@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Shared -->
+    <ProjectReference Include="../../Shared/Pottmayer.Pandora.Shared.Infrastructure/Pottmayer.Pandora.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="../../Shared/Pottmayer.Pandora.Shared.Persistence/Pottmayer.Pandora.Shared.Persistence.csproj" />
+    <!-- System module -->
+    <ProjectReference Include="../../Modules/System/Pottmayer.Pandora.Modules.System.Persistence/Pottmayer.Pandora.Modules.System.Persistence.csproj" />
+    <!-- Users module -->
+    <ProjectReference Include="../../Modules/Users/Pottmayer.Pandora.Modules.Users.Application/Pottmayer.Pandora.Modules.Users.Application.csproj" />
+    <ProjectReference Include="../../Modules/Users/Pottmayer.Pandora.Modules.Users.Infrastructure/Pottmayer.Pandora.Modules.Users.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Users/Pottmayer.Pandora.Modules.Users.Persistence/Pottmayer.Pandora.Modules.Users.Persistence.csproj" />
+    <ProjectReference Include="../../Modules/Users/Pottmayer.Pandora.Modules.Users.Presentation/Pottmayer.Pandora.Modules.Users.Presentation.csproj" />
+    <!-- Identity module -->
+    <ProjectReference Include="../../Modules/Identity/Pottmayer.Pandora.Modules.Identity.Application/Pottmayer.Pandora.Modules.Identity.Application.csproj" />
+    <ProjectReference Include="../../Modules/Identity/Pottmayer.Pandora.Modules.Identity.Infrastructure/Pottmayer.Pandora.Modules.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Identity/Pottmayer.Pandora.Modules.Identity.Persistence/Pottmayer.Pandora.Modules.Identity.Persistence.csproj" />
+    <ProjectReference Include="../../Modules/Identity/Pottmayer.Pandora.Modules.Identity.Presentation/Pottmayer.Pandora.Modules.Identity.Presentation.csproj" />
+    <!-- Tars: Core -->
+    <ProjectReference Include="../../../../../tars/src/Core/Pottmayer.Tars.Core.Localization/Pottmayer.Tars.Core.Localization.csproj" />
+    <!-- Tars: Web -->
+    <ProjectReference Include="../../../../../tars/src/Web/Pottmayer.Tars.Web.Http/Pottmayer.Tars.Web.Http.csproj" />
+    <ProjectReference Include="../../../../../tars/src/Web/Pottmayer.Tars.Web.Http.AspNetCore/Pottmayer.Tars.Web.Http.AspNetCore.csproj" />
+    <!-- Tars: UserContext -->
+    <ProjectReference Include="../../../../../tars/src/UserContext/Pottmayer.Tars.UserContext.AspNetCore/Pottmayer.Tars.UserContext.AspNetCore.csproj" />
+    <!-- Tars: Caching -->
+    <ProjectReference Include="../../../../../tars/src/Caching/Pottmayer.Tars.Caching.Core/Pottmayer.Tars.Caching.Core.csproj" />
+    <ProjectReference Include="../../../../../tars/src/Caching/Pottmayer.Tars.Caching.Memory/Pottmayer.Tars.Caching.Memory.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.1" />
+    <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.2" />
+  </ItemGroup>
+
+</Project>

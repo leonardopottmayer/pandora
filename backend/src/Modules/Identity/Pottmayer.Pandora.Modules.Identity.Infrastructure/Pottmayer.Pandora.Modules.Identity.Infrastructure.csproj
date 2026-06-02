@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Identity.Abstractions/Pottmayer.Pandora.Modules.Identity.Abstractions.csproj" />
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Identity.Application/Pottmayer.Pandora.Modules.Identity.Application.csproj" />
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Identity.Domain/Pottmayer.Pandora.Modules.Identity.Domain.csproj" />
+    <!-- Tars: Data -->
+    <ProjectReference Include="../../../../../../tars/src/Data/Pottmayer.Tars.Data.Abstractions/Pottmayer.Tars.Data.Abstractions.csproj" />
+    <!-- Tars: Security -->
+    <ProjectReference Include="../../../../../../tars/src/Security/Pottmayer.Tars.Security.Identity/Pottmayer.Tars.Security.Identity.csproj" />
+    <ProjectReference Include="../../../../../../tars/src/Security/Pottmayer.Tars.Security.Identity.AspNetCore/Pottmayer.Tars.Security.Identity.AspNetCore.csproj" />
+  </ItemGroup>
+
+</Project>

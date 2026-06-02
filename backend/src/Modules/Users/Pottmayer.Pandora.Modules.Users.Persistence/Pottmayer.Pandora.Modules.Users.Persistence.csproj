@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Users.Abstractions/Pottmayer.Pandora.Modules.Users.Abstractions.csproj" />
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Users.Domain/Pottmayer.Pandora.Modules.Users.Domain.csproj" />
+    <ProjectReference Include="../../../Shared/Pottmayer.Pandora.Shared.Persistence/Pottmayer.Pandora.Shared.Persistence.csproj" />
+    <!-- Tars: Data -->
+    <ProjectReference Include="../../../../../../tars/src/Data/Pottmayer.Tars.Data.Relational/Pottmayer.Tars.Data.Relational.csproj" />
+  </ItemGroup>
+
+</Project>

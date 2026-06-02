@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Pottmayer.Pandora.Shared.Domain/Pottmayer.Pandora.Shared.Domain.csproj" />
+    <!-- Tars: Data -->
+    <ProjectReference Include="../../../../../tars/src/Data/Pottmayer.Tars.Data.Relational/Pottmayer.Tars.Data.Relational.csproj" />
+    <!-- Tars: UserContext -->
+    <ProjectReference Include="../../../../../tars/src/UserContext/Pottmayer.Tars.UserContext.Abstractions/Pottmayer.Tars.UserContext.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+  </ItemGroup>
+
+</Project>

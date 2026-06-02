@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+
+  <!-- Users -->
+  <data name="Users.EmailAlreadyRegistered" xml:space="preserve">
+    <value>O e-mail informado já está cadastrado.</value>
+  </data>
+  <data name="Users.UsernameAlreadyRegistered" xml:space="preserve">
+    <value>O nome de usuário informado já está em uso.</value>
+  </data>
+  <data name="Users.InvalidEmail" xml:space="preserve">
+    <value>O e-mail informado é inválido.</value>
+  </data>
+  <data name="Users.NotFound" xml:space="preserve">
+    <value>Usuário não encontrado.</value>
+  </data>
+  <data name="Users.PreferencesNotFound" xml:space="preserve">
+    <value>Preferências do usuário não encontradas.</value>
+  </data>
+  <data name="Users.InvalidTheme" xml:space="preserve">
+    <value>Tema não suportado.</value>
+  </data>
+  <data name="Users.InvalidUsername" xml:space="preserve">
+    <value>O nome de usuário é obrigatório.</value>
+  </data>
+  <data name="Users.InvalidName" xml:space="preserve">
+    <value>O nome é obrigatório.</value>
+  </data>
+  <data name="Users.InvalidPassword" xml:space="preserve">
+    <value>A senha é obrigatória.</value>
+  </data>
+
+  <!-- Identity -->
+  <data name="Identity.InvalidCredentials" xml:space="preserve">
+    <value>As credenciais informadas são inválidas.</value>
+  </data>
+  <data name="Identity.AccountNotActive" xml:space="preserve">
+    <value>A conta não está ativa.</value>
+  </data>
+  <data name="Identity.InvalidRefreshToken" xml:space="preserve">
+    <value>O refresh token é inválido ou expirou.</value>
+  </data>
+  <data name="Identity.TokenReuseDetected" xml:space="preserve">
+    <value>Reutilização de refresh token detectada. Todas as sessões foram revogadas.</value>
+  </data>
+</root>

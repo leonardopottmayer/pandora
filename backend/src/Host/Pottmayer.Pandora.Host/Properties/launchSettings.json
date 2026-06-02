@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Pottmayer.Pandora.Host": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:61182;http://localhost:61183"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Users.Application/Pottmayer.Pandora.Modules.Users.Application.csproj" />
+    <ProjectReference Include="../../../Shared/Pottmayer.Pandora.Shared.Domain/Pottmayer.Pandora.Shared.Domain.csproj" />
+    <!-- Tars: Web -->
+    <ProjectReference Include="../../../../../../tars/src/Web/Pottmayer.Tars.Web.Http.Abstractions/Pottmayer.Tars.Web.Http.Abstractions.csproj" />
+    <ProjectReference Include="../../../../../../tars/src/Web/Pottmayer.Tars.Web.Http.AspNetCore/Pottmayer.Tars.Web.Http.AspNetCore.csproj" />
+    <!-- Tars: UserContext -->
+    <ProjectReference Include="../../../../../../tars/src/UserContext/Pottmayer.Tars.UserContext.Abstractions/Pottmayer.Tars.UserContext.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>
