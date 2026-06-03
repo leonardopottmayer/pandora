@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <!-- Tars: UserContext -->
-    <ProjectReference Include="../../../../../tars/src/UserContext/Pottmayer.Tars.UserContext.Abstractions/Pottmayer.Tars.UserContext.Abstractions.csproj" />
+    <PackageReference Include="Pottmayer.Tars.UserContext.Abstractions" Version="0.0.1" />
   </ItemGroup>
 
 </Project>

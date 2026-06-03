@@ -13,8 +13,8 @@
   <ItemGroup>
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Identity.Application/Pottmayer.Pandora.Modules.Identity.Application.csproj" />
     <!-- Tars: Web -->
-    <ProjectReference Include="../../../../../../tars/src/Web/Pottmayer.Tars.Web.Http.Abstractions/Pottmayer.Tars.Web.Http.Abstractions.csproj" />
-    <ProjectReference Include="../../../../../../tars/src/Web/Pottmayer.Tars.Web.Http.AspNetCore/Pottmayer.Tars.Web.Http.AspNetCore.csproj" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http.Abstractions" Version="0.0.1" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http.AspNetCore" Version="0.0.1" />
   </ItemGroup>
 
 </Project>

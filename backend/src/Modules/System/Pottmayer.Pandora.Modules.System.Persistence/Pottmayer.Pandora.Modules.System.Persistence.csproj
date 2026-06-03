@@ -11,7 +11,7 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.System.Domain/Pottmayer.Pandora.Modules.System.Domain.csproj" />
     <ProjectReference Include="../../../Shared/Pottmayer.Pandora.Shared.Persistence/Pottmayer.Pandora.Shared.Persistence.csproj" />
     <!-- Tars: Data -->
-    <ProjectReference Include="../../../../../../tars/src/Data/Pottmayer.Tars.Data.Relational/Pottmayer.Tars.Data.Relational.csproj" />
+    <PackageReference Include="Pottmayer.Tars.Data.Relational" Version="0.0.1" />
   </ItemGroup>
 
 </Project>

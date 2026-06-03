@@ -30,39 +30,4 @@
   <Folder Name="/src/Host/">
     <Project Path="src/Host/Pottmayer.Pandora.Host/Pottmayer.Pandora.Host.csproj" Id="b0000004-0000-0000-0000-000000000001" />
   </Folder>
-  <Folder Name="/Tars/" />
-  <Folder Name="/Tars/Caching/">
-    <Project Path="../../tars/src/Caching/Pottmayer.Tars.Caching.Abstractions/Pottmayer.Tars.Caching.Abstractions.csproj" Id="a82a14e7-5b7c-4073-922d-2c52898d71e1" />
-    <Project Path="../../tars/src/Caching/Pottmayer.Tars.Caching.Core/Pottmayer.Tars.Caching.Core.csproj" Id="4c830547-3582-4ecc-83d0-2538be5e9ac2" />
-    <Project Path="../../tars/src/Caching/Pottmayer.Tars.Caching.Memory/Pottmayer.Tars.Caching.Memory.csproj" Id="76c37494-1c82-45c4-a0ed-bb9b444f01e8" />
-  </Folder>
-  <Folder Name="/Tars/Core/">
-    <Project Path="../../tars/src/Core/Pottmayer.Tars.Core.Cqrs/Pottmayer.Tars.Core.Cqrs.csproj" Id="7eff268f-71cf-45e1-b4a4-2d6726e375ff" />
-    <Project Path="../../tars/src/Core/Pottmayer.Tars.Core.Ddd/Pottmayer.Tars.Core.Ddd.csproj" Id="119f929c-e28f-4c28-9a4f-5013a46baa65" />
-    <Project Path="../../tars/src/Core/Pottmayer.Tars.Core.Mediator.Abstractions/Pottmayer.Tars.Core.Mediator.Abstractions.csproj" Id="4286ce43-1038-45e1-9aa7-510125526ddd" />
-    <Project Path="../../tars/src/Core/Pottmayer.Tars.Core.Mediator/Pottmayer.Tars.Core.Mediator.csproj" Id="c0cfbbac-504d-4d80-afbb-0351885b1447" />
-    <Project Path="../../tars/src/Core/Pottmayer.Tars.Core.Primitives/Pottmayer.Tars.Core.Primitives.csproj" Id="9f46fda0-9002-4c7a-8915-5027f2dcc4ad" />
-    <Project Path="../../tars/src/Core/Pottmayer.Tars.Core.Localization/Pottmayer.Tars.Core.Localization.csproj" Id="c3d4e5f6-a7b8-4901-cdef-23456789abcd" />
-    <Project Path="../../tars/src/Core/Pottmayer.Tars.Core.Localization.AspNetCore/Pottmayer.Tars.Core.Localization.AspNetCore.csproj" Id="b2c3d4e5-f6a7-4890-bcde-123456789abc" />
-  </Folder>
-  <Folder Name="/Tars/Data/">
-    <Project Path="../../tars/src/Data/Pottmayer.Tars.Data.Abstractions/Pottmayer.Tars.Data.Abstractions.csproj" Id="53f8edb1-4da6-46ee-b100-1b9a2e87d100" />
-    <Project Path="../../tars/src/Data/Pottmayer.Tars.Data.Relational.Abstractions/Pottmayer.Tars.Data.Relational.Abstractions.csproj" Id="c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f" />
-    <Project Path="../../tars/src/Data/Pottmayer.Tars.Data.Relational/Pottmayer.Tars.Data.Relational.csproj" Id="d2e3f4a5-b6c7-4d8e-9f0a-1b2c3d4e5f6a" />
-  </Folder>
-  <Folder Name="/Tars/Security/">
-    <Project Path="../../tars/src/Security/Pottmayer.Tars.Security.Identity.Abstractions/Pottmayer.Tars.Security.Identity.Abstractions.csproj" Id="aa8c8763-f133-4200-b5ee-19ed24e0ea46" />
-    <Project Path="../../tars/src/Security/Pottmayer.Tars.Security.Identity/Pottmayer.Tars.Security.Identity.csproj" Id="e84dc98c-e755-4522-d8ee-4b5f56f2fd78" />
-    <Project Path="../../tars/src/Security/Pottmayer.Tars.Security.Identity.AspNetCore/Pottmayer.Tars.Security.Identity.AspNetCore.csproj" Id="f9a1b2c3-d4e5-4f6a-7b8c-9d0e1f2a3b4c" />
-  </Folder>
-  <Folder Name="/Tars/UserContext/">
-    <Project Path="../../tars/src/UserContext/Pottmayer.Tars.UserContext.Abstractions/Pottmayer.Tars.UserContext.Abstractions.csproj" Id="d1e2f3a4-b5c6-4d7e-8f9a-0b1c2d3e4f5a" />
-    <Project Path="../../tars/src/UserContext/Pottmayer.Tars.UserContext/Pottmayer.Tars.UserContext.csproj" Id="e2f3a4b5-c6d7-4e8f-9a0b-1c2d3e4f5a6b" />
-    <Project Path="../../tars/src/UserContext/Pottmayer.Tars.UserContext.AspNetCore/Pottmayer.Tars.UserContext.AspNetCore.csproj" Id="f3a4b5c6-d7e8-4f9a-0b1c-2d3e4f5a6b7c" />
-  </Folder>
-  <Folder Name="/Tars/Web/">
-    <Project Path="../../tars/src/Web/Pottmayer.Tars.Web.Http.Abstractions/Pottmayer.Tars.Web.Http.Abstractions.csproj" Id="e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b" />
-    <Project Path="../../tars/src/Web/Pottmayer.Tars.Web.Http/Pottmayer.Tars.Web.Http.csproj" Id="f2a3b4c5-d6e7-4f8a-9b0c-1d2e3f4a5b6c" />
-    <Project Path="../../tars/src/Web/Pottmayer.Tars.Web.Http.AspNetCore/Pottmayer.Tars.Web.Http.AspNetCore.csproj" Id="a3b4c5d6-e7f8-4a9b-0c1d-2e3f4a5b6c7d" />
-  </Folder>
 </Solution>

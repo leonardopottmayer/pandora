@@ -8,11 +8,11 @@
 
   <ItemGroup>
     <!-- Tars: Core -->
-    <ProjectReference Include="../../../../../../tars/src/Core/Pottmayer.Tars.Core.Primitives/Pottmayer.Tars.Core.Primitives.csproj" />
+    <PackageReference Include="Pottmayer.Tars.Core.Primitives" Version="0.0.1" />
     <!-- Tars: Data -->
-    <ProjectReference Include="../../../../../../tars/src/Data/Pottmayer.Tars.Data.Relational.Abstractions/Pottmayer.Tars.Data.Relational.Abstractions.csproj" />
+    <PackageReference Include="Pottmayer.Tars.Data.Relational.Abstractions" Version="0.0.1" />
     <!-- Tars: Security -->
-    <ProjectReference Include="../../../../../../tars/src/Security/Pottmayer.Tars.Security.Identity.Abstractions/Pottmayer.Tars.Security.Identity.Abstractions.csproj" />
+    <PackageReference Include="Pottmayer.Tars.Security.Identity.Abstractions" Version="0.0.1" />
   </ItemGroup>
 
 </Project>

@@ -11,10 +11,10 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Users.Contracts/Pottmayer.Pandora.Modules.Users.Contracts.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Users.Domain/Pottmayer.Pandora.Modules.Users.Domain.csproj" />
     <!-- Tars: Core -->
-    <ProjectReference Include="../../../../../../tars/src/Core/Pottmayer.Tars.Core.Cqrs/Pottmayer.Tars.Core.Cqrs.csproj" />
-    <ProjectReference Include="../../../../../../tars/src/Core/Pottmayer.Tars.Core.Mediator/Pottmayer.Tars.Core.Mediator.csproj" />
+    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.1" />
+    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.1" />
     <!-- Tars: Data -->
-    <ProjectReference Include="../../../../../../tars/src/Data/Pottmayer.Tars.Data.Abstractions/Pottmayer.Tars.Data.Abstractions.csproj" />
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.1" />
   </ItemGroup>
 
 </Project>

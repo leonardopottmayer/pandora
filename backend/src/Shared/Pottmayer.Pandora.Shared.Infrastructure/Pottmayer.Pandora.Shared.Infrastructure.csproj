@@ -14,8 +14,8 @@
   <ItemGroup>
     <ProjectReference Include="../Pottmayer.Pandora.Shared.Domain/Pottmayer.Pandora.Shared.Domain.csproj" />
     <!-- Tars: UserContext -->
-    <ProjectReference Include="../../../../../tars/src/UserContext/Pottmayer.Tars.UserContext/Pottmayer.Tars.UserContext.csproj" />
-    <ProjectReference Include="../../../../../tars/src/UserContext/Pottmayer.Tars.UserContext.AspNetCore/Pottmayer.Tars.UserContext.AspNetCore.csproj" />
+    <PackageReference Include="Pottmayer.Tars.UserContext" Version="0.0.1" />
+    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.1" />
   </ItemGroup>
 
 </Project>
