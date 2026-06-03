@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -9,10 +9,10 @@
   <ItemGroup>
     <ProjectReference Include="../../../Shared/Pottmayer.Pandora.Shared.Domain/Pottmayer.Pandora.Shared.Domain.csproj" />
     <!-- Tars: Core -->
-    <PackageReference Include="Pottmayer.Tars.Core.Ddd" Version="0.0.1" />
-    <PackageReference Include="Pottmayer.Tars.Core.Primitives" Version="0.0.1" />
+    <PackageReference Include="Pottmayer.Tars.Core.Ddd" Version="0.0.2" />
+    <PackageReference Include="Pottmayer.Tars.Core.Primitives" Version="0.0.2" />
     <!-- Tars: Data -->
-    <PackageReference Include="Pottmayer.Tars.Data.Relational.Abstractions" Version="0.0.1" />
+    <PackageReference Include="Pottmayer.Tars.Data.Relational.Abstractions" Version="0.0.2" />
   </ItemGroup>
 
 </Project>

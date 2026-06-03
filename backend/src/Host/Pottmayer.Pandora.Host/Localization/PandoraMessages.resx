@@ -49,4 +49,10 @@
   <data name="Identity.TokenReuseDetected" xml:space="preserve">
     <value>Refresh token reuse detected. All sessions have been revoked.</value>
   </data>
+  <data name="Identity.NotAuthenticated" xml:space="preserve">
+    <value>Authentication required.</value>
+  </data>
+  <data name="Identity.AccessDenied" xml:space="preserve">
+    <value>Access denied.</value>
+  </data>
 </root>

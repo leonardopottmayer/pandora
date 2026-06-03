@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <!-- Tars: Data -->
-    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.1" />
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.2" />
   </ItemGroup>
 
 </Project>

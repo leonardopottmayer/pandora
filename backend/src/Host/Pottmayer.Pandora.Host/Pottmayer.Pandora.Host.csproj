@@ -23,15 +23,15 @@
     <ProjectReference Include="../../Modules/Identity/Pottmayer.Pandora.Modules.Identity.Persistence/Pottmayer.Pandora.Modules.Identity.Persistence.csproj" />
     <ProjectReference Include="../../Modules/Identity/Pottmayer.Pandora.Modules.Identity.Presentation/Pottmayer.Pandora.Modules.Identity.Presentation.csproj" />
     <!-- Tars: Core -->
-    <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.1" />
+    <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.2" />
     <!-- Tars: Web -->
-    <PackageReference Include="Pottmayer.Tars.Web.Http" Version="0.0.1" />
-    <PackageReference Include="Pottmayer.Tars.Web.Http.AspNetCore" Version="0.0.1" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http" Version="0.0.2" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http.AspNetCore" Version="0.0.2" />
     <!-- Tars: UserContext -->
-    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.1" />
+    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.2" />
     <!-- Tars: Caching -->
-    <PackageReference Include="Pottmayer.Tars.Caching.Core" Version="0.0.1" />
-    <PackageReference Include="Pottmayer.Tars.Caching.Memory" Version="0.0.1" />
+    <PackageReference Include="Pottmayer.Tars.Caching.Core" Version="0.0.2" />
+    <PackageReference Include="Pottmayer.Tars.Caching.Memory" Version="0.0.2" />
   </ItemGroup>
 
   <ItemGroup>

@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Pottmayer.Pandora.Modules.Identity.Infrastructure.Jobs;
 using Pottmayer.Pandora.Modules.Identity.Infrastructure.Stores;
+using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Security.Identity.Abstractions.Stores;
 using Pottmayer.Tars.Security.Identity.AspNetCore.DI;
 using Pottmayer.Tars.Security.Identity.DI;
@@ -61,6 +62,9 @@ public static class InfrastructureDI
         .AddJwtBearer(IdentityJwtBearerExtensions.DefaultJwtScheme, options =>
         {
             options.ConfigureTarsIdentityJwtBearerEvents();
+            options.ConfigureTarsIdentityProblemResponses(
+                unauthorizedError: Error.Unauthorized("Identity.NotAuthenticated", "Authentication required."),
+                forbiddenError:    Error.Forbidden("Identity.AccessDenied", "Access denied."));
         });
 
         services.AddAuthorization();

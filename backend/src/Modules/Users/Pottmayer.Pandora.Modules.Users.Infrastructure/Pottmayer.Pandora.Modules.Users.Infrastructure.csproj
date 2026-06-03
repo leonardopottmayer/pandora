@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -9,7 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Users.Domain/Pottmayer.Pandora.Modules.Users.Domain.csproj" />
     <!-- Tars: Data (brings Microsoft.Extensions.DependencyInjection) -->
-    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.1" />
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.2" />
   </ItemGroup>
 
   <ItemGroup>

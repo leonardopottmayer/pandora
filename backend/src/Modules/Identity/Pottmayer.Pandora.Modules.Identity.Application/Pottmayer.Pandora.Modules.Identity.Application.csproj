@@ -12,12 +12,12 @@
     <!-- Cross-module: Users public contract for sign-in -->
     <ProjectReference Include="../../Users/Pottmayer.Pandora.Modules.Users.Contracts/Pottmayer.Pandora.Modules.Users.Contracts.csproj" />
     <!-- Tars: Core -->
-    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.1" />
-    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.1" />
+    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.2" />
+    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.2" />
     <!-- Tars: Data -->
-    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.1" />
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.2" />
     <!-- Tars: Security -->
-    <PackageReference Include="Pottmayer.Tars.Security.Identity.Abstractions" Version="0.0.1" />
+    <PackageReference Include="Pottmayer.Tars.Security.Identity.Abstractions" Version="0.0.2" />
   </ItemGroup>
 
 </Project>
