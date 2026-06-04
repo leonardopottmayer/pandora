@@ -1,16 +1,16 @@
-using Pottmayer.Pandora.Modules.Users.Contracts.Authentication;
+using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Security.Identity.Abstractions.Results;
 
 namespace Pottmayer.Pandora.Modules.Identity.Application.Services;
 
 public static class TokenMapper
 {
-    public static AuthenticationResult ToAuthResult(UserAuthDto user) => new()
+    public static AuthenticationResult ToAuthResult(Guid userId) => new()
     {
-        Subject = user.Id.ToString(),
+        Subject = userId.ToString(),
         Claims =
         [
-            new ClaimData("Id", user.Id.ToString())
+            new ClaimData(nameof(UserData.Id), userId.ToString())
         ]
     };
 }

@@ -15,6 +15,8 @@
     <!-- Tars: Security -->
     <PackageReference Include="Pottmayer.Tars.Security.Identity" Version="0.0.2" />
     <PackageReference Include="Pottmayer.Tars.Security.Identity.AspNetCore" Version="0.0.2" />
+    <!-- Password hashing (Identity owns credential secrets) -->
+    <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.1" />
   </ItemGroup>
 
 </Project>

@@ -9,8 +9,6 @@
   <ItemGroup>
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Identity.Abstractions/Pottmayer.Pandora.Modules.Identity.Abstractions.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Identity.Domain/Pottmayer.Pandora.Modules.Identity.Domain.csproj" />
-    <!-- Cross-module: Users public contract for sign-in -->
-    <ProjectReference Include="../../Users/Pottmayer.Pandora.Modules.Users.Contracts/Pottmayer.Pandora.Modules.Users.Contracts.csproj" />
     <!-- Tars: Core -->
     <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.2" />
     <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.2" />

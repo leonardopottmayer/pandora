@@ -8,11 +8,8 @@
   </resheader>
 
   <!-- Users -->
-  <data name="Users.EmailAlreadyRegistered" xml:space="preserve">
-    <value>O e-mail informado já está cadastrado.</value>
-  </data>
-  <data name="Users.UsernameAlreadyRegistered" xml:space="preserve">
-    <value>O nome de usuário informado já está em uso.</value>
+  <data name="Users.EmailOrUsernameAlreadyRegistered" xml:space="preserve">
+    <value>O e-mail ou nome de usuário informado já está cadastrado.</value>
   </data>
   <data name="Users.InvalidEmail" xml:space="preserve">
     <value>O e-mail informado é inválido.</value>

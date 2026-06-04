@@ -10,6 +10,9 @@ public static class IdentityErrors
     public static Error AccountNotActive =>
         Error.Unauthorized("Identity.AccountNotActive", "The account is not active.");
 
+    public static Error PasswordRequired =>
+        Error.Validation("Identity.PasswordRequired", "Password is required.");
+
     public static Error InvalidRefreshToken =>
         Error.Unauthorized("Identity.InvalidRefreshToken", "The refresh token is invalid or expired.");
 

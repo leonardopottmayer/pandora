@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Services;
 using Pottmayer.Pandora.Modules.Identity.Infrastructure.Jobs;
+using Pottmayer.Pandora.Modules.Identity.Infrastructure.Security;
 using Pottmayer.Pandora.Modules.Identity.Infrastructure.Stores;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Security.Identity.Abstractions.Stores;
@@ -14,6 +16,7 @@ public static class InfrastructureDI
     public static IHostApplicationBuilder AddIdentityInfrastructure(this IHostApplicationBuilder builder)
     {
         builder.AddIdentityOptions();
+        builder.Services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
         builder.Services.AddRefreshTokenStore();
         builder.Services.AddIdentityTokenServices();
         builder.Services.AddIdentityAuthentication();

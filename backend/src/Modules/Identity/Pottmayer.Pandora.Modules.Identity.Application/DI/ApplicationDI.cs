@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.SignIn;
 using Pottmayer.Tars.Core.Mediator.DI;
 

@@ -4,20 +4,6 @@
     <Project Path="src/Shared/Pottmayer.Pandora.Shared.Persistence/Pottmayer.Pandora.Shared.Persistence.csproj" Id="b0000001-0000-0000-0000-000000000002" />
     <Project Path="src/Shared/Pottmayer.Pandora.Shared.Infrastructure/Pottmayer.Pandora.Shared.Infrastructure.csproj" Id="b0000001-0000-0000-0000-000000000003" />
   </Folder>
-  <Folder Name="/src/Modules/System/">
-    <Project Path="src/Modules/System/Pottmayer.Pandora.Modules.System.Abstractions/Pottmayer.Pandora.Modules.System.Abstractions.csproj" Id="b0000005-0000-0000-0000-000000000003" />
-    <Project Path="src/Modules/System/Pottmayer.Pandora.Modules.System.Domain/Pottmayer.Pandora.Modules.System.Domain.csproj" Id="b0000005-0000-0000-0000-000000000001" />
-    <Project Path="src/Modules/System/Pottmayer.Pandora.Modules.System.Persistence/Pottmayer.Pandora.Modules.System.Persistence.csproj" Id="b0000005-0000-0000-0000-000000000002" />
-  </Folder>
-  <Folder Name="/src/Modules/Users/">
-    <Project Path="src/Modules/Users/Pottmayer.Pandora.Modules.Users.Abstractions/Pottmayer.Pandora.Modules.Users.Abstractions.csproj" Id="b0000002-0000-0000-0000-000000000006" />
-    <Project Path="src/Modules/Users/Pottmayer.Pandora.Modules.Users.Contracts/Pottmayer.Pandora.Modules.Users.Contracts.csproj" Id="b0000002-0000-0000-0000-000000000000" />
-    <Project Path="src/Modules/Users/Pottmayer.Pandora.Modules.Users.Domain/Pottmayer.Pandora.Modules.Users.Domain.csproj" Id="b0000002-0000-0000-0000-000000000001" />
-    <Project Path="src/Modules/Users/Pottmayer.Pandora.Modules.Users.Application/Pottmayer.Pandora.Modules.Users.Application.csproj" Id="b0000002-0000-0000-0000-000000000002" />
-    <Project Path="src/Modules/Users/Pottmayer.Pandora.Modules.Users.Infrastructure/Pottmayer.Pandora.Modules.Users.Infrastructure.csproj" Id="b0000002-0000-0000-0000-000000000003" />
-    <Project Path="src/Modules/Users/Pottmayer.Pandora.Modules.Users.Persistence/Pottmayer.Pandora.Modules.Users.Persistence.csproj" Id="b0000002-0000-0000-0000-000000000004" />
-    <Project Path="src/Modules/Users/Pottmayer.Pandora.Modules.Users.Presentation/Pottmayer.Pandora.Modules.Users.Presentation.csproj" Id="b0000002-0000-0000-0000-000000000005" />
-  </Folder>
   <Folder Name="/src/Modules/Identity/">
     <Project Path="src/Modules/Identity/Pottmayer.Pandora.Modules.Identity.Abstractions/Pottmayer.Pandora.Modules.Identity.Abstractions.csproj" Id="b0000003-0000-0000-0000-000000000006" />
     <Project Path="src/Modules/Identity/Pottmayer.Pandora.Modules.Identity.Contracts/Pottmayer.Pandora.Modules.Identity.Contracts.csproj" Id="b0000003-0000-0000-0000-000000000000" />
@@ -29,5 +15,8 @@
   </Folder>
   <Folder Name="/src/Host/">
     <Project Path="src/Host/Pottmayer.Pandora.Host/Pottmayer.Pandora.Host.csproj" Id="b0000004-0000-0000-0000-000000000001" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pottmayer.Pandora.Modules.Identity.Tests/Pottmayer.Pandora.Modules.Identity.Tests.csproj" Id="b0000006-0000-0000-0000-000000000001" />
   </Folder>
 </Solution>

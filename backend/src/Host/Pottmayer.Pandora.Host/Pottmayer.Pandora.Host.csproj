@@ -10,13 +10,6 @@
     <!-- Shared -->
     <ProjectReference Include="../../Shared/Pottmayer.Pandora.Shared.Infrastructure/Pottmayer.Pandora.Shared.Infrastructure.csproj" />
     <ProjectReference Include="../../Shared/Pottmayer.Pandora.Shared.Persistence/Pottmayer.Pandora.Shared.Persistence.csproj" />
-    <!-- System module -->
-    <ProjectReference Include="../../Modules/System/Pottmayer.Pandora.Modules.System.Persistence/Pottmayer.Pandora.Modules.System.Persistence.csproj" />
-    <!-- Users module -->
-    <ProjectReference Include="../../Modules/Users/Pottmayer.Pandora.Modules.Users.Application/Pottmayer.Pandora.Modules.Users.Application.csproj" />
-    <ProjectReference Include="../../Modules/Users/Pottmayer.Pandora.Modules.Users.Infrastructure/Pottmayer.Pandora.Modules.Users.Infrastructure.csproj" />
-    <ProjectReference Include="../../Modules/Users/Pottmayer.Pandora.Modules.Users.Persistence/Pottmayer.Pandora.Modules.Users.Persistence.csproj" />
-    <ProjectReference Include="../../Modules/Users/Pottmayer.Pandora.Modules.Users.Presentation/Pottmayer.Pandora.Modules.Users.Presentation.csproj" />
     <!-- Identity module -->
     <ProjectReference Include="../../Modules/Identity/Pottmayer.Pandora.Modules.Identity.Application/Pottmayer.Pandora.Modules.Identity.Application.csproj" />
     <ProjectReference Include="../../Modules/Identity/Pottmayer.Pandora.Modules.Identity.Infrastructure/Pottmayer.Pandora.Modules.Identity.Infrastructure.csproj" />

@@ -8,11 +8,8 @@
   </resheader>
 
   <!-- Users -->
-  <data name="Users.EmailAlreadyRegistered" xml:space="preserve">
-    <value>The provided email is already registered.</value>
-  </data>
-  <data name="Users.UsernameAlreadyRegistered" xml:space="preserve">
-    <value>The provided username is already taken.</value>
+  <data name="Users.EmailOrUsernameAlreadyRegistered" xml:space="preserve">
+    <value>The provided email or username is already registered.</value>
   </data>
   <data name="Users.InvalidEmail" xml:space="preserve">
     <value>The provided email is invalid.</value>

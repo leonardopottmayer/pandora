@@ -7,11 +7,6 @@ using Pottmayer.Pandora.Modules.Identity.Application.DI;
 using Pottmayer.Pandora.Modules.Identity.Infrastructure.DI;
 using Pottmayer.Pandora.Modules.Identity.Persistence.DI;
 using Pottmayer.Pandora.Modules.Identity.Presentation.DI;
-using Pottmayer.Pandora.Modules.System.Persistence.DI;
-using Pottmayer.Pandora.Modules.Users.Application.DI;
-using Pottmayer.Pandora.Modules.Users.Infrastructure.DI;
-using Pottmayer.Pandora.Modules.Users.Persistence.DI;
-using Pottmayer.Pandora.Modules.Users.Presentation.DI;
 using Pottmayer.Pandora.Shared.Infrastructure.DI;
 using Pottmayer.Pandora.Shared.Persistence.DI;
 using Pottmayer.Tars.Core.Localization.DI;
@@ -26,12 +21,6 @@ builder.AddPandoraSharedInfrastructure();
 builder.AddPandoraSharedPersistence();
 
 // Modules
-builder.Services.AddSystemPersistence();
-
-builder.Services.AddUsersPersistence();
-builder.Services.AddUsersInfrastructure();
-builder.Services.AddUsersApplication();
-
 builder.Services.AddIdentityPersistence();
 builder.AddIdentityInfrastructure();
 builder.Services.AddIdentityApplication();
@@ -43,7 +32,6 @@ builder.Services.AddTarsProblemDetails();
 
 // Presentation
 builder.Services.AddControllers()
-                .AddUsersPresentationPart()
                 .AddIdentityPresentationPart();
 
 // API Versioning

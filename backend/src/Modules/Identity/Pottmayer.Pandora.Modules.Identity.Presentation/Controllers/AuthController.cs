@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.RefreshToken;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.SignIn;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.SignOut;
+using Pottmayer.Pandora.Modules.Identity.Application.Commands.SignUp;
 using Pottmayer.Pandora.Modules.Identity.Presentation.Requests;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using Pottmayer.Tars.Web.Http.Abstractions;
@@ -16,6 +17,16 @@ namespace Pottmayer.Pandora.Modules.Identity.Presentation.Controllers;
 [Route("api/v{version:apiVersion}/identity/auth")]
 public sealed class AuthController(ISender sender, IHttpErrorMapper errorMapper) : ControllerBase
 {
+    [AllowAnonymous]
+    [HttpPost("signup")]
+    public async Task<IActionResult> SignUpAsync(SignUpRequest request, CancellationToken ct)
+    {
+        var command = new SignUpCommand(
+            new SignUpInput(request.Name, request.Username, request.Email, request.Password));
+        var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
     [AllowAnonymous]
     [HttpPost("signin")]
     public async Task<IActionResult> SignInAsync(SignInRequest request, CancellationToken ct)

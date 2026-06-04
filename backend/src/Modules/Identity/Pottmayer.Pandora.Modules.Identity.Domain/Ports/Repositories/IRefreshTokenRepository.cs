@@ -24,10 +24,6 @@ public interface IRefreshTokenRepository : IStandardRepository<StoredRefreshToke
 
     ValueTask RevokeAllForSubjectAsync(string subject, CancellationToken ct = default);
 
-    /// <summary>
-    /// Returns the subject for a consumed token (enables reuse detection).
-    /// Returns null if the token has never been seen.
-    /// </summary>
     ValueTask<string?> TryGetSubjectForReuseAsync(string tokenId, CancellationToken ct = default);
 
     ValueTask<int> PurgeOldTokensAsync(
