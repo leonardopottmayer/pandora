@@ -14,12 +14,12 @@ internal sealed class UserPreferencesEntityConfiguration : IEntityTypeConfigurat
         builder.ToTable("idt003_user_preferences", IdentityModule.Schema, tb =>
         {
             tb.HasCheckConstraint(
-                "chk_idt003_user_preferences_theme",
+                "chk_idt003_theme",
                 "theme IN ('light', 'dark', 'system')");
         });
 
         builder.HasKey(p => p.Id)
-               .HasName("pk_idt003_user_preferences");
+               .HasName("pk_idt003");
 
         builder.Property(p => p.Id)
                .HasColumnName("id")
@@ -30,7 +30,7 @@ internal sealed class UserPreferencesEntityConfiguration : IEntityTypeConfigurat
                .IsRequired();
 
         builder.HasIndex(p => p.UserId)
-               .HasDatabaseName("uq_idt003_user_preferences_user_id")
+               .HasDatabaseName("uq_idt003_user_id")
                .IsUnique();
 
         builder.Property(p => p.Theme)
@@ -48,14 +48,14 @@ internal sealed class UserPreferencesEntityConfiguration : IEntityTypeConfigurat
                .WithMany()
                .HasForeignKey(p => p.CreatedBy)
                .HasPrincipalKey(u => u.Id)
-               .HasConstraintName("fk_idt003_user_preferences_created_by")
+               .HasConstraintName("fk_idt003_created_by")
                .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<User>()
                .WithMany()
                .HasForeignKey(p => p.UpdatedBy)
                .HasPrincipalKey(u => u.Id)
-               .HasConstraintName("fk_idt003_user_preferences_updated_by")
+               .HasConstraintName("fk_idt003_updated_by")
                .OnDelete(DeleteBehavior.Restrict);
     }
 }

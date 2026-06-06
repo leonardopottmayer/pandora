@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Notifications.Abstractions/Pottmayer.Pandora.Modules.Notifications.Abstractions.csproj" />
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Notifications.Application/Pottmayer.Pandora.Modules.Notifications.Application.csproj" />
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Notifications.Domain/Pottmayer.Pandora.Modules.Notifications.Domain.csproj" />
+    <!-- Tars: Data -->
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.3" />
+    <!-- Tars: Communication e-mail providers (logging + MailKit) -->
+    <PackageReference Include="Pottmayer.Tars.Communication.Email" Version="0.0.3" />
+    <PackageReference Include="Pottmayer.Tars.Communication.Email.MailKit" Version="0.0.3" />
+    <!-- Hosting / options / logging for the dispatcher worker and provider config -->
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
+  </ItemGroup>
+
+</Project>

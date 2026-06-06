@@ -9,9 +9,9 @@
   <ItemGroup>
     <ProjectReference Include="../Pottmayer.Pandora.Shared.Domain/Pottmayer.Pandora.Shared.Domain.csproj" />
     <!-- Tars: Data -->
-    <PackageReference Include="Pottmayer.Tars.Data.Relational" Version="0.0.2" />
+    <PackageReference Include="Pottmayer.Tars.Data.Relational" Version="0.0.3" />
     <!-- Tars: UserContext -->
-    <PackageReference Include="Pottmayer.Tars.UserContext.Abstractions" Version="0.0.2" />
+    <PackageReference Include="Pottmayer.Tars.UserContext.Abstractions" Version="0.0.3" />
   </ItemGroup>
 
   <ItemGroup>

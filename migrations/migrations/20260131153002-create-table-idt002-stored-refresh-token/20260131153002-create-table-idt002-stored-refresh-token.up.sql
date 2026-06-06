@@ -12,7 +12,7 @@ CREATE TABLE identity.idt002_stored_refresh_token (
 );
 
 ALTER TABLE identity.idt002_stored_refresh_token
-ADD CONSTRAINT pk_idt002_stored_refresh_token PRIMARY KEY (id);
+ADD CONSTRAINT pk_idt002 PRIMARY KEY (id);
 
 ALTER TABLE identity.idt002_stored_refresh_token
-ADD CONSTRAINT uq_idt002_stored_refresh_token_key UNIQUE (key);
+ADD CONSTRAINT uq_idt002_key UNIQUE (key);

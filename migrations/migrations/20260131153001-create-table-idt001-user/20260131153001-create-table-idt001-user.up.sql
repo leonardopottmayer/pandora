@@ -18,16 +18,16 @@ CREATE TABLE identity.idt001_user (
 );
 
 ALTER TABLE identity.idt001_user
-ADD CONSTRAINT pk_idt001_user PRIMARY KEY (id);
+ADD CONSTRAINT pk_idt001 PRIMARY KEY (id);
 
 ALTER TABLE identity.idt001_user
-ADD CONSTRAINT uq_idt001_user_username UNIQUE (username);
+ADD CONSTRAINT uq_idt001_username UNIQUE (username);
 
 ALTER TABLE identity.idt001_user
-ADD CONSTRAINT uq_idt001_user_email UNIQUE (email);
+ADD CONSTRAINT uq_idt001_email UNIQUE (email);
 
 ALTER TABLE identity.idt001_user
-ADD CONSTRAINT fk_idt001_user_created_by FOREIGN KEY (created_by) REFERENCES identity.idt001_user (id);
+ADD CONSTRAINT fk_idt001_created_by FOREIGN KEY (created_by) REFERENCES identity.idt001_user (id);
 
 ALTER TABLE identity.idt001_user
-ADD CONSTRAINT fk_idt001_user_updated_by FOREIGN KEY (updated_by) REFERENCES identity.idt001_user (id);
+ADD CONSTRAINT fk_idt001_updated_by FOREIGN KEY (updated_by) REFERENCES identity.idt001_user (id);

@@ -10,6 +10,9 @@ public static class IdentityErrors
     public static Error AccountNotActive =>
         Error.Unauthorized("Identity.AccountNotActive", "The account is not active.");
 
+    public static Error InvalidActivationToken =>
+        Error.Validation("Identity.InvalidActivationToken", "The activation token is invalid or has expired.");
+
     public static Error PasswordRequired =>
         Error.Validation("Identity.PasswordRequired", "Password is required.");
 

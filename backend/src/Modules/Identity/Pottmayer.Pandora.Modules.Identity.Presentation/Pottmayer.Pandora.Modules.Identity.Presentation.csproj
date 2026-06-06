@@ -14,10 +14,10 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Identity.Application/Pottmayer.Pandora.Modules.Identity.Application.csproj" />
     <ProjectReference Include="../../../Shared/Pottmayer.Pandora.Shared.Domain/Pottmayer.Pandora.Shared.Domain.csproj" />
     <!-- Tars: Web -->
-    <PackageReference Include="Pottmayer.Tars.Web.Http.Abstractions" Version="0.0.2" />
-    <PackageReference Include="Pottmayer.Tars.Web.Http.AspNetCore" Version="0.0.2" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http.Abstractions" Version="0.0.3" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http.AspNetCore" Version="0.0.3" />
     <!-- Tars: UserContext -->
-    <PackageReference Include="Pottmayer.Tars.UserContext.Abstractions" Version="0.0.2" />
+    <PackageReference Include="Pottmayer.Tars.UserContext.Abstractions" Version="0.0.3" />
   </ItemGroup>
 
 </Project>

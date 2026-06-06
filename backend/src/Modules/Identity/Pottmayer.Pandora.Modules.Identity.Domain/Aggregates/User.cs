@@ -1,5 +1,4 @@
 using Pottmayer.Pandora.Modules.Identity.Domain.Entities;
-using Pottmayer.Pandora.Modules.Identity.Domain.Events;
 using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Services;
 using Pottmayer.Pandora.Modules.Identity.Domain.ValueObjects;
 using Pottmayer.Pandora.Shared.Domain;
@@ -44,16 +43,26 @@ public sealed class User : AggregateRoot<Guid>, IAuditable
             Username = username.Trim().ToLowerInvariant(),
             Email = email,
             PasswordHash = passwordHash,
-            EmailConfirmedAt = now,
             LastPasswordChangedAt = now,
             CreatedAt = now
         };
 
-        user.Raise(new UserRegisteredDomainEvent(user.Id, user.Email));
         return user;
     }
 
     public bool CanAuthenticate => EmailConfirmedAt is not null && DisabledAt is null;
+
+    /// <summary>
+    /// Confirms the user's e-mail (account activation). Idempotent: a second call is a no-op,
+    /// so re-using an activation link never moves the confirmation timestamp.
+    /// </summary>
+    public void ConfirmEmail(TimeProvider timeProvider)
+    {
+        if (EmailConfirmedAt is not null)
+            return;
+
+        EmailConfirmedAt = timeProvider.GetUtcNow();
+    }
 
     public bool VerifyPassword(string plainText, IPasswordHasher hasher)
         => hasher.Verify(plainText, PasswordHash);

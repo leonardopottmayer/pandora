@@ -10,17 +10,39 @@ public sealed class UserTests
     private readonly FakePasswordHasher _hasher = new();
 
     [Fact]
-    public void Register_yields_a_confirmed_user_who_can_authenticate()
+    public void Register_yields_a_pending_user_who_cannot_authenticate()
     {
         var user = User.Register("Alice", "Alice", Email.Create("alice@example.com"), _hasher.Hash("secret"), TimeProvider.System);
 
         Assert.Equal("alice", user.Username); // normalized
-        Assert.NotNull(user.EmailConfirmedAt);
+        Assert.Null(user.EmailConfirmedAt);
         Assert.Null(user.DisabledAt);
-        Assert.True(user.CanAuthenticate);
+        Assert.False(user.CanAuthenticate);
         Assert.NotNull(user.LastPasswordChangedAt);
         Assert.Null(user.LastSignInAt);
         Assert.False(user.MfaEnabled);
+    }
+
+    [Fact]
+    public void ConfirmEmail_activates_a_pending_user()
+    {
+        var user = User.Register("Alice", "Alice", Email.Create("alice@example.com"), _hasher.Hash("secret"), TimeProvider.System);
+
+        user.ConfirmEmail(TimeProvider.System);
+
+        Assert.NotNull(user.EmailConfirmedAt);
+        Assert.True(user.CanAuthenticate);
+    }
+
+    [Fact]
+    public void ConfirmEmail_is_idempotent()
+    {
+        var user = TestUsers.Active(_hasher, "secret");
+        var confirmedAt = user.EmailConfirmedAt;
+
+        user.ConfirmEmail(TimeProvider.System);
+
+        Assert.Equal(confirmedAt, user.EmailConfirmedAt);
     }
 
     [Fact]

@@ -12,7 +12,7 @@ internal sealed class StoredRefreshTokenEntityConfiguration : IEntityTypeConfigu
         builder.ToTable("idt002_stored_refresh_token", IdentityModule.Schema);
 
         builder.HasKey(t => t.Id)
-               .HasName("pk_idt002_stored_refresh_token");
+               .HasName("pk_idt002");
 
         builder.Property(t => t.Id)
                .HasColumnName("id")
@@ -24,7 +24,7 @@ internal sealed class StoredRefreshTokenEntityConfiguration : IEntityTypeConfigu
                .IsRequired();
 
         builder.HasIndex(t => t.TokenId)
-               .HasDatabaseName("uq_idt002_stored_refresh_token_key")
+               .HasDatabaseName("uq_idt002_key")
                .IsUnique();
 
         builder.Property(t => t.TokenHash)

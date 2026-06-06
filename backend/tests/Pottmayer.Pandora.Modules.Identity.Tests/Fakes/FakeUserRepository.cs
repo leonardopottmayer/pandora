@@ -37,11 +37,13 @@ internal sealed class FakeUserRepository : IUserRepository
     public Task<User> UpdateAsync(User entity, CancellationToken ct = default)
         => Task.FromResult(entity);
 
+    public Task<User> GetByIdAsync(Guid key, CancellationToken ct = default)
+        => Task.FromResult(_users.FirstOrDefault(u => u.Id == key));
+
     // --- Unused IStandardRepository surface ---
     public IQueryable<User> Queryable(Expression<Func<User, bool>> predicate = null) => throw new NotImplementedException();
     public Task<IEnumerable<User>> GetAsync(Expression<Func<User, bool>> predicate, CancellationToken ct = default) => throw new NotImplementedException();
     public Task<IEnumerable<User>> GetAllAsync(CancellationToken ct = default) => throw new NotImplementedException();
-    public Task<User> GetByIdAsync(Guid key, CancellationToken ct = default) => throw new NotImplementedException();
     public Task AddRangeAsync(IEnumerable<User> entities, CancellationToken ct = default) => throw new NotImplementedException();
     public Task UpdateRangeAsync(IEnumerable<User> entities, CancellationToken ct = default) => throw new NotImplementedException();
     public Task<User> RemoveByKeyAsync(Guid key, CancellationToken ct = default) => throw new NotImplementedException();

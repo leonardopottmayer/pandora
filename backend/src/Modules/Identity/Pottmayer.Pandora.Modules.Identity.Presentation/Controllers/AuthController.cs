@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Pottmayer.Pandora.Modules.Identity.Application.Commands.Activation;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.RefreshToken;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.SignIn;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.SignOut;
@@ -32,6 +33,15 @@ public sealed class AuthController(ISender sender, IHttpErrorMapper errorMapper)
     public async Task<IActionResult> SignInAsync(SignInRequest request, CancellationToken ct)
     {
         var command = new SignInCommand(new SignInInput(request.EmailOrUsername, request.Password));
+        var result  = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [AllowAnonymous]
+    [HttpPost("activate")]
+    public async Task<IActionResult> ActivateAsync(ActivateRequest request, CancellationToken ct)
+    {
+        var command = new ActivateAccountCommand(new ActivateAccountInput(request.Token));
         var result  = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }

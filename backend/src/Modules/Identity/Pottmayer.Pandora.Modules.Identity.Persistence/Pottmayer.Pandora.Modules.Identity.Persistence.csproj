@@ -11,9 +11,9 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Identity.Domain/Pottmayer.Pandora.Modules.Identity.Domain.csproj" />
     <ProjectReference Include="../../../Shared/Pottmayer.Pandora.Shared.Persistence/Pottmayer.Pandora.Shared.Persistence.csproj" />
     <!-- Tars: Data -->
-    <PackageReference Include="Pottmayer.Tars.Data.Relational" Version="0.0.2" />
+    <PackageReference Include="Pottmayer.Tars.Data.Relational" Version="0.0.3" />
     <!-- Tars: Security (for ClaimData in RefreshTokenRepository) -->
-    <PackageReference Include="Pottmayer.Tars.Security.Identity.Abstractions" Version="0.0.2" />
+    <PackageReference Include="Pottmayer.Tars.Security.Identity.Abstractions" Version="0.0.3" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Notifications.Abstractions/Pottmayer.Pandora.Modules.Notifications.Abstractions.csproj" />
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Notifications.Contracts/Pottmayer.Pandora.Modules.Notifications.Contracts.csproj" />
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Notifications.Domain/Pottmayer.Pandora.Modules.Notifications.Domain.csproj" />
+    <!-- Tars: Messaging impl (DI handler scanning) -->
+    <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.0.3" />
+    <!-- Tars: Communication e-mail contract (dispatcher builds EmailMessage) -->
+    <PackageReference Include="Pottmayer.Tars.Communication.Email.Abstractions" Version="0.0.3" />
+    <!-- Consumes integration events published by Identity -->
+    <ProjectReference Include="../../Identity/Pottmayer.Pandora.Modules.Identity.Contracts/Pottmayer.Pandora.Modules.Identity.Contracts.csproj" />
+    <!-- Tars: Core -->
+    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.3" />
+    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.3" />
+    <!-- Tars: Data -->
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.3" />
+  </ItemGroup>
+
+</Project>

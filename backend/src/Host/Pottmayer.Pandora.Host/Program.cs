@@ -7,6 +7,9 @@ using Pottmayer.Pandora.Modules.Identity.Application.DI;
 using Pottmayer.Pandora.Modules.Identity.Infrastructure.DI;
 using Pottmayer.Pandora.Modules.Identity.Persistence.DI;
 using Pottmayer.Pandora.Modules.Identity.Presentation.DI;
+using Pottmayer.Pandora.Modules.Notifications.Application.DI;
+using Pottmayer.Pandora.Modules.Notifications.Infrastructure.DI;
+using Pottmayer.Pandora.Modules.Notifications.Persistence.DI;
 using Pottmayer.Pandora.Shared.Infrastructure.DI;
 using Pottmayer.Pandora.Shared.Persistence.DI;
 using Pottmayer.Tars.Core.Localization.DI;
@@ -24,6 +27,10 @@ builder.AddPandoraSharedPersistence();
 builder.Services.AddIdentityPersistence();
 builder.AddIdentityInfrastructure();
 builder.Services.AddIdentityApplication();
+
+builder.Services.AddNotificationsPersistence();
+builder.AddNotificationsInfrastructure();
+builder.Services.AddNotificationsApplication();
 
 // Web HTTP
 builder.Services.AddTarsLocalization();

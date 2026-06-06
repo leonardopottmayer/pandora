@@ -15,16 +15,20 @@
     <ProjectReference Include="../../Modules/Identity/Pottmayer.Pandora.Modules.Identity.Infrastructure/Pottmayer.Pandora.Modules.Identity.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Identity/Pottmayer.Pandora.Modules.Identity.Persistence/Pottmayer.Pandora.Modules.Identity.Persistence.csproj" />
     <ProjectReference Include="../../Modules/Identity/Pottmayer.Pandora.Modules.Identity.Presentation/Pottmayer.Pandora.Modules.Identity.Presentation.csproj" />
+    <!-- Notifications module -->
+    <ProjectReference Include="../../Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Application/Pottmayer.Pandora.Modules.Notifications.Application.csproj" />
+    <ProjectReference Include="../../Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Infrastructure/Pottmayer.Pandora.Modules.Notifications.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Persistence/Pottmayer.Pandora.Modules.Notifications.Persistence.csproj" />
     <!-- Tars: Core -->
-    <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.2" />
+    <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.3" />
     <!-- Tars: Web -->
-    <PackageReference Include="Pottmayer.Tars.Web.Http" Version="0.0.2" />
-    <PackageReference Include="Pottmayer.Tars.Web.Http.AspNetCore" Version="0.0.2" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http" Version="0.0.3" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http.AspNetCore" Version="0.0.3" />
     <!-- Tars: UserContext -->
-    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.2" />
+    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.3" />
     <!-- Tars: Caching -->
-    <PackageReference Include="Pottmayer.Tars.Caching.Core" Version="0.0.2" />
-    <PackageReference Include="Pottmayer.Tars.Caching.Memory" Version="0.0.2" />
+    <PackageReference Include="Pottmayer.Tars.Caching.Core" Version="0.0.3" />
+    <PackageReference Include="Pottmayer.Tars.Caching.Memory" Version="0.0.3" />
   </ItemGroup>
 
   <ItemGroup>

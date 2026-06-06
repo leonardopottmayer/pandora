@@ -13,10 +13,20 @@
     <Project Path="src/Modules/Identity/Pottmayer.Pandora.Modules.Identity.Persistence/Pottmayer.Pandora.Modules.Identity.Persistence.csproj" Id="b0000003-0000-0000-0000-000000000004" />
     <Project Path="src/Modules/Identity/Pottmayer.Pandora.Modules.Identity.Presentation/Pottmayer.Pandora.Modules.Identity.Presentation.csproj" Id="b0000003-0000-0000-0000-000000000005" />
   </Folder>
+  <Folder Name="/src/Modules/Notifications/">
+    <Project Path="src/Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Abstractions/Pottmayer.Pandora.Modules.Notifications.Abstractions.csproj" Id="b0000005-0000-0000-0000-000000000006" />
+    <Project Path="src/Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Contracts/Pottmayer.Pandora.Modules.Notifications.Contracts.csproj" Id="b0000005-0000-0000-0000-000000000000" />
+    <Project Path="src/Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Domain/Pottmayer.Pandora.Modules.Notifications.Domain.csproj" Id="b0000005-0000-0000-0000-000000000001" />
+    <Project Path="src/Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Application/Pottmayer.Pandora.Modules.Notifications.Application.csproj" Id="b0000005-0000-0000-0000-000000000002" />
+    <Project Path="src/Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Infrastructure/Pottmayer.Pandora.Modules.Notifications.Infrastructure.csproj" Id="b0000005-0000-0000-0000-000000000003" />
+    <Project Path="src/Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Persistence/Pottmayer.Pandora.Modules.Notifications.Persistence.csproj" Id="b0000005-0000-0000-0000-000000000004" />
+  </Folder>
   <Folder Name="/src/Host/">
     <Project Path="src/Host/Pottmayer.Pandora.Host/Pottmayer.Pandora.Host.csproj" Id="b0000004-0000-0000-0000-000000000001" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Pottmayer.Pandora.Modules.Identity.Tests/Pottmayer.Pandora.Modules.Identity.Tests.csproj" Id="b0000006-0000-0000-0000-000000000001" />
+    <Project Path="tests/Pottmayer.Pandora.Modules.Notifications.Tests/Pottmayer.Pandora.Modules.Notifications.Tests.csproj" Id="b0000006-0000-0000-0000-000000000002" />
+    <Project Path="tests/Pottmayer.Pandora.IntegrationTests/Pottmayer.Pandora.IntegrationTests.csproj" Id="b0000006-0000-0000-0000-000000000003" />
   </Folder>
 </Solution>

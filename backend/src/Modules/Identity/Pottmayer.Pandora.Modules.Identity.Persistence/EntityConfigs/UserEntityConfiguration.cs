@@ -14,17 +14,17 @@ internal sealed class UserEntityConfiguration : IEntityTypeConfiguration<User>
         builder.ToTable("idt001_user", IdentityModule.Schema);
 
         builder.HasKey(u => u.Id)
-               .HasName("pk_idt001_user");
+               .HasName("pk_idt001");
 
         builder.Property(u => u.Id)
                .HasColumnName("id")
                .ValueGeneratedNever();
 
         builder.HasIndex(u => u.Email)
-               .HasDatabaseName("uq_idt001_user_email")
+               .HasDatabaseName("uq_idt001_email")
                .IsUnique();
         builder.HasIndex(u => u.Username)
-               .HasDatabaseName("uq_idt001_user_username")
+               .HasDatabaseName("uq_idt001_username")
                .IsUnique();
 
         builder.Property(u => u.Name)
@@ -72,21 +72,21 @@ internal sealed class UserEntityConfiguration : IEntityTypeConfiguration<User>
         builder.HasOne(u => u.Preferences)
                .WithOne()
                .HasForeignKey<UserPreferences>(p => p.UserId)
-               .HasConstraintName("fk_idt003_user_preferences_user_id")
+               .HasConstraintName("fk_idt003_user_id")
                .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne<User>()
                .WithMany()
                .HasForeignKey(u => u.CreatedBy)
                .HasPrincipalKey(u => u.Id)
-               .HasConstraintName("fk_idt001_user_created_by")
+               .HasConstraintName("fk_idt001_created_by")
                .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<User>()
                .WithMany()
                .HasForeignKey(u => u.UpdatedBy)
                .HasPrincipalKey(u => u.Id)
-               .HasConstraintName("fk_idt001_user_updated_by")
+               .HasConstraintName("fk_idt001_updated_by")
                .OnDelete(DeleteBehavior.Restrict);
     }
 }
