@@ -57,6 +57,41 @@ public sealed class SubscriberTests
     }
 
     [Fact]
+    public async Task PasswordResetRequested_maps_to_the_password_reset_template_email()
+    {
+        var (enqueuer, repo) = Build();
+        var handler = new PasswordResetRequestedHandler(enqueuer);
+        var eventId = Guid.NewGuid();
+        var @event = new PasswordResetRequested(
+            eventId, Now, UserId: Guid.NewGuid(), Email: "Frank@Example.com", Token: "tok-2", Locale: "pt-BR");
+
+        await handler.HandleAsync(@event);
+
+        var n = Assert.Single(repo.Added);
+        Assert.Equal("email", n.Channel.Value);
+        Assert.Equal("frank@example.com", n.Recipient.Value);
+        Assert.Equal("password-reset", n.TemplateKey.Value);
+        Assert.Equal("pt-BR", n.Locale);
+        Assert.Equal(eventId, n.CorrelationId);
+    }
+
+    [Fact]
+    public async Task PasswordChanged_maps_to_the_password_changed_template_email()
+    {
+        var (enqueuer, repo) = Build();
+        var handler = new PasswordChangedHandler(enqueuer);
+        var eventId = Guid.NewGuid();
+        var @event = new PasswordChanged(
+            eventId, Now, UserId: Guid.NewGuid(), Email: "grace@example.com", Locale: "en");
+
+        await handler.HandleAsync(@event);
+
+        var n = Assert.Single(repo.Added);
+        Assert.Equal("password-changed", n.TemplateKey.Value);
+        Assert.Equal(eventId, n.CorrelationId);
+    }
+
+    [Fact]
     public async Task SendNotificationRequested_uses_the_caller_supplied_channel_and_template()
     {
         var (enqueuer, repo) = Build();

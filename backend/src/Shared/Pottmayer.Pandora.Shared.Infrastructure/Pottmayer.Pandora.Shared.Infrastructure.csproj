@@ -14,10 +14,10 @@
   <ItemGroup>
     <ProjectReference Include="../Pottmayer.Pandora.Shared.Domain/Pottmayer.Pandora.Shared.Domain.csproj" />
     <!-- Tars: Messaging -->
-    <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.0.3" />
+    <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.0.4" />
     <!-- Tars: UserContext -->
-    <PackageReference Include="Pottmayer.Tars.UserContext" Version="0.0.3" />
-    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.3" />
+    <PackageReference Include="Pottmayer.Tars.UserContext" Version="0.0.4" />
+    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.4" />
   </ItemGroup>
 
 </Project>

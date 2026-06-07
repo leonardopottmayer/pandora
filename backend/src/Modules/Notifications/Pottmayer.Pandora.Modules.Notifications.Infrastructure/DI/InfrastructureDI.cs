@@ -19,9 +19,9 @@ public static class InfrastructureDI
 
         builder.Services.AddScoped<INotificationTemplateRenderer, InMemoryNotificationTemplateRenderer>();
 
-        // E-mail transport (Tars.Communication): selected by config (Communication:Email:Provider).
+        // E-mail transport (Tars.Communication): selected by config (Tars:Communication:Email:Provider).
         // "logging" (default) writes to the log; "mailkit" delivers over SMTP (e.g. Mailpit locally).
-        var provider = builder.Configuration["Communication:Email:Provider"];
+        var provider = builder.Configuration["Tars:Communication:Email:Provider"];
         if (string.Equals(provider, "mailkit", StringComparison.OrdinalIgnoreCase))
         {
             builder.AddTarsMailKitEmailOptions();

@@ -46,6 +46,12 @@
   <data name="Identity.TokenReuseDetected" xml:space="preserve">
     <value>Refresh token reuse detected. All sessions have been revoked.</value>
   </data>
+  <data name="Identity.WeakPassword" xml:space="preserve">
+    <value>The password must be at least 8 characters and include an uppercase letter, a number and a special character.</value>
+  </data>
+  <data name="Identity.InvalidPasswordResetToken" xml:space="preserve">
+    <value>The password reset token is invalid or has expired.</value>
+  </data>
   <data name="Identity.NotAuthenticated" xml:space="preserve">
     <value>Authentication required.</value>
   </data>

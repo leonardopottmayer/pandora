@@ -89,7 +89,7 @@ public sealed class NotificationDispatchTests : IAsyncLifetime
             name = "Test User",
             username,
             email,
-            password = "correct horse battery staple"
+            password = "Str0ng!Pass"
         });
 
     private async Task<Result<DispatchPendingNotificationsResult>> DispatchAsync()

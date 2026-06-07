@@ -5,7 +5,7 @@ namespace Pottmayer.Pandora.Modules.Identity.Application.Options;
 /// </summary>
 public sealed class AccountActivationOptions
 {
-    public const string SectionName = "Identity:AccountActivation";
+    public const string SectionName = "Pandora:Identity:AccountActivation";
 
     /// <summary>How long an activation token stays valid after sign-up.</summary>
     public TimeSpan TokenLifetime { get; set; } = TimeSpan.FromHours(24);

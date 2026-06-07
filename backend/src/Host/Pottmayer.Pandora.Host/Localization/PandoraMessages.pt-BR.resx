@@ -46,6 +46,12 @@
   <data name="Identity.TokenReuseDetected" xml:space="preserve">
     <value>Reutilização de refresh token detectada. Todas as sessões foram revogadas.</value>
   </data>
+  <data name="Identity.WeakPassword" xml:space="preserve">
+    <value>A senha deve ter ao menos 8 caracteres e incluir uma letra maiúscula, um número e um caractere especial.</value>
+  </data>
+  <data name="Identity.InvalidPasswordResetToken" xml:space="preserve">
+    <value>O token de redefinição de senha é inválido ou expirou.</value>
+  </data>
   <data name="Identity.NotAuthenticated" xml:space="preserve">
     <value>Autenticação necessária.</value>
   </data>

@@ -11,16 +11,16 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Notifications.Contracts/Pottmayer.Pandora.Modules.Notifications.Contracts.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Notifications.Domain/Pottmayer.Pandora.Modules.Notifications.Domain.csproj" />
     <!-- Tars: Messaging impl (DI handler scanning) -->
-    <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.0.3" />
+    <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.0.4" />
     <!-- Tars: Communication e-mail contract (dispatcher builds EmailMessage) -->
-    <PackageReference Include="Pottmayer.Tars.Communication.Email.Abstractions" Version="0.0.3" />
+    <PackageReference Include="Pottmayer.Tars.Communication.Email.Abstractions" Version="0.0.4" />
     <!-- Consumes integration events published by Identity -->
     <ProjectReference Include="../../Identity/Pottmayer.Pandora.Modules.Identity.Contracts/Pottmayer.Pandora.Modules.Identity.Contracts.csproj" />
     <!-- Tars: Core -->
-    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.3" />
-    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.3" />
+    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.4" />
+    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.4" />
     <!-- Tars: Data -->
-    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.3" />
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.4" />
   </ItemGroup>
 
 </Project>

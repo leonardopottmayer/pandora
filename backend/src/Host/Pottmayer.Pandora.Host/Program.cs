@@ -73,7 +73,7 @@ builder.Services.AddCors(options =>
         }
         else
         {
-            var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+            var origins = builder.Configuration.GetSection("Pandora:Cors:AllowedOrigins").Get<string[]>();
             if (origins is { Length: > 0 })
                 policy.WithOrigins(origins);
         }

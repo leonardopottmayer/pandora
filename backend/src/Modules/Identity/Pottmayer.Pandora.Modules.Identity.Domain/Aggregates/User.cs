@@ -67,6 +67,16 @@ public sealed class User : AggregateRoot<Guid>, IAuditable
     public bool VerifyPassword(string plainText, IPasswordHasher hasher)
         => hasher.Verify(plainText, PasswordHash);
 
+    /// <summary>
+    /// Replaces the password hash and stamps the change. Shared by the reset (forgot) and
+    /// change (authenticated) flows; the caller is responsible for any prior verification.
+    /// </summary>
+    public void ChangePassword(string newPasswordHash, TimeProvider timeProvider)
+    {
+        PasswordHash = newPasswordHash;
+        LastPasswordChangedAt = timeProvider.GetUtcNow();
+    }
+
     public void RecordSuccessfulSignIn(TimeProvider timeProvider)
         => LastSignInAt = timeProvider.GetUtcNow();
 

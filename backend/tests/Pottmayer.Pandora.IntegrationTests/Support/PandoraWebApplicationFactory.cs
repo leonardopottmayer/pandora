@@ -58,7 +58,7 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
                 ["Tars:Data:Connections:identity:ConnectionString"] = ConnectionString,
                 ["Tars:Data:Connections:notifications:ConnectionString"] = ConnectionString,
                 // Deliver e-mails to the log (always succeeds) instead of SMTP — no Mailpit needed.
-                ["Communication:Email:Provider"] = "logging"
+                ["Tars:Communication:Email:Provider"] = "logging"
             });
         });
 

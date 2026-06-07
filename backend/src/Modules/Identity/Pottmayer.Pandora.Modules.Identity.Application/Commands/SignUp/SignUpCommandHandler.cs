@@ -1,8 +1,8 @@
-using System.Globalization;
 using Microsoft.Extensions.Options;
 using Pottmayer.Pandora.Modules.Identity.Abstractions;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.Activation;
 using Pottmayer.Pandora.Modules.Identity.Application.Options;
+using Pottmayer.Pandora.Modules.Identity.Application.Security;
 using Pottmayer.Pandora.Modules.Identity.Contracts;
 using Pottmayer.Pandora.Modules.Identity.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Identity.Domain.Entities;
@@ -10,10 +10,11 @@ using Pottmayer.Pandora.Modules.Identity.Domain.Errors;
 using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Services;
 using Pottmayer.Pandora.Shared.Domain.ValueObjects;
-using Pottmayer.Tars.Messaging.Abstractions;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
+using Pottmayer.Tars.Messaging.Abstractions;
+using System.Globalization;
 
 namespace Pottmayer.Pandora.Modules.Identity.Application.Commands.SignUp;
 
@@ -31,6 +32,9 @@ public sealed class SignUpCommandHandler(
 
         if (string.IsNullOrWhiteSpace(input.Password))
             return Fail(IdentityErrors.PasswordRequired);
+
+        if (!PasswordPolicy.IsSatisfiedBy(input.Password))
+            return Fail(IdentityErrors.WeakPassword);
 
         if (!Email.TryCreate(input.Email, out var email))
             return Fail(UserErrors.InvalidEmail);

@@ -12,7 +12,7 @@ namespace Pottmayer.Pandora.Modules.Identity.Tests;
 
 public sealed class SignUpCommandHandlerTests
 {
-    private const string Password = "correct horse battery staple";
+    private const string Password = "Str0ng!Pass";
 
     private readonly FakePasswordHasher _hasher = new();
 
@@ -69,6 +69,18 @@ public sealed class SignUpCommandHandlerTests
 
         Assert.True(result.IsFailure);
         Assert.Equal("Identity.PasswordRequired", result.Errors[0].Code);
+        Assert.Empty(users.Users);
+    }
+
+    [Fact]
+    public async Task Fails_when_password_is_weak_and_creates_nothing()
+    {
+        var (handler, users, _) = Build();
+
+        var result = await handler.Handle(Command(password: "pandora"), CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("Identity.WeakPassword", result.Errors[0].Code);
         Assert.Empty(users.Users);
     }
 

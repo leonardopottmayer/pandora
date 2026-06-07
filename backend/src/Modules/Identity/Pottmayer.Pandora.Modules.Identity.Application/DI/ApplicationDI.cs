@@ -15,6 +15,9 @@ public static class ApplicationDI
         services.AddOptions<AccountActivationOptions>()
                 .BindConfiguration(AccountActivationOptions.SectionName);
 
+        services.AddOptions<PasswordResetOptions>()
+                .BindConfiguration(PasswordResetOptions.SectionName);
+
         return services;
     }
 }

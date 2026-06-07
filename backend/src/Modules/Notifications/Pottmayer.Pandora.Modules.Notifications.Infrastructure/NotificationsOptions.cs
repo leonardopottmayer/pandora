@@ -5,10 +5,13 @@ namespace Pottmayer.Pandora.Modules.Notifications.Infrastructure;
 /// </summary>
 public sealed class NotificationsOptions
 {
-    public const string SectionName = "Notifications";
+    public const string SectionName = "Pandora:Notifications";
 
     /// <summary>URL template for activation links; <c>{token}</c> is replaced at render time.</summary>
     public string ActivationUrlTemplate { get; set; } = "https://localhost/activate?token={token}";
+
+    /// <summary>URL template for password reset links; <c>{token}</c> is replaced at render time.</summary>
+    public string PasswordResetUrlTemplate { get; set; } = "https://localhost/reset-password?token={token}";
 
     /// <summary>How often the dispatcher worker drains the queue.</summary>
     public int DispatchIntervalSeconds { get; set; } = 15;

@@ -9,7 +9,11 @@ namespace Pottmayer.Pandora.Modules.Notifications.Tests;
 public sealed class InMemoryNotificationTemplateRendererTests
 {
     private static InMemoryNotificationTemplateRenderer Build(string urlTemplate = "https://app/activate?token={token}")
-        => new(Options.Create(new NotificationsOptions { ActivationUrlTemplate = urlTemplate }));
+        => new(Options.Create(new NotificationsOptions
+        {
+            ActivationUrlTemplate = urlTemplate,
+            PasswordResetUrlTemplate = "https://app/reset-password?token={token}"
+        }));
 
     private static IReadOnlyDictionary<string, string> Payload(string token) => new Dictionary<string, string> { ["token"] = token };
 
@@ -54,6 +58,28 @@ public sealed class InMemoryNotificationTemplateRendererTests
         var content = Build().Render(TemplateKey.Create("account-activation"), "en", new Dictionary<string, string>());
 
         Assert.Contains("https://app/activate?token=", content.Body);
+    }
+
+    [Fact]
+    public void Renders_password_reset_with_escaped_token()
+    {
+        var en = Build().Render(TemplateKey.Create("password-reset"), "en", Payload("a b&c"));
+        Assert.Equal("Reset your Pandora password", en.Subject);
+        Assert.Contains("https://app/reset-password?token=a%20b%26c", en.Body);
+
+        var pt = Build().Render(TemplateKey.Create("password-reset"), "pt-BR", Payload("abc"));
+        Assert.Equal("Redefina sua senha no Pandora", pt.Subject);
+        Assert.Contains("https://app/reset-password?token=abc", pt.Body);
+    }
+
+    [Fact]
+    public void Renders_password_changed_notice()
+    {
+        var en = Build().Render(TemplateKey.Create("password-changed"), "en", new Dictionary<string, string>());
+        Assert.Equal("Your Pandora password was changed", en.Subject);
+
+        var pt = Build().Render(TemplateKey.Create("password-changed"), "pt-BR", new Dictionary<string, string>());
+        Assert.Equal("Sua senha no Pandora foi alterada", pt.Subject);
     }
 
     [Fact]

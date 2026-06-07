@@ -16,6 +16,12 @@ public static class IdentityErrors
     public static Error PasswordRequired =>
         Error.Validation("Identity.PasswordRequired", "Password is required.");
 
+    public static Error WeakPassword =>
+        Error.Validation("Identity.WeakPassword", "The password does not meet the required policy.");
+
+    public static Error InvalidPasswordResetToken =>
+        Error.Validation("Identity.InvalidPasswordResetToken", "The password reset token is invalid or has expired.");
+
     public static Error InvalidRefreshToken =>
         Error.Unauthorized("Identity.InvalidRefreshToken", "The refresh token is invalid or expired.");
 

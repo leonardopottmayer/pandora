@@ -17,6 +17,8 @@ public sealed class InMemoryNotificationTemplateRenderer(IOptions<NotificationsO
         return templateKey.Value switch
         {
             "account-activation" => RenderAccountActivation(locale, payload),
+            "password-reset" => RenderPasswordReset(locale, payload),
+            "password-changed" => RenderPasswordChanged(locale),
             _ => throw new InvalidOperationException($"No template registered for key '{templateKey.Value}'.")
         };
     }
@@ -37,6 +39,42 @@ public sealed class InMemoryNotificationTemplateRenderer(IOptions<NotificationsO
             _ => new NotificationContent(
                 Subject: "Activate your Pandora account",
                 Body: $"Welcome to Pandora! Confirm your account using the link:\n{activationUrl}",
+                IsHtml: false)
+        };
+    }
+
+    private NotificationContent RenderPasswordReset(string locale, IReadOnlyDictionary<string, string> payload)
+    {
+        payload.TryGetValue("token", out var token);
+        var resetUrl = options.Value.PasswordResetUrlTemplate
+            .Replace("{token}", Uri.EscapeDataString(token ?? string.Empty));
+
+        return locale switch
+        {
+            "pt-BR" => new NotificationContent(
+                Subject: "Redefina sua senha no Pandora",
+                Body: $"Recebemos um pedido para redefinir sua senha. Acesse o link para criar uma nova:\n{resetUrl}\n\nSe não foi você, ignore este e-mail.",
+                IsHtml: false),
+
+            _ => new NotificationContent(
+                Subject: "Reset your Pandora password",
+                Body: $"We received a request to reset your password. Use the link to set a new one:\n{resetUrl}\n\nIf this wasn't you, please ignore this e-mail.",
+                IsHtml: false)
+        };
+    }
+
+    private static NotificationContent RenderPasswordChanged(string locale)
+    {
+        return locale switch
+        {
+            "pt-BR" => new NotificationContent(
+                Subject: "Sua senha no Pandora foi alterada",
+                Body: "Sua senha foi alterada com sucesso. Se não foi você, entre em contato com o suporte imediatamente.",
+                IsHtml: false),
+
+            _ => new NotificationContent(
+                Subject: "Your Pandora password was changed",
+                Body: "Your password was changed successfully. If this wasn't you, contact support immediately.",
                 IsHtml: false)
         };
     }

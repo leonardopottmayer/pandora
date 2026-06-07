@@ -11,7 +11,7 @@ namespace Pottmayer.Pandora.IntegrationTests.Support;
 /// </summary>
 internal static class IdentityHelper
 {
-    public const string DefaultPassword = "correct horse battery staple";
+    public const string DefaultPassword = "Str0ng!Pass";
 
     private const string SignUpUrl = "/api/v1/identity/auth/signup";
     private const string SignInUrl = "/api/v1/identity/auth/signin";

@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <!-- Tars: Messaging -->
-    <PackageReference Include="Pottmayer.Tars.Messaging.Abstractions" Version="0.0.3" />
+    <PackageReference Include="Pottmayer.Tars.Messaging.Abstractions" Version="0.0.4" />
   </ItemGroup>
 
 </Project>
