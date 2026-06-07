@@ -50,16 +50,38 @@ internal static class IdentityHelper
 
     public static async Task<Tokens> SignInAsync(HttpClient client, string emailOrUsername)
     {
-        var response = await client.PostAsJsonAsync(SignInUrl, new
-        {
-            emailOrUsername,
-            password = DefaultPassword
-        });
+        var response = await PostSignInAsync(client, emailOrUsername, DefaultPassword);
         response.EnsureSuccessStatusCode();
-        return await ReadTokensAsync(response);
+        return await ReadSignInTokensAsync(response);
     }
 
-    /// <summary>Reads tokens from the Tars success envelope: <c>{ "success": true, "data": { ... } }</c>.</summary>
+    /// <summary>Posts to the sign-in endpoint without asserting the outcome (so MFA challenges can be inspected).</summary>
+    public static Task<HttpResponseMessage> PostSignInAsync(
+        HttpClient client, string emailOrUsername, string password)
+        => client.PostAsJsonAsync(SignInUrl, new { emailOrUsername, password });
+
+    /// <summary>
+    /// Reads tokens from a sign-in response (data is a <c>SignInResultDto</c> whose <c>tokens</c> is set
+    /// when MFA is not required).
+    /// </summary>
+    public static async Task<Tokens> ReadSignInTokensAsync(HttpResponseMessage response)
+    {
+        var envelope = await response.Content.ReadFromJsonAsync<SignInEnvelope>()
+                       ?? throw new InvalidOperationException("Response had an empty body.");
+        var tokens = envelope.Data.Tokens
+                     ?? throw new InvalidOperationException("Sign-in returned an MFA challenge, not tokens.");
+        return new Tokens(tokens.AccessToken, tokens.RefreshToken);
+    }
+
+    /// <summary>Reads the MFA challenge ticket from a sign-in response, if one was issued.</summary>
+    public static async Task<string?> ReadMfaTicketAsync(HttpResponseMessage response)
+    {
+        var envelope = await response.Content.ReadFromJsonAsync<SignInEnvelope>()
+                       ?? throw new InvalidOperationException("Response had an empty body.");
+        return envelope.Data.Mfa?.Ticket;
+    }
+
+    /// <summary>Reads tokens from a plain token envelope: <c>{ "data": { accessToken, refreshToken } }</c> (refresh).</summary>
     public static async Task<Tokens> ReadTokensAsync(HttpResponseMessage response)
     {
         var envelope = await response.Content.ReadFromJsonAsync<Envelope>()
@@ -69,4 +91,7 @@ internal static class IdentityHelper
 
     private sealed record Envelope(TokenData Data);
     private sealed record TokenData(string AccessToken, string RefreshToken);
+    private sealed record SignInEnvelope(SignInData Data);
+    private sealed record SignInData(TokenData? Tokens, MfaChallengeData? Mfa);
+    private sealed record MfaChallengeData(string Ticket);
 }

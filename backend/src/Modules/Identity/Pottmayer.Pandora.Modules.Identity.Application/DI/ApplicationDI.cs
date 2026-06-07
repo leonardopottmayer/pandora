@@ -18,6 +18,9 @@ public static class ApplicationDI
         services.AddOptions<PasswordResetOptions>()
                 .BindConfiguration(PasswordResetOptions.SectionName);
 
+        services.AddOptions<MfaOptions>()
+                .BindConfiguration(MfaOptions.SectionName);
+
         return services;
     }
 }

@@ -58,7 +58,9 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
                 ["Tars:Data:Connections:identity:ConnectionString"] = ConnectionString,
                 ["Tars:Data:Connections:notifications:ConnectionString"] = ConnectionString,
                 // Deliver e-mails to the log (always succeeds) instead of SMTP — no Mailpit needed.
-                ["Tars:Communication:Email:Provider"] = "logging"
+                ["Tars:Communication:Email:Provider"] = "logging",
+                // Fixed AES-256 key (Base64 of 32 bytes) so MFA secrets can be encrypted in tests.
+                ["Pandora:Identity:Mfa:EncryptionKey"] = "7Mzi45PyKOyGH1hWmXvnDKCVOY9qKeEB8P8NTuZe3T4="
             });
         });
 

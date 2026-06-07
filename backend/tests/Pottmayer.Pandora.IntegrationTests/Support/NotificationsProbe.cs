@@ -64,6 +64,36 @@ internal sealed class NotificationsProbe(string connectionString)
         throw new TimeoutException($"No notification for '{recipient}' was persisted within the timeout.");
     }
 
+    /// <summary>Polls for a notification to the given recipient using a specific template.</summary>
+    public async Task<Row> WaitForTemplateAsync(string recipient, string templateKey, TimeSpan? timeout = null)
+    {
+        var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromSeconds(5));
+        while (DateTime.UtcNow < deadline)
+        {
+            await using var conn = await OpenAsync();
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                SELECT recipient, template_key, locale, status, provider, attempt_count
+                FROM notifications.not001_notification
+                WHERE recipient = $1 AND template_key = $2
+                """;
+            cmd.Parameters.AddWithValue(recipient);
+            cmd.Parameters.AddWithValue(templateKey);
+
+            await using var reader = await cmd.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                return new Row(
+                    reader.GetString(0), reader.GetString(1), reader.GetString(2),
+                    reader.GetString(3), reader.IsDBNull(4) ? null : reader.GetString(4), reader.GetInt32(5));
+            }
+
+            await Task.Delay(50);
+        }
+
+        throw new TimeoutException($"No '{templateKey}' notification for '{recipient}' was persisted within the timeout.");
+    }
+
     private async Task<NpgsqlConnection> OpenAsync()
     {
         var conn = new NpgsqlConnection(connectionString);

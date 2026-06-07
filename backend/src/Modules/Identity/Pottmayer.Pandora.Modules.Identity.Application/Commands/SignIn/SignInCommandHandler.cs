@@ -1,6 +1,10 @@
+using Microsoft.Extensions.Options;
 using Pottmayer.Pandora.Modules.Identity.Abstractions;
+using Pottmayer.Pandora.Modules.Identity.Application.Commands.Mfa.Challenge;
 using Pottmayer.Pandora.Modules.Identity.Application.Dtos;
+using Pottmayer.Pandora.Modules.Identity.Application.Options;
 using Pottmayer.Pandora.Modules.Identity.Application.Services;
+using Pottmayer.Pandora.Modules.Identity.Domain.Entities;
 using Pottmayer.Pandora.Modules.Identity.Domain.Errors;
 using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Services;
@@ -18,15 +22,20 @@ public sealed class SignInCommandHandler(
     IPasswordHasher passwordHasher,
     ITokenIssuer tokenIssuer,
     IRefreshTokenService refreshTokenService,
+    IOptions<MfaOptions> mfaOptions,
     TimeProvider timeProvider)
-    : CommandHandlerBase<SignInCommand, TokenDto>
+    : CommandHandlerBase<SignInCommand, SignInResultDto>
 {
-    protected override async Task<Result<TokenDto>> HandleAsync(SignInCommand request, CancellationToken ct)
+    private sealed record SignInOutcome(Guid UserId, bool MfaRequired, string? Ticket, DateTimeOffset ChallengeExpiresAt);
+
+    protected override async Task<Result<SignInResultDto>> HandleAsync(SignInCommand request, CancellationToken ct)
     {
         var input = request.Input;
+        var now = timeProvider.GetUtcNow();
 
-        // Verify credentials and stamp the sign-in within a single transaction.
-        var authenticated = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
+        // Verify credentials within a single transaction. MFA accounts get a challenge ticket instead of
+        // tokens and only have their sign-in stamped once the second factor is completed.
+        var outcome = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
         {
             var users = ctx.AcquireRepository<IUserRepository>();
 
@@ -35,28 +44,44 @@ public sealed class SignInCommandHandler(
                 : await users.FindByUsernameAsync(input.EmailOrUsername, token);
 
             if (user is null || !user.VerifyPassword(input.Password, passwordHasher))
-                return Result<Guid>.Failure([IdentityErrors.InvalidCredentials]);
+                return Result<SignInOutcome>.Failure([IdentityErrors.InvalidCredentials]);
 
             if (!user.CanAuthenticate)
-                return Result<Guid>.Failure([IdentityErrors.AccountNotActive]);
+                return Result<SignInOutcome>.Failure([IdentityErrors.AccountNotActive]);
+
+            if (user.MfaEnabled)
+            {
+                var ticket = MfaTickets.Generate();
+                var challenge = MfaChallenge.Issue(
+                    user.Id, MfaTickets.Hash(ticket), now + mfaOptions.Value.ChallengeLifetime);
+                await ctx.AcquireRepository<IMfaChallengeRepository>().AddAsync(challenge, token);
+
+                return Result<SignInOutcome>.Success(new SignInOutcome(user.Id, true, ticket, challenge.ExpiresAt));
+            }
 
             user.RecordSuccessfulSignIn(timeProvider);
             await users.UpdateAsync(user, token);
 
-            return Result<Guid>.Success(user.Id);
+            return Result<SignInOutcome>.Success(new SignInOutcome(user.Id, false, null, default));
         }, cancellationToken: ct);
 
-        if (authenticated.IsFailure)
-            return Fail([.. authenticated.Errors]);
+        if (outcome.IsFailure)
+            return Fail([.. outcome.Errors]);
 
-        var authResult = TokenMapper.ToAuthResult(authenticated.Value);
+        var value = outcome.Value;
+        if (value.MfaRequired)
+            return Ok(new SignInResultDto(null, new MfaChallengeDto(value.Ticket!, value.ChallengeExpiresAt)));
+
+        var authResult = TokenMapper.ToAuthResult(value.UserId);
         var accessToken = await tokenIssuer.IssueAsync(authResult, ct);
         var refresh = await refreshTokenService.IssueAsync(authResult.Subject, authResult.Claims, null, ct);
 
-        return Ok(new TokenDto(
+        var tokens = new TokenDto(
             AccessToken: accessToken.AccessToken,
             AccessTokenExpiresAt: accessToken.ExpiresAt,
             RefreshToken: refresh.OpaqueToken,
-            RefreshTokenExpiresAt: refresh.ExpiresAt));
+            RefreshTokenExpiresAt: refresh.ExpiresAt);
+
+        return Ok(new SignInResultDto(tokens, null));
     }
 }

@@ -27,4 +27,19 @@ public static class IdentityErrors
 
     public static Error TokenReuseDetected =>
         Error.Unauthorized("Identity.TokenReuseDetected", "Refresh token reuse detected. All sessions have been revoked.");
+
+    public static Error MfaAlreadyEnabled =>
+        Error.Validation("Identity.MfaAlreadyEnabled", "MFA is already enabled for this account.");
+
+    public static Error MfaNotEnabled =>
+        Error.Validation("Identity.MfaNotEnabled", "MFA is not enabled for this account.");
+
+    public static Error MfaSetupNotFound =>
+        Error.Validation("Identity.MfaSetupNotFound", "No pending MFA setup was found. Start the setup again.");
+
+    public static Error InvalidMfaCode =>
+        Error.Unauthorized("Identity.InvalidMfaCode", "The provided MFA code is invalid.");
+
+    public static Error InvalidMfaChallenge =>
+        Error.Unauthorized("Identity.InvalidMfaChallenge", "The MFA challenge is invalid or has expired.");
 }

@@ -17,6 +17,8 @@
     <PackageReference Include="Pottmayer.Tars.Security.Identity.AspNetCore" Version="0.0.4" />
     <!-- Password hashing (Identity owns credential secrets) -->
     <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.1" />
+    <!-- TOTP (RFC 6238) for MFA -->
+    <PackageReference Include="Otp.NET" Version="1.4.0" />
   </ItemGroup>
 
 </Project>

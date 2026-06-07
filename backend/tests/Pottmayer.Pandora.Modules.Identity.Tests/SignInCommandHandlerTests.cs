@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Options;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.SignIn;
+using Pottmayer.Pandora.Modules.Identity.Application.Options;
 using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Identity.Tests.Fakes;
 using Xunit;
@@ -17,7 +19,8 @@ public sealed class SignInCommandHandlerTests
         var refresh = new FakeRefreshTokenService();
         var ctx     = new FakeDataContext().Register<IUserRepository>(users);
         var handler = new SignInCommandHandler(
-            new FakeUnitOfWorkFactory(ctx), _hasher, new FakeTokenIssuer(), refresh, TimeProvider.System);
+            new FakeUnitOfWorkFactory(ctx), _hasher, new FakeTokenIssuer(), refresh,
+            Options.Create(new MfaOptions()), TimeProvider.System);
         return (handler, users, refresh);
     }
 
@@ -32,8 +35,8 @@ public sealed class SignInCommandHandlerTests
         var result = await handler.Handle(Command("alice@example.com"), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal("access-token", result.Value!.AccessToken);
-        Assert.Equal("refresh-token", result.Value!.RefreshToken);
+        Assert.Equal("access-token", result.Value!.Tokens!.AccessToken);
+        Assert.Equal("refresh-token", result.Value!.Tokens!.RefreshToken);
         Assert.Equal(1, refresh.IssueCount);
     }
 

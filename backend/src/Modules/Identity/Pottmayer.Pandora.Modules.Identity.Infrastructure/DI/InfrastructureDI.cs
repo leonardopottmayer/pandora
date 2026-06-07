@@ -17,6 +17,8 @@ public static class InfrastructureDI
     {
         builder.AddIdentityOptions();
         builder.Services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
+        builder.Services.AddSingleton<ITotpAuthenticator, OtpNetTotpAuthenticator>();
+        builder.Services.AddSingleton<ISecretProtector, AesGcmSecretProtector>();
         builder.Services.AddRefreshTokenStore();
         builder.Services.AddIdentityTokenServices();
         builder.Services.AddIdentityAuthentication();

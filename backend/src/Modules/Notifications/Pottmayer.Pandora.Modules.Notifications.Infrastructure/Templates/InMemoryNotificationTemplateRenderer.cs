@@ -19,6 +19,8 @@ public sealed class InMemoryNotificationTemplateRenderer(IOptions<NotificationsO
             "account-activation" => RenderAccountActivation(locale, payload),
             "password-reset" => RenderPasswordReset(locale, payload),
             "password-changed" => RenderPasswordChanged(locale),
+            "mfa-enabled" => RenderMfaEnabled(locale),
+            "mfa-disabled" => RenderMfaDisabled(locale),
             _ => throw new InvalidOperationException($"No template registered for key '{templateKey.Value}'.")
         };
     }
@@ -75,6 +77,38 @@ public sealed class InMemoryNotificationTemplateRenderer(IOptions<NotificationsO
             _ => new NotificationContent(
                 Subject: "Your Pandora password was changed",
                 Body: "Your password was changed successfully. If this wasn't you, contact support immediately.",
+                IsHtml: false)
+        };
+    }
+
+    private static NotificationContent RenderMfaEnabled(string locale)
+    {
+        return locale switch
+        {
+            "pt-BR" => new NotificationContent(
+                Subject: "Verificação em duas etapas ativada",
+                Body: "A verificação em duas etapas (MFA) foi ativada na sua conta Pandora. Se não foi você, redefina sua senha e entre em contato com o suporte imediatamente.",
+                IsHtml: false),
+
+            _ => new NotificationContent(
+                Subject: "Two-factor authentication enabled",
+                Body: "Two-factor authentication (MFA) was enabled on your Pandora account. If this wasn't you, reset your password and contact support immediately.",
+                IsHtml: false)
+        };
+    }
+
+    private static NotificationContent RenderMfaDisabled(string locale)
+    {
+        return locale switch
+        {
+            "pt-BR" => new NotificationContent(
+                Subject: "Verificação em duas etapas desativada",
+                Body: "A verificação em duas etapas (MFA) foi desativada na sua conta Pandora. Se não foi você, redefina sua senha e entre em contato com o suporte imediatamente.",
+                IsHtml: false),
+
+            _ => new NotificationContent(
+                Subject: "Two-factor authentication disabled",
+                Body: "Two-factor authentication (MFA) was disabled on your Pandora account. If this wasn't you, reset your password and contact support immediately.",
                 IsHtml: false)
         };
     }

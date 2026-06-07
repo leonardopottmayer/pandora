@@ -6,4 +6,4 @@ namespace Pottmayer.Pandora.Modules.Identity.Application.Commands.SignIn;
 public sealed record SignInInput(string EmailOrUsername, string Password);
 
 public sealed class SignInCommand(SignInInput input)
-    : CommandBase<SignInInput, TokenDto>(input);
+    : CommandBase<SignInInput, SignInResultDto>(input);

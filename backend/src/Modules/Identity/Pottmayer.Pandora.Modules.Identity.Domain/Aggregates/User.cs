@@ -80,6 +80,12 @@ public sealed class User : AggregateRoot<Guid>, IAuditable
     public void RecordSuccessfulSignIn(TimeProvider timeProvider)
         => LastSignInAt = timeProvider.GetUtcNow();
 
+    /// <summary>Turns MFA on. Called after a TOTP enrollment is confirmed by a valid code.</summary>
+    public void EnableMfa() => MfaEnabled = true;
+
+    /// <summary>Turns MFA off. The caller is responsible for removing the credential and recovery codes.</summary>
+    public void DisableMfa() => MfaEnabled = false;
+
     public void UpdatePreferences(AppTheme theme)
     {
         if (Preferences is null)
