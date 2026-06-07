@@ -1,6 +1,6 @@
 using Pottmayer.Tars.Messaging.Abstractions;
 
-namespace Pottmayer.Pandora.Modules.Identity.Contracts;
+namespace Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
 
 /// <summary>
 /// Published by Identity after a user signs up, requesting that an activation message be sent.

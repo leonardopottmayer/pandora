@@ -1,6 +1,6 @@
 using Pottmayer.Tars.Messaging.Abstractions;
 
-namespace Pottmayer.Pandora.Modules.Identity.Contracts;
+namespace Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
 
 /// <summary>
 /// Published by Identity after a user's password changes (via reset or authenticated change),

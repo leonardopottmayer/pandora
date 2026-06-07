@@ -1,6 +1,6 @@
 using System.Globalization;
 using Pottmayer.Pandora.Modules.Identity.Abstractions;
-using Pottmayer.Pandora.Modules.Identity.Contracts;
+using Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
 using Pottmayer.Pandora.Modules.Identity.Domain.Errors;
 using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Services;

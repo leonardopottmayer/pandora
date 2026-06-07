@@ -1,5 +1,5 @@
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.PasswordReset;
-using Pottmayer.Pandora.Modules.Identity.Contracts;
+using Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
 using Pottmayer.Pandora.Modules.Identity.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Identity.Domain.Entities;
 using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Repositories;

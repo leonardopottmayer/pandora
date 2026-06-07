@@ -1,5 +1,5 @@
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.ChangePassword;
-using Pottmayer.Pandora.Modules.Identity.Contracts;
+using Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
 using Pottmayer.Pandora.Modules.Identity.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Identity.Tests.Fakes;

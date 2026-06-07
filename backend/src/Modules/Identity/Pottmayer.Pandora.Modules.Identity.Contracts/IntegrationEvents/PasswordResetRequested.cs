@@ -1,6 +1,6 @@
 using Pottmayer.Tars.Messaging.Abstractions;
 
-namespace Pottmayer.Pandora.Modules.Identity.Contracts;
+namespace Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
 
 /// <summary>
 /// Published by Identity when a user requests a password reset, requesting that a reset message be sent.

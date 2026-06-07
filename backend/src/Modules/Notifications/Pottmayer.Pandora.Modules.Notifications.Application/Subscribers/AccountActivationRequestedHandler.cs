@@ -1,4 +1,4 @@
-using Pottmayer.Pandora.Modules.Identity.Contracts;
+using Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
 using Pottmayer.Pandora.Modules.Notifications.Application.Enqueue;
 using Pottmayer.Pandora.Modules.Notifications.Domain.ValueObjects;
 using Pottmayer.Tars.Messaging.Abstractions;

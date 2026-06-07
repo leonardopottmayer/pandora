@@ -2,7 +2,7 @@ using System.Globalization;
 using Microsoft.Extensions.Options;
 using Pottmayer.Pandora.Modules.Identity.Abstractions;
 using Pottmayer.Pandora.Modules.Identity.Application.Options;
-using Pottmayer.Pandora.Modules.Identity.Contracts;
+using Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
 using Pottmayer.Pandora.Modules.Identity.Domain.Entities;
 using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Shared.Domain.ValueObjects;

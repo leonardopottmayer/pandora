@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 using Pottmayer.Pandora.Modules.Identity.Abstractions;
 using Pottmayer.Pandora.Modules.Identity.Application.Dtos;
 using Pottmayer.Pandora.Modules.Identity.Application.Options;
-using Pottmayer.Pandora.Modules.Identity.Contracts;
+using Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
 using Pottmayer.Pandora.Modules.Identity.Domain.Entities;
 using Pottmayer.Pandora.Modules.Identity.Domain.Errors;
 using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Repositories;

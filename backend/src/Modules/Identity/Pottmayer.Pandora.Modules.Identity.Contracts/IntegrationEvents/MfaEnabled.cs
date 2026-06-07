@@ -1,12 +1,12 @@
 using Pottmayer.Tars.Messaging.Abstractions;
 
-namespace Pottmayer.Pandora.Modules.Identity.Contracts;
+namespace Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
 
 /// <summary>
-/// Published by Identity after a user disables MFA, requesting that a security notice be sent.
+/// Published by Identity after a user enables MFA, requesting that a confirmation notice be sent.
 /// Informational only (no token).
 /// </summary>
-public sealed record MfaDisabled(
+public sealed record MfaEnabled(
     Guid EventId,
     DateTimeOffset OccurredAt,
     Guid UserId,
