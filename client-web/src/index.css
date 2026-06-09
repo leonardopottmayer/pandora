@@ -1,7 +1,7 @@
-/* Ordem das CSS layers. A layer "antd" fica ENTRE "base" (preflight do Tailwind)
-   e "utilities": assim o preflight nao apaga os estilos dos componentes antd,
-   mas os utilitarios do Tailwind ainda vencem quando aplicados explicitamente.
-   O antd emite na layer "antd" via <StyleProvider layer> (src/app/providers.tsx). */
+/* CSS layer order. The "antd" layer sits BETWEEN "base" (Tailwind preflight)
+   and "utilities": this way the preflight does not wipe out the antd component
+   styles, but Tailwind utilities still win when applied explicitly.
+   antd emits into the "antd" layer via <StyleProvider layer> (src/app/providers.tsx). */
 @layer theme, base, antd, components, utilities;
 
 @import 'tailwindcss';

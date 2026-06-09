@@ -7,7 +7,7 @@ import type { AppLanguage } from '@/features/identity/models'
 const LANGUAGE_KEY = 'pandora.language'
 export const SUPPORTED_LANGUAGES: AppLanguage[] = ['pt-BR', 'en']
 
-// Idioma padrao: ingles. Usa o salvo no dispositivo quando existir.
+// Default language: English. Uses the one saved on the device when present.
 export function getStoredLanguage(): AppLanguage {
   const stored = localStorage.getItem(LANGUAGE_KEY)
   if (stored && (SUPPORTED_LANGUAGES as string[]).includes(stored)) {

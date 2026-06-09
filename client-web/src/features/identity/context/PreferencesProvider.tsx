@@ -23,7 +23,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     void i18n.changeLanguage(next)
   }, [])
 
-  // Carrega preferencias do backend ao autenticar.
+  // Loads preferences from the backend on authentication.
   useEffect(() => {
     if (!isAuthenticated) return
     let cancelled = false
@@ -35,21 +35,21 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         if (prefs.language) applyLanguage(prefs.language)
       })
       .catch(() => {
-        /* mantem os valores atuais em caso de erro */
+        /* keeps the current values on error */
       })
     return () => {
       cancelled = true
     }
   }, [isAuthenticated, applyLanguage])
 
-  // Persiste o par (theme, language) na conta, com debounce.
+  // Persists the (theme, language) pair to the account, with debounce.
   const persist = useCallback(
     (nextTheme: AppTheme, nextLanguage: AppLanguage) => {
       if (!isAuthenticated) return
       if (saveTimer.current) clearTimeout(saveTimer.current)
       saveTimer.current = setTimeout(() => {
         preferencesService.upsertPreferences(nextTheme, nextLanguage).catch(() => {
-          /* ja aplicado localmente; ignora erro de persistencia */
+          /* already applied locally; ignore persistence error */
         })
       }, SAVE_DEBOUNCE_MS)
     },

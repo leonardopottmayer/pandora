@@ -1,7 +1,7 @@
 const ACCESS_TOKEN_KEY = 'pandora.access_token'
 const REFRESH_TOKEN_KEY = 'pandora.refresh_token'
-// Rotulo digitado no login (email/username). Fallback de exibicao enquanto o
-// backend nao expoe um GET /me com nome/email.
+// Label typed at login (email/username). Display fallback while the
+// backend does not expose a GET /me with name/email.
 const LOGIN_LABEL_KEY = 'pandora.login_label'
 
 export function getAccessToken(): string | null {
