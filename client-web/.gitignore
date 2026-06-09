@@ -12,7 +12,7 @@ dist
 dist-ssr
 *.local
 
-# Local env (mantenha o .env.example versionado)
+# Local env (keep .env.example versioned)
 .env
 .env.*.local
 
