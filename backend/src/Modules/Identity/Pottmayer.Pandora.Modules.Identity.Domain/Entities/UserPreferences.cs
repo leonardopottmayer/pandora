@@ -8,6 +8,7 @@ public sealed class UserPreferences : Entity<Guid>, IAuditable
 {
     public Guid UserId { get; private set; }
     public AppTheme Theme { get; private set; } = null!;
+    public AppLanguage Language { get; private set; } = null!;
 
     public Guid? CreatedBy { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
@@ -16,8 +17,12 @@ public sealed class UserPreferences : Entity<Guid>, IAuditable
 
     private UserPreferences() { }
 
-    internal static UserPreferences Create(AppTheme theme) =>
-        new() { Id = Guid.CreateVersion7(), Theme = theme };
+    internal static UserPreferences Create(AppTheme theme, AppLanguage language) =>
+        new() { Id = Guid.CreateVersion7(), Theme = theme, Language = language };
 
-    public void Update(AppTheme theme) => Theme = theme;
+    public void Update(AppTheme theme, AppLanguage language)
+    {
+        Theme = theme;
+        Language = language;
+    }
 }

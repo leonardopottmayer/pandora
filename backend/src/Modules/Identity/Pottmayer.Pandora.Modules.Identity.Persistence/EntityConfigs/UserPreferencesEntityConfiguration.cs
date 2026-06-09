@@ -16,6 +16,10 @@ internal sealed class UserPreferencesEntityConfiguration : IEntityTypeConfigurat
             tb.HasCheckConstraint(
                 "chk_idt003_theme",
                 "theme IN ('light', 'dark', 'system')");
+
+            tb.HasCheckConstraint(
+                "chk_idt003_language",
+                "language IN ('pt-BR', 'en')");
         });
 
         builder.HasKey(p => p.Id)
@@ -37,6 +41,12 @@ internal sealed class UserPreferencesEntityConfiguration : IEntityTypeConfigurat
                .HasColumnName("theme")
                .HasConversion(new AppThemeConverter())
                .HasMaxLength(20)
+               .IsRequired();
+
+        builder.Property(p => p.Language)
+               .HasColumnName("language")
+               .HasConversion(new AppLanguageConverter())
+               .HasMaxLength(10)
                .IsRequired();
 
         builder.Property(p => p.CreatedAt).HasColumnName("created_at").IsRequired();

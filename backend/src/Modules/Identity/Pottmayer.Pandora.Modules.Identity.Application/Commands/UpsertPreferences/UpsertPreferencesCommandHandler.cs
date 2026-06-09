@@ -20,7 +20,11 @@ public sealed class UpsertPreferencesCommandHandler(IUnitOfWorkFactory factory)
         if (!AppTheme.IsSupported(input.Theme))
             return Fail(UserErrors.InvalidTheme(input.Theme));
 
+        if (!AppLanguage.IsSupported(input.Language))
+            return Fail(UserErrors.InvalidLanguage(input.Language));
+
         var theme = AppTheme.FromValue(input.Theme);
+        var language = AppLanguage.FromValue(input.Language);
 
         var user = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
         {
@@ -30,7 +34,7 @@ public sealed class UpsertPreferencesCommandHandler(IUnitOfWorkFactory factory)
             if (user is null)
                 return null;
 
-            user.UpdatePreferences(theme);
+            user.UpdatePreferences(theme, language);
             await repo.UpdateAsync(user, token);
             return user;
         }, cancellationToken: ct);
@@ -38,6 +42,6 @@ public sealed class UpsertPreferencesCommandHandler(IUnitOfWorkFactory factory)
         if (user is null)
             return Fail(UserErrors.NotFound);
 
-        return Ok(new UserPreferencesDto(user.Preferences!.Theme.Value));
+        return Ok(new UserPreferencesDto(user.Preferences!.Theme.Value, user.Preferences!.Language.Value));
     }
 }

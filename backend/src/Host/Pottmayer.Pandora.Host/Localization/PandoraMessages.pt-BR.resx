@@ -58,4 +58,28 @@
   <data name="Identity.AccessDenied" xml:space="preserve">
     <value>Acesso negado.</value>
   </data>
+  <data name="Identity.InvalidActivationToken" xml:space="preserve">
+    <value>O token de ativação é inválido ou expirou.</value>
+  </data>
+  <data name="Identity.PasswordRequired" xml:space="preserve">
+    <value>A senha é obrigatória.</value>
+  </data>
+  <data name="Identity.MfaAlreadyEnabled" xml:space="preserve">
+    <value>A verificação em duas etapas já está habilitada para esta conta.</value>
+  </data>
+  <data name="Identity.MfaNotEnabled" xml:space="preserve">
+    <value>A verificação em duas etapas não está habilitada para esta conta.</value>
+  </data>
+  <data name="Identity.MfaSetupNotFound" xml:space="preserve">
+    <value>Nenhuma configuração de MFA pendente foi encontrada. Inicie a configuração novamente.</value>
+  </data>
+  <data name="Identity.InvalidMfaCode" xml:space="preserve">
+    <value>O código de verificação informado é inválido.</value>
+  </data>
+  <data name="Identity.InvalidMfaChallenge" xml:space="preserve">
+    <value>O desafio de verificação é inválido ou expirou.</value>
+  </data>
+  <data name="Users.InvalidLanguage" xml:space="preserve">
+    <value>Idioma não suportado.</value>
+  </data>
 </root>

@@ -1,0 +1,180 @@
+{
+  "common": {
+    "appName": "Pandora",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "finish": "Concluir",
+    "back": "Voltar",
+    "backToLogin": "Voltar ao login",
+    "copy": "Copiar",
+    "download": "Baixar .txt",
+    "loading": "Carregando..."
+  },
+  "nav": {
+    "start": "Inicio",
+    "home": "Home",
+    "account": "Conta",
+    "profile": "Perfil",
+    "security": "Seguranca",
+    "settings": "Preferencias",
+    "changePassword": "Trocar senha",
+    "signOut": "Sair"
+  },
+  "theme": {
+    "toLight": "Tema claro",
+    "toDark": "Tema escuro"
+  },
+  "authLayout": {
+    "desc": "Acesse para gerenciar seus dados e usar os recursos do sistema com seguranca.",
+    "newsTitle": "Novidades",
+    "news": [
+      { "title": "Bem-vindo ao Pandora", "date": "Jun 2026", "snippet": "Sistema com nova interface e seguranca aprimorada." },
+      { "title": "Autenticacao em dois fatores", "date": "Jun 2026", "snippet": "Proteja sua conta habilitando o MFA nas configuracoes." },
+      { "title": "Suporte", "date": "2026", "snippet": "Duvidas? Fale com a equipe de suporte." }
+    ]
+  },
+  "login": {
+    "title": "Entrar",
+    "idLabel": "Email ou usuario",
+    "idRequired": "Informe seu email ou usuario.",
+    "passwordLabel": "Senha",
+    "passwordRequired": "Informe sua senha.",
+    "submit": "Entrar",
+    "forgot": "Esqueceu sua senha?",
+    "noAccount": "Nao tem conta? Cadastre-se",
+    "success": "Login realizado com sucesso.",
+    "error": "Email/usuario ou senha invalidos."
+  },
+  "register": {
+    "title": "Criar conta",
+    "name": "Nome",
+    "nameRequired": "Informe seu nome.",
+    "email": "Email",
+    "emailRequired": "Informe seu email.",
+    "emailInvalid": "Informe um email valido.",
+    "username": "Usuario",
+    "usernameRequired": "Informe um usuario.",
+    "password": "Senha",
+    "submit": "Criar conta",
+    "haveAccount": "Ja tem conta? Entrar",
+    "success": "Conta criada. Enviamos um email para ativar sua conta.",
+    "error": "Nao foi possivel criar a conta."
+  },
+  "mfa": {
+    "title": "Verificacao em duas etapas",
+    "desc": "Digite o codigo do seu aplicativo autenticador ou um codigo de recuperacao.",
+    "codeLabel": "Codigo",
+    "codeRequired": "Informe o codigo.",
+    "verify": "Verificar",
+    "success": "Login realizado com sucesso.",
+    "error": "Codigo invalido ou expirado."
+  },
+  "forgot": {
+    "title": "Esqueci minha senha",
+    "email": "Email",
+    "emailRequired": "Informe seu email.",
+    "emailInvalid": "Informe um email valido.",
+    "submit": "Enviar link",
+    "sentTitle": "Verifique seu email",
+    "sentDesc": "Se o email existir, enviamos um link para redefinir sua senha.",
+    "error": "Nao foi possivel enviar o email."
+  },
+  "reset": {
+    "title": "Redefinir senha",
+    "newPassword": "Nova senha",
+    "confirm": "Confirmar senha",
+    "confirmRequired": "Confirme a senha.",
+    "mismatch": "As senhas nao conferem.",
+    "submit": "Redefinir senha",
+    "success": "Senha redefinida. Faca login com a nova senha.",
+    "error": "Nao foi possivel redefinir a senha.",
+    "invalidTitle": "Link invalido",
+    "invalidDesc": "O link de redefinicao esta incompleto ou expirou. Solicite um novo.",
+    "requestNew": "Solicitar novo"
+  },
+  "activate": {
+    "activating": "Ativando sua conta...",
+    "successTitle": "Conta ativada!",
+    "successDesc": "Sua conta foi ativada. Agora voce pode fazer login.",
+    "errorTitle": "Nao foi possivel ativar",
+    "errorDesc": "O link pode ter expirado ou ja foi usado.",
+    "invalidTitle": "Link invalido",
+    "invalidDesc": "O link de ativacao esta incompleto.",
+    "goLogin": "Ir para o login"
+  },
+  "profile": {
+    "title": "Perfil",
+    "name": "Nome",
+    "email": "Email",
+    "username": "Usuario",
+    "unavailableTitle": "Dados do perfil indisponiveis",
+    "unavailableDesc": "O backend ainda nao expoe os dados do usuario. Exibindo o identificador usado no login: {{label}}."
+  },
+  "password": {
+    "title": "Trocar senha",
+    "current": "Senha atual",
+    "currentRequired": "Informe a senha atual.",
+    "new": "Nova senha",
+    "confirm": "Confirmar nova senha",
+    "confirmRequired": "Confirme a nova senha.",
+    "mismatch": "As senhas nao conferem.",
+    "submit": "Alterar senha",
+    "success": "Senha alterada com sucesso.",
+    "error": "Nao foi possivel alterar a senha.",
+    "hint": "Minimo de 8 caracteres, com ao menos uma letra maiuscula, um numero e um caractere especial.",
+    "required": "Informe uma senha."
+  },
+  "settings": {
+    "title": "Preferencias",
+    "themeLabel": "Tema",
+    "themeDesc": "Escolha entre claro, escuro ou seguir o sistema. A preferencia e salva na sua conta.",
+    "themeLight": "Claro",
+    "themeDark": "Escuro",
+    "themeSystem": "Sistema",
+    "languageLabel": "Idioma",
+    "languageDesc": "Escolha o idioma da interface. A preferencia e salva na sua conta."
+  },
+  "security": {
+    "title": "Autenticacao em duas etapas (MFA)",
+    "loadError": "Erro ao carregar o status do MFA",
+    "enabled": "Habilitado",
+    "remaining": "Codigos de recuperacao restantes",
+    "lowCodes": "Poucos codigos de recuperacao restantes. Considere regenera-los.",
+    "regenerate": "Regenerar codigos de recuperacao",
+    "disable": "Desabilitar MFA",
+    "steps": { "start": "Iniciar", "confirm": "Confirmar", "codes": "Codigos" },
+    "startDesc": "Voce vai precisar de um aplicativo autenticador (Google Authenticator, Authy, etc.).",
+    "startButton": "Iniciar configuracao",
+    "startError": "Nao foi possivel iniciar a configuracao.",
+    "scanDesc": "Escaneie o QR Code no seu autenticador, ou cadastre a chave manualmente, depois informe o codigo gerado.",
+    "codeLabel": "Codigo do autenticador",
+    "codeRequired": "Informe o codigo.",
+    "confirmEnable": "Confirmar e habilitar",
+    "enableError": "Codigo invalido.",
+    "recoveryTitle": "Guarde estes codigos em local seguro",
+    "recoveryDesc": "Cada codigo pode ser usado uma vez para acessar caso voce perca o autenticador. Eles nao serao exibidos novamente.",
+    "copied": "Codigos copiados.",
+    "copyError": "Nao foi possivel copiar.",
+    "newCodesTitle": "Novos codigos de recuperacao",
+    "disableTitle": "Desabilitar MFA",
+    "disableConfirm": "Desabilitar",
+    "disabled": "MFA desabilitado.",
+    "disableError": "Nao foi possivel desabilitar.",
+    "regenerateTitle": "Regenerar codigos de recuperacao",
+    "regenerateConfirm": "Regenerar",
+    "regenerated": "Novos codigos gerados.",
+    "regenerateError": "Nao foi possivel regenerar os codigos.",
+    "passwordLabel": "Senha atual",
+    "passwordRequired": "Informe sua senha.",
+    "codeModalLabel": "Codigo (autenticador ou recuperacao)"
+  },
+  "home": {
+    "greeting": "Ola, {{name}}!",
+    "welcome": "Bem-vindo ao Pandora. Use o menu lateral para navegar e o menu do seu usuario, no canto superior direito, para gerenciar a conta e a seguranca.",
+    "defaultUser": "usuario"
+  },
+  "notFound": {
+    "subtitle": "Pagina nao encontrada.",
+    "back": "Voltar ao inicio"
+  }
+}

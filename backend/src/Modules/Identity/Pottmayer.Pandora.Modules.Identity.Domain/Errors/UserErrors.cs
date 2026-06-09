@@ -19,6 +19,9 @@ public static class UserErrors
     public static Error InvalidTheme(string theme) =>
         Error.Validation("Users.InvalidTheme", $"Theme '{theme}' is not supported.");
 
+    public static Error InvalidLanguage(string language) =>
+        Error.Validation("Users.InvalidLanguage", $"Language '{language}' is not supported.");
+
     public static Error NotFound =>
         Error.NotFound("Users.NotFound", "User not found.");
 

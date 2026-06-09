@@ -86,11 +86,11 @@ public sealed class User : AggregateRoot<Guid>, IAuditable
     /// <summary>Turns MFA off. The caller is responsible for removing the credential and recovery codes.</summary>
     public void DisableMfa() => MfaEnabled = false;
 
-    public void UpdatePreferences(AppTheme theme)
+    public void UpdatePreferences(AppTheme theme, AppLanguage language)
     {
         if (Preferences is null)
-            Preferences = UserPreferences.Create(theme);
+            Preferences = UserPreferences.Create(theme, language);
         else
-            Preferences.Update(theme);
+            Preferences.Update(theme, language);
     }
 }

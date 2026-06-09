@@ -26,6 +26,6 @@ public sealed class GetPreferencesQueryHandler(IUnitOfWorkFactory factory)
         if (user.Preferences is null)
             return Fail(UserErrors.PreferencesNotFound);
 
-        return Ok(new UserPreferencesDto(user.Preferences.Theme.Value));
+        return Ok(new UserPreferencesDto(user.Preferences.Theme.Value, user.Preferences.Language.Value));
     }
 }

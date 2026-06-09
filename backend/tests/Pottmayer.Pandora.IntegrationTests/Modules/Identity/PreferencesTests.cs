@@ -7,7 +7,7 @@ namespace Pottmayer.Pandora.IntegrationTests.Modules.Identity;
 
 /// <summary>
 /// Covers the authenticated user-preferences endpoints: reading before anything is set, upserting a
-/// theme, validation of unsupported themes, and the auth requirement.
+/// theme and language, validation of unsupported values, and the auth requirement.
 /// </summary>
 [Collection("Integration")]
 public sealed class PreferencesTests : IAsyncLifetime
@@ -45,28 +45,31 @@ public sealed class PreferencesTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Upsert_then_get_returns_the_saved_theme()
+    public async Task Upsert_then_get_returns_the_saved_theme_and_language()
     {
         await IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, "bob@example.com", "bob");
 
-        var upsert = await _client.PutAsJsonAsync(PreferencesUrl, new { theme = "dark" });
+        var upsert = await _client.PutAsJsonAsync(PreferencesUrl, new { theme = "dark", language = "en" });
         Assert.Equal(HttpStatusCode.OK, upsert.StatusCode);
 
         var get = await _client.GetAsync(PreferencesUrl);
         Assert.Equal(HttpStatusCode.OK, get.StatusCode);
-        Assert.Equal("dark", await ReadThemeAsync(get));
+        var prefs = await ReadPreferencesAsync(get);
+        Assert.Equal("dark", prefs.Theme);
+        Assert.Equal("en", prefs.Language);
     }
 
     [Fact]
-    public async Task Upsert_overwrites_the_previous_theme()
+    public async Task Upsert_overwrites_the_previous_values()
     {
         await IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, "carol@example.com", "carol");
 
-        await _client.PutAsJsonAsync(PreferencesUrl, new { theme = "dark" });
-        await _client.PutAsJsonAsync(PreferencesUrl, new { theme = "light" });
+        await _client.PutAsJsonAsync(PreferencesUrl, new { theme = "dark", language = "en" });
+        await _client.PutAsJsonAsync(PreferencesUrl, new { theme = "light", language = "pt-BR" });
 
-        var get = await _client.GetAsync(PreferencesUrl);
-        Assert.Equal("light", await ReadThemeAsync(get));
+        var prefs = await ReadPreferencesAsync(await _client.GetAsync(PreferencesUrl));
+        Assert.Equal("light", prefs.Theme);
+        Assert.Equal("pt-BR", prefs.Language);
     }
 
     [Fact]
@@ -74,17 +77,27 @@ public sealed class PreferencesTests : IAsyncLifetime
     {
         await IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, "dave@example.com", "dave");
 
-        var response = await _client.PutAsJsonAsync(PreferencesUrl, new { theme = "neon" });
+        var response = await _client.PutAsJsonAsync(PreferencesUrl, new { theme = "neon", language = "en" });
 
         Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
     }
 
-    private static async Task<string?> ReadThemeAsync(HttpResponseMessage response)
+    [Fact]
+    public async Task Upsert_rejects_an_unsupported_language()
+    {
+        await IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, "erin@example.com", "erin");
+
+        var response = await _client.PutAsJsonAsync(PreferencesUrl, new { theme = "dark", language = "fr" });
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+    }
+
+    private static async Task<PreferencesData> ReadPreferencesAsync(HttpResponseMessage response)
     {
         var envelope = await response.Content.ReadFromJsonAsync<Envelope>();
-        return envelope?.Data.Theme;
+        return envelope!.Data;
     }
 
     private sealed record Envelope(PreferencesData Data);
-    private sealed record PreferencesData(string Theme);
+    private sealed record PreferencesData(string Theme, string Language);
 }

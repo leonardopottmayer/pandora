@@ -1,0 +1,180 @@
+{
+  "common": {
+    "appName": "Pandora",
+    "save": "Save",
+    "cancel": "Cancel",
+    "finish": "Finish",
+    "back": "Back",
+    "backToLogin": "Back to login",
+    "copy": "Copy",
+    "download": "Download .txt",
+    "loading": "Loading..."
+  },
+  "nav": {
+    "start": "Start",
+    "home": "Home",
+    "account": "Account",
+    "profile": "Profile",
+    "security": "Security",
+    "settings": "Preferences",
+    "changePassword": "Change password",
+    "signOut": "Sign out"
+  },
+  "theme": {
+    "toLight": "Light theme",
+    "toDark": "Dark theme"
+  },
+  "authLayout": {
+    "desc": "Sign in to manage your data and use the system's features securely.",
+    "newsTitle": "Recent news",
+    "news": [
+      { "title": "Welcome to Pandora", "date": "Jun 2026", "snippet": "System with a new interface and improved security." },
+      { "title": "Two-factor authentication", "date": "Jun 2026", "snippet": "Protect your account by enabling MFA in the settings." },
+      { "title": "Support", "date": "2026", "snippet": "Questions? Reach out to the support team." }
+    ]
+  },
+  "login": {
+    "title": "Sign in",
+    "idLabel": "Email or username",
+    "idRequired": "Enter your email or username.",
+    "passwordLabel": "Password",
+    "passwordRequired": "Enter your password.",
+    "submit": "Sign in",
+    "forgot": "Forgot your password?",
+    "noAccount": "Don't have an account? Sign up",
+    "success": "Signed in successfully.",
+    "error": "Invalid email/username or password."
+  },
+  "register": {
+    "title": "Create account",
+    "name": "Name",
+    "nameRequired": "Enter your name.",
+    "email": "Email",
+    "emailRequired": "Enter your email.",
+    "emailInvalid": "Enter a valid email.",
+    "username": "Username",
+    "usernameRequired": "Enter a username.",
+    "password": "Password",
+    "submit": "Create account",
+    "haveAccount": "Already have an account? Sign in",
+    "success": "Account created. We've sent an email to activate your account.",
+    "error": "Could not create the account."
+  },
+  "mfa": {
+    "title": "Two-step verification",
+    "desc": "Enter the code from your authenticator app or a recovery code.",
+    "codeLabel": "Code",
+    "codeRequired": "Enter the code.",
+    "verify": "Verify",
+    "success": "Signed in successfully.",
+    "error": "Invalid or expired code."
+  },
+  "forgot": {
+    "title": "Forgot my password",
+    "email": "Email",
+    "emailRequired": "Enter your email.",
+    "emailInvalid": "Enter a valid email.",
+    "submit": "Send link",
+    "sentTitle": "Check your email",
+    "sentDesc": "If the email exists, we've sent a link to reset your password.",
+    "error": "Could not send the email."
+  },
+  "reset": {
+    "title": "Reset password",
+    "newPassword": "New password",
+    "confirm": "Confirm password",
+    "confirmRequired": "Confirm the password.",
+    "mismatch": "Passwords do not match.",
+    "submit": "Reset password",
+    "success": "Password reset. Sign in with your new password.",
+    "error": "Could not reset the password.",
+    "invalidTitle": "Invalid link",
+    "invalidDesc": "The reset link is incomplete or has expired. Request a new one.",
+    "requestNew": "Request a new one"
+  },
+  "activate": {
+    "activating": "Activating your account...",
+    "successTitle": "Account activated!",
+    "successDesc": "Your account has been activated. You can now sign in.",
+    "errorTitle": "Could not activate",
+    "errorDesc": "The link may have expired or already been used.",
+    "invalidTitle": "Invalid link",
+    "invalidDesc": "The activation link is incomplete.",
+    "goLogin": "Go to login"
+  },
+  "profile": {
+    "title": "Profile",
+    "name": "Name",
+    "email": "Email",
+    "username": "Username",
+    "unavailableTitle": "Profile data unavailable",
+    "unavailableDesc": "The backend does not expose user data yet. Showing the identifier used at login: {{label}}."
+  },
+  "password": {
+    "title": "Change password",
+    "current": "Current password",
+    "currentRequired": "Enter your current password.",
+    "new": "New password",
+    "confirm": "Confirm new password",
+    "confirmRequired": "Confirm the new password.",
+    "mismatch": "Passwords do not match.",
+    "submit": "Change password",
+    "success": "Password changed successfully.",
+    "error": "Could not change the password.",
+    "hint": "At least 8 characters, with one uppercase letter, one number and one special character.",
+    "required": "Enter a password."
+  },
+  "settings": {
+    "title": "Preferences",
+    "themeLabel": "Theme",
+    "themeDesc": "Choose light, dark or follow the system. The preference is saved to your account.",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "languageLabel": "Language",
+    "languageDesc": "Choose the interface language. The preference is saved to your account."
+  },
+  "security": {
+    "title": "Two-factor authentication (MFA)",
+    "loadError": "Error loading MFA status",
+    "enabled": "Enabled",
+    "remaining": "Remaining recovery codes",
+    "lowCodes": "Few recovery codes left. Consider regenerating them.",
+    "regenerate": "Regenerate recovery codes",
+    "disable": "Disable MFA",
+    "steps": { "start": "Start", "confirm": "Confirm", "codes": "Codes" },
+    "startDesc": "You'll need an authenticator app (Google Authenticator, Authy, etc.).",
+    "startButton": "Start setup",
+    "startError": "Could not start the setup.",
+    "scanDesc": "Scan the QR Code in your authenticator, or enter the key manually, then provide the generated code.",
+    "codeLabel": "Authenticator code",
+    "codeRequired": "Enter the code.",
+    "confirmEnable": "Confirm and enable",
+    "enableError": "Invalid code.",
+    "recoveryTitle": "Keep these codes in a safe place",
+    "recoveryDesc": "Each code can be used once to sign in if you lose your authenticator. They won't be shown again.",
+    "copied": "Codes copied.",
+    "copyError": "Could not copy.",
+    "newCodesTitle": "New recovery codes",
+    "disableTitle": "Disable MFA",
+    "disableConfirm": "Disable",
+    "disabled": "MFA disabled.",
+    "disableError": "Could not disable.",
+    "regenerateTitle": "Regenerate recovery codes",
+    "regenerateConfirm": "Regenerate",
+    "regenerated": "New codes generated.",
+    "regenerateError": "Could not regenerate the codes.",
+    "passwordLabel": "Current password",
+    "passwordRequired": "Enter your password.",
+    "codeModalLabel": "Code (authenticator or recovery)"
+  },
+  "home": {
+    "greeting": "Hello, {{name}}!",
+    "welcome": "Welcome to Pandora. Use the sidebar to navigate and your user menu, in the top right corner, to manage your account and security.",
+    "defaultUser": "user"
+  },
+  "notFound": {
+    "subtitle": "Page not found.",
+    "back": "Back to home"
+  }
+}
