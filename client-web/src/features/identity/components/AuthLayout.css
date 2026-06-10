@@ -75,46 +75,6 @@
   color: rgba(255, 255, 255, 0.75);
   line-height: 1.6;
   max-width: 420px;
-  margin-bottom: 2.5rem;
-}
-
-.auth-layout__news {
-  width: 100%;
-  padding-top: 2rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  text-align: center;
-}
-
-.auth-layout__news-title {
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.5);
-  margin-bottom: 1rem;
-}
-
-.auth-layout__news-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.auth-layout__news-item {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.85);
-  line-height: 1.45;
-}
-
-.auth-layout__news-item:last-child {
-  border-bottom: none;
-}
-
-.auth-layout__news-item strong {
-  color: #fff;
-  font-weight: 600;
 }
 
 .auth-layout__form-panel {

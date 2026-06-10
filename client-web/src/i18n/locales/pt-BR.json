@@ -25,13 +25,7 @@
     "toDark": "Tema escuro"
   },
   "authLayout": {
-    "desc": "Acesse para gerenciar seus dados e usar os recursos do sistema com seguranca.",
-    "newsTitle": "Novidades",
-    "news": [
-      { "title": "Bem-vindo ao Pandora", "date": "Jun 2026", "snippet": "Sistema com nova interface e seguranca aprimorada." },
-      { "title": "Autenticacao em dois fatores", "date": "Jun 2026", "snippet": "Proteja sua conta habilitando o MFA nas configuracoes." },
-      { "title": "Suporte", "date": "2026", "snippet": "Duvidas? Fale com a equipe de suporte." }
-    ]
+    "desc": "Acesse para gerenciar seus dados e usar os recursos do sistema com seguranca."
   },
   "login": {
     "title": "Entrar",

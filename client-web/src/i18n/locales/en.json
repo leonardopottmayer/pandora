@@ -25,13 +25,7 @@
     "toDark": "Dark theme"
   },
   "authLayout": {
-    "desc": "Sign in to manage your data and use the system's features securely.",
-    "newsTitle": "Recent news",
-    "news": [
-      { "title": "Welcome to Pandora", "date": "Jun 2026", "snippet": "System with a new interface and improved security." },
-      { "title": "Two-factor authentication", "date": "Jun 2026", "snippet": "Protect your account by enabling MFA in the settings." },
-      { "title": "Support", "date": "2026", "snippet": "Questions? Reach out to the support team." }
-    ]
+    "desc": "Sign in to manage your data and use the system's features securely."
   },
   "login": {
     "title": "Sign in",
