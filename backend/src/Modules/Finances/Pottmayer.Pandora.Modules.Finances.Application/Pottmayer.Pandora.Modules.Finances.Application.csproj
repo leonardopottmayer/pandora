@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Finances.Abstractions/Pottmayer.Pandora.Modules.Finances.Abstractions.csproj" />
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Finances.Contracts/Pottmayer.Pandora.Modules.Finances.Contracts.csproj" />
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Finances.Domain/Pottmayer.Pandora.Modules.Finances.Domain.csproj" />
+    <!-- Tars: Core -->
+    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.4" />
+    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.4" />
+    <!-- Tars: Data -->
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.4" />
+  </ItemGroup>
+
+</Project>

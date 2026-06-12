@@ -10,6 +10,10 @@ using Pottmayer.Pandora.Modules.Identity.Presentation.DI;
 using Pottmayer.Pandora.Modules.Notifications.Application.DI;
 using Pottmayer.Pandora.Modules.Notifications.Infrastructure.DI;
 using Pottmayer.Pandora.Modules.Notifications.Persistence.DI;
+using Pottmayer.Pandora.Modules.Finances.Application.DI;
+using Pottmayer.Pandora.Modules.Finances.Infrastructure.DI;
+using Pottmayer.Pandora.Modules.Finances.Persistence.DI;
+using Pottmayer.Pandora.Modules.Finances.Presentation.DI;
 using Pottmayer.Pandora.Shared.Infrastructure.DI;
 using Pottmayer.Pandora.Shared.Persistence.DI;
 using Pottmayer.Tars.Core.Localization.DI;
@@ -32,6 +36,10 @@ builder.Services.AddNotificationsPersistence();
 builder.AddNotificationsInfrastructure();
 builder.Services.AddNotificationsApplication();
 
+builder.Services.AddFinancesPersistence();
+builder.AddFinancesInfrastructure();
+builder.Services.AddFinancesApplication();
+
 // Web HTTP
 builder.Services.AddTarsLocalization();
 builder.Services.AddPandoraLocalization();
@@ -39,7 +47,8 @@ builder.Services.AddTarsProblemDetails();
 
 // Presentation
 builder.Services.AddControllers()
-                .AddIdentityPresentationPart();
+                .AddIdentityPresentationPart()
+                .AddFinancesPresentationPart();
 
 // API Versioning
 builder.Services.AddApiVersioning(options =>

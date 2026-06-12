@@ -19,6 +19,11 @@
     <ProjectReference Include="../../Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Application/Pottmayer.Pandora.Modules.Notifications.Application.csproj" />
     <ProjectReference Include="../../Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Infrastructure/Pottmayer.Pandora.Modules.Notifications.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Persistence/Pottmayer.Pandora.Modules.Notifications.Persistence.csproj" />
+    <!-- Finances module -->
+    <ProjectReference Include="../../Modules/Finances/Pottmayer.Pandora.Modules.Finances.Application/Pottmayer.Pandora.Modules.Finances.Application.csproj" />
+    <ProjectReference Include="../../Modules/Finances/Pottmayer.Pandora.Modules.Finances.Infrastructure/Pottmayer.Pandora.Modules.Finances.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Finances/Pottmayer.Pandora.Modules.Finances.Persistence/Pottmayer.Pandora.Modules.Finances.Persistence.csproj" />
+    <ProjectReference Include="../../Modules/Finances/Pottmayer.Pandora.Modules.Finances.Presentation/Pottmayer.Pandora.Modules.Finances.Presentation.csproj" />
     <!-- Tars: Core -->
     <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.4" />
     <!-- Tars: Web -->

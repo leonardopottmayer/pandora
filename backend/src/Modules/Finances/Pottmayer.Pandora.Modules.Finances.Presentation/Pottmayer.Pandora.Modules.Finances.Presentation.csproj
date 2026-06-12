@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Finances.Application/Pottmayer.Pandora.Modules.Finances.Application.csproj" />
+    <ProjectReference Include="../../../Shared/Pottmayer.Pandora.Shared.Domain/Pottmayer.Pandora.Shared.Domain.csproj" />
+    <!-- Tars: Web -->
+    <PackageReference Include="Pottmayer.Tars.Web.Http.Abstractions" Version="0.0.4" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http.AspNetCore" Version="0.0.4" />
+    <!-- Tars: UserContext -->
+    <PackageReference Include="Pottmayer.Tars.UserContext.Abstractions" Version="0.0.4" />
+  </ItemGroup>
+
+</Project>

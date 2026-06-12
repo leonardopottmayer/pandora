@@ -40,10 +40,12 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
         await _connection.OpenAsync();
 
         // Resets only the module schemas; the migration tracking table lives in "public" and is left intact.
+        // fin002 holds seeded system-category reference data — preserve it across resets.
         _respawner = await Respawner.CreateAsync(_connection, new RespawnerOptions
         {
             DbAdapter = DbAdapter.Postgres,
-            SchemasToInclude = ["identity", "notifications"]
+            SchemasToInclude = ["identity", "notifications", "finances"],
+            TablesToIgnore = [new Respawn.Graph.Table("finances", "fin002_system_category")]
         });
     }
 
@@ -57,6 +59,7 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
             {
                 ["Tars:Data:Connections:identity:ConnectionString"] = ConnectionString,
                 ["Tars:Data:Connections:notifications:ConnectionString"] = ConnectionString,
+                ["Tars:Data:Connections:finances:ConnectionString"] = ConnectionString,
                 // Deliver e-mails to the log (always succeeds) instead of SMTP — no Mailpit needed.
                 ["Tars:Communication:Email:Provider"] = "logging",
                 // Fixed AES-256 key (Base64 of 32 bytes) so MFA secrets can be encrypted in tests.

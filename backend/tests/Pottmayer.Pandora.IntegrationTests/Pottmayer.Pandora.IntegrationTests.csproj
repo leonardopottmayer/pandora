@@ -22,6 +22,13 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Host/Pottmayer.Pandora.Host/Pottmayer.Pandora.Host.csproj" />
+    <!-- Finances: write audit events through the real unit of work in tests -->
+    <ProjectReference Include="../../src/Modules/Finances/Pottmayer.Pandora.Modules.Finances.Application/Pottmayer.Pandora.Modules.Finances.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Tars: Data (IUnitOfWorkFactory) -->
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.4" />
   </ItemGroup>
 
 </Project>
