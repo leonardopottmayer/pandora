@@ -4,11 +4,13 @@ using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateAccount;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.DeleteAccount;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.SetAccountArchived;
+using Pottmayer.Pandora.Modules.Finances.Application.Commands.SetEntityTags;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.UpdateAccount;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetAccount;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetAccountBalance;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetAccounts;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetTransactions;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Finances.Presentation.Requests;
 using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
@@ -30,9 +32,12 @@ public sealed class AccountsController(
     private Guid UserId => userContextAccessor.Context.User!.Id;
 
     [HttpGet]
-    public async Task<IActionResult> ListAsync([FromQuery] bool includeArchived = false, CancellationToken ct = default)
+    public async Task<IActionResult> ListAsync(
+        [FromQuery] bool includeArchived = false,
+        [FromQuery] Guid[]? tags = null,
+        CancellationToken ct = default)
     {
-        var result = await sender.Send(new GetAccountsQuery(new GetAccountsInput(UserId, includeArchived)), ct);
+        var result = await sender.Send(new GetAccountsQuery(new GetAccountsInput(UserId, includeArchived, tags)), ct);
         return result.ToActionResult(errorMapper);
     }
 
@@ -101,13 +106,23 @@ public sealed class AccountsController(
         [FromQuery] string? kind,
         [FromQuery] string? status,
         [FromQuery] string? text,
+        [FromQuery] Guid[]? tags,
         [FromQuery] int skip = 0,
         [FromQuery] int take = 50,
         CancellationToken ct = default)
     {
         var query = new GetTransactionsQuery(new GetTransactionsInput(
-            UserId, id, from, to, kind, status, null, null, text, null, skip, take));
+            UserId, id, from, to, kind, status, null, null, text, null, tags, skip, take));
         var result = await sender.Send(query, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpPut("{id:guid}/tags")]
+    public async Task<IActionResult> SetTagsAsync(Guid id, SetEntityTagsRequest request, CancellationToken ct)
+    {
+        var command = new SetEntityTagsCommand(new SetEntityTagsInput(
+            UserId, TaggableEntityType.Account.Value, id, request.TagIds));
+        var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
 }

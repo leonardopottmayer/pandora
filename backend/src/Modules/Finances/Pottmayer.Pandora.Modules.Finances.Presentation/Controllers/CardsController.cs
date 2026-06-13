@@ -4,12 +4,14 @@ using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateCard;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.DeleteCard;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.SetCardArchived;
+using Pottmayer.Pandora.Modules.Finances.Application.Commands.SetEntityTags;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.UpdateCard;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetCard;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetCardAvailableLimit;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetCardInstallmentPlans;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetCards;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetCardStatements;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Finances.Presentation.Requests;
 using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
@@ -31,9 +33,12 @@ public sealed class CardsController(
     private Guid UserId => userContextAccessor.Context.User!.Id;
 
     [HttpGet]
-    public async Task<IActionResult> ListAsync([FromQuery] bool includeArchived = false, CancellationToken ct = default)
+    public async Task<IActionResult> ListAsync(
+        [FromQuery] bool includeArchived = false,
+        [FromQuery] Guid[]? tags = null,
+        CancellationToken ct = default)
     {
-        var result = await sender.Send(new GetCardsQuery(new GetCardsInput(UserId, includeArchived)), ct);
+        var result = await sender.Send(new GetCardsQuery(new GetCardsInput(UserId, includeArchived, tags)), ct);
         return result.ToActionResult(errorMapper);
     }
 
@@ -103,6 +108,15 @@ public sealed class CardsController(
     public async Task<IActionResult> GetAvailableLimitAsync(Guid id, CancellationToken ct)
     {
         var result = await sender.Send(new GetCardAvailableLimitQuery(new GetCardAvailableLimitInput(UserId, id)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpPut("{id:guid}/tags")]
+    public async Task<IActionResult> SetTagsAsync(Guid id, SetEntityTagsRequest request, CancellationToken ct)
+    {
+        var command = new SetEntityTagsCommand(new SetEntityTagsInput(
+            UserId, TaggableEntityType.Card.Value, id, request.TagIds));
+        var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
 }

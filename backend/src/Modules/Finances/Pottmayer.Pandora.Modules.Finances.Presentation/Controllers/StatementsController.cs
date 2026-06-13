@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.CloseStatement;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.PayStatement;
+using Pottmayer.Pandora.Modules.Finances.Application.Commands.SetEntityTags;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetStatement;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Finances.Presentation.Requests;
 using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
@@ -44,6 +46,15 @@ public sealed class StatementsController(
     public async Task<IActionResult> CloseAsync(Guid id, CancellationToken ct)
     {
         var result = await sender.Send(new CloseStatementCommand(new CloseStatementInput(UserId, id)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpPut("{id:guid}/tags")]
+    public async Task<IActionResult> SetTagsAsync(Guid id, SetEntityTagsRequest request, CancellationToken ct)
+    {
+        var command = new SetEntityTagsCommand(new SetEntityTagsInput(
+            UserId, TaggableEntityType.CardStatement.Value, id, request.TagIds));
+        var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
 }

@@ -14,6 +14,7 @@ public sealed record GetTransactionsInput(
     Guid? UserCategoryId,
     string? Text,
     string? Origin,
+    IReadOnlyList<Guid>? TagIds,
     int Skip,
     int Take);
 

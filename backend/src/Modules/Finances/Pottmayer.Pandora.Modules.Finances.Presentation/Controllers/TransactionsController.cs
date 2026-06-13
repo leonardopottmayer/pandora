@@ -4,9 +4,11 @@ using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateTransaction;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateTransfer;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.PostTransaction;
+using Pottmayer.Pandora.Modules.Finances.Application.Commands.SetEntityTags;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.UpdateTransaction;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.VoidTransaction;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetTransactions;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Finances.Presentation.Requests;
 using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
@@ -38,12 +40,13 @@ public sealed class TransactionsController(
         [FromQuery] Guid? userCategoryId,
         [FromQuery] string? text,
         [FromQuery] string? origin,
+        [FromQuery] Guid[]? tags,
         [FromQuery] int skip = 0,
         [FromQuery] int take = 50,
         CancellationToken ct = default)
     {
         var query = new GetTransactionsQuery(new GetTransactionsInput(
-            UserId, accountId, from, to, kind, status, systemCategoryId, userCategoryId, text, origin, skip, take));
+            UserId, accountId, from, to, kind, status, systemCategoryId, userCategoryId, text, origin, tags, skip, take));
         var result = await sender.Send(query, ct);
         return result.ToActionResult(errorMapper);
     }
@@ -89,6 +92,15 @@ public sealed class TransactionsController(
     public async Task<IActionResult> VoidAsync(Guid id, VoidTransactionRequest? request, CancellationToken ct)
     {
         var command = new VoidTransactionCommand(new VoidTransactionInput(UserId, id, request?.Reason, request?.VoidEntirePlan ?? false));
+        var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpPut("{id:guid}/tags")]
+    public async Task<IActionResult> SetTagsAsync(Guid id, SetEntityTagsRequest request, CancellationToken ct)
+    {
+        var command = new SetEntityTagsCommand(new SetEntityTagsInput(
+            UserId, TaggableEntityType.Transaction.Value, id, request.TagIds));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }

@@ -15,6 +15,7 @@ public sealed record TransactionFilter(
     Guid? UserCategoryId = null,
     string? Text = null,
     string? Origin = null,
+    IReadOnlyCollection<Guid>? Ids = null,
     int Skip = 0,
     int Take = 50);
 
