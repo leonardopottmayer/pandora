@@ -53,6 +53,30 @@ public sealed class CreateAccountCommandHandler(IUnitOfWorkFactory factory, Time
                 },
                 ct: token);
 
+            // A positive opening balance becomes a posted opening-balance transaction (ledger is the
+            // truth, never a stored balance field — D1). Non-positive values are ignored here.
+            if (input.OpeningBalance is > 0m)
+            {
+                var opening = Transaction.Create(
+                    input.UserId, account.Id, TransactionKind.OpeningBalance, currency!,
+                    input.OpeningBalance.Value, DateOnly.FromDateTime(now.UtcDateTime),
+                    "Opening balance", null, null, null, null, post: true, timeProvider);
+
+                await ctx.AcquireRepository<ITransactionRepository>().AddAsync(opening, token);
+
+                await ctx.RecordAsync(
+                    input.UserId, input.UserId, "transaction", opening.Id, "transaction.created", now,
+                    new
+                    {
+                        accountId = opening.AccountId,
+                        kind = opening.Kind.Value,
+                        status = opening.Status.Value,
+                        amount = opening.Amount,
+                        currency = opening.Currency.Value
+                    },
+                    ct: token);
+            }
+
             return Result<Account>.Success(account);
         }, cancellationToken: ct);
 

@@ -6,7 +6,9 @@ using Pottmayer.Pandora.Modules.Finances.Application.Commands.DeleteAccount;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.SetAccountArchived;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.UpdateAccount;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetAccount;
+using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetAccountBalance;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetAccounts;
+using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetTransactions;
 using Pottmayer.Pandora.Modules.Finances.Presentation.Requests;
 using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
@@ -46,7 +48,7 @@ public sealed class AccountsController(
     {
         var command = new CreateAccountCommand(new CreateAccountInput(
             UserId, request.Name, request.Type, request.Currency, request.Institution,
-            request.Description, request.Color, request.Icon, request.DisplayOrder));
+            request.Description, request.Color, request.Icon, request.DisplayOrder, request.OpeningBalance));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
@@ -81,6 +83,31 @@ public sealed class AccountsController(
     {
         var command = new SetAccountArchivedCommand(new SetAccountArchivedInput(UserId, id, Archived: false));
         var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpGet("{id:guid}/balance")]
+    public async Task<IActionResult> GetBalanceAsync(Guid id, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetAccountBalanceQuery(new GetAccountBalanceInput(UserId, id)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpGet("{id:guid}/transactions")]
+    public async Task<IActionResult> GetTransactionsAsync(
+        Guid id,
+        [FromQuery] DateOnly? from,
+        [FromQuery] DateOnly? to,
+        [FromQuery] string? kind,
+        [FromQuery] string? status,
+        [FromQuery] string? text,
+        [FromQuery] int skip = 0,
+        [FromQuery] int take = 50,
+        CancellationToken ct = default)
+    {
+        var query = new GetTransactionsQuery(new GetTransactionsInput(
+            UserId, id, from, to, kind, status, null, null, text, null, skip, take));
+        var result = await sender.Send(query, ct);
         return result.ToActionResult(errorMapper);
     }
 }

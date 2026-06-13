@@ -12,7 +12,8 @@ public sealed record CreateAccountInput(
     string? Description,
     string? Color,
     string? Icon,
-    int DisplayOrder);
+    int DisplayOrder,
+    decimal? OpeningBalance);
 
 public sealed class CreateAccountCommand(CreateAccountInput input)
     : CommandBase<CreateAccountInput, AccountDto>(input);

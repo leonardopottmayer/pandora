@@ -8,4 +8,5 @@ public sealed record CreateAccountRequest(
     string? Description,
     string? Color,
     string? Icon,
-    int DisplayOrder);
+    int DisplayOrder,
+    decimal? OpeningBalance);
