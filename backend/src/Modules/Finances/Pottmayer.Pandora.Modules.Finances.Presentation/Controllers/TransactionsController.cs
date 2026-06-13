@@ -53,7 +53,7 @@ public sealed class TransactionsController(
     {
         var command = new CreateTransactionCommand(new CreateTransactionInput(
             UserId, request.AccountId, request.CardId, request.CardStatementId, request.Kind, request.Amount, request.OccurredOn, request.Description,
-            request.Payee, request.Notes, request.SystemCategoryId, request.UserCategoryId));
+            request.Payee, request.Notes, request.SystemCategoryId, request.UserCategoryId, request.Installments));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
@@ -88,7 +88,7 @@ public sealed class TransactionsController(
     [HttpPost("{id:guid}/void")]
     public async Task<IActionResult> VoidAsync(Guid id, VoidTransactionRequest? request, CancellationToken ct)
     {
-        var command = new VoidTransactionCommand(new VoidTransactionInput(UserId, id, request?.Reason));
+        var command = new VoidTransactionCommand(new VoidTransactionInput(UserId, id, request?.Reason, request?.VoidEntirePlan ?? false));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }

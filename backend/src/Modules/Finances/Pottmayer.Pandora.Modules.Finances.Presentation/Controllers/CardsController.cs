@@ -7,6 +7,7 @@ using Pottmayer.Pandora.Modules.Finances.Application.Commands.SetCardArchived;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.UpdateCard;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetCard;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetCardAvailableLimit;
+using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetCardInstallmentPlans;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetCards;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetCardStatements;
 using Pottmayer.Pandora.Modules.Finances.Presentation.Requests;
@@ -88,6 +89,13 @@ public sealed class CardsController(
     public async Task<IActionResult> GetStatementsAsync(Guid id, CancellationToken ct)
     {
         var result = await sender.Send(new GetCardStatementsQuery(new GetCardStatementsInput(UserId, id)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpGet("{id:guid}/installment-plans")]
+    public async Task<IActionResult> GetInstallmentPlansAsync(Guid id, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetCardInstallmentPlansQuery(new GetCardInstallmentPlansInput(UserId, id)), ct);
         return result.ToActionResult(errorMapper);
     }
 

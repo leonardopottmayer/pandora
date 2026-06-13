@@ -11,4 +11,5 @@ public sealed record CreateTransactionRequest(
     string? Payee,
     string? Notes,
     Guid? SystemCategoryId,
-    Guid? UserCategoryId);
+    Guid? UserCategoryId,
+    int Installments = 1);

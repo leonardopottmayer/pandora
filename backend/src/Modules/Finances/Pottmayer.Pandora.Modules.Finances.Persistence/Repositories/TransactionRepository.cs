@@ -72,6 +72,13 @@ public sealed class TransactionRepository(IDataContextAccessor accessor)
             .ThenBy(t => t.Id)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<Transaction>> GetByInstallmentPlanAsync(
+        Guid installmentPlanId, Guid userId, CancellationToken ct = default)
+        => await Queryable()
+            .Where(t => t.InstallmentPlanId == installmentPlanId && t.UserId == userId)
+            .OrderBy(t => t.InstallmentNumber)
+            .ToListAsync(ct);
+
     public async Task<decimal> GetStatementTotalAsync(
         Guid statementId, Guid userId, CancellationToken ct = default)
     {

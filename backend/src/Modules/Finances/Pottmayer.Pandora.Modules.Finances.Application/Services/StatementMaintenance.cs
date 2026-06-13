@@ -36,6 +36,31 @@ internal static class StatementMaintenance
         return await EnsureNextStatementAsync(statements, resolver, card, userId, purchaseDate, timeProvider, ct);
     }
 
+    /// <summary>
+    /// Ensures the statement for the exact reference month of <paramref name="anchorDate"/> exists,
+    /// creating it if missing. Unlike <see cref="EnsureStatementForPurchaseAsync"/> this never rolls
+    /// over to the next month — it is used to place later installments on their own future statements.
+    /// </summary>
+    public static async Task<Result<StatementResolutionResult>> EnsureExactStatementAsync(
+        ICardStatementRepository statements,
+        IStatementResolver resolver,
+        Card card,
+        Guid userId,
+        DateOnly anchorDate,
+        TimeProvider timeProvider,
+        CancellationToken ct)
+    {
+        var resolution = resolver.Resolve(card, anchorDate);
+        var statement = await statements.FindByCardAndReferenceMonthAsync(card.Id, userId, resolution.ReferenceMonth, ct);
+        if (statement is not null)
+            return Result<StatementResolutionResult>.Success(new StatementResolutionResult(statement, Created: false));
+
+        statement = CardStatement.Create(
+            userId, card.Id, resolution.ReferenceMonth, resolution.ClosingDate, resolution.DueDate, timeProvider);
+        await statements.AddAsync(statement, ct);
+        return Result<StatementResolutionResult>.Success(new StatementResolutionResult(statement, Created: true));
+    }
+
     public static async Task SyncAsync(
         CardStatement statement,
         ICardStatementRepository statements,

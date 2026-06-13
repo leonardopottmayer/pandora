@@ -9,6 +9,7 @@ using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
+using Pottmayer.Tars.Data.Abstractions.DataContext;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateTransaction;
@@ -43,6 +44,19 @@ public sealed class CreateTransactionCommandHandler(
         var hasCard = input.CardId is not null;
         if (hasAccount == hasCard)
             return Fail(StatementErrors.InvalidTarget);
+
+        if (input.Installments < 1)
+            return Fail(InstallmentErrors.InvalidCount);
+
+        if (input.Installments > 1)
+        {
+            if (!hasCard)
+                return Fail(InstallmentErrors.RequiresCard);
+            if (kind != TransactionKind.Expense)
+                return Fail(InstallmentErrors.RequiresExpenseKind);
+
+            return await CreateInstallmentPurchaseAsync(input, now, today, ct);
+        }
 
         if (input.AccountId is not null)
         {
@@ -182,5 +196,124 @@ public sealed class CreateTransactionCommandHandler(
         return transactionResult.IsFailure
             ? Fail([.. transactionResult.Errors])
             : Ok(TransactionDto.From(transactionResult.Value!));
+    }
+
+    /// <summary>
+    /// A card purchase split into N installments: one <see cref="InstallmentPlan"/> plus N posted
+    /// installment transactions, one on each consecutive statement (created on demand). The whole
+    /// thing — plan, transactions and every affected statement total — commits in a single database
+    /// transaction so the ledger is never partially written. Returns the first installment.
+    /// </summary>
+    private async Task<Result<TransactionDto>> CreateInstallmentPurchaseAsync(
+        CreateTransactionInput input, DateTimeOffset now, DateOnly today, CancellationToken ct)
+    {
+        var count = input.Installments;
+
+        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        {
+            var cards = ctx.AcquireRepository<ICardRepository>();
+            var statements = ctx.AcquireRepository<ICardStatementRepository>();
+            var transactions = ctx.AcquireRepository<ITransactionRepository>();
+            var plans = ctx.AcquireRepository<IInstallmentPlanRepository>();
+
+            var card = await cards.FindByIdForUserAsync(input.CardId!.Value, input.UserId, token);
+            if (card is null)
+                return Result<Transaction>.Failure([CardErrors.NotFound]);
+            if (card.IsArchived)
+                return Result<Transaction>.Failure([CardErrors.Archived]);
+
+            var correlationId = Guid.CreateVersion7();
+
+            var ensured = await StatementMaintenance.EnsureStatementForPurchaseAsync(
+                statements, statementResolver, card, input.UserId, input.OccurredOn, input.CardStatementId, timeProvider, token);
+            if (ensured.IsFailure)
+                return Result<Transaction>.Failure([.. ensured.Errors]);
+
+            var firstStatement = ensured.Value!.Statement;
+            var firstCreated = ensured.Value!.Created;
+            if (firstCreated)
+                await RecordStatementCreatedAsync(ctx, input.UserId, firstStatement, now, correlationId, token);
+
+            var firstMonth = ParseFirstOfMonth(firstStatement.ReferenceMonth);
+
+            var plan = InstallmentPlan.CreateManual(
+                input.UserId, card.Id, input.Amount, count, firstStatement.ReferenceMonth, input.Description, timeProvider);
+            await plans.AddAsync(plan, token);
+            await ctx.RecordAsync(
+                input.UserId, input.UserId, "installment-plan", plan.Id, "installment-plan.created", now,
+                new { plan.CardId, plan.TotalAmount, plan.InstallmentCount, plan.FirstReferenceMonth, plan.NormalizedDescription },
+                correlationId, token);
+
+            var parts = InstallmentPlan.SplitAmount(input.Amount, count);
+            Transaction? firstInstallment = null;
+
+            for (var i = 1; i <= count; i++)
+            {
+                CardStatement statement;
+                bool created;
+                if (i == 1)
+                {
+                    statement = firstStatement;
+                    created = firstCreated;
+                }
+                else
+                {
+                    var anchorMonth = firstMonth.AddMonths(i - 1);
+                    var anchor = new DateOnly(anchorMonth.Year, anchorMonth.Month, card.ClosingDay);
+                    var ensuredI = await StatementMaintenance.EnsureExactStatementAsync(
+                        statements, statementResolver, card, input.UserId, anchor, timeProvider, token);
+                    statement = ensuredI.Value!.Statement;
+                    created = ensuredI.Value!.Created;
+                    if (created)
+                        await RecordStatementCreatedAsync(ctx, input.UserId, statement, now, correlationId, token);
+                }
+
+                var amount = parts[i - 1];
+                var tx = Transaction.CreateInstallmentTransaction(
+                    input.UserId, card.Id, statement.Id, plan.Id, (short)i, card.Currency, amount, input.OccurredOn,
+                    input.Description, input.Payee, input.Notes, input.SystemCategoryId, input.UserCategoryId, timeProvider);
+                await transactions.AddAsync(tx, token);
+
+                // Expense raises the statement total; recompute the cache in this same transaction (D1).
+                statement.SyncAmounts(statement.TotalAmount + amount, statement.PaidAmount, today, timeProvider);
+                if (!created)
+                    await statements.UpdateAsync(statement, token);
+
+                await ctx.RecordAsync(
+                    input.UserId, input.UserId, "transaction", tx.Id, "transaction.created", now,
+                    new
+                    {
+                        cardId = card.Id,
+                        cardStatementId = statement.Id,
+                        installmentPlanId = plan.Id,
+                        installmentNumber = i,
+                        kind = tx.Kind.Value,
+                        amount = tx.Amount,
+                        currency = tx.Currency.Value,
+                        occurredOn = tx.OccurredOn
+                    }, correlationId, token);
+
+                firstInstallment ??= tx;
+            }
+
+            return Result<Transaction>.Success(firstInstallment!);
+        }, cancellationToken: ct);
+
+        return result.IsFailure ? Fail([.. result.Errors]) : Ok(TransactionDto.From(result.Value!));
+    }
+
+    private static Task RecordStatementCreatedAsync(
+        IDataContext ctx,
+        Guid userId, CardStatement statement, DateTimeOffset now, Guid correlationId, CancellationToken ct) =>
+        ctx.RecordAsync(
+            userId, userId, "statement", statement.Id, "statement.created", now,
+            new { statement.CardId, statement.ReferenceMonth, statement.ClosingDate, statement.DueDate },
+            correlationId, ct);
+
+    private static DateOnly ParseFirstOfMonth(string referenceMonth)
+    {
+        var year = int.Parse(referenceMonth[..4]);
+        var month = int.Parse(referenceMonth[5..7]);
+        return new DateOnly(year, month, 1);
     }
 }

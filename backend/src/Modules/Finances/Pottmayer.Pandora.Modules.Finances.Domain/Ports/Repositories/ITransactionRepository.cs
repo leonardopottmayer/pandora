@@ -39,6 +39,9 @@ public interface ITransactionRepository : IStandardRepository<Transaction, Guid>
 
     Task<IReadOnlyList<Transaction>> GetByStatementAsync(Guid statementId, Guid userId, CancellationToken ct = default);
 
+    /// <summary>All installment transactions of a plan, ordered by installment number.</summary>
+    Task<IReadOnlyList<Transaction>> GetByInstallmentPlanAsync(Guid installmentPlanId, Guid userId, CancellationToken ct = default);
+
     Task<decimal> GetStatementTotalAsync(Guid statementId, Guid userId, CancellationToken ct = default);
 
     Task<decimal> GetStatementPaidTotalAsync(Guid statementId, Guid userId, CancellationToken ct = default);

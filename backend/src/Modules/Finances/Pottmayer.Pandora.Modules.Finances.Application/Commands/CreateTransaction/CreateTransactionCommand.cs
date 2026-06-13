@@ -15,7 +15,8 @@ public sealed record CreateTransactionInput(
     string? Payee,
     string? Notes,
     Guid? SystemCategoryId,
-    Guid? UserCategoryId);
+    Guid? UserCategoryId,
+    int Installments = 1);
 
 public sealed class CreateTransactionCommand(CreateTransactionInput input)
     : CommandBase<CreateTransactionInput, TransactionDto>(input);

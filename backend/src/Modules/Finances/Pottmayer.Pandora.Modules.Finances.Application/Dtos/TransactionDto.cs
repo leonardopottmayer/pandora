@@ -20,6 +20,8 @@ public sealed record TransactionDto(
     Guid? UserCategoryId,
     Guid? TransferGroupId,
     decimal? FxRate,
+    Guid? InstallmentPlanId,
+    short? InstallmentNumber,
     string Origin,
     DateTimeOffset? PostedAt,
     DateTimeOffset? VoidedAt,
@@ -28,5 +30,6 @@ public sealed record TransactionDto(
     public static TransactionDto From(Transaction t) =>
         new(t.Id, t.AccountId, t.CardStatementId, t.CardId, t.PaidStatementId, t.Kind.Value, t.Status.Value,
             t.Amount, t.Currency.Value, t.OccurredOn, t.Description, t.Payee, t.Notes, t.SystemCategoryId,
-            t.UserCategoryId, t.TransferGroupId, t.FxRate, t.Origin, t.PostedAt, t.VoidedAt, t.VoidReason);
+            t.UserCategoryId, t.TransferGroupId, t.FxRate, t.InstallmentPlanId, t.InstallmentNumber, t.Origin,
+            t.PostedAt, t.VoidedAt, t.VoidReason);
 }

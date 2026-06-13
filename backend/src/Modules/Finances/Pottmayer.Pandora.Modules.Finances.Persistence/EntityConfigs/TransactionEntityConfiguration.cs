@@ -51,6 +51,9 @@ internal sealed class TransactionEntityConfiguration : IEntityTypeConfiguration<
         builder.Property(t => t.TransferGroupId).HasColumnName("transfer_group_id");
         builder.Property(t => t.FxRate).HasColumnName("fx_rate").HasColumnType("numeric(20,10)");
 
+        builder.Property(t => t.InstallmentPlanId).HasColumnName("installment_plan_id");
+        builder.Property(t => t.InstallmentNumber).HasColumnName("installment_number");
+
         builder.Property(t => t.Origin).HasColumnName("origin").HasMaxLength(15).IsRequired();
 
         builder.Property(t => t.PostedAt).HasColumnName("posted_at");
@@ -82,11 +85,17 @@ internal sealed class TransactionEntityConfiguration : IEntityTypeConfiguration<
             .HasForeignKey(t => t.PaidStatementId)
             .HasConstraintName("fk_fin008_paid_statement_id");
 
+        builder.HasOne<InstallmentPlan>()
+            .WithMany()
+            .HasForeignKey(t => t.InstallmentPlanId)
+            .HasConstraintName("fk_fin008_installment_plan_id");
+
         builder.HasIndex(t => new { t.UserId, t.OccurredOn }).HasDatabaseName("ix_fin008_user_occurred_on");
         builder.HasIndex(t => new { t.AccountId, t.Status, t.OccurredOn }).HasDatabaseName("ix_fin008_account_status_occurred_on");
         builder.HasIndex(t => new { t.CardStatementId, t.Status, t.OccurredOn }).HasDatabaseName("ix_fin008_card_statement_status_occurred_on");
         builder.HasIndex(t => t.PaidStatementId).HasDatabaseName("ix_fin008_paid_statement_id");
         builder.HasIndex(t => new { t.CardId, t.OccurredOn }).HasDatabaseName("ix_fin008_card_id_occurred_on");
         builder.HasIndex(t => t.TransferGroupId).HasDatabaseName("ix_fin008_transfer_group_id");
+        builder.HasIndex(t => t.InstallmentPlanId).HasDatabaseName("ix_fin008_installment_plan_id");
     }
 }

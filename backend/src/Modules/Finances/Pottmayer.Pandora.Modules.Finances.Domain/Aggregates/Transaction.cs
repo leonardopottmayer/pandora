@@ -33,6 +33,9 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
     public Guid? TransferGroupId { get; private set; }
     public decimal? FxRate { get; private set; }
 
+    public Guid? InstallmentPlanId { get; private set; }
+    public short? InstallmentNumber { get; private set; }
+
     /// <summary>Provenance. Only <c>manual</c> exists in this phase (import/recurrence arrive later).</summary>
     public string Origin { get; private set; } = "manual";
 
@@ -112,6 +115,50 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
             CardId = cardId,
             CardStatementId = cardStatementId,
             Kind = kind,
+            Status = TransactionStatus.Posted,
+            Amount = amount,
+            Currency = currency,
+            OccurredOn = occurredOn,
+            Description = description.Trim(),
+            Payee = payee,
+            Notes = notes,
+            SystemCategoryId = systemCategoryId,
+            UserCategoryId = userCategoryId,
+            PostedAt = now,
+            CreatedAt = now
+        };
+    }
+
+    /// <summary>
+    /// One installment of a card purchase: a posted statement transaction carrying its plan id and
+    /// 1-based position. All N installments are real, committed charges, each on its own statement.
+    /// </summary>
+    public static Transaction CreateInstallmentTransaction(
+        Guid userId,
+        Guid cardId,
+        Guid cardStatementId,
+        Guid installmentPlanId,
+        short installmentNumber,
+        CurrencyCode currency,
+        decimal amount,
+        DateOnly occurredOn,
+        string description,
+        string? payee,
+        string? notes,
+        Guid? systemCategoryId,
+        Guid? userCategoryId,
+        TimeProvider timeProvider)
+    {
+        var now = timeProvider.GetUtcNow();
+        return new Transaction
+        {
+            Id = Guid.CreateVersion7(),
+            UserId = userId,
+            CardId = cardId,
+            CardStatementId = cardStatementId,
+            InstallmentPlanId = installmentPlanId,
+            InstallmentNumber = installmentNumber,
+            Kind = TransactionKind.Expense,
             Status = TransactionStatus.Posted,
             Amount = amount,
             Currency = currency,
