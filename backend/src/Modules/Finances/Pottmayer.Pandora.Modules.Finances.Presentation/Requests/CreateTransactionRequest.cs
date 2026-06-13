@@ -1,7 +1,9 @@
 namespace Pottmayer.Pandora.Modules.Finances.Presentation.Requests;
 
 public sealed record CreateTransactionRequest(
-    Guid AccountId,
+    Guid? AccountId,
+    Guid? CardId,
+    Guid? CardStatementId,
     string Kind,
     decimal Amount,
     DateOnly OccurredOn,

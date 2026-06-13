@@ -4,7 +4,10 @@ namespace Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 
 public sealed record TransactionDto(
     Guid Id,
-    Guid AccountId,
+    Guid? AccountId,
+    Guid? CardStatementId,
+    Guid? CardId,
+    Guid? PaidStatementId,
     string Kind,
     string Status,
     decimal Amount,
@@ -23,7 +26,7 @@ public sealed record TransactionDto(
     string? VoidReason)
 {
     public static TransactionDto From(Transaction t) =>
-        new(t.Id, t.AccountId, t.Kind.Value, t.Status.Value, t.Amount, t.Currency.Value, t.OccurredOn,
-            t.Description, t.Payee, t.Notes, t.SystemCategoryId, t.UserCategoryId, t.TransferGroupId,
-            t.FxRate, t.Origin, t.PostedAt, t.VoidedAt, t.VoidReason);
+        new(t.Id, t.AccountId, t.CardStatementId, t.CardId, t.PaidStatementId, t.Kind.Value, t.Status.Value,
+            t.Amount, t.Currency.Value, t.OccurredOn, t.Description, t.Payee, t.Notes, t.SystemCategoryId,
+            t.UserCategoryId, t.TransferGroupId, t.FxRate, t.Origin, t.PostedAt, t.VoidedAt, t.VoidReason);
 }

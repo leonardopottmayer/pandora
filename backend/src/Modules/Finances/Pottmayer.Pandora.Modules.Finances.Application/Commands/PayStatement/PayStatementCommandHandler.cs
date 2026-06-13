@@ -1,0 +1,80 @@
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
+using Pottmayer.Pandora.Modules.Finances.Application.Auditing;
+using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
+using Pottmayer.Pandora.Modules.Finances.Application.Services;
+using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
+using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
+using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
+using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Core.Primitives.Outcomes;
+using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
+
+namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.PayStatement;
+
+public sealed class PayStatementCommandHandler(IUnitOfWorkFactory factory, TimeProvider timeProvider)
+    : CommandHandlerBase<PayStatementCommand, CardStatementDto>
+{
+    protected override async Task<Result<CardStatementDto>> HandleAsync(PayStatementCommand request, CancellationToken ct)
+    {
+        var input = request.Input;
+        if (input.Amount <= 0m)
+            return Fail(StatementErrors.InvalidPaymentAmount);
+
+        var now = timeProvider.GetUtcNow();
+        var today = DateOnly.FromDateTime(now.UtcDateTime);
+
+        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        {
+            var statements = ctx.AcquireRepository<ICardStatementRepository>();
+            var accounts = ctx.AcquireRepository<IAccountRepository>();
+            var transactions = ctx.AcquireRepository<ITransactionRepository>();
+
+            var statement = await statements.FindByIdForUserAsync(input.StatementId, input.UserId, token);
+            if (statement is null)
+                return Result<CardStatement>.Failure([StatementErrors.NotFound]);
+
+            var account = await accounts.FindByIdForUserAsync(input.AccountId, input.UserId, token);
+            if (account is null)
+                return Result<CardStatement>.Failure([AccountErrors.NotFound]);
+            if (account.IsArchived)
+                return Result<CardStatement>.Failure([StatementErrors.CannotPayWithArchivedAccount]);
+
+            var card = await ctx.AcquireRepository<ICardRepository>().FindByIdForUserAsync(statement.CardId, input.UserId, token);
+            if (card is null)
+                return Result<CardStatement>.Failure([CardErrors.NotFound]);
+            if (account.Currency != card.Currency && input.FxRate is null)
+                return Result<CardStatement>.Failure([StatementErrors.MissingFxRate]);
+
+            var occurredOn = input.OccurredOn ?? today;
+            var payment = Transaction.CreateStatementPayment(
+                input.UserId,
+                account.Id,
+                statement.Id,
+                account.Currency,
+                input.Amount,
+                occurredOn,
+                input.Description ?? $"Payment for statement {statement.ReferenceMonth}",
+                null,
+                input.Notes,
+                fxRate: input.FxRate,
+                timeProvider);
+
+            await transactions.AddAsync(payment, token);
+            statement.SyncAmounts(statement.TotalAmount, statement.PaidAmount + input.Amount, today, timeProvider);
+            await statements.UpdateAsync(statement, token);
+
+            await ctx.RecordAsync(input.UserId, input.UserId, "statement", statement.Id, "statement.payment-received", now, new
+            {
+                amount = input.Amount,
+                accountId = account.Id
+            }, ct: token);
+
+            if (statement.Status.Value == "paid")
+                await ctx.RecordAsync(input.UserId, input.UserId, "statement", statement.Id, "statement.paid", now, ct: token);
+
+            return Result<CardStatement>.Success(statement);
+        }, cancellationToken: ct);
+
+        return result.IsFailure ? Fail([.. result.Errors]) : Ok(CardStatementDto.From(result.Value!));
+    }
+}

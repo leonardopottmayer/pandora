@@ -6,6 +6,7 @@ namespace Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 /// <summary>Filters for the account statement (extrato). All members are optional (AND-combined).</summary>
 public sealed record TransactionFilter(
     Guid? AccountId = null,
+    Guid? CardStatementId = null,
     DateOnly? From = null,
     DateOnly? To = null,
     string? Kind = null,
@@ -35,4 +36,12 @@ public interface ITransactionRepository : IStandardRepository<Transaction, Guid>
 
     /// <summary>Balance including <c>pending</c> (scheduled/future) entries — the projected balance.</summary>
     Task<decimal> GetProjectedBalanceAsync(Guid accountId, Guid userId, CancellationToken ct = default);
+
+    Task<IReadOnlyList<Transaction>> GetByStatementAsync(Guid statementId, Guid userId, CancellationToken ct = default);
+
+    Task<decimal> GetStatementTotalAsync(Guid statementId, Guid userId, CancellationToken ct = default);
+
+    Task<decimal> GetStatementPaidTotalAsync(Guid statementId, Guid userId, CancellationToken ct = default);
+
+    Task<decimal> GetUnpaidStatementTotalForCardAsync(Guid cardId, Guid userId, CancellationToken ct = default);
 }

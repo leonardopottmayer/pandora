@@ -18,6 +18,8 @@ public sealed class TransactionKind : IDomainValue<TransactionKind>
     public static readonly TransactionKind InvestmentRedemption = new("investment-redemption", sign: +1);
     public static readonly TransactionKind Yield = new("yield", sign: +1);
     public static readonly TransactionKind Adjustment = new("adjustment", sign: +1);
+    public static readonly TransactionKind Refund = new("refund", sign: +1);
+    public static readonly TransactionKind CardStatementPayment = new("card-statement-payment", sign: -1);
 
     private static readonly Dictionary<string, TransactionKind> All = new()
     {
@@ -29,7 +31,9 @@ public sealed class TransactionKind : IDomainValue<TransactionKind>
         [InvestmentContribution.Value] = InvestmentContribution,
         [InvestmentRedemption.Value] = InvestmentRedemption,
         [Yield.Value] = Yield,
-        [Adjustment.Value] = Adjustment
+        [Adjustment.Value] = Adjustment,
+        [Refund.Value] = Refund,
+        [CardStatementPayment.Value] = CardStatementPayment
     };
 
     public string Value { get; }
@@ -56,6 +60,12 @@ public sealed class TransactionKind : IDomainValue<TransactionKind>
     /// <summary>Kinds that only make sense on an <c>investment</c> account (phase 04 decision: restrict).</summary>
     public bool RequiresInvestmentAccount =>
         this == InvestmentContribution || this == InvestmentRedemption || this == Yield;
+
+    public bool CanTargetStatement => this == Expense || this == Refund;
+
+    public bool IsStatementPayment => this == CardStatementPayment;
+
+    public int StatementSign => this == Expense ? +1 : this == Refund ? -1 : 0;
 
     public override string ToString() => Value;
 }

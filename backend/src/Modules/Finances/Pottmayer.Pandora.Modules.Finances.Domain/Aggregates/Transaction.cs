@@ -15,7 +15,10 @@ namespace Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 public sealed class Transaction : AggregateRoot<Guid>, IAuditable
 {
     public Guid UserId { get; private set; }
-    public Guid AccountId { get; private set; }
+    public Guid? AccountId { get; private set; }
+    public Guid? CardStatementId { get; private set; }
+    public Guid? CardId { get; private set; }
+    public Guid? PaidStatementId { get; private set; }
     public TransactionKind Kind { get; private set; } = TransactionKind.Expense;
     public TransactionStatus Status { get; private set; } = TransactionStatus.Posted;
     public decimal Amount { get; private set; }
@@ -46,11 +49,11 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
     public bool IsVoid => Status == TransactionStatus.Void;
 
     /// <summary>Signed contribution of this entry to the account balance (0 unless posted).</summary>
-    public decimal SignedAmount => IsPosted ? Amount * Kind.Sign : 0m;
+    public decimal SignedAmount => IsPosted && AccountId is not null ? Amount * Kind.Sign : 0m;
 
     private Transaction() { }
 
-    public static Transaction Create(
+    public static Transaction CreateAccountTransaction(
         Guid userId,
         Guid accountId,
         TransactionKind kind,
@@ -82,6 +85,77 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
             SystemCategoryId = systemCategoryId,
             UserCategoryId = userCategoryId,
             PostedAt = post ? now : null,
+            CreatedAt = now
+        };
+    }
+
+    public static Transaction CreateStatementTransaction(
+        Guid userId,
+        Guid cardId,
+        Guid cardStatementId,
+        TransactionKind kind,
+        CurrencyCode currency,
+        decimal amount,
+        DateOnly occurredOn,
+        string description,
+        string? payee,
+        string? notes,
+        Guid? systemCategoryId,
+        Guid? userCategoryId,
+        TimeProvider timeProvider)
+    {
+        var now = timeProvider.GetUtcNow();
+        return new Transaction
+        {
+            Id = Guid.CreateVersion7(),
+            UserId = userId,
+            CardId = cardId,
+            CardStatementId = cardStatementId,
+            Kind = kind,
+            Status = TransactionStatus.Posted,
+            Amount = amount,
+            Currency = currency,
+            OccurredOn = occurredOn,
+            Description = description.Trim(),
+            Payee = payee,
+            Notes = notes,
+            SystemCategoryId = systemCategoryId,
+            UserCategoryId = userCategoryId,
+            PostedAt = now,
+            CreatedAt = now
+        };
+    }
+
+    public static Transaction CreateStatementPayment(
+        Guid userId,
+        Guid accountId,
+        Guid paidStatementId,
+        CurrencyCode currency,
+        decimal amount,
+        DateOnly occurredOn,
+        string description,
+        string? payee,
+        string? notes,
+        decimal? fxRate,
+        TimeProvider timeProvider)
+    {
+        var now = timeProvider.GetUtcNow();
+        return new Transaction
+        {
+            Id = Guid.CreateVersion7(),
+            UserId = userId,
+            AccountId = accountId,
+            PaidStatementId = paidStatementId,
+            Kind = TransactionKind.CardStatementPayment,
+            Status = TransactionStatus.Posted,
+            Amount = amount,
+            Currency = currency,
+            OccurredOn = occurredOn,
+            Description = description.Trim(),
+            Payee = payee,
+            Notes = notes,
+            FxRate = fxRate,
+            PostedAt = now,
             CreatedAt = now
         };
     }

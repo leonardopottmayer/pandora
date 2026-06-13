@@ -5,7 +5,9 @@ namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateTransact
 
 public sealed record CreateTransactionInput(
     Guid UserId,
-    Guid AccountId,
+    Guid? AccountId,
+    Guid? CardId,
+    Guid? CardStatementId,
     string Kind,
     decimal Amount,
     DateOnly OccurredOn,

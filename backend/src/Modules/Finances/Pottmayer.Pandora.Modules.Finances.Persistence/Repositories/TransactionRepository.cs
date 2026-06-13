@@ -26,6 +26,8 @@ public sealed class TransactionRepository(IDataContextAccessor accessor)
 
         if (filter.AccountId is not null)
             query = query.Where(t => t.AccountId == filter.AccountId);
+        if (filter.CardStatementId is not null)
+            query = query.Where(t => t.CardStatementId == filter.CardStatementId);
         if (filter.From is not null)
             query = query.Where(t => t.OccurredOn >= filter.From);
         if (filter.To is not null)
@@ -61,6 +63,61 @@ public sealed class TransactionRepository(IDataContextAccessor accessor)
 
     public Task<decimal> GetProjectedBalanceAsync(Guid accountId, Guid userId, CancellationToken ct = default)
         => SumSignedAsync(accountId, userId, includePending: true, ct);
+
+    public async Task<IReadOnlyList<Transaction>> GetByStatementAsync(
+        Guid statementId, Guid userId, CancellationToken ct = default)
+        => await Queryable()
+            .Where(t => t.CardStatementId == statementId && t.UserId == userId)
+            .OrderBy(t => t.OccurredOn)
+            .ThenBy(t => t.Id)
+            .ToListAsync(ct);
+
+    public async Task<decimal> GetStatementTotalAsync(
+        Guid statementId, Guid userId, CancellationToken ct = default)
+    {
+        var rows = await Queryable()
+            .Where(t => t.CardStatementId == statementId && t.UserId == userId && t.Status == TransactionStatus.Posted)
+            .Select(t => new { t.Kind, t.Amount })
+            .ToListAsync(ct);
+
+        return rows.Sum(r => r.Amount * r.Kind.StatementSign);
+    }
+
+    public async Task<decimal> GetStatementPaidTotalAsync(
+        Guid statementId, Guid userId, CancellationToken ct = default)
+    {
+        var rows = await Queryable()
+            .Where(t => t.PaidStatementId == statementId && t.UserId == userId && t.Status == TransactionStatus.Posted)
+            .Select(t => t.Amount)
+            .ToListAsync(ct);
+
+        return rows.Sum();
+    }
+
+    public async Task<decimal> GetUnpaidStatementTotalForCardAsync(
+        Guid cardId, Guid userId, CancellationToken ct = default)
+    {
+        var rows = await Queryable()
+            .Where(t => t.CardId == cardId && t.UserId == userId && t.CardStatementId != null && t.Status == TransactionStatus.Posted)
+            .Select(t => new { t.CardStatementId, t.Kind, t.Amount })
+            .ToListAsync(ct);
+
+        var paid = await Queryable()
+            .Where(t => t.PaidStatementId != null && t.UserId == userId)
+            .Select(t => new { t.PaidStatementId, t.Amount, t.Status })
+            .ToListAsync(ct);
+
+        var totalsByStatement = rows
+            .GroupBy(r => r.CardStatementId!.Value)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.Amount * x.Kind.StatementSign));
+
+        var paidByStatement = paid
+            .Where(x => x.Status == TransactionStatus.Posted)
+            .GroupBy(x => x.PaidStatementId!.Value)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.Amount));
+
+        return totalsByStatement.Sum(pair => Math.Max(0m, pair.Value - paidByStatement.GetValueOrDefault(pair.Key)));
+    }
 
     /// <summary>
     /// Signed sum over the account ledger. Kept in memory because the sign is a function of the kind

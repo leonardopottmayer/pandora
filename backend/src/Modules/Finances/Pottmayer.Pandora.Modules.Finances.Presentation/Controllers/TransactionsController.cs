@@ -52,7 +52,7 @@ public sealed class TransactionsController(
     public async Task<IActionResult> CreateAsync(CreateTransactionRequest request, CancellationToken ct)
     {
         var command = new CreateTransactionCommand(new CreateTransactionInput(
-            UserId, request.AccountId, request.Kind, request.Amount, request.OccurredOn, request.Description,
+            UserId, request.AccountId, request.CardId, request.CardStatementId, request.Kind, request.Amount, request.OccurredOn, request.Description,
             request.Payee, request.Notes, request.SystemCategoryId, request.UserCategoryId));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);

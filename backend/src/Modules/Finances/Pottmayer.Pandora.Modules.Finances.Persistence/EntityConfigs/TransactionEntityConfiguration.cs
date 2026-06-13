@@ -16,7 +16,10 @@ internal sealed class TransactionEntityConfiguration : IEntityTypeConfiguration<
 
         builder.Property(t => t.Id).HasColumnName("id").ValueGeneratedNever();
         builder.Property(t => t.UserId).HasColumnName("user_id").IsRequired();
-        builder.Property(t => t.AccountId).HasColumnName("account_id").IsRequired();
+        builder.Property(t => t.AccountId).HasColumnName("account_id");
+        builder.Property(t => t.CardStatementId).HasColumnName("card_statement_id");
+        builder.Property(t => t.CardId).HasColumnName("card_id");
+        builder.Property(t => t.PaidStatementId).HasColumnName("paid_statement_id");
 
         builder.Property(t => t.Kind)
                .HasColumnName("kind")
@@ -59,8 +62,31 @@ internal sealed class TransactionEntityConfiguration : IEntityTypeConfiguration<
         builder.Property(t => t.UpdatedAt).HasColumnName("updated_at");
         builder.Property(t => t.UpdatedBy).HasColumnName("updated_by");
 
+        builder.HasOne<Account>()
+            .WithMany()
+            .HasForeignKey(t => t.AccountId)
+            .HasConstraintName("fk_fin008_account_id");
+
+        builder.HasOne<CardStatement>()
+            .WithMany()
+            .HasForeignKey(t => t.CardStatementId)
+            .HasConstraintName("fk_fin008_card_statement_id");
+
+        builder.HasOne<Card>()
+            .WithMany()
+            .HasForeignKey(t => t.CardId)
+            .HasConstraintName("fk_fin008_card_id");
+
+        builder.HasOne<CardStatement>()
+            .WithMany()
+            .HasForeignKey(t => t.PaidStatementId)
+            .HasConstraintName("fk_fin008_paid_statement_id");
+
         builder.HasIndex(t => new { t.UserId, t.OccurredOn }).HasDatabaseName("ix_fin008_user_occurred_on");
         builder.HasIndex(t => new { t.AccountId, t.Status, t.OccurredOn }).HasDatabaseName("ix_fin008_account_status_occurred_on");
+        builder.HasIndex(t => new { t.CardStatementId, t.Status, t.OccurredOn }).HasDatabaseName("ix_fin008_card_statement_status_occurred_on");
+        builder.HasIndex(t => t.PaidStatementId).HasDatabaseName("ix_fin008_paid_statement_id");
+        builder.HasIndex(t => new { t.CardId, t.OccurredOn }).HasDatabaseName("ix_fin008_card_id_occurred_on");
         builder.HasIndex(t => t.TransferGroupId).HasDatabaseName("ix_fin008_transfer_group_id");
     }
 }

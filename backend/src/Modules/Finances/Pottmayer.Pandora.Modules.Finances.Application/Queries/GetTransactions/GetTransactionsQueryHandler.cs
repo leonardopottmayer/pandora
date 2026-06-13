@@ -20,7 +20,7 @@ public sealed class GetTransactionsQueryHandler(IUnitOfWorkFactory factory)
         var skip = input.Skip < 0 ? 0 : input.Skip;
 
         var filter = new TransactionFilter(
-            input.AccountId, input.From, input.To, input.Kind, input.Status,
+            input.AccountId, null, input.From, input.To, input.Kind, input.Status,
             input.SystemCategoryId, input.UserCategoryId, input.Text, input.Origin, skip, take);
 
         var transactions = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>

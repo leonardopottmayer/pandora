@@ -57,7 +57,7 @@ public sealed class CreateAccountCommandHandler(IUnitOfWorkFactory factory, Time
             // truth, never a stored balance field — D1). Non-positive values are ignored here.
             if (input.OpeningBalance is > 0m)
             {
-                var opening = Transaction.Create(
+                var opening = Transaction.CreateAccountTransaction(
                     input.UserId, account.Id, TransactionKind.OpeningBalance, currency!,
                     input.OpeningBalance.Value, DateOnly.FromDateTime(now.UtcDateTime),
                     "Opening balance", null, null, null, null, post: true, timeProvider);
