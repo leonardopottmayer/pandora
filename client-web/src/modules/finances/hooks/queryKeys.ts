@@ -1,0 +1,47 @@
+import type { TransactionFilters } from '../models'
+
+// Fábrica central de query keys do módulo financeiro. Centralizar evita
+// divergências entre quem consulta e quem invalida no cache do TanStack Query.
+export const financeKeys = {
+  all: ['finances'] as const,
+
+  accounts: () => [...financeKeys.all, 'accounts'] as const,
+  accountList: (params: { includeArchived?: boolean; tags?: string[] } = {}) =>
+    [...financeKeys.accounts(), 'list', params] as const,
+  account: (id: string) => [...financeKeys.accounts(), 'detail', id] as const,
+  accountBalance: (id: string) => [...financeKeys.accounts(), 'balance', id] as const,
+  accountTransactions: (id: string, filters: TransactionFilters = {}) =>
+    [...financeKeys.accounts(), 'transactions', id, filters] as const,
+
+  transactions: () => [...financeKeys.all, 'transactions'] as const,
+  transactionList: (filters: TransactionFilters = {}) =>
+    [...financeKeys.transactions(), 'list', filters] as const,
+
+  cards: () => [...financeKeys.all, 'cards'] as const,
+  cardList: (params: { includeArchived?: boolean; tags?: string[] } = {}) =>
+    [...financeKeys.cards(), 'list', params] as const,
+  card: (id: string) => [...financeKeys.cards(), 'detail', id] as const,
+  cardAvailableLimit: (id: string) => [...financeKeys.cards(), 'available-limit', id] as const,
+  cardStatements: (id: string) => [...financeKeys.cards(), 'statements', id] as const,
+  cardInstallmentPlans: (id: string) => [...financeKeys.cards(), 'installment-plans', id] as const,
+
+  statements: () => [...financeKeys.all, 'statements'] as const,
+  statement: (id: string) => [...financeKeys.statements(), 'detail', id] as const,
+
+  installmentPlans: () => [...financeKeys.all, 'installment-plans'] as const,
+  installmentPlan: (id: string) => [...financeKeys.installmentPlans(), 'detail', id] as const,
+
+  categories: () => [...financeKeys.all, 'categories'] as const,
+  systemCategories: (params: { nature?: string; includeInactive?: boolean } = {}) =>
+    [...financeKeys.categories(), 'system', params] as const,
+  userCategories: (params: { includeInactive?: boolean } = {}) =>
+    [...financeKeys.categories(), 'user', params] as const,
+
+  tags: () => [...financeKeys.all, 'tags'] as const,
+  tagList: () => [...financeKeys.tags(), 'list'] as const,
+  tagLinks: (id: string) => [...financeKeys.tags(), 'links', id] as const,
+
+  audit: () => [...financeKeys.all, 'audit'] as const,
+  auditTimeline: (params: object = {}) =>
+    [...financeKeys.audit(), 'timeline', params] as const,
+}

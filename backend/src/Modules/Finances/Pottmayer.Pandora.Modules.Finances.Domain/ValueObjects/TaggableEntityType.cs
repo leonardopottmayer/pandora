@@ -12,10 +12,10 @@ public sealed class TaggableEntityType : IDomainValue<TaggableEntityType>
 {
     public static readonly TaggableEntityType Account = new("account");
     public static readonly TaggableEntityType Card = new("card");
-    public static readonly TaggableEntityType CardStatement = new("card_statement");
+    public static readonly TaggableEntityType CardStatement = new("card-statement");
     public static readonly TaggableEntityType Transaction = new("transaction");
-    public static readonly TaggableEntityType RecurringTransaction = new("recurring_transaction");
-    public static readonly TaggableEntityType PendingTransaction = new("pending_transaction");
+    public static readonly TaggableEntityType RecurringTransaction = new("recurring-transaction");
+    public static readonly TaggableEntityType PendingTransaction = new("pending-transaction");
 
     private static readonly Dictionary<string, TaggableEntityType> All = new()
     {

@@ -6,9 +6,9 @@ import enUS from 'antd/locale/en_US'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { queryClient } from '@/lib/queryClient'
-import { AuthProvider } from '@/features/identity/context/AuthProvider'
-import { PreferencesProvider } from '@/features/identity/context/PreferencesProvider'
-import { usePreferences } from '@/features/identity/context/preferences-context'
+import { AuthProvider } from '@/modules/identity/context/AuthProvider'
+import { PreferencesProvider } from '@/modules/identity/context/PreferencesProvider'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 
 function ThemedApp({ children }: { children: ReactNode }) {
   const { isDark, language } = usePreferences()

@@ -201,6 +201,23 @@ public sealed class TransactionsTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Text_filter_matches_the_rendered_system_description()
+    {
+        await AuthAsync("tx-text-system");
+        // The opening-balance entry is system-described: its stored `description` is empty and the
+        // displayed text ("Opening balance") is only rendered at read time.
+        var account = await CreateAccountAsync(new { name = "Wallet", type = "cash", currency = "BRL", displayOrder = 0, openingBalance = 100m });
+        await CreateTxAsync(new { accountId = account, kind = "expense", amount = 20m, occurredOn = Today, description = "Lunch" });
+
+        var byText = await ListTxAsync($"?accountId={account}&text=opening");
+        Assert.Single(byText);
+        Assert.Equal("Opening balance", byText[0].Description);
+
+        var noMatch = await ListTxAsync($"?accountId={account}&text=nonexistent");
+        Assert.Empty(noMatch);
+    }
+
+    [Fact]
     public async Task Archived_account_rejects_new_transactions()
     {
         await AuthAsync("tx-archived");

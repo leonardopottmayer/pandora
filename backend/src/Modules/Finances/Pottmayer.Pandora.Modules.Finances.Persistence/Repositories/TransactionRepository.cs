@@ -10,6 +10,14 @@ namespace Pottmayer.Pandora.Modules.Finances.Persistence.Repositories;
 public sealed class TransactionRepository(IDataContextAccessor accessor)
     : StandardRepository<Transaction, Guid>(accessor), ITransactionRepository
 {
+    /// <summary>
+    /// Cap applied when a text filter is active: system-described entries (e.g. "Saldo inicial",
+    /// "Pagamento da fatura ...") are stored with an empty <c>description</c> and only rendered at
+    /// read time, so they can't be matched in SQL. We widen the query to include all of them and let
+    /// the application layer re-check the rendered text, hence no DB-side paging in that case.
+    /// </summary>
+    private const int TextSearchScanLimit = 1000;
+
     public Task<Transaction?> FindByIdForUserAsync(Guid id, Guid userId, CancellationToken ct = default)
         => Queryable().FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId, ct);
 
@@ -47,9 +55,18 @@ public sealed class TransactionRepository(IDataContextAccessor accessor)
         if (!string.IsNullOrWhiteSpace(filter.Text))
         {
             var text = filter.Text.Trim().ToLower();
+            // System-described entries (SystemDescription != null) are included regardless of their
+            // (empty) raw description — the application layer re-checks the rendered text.
             query = query.Where(t =>
                 t.Description.ToLower().Contains(text) ||
-                (t.Payee != null && t.Payee.ToLower().Contains(text)));
+                (t.Payee != null && t.Payee.ToLower().Contains(text)) ||
+                t.SystemDescription != null);
+
+            return await query
+                .OrderByDescending(t => t.OccurredOn)
+                .ThenByDescending(t => t.Id)
+                .Take(TextSearchScanLimit)
+                .ToListAsync(ct);
         }
 
         return await query

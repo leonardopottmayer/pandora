@@ -5,6 +5,7 @@ using Pottmayer.Pandora.Modules.Finances.Application.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
@@ -28,6 +29,7 @@ public sealed class PayStatementCommandHandler(IUnitOfWorkFactory factory, TimeP
             var statements = ctx.AcquireRepository<ICardStatementRepository>();
             var accounts = ctx.AcquireRepository<IAccountRepository>();
             var transactions = ctx.AcquireRepository<ITransactionRepository>();
+            var categories = ctx.AcquireRepository<ISystemCategoryReader>();
 
             var statement = await statements.FindByIdForUserAsync(input.StatementId, input.UserId, token);
             if (statement is null)
@@ -46,6 +48,8 @@ public sealed class PayStatementCommandHandler(IUnitOfWorkFactory factory, TimeP
                 return Result<CardStatement>.Failure([StatementErrors.MissingFxRate]);
 
             var occurredOn = input.OccurredOn ?? today;
+            var hasUserDescription = !string.IsNullOrWhiteSpace(input.Description);
+            var category = await categories.GetByCodeAsync("credit-card-payment", token);
             var payment = Transaction.CreateStatementPayment(
                 input.UserId,
                 account.Id,
@@ -53,15 +57,30 @@ public sealed class PayStatementCommandHandler(IUnitOfWorkFactory factory, TimeP
                 account.Currency,
                 input.Amount,
                 occurredOn,
-                input.Description ?? $"Payment for statement {statement.ReferenceMonth}",
+                hasUserDescription ? input.Description! : "",
                 null,
                 input.Notes,
                 fxRate: input.FxRate,
-                timeProvider);
+                timeProvider,
+                systemCategoryId: category?.Id,
+                systemDescription: hasUserDescription ? null : SystemDescription.StatementPayment(statement.ReferenceMonth));
 
             await transactions.AddAsync(payment, token);
             statement.SyncAmounts(statement.TotalAmount, statement.PaidAmount + input.Amount, today, timeProvider);
             await statements.UpdateAsync(statement, token);
+
+            await ctx.RecordAsync(
+                input.UserId, input.UserId, "transaction", payment.Id, "transaction.created", now,
+                new
+                {
+                    accountId = payment.AccountId,
+                    kind = payment.Kind.Value,
+                    status = payment.Status.Value,
+                    amount = payment.Amount,
+                    currency = payment.Currency.Value,
+                    occurredOn = payment.OccurredOn
+                },
+                ct: token);
 
             await ctx.RecordAsync(input.UserId, input.UserId, "statement", statement.Id, "statement.payment-received", now, new
             {

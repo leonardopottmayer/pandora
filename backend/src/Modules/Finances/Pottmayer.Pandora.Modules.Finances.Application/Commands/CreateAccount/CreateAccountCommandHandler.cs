@@ -60,7 +60,8 @@ public sealed class CreateAccountCommandHandler(IUnitOfWorkFactory factory, Time
                 var opening = Transaction.CreateAccountTransaction(
                     input.UserId, account.Id, TransactionKind.OpeningBalance, currency!,
                     input.OpeningBalance.Value, DateOnly.FromDateTime(now.UtcDateTime),
-                    "Opening balance", null, null, null, null, post: true, timeProvider);
+                    description: "", null, null, null, null, post: true, timeProvider,
+                    systemDescription: SystemDescription.OpeningBalance());
 
                 await ctx.AcquireRepository<ITransactionRepository>().AddAsync(opening, token);
 

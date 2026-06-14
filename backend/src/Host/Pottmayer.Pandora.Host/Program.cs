@@ -43,6 +43,7 @@ builder.Services.AddFinancesApplication();
 // Web HTTP
 builder.Services.AddTarsLocalization();
 builder.Services.AddPandoraLocalization();
+builder.Services.AddFinancesLocalization();
 builder.Services.AddTarsProblemDetails();
 
 // Presentation

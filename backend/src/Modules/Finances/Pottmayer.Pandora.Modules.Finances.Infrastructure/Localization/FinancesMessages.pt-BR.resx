@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="transaction.opening-balance" xml:space="preserve">
+    <value>Saldo inicial</value>
+  </data>
+  <data name="transaction.statement-payment" xml:space="preserve">
+    <value>Pagamento da fatura {0}</value>
+  </data>
+  <data name="category.housing" xml:space="preserve">
+    <value>Moradia</value>
+  </data>
+  <data name="category.rent" xml:space="preserve">
+    <value>Aluguel</value>
+  </data>
+  <data name="category.mortgage" xml:space="preserve">
+    <value>Financiamento imobiliário</value>
+  </data>
+  <data name="category.utilities" xml:space="preserve">
+    <value>Contas de consumo</value>
+  </data>
+  <data name="category.condo-fee" xml:space="preserve">
+    <value>Condomínio</value>
+  </data>
+  <data name="category.home-maintenance" xml:space="preserve">
+    <value>Manutenção da casa</value>
+  </data>
+  <data name="category.property-tax" xml:space="preserve">
+    <value>IPTU</value>
+  </data>
+  <data name="category.home-insurance" xml:space="preserve">
+    <value>Seguro residencial</value>
+  </data>
+  <data name="category.other-housing" xml:space="preserve">
+    <value>Outros (moradia)</value>
+  </data>
+  <data name="category.food" xml:space="preserve">
+    <value>Alimentação</value>
+  </data>
+  <data name="category.groceries" xml:space="preserve">
+    <value>Supermercado</value>
+  </data>
+  <data name="category.restaurants" xml:space="preserve">
+    <value>Restaurantes</value>
+  </data>
+  <data name="category.food-delivery" xml:space="preserve">
+    <value>Delivery</value>
+  </data>
+  <data name="category.coffee-snacks" xml:space="preserve">
+    <value>Café e lanches</value>
+  </data>
+  <data name="category.other-food" xml:space="preserve">
+    <value>Outros (alimentação)</value>
+  </data>
+  <data name="category.transport" xml:space="preserve">
+    <value>Transporte</value>
+  </data>
+  <data name="category.fuel" xml:space="preserve">
+    <value>Combustível</value>
+  </data>
+  <data name="category.public-transport" xml:space="preserve">
+    <value>Transporte público</value>
+  </data>
+  <data name="category.ride-hailing" xml:space="preserve">
+    <value>Aplicativos de transporte</value>
+  </data>
+  <data name="category.parking-tolls" xml:space="preserve">
+    <value>Estacionamento e pedágios</value>
+  </data>
+  <data name="category.vehicle-maintenance" xml:space="preserve">
+    <value>Manutenção do veículo</value>
+  </data>
+  <data name="category.vehicle-insurance" xml:space="preserve">
+    <value>Seguro do veículo</value>
+  </data>
+  <data name="category.car-payment" xml:space="preserve">
+    <value>Prestação do carro</value>
+  </data>
+  <data name="category.other-transport" xml:space="preserve">
+    <value>Outros (transporte)</value>
+  </data>
+  <data name="category.health" xml:space="preserve">
+    <value>Saúde</value>
+  </data>
+  <data name="category.health-insurance" xml:space="preserve">
+    <value>Plano de saúde</value>
+  </data>
+  <data name="category.doctor" xml:space="preserve">
+    <value>Médico</value>
+  </data>
+  <data name="category.pharmacy" xml:space="preserve">
+    <value>Farmácia</value>
+  </data>
+  <data name="category.dentist" xml:space="preserve">
+    <value>Dentista</value>
+  </data>
+  <data name="category.therapy" xml:space="preserve">
+    <value>Terapia</value>
+  </data>
+  <data name="category.gym-fitness" xml:space="preserve">
+    <value>Academia e fitness</value>
+  </data>
+  <data name="category.other-health" xml:space="preserve">
+    <value>Outros (saúde)</value>
+  </data>
+  <data name="category.education" xml:space="preserve">
+    <value>Educação</value>
+  </data>
+  <data name="category.tuition" xml:space="preserve">
+    <value>Mensalidade</value>
+  </data>
+  <data name="category.courses" xml:space="preserve">
+    <value>Cursos</value>
+  </data>
+  <data name="category.books-materials" xml:space="preserve">
+    <value>Livros e materiais</value>
+  </data>
+  <data name="category.school-supplies" xml:space="preserve">
+    <value>Material escolar</value>
+  </data>
+  <data name="category.other-education" xml:space="preserve">
+    <value>Outros (educação)</value>
+  </data>
+  <data name="category.personal-care" xml:space="preserve">
+    <value>Cuidados pessoais</value>
+  </data>
+  <data name="category.haircut-beauty" xml:space="preserve">
+    <value>Cabelo e beleza</value>
+  </data>
+  <data name="category.cosmetics" xml:space="preserve">
+    <value>Cosméticos</value>
+  </data>
+  <data name="category.spa-wellness" xml:space="preserve">
+    <value>Spa e bem-estar</value>
+  </data>
+  <data name="category.other-personal-care" xml:space="preserve">
+    <value>Outros (cuidados pessoais)</value>
+  </data>
+  <data name="category.family" xml:space="preserve">
+    <value>Família</value>
+  </data>
+  <data name="category.childcare" xml:space="preserve">
+    <value>Creche/babá</value>
+  </data>
+  <data name="category.child-education" xml:space="preserve">
+    <value>Educação dos filhos</value>
+  </data>
+  <data name="category.allowance" xml:space="preserve">
+    <value>Mesada</value>
+  </data>
+  <data name="category.elder-care" xml:space="preserve">
+    <value>Cuidado com idosos</value>
+  </data>
+  <data name="category.other-family" xml:space="preserve">
+    <value>Outros (família)</value>
+  </data>
+  <data name="category.shopping" xml:space="preserve">
+    <value>Compras</value>
+  </data>
+  <data name="category.clothing" xml:space="preserve">
+    <value>Roupas</value>
+  </data>
+  <data name="category.electronics" xml:space="preserve">
+    <value>Eletrônicos</value>
+  </data>
+  <data name="category.home-goods" xml:space="preserve">
+    <value>Utilidades domésticas</value>
+  </data>
+  <data name="category.gifts" xml:space="preserve">
+    <value>Presentes</value>
+  </data>
+  <data name="category.hobbies" xml:space="preserve">
+    <value>Hobbies</value>
+  </data>
+  <data name="category.other-shopping" xml:space="preserve">
+    <value>Outros (compras)</value>
+  </data>
+  <data name="category.entertainment" xml:space="preserve">
+    <value>Entretenimento</value>
+  </data>
+  <data name="category.streaming" xml:space="preserve">
+    <value>Streaming</value>
+  </data>
+  <data name="category.movies-shows" xml:space="preserve">
+    <value>Filmes e shows</value>
+  </data>
+  <data name="category.games" xml:space="preserve">
+    <value>Jogos</value>
+  </data>
+  <data name="category.events-tickets" xml:space="preserve">
+    <value>Eventos e ingressos</value>
+  </data>
+  <data name="category.bars-nightlife" xml:space="preserve">
+    <value>Bares e vida noturna</value>
+  </data>
+  <data name="category.other-entertainment" xml:space="preserve">
+    <value>Outros (entretenimento)</value>
+  </data>
+  <data name="category.travel" xml:space="preserve">
+    <value>Viagens</value>
+  </data>
+  <data name="category.flights" xml:space="preserve">
+    <value>Passagens aéreas</value>
+  </data>
+  <data name="category.lodging" xml:space="preserve">
+    <value>Hospedagem</value>
+  </data>
+  <data name="category.travel-transport" xml:space="preserve">
+    <value>Transporte em viagem</value>
+  </data>
+  <data name="category.travel-food" xml:space="preserve">
+    <value>Alimentação em viagem</value>
+  </data>
+  <data name="category.travel-activities" xml:space="preserve">
+    <value>Atividades em viagem</value>
+  </data>
+  <data name="category.other-travel" xml:space="preserve">
+    <value>Outros (viagens)</value>
+  </data>
+  <data name="category.financial-expenses" xml:space="preserve">
+    <value>Despesas financeiras</value>
+  </data>
+  <data name="category.bank-fees" xml:space="preserve">
+    <value>Tarifas bancárias</value>
+  </data>
+  <data name="category.interest-paid" xml:space="preserve">
+    <value>Juros pagos</value>
+  </data>
+  <data name="category.taxes" xml:space="preserve">
+    <value>Impostos</value>
+  </data>
+  <data name="category.fines" xml:space="preserve">
+    <value>Multas</value>
+  </data>
+  <data name="category.loan-payment" xml:space="preserve">
+    <value>Pagamento de empréstimo</value>
+  </data>
+  <data name="category.credit-card-fee" xml:space="preserve">
+    <value>Anuidade do cartão</value>
+  </data>
+  <data name="category.credit-card-payment" xml:space="preserve">
+    <value>Pagamento de fatura do cartão</value>
+  </data>
+  <data name="category.other-financial" xml:space="preserve">
+    <value>Outros (financeiro)</value>
+  </data>
+  <data name="category.subscriptions" xml:space="preserve">
+    <value>Assinaturas</value>
+  </data>
+  <data name="category.software" xml:space="preserve">
+    <value>Software</value>
+  </data>
+  <data name="category.cloud-storage" xml:space="preserve">
+    <value>Armazenamento em nuvem</value>
+  </data>
+  <data name="category.news-media" xml:space="preserve">
+    <value>Notícias e mídia</value>
+  </data>
+  <data name="category.memberships" xml:space="preserve">
+    <value>Mensalidades/associações</value>
+  </data>
+  <data name="category.other-subscriptions" xml:space="preserve">
+    <value>Outros (assinaturas)</value>
+  </data>
+  <data name="category.work-expenses" xml:space="preserve">
+    <value>Despesas de trabalho</value>
+  </data>
+  <data name="category.office-supplies" xml:space="preserve">
+    <value>Material de escritório</value>
+  </data>
+  <data name="category.business-travel" xml:space="preserve">
+    <value>Viagem a trabalho</value>
+  </data>
+  <data name="category.professional-services" xml:space="preserve">
+    <value>Serviços profissionais</value>
+  </data>
+  <data name="category.equipment" xml:space="preserve">
+    <value>Equipamentos</value>
+  </data>
+  <data name="category.other-work" xml:space="preserve">
+    <value>Outros (trabalho)</value>
+  </data>
+  <data name="category.pets" xml:space="preserve">
+    <value>Pets</value>
+  </data>
+  <data name="category.pet-food" xml:space="preserve">
+    <value>Ração</value>
+  </data>
+  <data name="category.vet" xml:space="preserve">
+    <value>Veterinário</value>
+  </data>
+  <data name="category.pet-supplies" xml:space="preserve">
+    <value>Acessórios para pet</value>
+  </data>
+  <data name="category.pet-grooming" xml:space="preserve">
+    <value>Banho e tosa</value>
+  </data>
+  <data name="category.other-pets" xml:space="preserve">
+    <value>Outros (pets)</value>
+  </data>
+  <data name="category.misc-expense" xml:space="preserve">
+    <value>Diversos</value>
+  </data>
+  <data name="category.donations" xml:space="preserve">
+    <value>Doações</value>
+  </data>
+  <data name="category.cash-withdrawal" xml:space="preserve">
+    <value>Saque em dinheiro</value>
+  </data>
+  <data name="category.other-misc-expense" xml:space="preserve">
+    <value>Outros (diversos)</value>
+  </data>
+  <data name="category.primary-income" xml:space="preserve">
+    <value>Renda principal</value>
+  </data>
+  <data name="category.salary" xml:space="preserve">
+    <value>Salário</value>
+  </data>
+  <data name="category.bonus" xml:space="preserve">
+    <value>Bônus</value>
+  </data>
+  <data name="category.overtime" xml:space="preserve">
+    <value>Horas extras</value>
+  </data>
+  <data name="category.commission" xml:space="preserve">
+    <value>Comissão</value>
+  </data>
+  <data name="category.other-primary-income" xml:space="preserve">
+    <value>Outros (renda principal)</value>
+  </data>
+  <data name="category.investment-income" xml:space="preserve">
+    <value>Renda de investimentos</value>
+  </data>
+  <data name="category.dividends" xml:space="preserve">
+    <value>Dividendos</value>
+  </data>
+  <data name="category.interest-income" xml:space="preserve">
+    <value>Juros recebidos</value>
+  </data>
+  <data name="category.capital-gains" xml:space="preserve">
+    <value>Ganhos de capital</value>
+  </data>
+  <data name="category.rental-income" xml:space="preserve">
+    <value>Renda de aluguel</value>
+  </data>
+  <data name="category.crypto-gains" xml:space="preserve">
+    <value>Ganhos com cripto</value>
+  </data>
+  <data name="category.other-investment-income" xml:space="preserve">
+    <value>Outros (investimentos)</value>
+  </data>
+  <data name="category.sales-income" xml:space="preserve">
+    <value>Renda de vendas</value>
+  </data>
+  <data name="category.product-sales" xml:space="preserve">
+    <value>Venda de produtos</value>
+  </data>
+  <data name="category.service-income" xml:space="preserve">
+    <value>Renda de serviços</value>
+  </data>
+  <data name="category.freelance" xml:space="preserve">
+    <value>Freelance</value>
+  </data>
+  <data name="category.other-sales-income" xml:space="preserve">
+    <value>Outros (vendas)</value>
+  </data>
+  <data name="category.support-income" xml:space="preserve">
+    <value>Renda de apoio</value>
+  </data>
+  <data name="category.gifts-received" xml:space="preserve">
+    <value>Presentes recebidos</value>
+  </data>
+  <data name="category.government-benefit" xml:space="preserve">
+    <value>Benefício do governo</value>
+  </data>
+  <data name="category.pension" xml:space="preserve">
+    <value>Aposentadoria</value>
+  </data>
+  <data name="category.alimony" xml:space="preserve">
+    <value>Pensão alimentícia</value>
+  </data>
+  <data name="category.other-support-income" xml:space="preserve">
+    <value>Outros (apoio)</value>
+  </data>
+  <data name="category.misc-income" xml:space="preserve">
+    <value>Renda diversa</value>
+  </data>
+  <data name="category.refunds" xml:space="preserve">
+    <value>Reembolsos</value>
+  </data>
+  <data name="category.cashback" xml:space="preserve">
+    <value>Cashback</value>
+  </data>
+  <data name="category.reimbursements" xml:space="preserve">
+    <value>Ressarcimentos</value>
+  </data>
+  <data name="category.other-misc-income" xml:space="preserve">
+    <value>Outros (renda diversa)</value>
+  </data>
+</root>

@@ -38,6 +38,8 @@ internal static class InstallmentPlanAssembler
             else remaining += tx.Amount;
         }
 
+        var first = installments.FirstOrDefault();
+
         return new InstallmentPlanDto(
             plan.Id,
             plan.CardId,
@@ -49,6 +51,8 @@ internal static class InstallmentPlanAssembler
             plan.FirstReferenceMonth,
             remaining,
             paid,
+            first?.SystemCategoryId,
+            first?.UserCategoryId,
             items);
     }
 }

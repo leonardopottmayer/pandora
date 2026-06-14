@@ -1,17 +1,26 @@
 import { createBrowserRouter } from 'react-router-dom'
-import { ProtectedRoute, PublicOnlyRoute } from '@/features/identity/components/RouteGuards'
-import { LoginPage } from '@/features/identity/pages/LoginPage'
-import { RegisterPage } from '@/features/identity/pages/RegisterPage'
-import { MfaChallengePage } from '@/features/identity/pages/MfaChallengePage'
-import { ForgotPasswordPage } from '@/features/identity/pages/ForgotPasswordPage'
-import { ResetPasswordPage } from '@/features/identity/pages/ResetPasswordPage'
-import { ActivateAccountPage } from '@/features/identity/pages/ActivateAccountPage'
-import { ProfilePage } from '@/features/identity/pages/ProfilePage'
-import { ChangePasswordPage } from '@/features/identity/pages/ChangePasswordPage'
-import { SecurityPage } from '@/features/identity/pages/SecurityPage'
-import { SettingsPage } from '@/features/identity/pages/SettingsPage'
+import { ProtectedRoute, PublicOnlyRoute } from '@/modules/identity/components/RouteGuards'
+import { LoginPage } from '@/modules/identity/pages/LoginPage'
+import { RegisterPage } from '@/modules/identity/pages/RegisterPage'
+import { MfaChallengePage } from '@/modules/identity/pages/MfaChallengePage'
+import { ForgotPasswordPage } from '@/modules/identity/pages/ForgotPasswordPage'
+import { ResetPasswordPage } from '@/modules/identity/pages/ResetPasswordPage'
+import { ActivateAccountPage } from '@/modules/identity/pages/ActivateAccountPage'
+import { ProfilePage } from '@/modules/identity/pages/ProfilePage'
+import { ChangePasswordPage } from '@/modules/identity/pages/ChangePasswordPage'
+import { SecurityPage } from '@/modules/identity/pages/SecurityPage'
+import { SettingsPage } from '@/modules/identity/pages/SettingsPage'
 import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { AccountsListPage } from '@/modules/finances/pages/accounts/AccountsListPage'
+import { AccountDetailPage } from '@/modules/finances/pages/accounts/AccountDetailPage'
+import { CategoriesListPage } from '@/modules/finances/pages/categories/CategoriesListPage'
+import { TagsListPage } from '@/modules/finances/pages/tags/TagsListPage'
+import { TransactionsListPage } from '@/modules/finances/pages/transactions/TransactionsListPage'
+import { CardsListPage } from '@/modules/finances/pages/cards/CardsListPage'
+import { CardDetailPage } from '@/modules/finances/pages/cards/CardDetailPage'
+import { StatementDetailPage } from '@/modules/finances/pages/statements/StatementDetailPage'
+import { AuditPage } from '@/modules/finances/pages/audit/AuditPage'
 
 export const router = createBrowserRouter([
   // Public (redirect if already authenticated)
@@ -33,6 +42,17 @@ export const router = createBrowserRouter([
       { path: 'account/security', element: <SecurityPage /> },
       { path: 'account/password', element: <ChangePasswordPage /> },
       { path: 'settings', element: <SettingsPage /> },
+
+      // Finances (telas reais substituem o placeholder conforme cada area e implementada)
+      { path: 'finances/accounts', element: <AccountsListPage /> },
+      { path: 'finances/accounts/:id', element: <AccountDetailPage /> },
+      { path: 'finances/transactions', element: <TransactionsListPage /> },
+      { path: 'finances/cards', element: <CardsListPage /> },
+      { path: 'finances/cards/:id', element: <CardDetailPage /> },
+      { path: 'finances/statements/:id', element: <StatementDetailPage /> },
+      { path: 'finances/categories', element: <CategoriesListPage /> },
+      { path: 'finances/tags', element: <TagsListPage /> },
+      { path: 'finances/audit', element: <AuditPage /> },
     ],
   },
 

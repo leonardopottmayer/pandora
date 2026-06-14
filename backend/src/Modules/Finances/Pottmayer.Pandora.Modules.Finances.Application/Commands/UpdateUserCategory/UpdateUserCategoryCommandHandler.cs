@@ -46,7 +46,7 @@ public sealed class UpdateUserCategoryCommandHandler(IUnitOfWorkFactory factory,
             await repo.UpdateAsync(category, token);
 
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "user_category", category.Id, "category.updated", now, diff, ct: token);
+                input.UserId, input.UserId, "user-category", category.Id, "category.updated", now, diff, ct: token);
 
             return Result<UserCategory>.Success(category);
         }, cancellationToken: ct);

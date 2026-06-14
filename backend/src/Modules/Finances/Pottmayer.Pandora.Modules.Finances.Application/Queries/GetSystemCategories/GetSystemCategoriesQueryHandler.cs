@@ -3,12 +3,13 @@ using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 using Pottmayer.Tars.Core.Cqrs.Queries;
+using Pottmayer.Tars.Core.Localization.Abstractions;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Queries.GetSystemCategories;
 
-public sealed class GetSystemCategoriesQueryHandler(IUnitOfWorkFactory factory)
+public sealed class GetSystemCategoriesQueryHandler(IUnitOfWorkFactory factory, IMessageProvider messages)
     : QueryHandlerBase<GetSystemCategoriesQuery, IReadOnlyList<SystemCategoryDto>>
 {
     protected override async Task<Result<IReadOnlyList<SystemCategoryDto>>> HandleAsync(
@@ -27,6 +28,11 @@ public sealed class GetSystemCategoriesQueryHandler(IUnitOfWorkFactory factory)
             .GroupBy(c => c.ParentCategoryId!.Value)
             .ToDictionary(g => g.Key, g => (IReadOnlyList<SystemCategory>)[.. g]);
 
+        // Display name is localized by code in the current culture; the seeded English name is the fallback.
+        SystemCategoryDto Map(SystemCategory c, IReadOnlyList<SystemCategoryDto> children) =>
+            new(c.Id, c.Code, messages.Get($"category.{c.Code}", c.Name), c.Nature.Value,
+                c.Color, c.Icon, c.DisplayOrder, c.IsOther, c.IsActive, children);
+
         IReadOnlyList<SystemCategoryDto> tree =
         [
             .. all
@@ -34,9 +40,9 @@ public sealed class GetSystemCategoriesQueryHandler(IUnitOfWorkFactory factory)
                 .Select(parent =>
                 {
                     IReadOnlyList<SystemCategoryDto> children = childrenByParent.TryGetValue(parent.Id, out var kids)
-                        ? [.. kids.Select(k => SystemCategoryDto.From(k, []))]
+                        ? [.. kids.Select(k => Map(k, []))]
                         : [];
-                    return SystemCategoryDto.From(parent, children);
+                    return Map(parent, children);
                 })
         ];
 

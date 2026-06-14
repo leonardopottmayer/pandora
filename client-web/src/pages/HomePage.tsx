@@ -1,6 +1,6 @@
 import { Card, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { useAuth } from '@/features/identity/context/auth-context'
+import { useAuth } from '@/modules/identity/context/auth-context'
 
 export function HomePage() {
   const { t } = useTranslation()

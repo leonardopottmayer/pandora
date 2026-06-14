@@ -29,4 +29,7 @@ public sealed class SystemCategoryReader(IDataContextAccessor accessor)
             .ThenBy(c => c.Name)
             .ToListAsync(ct);
     }
+
+    public Task<SystemCategory?> GetByCodeAsync(string code, CancellationToken ct = default) =>
+        Queryable().FirstOrDefaultAsync(c => c.Code == code, ct);
 }

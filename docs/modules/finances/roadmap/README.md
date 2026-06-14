@@ -4,6 +4,8 @@ Sequência de fases para implementar o módulo descrito em [finances-module.md](
 
 Esta sequência granular é a ordem oficial de implementação; a seção 13 do documento principal agrupa as mesmas entregas em 4 macro-fases.
 
+> Hardening pós-06/07: ver [reversibilidade-e-consistencia.md](../reversibilidade-e-consistencia.md) — corrige sincronização de fatura no `void`, adiciona `unvoid` e rollback real (hard delete) para ações desfeitas a tempo.
+
 | Fase | Arquivo | Entrega | Depende de |
 |---|---|---|---|
 | 01 | [01-criacao-do-modulo.md](01-criacao-do-modulo.md) | Scaffolding do módulo, schema `finances`, trilha de auditoria (fin016) | — |

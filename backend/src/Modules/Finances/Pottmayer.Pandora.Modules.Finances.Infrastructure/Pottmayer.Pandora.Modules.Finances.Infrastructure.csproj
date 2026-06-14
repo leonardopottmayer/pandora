@@ -10,6 +10,8 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Finances.Abstractions/Pottmayer.Pandora.Modules.Finances.Abstractions.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Finances.Application/Pottmayer.Pandora.Modules.Finances.Application.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Finances.Domain/Pottmayer.Pandora.Modules.Finances.Domain.csproj" />
+    <!-- Localization: module owns its display resources (category names, system descriptions) -->
+    <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.4" />
     <!-- Hosting / options / logging for background jobs added in later phases -->
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.2" />

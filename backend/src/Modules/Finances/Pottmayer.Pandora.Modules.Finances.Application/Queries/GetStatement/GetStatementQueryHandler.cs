@@ -3,12 +3,13 @@ using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 using Pottmayer.Tars.Core.Cqrs.Queries;
+using Pottmayer.Tars.Core.Localization.Abstractions;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Queries.GetStatement;
 
-public sealed class GetStatementQueryHandler(IUnitOfWorkFactory factory)
+public sealed class GetStatementQueryHandler(IUnitOfWorkFactory factory, IMessageProvider messages)
     : QueryHandlerBase<GetStatementQuery, CardStatementDetailDto>
 {
     protected override async Task<Result<CardStatementDetailDto>> HandleAsync(GetStatementQuery request, CancellationToken ct)
@@ -22,7 +23,7 @@ public sealed class GetStatementQueryHandler(IUnitOfWorkFactory factory)
                 return Result<CardStatementDetailDto>.Failure([StatementErrors.NotFound]);
 
             var transactions = await ctx.AcquireRepository<ITransactionRepository>().GetByStatementAsync(statement.Id, input.UserId, token);
-            var dto = new CardStatementDetailDto(CardStatementDto.From(statement), [.. transactions.Select(TransactionDto.From)]);
+            var dto = new CardStatementDetailDto(CardStatementDto.From(statement), [.. transactions.Select(t => TransactionDto.From(t, messages))]);
             return Result<CardStatementDetailDto>.Success(dto);
         }, cancellationToken: ct);
 

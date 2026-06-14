@@ -48,10 +48,10 @@ public sealed class TagTests
     [Theory]
     [InlineData("account", true)]
     [InlineData("card", true)]
-    [InlineData("card_statement", true)]
+    [InlineData("card-statement", true)]
     [InlineData("transaction", true)]
-    [InlineData("recurring_transaction", true)]   // valid value now; targets arrive in phase 08
-    [InlineData("pending_transaction", true)]
+    [InlineData("recurring-transaction", true)]   // valid value now; targets arrive in phase 08
+    [InlineData("pending-transaction", true)]
     [InlineData("budget", false)]
     [InlineData("", false)]
     [InlineData(null, false)]

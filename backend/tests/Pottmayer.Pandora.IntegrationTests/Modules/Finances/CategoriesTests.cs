@@ -139,7 +139,7 @@ public sealed class CategoriesTests : IAsyncLifetime
         await _client.PostAsync($"{UserUrl}/{id}/deactivate", null);
 
         var audit = await _client.GetFromJsonAsync<AuditEnvelope>(
-            $"{AuditUrl}?entityType=user_category&entityId={id}");
+            $"{AuditUrl}?entityType=user-category&entityId={id}");
 
         var types = audit!.Data.Select(e => e.EventType).ToList();
         Assert.Contains("category.created", types);

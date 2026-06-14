@@ -3,12 +3,13 @@ using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Cqrs.Queries;
+using Pottmayer.Tars.Core.Localization.Abstractions;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Queries.GetTransactions;
 
-public sealed class GetTransactionsQueryHandler(IUnitOfWorkFactory factory)
+public sealed class GetTransactionsQueryHandler(IUnitOfWorkFactory factory, IMessageProvider messages)
     : QueryHandlerBase<GetTransactionsQuery, IReadOnlyList<TransactionDto>>
 {
     private const int MaxTake = 200;
@@ -39,7 +40,22 @@ public sealed class GetTransactionsQueryHandler(IUnitOfWorkFactory factory)
             return await repo.QueryAsync(input.UserId, filter, token);
         }, cancellationToken: ct);
 
-        IReadOnlyList<TransactionDto> dtos = [.. transactions.Select(TransactionDto.From)];
-        return Ok(dtos);
+        IEnumerable<TransactionDto> dtos = transactions.Select(t => TransactionDto.From(t, messages));
+
+        if (!string.IsNullOrWhiteSpace(input.Text))
+        {
+            // The repository couldn't filter/page system-described entries (e.g. "Saldo inicial",
+            // "Pagamento da fatura ...") in SQL since their text is only rendered here — re-check the
+            // rendered description and apply paging now that the set is final.
+            var text = input.Text.Trim();
+            dtos = dtos
+                .Where(d =>
+                    d.Description.Contains(text, StringComparison.OrdinalIgnoreCase) ||
+                    (d.Payee?.Contains(text, StringComparison.OrdinalIgnoreCase) ?? false))
+                .Skip(skip)
+                .Take(take);
+        }
+
+        return Ok((IReadOnlyList<TransactionDto>)[.. dtos]);
     }
 }

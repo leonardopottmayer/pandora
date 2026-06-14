@@ -13,8 +13,8 @@ import {
   BulbOutlined,
   BulbFilled,
 } from '@ant-design/icons'
-import { useAuth } from '@/features/identity/context/auth-context'
-import { usePreferences } from '@/features/identity/context/preferences-context'
+import { useAuth } from '@/modules/identity/context/auth-context'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { navigationModules } from './navigation'
 
 const { Header, Sider, Content } = Layout

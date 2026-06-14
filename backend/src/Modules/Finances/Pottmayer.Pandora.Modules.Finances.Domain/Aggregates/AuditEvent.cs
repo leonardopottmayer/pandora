@@ -14,7 +14,7 @@ public sealed class AuditEvent : AggregateRoot<Guid>
     /// <summary>Who performed the action; <c>null</c> for system/job actors.</summary>
     public Guid? ActorUserId { get; private set; }
 
-    /// <summary>Entity kind, e.g. <c>account</c>, <c>user_category</c>, <c>transaction</c>.</summary>
+    /// <summary>Entity kind, e.g. <c>account</c>, <c>user-category</c>, <c>transaction</c>.</summary>
     public string EntityType { get; private set; } = string.Empty;
 
     public Guid EntityId { get; private set; }

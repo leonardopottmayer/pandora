@@ -10,6 +10,7 @@ CREATE TABLE finances.fin008_transaction (
 	currency VARCHAR(10) NOT NULL,
 	occurred_on DATE NOT NULL,
 	description VARCHAR(255) NOT NULL,
+	system_description JSONB NULL,
 	payee VARCHAR(150) NULL,
 	notes TEXT NULL,
 	system_category_id uuid NULL,

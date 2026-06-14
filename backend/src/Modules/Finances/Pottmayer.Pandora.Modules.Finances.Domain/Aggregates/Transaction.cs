@@ -25,6 +25,15 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
     public CurrencyCode Currency { get; private set; } = null!;
     public DateOnly OccurredOn { get; private set; }
     public string Description { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Set only for system-defined entries (opening balance, statement payment). When present,
+    /// <see cref="Description"/> is empty and the display text is rendered from this descriptor at
+    /// read time. User-entered transactions keep their text in <see cref="Description"/> and leave
+    /// this null.
+    /// </summary>
+    public SystemDescription? SystemDescription { get; private set; }
+
     public string? Payee { get; private set; }
     public string? Notes { get; private set; }
     public Guid? SystemCategoryId { get; private set; }
@@ -69,7 +78,8 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
         Guid? systemCategoryId,
         Guid? userCategoryId,
         bool post,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        SystemDescription? systemDescription = null)
     {
         var now = timeProvider.GetUtcNow();
         return new Transaction
@@ -83,6 +93,7 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
             Currency = currency,
             OccurredOn = occurredOn,
             Description = description.Trim(),
+            SystemDescription = systemDescription,
             Payee = payee,
             Notes = notes,
             SystemCategoryId = systemCategoryId,
@@ -184,7 +195,9 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
         string? payee,
         string? notes,
         decimal? fxRate,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        Guid? systemCategoryId = null,
+        SystemDescription? systemDescription = null)
     {
         var now = timeProvider.GetUtcNow();
         return new Transaction
@@ -199,8 +212,10 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
             Currency = currency,
             OccurredOn = occurredOn,
             Description = description.Trim(),
+            SystemDescription = systemDescription,
             Payee = payee,
             Notes = notes,
+            SystemCategoryId = systemCategoryId,
             FxRate = fxRate,
             PostedAt = now,
             CreatedAt = now

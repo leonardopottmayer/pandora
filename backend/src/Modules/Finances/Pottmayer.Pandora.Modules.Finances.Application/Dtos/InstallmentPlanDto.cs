@@ -21,4 +21,6 @@ public sealed record InstallmentPlanDto(
     string FirstReferenceMonth,
     decimal RemainingAmount,
     int PaidInstallments,
+    Guid? SystemCategoryId,
+    Guid? UserCategoryId,
     IReadOnlyList<InstallmentItemDto> Installments);

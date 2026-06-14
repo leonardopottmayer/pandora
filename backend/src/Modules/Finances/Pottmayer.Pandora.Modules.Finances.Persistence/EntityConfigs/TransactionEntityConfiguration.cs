@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Pottmayer.Pandora.Modules.Finances.Abstractions;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
@@ -8,6 +10,22 @@ namespace Pottmayer.Pandora.Modules.Finances.Persistence.EntityConfigs;
 
 internal sealed class TransactionEntityConfiguration : IEntityTypeConfiguration<Transaction>
 {
+    private sealed record SystemDescriptionJson(string Key, IReadOnlyList<string> Args);
+
+    private static string Serialize(SystemDescription v) =>
+        JsonSerializer.Serialize(new SystemDescriptionJson(v.Key, v.Args));
+
+    private static SystemDescription Deserialize(string json)
+    {
+        var dto = JsonSerializer.Deserialize<SystemDescriptionJson>(json);
+        return SystemDescription.Create(dto!.Key, dto.Args);
+    }
+
+    private static readonly ValueComparer<SystemDescription?> SystemDescriptionComparer = new(
+        (a, b) => (a == null && b == null) || (a != null && a.Equals(b)),
+        v => v == null ? 0 : v.GetHashCode(),
+        v => v);
+
     public void Configure(EntityTypeBuilder<Transaction> builder)
     {
         builder.ToTable("fin008_transaction", FinancesModule.Schema);
@@ -43,6 +61,12 @@ internal sealed class TransactionEntityConfiguration : IEntityTypeConfiguration<
 
         builder.Property(t => t.OccurredOn).HasColumnName("occurred_on").IsRequired();
         builder.Property(t => t.Description).HasColumnName("description").HasMaxLength(255).IsRequired();
+
+        // System-defined descriptor (key + args) persisted as jsonb; null for user-entered text.
+        builder.Property(t => t.SystemDescription)
+               .HasColumnName("system_description")
+               .HasColumnType("jsonb")
+               .HasConversion(v => Serialize(v!), v => Deserialize(v), SystemDescriptionComparer);
         builder.Property(t => t.Payee).HasColumnName("payee").HasMaxLength(150);
         builder.Property(t => t.Notes).HasColumnName("notes");
         builder.Property(t => t.SystemCategoryId).HasColumnName("system_category_id");

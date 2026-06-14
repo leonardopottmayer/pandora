@@ -54,7 +54,7 @@ public sealed class CreateUserCategoryCommandHandler(IUnitOfWorkFactory factory,
             await repo.AddAsync(category, token);
 
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "user_category", category.Id, "category.created", now,
+                input.UserId, input.UserId, "user-category", category.Id, "category.created", now,
                 new
                 {
                     name = category.Name,

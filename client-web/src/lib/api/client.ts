@@ -96,28 +96,39 @@ apiClient.interceptors.response.use(
     return response
   },
   async (error: AxiosError) => {
-    // 4xx/5xx errors with envelope: reject with ApiResponseError (friendly message).
+    const originalRequest = error.config as (typeof error.config & { _retry?: boolean }) | undefined
+    const isAuthRoute = (originalRequest?.url ?? '').includes('/identity/auth/')
+
+    // 401 on an authenticated request: refresh the token once, then replay.
+    // This must run BEFORE the envelope mapping below — the backend returns a
+    // Tars error envelope on 401, so converting it here first would swallow the
+    // retry. Skipped on auth routes (e.g. a bad-credentials sign-in) and when
+    // there is no refresh token to use.
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !isAuthRoute &&
+      getRefreshToken()
+    ) {
+      if (!activeRefreshPromise) {
+        activeRefreshPromise = doRefresh().finally(() => {
+          activeRefreshPromise = null
+        })
+      }
+
+      const newAccess = await activeRefreshPromise
+      if (newAccess) {
+        originalRequest.headers.Authorization = `Bearer ${newAccess}`
+        originalRequest._retry = true
+        return apiClient(originalRequest)
+      }
+    }
+
+    // Otherwise, map the Tars error envelope to a friendly ApiResponseError.
     const data = error.response?.data
     if (isErrorEnvelope(data)) {
       return Promise.reject(errorFromEnvelope(data))
-    }
-
-    const originalRequest = error.config as (typeof error.config & { _retry?: boolean }) | undefined
-    if (error.response?.status !== 401 || !originalRequest || originalRequest._retry) {
-      return Promise.reject(error)
-    }
-
-    if (!activeRefreshPromise) {
-      activeRefreshPromise = doRefresh().finally(() => {
-        activeRefreshPromise = null
-      })
-    }
-
-    const newAccess = await activeRefreshPromise
-    if (newAccess) {
-      originalRequest.headers.Authorization = `Bearer ${newAccess}`
-      originalRequest._retry = true
-      return apiClient(originalRequest)
     }
     return Promise.reject(error)
   },

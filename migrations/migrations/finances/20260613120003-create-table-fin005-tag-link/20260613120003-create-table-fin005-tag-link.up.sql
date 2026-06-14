@@ -23,7 +23,7 @@ ADD CONSTRAINT fk_fin005_tag_id FOREIGN KEY (tag_id)
 
 ALTER TABLE finances.fin005_tag_link
 ADD CONSTRAINT ck_fin005_entity_type
-CHECK (entity_type IN ('account', 'card', 'card_statement', 'transaction', 'recurring_transaction', 'pending_transaction'));
+CHECK (entity_type IN ('account', 'card', 'card-statement', 'transaction', 'recurring-transaction', 'pending-transaction'));
 
 CREATE INDEX ix_fin005_entity
 ON finances.fin005_tag_link (entity_type, entity_id);

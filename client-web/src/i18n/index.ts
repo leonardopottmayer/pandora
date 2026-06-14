@@ -2,7 +2,7 @@ import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import ptBR from './locales/pt-BR.json'
 import en from './locales/en.json'
-import type { AppLanguage } from '@/features/identity/models'
+import type { AppLanguage } from '@/modules/identity/models'
 
 const LANGUAGE_KEY = 'pandora.language'
 export const SUPPORTED_LANGUAGES: AppLanguage[] = ['pt-BR', 'en']
