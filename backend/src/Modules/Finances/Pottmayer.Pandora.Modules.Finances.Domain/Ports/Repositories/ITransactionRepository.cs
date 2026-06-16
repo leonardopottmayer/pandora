@@ -48,4 +48,7 @@ public interface ITransactionRepository : IStandardRepository<Transaction, Guid>
     Task<decimal> GetStatementPaidTotalAsync(Guid statementId, Guid userId, CancellationToken ct = default);
 
     Task<decimal> GetUnpaidStatementTotalForCardAsync(Guid cardId, Guid userId, CancellationToken ct = default);
+
+    /// <summary>Whether some transaction already declares <paramref name="transactionId"/> as the one it reverses.</summary>
+    Task<bool> ExistsReversalForAsync(Guid transactionId, Guid userId, CancellationToken ct = default);
 }

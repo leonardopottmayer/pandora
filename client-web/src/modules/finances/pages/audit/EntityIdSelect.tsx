@@ -24,7 +24,7 @@ interface EntityIdSelectProps {
   onChange: (value: string) => void
 }
 
-/** Seleciona o ID da entidade a partir das entidades do usuário, conforme o tipo escolhido. */
+/** Selects the entity ID from the user's entities based on the chosen type. */
 export function EntityIdSelect({ entityType, value, onChange }: EntityIdSelectProps) {
   const { t } = useTranslation()
   const [statementCardId, setStatementCardId] = useState<string>()

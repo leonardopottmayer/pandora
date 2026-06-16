@@ -23,6 +23,11 @@ public sealed class DeleteCardCommandHandler(IUnitOfWorkFactory factory, TimePro
             if (card is null)
                 return Result<bool>.Failure([CardErrors.NotFound]);
 
+            var statements = ctx.AcquireRepository<ICardStatementRepository>();
+            var existingStatements = await statements.GetByCardAsync(card.Id, input.UserId, token);
+            if (existingStatements.Count > 0)
+                return Result<bool>.Failure([CardErrors.HasHistory]);
+
             await repo.RemoveAsync(card, token);
             await ctx.RecordAsync(input.UserId, input.UserId, "card", card.Id, "card.deleted", now, new { card.Name }, ct: token);
             return Result<bool>.Success(true);

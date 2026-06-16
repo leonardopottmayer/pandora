@@ -6,13 +6,13 @@ interface AccountSelectProps {
   value?: string
   onChange?: (value?: string) => void
   disabled?: boolean
-  /** Exibe um botão para limpar a seleção. */
+  /** Shows a clear button. */
   allowClear?: boolean
-  /** IDs a excluir das opções (ex.: a conta de origem numa transferência). */
+  /** IDs to exclude from the options (e.g. the source account in a transfer). */
   excludeIds?: string[]
 }
 
-/** Seleciona uma conta ativa do usuário. */
+/** Selects an active account for the current user. */
 export function AccountSelect({ value, onChange, disabled, allowClear, excludeIds = [] }: AccountSelectProps) {
   const { t } = useTranslation()
   const { data: accounts, isLoading } = useAccounts()

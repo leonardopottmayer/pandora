@@ -33,4 +33,7 @@ public static class CardErrors
 
     public static Error DefaultPaymentAccountNotFound =>
         Error.Validation("Cards.DefaultPaymentAccountNotFound", "Default payment account was not found.");
+
+    public static Error HasHistory =>
+        Error.Conflict("Cards.HasHistory", "A card with statements or transactions cannot be deleted; archive it instead.");
 }

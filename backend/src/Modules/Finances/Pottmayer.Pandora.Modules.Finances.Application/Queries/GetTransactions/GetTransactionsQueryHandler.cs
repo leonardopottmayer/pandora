@@ -1,5 +1,6 @@
 using Pottmayer.Pandora.Modules.Finances.Abstractions;
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
+using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Cqrs.Queries;
@@ -23,7 +24,7 @@ public sealed class GetTransactionsQueryHandler(IUnitOfWorkFactory factory, IMes
 
         var tagIds = input.TagIds?.Distinct().ToList();
 
-        var transactions = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var queryResult = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
         {
             // OR semantics: a transaction matches if it carries any of the requested tags. We resolve
             // the matching transaction ids first, then constrain the page query — paging stays intact.
@@ -36,11 +37,30 @@ public sealed class GetTransactionsQueryHandler(IUnitOfWorkFactory factory, IMes
                 input.AccountId, null, input.From, input.To, input.Kind, input.Status,
                 input.SystemCategoryId, input.UserCategoryId, input.Text, input.Origin, ids, skip, take);
 
-            var repo = ctx.AcquireRepository<ITransactionRepository>();
-            return await repo.QueryAsync(input.UserId, filter, token);
+            var txList = await ctx.AcquireRepository<ITransactionRepository>().QueryAsync(input.UserId, filter, token);
+
+            var statementIds = txList
+                .Where(t => t.CardStatementId.HasValue)
+                .Select(t => t.CardStatementId!.Value)
+                .Distinct()
+                .ToList();
+            var stmtMap = statementIds.Count > 0
+                ? (await ctx.AcquireRepository<ICardStatementRepository>()
+                    .GetByIdsAsync(statementIds, input.UserId, token))
+                    .ToDictionary(s => s.Id)
+                : [];
+
+            return Result<(IReadOnlyList<Transaction>, Dictionary<Guid, CardStatement>)>.Success((txList, stmtMap));
         }, cancellationToken: ct);
 
-        IEnumerable<TransactionDto> dtos = transactions.Select(t => TransactionDto.From(t, messages));
+        if (queryResult.IsFailure) return Fail([.. queryResult.Errors]);
+
+        var (transactions, stmtsById) = queryResult.Value!;
+        IEnumerable<TransactionDto> dtos = transactions.Select(t =>
+        {
+            var stmt = t.CardStatementId.HasValue && stmtsById.TryGetValue(t.CardStatementId.Value, out var s) ? s : null;
+            return TransactionDto.From(t, messages, stmt);
+        });
 
         if (!string.IsNullOrWhiteSpace(input.Text))
         {

@@ -8,7 +8,7 @@ import { formatDateTime } from '../../lib/format'
 import { useAuditTimeline } from '../../hooks/useAudit'
 import { EntityIdSelect } from './EntityIdSelect'
 
-// Valores reais que a auditoria grava em entity_type (vocabulário próprio, distinto do TaggableEntityType).
+// Real values the audit log writes to entity_type (its own vocabulary, distinct from TaggableEntityType).
 const ENTITY_TYPES = ['account', 'card', 'statement', 'transaction', 'user-category', 'tag']
 
 type Mode = 'entity' | 'correlation'
@@ -29,7 +29,7 @@ export function AuditPage() {
   const [entityId, setEntityId] = useState('')
   const [correlationId, setCorrelationId] = useState('')
 
-  // O backend exige (entityType + entityId) OU correlationId. Monta o filtro só quando válido.
+  // The backend requires (entityType + entityId) OR correlationId. Build the filter only when valid.
   const validEntity = mode === 'entity' && !!entityType && entityId.trim().length > 0
   const validCorrelation = mode === 'correlation' && correlationId.trim().length > 0
   const enabled = validEntity || validCorrelation
@@ -42,7 +42,7 @@ export function AuditPage() {
 
   const { data, isLoading, isError, error } = useAuditTimeline(params, enabled)
 
-  // Rótulo localizado do tipo de entidade; cai para o valor cru se não houver tradução.
+  // Localized label for the entity type; falls back to the raw value if no translation exists.
   const entityTypeLabel = (value: string) =>
     t(`finances.audit.entityTypes.${value}`, { defaultValue: value })
 

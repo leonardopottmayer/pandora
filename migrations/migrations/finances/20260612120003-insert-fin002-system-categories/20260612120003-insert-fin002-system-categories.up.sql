@@ -142,7 +142,8 @@ INSERT INTO finances.fin002_system_category (code, name, transaction_nature, par
 	('fines', 'Fines', 'expense', (SELECT id FROM finances.fin002_system_category WHERE code = 'financial-expenses'), 4, false, true),
 	('loan-payment', 'Loan Payment', 'expense', (SELECT id FROM finances.fin002_system_category WHERE code = 'financial-expenses'), 5, false, true),
 	('credit-card-fee', 'Credit Card Fee', 'expense', (SELECT id FROM finances.fin002_system_category WHERE code = 'financial-expenses'), 6, false, true),
-	('other-financial', 'Other Financial', 'expense', (SELECT id FROM finances.fin002_system_category WHERE code = 'financial-expenses'), 7, true, true)
+	('credit-card-payment', 'Credit Card Payment', 'expense', (SELECT id FROM finances.fin002_system_category WHERE code = 'financial-expenses'), 7, false, true),
+	('other-financial', 'Other Financial', 'expense', (SELECT id FROM finances.fin002_system_category WHERE code = 'financial-expenses'), 8, true, true)
 ON CONFLICT (code) DO NOTHING;
 
 INSERT INTO finances.fin002_system_category (code, name, transaction_nature, parent_category_id, display_order, is_other, is_active) VALUES
@@ -250,4 +251,4 @@ INSERT INTO finances.fin002_system_category (code, name, transaction_nature, par
 	('other-misc-income', 'Other Misc Income', 'income', (SELECT id FROM finances.fin002_system_category WHERE code = 'misc-income'), 4, true, true)
 ON CONFLICT (code) DO NOTHING;
 
--- seeded: 20 parents / 109 children
+-- seeded: 20 parents / 110 children

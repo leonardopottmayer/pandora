@@ -17,8 +17,8 @@ export function useTransactions(filters: TransactionFilters = {}) {
 }
 
 /**
- * Invalida os caches afetados por uma mutação de transação: a própria lista, os
- * saldos de contas e os dados de cartões (faturas/limite).
+ * Invalidates caches affected by a transaction mutation: the transaction list,
+ * account balances, and card data (statements/limit).
  */
 function useInvalidateTransactionEffects() {
   const queryClient = useQueryClient()

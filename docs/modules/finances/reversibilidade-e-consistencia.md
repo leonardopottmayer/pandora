@@ -3,7 +3,11 @@
 > Referência: [finances-module.md](finances-module.md) (D1 — saldo/derivados a partir do ledger).
 > Motivação: revisão de 2026-06-14 identificou que alguns fluxos de cancelamento deixam
 > `CardStatement` (fin007) em estado inconsistente com as transações (fin008) que o originaram, e
-> levantou o desejo de um "desfazer" mais forte do que `void` para o módulo como um todo.
+> levantou o desejo de uma forma de "desfazer" mais forte do que `void` para o módulo como um todo.
+> Revisão de 2026-06-14 (2): decidido que esse "desfazer mais forte" não deve ser um hard delete —
+> mesmo para erros de cadastro, faz mais sentido criar uma **transação inversa ligada à original**
+> (estorno datado), nunca apagar registros. O módulo fica 100% append-only para tudo que já foi
+> postado.
 
 ## 1. Contexto
 
@@ -24,22 +28,25 @@ Além disso:
   remover; como há FK sem `ON DELETE CASCADE` (`fk_fin007_card_id`, `fk_fin008_card_id`,
   `fk_fin008_account_id`, `fk_fin008_paid_statement_id`), qualquer cartão/conta já usado faz o
   delete estourar uma violação de FK não tratada.
-- O usuário quer, além de cancelar (`void`)/compensar (`refund`), uma opção de **rollback real**
-  (apagar o registro e desfazer o efeito), para os casos em que ainda é seguro fazer isso — evitando
-  pares `+100`/`-100` permanentes no extrato para erros corrigidos na hora.
+- O usuário quer, além de cancelar (`void`)/compensar, uma forma de **"desfazer" um lançamento já
+  postado criando um lançamento espelho** (sinal contrário, datado de hoje, ligado ao original) —
+  inclusive para erros de cadastro corrigidos na hora. Não há hard delete em nenhum cenário: o
+  ledger nunca perde uma linha que já foi postada.
 
-## 2. Vocabulário (para não confundir as 3 operações)
+## 2. Vocabulário (para não confundir as operações)
 
 | Termo | O que faz | Quando usar |
 |---|---|---|
-| **Cancelar** (`void`) | Marca a transação como `void`, mantém a linha, reverte o efeito no cache da fatura/conta | Erro identificado depois que outras coisas já podem ter acontecido; precisa manter rastro |
-| **Desfazer cancelamento** (`unvoid`) | Volta `void` → `posted`, reaplica o efeito | "Cancelei errado" |
-| **Estornar** (`refund`/lançamento espelho) | Cria uma transação nova de sinal oposto | Algo que já é fato consumado no mundo real (já paguei, banco já processou) e precisa de uma reversão **datada** |
-| **Rollback** (hard delete) | Remove a linha de verdade e reverte o efeito, sem deixar rastro no ledger | Erro corrigido **antes** de qualquer outra coisa depender do efeito causado |
+| **Cancelar** (`void`) | Marca a transação como `void`, mantém a linha, reverte o efeito no cache da fatura/conta. Não cria linha nova. | Erro identificado depois que outras coisas já podem ter acontecido, ou correção de algo que ainda não devia ter efeito (ex.: transação `pending` lançada errada). Precisa manter rastro, mas sem um "fato" novo a registrar. |
+| **Desfazer cancelamento** (`unvoid`) | Volta `void` → `posted`, reaplica o efeito. | "Cancelei errado". |
+| **Reverter / Estornar** (`reverse`) | Cria uma **transação nova**, de sinal/efeito oposto, **ligada à original** via `reversed_transaction_id`, datada de hoje (data em que o estorno é percebido/feito). A transação original **não muda** — fica `posted`, com seu rastro intacto. | Algo que já é fato consumado — já paguei, já comprei, já recebi — e a correção é, ela mesma, um novo fato (estorno do banco/loja, devolução, pagamento a mais corrigido). Também serve para "desfazer" erros de cadastro **sem apagar nada**: o par original+reversão soma zero, mas ambos ficam visíveis e auditáveis. |
 
-As três primeiras (cancelar, desfazer cancelamento, estornar) já são suportadas pelo modelo de
-dados atual — só precisam de correções/complementos pontuais (Etapas 1–2). O rollback (Etapa 4) é
-a peça nova.
+Não existe mais uma quarta operação de "rollback"/hard delete. Tudo que já foi `posted` permanece
+no ledger para sempre — `void`/`unvoid` mudam o *status* de uma linha existente; `reverse` adiciona
+uma linha nova que neutraliza o efeito da primeira. As duas primeiras (cancelar, desfazer
+cancelamento) já são suportadas pelo modelo de dados atual — só precisam de correções/complementos
+pontuais (Etapas 1–2). A reversão genérica (Etapa 4) é a peça nova, e reaproveita o conceito de
+`refund` que já existe para faturas, generalizando-o para qualquer tipo de lançamento.
 
 ## 3. Etapa 1 — Helper único de sincronização de fatura + corrigir os 2 casos do void
 
@@ -96,7 +103,8 @@ caminho de volta.
 **Limite assumido (não bloquear)**: se algo mudou na fatura *depois* do void (ex.: foi paga de
 novo), o `unvoid` ainda aplica o delta inverso — pode gerar `RemainingAmount` negativo
 ("crédito"). Isso é aceitável: o usuário vê o número e resolve manualmente. Não vale a
-complexidade de detectar e bloquear esse caso (CLAUDE.md — simplicidade).
+complexidade de detectar e bloquear esse caso (CLAUDE.md — simplicidade). A mesma régua é reusada
+pela Etapa 4.
 
 **Critérios de aceite**:
 1. Void seguido de unvoid de cada um dos 4 casos (avulsa, parcela, transferência, pagamento de
@@ -118,8 +126,9 @@ provável 500 não tratado.
 - Mensagem de erro orienta a arquivar em vez de excluir (arquivar já é 100% reversível via
   `SetCardArchived`/`SetAccountArchived`).
 - Resultado prático: **delete físico só é possível para cadastros nunca usados** (criados por
-  engano, sem nenhuma transação). Tudo que tem dinheiro envolvido só pode ser arquivado ou
-  voidado/rollback — sempre reversível.
+  engano, sem nenhuma transação). Tudo que tem dinheiro envolvido só pode ser arquivado,
+  cancelado (`void`/`unvoid`) ou revertido (`reverse`, Etapa 4) — sempre reversível, nunca
+  apagado.
 
 **Critérios de aceite**:
 1. `DeleteCard`/`DeleteAccount` em entidade sem nenhuma transação/fatura → remove normalmente
@@ -127,85 +136,149 @@ provável 500 não tratado.
 2. `DeleteCard`/`DeleteAccount` em entidade com histórico → 409 com erro de domínio claro, sem
    exceção de banco.
 
-## 6. Etapa 4 — Rollback real (hard delete) para a "última ação"
+## 6. Etapa 4 — Reversão genérica (`reverse`, transação espelho ligada à original)
 
-**Problema**: `void`/`refund` deixam rastro (`+100`/`-100`) mesmo quando o erro foi corrigido
-imediatamente, antes de qualquer outra coisa depender do efeito.
+**Problema**: hoje a única forma de "neutralizar" o efeito de uma transação `posted` é `void`, que
+não deixa rastro de *quando* a correção aconteceu nem de que houve um segundo fato (ex.: o banco
+estornou o valor numa data posterior). E `refund` já existe como "lançamento espelho", mas só para
+faturas de cartão (`CanTargetStatement`), criado manualmente via `CreateTransaction` sem nenhum
+vínculo estrutural com a transação que está sendo corrigida.
 
-**Proposta**: oferecer **"Desfazer"** como hard delete, mas **apenas quando a operação a desfazer
-ainda é a última coisa que aconteceu** no(s) recurso(s) afetado(s) — ou seja, nada posterior
-depende do efeito que ela causou. Fora dessa janela, a UI oferece `void`/`refund` (já corrigidos
-nas Etapas 1–2).
+**Proposta**: generalizar `refund` para **qualquer** lançamento via um novo comando
+`ReverseTransactionCommand`, que cria uma transação nova — mesmo destino (conta ou fatura *atual*),
+sinal/efeito oposto, datada de hoje — e grava `reversed_transaction_id` apontando para a original.
+A original **não é alterada** (continua `posted`, com seu próprio histórico).
 
-### 6.1 Regra de elegibilidade por tipo de operação
+### 6.1 Schema
 
-| Operação | Elegível para rollback se... |
-|---|---|
-| Transação simples de conta (`income`/`expense`/etc.) | Nenhuma outra transação posterior (`PostedAt`/`CreatedAt`) na mesma conta |
-| Par de transferência | Nenhuma transação posterior em **nenhuma** das duas contas desde a transferência |
-| Compra/reembolso avulso no cartão | Fatura ainda `open` **e** essa é a transação mais recente da fatura |
-| Compra parcelada (plano inteiro) | Todas as N parcelas estão em faturas `open` **e** cada uma é a transação mais recente da sua fatura |
-| Pagamento de fatura | Nenhuma alteração de `PaidAmount`/`TotalAmount` da fatura desde o pagamento (nenhuma transação/pagamento posterior) |
-| Arquivar/desarquivar conta/cartão | N/A — já é reversível via toggle, não precisa de rollback |
+Migration nova em `fin008_transaction`:
 
-A checagem "é a transação mais recente de X" é uma query simples (`MAX(CreatedAt)` no escopo —
-conta, ou fatura, ou par de contas). Se a transação/plano a desfazer não é a mais recente naquele
-escopo, a operação não é elegível.
+```sql
+ALTER TABLE finances.fin008_transaction
+  ADD COLUMN reversed_transaction_id uuid NULL
+    CONSTRAINT fk_fin008_reversed_transaction_id REFERENCES finances.fin008_transaction (id),
+  ADD CONSTRAINT uq_fin008_reversed_transaction_id UNIQUE (reversed_transaction_id),
+  ADD CONSTRAINT ck_fin008_reversed_transaction_not_self
+    CHECK (reversed_transaction_id IS NULL OR reversed_transaction_id <> id);
 
-### 6.2 Implementação
+CREATE INDEX ix_fin008_reversed_transaction_id ON finances.fin008_transaction (reversed_transaction_id);
+```
 
-- Novo comando `RollbackTransactionCommand` (`DELETE /transactions/{id}`), reaproveitando:
-  - `StatementAmountSync` da Etapa 1 para reverter o delta (mesmo cálculo do void, mas sem marcar
-    `void` — a linha é removida);
-  - a query de elegibilidade (nova, em `ITransactionRepository`, ex.:
-    `IsMostRecentInScopeAsync(transaction, ct)`).
-- Se não elegível → `Error.Conflict("Transactions.NotEligibleForRollback", "...")`, e a API/frontend
-  oferece `void` como alternativa.
-- Se elegível:
-  - parcela isolada → erro (`Installments.RollbackRequiresWholePlan`): rollback de parcelamento é
-    tudo ou nada (mesma régua do `VoidEntirePlan`, mas aqui simplificada porque elegibilidade já
-    exige que todas as parcelas estejam em faturas `open`);
-  - plano inteiro elegível → apaga as N transações + o `InstallmentPlan`, reverte o delta em cada
-    fatura afetada;
-  - transferência → apaga as duas pernas;
-  - demais casos → apaga a transação, reverte o delta (se houver fatura associada).
-- **Auditoria**: gravar `transaction.rolled-back` (e `installment-plan.rolled-back` quando
-  aplicável) com um snapshot dos dados removidos (igual ao padrão já usado em `DeleteTag`, que
-  audita os vínculos antes de deixar o cascade agir). O `transaction.created` original **não** é
-  removido do audit — auditoria é histórico de ações, não livro contábil; o rollback não deve ser
-  "invisível" para quem audita, só não deve contar nos saldos.
-- **Tags**: se a transação tiver `tag_link` (fin005, sem FK física), removê-los explicitamente
-  antes do delete (mesmo motivo do `DeleteTag` — sem isso ficam órfãos).
+- `UNIQUE` garante **uma reversão por transação**: para "desfazer a reversão", o usuário reverte a
+  *transação de reversão* (cria uma nova linha apontando para ela) — encadeamento permitido, sem
+  limite de profundidade. A UI pode seguir a cadeia para exibir "Estorno → Estorno do estorno → …".
+- `origin` (fin008) ganha um novo valor possível, `'reversal'`, para diferenciar de `'manual'` na
+  listagem/relatórios (ajuste no `ck_fin008_origin` se existir, ou documentar o valor adicional).
 
-### 6.3 Critérios de aceite
+### 6.2 Mapeamento de kind (transação → reversão)
 
-1. Criar transação simples → rollback imediato → linha não existe mais, saldo da conta idêntico ao
-   anterior à criação, auditoria mostra `created` + `rolled-back`.
-2. Criar transação → criar outra transação na mesma conta → tentar rollback da primeira → 409
-   `NotEligibleForRollback`; `void` continua disponível e funciona (Etapa 1).
-3. Compra parcelada 3x (3 faturas `open`) → rollback do plano → as 3 transações e o plano somem,
-   3 faturas voltam aos totais anteriores.
-4. Compra parcelada 3x, mas fatura da parcela 1 já fechada → rollback do plano → 409 (não
-   elegível); `void` com `VoidEntirePlan` continua sendo o caminho (comportamento atual,
-   documentado na fase 06).
-5. Pagar fatura → rollback do pagamento (nada mais aconteceu) → fatura volta ao estado anterior,
-   transação de pagamento removida.
+`TransactionKind` ganha `ReversalKind()`:
+
+| Kind original | Destino | Kind da reversão | Observação |
+|---|---|---|---|
+| `income` | conta | `expense` | |
+| `expense` | conta | `income` | |
+| `expense` | fatura (`CanTargetStatement`) | `refund` | `StatementSign` oposto (+1 → -1) |
+| `refund` | fatura | `expense` | `StatementSign` oposto (-1 → +1) |
+| `investment-contribution` | conta | `investment-redemption` | |
+| `investment-redemption` | conta | `investment-contribution` | |
+| `transfer-out` / `transfer-in` (par) | contas | novo par reverso (`transfer-in`/`transfer-out` trocados) | ver 6.3 |
+| `card-statement-payment` | conta + fatura paga | `refund` (conta) | ver 6.3 — também ajusta `PaidAmount` da fatura |
+| `opening-balance`, `adjustment`, `yield` | — | **não suportado (v1)** | sem kind de sinal oposto definido hoje; ver §8 |
+
+### 6.3 Casos de implementação
+
+- **Transação simples de conta** (`income`/`expense`/`investment-*`, sem `TransferGroupId`,
+  `InstallmentPlanId`, `CardStatementId` ou `PaidStatementId`): cria uma transação na **mesma
+  conta**, `occurred_on = hoje`, `kind = ReversalKind`, `amount = original.Amount`,
+  `reversed_transaction_id = original.Id`, descrição default `"Estorno: {original.Description}"`
+  (editável pelo usuário antes de confirmar).
+- **Compra/reembolso avulso em fatura** (`CardStatementId` set, `InstallmentPlanId` null):
+  resolve a fatura **atual** (aberta) via `IStatementResolver` para a data de hoje (cria a fatura
+  se necessário — mesmo fluxo de `CreateTransaction`); cria a transação nessa fatura com
+  `ReversalKind` e aplica `StatementAmountSync` (Etapa 1) com o delta correspondente **na fatura
+  atual** — a fatura original (possivelmente já `closed`/`paid`) não é tocada. Isso reflete o
+  comportamento real: um estorno de uma compra de meses atrás aparece como crédito na fatura
+  corrente.
+- **Par de transferência** (`TransferGroupId` set): cria um novo par (`transfer-in`/`transfer-out`
+  trocados em relação ao original), `occurred_on = hoje`, novo `transfer_group_id`; cada perna nova
+  tem `reversed_transaction_id` apontando para a perna original correspondente.
+- **Pagamento de fatura** (`PaidStatementId` set): cria uma transação na mesma conta,
+  `kind = refund` (sinal +1, dinheiro volta pra conta), `reversed_transaction_id = original.Id`; e
+  aplica `StatementAmountSync(paidDelta = -original.Amount)` na fatura referenciada por
+  `PaidStatementId`, no estado em que ela estiver **hoje** (mesma régua de "aceitar
+  `RemainingAmount` negativo" da Etapa 2).
+- **Parcela de `InstallmentPlan`**: fora de escopo v1 (ver §8) — `Transactions.ReversalNotSupported`.
+- **`opening-balance`/`adjustment`/`yield`**: fora de escopo v1 (ver §8) —
+  `Transactions.ReversalNotSupported`.
+
+### 6.4 Comando, endpoint, erros
+
+- `ReverseTransactionCommand(transactionId, description?)` → `POST /transactions/{id}/reverse`.
+- Validações:
+  - transação deve estar `posted` → senão `Transactions.NotPosted`;
+  - `reversed_transaction_id` de outra transação não pode já apontar para esta (`UNIQUE`) →
+    `Transactions.AlreadyReversed` ("esta transação já foi revertida; para desfazer, reverta a
+    transação de reversão");
+  - `ReversalKind()` indefinido para o `kind`/caso → `Transactions.ReversalNotSupported`.
+- **Auditoria**: `transaction.reversed` na original (`data: { reversalTransactionId }`) +
+  `transaction.created` na nova (mesmo evento já existente, com `origin = 'reversal'` e
+  `reversedTransactionId` no payload).
+- **Tags**: a transação de reversão **não** herda as tags da original automaticamente (são fatos
+  diferentes); usuário pode tagueá-la depois normalmente.
+
+### 6.5 Critérios de aceite
+
+1. Reverter `expense` em conta → cria `income` na mesma conta, hoje, `reversed_transaction_id`
+   setado; saldo da conta após a reversão = saldo antes da transação original (par soma zero).
+2. Reverter compra avulsa em fatura `closed`/`paid` → cria `refund` na fatura **atual** (aberta),
+   `TotalAmount` da fatura atual ajustado via `StatementAmountSync`; fatura original inalterada.
+3. Reverter par de transferência → cria novo par trocado, `transfer_group_id` novo, cada perna
+   ligada à perna original via `reversed_transaction_id`.
+4. Reverter pagamento de fatura → cria `refund` na conta (saldo volta) + `PaidAmount` da fatura
+   paga reduzido (`StatementAmountSync`, aceitando "crédito"/negativo se a fatura mudou desde o
+   pagamento).
+5. Reverter uma transação de reversão (encadeamento) → permitido, cria nova reversão apontando
+   para a transação-reversão.
+6. Reverter transação `pending` ou `void` → `Transactions.NotPosted`.
+7. Reverter transação que já tem uma reversão → `Transactions.AlreadyReversed`.
+8. Reverter parcela de `InstallmentPlan`, ou `opening-balance`/`adjustment`/`yield` →
+   `Transactions.ReversalNotSupported`.
+9. Testes de integração cobrindo os cenários 1–8.
 
 ## 7. Ordem de implementação recomendada
 
-1. **Etapa 1** — corrige o bug relatado e é pré-requisito de todo o resto (Unvoid e Rollback reusam
-   o mesmo helper).
+1. **Etapa 1** — corrige o bug relatado e é pré-requisito do resto (Unvoid e Reversão reusam o
+   mesmo helper `StatementAmountSync`).
 2. **Etapa 3** — independente, pequena, remove um risco de erro 500.
 3. **Etapa 2** (`Unvoid`) — reusa o helper da Etapa 1.
-4. **Etapa 4** (Rollback) — maior, reusa helper da Etapa 1 + a régua de elegibilidade é nova.
+4. **Etapa 4** (Reversão) — reusa o helper da Etapa 1 + a régua de "aceitar crédito negativo" da
+   Etapa 2. Sem dependência de uma janela de elegibilidade (diferente da proposta anterior de
+   rollback): uma reversão pode ser criada em qualquer momento, sempre como linha nova.
 
 ## 8. Fora de escopo / decisões já tomadas
 
-- **Filtrar `void` dos relatórios/somatórios**: complementar ao rollback, resolve o incômodo visual
-  para os casos em que rollback não é elegível e `void`/`refund` é o caminho. Não é tratado aqui —
-  é ajuste de query nas fases de relatórios (12).
+- **Hard delete de transações**: descartado. Tudo que já foi `posted` permanece no ledger para
+  sempre; `void`/`unvoid` mudam status, `reverse` adiciona uma linha nova. Não há comando que
+  apague uma linha de `fin008` com efeito monetário.
+- **Reversão de `InstallmentPlan`**: v1 não suporta `reverse` em transação de parcela. Enquanto
+  isso, `void`/`VoidEntirePlan` (fase 06, com os ajustes da Etapa 1) continua sendo o caminho para
+  corrigir parcelamentos errados. Reversão de parcelamento fica para revisão futura — decisão
+  pendente: reverter parcela isolada (cria 1 `refund` na fatura atual pelo valor da parcela, sem
+  alterar o plano) vs. reverter o plano inteiro (N reversões, uma por parcela, todas na fatura
+  atual ou cada uma na fatura original da parcela).
+- **Reversão de `opening-balance`/`adjustment`/`yield`**: sem kind de sinal oposto definido hoje
+  (`Adjustment.Sign` é fixo `+1`). Corrigir esses casos continua via `void` (se ainda `pending`)
+  ou novo lançamento manual de `adjustment`. Decisão pendente: introduzir uma forma de
+  `adjustment` com sinal negativo (ex.: novo kind `adjustment-debit`, ou permitir sinal explícito)
+  — avaliar quando aparecer um caso real.
+- **Filtrar `void`/transações de reversão dos relatórios/somatórios**: ajuste de query nas fases
+  de relatórios (12) — não tratado aqui. Como a reversão sempre soma zero com a original, o efeito
+  em totais já é neutro; o ajuste é só para não exibir os dois lançamentos como "ruído" em listagens
+  detalhadas, se desejado.
 - **Semântica de `VoidEntirePlan` com parcelas já faturadas** (parcelas em fatura fechada/paga
-  permanecem ativas e contando) — comportamento atual da fase 06 é mantido; o rollback (Etapa 4)
-  simplesmente não fica disponível nesse caso, caindo para `void` parcial existente.
+  permanecem ativas e contando) — comportamento atual da fase 06 é mantido.
 - **Reverter edições cosméticas** (`UpdateTransaction`) — não incluído; risco baixo, audit já guarda
   old/new para correção manual.
+- **Herança de tags na reversão** — a transação de reversão não copia tags da original (decisão
+  tomada em 6.4); se necessário no futuro, é mudança aditiva e isolada.

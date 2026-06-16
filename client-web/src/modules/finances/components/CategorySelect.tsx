@@ -4,7 +4,7 @@ import { TreeSelect } from 'antd'
 import type { SystemCategoryDto, TransactionNature, UserCategoryDto } from '../models'
 import { useSystemCategories, useUserCategories } from '../hooks/useCategories'
 
-/** Valor selecionado: uma categoria de sistema OU do usuário (mutuamente exclusivas). */
+/** Selected value: a system category OR a user category (mutually exclusive). */
 export interface CategorySelection {
   systemCategoryId: string | null
   userCategoryId: string | null
@@ -55,7 +55,7 @@ function fromValue(raw?: string): CategorySelection {
   }
 }
 
-/** Seletor de categoria que agrupa categorias do sistema e do usuário, filtradas por natureza. */
+/** Category selector grouping system and user categories, filtered by nature. */
 export function CategorySelect({ nature, value, onChange, disabled }: CategorySelectProps) {
   const { t } = useTranslation()
   const { data: system } = useSystemCategories({ nature })
@@ -79,7 +79,7 @@ export function CategorySelect({ nature, value, onChange, disabled }: CategorySe
       placeholder={t('finances.categories.selectPlaceholder')}
       value={toValue(value)}
       treeData={treeData}
-      // Os nós "group:*" são apenas rótulos e não devem ser selecionáveis.
+      // "group:*" nodes are labels only and must not be selectable.
       onChange={(raw?: string) => {
         if (raw?.startsWith('group:')) return
         onChange?.(fromValue(raw))

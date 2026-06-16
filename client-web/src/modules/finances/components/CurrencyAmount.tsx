@@ -5,7 +5,7 @@ import type { FlowDirection } from '../lib/enums'
 interface CurrencyAmountProps {
   amount: number
   currency: string
-  /** Quando informado, colore o valor (entrada=verde, saída=vermelho) e prefixa o sinal. */
+  /** When set, colours the amount (in=green, out=red) and prefixes the sign. */
   direction?: FlowDirection
   strong?: boolean
 }
@@ -16,7 +16,7 @@ const DIRECTION_COLOR: Record<FlowDirection, string | undefined> = {
   neutral: undefined,
 }
 
-/** Exibe um valor monetário formatado, opcionalmente colorido pela direção do fluxo. */
+/** Displays a formatted monetary amount, optionally coloured by flow direction. */
 export function CurrencyAmount({ amount, currency, direction, strong }: CurrencyAmountProps) {
   const sign = direction === 'in' ? '+' : direction === 'out' ? '−' : ''
   const color = direction ? DIRECTION_COLOR[direction] : undefined

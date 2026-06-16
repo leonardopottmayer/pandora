@@ -14,7 +14,7 @@ beforeAll(async () => {
 
 describe('AuditPage', () => {
   it('does not query until a valid filter is provided', () => {
-    // Sem entityId, nenhuma request deve sair (onUnhandledRequest: error falharia o teste).
+    // Without an entityId, no request should be made (onUnhandledRequest: error would fail the test).
     renderWithProviders(<AuditPage />)
     expect(screen.getByText(/Provide an entity type and ID/i)).toBeInTheDocument()
   })
@@ -44,7 +44,7 @@ describe('AuditPage', () => {
     const user = userEvent.setup()
     renderWithProviders(<AuditPage />)
 
-    // entityType já começa em "account"; basta informar o id.
+    // entityType starts as "account"; only the id needs to be provided.
     await user.type(screen.getByPlaceholderText(/Entity ID/i), 'a1')
 
     expect(await screen.findByText('account.created')).toBeInTheDocument()
@@ -78,7 +78,7 @@ describe('AuditPage', () => {
 
     await user.type(screen.getByPlaceholderText(/ID da entidade/i), 'a1')
     await screen.findByText('account.created')
-    // "account" -> "Conta" (aparece no seletor e na coluna de tipo de entidade).
+    // "account" -> "Conta" (appears in the selector and in the entity type column).
     expect(screen.getAllByText('Conta').length).toBeGreaterThan(0)
     await i18n.changeLanguage('en')
   })

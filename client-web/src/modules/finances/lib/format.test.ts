@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import i18n from '@/i18n'
 import { formatMoney, formatDate, formatDateTime, formatReferenceMonth } from './format'
 
-// Fixa o idioma para tornar a saída do Intl determinística (pt-BR usa NBSP/vírgula).
+// Fix the locale to make Intl output deterministic (pt-BR uses NBSP/comma).
 beforeAll(async () => {
   await i18n.changeLanguage('pt-BR')
 })

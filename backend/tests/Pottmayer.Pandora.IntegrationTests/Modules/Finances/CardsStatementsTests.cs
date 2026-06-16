@@ -150,6 +150,47 @@ public sealed class CardsStatementsTests : IAsyncLifetime
         Assert.Contains(statements!.Data, s => s.Id == expense.CardStatementId && s.TotalAmount == 75m);
     }
 
+    [Fact]
+    public async Task Reopening_closed_statement_restores_open_status()
+    {
+        await AuthAsync("card-reopen-closed");
+        var card = await CreateCardAsync(new { name = "Card", closingDay = 28, dueDay = 5, currency = "BRL", creditLimit = 1000m });
+        var tx = await CreateCardTxAsync(new { cardId = card, kind = "expense", amount = 80m, occurredOn = new DateOnly(2026, 6, 5), description = "Purchase" });
+
+        Assert.Equal(HttpStatusCode.OK, (await _client.PostAsync($"{Statements}/{tx.CardStatementId}/close", null)).StatusCode);
+
+        var reopenResponse = await _client.PostAsync($"{Statements}/{tx.CardStatementId}/reopen", null);
+        Assert.Equal(HttpStatusCode.OK, reopenResponse.StatusCode);
+        var reopened = (await reopenResponse.Content.ReadFromJsonAsync<SingleEnvelope<CardStatementNode>>())!.Data;
+        Assert.Equal("open", reopened.Status);
+    }
+
+    [Fact]
+    public async Task Reopening_open_statement_returns_conflict()
+    {
+        await AuthAsync("card-reopen-open");
+        var card = await CreateCardAsync(new { name = "Card", closingDay = 28, dueDay = 5, currency = "BRL", creditLimit = 1000m });
+        var tx = await CreateCardTxAsync(new { cardId = card, kind = "expense", amount = 80m, occurredOn = new DateOnly(2026, 6, 5), description = "Purchase" });
+
+        var response = await _client.PostAsync($"{Statements}/{tx.CardStatementId}/reopen", null);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Reopening_paid_statement_returns_conflict()
+    {
+        await AuthAsync("card-reopen-paid");
+        var account = await CreateAccountAsync(new { name = "Checking", type = "checking", currency = "BRL", displayOrder = 0, openingBalance = 500m });
+        var card = await CreateCardAsync(new { name = "Card", closingDay = 28, dueDay = 5, currency = "BRL", defaultPaymentAccountId = account });
+        var tx = await CreateCardTxAsync(new { cardId = card, kind = "expense", amount = 80m, occurredOn = new DateOnly(2026, 6, 5), description = "Purchase" });
+
+        Assert.Equal(HttpStatusCode.OK, (await _client.PostAsync($"{Statements}/{tx.CardStatementId}/close", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await _client.PostAsJsonAsync($"{Statements}/{tx.CardStatementId}/pay", new { accountId = account, amount = 80m, occurredOn = new DateOnly(2026, 6, 20) })).StatusCode);
+
+        var response = await _client.PostAsync($"{Statements}/{tx.CardStatementId}/reopen", null);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
     private Task AuthAsync(string username) =>
         IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, $"{username}@example.com", username);
 

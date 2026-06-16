@@ -7,7 +7,7 @@ export function useAuditTimeline(params: AuditTimelineParams = {}, enabled = tru
   return useQuery({
     queryKey: financeKeys.auditTimeline(params),
     queryFn: () => auditService.listAuditTimeline(params),
-    // O backend exige (entityType + entityId) OU correlationId; só consulta quando válido.
+    // The backend requires (entityType + entityId) OR correlationId; only queries when valid.
     enabled,
   })
 }

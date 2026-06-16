@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.CloseStatement;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.PayStatement;
+using Pottmayer.Pandora.Modules.Finances.Application.Commands.ReopenStatement;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.SetEntityTags;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetStatement;
 using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
@@ -46,6 +47,13 @@ public sealed class StatementsController(
     public async Task<IActionResult> CloseAsync(Guid id, CancellationToken ct)
     {
         var result = await sender.Send(new CloseStatementCommand(new CloseStatementInput(UserId, id)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpPost("{id:guid}/reopen")]
+    public async Task<IActionResult> ReopenAsync(Guid id, CancellationToken ct)
+    {
+        var result = await sender.Send(new ReopenStatementCommand(new ReopenStatementInput(UserId, id)), ct);
         return result.ToActionResult(errorMapper);
     }
 

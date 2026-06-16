@@ -34,9 +34,6 @@ ADD CONSTRAINT ck_fin007_reference_month
 CHECK (reference_month ~ '^[0-9]{4}-[0-9]{2}$');
 
 ALTER TABLE finances.fin007_card_statement
-ADD CONSTRAINT ck_fin007_total_amount CHECK (total_amount >= 0);
-
-ALTER TABLE finances.fin007_card_statement
 ADD CONSTRAINT ck_fin007_paid_amount CHECK (paid_amount >= 0);
 
 ALTER TABLE finances.fin007_card_statement

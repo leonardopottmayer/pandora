@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateTransaction;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateTransfer;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.PostTransaction;
+using Pottmayer.Pandora.Modules.Finances.Application.Commands.ReverseTransaction;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.SetEntityTags;
+using Pottmayer.Pandora.Modules.Finances.Application.Commands.UnvoidTransaction;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.UpdateTransaction;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.VoidTransaction;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetTransactions;
@@ -92,6 +94,22 @@ public sealed class TransactionsController(
     public async Task<IActionResult> VoidAsync(Guid id, VoidTransactionRequest? request, CancellationToken ct)
     {
         var command = new VoidTransactionCommand(new VoidTransactionInput(UserId, id, request?.Reason, request?.VoidEntirePlan ?? false));
+        var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpPost("{id:guid}/unvoid")]
+    public async Task<IActionResult> UnvoidAsync(Guid id, UnvoidTransactionRequest? request, CancellationToken ct)
+    {
+        var command = new UnvoidTransactionCommand(new UnvoidTransactionInput(UserId, id, request?.UnvoidEntirePlan ?? false));
+        var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpPost("{id:guid}/reverse")]
+    public async Task<IActionResult> ReverseAsync(Guid id, ReverseTransactionRequest? request, CancellationToken ct)
+    {
+        var command = new ReverseTransactionCommand(new ReverseTransactionInput(UserId, id, request?.Description));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }

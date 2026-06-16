@@ -31,7 +31,7 @@ export async function listTransactions(filters: TransactionFilters = {}): Promis
   return data
 }
 
-/** Cria um lançamento. Pode retornar N transações quando `installments > 1`. */
+/** Creates a transaction entry. May return N transactions when `installments > 1`. */
 export async function createTransaction(
   body: CreateTransactionRequest,
 ): Promise<TransactionDto | TransactionDto[]> {

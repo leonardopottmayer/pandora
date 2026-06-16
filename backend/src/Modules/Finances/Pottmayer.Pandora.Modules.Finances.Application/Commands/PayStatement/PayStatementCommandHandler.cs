@@ -66,7 +66,7 @@ public sealed class PayStatementCommandHandler(IUnitOfWorkFactory factory, TimeP
                 systemDescription: hasUserDescription ? null : SystemDescription.StatementPayment(statement.ReferenceMonth));
 
             await transactions.AddAsync(payment, token);
-            statement.SyncAmounts(statement.TotalAmount, statement.PaidAmount + input.Amount, today, timeProvider);
+            StatementAmountSync.Apply(statement, 0m, input.Amount, today, timeProvider);
             await statements.UpdateAsync(statement, token);
 
             await ctx.RecordAsync(

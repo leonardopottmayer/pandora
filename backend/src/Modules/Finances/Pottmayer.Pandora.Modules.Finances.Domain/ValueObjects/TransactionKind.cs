@@ -67,5 +67,23 @@ public sealed class TransactionKind : IDomainValue<TransactionKind>
 
     public int StatementSign => this == Expense ? +1 : this == Refund ? -1 : 0;
 
+    /// <summary>
+    /// The kind a reversal of this transaction should use, or <c>null</c> when there is no defined
+    /// opposite (e.g. <see cref="OpeningBalance"/>, <see cref="Adjustment"/>, <see cref="Yield"/>).
+    /// <paramref name="targetsStatement"/> disambiguates <see cref="Expense"/>, which has different
+    /// opposites depending on whether it targets an account (<see cref="Income"/>) or a card
+    /// statement (<see cref="Refund"/>).
+    /// </summary>
+    public TransactionKind? ReversalKind(bool targetsStatement)
+    {
+        if (this == Income) return Expense;
+        if (this == Expense) return targetsStatement ? Refund : Income;
+        if (this == Refund) return Expense;
+        if (this == InvestmentContribution) return InvestmentRedemption;
+        if (this == InvestmentRedemption) return InvestmentContribution;
+        if (this == CardStatementPayment) return Refund;
+        return null;
+    }
+
     public override string ToString() => Value;
 }

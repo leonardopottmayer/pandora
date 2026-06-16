@@ -11,7 +11,7 @@ export function useStatement(id: string) {
   })
 }
 
-/** Pagar/fechar fatura afeta a fatura, os cartões (limite) e os saldos das contas. */
+/** Paying/closing a statement affects the statement, cards (limit), and account balances. */
 function useInvalidateStatementEffects() {
   const queryClient = useQueryClient()
   return () => {
@@ -35,6 +35,14 @@ export function useCloseStatement() {
   const invalidate = useInvalidateStatementEffects()
   return useMutation({
     mutationFn: (id: string) => statementsService.closeStatement(id),
+    onSuccess: invalidate,
+  })
+}
+
+export function useReopenStatement() {
+  const invalidate = useInvalidateStatementEffects()
+  return useMutation({
+    mutationFn: (id: string) => statementsService.reopenStatement(id),
     onSuccess: invalidate,
   })
 }

@@ -8,7 +8,7 @@ interface CardSelectProps {
   disabled?: boolean
 }
 
-/** Seleciona um cartão ativo do usuário. */
+/** Selects an active card for the current user. */
 export function CardSelect({ value, onChange, disabled }: CardSelectProps) {
   const { t } = useTranslation()
   const { data: cards, isLoading } = useCards()

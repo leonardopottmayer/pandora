@@ -170,11 +170,7 @@ public sealed class CreateTransactionCommandHandler(
                 timeProvider);
 
             await transactions.AddAsync(transaction, token);
-            statement.SyncAmounts(
-                statement.TotalAmount + (input.Amount * kind.StatementSign),
-                statement.PaidAmount,
-                today,
-                timeProvider);
+            StatementAmountSync.Apply(statement, input.Amount * kind.StatementSign, 0m, today, timeProvider);
             await statements.UpdateAsync(statement, token);
             await ctx.RecordAsync(
                 input.UserId, input.UserId, "transaction", transaction.Id, "transaction.created", now,
@@ -275,7 +271,7 @@ public sealed class CreateTransactionCommandHandler(
                 await transactions.AddAsync(tx, token);
 
                 // Expense raises the statement total; recompute the cache in this same transaction (D1).
-                statement.SyncAmounts(statement.TotalAmount + amount, statement.PaidAmount, today, timeProvider);
+                StatementAmountSync.Apply(statement, amount, 0m, today, timeProvider);
                 if (!created)
                     await statements.UpdateAsync(statement, token);
 

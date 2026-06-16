@@ -25,6 +25,12 @@ public sealed class CardStatementRepository(IDataContextAccessor accessor)
             .OrderByDescending(s => s.ReferenceMonth)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<CardStatement>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids, Guid userId, CancellationToken ct = default)
+        => await Queryable()
+            .Where(s => ids.Contains(s.Id) && s.UserId == userId)
+            .ToListAsync(ct);
+
     public async Task<IReadOnlyList<CardStatement>> GetLifecycleCandidatesAsync(
         DateOnly today, CancellationToken ct = default)
         => await Queryable()

@@ -79,6 +79,7 @@ internal sealed class TransactionEntityConfiguration : IEntityTypeConfiguration<
         builder.Property(t => t.InstallmentNumber).HasColumnName("installment_number");
 
         builder.Property(t => t.Origin).HasColumnName("origin").HasMaxLength(15).IsRequired();
+        builder.Property(t => t.ReversedTransactionId).HasColumnName("reversed_transaction_id");
 
         builder.Property(t => t.PostedAt).HasColumnName("posted_at");
         builder.Property(t => t.VoidedAt).HasColumnName("voided_at");
@@ -113,6 +114,15 @@ internal sealed class TransactionEntityConfiguration : IEntityTypeConfiguration<
             .WithMany()
             .HasForeignKey(t => t.InstallmentPlanId)
             .HasConstraintName("fk_fin008_installment_plan_id");
+
+        builder.HasOne<Transaction>()
+            .WithMany()
+            .HasForeignKey(t => t.ReversedTransactionId)
+            .HasConstraintName("fk_fin008_reversed_transaction_id");
+
+        builder.HasIndex(t => t.ReversedTransactionId)
+            .IsUnique()
+            .HasDatabaseName("uq_fin008_reversed_transaction_id");
 
         builder.HasIndex(t => new { t.UserId, t.OccurredOn }).HasDatabaseName("ix_fin008_user_occurred_on");
         builder.HasIndex(t => new { t.AccountId, t.Status, t.OccurredOn }).HasDatabaseName("ix_fin008_account_status_occurred_on");

@@ -57,6 +57,14 @@ public sealed class CardStatement : AggregateRoot<Guid>, IAuditable
         return true;
     }
 
+    public bool Reopen(DateOnly today, TimeProvider timeProvider)
+    {
+        if (Status == StatementStatus.Open || Status == StatementStatus.Paid) return false;
+        ClosedAt = null;
+        SyncAmounts(TotalAmount, PaidAmount, today, timeProvider);
+        return true;
+    }
+
     public bool MarkOverdue(TimeProvider timeProvider)
     {
         if (RemainingAmount <= 0m || Status == StatementStatus.Paid || Status == StatementStatus.Overdue)

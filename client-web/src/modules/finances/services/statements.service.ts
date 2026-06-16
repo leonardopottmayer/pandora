@@ -26,6 +26,11 @@ export async function closeStatement(id: string): Promise<CardStatementDto> {
   return data
 }
 
+export async function reopenStatement(id: string): Promise<CardStatementDto> {
+  const { data } = await apiClient.post<CardStatementDto>(`${BASE}/${id}/reopen`)
+  return data
+}
+
 export async function setStatementTags(id: string, body: SetEntityTagsRequest): Promise<void> {
   await apiClient.put(`${BASE}/${id}/tags`, body)
 }

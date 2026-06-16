@@ -45,8 +45,14 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
     public Guid? InstallmentPlanId { get; private set; }
     public short? InstallmentNumber { get; private set; }
 
-    /// <summary>Provenance. Only <c>manual</c> exists in this phase (import/recurrence arrive later).</summary>
+    /// <summary>Provenance. Only <c>manual</c> and <c>reversal</c> exist in this phase (import/recurrence arrive later).</summary>
     public string Origin { get; private set; } = "manual";
+
+    /// <summary>
+    /// When this entry is a reversal (<see cref="Origin"/> = <c>"reversal"</c>), the transaction it
+    /// neutralizes. The original is never changed; this is a one-way link set only on the new entry.
+    /// </summary>
+    public Guid? ReversedTransactionId { get; private set; }
 
     public DateTimeOffset? PostedAt { get; private set; }
     public DateTimeOffset? VoidedAt { get; private set; }
@@ -286,6 +292,26 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
         VoidReason = reason;
         VoidedAt = timeProvider.GetUtcNow();
         return true;
+    }
+
+    /// <summary>Undoes a <see cref="Void"/>: only acts on a voided entry, restoring it to <c>posted</c>.</summary>
+    public bool Restore(TimeProvider timeProvider)
+    {
+        if (!IsVoid) return false;
+        Status = TransactionStatus.Posted;
+        VoidedAt = null;
+        VoidReason = null;
+        return true;
+    }
+
+    /// <summary>
+    /// Marks a freshly-created transaction as the reversal of <paramref name="reversedTransactionId"/>:
+    /// sets <see cref="Origin"/> to <c>"reversal"</c> and links back to the original.
+    /// </summary>
+    public void MarkAsReversal(Guid reversedTransactionId)
+    {
+        Origin = "reversal";
+        ReversedTransactionId = reversedTransactionId;
     }
 
     /// <summary>Edits the cosmetic fields. Value, destination and kind are intentionally absent.</summary>

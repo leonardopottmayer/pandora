@@ -24,22 +24,26 @@ public sealed record TransactionDto(
     Guid? InstallmentPlanId,
     short? InstallmentNumber,
     string Origin,
+    Guid? ReversedTransactionId,
     DateTimeOffset? PostedAt,
     DateTimeOffset? VoidedAt,
     string? VoidReason,
     // Language-neutral descriptor for system-defined text (null for user-entered descriptions).
     // Clients may use these to re-localize without another request; Description already comes resolved.
     string? DescriptionKey,
-    IReadOnlyList<string>? DescriptionArgs)
+    IReadOnlyList<string>? DescriptionArgs,
+    string? StatementReferenceMonth,
+    DateOnly? StatementDueDate)
 {
     /// <summary>Maps without localization — for command results, which only ever carry user text.</summary>
-    public static TransactionDto From(Transaction t) => From(t, null);
+    public static TransactionDto From(Transaction t) => From(t, null, null);
 
     /// <summary>
     /// Maps and, for system-defined entries, resolves <see cref="Description"/> in the current culture
-    /// via <paramref name="messages"/> (fallback to the stored text).
+    /// via <paramref name="messages"/> (fallback to the stored text). Optionally enriches statement
+    /// context fields when the caller already holds the linked <see cref="CardStatement"/>.
     /// </summary>
-    public static TransactionDto From(Transaction t, IMessageProvider? messages)
+    public static TransactionDto From(Transaction t, IMessageProvider? messages, CardStatement? statement = null)
     {
         var description = t.SystemDescription is { } sd && messages is not null
             ? messages.Get(sd.Key, t.Description, sd.Args.ToArray())
@@ -48,6 +52,7 @@ public sealed record TransactionDto(
         return new(t.Id, t.AccountId, t.CardStatementId, t.CardId, t.PaidStatementId, t.Kind.Value, t.Status.Value,
             t.Amount, t.Currency.Value, t.OccurredOn, description, t.Payee, t.Notes, t.SystemCategoryId,
             t.UserCategoryId, t.TransferGroupId, t.FxRate, t.InstallmentPlanId, t.InstallmentNumber, t.Origin,
-            t.PostedAt, t.VoidedAt, t.VoidReason, t.SystemDescription?.Key, t.SystemDescription?.Args);
+            t.ReversedTransactionId, t.PostedAt, t.VoidedAt, t.VoidReason, t.SystemDescription?.Key, t.SystemDescription?.Args,
+            statement?.ReferenceMonth, statement?.DueDate);
     }
 }

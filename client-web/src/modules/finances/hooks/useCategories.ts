@@ -9,7 +9,7 @@ export function useSystemCategories(params: SystemCategoriesParams = {}) {
   return useQuery({
     queryKey: financeKeys.systemCategories(params),
     queryFn: () => categoriesService.listSystemCategories(params),
-    staleTime: 5 * 60_000, // árvore de sistema muda raramente
+    staleTime: 5 * 60_000, // system category tree changes rarely
   })
 }
 
@@ -27,7 +27,7 @@ function flattenCategoryNames(categories: Array<SystemCategoryDto | UserCategory
   }
 }
 
-/** Mapa id -> nome, combinando categorias de sistema e do usuário (incl. subcategorias). */
+/** id → name map combining system and user categories (incl. subcategories). */
 export function useCategoryNames(): Map<string, string> {
   const { data: system } = useSystemCategories()
   const { data: user } = useUserCategories()

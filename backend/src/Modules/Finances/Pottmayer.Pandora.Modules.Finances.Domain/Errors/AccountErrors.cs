@@ -21,4 +21,7 @@ public static class AccountErrors
 
     public static Error Archived =>
         Error.Conflict("Accounts.Archived", "An archived account cannot be edited; unarchive it first.");
+
+    public static Error HasHistory =>
+        Error.Conflict("Accounts.HasHistory", "An account with transactions cannot be deleted; archive it instead.");
 }

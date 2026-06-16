@@ -257,7 +257,19 @@
       "created": "Transaction created.",
       "posted": "Transaction posted.",
       "voided": "Transaction voided.",
-      "saveError": "Could not save the transaction."
+      "saveError": "Could not save the transaction.",
+      "origin": "Origin",
+      "installment": "Installment",
+      "statement": "Statement",
+      "effectiveDate": "Due date",
+      "creditCard": "Credit Card"
+    },
+    "filters": {
+      "from": "From",
+      "to": "To",
+      "accounts": "Account(s)",
+      "cards": "Card(s)",
+      "referenceMonth": "Statement(s)"
     },
     "categories": {
       "userTitle": "My categories",
@@ -320,6 +332,9 @@
       "transactions": "Statement transactions",
       "close": "Close statement",
       "closed": "Statement closed.",
+      "reopen": "Reopen statement",
+      "reopened": "Statement reopened.",
+      "reopenError": "Could not reopen the statement.",
       "pay": "Pay statement",
       "paid": "Payment recorded.",
       "payAccount": "Payment account",

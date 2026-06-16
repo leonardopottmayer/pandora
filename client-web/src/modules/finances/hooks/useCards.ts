@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { financeKeys } from './queryKeys'
 import type { CreateCardRequest, UpdateCardRequest } from '../models'
@@ -41,6 +42,16 @@ export function useCardAvailableLimit(id: string) {
     queryFn: () => cardsService.getCardAvailableLimit(id),
     enabled: !!id,
   })
+}
+
+/** id → name map for all cards. */
+export function useCardNames(): Map<string, string> {
+  const { data } = useCards()
+  return useMemo(() => {
+    const map = new Map<string, string>()
+    for (const c of data ?? []) map.set(c.id, c.name)
+    return map
+  }, [data])
 }
 
 function useInvalidateCards() {

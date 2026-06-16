@@ -24,6 +24,12 @@ public sealed class DeleteAccountCommandHandler(IUnitOfWorkFactory factory, Time
             if (account is null)
                 return Result<bool>.Failure([AccountErrors.NotFound]);
 
+            var transactions = ctx.AcquireRepository<ITransactionRepository>();
+            var existingTransactions = await transactions.QueryAsync(
+                input.UserId, new TransactionFilter(AccountId: account.Id, Take: 1), token);
+            if (existingTransactions.Count > 0)
+                return Result<bool>.Failure([AccountErrors.HasHistory]);
+
             await repo.RemoveAsync(account, token);
 
             await ctx.RecordAsync(

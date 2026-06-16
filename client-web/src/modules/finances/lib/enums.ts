@@ -6,8 +6,8 @@ import type {
   TransactionStatus,
 } from '../models'
 
-// Cada enum mapeia para uma chave i18n (`finances.enums.*`) e uma cor de antd `Tag`.
-// As chaves são resolvidas com `t(...)` na UI; aqui guardamos só a estrutura.
+// Each enum maps to an i18n key (`finances.enums.*`) and an antd `Tag` colour.
+// Keys are resolved with `t(...)` in the UI; here we only store the structure.
 
 export interface EnumMeta {
   labelKey: string
@@ -43,7 +43,7 @@ export const TRANSACTION_NATURE_META: Record<TransactionNature, EnumMeta> = {
   expense: { labelKey: 'finances.enums.nature.expense', color: 'red' },
 }
 
-/** Direção de uma transação no saldo: entrada (+), saída (−) ou neutra. */
+/** Transaction flow direction on the balance: in (+), out (−), or neutral. */
 export type FlowDirection = 'in' | 'out' | 'neutral'
 
 const KIND_DIRECTION: Record<TransactionKind, FlowDirection> = {
@@ -72,5 +72,5 @@ function camelize(value: string): string {
   return value.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())
 }
 
-/** Moedas oferecidas como sugestão nos selects (o backend aceita qualquer código 3–10 letras). */
+/** Currencies suggested in selects (the backend accepts any 3–10 letter code). */
 export const COMMON_CURRENCIES = ['BRL', 'USD', 'EUR', 'GBP', 'BTC', 'ETH', 'USDT'] as const

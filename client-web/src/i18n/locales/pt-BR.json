@@ -257,7 +257,19 @@
       "created": "Lancamento criado.",
       "posted": "Lancamento efetivado.",
       "voided": "Lancamento cancelado.",
-      "saveError": "Nao foi possivel salvar o lancamento."
+      "saveError": "Nao foi possivel salvar o lancamento.",
+      "origin": "Origem",
+      "installment": "Parcela",
+      "statement": "Fatura",
+      "effectiveDate": "Vencimento",
+      "creditCard": "Cartao de Credito"
+    },
+    "filters": {
+      "from": "De",
+      "to": "Ate",
+      "accounts": "Conta(s)",
+      "cards": "Cartao(oes)",
+      "referenceMonth": "Fatura(s)"
     },
     "categories": {
       "userTitle": "Minhas categorias",
@@ -320,6 +332,9 @@
       "transactions": "Lancamentos da fatura",
       "close": "Fechar fatura",
       "closed": "Fatura fechada.",
+      "reopen": "Reabrir fatura",
+      "reopened": "Fatura reaberta.",
+      "reopenError": "Nao foi possivel reabrir a fatura.",
       "pay": "Pagar fatura",
       "paid": "Pagamento registrado.",
       "payAccount": "Conta de pagamento",

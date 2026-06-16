@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { financeKeys } from './queryKeys'
 import type { CreateAccountRequest, TransactionFilters, UpdateAccountRequest } from '../models'
@@ -9,6 +10,16 @@ export function useAccounts(params: ListAccountsParams = {}) {
     queryKey: financeKeys.accountList(params),
     queryFn: () => accountsService.listAccounts(params),
   })
+}
+
+/** id → name map for all accounts. */
+export function useAccountNames(): Map<string, string> {
+  const { data } = useAccounts()
+  return useMemo(() => {
+    const map = new Map<string, string>()
+    for (const a of data ?? []) map.set(a.id, a.name)
+    return map
+  }, [data])
 }
 
 export function useAccount(id: string) {
@@ -35,7 +46,7 @@ export function useAccountTransactions(id: string, filters: TransactionFilters =
   })
 }
 
-/** Invalida tudo sob `finances/accounts` após uma mutação. */
+/** Invalidates everything under `finances/accounts` after a mutation. */
 function useInvalidateAccounts() {
   const queryClient = useQueryClient()
   return () => queryClient.invalidateQueries({ queryKey: financeKeys.accounts() })

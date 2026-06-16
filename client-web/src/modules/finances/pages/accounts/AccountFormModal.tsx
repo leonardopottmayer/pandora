@@ -8,7 +8,7 @@ import { useCreateAccount, useUpdateAccount } from '../../hooks/useAccounts'
 
 interface AccountFormModalProps {
   open: boolean
-  /** Conta em edição; ausente = criação. */
+  /** Account being edited; absent = create mode. */
   account?: AccountDto | null
   onClose: () => void
 }

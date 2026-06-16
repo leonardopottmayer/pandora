@@ -1,7 +1,7 @@
 import type { TransactionFilters } from '../models'
 
-// Fábrica central de query keys do módulo financeiro. Centralizar evita
-// divergências entre quem consulta e quem invalida no cache do TanStack Query.
+// Central query key factory for the finances module. Centralising prevents
+// mismatches between callers that query and those that invalidate in the TanStack Query cache.
 export const financeKeys = {
   all: ['finances'] as const,
 

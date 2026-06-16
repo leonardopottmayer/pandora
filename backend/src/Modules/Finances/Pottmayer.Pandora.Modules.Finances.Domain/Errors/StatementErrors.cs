@@ -24,4 +24,10 @@ public static class StatementErrors
 
     public static Error MissingFxRate =>
         Error.Validation("Statements.MissingFxRate", "An exchange rate is required when paying a statement from an account with another currency.");
+
+    public static Error AlreadyOpen =>
+        Error.Conflict("Statements.AlreadyOpen", "The statement is already open.");
+
+    public static Error AlreadyPaid =>
+        Error.Conflict("Statements.AlreadyPaid", "The statement is fully paid. Void or reverse the payment before reopening.");
 }

@@ -145,6 +145,9 @@ public sealed class TransactionRepository(IDataContextAccessor accessor)
         return totalsByStatement.Sum(pair => Math.Max(0m, pair.Value - paidByStatement.GetValueOrDefault(pair.Key)));
     }
 
+    public Task<bool> ExistsReversalForAsync(Guid transactionId, Guid userId, CancellationToken ct = default)
+        => Queryable().AnyAsync(t => t.ReversedTransactionId == transactionId && t.UserId == userId, ct);
+
     /// <summary>
     /// Signed sum over the account ledger. Kept in memory because the sign is a function of the kind
     /// (a value object); ledger growth is addressed later with balance snapshots (D1), not now.

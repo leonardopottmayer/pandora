@@ -1,10 +1,10 @@
-// Tipos do módulo financeiro — espelham os DTOs/Requests do backend
+// Finances module types — mirror the backend DTOs/Requests
 // (Pottmayer.Pandora.Modules.Finances.Application.Dtos / .Presentation.Requests).
-// O JSON do backend é camelCase; datas `DateOnly` chegam como "yyyy-MM-dd" e
-// `DateTimeOffset` como ISO 8601. Valores `decimal` chegam como number.
+// Backend JSON is camelCase; `DateOnly` dates arrive as "yyyy-MM-dd" and
+// `DateTimeOffset` as ISO 8601. `decimal` values arrive as number.
 
 // ---------------------------------------------------------------------------
-// Enums (string unions + arrays para iteração na UI)
+// Enums (string unions + arrays for UI iteration)
 // ---------------------------------------------------------------------------
 
 export const ACCOUNT_TYPES = [
@@ -56,7 +56,7 @@ export const TAGGABLE_ENTITY_TYPES = [
 export type TaggableEntityType = (typeof TAGGABLE_ENTITY_TYPES)[number]
 
 // ---------------------------------------------------------------------------
-// DTOs de resposta
+// Response DTOs
 // ---------------------------------------------------------------------------
 
 export interface AccountDto {
@@ -91,7 +91,7 @@ export interface TransactionDto {
   currency: string
   occurredOn: string
   description: string
-  /** Descritor neutro para textos de sistema; null para descrições do usuário. */
+  /** Neutral descriptor for system-generated text; null for user-authored descriptions. */
   descriptionKey: string | null
   descriptionArgs: string[] | null
   payee: string | null
@@ -106,6 +106,8 @@ export interface TransactionDto {
   postedAt: string | null
   voidedAt: string | null
   voidReason: string | null
+  statementReferenceMonth: string | null
+  statementDueDate: string | null
 }
 
 export interface CardDto {
@@ -223,7 +225,7 @@ export interface AuditEventDto {
 }
 
 // ---------------------------------------------------------------------------
-// Requests (payloads de criação/edição)
+// Requests (create/update payloads)
 // ---------------------------------------------------------------------------
 
 export interface CreateAccountRequest {
@@ -352,7 +354,7 @@ export interface SetEntityTagsRequest {
   tagIds: string[]
 }
 
-/** Filtros do extrato/lista de transações (GET /transactions e /accounts/{id}/transactions). */
+/** Filters for the transaction list (GET /transactions and /accounts/{id}/transactions). */
 export interface TransactionFilters {
   accountId?: string
   from?: string

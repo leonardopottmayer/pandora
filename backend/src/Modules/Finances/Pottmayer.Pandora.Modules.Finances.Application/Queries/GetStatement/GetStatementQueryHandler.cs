@@ -23,7 +23,7 @@ public sealed class GetStatementQueryHandler(IUnitOfWorkFactory factory, IMessag
                 return Result<CardStatementDetailDto>.Failure([StatementErrors.NotFound]);
 
             var transactions = await ctx.AcquireRepository<ITransactionRepository>().GetByStatementAsync(statement.Id, input.UserId, token);
-            var dto = new CardStatementDetailDto(CardStatementDto.From(statement), [.. transactions.Select(t => TransactionDto.From(t, messages))]);
+            var dto = new CardStatementDetailDto(CardStatementDto.From(statement), [.. transactions.Select(t => TransactionDto.From(t, messages, statement))]);
             return Result<CardStatementDetailDto>.Success(dto);
         }, cancellationToken: ct);
 

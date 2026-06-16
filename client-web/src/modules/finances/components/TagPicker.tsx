@@ -8,7 +8,7 @@ interface TagPickerProps {
   disabled?: boolean
 }
 
-/** Multi-seleção de tags do usuário (retorna a lista de tagIds). */
+/** Multi-select tag picker for the user (returns the list of tagIds). */
 export function TagPicker({ value, onChange, disabled }: TagPickerProps) {
   const { t } = useTranslation()
   const { data: tags, isLoading } = useTags()
