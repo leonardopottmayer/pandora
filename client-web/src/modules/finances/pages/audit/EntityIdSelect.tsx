@@ -7,6 +7,8 @@ import { useCards, useCardStatements } from '../../hooks/useCards'
 import { useUserCategories } from '../../hooks/useCategories'
 import { useTags } from '../../hooks/useTags'
 import { useTransactions } from '../../hooks/useTransactions'
+import { useRecurringTransactions } from '../../hooks/useRecurringTransactions'
+import { usePendingTransactions } from '../../hooks/usePendingTransactions'
 import { formatDate, formatMoney, formatReferenceMonth } from '../../lib/format'
 
 function flattenUserCategoryOptions(categories: UserCategoryDto[]): { value: string; label: string }[] {
@@ -34,6 +36,8 @@ export function EntityIdSelect({ entityType, value, onChange }: EntityIdSelectPr
   const { data: tags, isLoading: loadingTags } = useTags()
   const { data: userCategories, isLoading: loadingUserCategories } = useUserCategories()
   const { data: transactions, isLoading: loadingTransactions } = useTransactions({ take: 100 })
+  const { data: recurring, isLoading: loadingRecurring } = useRecurringTransactions()
+  const { data: pending, isLoading: loadingPending } = usePendingTransactions({ take: 100 })
   const { data: statements, isLoading: loadingStatements } = useCardStatements(statementCardId ?? '')
 
   const commonProps = {
@@ -95,6 +99,28 @@ export function EntityIdSelect({ entityType, value, onChange }: EntityIdSelectPr
           options={(transactions ?? []).map((tx) => ({
             value: tx.id,
             label: `${formatDate(tx.occurredOn)} · ${tx.description} · ${formatMoney(tx.amount, tx.currency)}`,
+          }))}
+        />
+      )
+
+    case 'recurring-transaction':
+      return (
+        <Select
+          {...commonProps}
+          loading={loadingRecurring}
+          options={(recurring ?? []).map((r) => ({ value: r.id, label: r.name }))}
+        />
+      )
+
+    case 'pending-transaction':
+      return (
+        <Select
+          {...commonProps}
+          style={{ minWidth: 360 }}
+          loading={loadingPending}
+          options={(pending ?? []).map((p) => ({
+            value: p.id,
+            label: `${formatDate(p.occurredOn)} · ${p.description}`,
           }))}
         />
       )

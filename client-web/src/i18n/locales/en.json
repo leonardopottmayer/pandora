@@ -30,6 +30,8 @@
     "finances": "Finances",
     "accounts": "Accounts",
     "transactions": "Transactions",
+    "recurring": "Recurring",
+    "inbox": "Inbox",
     "cards": "Cards",
     "categories": "Categories",
     "tags": "Tags",
@@ -271,6 +273,62 @@
       "cards": "Card(s)",
       "referenceMonth": "Statement(s)"
     },
+    "recurring": {
+      "new": "New recurrence",
+      "newTitle": "New recurrence",
+      "editTitle": "Edit recurrence",
+      "name": "Name",
+      "nameRequired": "Enter the recurrence name.",
+      "destination": "Destination",
+      "target": "Record on",
+      "frequency": "Frequency",
+      "interval": "Interval",
+      "intervalHint": "How many periods between occurrences (e.g. every 2 months).",
+      "intervalRequired": "Enter the interval.",
+      "everyN": "Every {{n}} {{unit}}",
+      "startDate": "Start date",
+      "startDateHint": "Sets the first occurrence and the anchor day (e.g. day of month).",
+      "startDateRequired": "Enter the start date.",
+      "endDate": "End date",
+      "maxOccurrences": "Max occurrences",
+      "maxOccurrencesHint": "Finishes the recurrence after generating this many occurrences.",
+      "amountIsEstimate": "Estimated amount",
+      "estimate": "Estimate",
+      "autoPost": "Auto-post",
+      "autoPostHint": "When on, each account occurrence is posted directly, skipping the inbox.",
+      "cardAlwaysInbox": "Card recurrences always go through the inbox for review.",
+      "nextOccurrence": "Next occurrence",
+      "occurrences": "Occurrences",
+      "pause": "Pause",
+      "resume": "Resume",
+      "created": "Recurrence created.",
+      "updated": "Recurrence updated.",
+      "paused": "Recurrence paused.",
+      "resumed": "Recurrence resumed.",
+      "deleted": "Recurrence deleted.",
+      "deleteConfirm": "Delete this recurrence?",
+      "saveError": "Could not save the recurrence.",
+      "deleteError": "Could not delete the recurrence."
+    },
+    "inbox": {
+      "source": "Source",
+      "sources": {
+        "recurrence": "Recurrence"
+      },
+      "approve": "Approve",
+      "reject": "Reject",
+      "approveSelected": "Approve selected ({{count}})",
+      "batchApproveConfirm": "Approve {{count}} suggestion(s)?",
+      "rejectTitle": "Reject suggestion",
+      "rejectReasonPlaceholder": "Reason (optional)",
+      "editTitle": "Edit suggestion",
+      "approved": "Suggestion approved.",
+      "rejected": "Suggestion rejected.",
+      "batchApproved": "{{count}} suggestion(s) approved.",
+      "updated": "Suggestion updated.",
+      "saveError": "Could not save the suggestion.",
+      "actionError": "Could not complete the action."
+    },
     "categories": {
       "userTitle": "My categories",
       "systemTitle": "System categories",
@@ -366,6 +424,8 @@
         "card": "Card",
         "statement": "Statement",
         "transaction": "Transaction",
+        "recurring-transaction": "Recurrence",
+        "pending-transaction": "Suggestion (inbox)",
         "user-category": "Category",
         "tag": "Tag"
       }
@@ -410,6 +470,22 @@
       "nature": {
         "income": "Income",
         "expense": "Expense"
+      },
+      "recurringStatus": {
+        "active": "Active",
+        "paused": "Paused",
+        "finished": "Finished"
+      },
+      "pendingStatus": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "recurrenceFrequency": {
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "yearly": "Yearly"
       },
       "transactionKind": {
         "openingBalance": "Opening balance",

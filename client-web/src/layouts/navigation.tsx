@@ -10,6 +10,8 @@ import {
   AppstoreAddOutlined,
   TagsOutlined,
   AuditOutlined,
+  RetweetOutlined,
+  InboxOutlined,
 } from '@ant-design/icons'
 import type { ReactNode } from 'react'
 
@@ -42,6 +44,8 @@ export const navigationModules: NavModule[] = [
     screens: [
       { key: 'fin-accounts', labelKey: 'nav.accounts', path: '/finances/accounts', icon: <BankOutlined /> },
       { key: 'fin-transactions', labelKey: 'nav.transactions', path: '/finances/transactions', icon: <SwapOutlined /> },
+      { key: 'fin-recurring', labelKey: 'nav.recurring', path: '/finances/recurring', icon: <RetweetOutlined /> },
+      { key: 'fin-inbox', labelKey: 'nav.inbox', path: '/finances/inbox', icon: <InboxOutlined /> },
       { key: 'fin-cards', labelKey: 'nav.cards', path: '/finances/cards', icon: <CreditCardOutlined /> },
       { key: 'fin-categories', labelKey: 'nav.categories', path: '/finances/categories', icon: <AppstoreAddOutlined /> },
       { key: 'fin-tags', labelKey: 'nav.tags', path: '/finances/tags', icon: <TagsOutlined /> },

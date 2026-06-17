@@ -17,6 +17,8 @@ import { AccountDetailPage } from '@/modules/finances/pages/accounts/AccountDeta
 import { CategoriesListPage } from '@/modules/finances/pages/categories/CategoriesListPage'
 import { TagsListPage } from '@/modules/finances/pages/tags/TagsListPage'
 import { TransactionsListPage } from '@/modules/finances/pages/transactions/TransactionsListPage'
+import { RecurringTransactionsListPage } from '@/modules/finances/pages/recurring/RecurringTransactionsListPage'
+import { InboxPage } from '@/modules/finances/pages/inbox/InboxPage'
 import { CardsListPage } from '@/modules/finances/pages/cards/CardsListPage'
 import { CardDetailPage } from '@/modules/finances/pages/cards/CardDetailPage'
 import { StatementDetailPage } from '@/modules/finances/pages/statements/StatementDetailPage'
@@ -47,6 +49,8 @@ export const router = createBrowserRouter([
       { path: 'finances/accounts', element: <AccountsListPage /> },
       { path: 'finances/accounts/:id', element: <AccountDetailPage /> },
       { path: 'finances/transactions', element: <TransactionsListPage /> },
+      { path: 'finances/recurring', element: <RecurringTransactionsListPage /> },
+      { path: 'finances/inbox', element: <InboxPage /> },
       { path: 'finances/cards', element: <CardsListPage /> },
       { path: 'finances/cards/:id', element: <CardDetailPage /> },
       { path: 'finances/statements/:id', element: <StatementDetailPage /> },

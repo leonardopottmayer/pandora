@@ -9,7 +9,16 @@ import { useAuditTimeline } from '../../hooks/useAudit'
 import { EntityIdSelect } from './EntityIdSelect'
 
 // Real values the audit log writes to entity_type (its own vocabulary, distinct from TaggableEntityType).
-const ENTITY_TYPES = ['account', 'card', 'statement', 'transaction', 'user-category', 'tag']
+const ENTITY_TYPES = [
+  'account',
+  'card',
+  'statement',
+  'transaction',
+  'recurring-transaction',
+  'pending-transaction',
+  'user-category',
+  'tag',
+]
 
 type Mode = 'entity' | 'correlation'
 

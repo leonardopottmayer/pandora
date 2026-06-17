@@ -1,4 +1,4 @@
-import type { TransactionFilters } from '../models'
+import type { PendingTransactionFilters, TransactionFilters } from '../models'
 
 // Central query key factory for the finances module. Centralising prevents
 // mismatches between callers that query and those that invalidate in the TanStack Query cache.
@@ -44,4 +44,12 @@ export const financeKeys = {
   audit: () => [...financeKeys.all, 'audit'] as const,
   auditTimeline: (params: object = {}) =>
     [...financeKeys.audit(), 'timeline', params] as const,
+
+  recurring: () => [...financeKeys.all, 'recurring'] as const,
+  recurringList: () => [...financeKeys.recurring(), 'list'] as const,
+  recurringItem: (id: string) => [...financeKeys.recurring(), 'detail', id] as const,
+
+  pending: () => [...financeKeys.all, 'pending'] as const,
+  pendingList: (filters: PendingTransactionFilters = {}) =>
+    [...financeKeys.pending(), 'list', filters] as const,
 }

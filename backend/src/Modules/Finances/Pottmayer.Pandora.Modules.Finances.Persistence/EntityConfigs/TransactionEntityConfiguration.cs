@@ -80,6 +80,8 @@ internal sealed class TransactionEntityConfiguration : IEntityTypeConfiguration<
 
         builder.Property(t => t.Origin).HasColumnName("origin").HasMaxLength(15).IsRequired();
         builder.Property(t => t.ReversedTransactionId).HasColumnName("reversed_transaction_id");
+        builder.Property(t => t.PendingTransactionId).HasColumnName("pending_transaction_id");
+        builder.Property(t => t.RecurringTransactionId).HasColumnName("recurring_transaction_id");
 
         builder.Property(t => t.PostedAt).HasColumnName("posted_at");
         builder.Property(t => t.VoidedAt).HasColumnName("voided_at");
@@ -120,6 +122,16 @@ internal sealed class TransactionEntityConfiguration : IEntityTypeConfiguration<
             .HasForeignKey(t => t.ReversedTransactionId)
             .HasConstraintName("fk_fin008_reversed_transaction_id");
 
+        builder.HasOne<PendingTransaction>()
+            .WithMany()
+            .HasForeignKey(t => t.PendingTransactionId)
+            .HasConstraintName("fk_fin008_pending_transaction_id");
+
+        builder.HasOne<RecurringTransaction>()
+            .WithMany()
+            .HasForeignKey(t => t.RecurringTransactionId)
+            .HasConstraintName("fk_fin008_recurring_transaction_id");
+
         builder.HasIndex(t => t.ReversedTransactionId)
             .IsUnique()
             .HasDatabaseName("uq_fin008_reversed_transaction_id");
@@ -131,5 +143,7 @@ internal sealed class TransactionEntityConfiguration : IEntityTypeConfiguration<
         builder.HasIndex(t => new { t.CardId, t.OccurredOn }).HasDatabaseName("ix_fin008_card_id_occurred_on");
         builder.HasIndex(t => t.TransferGroupId).HasDatabaseName("ix_fin008_transfer_group_id");
         builder.HasIndex(t => t.InstallmentPlanId).HasDatabaseName("ix_fin008_installment_plan_id");
+        builder.HasIndex(t => t.PendingTransactionId).HasDatabaseName("ix_fin008_pending_transaction_id");
+        builder.HasIndex(t => t.RecurringTransactionId).HasDatabaseName("ix_fin008_recurring_transaction_id");
     }
 }

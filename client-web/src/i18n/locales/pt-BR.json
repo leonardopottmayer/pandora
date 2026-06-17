@@ -30,6 +30,8 @@
     "finances": "Financas",
     "accounts": "Contas",
     "transactions": "Transacoes",
+    "recurring": "Recorrencias",
+    "inbox": "Caixa de entrada",
     "cards": "Cartoes",
     "categories": "Categorias",
     "tags": "Etiquetas",
@@ -271,6 +273,62 @@
       "cards": "Cartao(oes)",
       "referenceMonth": "Fatura(s)"
     },
+    "recurring": {
+      "new": "Nova recorrencia",
+      "newTitle": "Nova recorrencia",
+      "editTitle": "Editar recorrencia",
+      "name": "Nome",
+      "nameRequired": "Informe o nome da recorrencia.",
+      "destination": "Destino",
+      "target": "Lancar em",
+      "frequency": "Frequencia",
+      "interval": "Intervalo",
+      "intervalHint": "A cada quantos periodos a recorrencia ocorre (ex.: a cada 2 meses).",
+      "intervalRequired": "Informe o intervalo.",
+      "everyN": "A cada {{n}} {{unit}}",
+      "startDate": "Data de inicio",
+      "startDateHint": "Define a primeira ocorrencia e o dia de ancoragem (ex.: dia do mes).",
+      "startDateRequired": "Informe a data de inicio.",
+      "endDate": "Data de termino",
+      "maxOccurrences": "Maximo de ocorrencias",
+      "maxOccurrencesHint": "Encerra a recorrencia apos gerar esta quantidade de ocorrencias.",
+      "amountIsEstimate": "Valor estimado",
+      "estimate": "Estimado",
+      "autoPost": "Lancar automaticamente",
+      "autoPostHint": "Quando ativo, cada ocorrencia em conta e lancada direto, sem passar pela caixa de entrada.",
+      "cardAlwaysInbox": "Recorrencias em cartao sempre passam pela caixa de entrada para revisao.",
+      "nextOccurrence": "Proxima ocorrencia",
+      "occurrences": "Ocorrencias",
+      "pause": "Pausar",
+      "resume": "Retomar",
+      "created": "Recorrencia criada.",
+      "updated": "Recorrencia atualizada.",
+      "paused": "Recorrencia pausada.",
+      "resumed": "Recorrencia retomada.",
+      "deleted": "Recorrencia excluida.",
+      "deleteConfirm": "Excluir esta recorrencia?",
+      "saveError": "Nao foi possivel salvar a recorrencia.",
+      "deleteError": "Nao foi possivel excluir a recorrencia."
+    },
+    "inbox": {
+      "source": "Origem",
+      "sources": {
+        "recurrence": "Recorrencia"
+      },
+      "approve": "Aprovar",
+      "reject": "Rejeitar",
+      "approveSelected": "Aprovar selecionadas ({{count}})",
+      "batchApproveConfirm": "Aprovar {{count}} sugestao(oes)?",
+      "rejectTitle": "Rejeitar sugestao",
+      "rejectReasonPlaceholder": "Motivo (opcional)",
+      "editTitle": "Editar sugestao",
+      "approved": "Sugestao aprovada.",
+      "rejected": "Sugestao rejeitada.",
+      "batchApproved": "{{count}} sugestao(oes) aprovada(s).",
+      "updated": "Sugestao atualizada.",
+      "saveError": "Nao foi possivel salvar a sugestao.",
+      "actionError": "Nao foi possivel concluir a acao."
+    },
     "categories": {
       "userTitle": "Minhas categorias",
       "systemTitle": "Categorias do sistema",
@@ -366,6 +424,8 @@
         "card": "Cartao",
         "statement": "Fatura",
         "transaction": "Transacao",
+        "recurring-transaction": "Recorrencia",
+        "pending-transaction": "Sugestao (caixa de entrada)",
         "user-category": "Categoria",
         "tag": "Etiqueta"
       }
@@ -410,6 +470,22 @@
       "nature": {
         "income": "Receita",
         "expense": "Despesa"
+      },
+      "recurringStatus": {
+        "active": "Ativa",
+        "paused": "Pausada",
+        "finished": "Encerrada"
+      },
+      "pendingStatus": {
+        "pending": "Pendente",
+        "approved": "Aprovada",
+        "rejected": "Rejeitada"
+      },
+      "recurrenceFrequency": {
+        "daily": "Diaria",
+        "weekly": "Semanal",
+        "monthly": "Mensal",
+        "yearly": "Anual"
       },
       "transactionKind": {
         "openingBalance": "Saldo inicial",

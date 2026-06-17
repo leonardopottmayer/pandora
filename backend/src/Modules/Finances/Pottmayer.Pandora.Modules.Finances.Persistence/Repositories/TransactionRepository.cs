@@ -148,6 +148,11 @@ public sealed class TransactionRepository(IDataContextAccessor accessor)
     public Task<bool> ExistsReversalForAsync(Guid transactionId, Guid userId, CancellationToken ct = default)
         => Queryable().AnyAsync(t => t.ReversedTransactionId == transactionId && t.UserId == userId, ct);
 
+    public async Task<IReadOnlyList<Transaction>> GetDuePendingAsync(DateOnly today, CancellationToken ct = default)
+        => await Queryable()
+            .Where(t => t.Status == TransactionStatus.Pending && t.AccountId != null && t.OccurredOn <= today)
+            .ToListAsync(ct);
+
     /// <summary>
     /// Signed sum over the account ledger. Kept in memory because the sign is a function of the kind
     /// (a value object); ledger growth is addressed later with balance snapshots (D1), not now.

@@ -9,6 +9,7 @@ public static class InfrastructureDI
     public static IHostApplicationBuilder AddFinancesInfrastructure(this IHostApplicationBuilder builder)
     {
         builder.Services.AddHostedService<StatementLifecycleBackgroundService>();
+        builder.Services.AddHostedService<RecurrenceGenerationBackgroundService>();
         return builder;
     }
 }

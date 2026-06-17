@@ -1,0 +1,56 @@
+using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
+
+namespace Pottmayer.Pandora.Modules.Finances.Application.Dtos;
+
+public sealed record RecurringTransactionDto(
+    Guid Id,
+    string Name,
+    Guid? AccountId,
+    Guid? CardId,
+    string Kind,
+    decimal? Amount,
+    bool AmountIsEstimate,
+    string Description,
+    string? Payee,
+    Guid? SystemCategoryId,
+    Guid? UserCategoryId,
+    string Frequency,
+    short Interval,
+    short? DayOfMonth,
+    short? Weekday,
+    DateOnly StartDate,
+    DateOnly? EndDate,
+    int? MaxOccurrences,
+    string Status,
+    bool AutoPost,
+    DateOnly NextOccurrenceOn,
+    int OccurrencesCount,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? UpdatedAt)
+{
+    public static RecurringTransactionDto From(RecurringTransaction r) => new(
+        r.Id,
+        r.Name,
+        r.AccountId,
+        r.CardId,
+        r.Kind,
+        r.Amount,
+        r.AmountIsEstimate,
+        r.Description,
+        r.Payee,
+        r.SystemCategoryId,
+        r.UserCategoryId,
+        r.Frequency,
+        r.Interval,
+        r.DayOfMonth,
+        r.Weekday,
+        r.StartDate,
+        r.EndDate,
+        r.MaxOccurrences,
+        r.Status,
+        r.AutoPost,
+        r.NextOccurrenceOn,
+        r.OccurrencesCount,
+        r.CreatedAt,
+        r.UpdatedAt);
+}

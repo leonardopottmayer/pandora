@@ -1,5 +1,8 @@
 import type {
   AccountType,
+  PendingStatus,
+  RecurrenceFrequency,
+  RecurringStatus,
   StatementStatus,
   TransactionKind,
   TransactionNature,
@@ -41,6 +44,22 @@ export const STATEMENT_STATUS_META: Record<StatementStatus, EnumMeta> = {
 export const TRANSACTION_NATURE_META: Record<TransactionNature, EnumMeta> = {
   income: { labelKey: 'finances.enums.nature.income', color: 'green' },
   expense: { labelKey: 'finances.enums.nature.expense', color: 'red' },
+}
+
+export const RECURRING_STATUS_META: Record<RecurringStatus, EnumMeta> = {
+  active: { labelKey: 'finances.enums.recurringStatus.active', color: 'green' },
+  paused: { labelKey: 'finances.enums.recurringStatus.paused', color: 'gold' },
+  finished: { labelKey: 'finances.enums.recurringStatus.finished', color: 'default' },
+}
+
+export const PENDING_STATUS_META: Record<PendingStatus, EnumMeta> = {
+  pending: { labelKey: 'finances.enums.pendingStatus.pending', color: 'gold' },
+  approved: { labelKey: 'finances.enums.pendingStatus.approved', color: 'green' },
+  rejected: { labelKey: 'finances.enums.pendingStatus.rejected', color: 'red' },
+}
+
+export function recurrenceFrequencyLabelKey(frequency: RecurrenceFrequency): string {
+  return `finances.enums.recurrenceFrequency.${frequency}`
 }
 
 /** Transaction flow direction on the balance: in (+), out (−), or neutral. */

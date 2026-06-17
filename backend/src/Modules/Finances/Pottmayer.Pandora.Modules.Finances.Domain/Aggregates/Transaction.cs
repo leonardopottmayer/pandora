@@ -45,14 +45,15 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
     public Guid? InstallmentPlanId { get; private set; }
     public short? InstallmentNumber { get; private set; }
 
-    /// <summary>Provenance. Only <c>manual</c> and <c>reversal</c> exist in this phase (import/recurrence arrive later).</summary>
     public string Origin { get; private set; } = "manual";
 
-    /// <summary>
-    /// When this entry is a reversal (<see cref="Origin"/> = <c>"reversal"</c>), the transaction it
-    /// neutralizes. The original is never changed; this is a one-way link set only on the new entry.
-    /// </summary>
     public Guid? ReversedTransactionId { get; private set; }
+
+    /// <summary>Links the transaction back to the inbox entry it was created from (source = recurrence).</summary>
+    public Guid? PendingTransactionId { get; private set; }
+
+    /// <summary>Links the transaction back to the recurring template that generated it.</summary>
+    public Guid? RecurringTransactionId { get; private set; }
 
     public DateTimeOffset? PostedAt { get; private set; }
     public DateTimeOffset? VoidedAt { get; private set; }
@@ -302,6 +303,17 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
         VoidedAt = null;
         VoidReason = null;
         return true;
+    }
+
+    /// <summary>
+    /// Links this transaction to the recurring-transaction template and optional pending-transaction
+    /// record it was generated from. Sets <see cref="Origin"/> to <c>"recurrence"</c>.
+    /// </summary>
+    public void MarkAsRecurrence(Guid recurringTransactionId, Guid? pendingTransactionId)
+    {
+        Origin = "recurrence";
+        RecurringTransactionId = recurringTransactionId;
+        PendingTransactionId = pendingTransactionId;
     }
 
     /// <summary>

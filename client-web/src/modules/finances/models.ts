@@ -45,6 +45,19 @@ export type StatementStatus = (typeof STATEMENT_STATUSES)[number]
 export const TRANSACTION_ORIGINS = ['manual', 'import', 'recurrence', 'projection'] as const
 export type TransactionOrigin = (typeof TRANSACTION_ORIGINS)[number]
 
+export const RECURRENCE_FREQUENCIES = ['daily', 'weekly', 'monthly', 'yearly'] as const
+export type RecurrenceFrequency = (typeof RECURRENCE_FREQUENCIES)[number]
+
+export const RECURRING_STATUSES = ['active', 'paused', 'finished'] as const
+export type RecurringStatus = (typeof RECURRING_STATUSES)[number]
+
+export const PENDING_STATUSES = ['pending', 'approved', 'rejected'] as const
+export type PendingStatus = (typeof PENDING_STATUSES)[number]
+
+/** Source of a pending transaction. Only 'recurrence' exists in phase 08 ('import' arrives in phase 09). */
+export const PENDING_SOURCES = ['recurrence'] as const
+export type PendingSource = (typeof PENDING_SOURCES)[number]
+
 export const TAGGABLE_ENTITY_TYPES = [
   'account',
   'card',
@@ -224,6 +237,60 @@ export interface AuditEventDto {
   occurredAt: string
 }
 
+export interface RecurringTransactionDto {
+  id: string
+  name: string
+  accountId: string | null
+  cardId: string | null
+  kind: TransactionKind
+  amount: number | null
+  amountIsEstimate: boolean
+  description: string
+  payee: string | null
+  systemCategoryId: string | null
+  userCategoryId: string | null
+  frequency: RecurrenceFrequency
+  interval: number
+  dayOfMonth: number | null
+  weekday: number | null
+  startDate: string
+  endDate: string | null
+  maxOccurrences: number | null
+  status: RecurringStatus
+  autoPost: boolean
+  nextOccurrenceOn: string
+  occurrencesCount: number
+  createdAt: string
+  updatedAt: string | null
+}
+
+export interface PendingTransactionDto {
+  id: string
+  source: PendingSource
+  recurringTransactionId: string | null
+  accountId: string | null
+  cardId: string | null
+  kind: TransactionKind
+  amount: number | null
+  currency: string
+  occurredOn: string
+  description: string
+  payee: string | null
+  notes: string | null
+  systemCategoryId: string | null
+  userCategoryId: string | null
+  suggestedStatementId: string | null
+  /** Immutable JSON snapshot of the originally generated proposal. */
+  originalPayload: string
+  status: PendingStatus
+  decidedAt: string | null
+  decidedBy: string | null
+  rejectionReason: string | null
+  transactionId: string | null
+  createdAt: string
+  updatedAt: string | null
+}
+
 // ---------------------------------------------------------------------------
 // Requests (create/update payloads)
 // ---------------------------------------------------------------------------
@@ -352,6 +419,71 @@ export interface LinkTagRequest {
 
 export interface SetEntityTagsRequest {
   tagIds: string[]
+}
+
+export interface CreateRecurringTransactionRequest {
+  name: string
+  accountId?: string | null
+  cardId?: string | null
+  kind: TransactionKind
+  amount?: number | null
+  amountIsEstimate: boolean
+  description: string
+  payee?: string | null
+  systemCategoryId?: string | null
+  userCategoryId?: string | null
+  frequency: RecurrenceFrequency
+  interval: number
+  dayOfMonth?: number | null
+  weekday?: number | null
+  startDate: string
+  endDate?: string | null
+  maxOccurrences?: number | null
+  autoPost: boolean
+}
+
+export interface UpdateRecurringTransactionRequest {
+  name: string
+  amount?: number | null
+  amountIsEstimate: boolean
+  description: string
+  payee?: string | null
+  systemCategoryId?: string | null
+  userCategoryId?: string | null
+  endDate?: string | null
+  maxOccurrences?: number | null
+  autoPost: boolean
+}
+
+export interface UpdatePendingTransactionRequest {
+  kind: TransactionKind
+  amount?: number | null
+  occurredOn: string
+  description: string
+  payee?: string | null
+  notes?: string | null
+  systemCategoryId?: string | null
+  userCategoryId?: string | null
+  suggestedStatementId?: string | null
+}
+
+export interface RejectPendingTransactionRequest {
+  reason?: string | null
+}
+
+export interface ApprovePendingTransactionBatchRequest {
+  ids: string[]
+}
+
+/** Filters for the pending transaction inbox (GET /pending-transactions). */
+export interface PendingTransactionFilters {
+  source?: PendingSource
+  accountId?: string
+  cardId?: string
+  from?: string
+  to?: string
+  skip?: number
+  take?: number
 }
 
 /** Filters for the transaction list (GET /transactions and /accounts/{id}/transactions). */
