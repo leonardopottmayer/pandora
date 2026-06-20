@@ -9,6 +9,7 @@ using Pottmayer.Pandora.Modules.Finances.Application.Commands.SetEntityTags;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.UnvoidTransaction;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.UpdateTransaction;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.VoidTransaction;
+using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetTransaction;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetTransactions;
 using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Finances.Presentation.Requests;
@@ -50,6 +51,13 @@ public sealed class TransactionsController(
         var query = new GetTransactionsQuery(new GetTransactionsInput(
             UserId, accountId, from, to, kind, status, systemCategoryId, userCategoryId, text, origin, tags, skip, take));
         var result = await sender.Send(query, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetAsync(Guid id, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetTransactionQuery(new GetTransactionInput(UserId, id)), ct);
         return result.ToActionResult(errorMapper);
     }
 

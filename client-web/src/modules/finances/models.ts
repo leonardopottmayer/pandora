@@ -54,9 +54,17 @@ export type RecurringStatus = (typeof RECURRING_STATUSES)[number]
 export const PENDING_STATUSES = ['pending', 'approved', 'rejected'] as const
 export type PendingStatus = (typeof PENDING_STATUSES)[number]
 
-/** Source of a pending transaction. Only 'recurrence' exists in phase 08 ('import' arrives in phase 09). */
-export const PENDING_SOURCES = ['recurrence'] as const
+export const PENDING_SOURCES = ['recurrence', 'import'] as const
 export type PendingSource = (typeof PENDING_SOURCES)[number]
+
+export const IMPORT_STATUSES = ['received', 'parsing', 'completed', 'failed', 'aborted'] as const
+export type ImportStatus = (typeof IMPORT_STATUSES)[number]
+
+export const IMPORT_ROW_STATUSES = ['pending', 'skipped', 'suggestion-created', 'error'] as const
+export type ImportRowStatus = (typeof IMPORT_ROW_STATUSES)[number]
+
+export const DEDUP_STATUSES = ['new', 'certain', 'suspected', 'matched'] as const
+export type DedupStatus = (typeof DEDUP_STATUSES)[number]
 
 export const TAGGABLE_ENTITY_TYPES = [
   'account',
@@ -287,6 +295,10 @@ export interface PendingTransactionDto {
   decidedBy: string | null
   rejectionReason: string | null
   transactionId: string | null
+  /** Import provenance / dedup — null for recurrence-sourced suggestions. */
+  importRowId: string | null
+  dedupStatus: DedupStatus | null
+  duplicateOfTransactionId: string | null
   createdAt: string
   updatedAt: string | null
 }
@@ -475,6 +487,19 @@ export interface ApprovePendingTransactionBatchRequest {
   ids: string[]
 }
 
+/** Links an import suggestion to a transaction the user already has (no new transaction is created). */
+export interface LinkPendingTransactionRequest {
+  transactionId: string
+}
+
+/** Turns two account suggestions (one outflow, one inflow) into a transfer pair. */
+export interface CreateTransferFromPendingRequest {
+  outflowPendingId: string
+  inflowPendingId: string
+  description?: string | null
+  occurredOn?: string | null
+}
+
 /** Filters for the pending transaction inbox (GET /pending-transactions). */
 export interface PendingTransactionFilters {
   source?: PendingSource
@@ -482,6 +507,69 @@ export interface PendingTransactionFilters {
   cardId?: string
   from?: string
   to?: string
+  skip?: number
+  take?: number
+}
+
+// ---------------------------------------------------------------------------
+// Import DTOs (phases 09 / 10)
+// ---------------------------------------------------------------------------
+
+export interface ImportLayoutDto {
+  id: string
+  layoutCode: string
+  name: string
+  bankName: string | null
+  fileFormat: string
+  accountType: string
+  isSystemLayout: boolean
+  createdAt: string
+}
+
+export interface ImportFileDto {
+  id: string
+  userId: string
+  layoutId: string | null
+  accountId: string | null
+  cardId: string | null
+  fileName: string
+  fileHash: string
+  fileSize: number
+  correlationId: string
+  status: ImportStatus
+  totalRows: number
+  parsedRows: number
+  errorRows: number
+  duplicateRows: number
+  suggestionRows: number
+  retryCount: number
+  errorMessage: string | null
+  startedAt: string | null
+  completedAt: string | null
+  createdAt: string
+}
+
+export interface ImportRowDto {
+  id: string
+  importFileId: string
+  rowIndex: number
+  rawData: string
+  parsedPayload: string | null
+  externalId: string | null
+  dedupKey: string | null
+  dedupStatus: DedupStatus
+  matchedTransactionId: string | null
+  matchedPendingTransactionId: string | null
+  installmentNumber: number | null
+  installmentCount: number | null
+  matchedInstallmentPlanId: string | null
+  pendingTransactionId: string | null
+  status: ImportRowStatus
+  errorMessage: string | null
+  createdAt: string
+}
+
+export interface ImportFileFilters {
   skip?: number
   take?: number
 }

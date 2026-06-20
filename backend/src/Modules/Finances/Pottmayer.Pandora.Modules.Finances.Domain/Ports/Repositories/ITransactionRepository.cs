@@ -7,6 +7,7 @@ namespace Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 public sealed record TransactionFilter(
     Guid? AccountId = null,
     Guid? CardStatementId = null,
+    Guid? CardId = null,
     DateOnly? From = null,
     DateOnly? To = null,
     string? Kind = null,

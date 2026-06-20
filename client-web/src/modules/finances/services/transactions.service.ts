@@ -11,6 +11,11 @@ import type {
 
 const BASE = '/api/v1.0/finances/transactions'
 
+export async function getTransaction(id: string): Promise<TransactionDto> {
+  const { data } = await apiClient.get<TransactionDto>(`${BASE}/${id}`)
+  return data
+}
+
 export async function listTransactions(filters: TransactionFilters = {}): Promise<TransactionDto[]> {
   const { data } = await apiClient.get<TransactionDto[]>(BASE, {
     params: {

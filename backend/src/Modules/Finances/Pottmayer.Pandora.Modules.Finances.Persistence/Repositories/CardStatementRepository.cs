@@ -15,8 +15,18 @@ public sealed class CardStatementRepository(IDataContextAccessor accessor)
 
     public Task<CardStatement?> FindByCardAndReferenceMonthAsync(
         Guid cardId, Guid userId, string referenceMonth, CancellationToken ct = default)
-        => Queryable().FirstOrDefaultAsync(
+    {
+        // Check locally tracked (e.g. just-added, not-yet-committed) entities first: within a single
+        // unit of work, multiple occurrences can resolve to the same reference month, and a DB query
+        // alone won't see statements created earlier in the same not-yet-saved batch.
+        var local = Set.Local.FirstOrDefault(
+            s => s.CardId == cardId && s.UserId == userId && s.ReferenceMonth == referenceMonth);
+        if (local is not null)
+            return Task.FromResult<CardStatement?>(local);
+
+        return Queryable().FirstOrDefaultAsync(
             s => s.CardId == cardId && s.UserId == userId && s.ReferenceMonth == referenceMonth, ct);
+    }
 
     public async Task<IReadOnlyList<CardStatement>> GetByCardAsync(
         Guid cardId, Guid userId, CancellationToken ct = default)

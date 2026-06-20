@@ -2,21 +2,27 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { App, Button, Card, Flex, Input, Modal, Popconfirm, Space, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import { LinkOutlined, SwapOutlined } from '@ant-design/icons'
 import { toErrorMessage } from '@/lib/api/envelope'
 import type { PendingTransactionDto } from '../../models'
 import { kindDirection, transactionKindLabelKey } from '../../lib/enums'
 import { formatDate } from '../../lib/format'
 import { CurrencyAmount } from '../../components/CurrencyAmount'
+import { TransactionDetailModal } from '../../components/TransactionDetailModal'
+import { LinkTransactionModal } from '../../components/LinkTransactionModal'
 import { useAccountNames } from '../../hooks/useAccounts'
 import { useCardNames } from '../../hooks/useCards'
 import { useCategoryNames } from '../../hooks/useCategories'
 import {
   useApprovePendingTransaction,
   useApprovePendingTransactionBatch,
+  useCreateTransferFromPending,
+  useLinkPendingTransaction,
   usePendingTransactions,
   useRejectPendingTransaction,
 } from '../../hooks/usePendingTransactions'
 import { PendingTransactionEditModal } from './PendingTransactionEditModal'
+import { TransferFromPendingModal } from './TransferFromPendingModal'
 
 export function InboxPage() {
   const { t } = useTranslation()
@@ -26,6 +32,9 @@ export function InboxPage() {
   const [editOpen, setEditOpen] = useState(false)
   const [rejecting, setRejecting] = useState<PendingTransactionDto | null>(null)
   const [rejectReason, setRejectReason] = useState('')
+  const [viewTxId, setViewTxId] = useState<string | null>(null)
+  const [linking, setLinking] = useState<PendingTransactionDto | null>(null)
+  const [transferOpen, setTransferOpen] = useState(false)
 
   const { data, isLoading } = usePendingTransactions({ take: 1000 })
   const accountNames = useAccountNames()
@@ -34,6 +43,49 @@ export function InboxPage() {
   const approveMutation = useApprovePendingTransaction()
   const rejectMutation = useRejectPendingTransaction()
   const batchMutation = useApprovePendingTransactionBatch()
+  const linkMutation = useLinkPendingTransaction()
+  const transferMutation = useCreateTransferFromPending()
+
+  // Resolve the two selected suggestions into a transfer's legs (one outflow + one inflow on accounts).
+  const selectedPendings = (data ?? []).filter((p) => selectedRowKeys.includes(p.id))
+  const outflowLeg =
+    selectedPendings.length === 2
+      ? selectedPendings.find((p) => p.accountId && !p.cardId && kindDirection(p.kind) === 'out') ?? null
+      : null
+  const inflowLeg =
+    selectedPendings.length === 2
+      ? selectedPendings.find((p) => p.accountId && !p.cardId && kindDirection(p.kind) === 'in') ?? null
+      : null
+  const canTransfer =
+    !!outflowLeg && !!inflowLeg && outflowLeg.accountId !== inflowLeg.accountId
+
+  async function handleLink(transactionId: string) {
+    if (!linking) return
+    try {
+      await linkMutation.mutateAsync({ id: linking.id, transactionId })
+      message.success(t('finances.imports.linked'))
+      setLinking(null)
+    } catch (err) {
+      message.error(toErrorMessage(err, t('finances.inbox.actionError')))
+    }
+  }
+
+  async function handleTransfer(description: string, occurredOn: string) {
+    if (!outflowLeg || !inflowLeg) return
+    try {
+      await transferMutation.mutateAsync({
+        outflowPendingId: outflowLeg.id,
+        inflowPendingId: inflowLeg.id,
+        description,
+        occurredOn,
+      })
+      message.success(t('finances.inbox.transferDone'))
+      setTransferOpen(false)
+      setSelectedRowKeys([])
+    } catch (err) {
+      message.error(toErrorMessage(err, t('finances.inbox.actionError')))
+    }
+  }
 
   function openEdit(pending: PendingTransactionDto) {
     setEditing(pending)
@@ -125,6 +177,18 @@ export function InboxPage() {
       sorter: (a, b) => (a.amount ?? 0) - (b.amount ?? 0),
     },
     {
+      title: t('finances.imports.duplicate'),
+      key: 'duplicate',
+      render: (_, p) =>
+        p.duplicateOfTransactionId ? (
+          <a onClick={() => setViewTxId(p.duplicateOfTransactionId)}>
+            {t('finances.imports.viewTransaction')}
+          </a>
+        ) : (
+          '—'
+        ),
+    },
+    {
       title: t('common.actions'),
       key: 'actions',
       align: 'right',
@@ -136,6 +200,11 @@ export function InboxPage() {
           <Button size="small" onClick={() => openEdit(p)}>
             {t('common.edit')}
           </Button>
+          {p.source === 'import' && (
+            <Button size="small" icon={<LinkOutlined />} onClick={() => setLinking(p)}>
+              {t('finances.imports.link')}
+            </Button>
+          )}
           <Button size="small" danger onClick={() => setRejecting(p)}>
             {t('finances.inbox.reject')}
           </Button>
@@ -150,18 +219,25 @@ export function InboxPage() {
         <Typography.Title level={4} style={{ margin: 0 }}>
           {t('nav.inbox')}
         </Typography.Title>
-        {selectedRowKeys.length > 0 && (
-          <Popconfirm
-            title={t('finances.inbox.batchApproveConfirm', { count: selectedRowKeys.length })}
-            okText={t('finances.inbox.approve')}
-            cancelText={t('common.cancel')}
-            onConfirm={handleApproveSelected}
-          >
-            <Button type="primary" loading={batchMutation.isPending}>
-              {t('finances.inbox.approveSelected', { count: selectedRowKeys.length })}
+        <Space>
+          {canTransfer && (
+            <Button icon={<SwapOutlined />} onClick={() => setTransferOpen(true)}>
+              {t('finances.inbox.makeTransfer')}
             </Button>
-          </Popconfirm>
-        )}
+          )}
+          {selectedRowKeys.length > 0 && (
+            <Popconfirm
+              title={t('finances.inbox.batchApproveConfirm', { count: selectedRowKeys.length })}
+              okText={t('finances.inbox.approve')}
+              cancelText={t('common.cancel')}
+              onConfirm={handleApproveSelected}
+            >
+              <Button type="primary" loading={batchMutation.isPending}>
+                {t('finances.inbox.approveSelected', { count: selectedRowKeys.length })}
+              </Button>
+            </Popconfirm>
+          )}
+        </Space>
       </Flex>
 
       <Table
@@ -178,6 +254,31 @@ export function InboxPage() {
         open={editOpen}
         pending={editing}
         onClose={() => setEditOpen(false)}
+      />
+
+      <TransactionDetailModal
+        transactionId={viewTxId}
+        open={!!viewTxId}
+        onClose={() => setViewTxId(null)}
+      />
+
+      <LinkTransactionModal
+        open={!!linking}
+        defaultSearch={linking?.description}
+        accountId={linking?.accountId}
+        loading={linkMutation.isPending}
+        onClose={() => setLinking(null)}
+        onPick={handleLink}
+      />
+
+      <TransferFromPendingModal
+        open={transferOpen}
+        outflow={outflowLeg}
+        inflow={inflowLeg}
+        accountNames={accountNames}
+        loading={transferMutation.isPending}
+        onClose={() => setTransferOpen(false)}
+        onConfirm={handleTransfer}
       />
 
       <Modal

@@ -46,6 +46,33 @@ public sealed class CategoriesTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task System_tree_includes_seeded_extra_categories()
+    {
+        await IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, "sysextra@example.com", "sysextra");
+
+        var tree = await GetSystemAsync();
+
+        // New Telecom group sits in the expense block (before any income root) with its children.
+        var telecom = Assert.Single(tree, c => c.Code == "telecom");
+        Assert.Equal("expense", telecom.Nature);
+        Assert.Contains(telecom.Children, c => c.Code == "internet");
+        Assert.Contains(telecom.Children, c => c.Code == "mobile-phone");
+        Assert.Contains(telecom.Children, c => c.Code == "landline-phone");
+        Assert.Contains(telecom.Children, c => c.IsOther);
+
+        var firstIncomeOrder = tree.Where(c => c.Nature == "income").Min(c => c.DisplayOrder);
+        Assert.True(telecom.DisplayOrder < firstIncomeOrder, "Telecom must stay within the expense block");
+
+        // New children attached to existing groups.
+        var financial = Assert.Single(tree, c => c.Code == "financial-expenses");
+        Assert.Contains(financial.Children, c => c.Code == "accounting");
+        var subscriptions = Assert.Single(tree, c => c.Code == "subscriptions");
+        Assert.Contains(subscriptions.Children, c => c.Code == "hosting");
+        var health = Assert.Single(tree, c => c.Code == "health");
+        Assert.Contains(health.Children, c => c.Code == "supplements");
+    }
+
+    [Fact]
     public async Task System_tree_filters_by_nature()
     {
         await IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, "sysnat@example.com", "sysnat");

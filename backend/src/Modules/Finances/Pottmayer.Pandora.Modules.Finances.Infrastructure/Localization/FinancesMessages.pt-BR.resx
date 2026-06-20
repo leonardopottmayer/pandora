@@ -454,4 +454,28 @@
   <data name="category.other-misc-income" xml:space="preserve">
     <value>Outros (renda diversa)</value>
   </data>
+  <data name="category.telecom" xml:space="preserve">
+    <value>Telecomunicações</value>
+  </data>
+  <data name="category.internet" xml:space="preserve">
+    <value>Internet</value>
+  </data>
+  <data name="category.mobile-phone" xml:space="preserve">
+    <value>Plano de celular</value>
+  </data>
+  <data name="category.landline-phone" xml:space="preserve">
+    <value>Telefone fixo</value>
+  </data>
+  <data name="category.other-telecom" xml:space="preserve">
+    <value>Outros (telecom)</value>
+  </data>
+  <data name="category.accounting" xml:space="preserve">
+    <value>Serviços contábeis</value>
+  </data>
+  <data name="category.hosting" xml:space="preserve">
+    <value>Hospedagem</value>
+  </data>
+  <data name="category.supplements" xml:space="preserve">
+    <value>Suplementos</value>
+  </data>
 </root>

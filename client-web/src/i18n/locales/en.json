@@ -35,7 +35,9 @@
     "cards": "Cards",
     "categories": "Categories",
     "tags": "Tags",
-    "audit": "Audit"
+    "audit": "Audit",
+    "imports": "Imports",
+    "importLayouts": "Import Layouts"
   },
   "theme": {
     "toLight": "Light theme",
@@ -153,7 +155,11 @@
     "lowCodes": "Few recovery codes left. Consider regenerating them.",
     "regenerate": "Regenerate recovery codes",
     "disable": "Disable MFA",
-    "steps": { "start": "Start", "confirm": "Confirm", "codes": "Codes" },
+    "steps": {
+      "start": "Start",
+      "confirm": "Confirm",
+      "codes": "Codes"
+    },
     "startDesc": "You'll need an authenticator app (Google Authenticator, Authy, etc.).",
     "startButton": "Start setup",
     "startError": "Could not start the setup.",
@@ -264,7 +270,8 @@
       "installment": "Installment",
       "statement": "Statement",
       "effectiveDate": "Due date",
-      "creditCard": "Credit Card"
+      "creditCard": "Credit Card",
+      "detailTitle": "Transaction details"
     },
     "filters": {
       "from": "From",
@@ -313,7 +320,8 @@
     "inbox": {
       "source": "Source",
       "sources": {
-        "recurrence": "Recurrence"
+        "recurrence": "Recurrence",
+        "import": "Import"
       },
       "approve": "Approve",
       "reject": "Reject",
@@ -327,7 +335,12 @@
       "batchApproved": "{{count}} suggestion(s) approved.",
       "updated": "Suggestion updated.",
       "saveError": "Could not save the suggestion.",
-      "actionError": "Could not complete the action."
+      "actionError": "Could not complete the action.",
+      "makeTransfer": "Make transfer",
+      "transferTitle": "Create transfer from suggestions",
+      "transferConfirm": "Create transfer",
+      "transferInvalid": "Select one outflow and one inflow suggestion, both on accounts.",
+      "transferDone": "Transfer created from the two suggestions."
     },
     "categories": {
       "userTitle": "My categories",
@@ -500,6 +513,78 @@
         "refund": "Refund",
         "cardStatementPayment": "Statement payment"
       }
+    },
+    "imports": {
+      "title": "Imports",
+      "upload": "Upload file",
+      "uploaded": "File uploaded and queued for processing.",
+      "uploadError": "Could not upload the file.",
+      "selectDestinationFirst": "Select an account or card before uploading.",
+      "selectAccount": "Select account",
+      "selectCard": "Select card",
+      "account": "Account",
+      "card": "Card",
+      "fileName": "File",
+      "status": "Status",
+      "rows": "Rows",
+      "createdAt": "Uploaded at",
+      "completedAt": "Completed at",
+      "totalRows": "Total rows",
+      "parsedRows": "Parsed",
+      "suggestions": "Suggestions",
+      "duplicates": "Duplicates",
+      "errors": "Errors",
+      "errorMessage": "Error",
+      "rowsTitle": "Rows",
+      "rowStatus": "Status",
+      "dedupStatus": "Dedup",
+      "rawData": "Raw data",
+      "externalId": "External ID",
+      "installment": "Installment",
+      "suggestion": "Suggestion",
+      "duplicate": "Duplicate",
+      "error": "Error",
+      "viewInbox": "View in inbox",
+      "existingTx": "Existing transaction",
+      "existingSuggestion": "Existing suggestion",
+      "abort": "Abort",
+      "retry": "Retry",
+      "aborted": "Import aborted.",
+      "retried": "Import re-queued for processing.",
+      "actionError": "Could not complete the action.",
+      "statuses": {
+        "received": "Received",
+        "parsing": "Parsing",
+        "completed": "Completed",
+        "failed": "Failed",
+        "aborted": "Aborted"
+      },
+      "rowStatuses": {
+        "pending": "Pending",
+        "skipped": "Skipped",
+        "suggestion-created": "Suggestion created",
+        "error": "Error"
+      },
+      "dedupStatuses": {
+        "new": "New",
+        "certain": "Certain duplicate",
+        "suspected": "Suspected duplicate",
+        "matched": "Matched"
+      },
+      "link": "Link",
+      "linked": "Suggestion linked to the existing transaction.",
+      "linkTitle": "Link to an existing transaction",
+      "linkConfirm": "Link",
+      "linkSearchPlaceholder": "Search by description or payee",
+      "viewTransaction": "View transaction"
+    },
+    "importLayouts": {
+      "title": "Import Layouts",
+      "name": "Name",
+      "bank": "Bank",
+      "format": "Format",
+      "accountType": "Type",
+      "code": "Code"
     }
   }
 }

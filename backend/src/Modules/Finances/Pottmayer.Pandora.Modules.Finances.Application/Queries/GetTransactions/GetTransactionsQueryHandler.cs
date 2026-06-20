@@ -34,8 +34,18 @@ public sealed class GetTransactionsQueryHandler(IUnitOfWorkFactory factory, IMes
                     .GetEntityIdsByTagsAsync(TaggableEntityType.Transaction, tagIds, token);
 
             var filter = new TransactionFilter(
-                input.AccountId, null, input.From, input.To, input.Kind, input.Status,
-                input.SystemCategoryId, input.UserCategoryId, input.Text, input.Origin, ids, skip, take);
+                AccountId: input.AccountId,
+                From: input.From,
+                To: input.To,
+                Kind: input.Kind,
+                Status: input.Status,
+                SystemCategoryId: input.SystemCategoryId,
+                UserCategoryId: input.UserCategoryId,
+                Text: input.Text,
+                Origin: input.Origin,
+                Ids: ids,
+                Skip: skip,
+                Take: take);
 
             var txList = await ctx.AcquireRepository<ITransactionRepository>().QueryAsync(input.UserId, filter, token);
 

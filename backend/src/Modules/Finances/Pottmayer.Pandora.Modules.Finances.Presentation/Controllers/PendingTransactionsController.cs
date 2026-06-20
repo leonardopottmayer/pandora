@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.ApprovePendingTransaction;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.ApprovePendingTransactionBatch;
+using Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateTransferFromPending;
+using Pottmayer.Pandora.Modules.Finances.Application.Commands.LinkPendingTransaction;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.RejectPendingTransaction;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.UpdatePendingTransaction;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetPendingTransactions;
@@ -83,6 +85,22 @@ public sealed class PendingTransactionsController(
     {
         var result = await sender.Send(
             new ApprovePendingTransactionBatchCommand(new ApprovePendingTransactionBatchInput(UserId, request.Ids)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpPost("{id:guid}/link")]
+    public async Task<IActionResult> LinkAsync(Guid id, LinkPendingTransactionRequest request, CancellationToken ct)
+    {
+        var result = await sender.Send(
+            new LinkPendingTransactionCommand(new LinkPendingTransactionInput(UserId, id, request.TransactionId)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpPost("transfer")]
+    public async Task<IActionResult> TransferAsync(CreateTransferFromPendingRequest request, CancellationToken ct)
+    {
+        var result = await sender.Send(new CreateTransferFromPendingCommand(new CreateTransferFromPendingInput(
+            UserId, request.OutflowPendingId, request.InflowPendingId, request.Description, request.OccurredOn)), ct);
         return result.ToActionResult(errorMapper);
     }
 }

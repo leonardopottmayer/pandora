@@ -16,6 +16,15 @@ export function useTransactions(filters: TransactionFilters = {}) {
   })
 }
 
+/** Fetches a single transaction; disabled until an id is provided (e.g. a modal that's closed). */
+export function useTransaction(id: string | null | undefined) {
+  return useQuery({
+    queryKey: financeKeys.transaction(id ?? ''),
+    queryFn: () => transactionsService.getTransaction(id!),
+    enabled: !!id,
+  })
+}
+
 /**
  * Invalidates caches affected by a transaction mutation: the transaction list,
  * account balances, and card data (statements/limit).

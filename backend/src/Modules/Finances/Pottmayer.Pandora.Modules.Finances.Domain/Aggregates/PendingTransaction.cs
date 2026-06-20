@@ -9,6 +9,15 @@ public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
     public string Source { get; private set; } = "recurrence";
     public Guid? RecurringTransactionId { get; private set; }
 
+    // import provenance
+    public Guid? ImportRowId { get; private set; }
+    public Guid? DuplicateOfTransactionId { get; private set; }
+    public Guid? DuplicateOfPendingId { get; private set; }
+    public string? DedupStatus { get; private set; }
+    public short? InstallmentNumber { get; private set; }
+    public short? InstallmentCount { get; private set; }
+    public Guid? MatchedInstallmentPlanId { get; private set; }
+
     // payload (editable until decided)
     public Guid? AccountId { get; private set; }
     public Guid? CardId { get; private set; }
@@ -39,6 +48,7 @@ public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
     public DateTimeOffset? UpdatedAt { get; set; }
 
     public bool IsPending => Status == "pending";
+    public bool IsImportSource => Source == "import";
 
     private PendingTransaction() { }
 
@@ -82,6 +92,51 @@ public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
         };
     }
 
+    public static PendingTransaction CreateFromImport(
+        Guid userId,
+        Guid importRowId,
+        Guid? accountId,
+        Guid? cardId,
+        string kind,
+        decimal amount,
+        string currency,
+        DateOnly occurredOn,
+        string description,
+        string? payee,
+        Guid? suggestedStatementId,
+        string dedupStatus,
+        Guid? duplicateOfTransactionId,
+        Guid? duplicateOfPendingId,
+        short? installmentNumber,
+        short? installmentCount,
+        string originalPayload,
+        TimeProvider timeProvider)
+    {
+        return new PendingTransaction
+        {
+            Id = Guid.CreateVersion7(),
+            UserId = userId,
+            Source = "import",
+            ImportRowId = importRowId,
+            AccountId = accountId,
+            CardId = cardId,
+            Kind = kind,
+            Amount = amount,
+            Currency = currency,
+            OccurredOn = occurredOn,
+            Description = description,
+            SuggestedStatementId = suggestedStatementId,
+            DedupStatus = dedupStatus,
+            DuplicateOfTransactionId = duplicateOfTransactionId,
+            DuplicateOfPendingId = duplicateOfPendingId,
+            InstallmentNumber = installmentNumber,
+            InstallmentCount = installmentCount,
+            OriginalPayload = originalPayload,
+            Status = "pending",
+            CreatedAt = timeProvider.GetUtcNow()
+        };
+    }
+
     /// <summary>
     /// Replaces the editable payload. <see cref="OriginalPayload"/> is never mutated.
     /// </summary>
@@ -116,6 +171,23 @@ public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
         if (!IsPending) return false;
         Status = "approved";
         TransactionId = transactionId;
+        DecidedBy = decidedBy;
+        DecidedAt = timeProvider.GetUtcNow();
+        return true;
+    }
+
+    /// <summary>
+    /// Resolves the suggestion by linking it to an existing transaction the user identified as the
+    /// same movement (no new transaction is created). Terminal like <see cref="Reject"/>, but records
+    /// the matched transaction so the relationship is auditable. Returns <c>false</c> if already decided.
+    /// </summary>
+    public bool MarkLinkedToExisting(Guid transactionId, Guid decidedBy, TimeProvider timeProvider)
+    {
+        if (!IsPending) return false;
+        Status = "rejected";
+        DedupStatus = "matched";
+        DuplicateOfTransactionId = transactionId;
+        RejectionReason = "linked-to-existing-transaction";
         DecidedBy = decidedBy;
         DecidedAt = timeProvider.GetUtcNow();
         return true;

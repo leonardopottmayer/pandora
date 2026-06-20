@@ -12,6 +12,8 @@ import {
   AuditOutlined,
   RetweetOutlined,
   InboxOutlined,
+  CloudUploadOutlined,
+  LayoutOutlined,
 } from '@ant-design/icons'
 import type { ReactNode } from 'react'
 
@@ -50,6 +52,8 @@ export const navigationModules: NavModule[] = [
       { key: 'fin-categories', labelKey: 'nav.categories', path: '/finances/categories', icon: <AppstoreAddOutlined /> },
       { key: 'fin-tags', labelKey: 'nav.tags', path: '/finances/tags', icon: <TagsOutlined /> },
       { key: 'fin-audit', labelKey: 'nav.audit', path: '/finances/audit', icon: <AuditOutlined /> },
+      { key: 'fin-imports', labelKey: 'nav.imports', path: '/finances/imports', icon: <CloudUploadOutlined /> },
+      { key: 'fin-import-layouts', labelKey: 'nav.importLayouts', path: '/finances/import-layouts', icon: <LayoutOutlined /> },
     ],
   },
   {

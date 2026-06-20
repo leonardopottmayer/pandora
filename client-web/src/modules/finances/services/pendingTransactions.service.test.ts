@@ -5,6 +5,8 @@ import { FINANCES_BASE } from '@/test/constants'
 import {
   approvePendingTransaction,
   approvePendingTransactionBatch,
+  createTransferFromPending,
+  linkPendingTransaction,
   listPendingTransactions,
   rejectPendingTransaction,
   updatePendingTransaction,
@@ -33,6 +35,9 @@ const pending: PendingTransactionDto = {
   decidedBy: null,
   rejectionReason: null,
   transactionId: null,
+  importRowId: null,
+  dedupStatus: null,
+  duplicateOfTransactionId: null,
   createdAt: '2026-07-01T00:00:00Z',
   updatedAt: null,
 }
@@ -97,5 +102,43 @@ describe('pendingTransactions.service', () => {
     )
     const count = await approvePendingTransactionBatch(['p1', 'p2'])
     expect(count).toBe(2)
+  })
+
+  it('links a pending transaction to an existing transaction', async () => {
+    let body: unknown
+    server.use(
+      http.post(`${BASE}/p1/link`, async ({ request }) => {
+        body = await request.json()
+        return HttpResponse.json({
+          success: true,
+          data: { ...pending, status: 'rejected', duplicateOfTransactionId: 'tx9' },
+        })
+      }),
+    )
+    const linked = await linkPendingTransaction('p1', 'tx9')
+    expect(linked.duplicateOfTransactionId).toBe('tx9')
+    expect((body as { transactionId: string }).transactionId).toBe('tx9')
+  })
+
+  it('creates a transfer from two suggestions forwarding both legs', async () => {
+    let body: unknown
+    server.use(
+      http.post(`${BASE}/transfer`, async ({ request }) => {
+        body = await request.json()
+        return HttpResponse.json({
+          success: true,
+          data: [{ id: 'out1', kind: 'transfer-out' }, { id: 'in1', kind: 'transfer-in' }],
+        })
+      }),
+    )
+    const legs = await createTransferFromPending({
+      outflowPendingId: 'p1',
+      inflowPendingId: 'p2',
+      description: 'Transferência',
+      occurredOn: '2026-07-01',
+    })
+    expect(legs).toHaveLength(2)
+    expect((body as { outflowPendingId: string }).outflowPendingId).toBe('p1')
+    expect((body as { inflowPendingId: string }).inflowPendingId).toBe('p2')
   })
 })

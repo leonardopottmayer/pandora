@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { financeKeys } from './queryKeys'
-import type { PendingTransactionFilters, UpdatePendingTransactionRequest } from '../models'
+import type {
+  CreateTransferFromPendingRequest,
+  PendingTransactionFilters,
+  UpdatePendingTransactionRequest,
+} from '../models'
 import * as pendingService from '../services/pendingTransactions.service'
 
 export function usePendingTransactions(filters: PendingTransactionFilters = {}) {
@@ -22,6 +26,8 @@ function useInvalidatePendingEffects() {
     queryClient.invalidateQueries({ queryKey: financeKeys.accounts() })
     queryClient.invalidateQueries({ queryKey: financeKeys.cards() })
     queryClient.invalidateQueries({ queryKey: financeKeys.statements() })
+    // A manual link flips an import row's dedup status, so the import detail grid is stale too.
+    queryClient.invalidateQueries({ queryKey: financeKeys.imports() })
   }
 }
 
@@ -55,6 +61,24 @@ export function useApprovePendingTransactionBatch() {
   const invalidate = useInvalidatePendingEffects()
   return useMutation({
     mutationFn: (ids: string[]) => pendingService.approvePendingTransactionBatch(ids),
+    onSuccess: invalidate,
+  })
+}
+
+export function useLinkPendingTransaction() {
+  const invalidate = useInvalidatePendingEffects()
+  return useMutation({
+    mutationFn: ({ id, transactionId }: { id: string; transactionId: string }) =>
+      pendingService.linkPendingTransaction(id, transactionId),
+    onSuccess: invalidate,
+  })
+}
+
+export function useCreateTransferFromPending() {
+  const invalidate = useInvalidatePendingEffects()
+  return useMutation({
+    mutationFn: (body: CreateTransferFromPendingRequest) =>
+      pendingService.createTransferFromPending(body),
     onSuccess: invalidate,
   })
 }

@@ -36,6 +36,8 @@ public sealed class TransactionRepository(IDataContextAccessor accessor)
             query = query.Where(t => t.AccountId == filter.AccountId);
         if (filter.CardStatementId is not null)
             query = query.Where(t => t.CardStatementId == filter.CardStatementId);
+        if (filter.CardId is not null)
+            query = query.Where(t => t.CardId == filter.CardId);
         if (filter.From is not null)
             query = query.Where(t => t.OccurredOn >= filter.From);
         if (filter.To is not null)

@@ -5,6 +5,7 @@ import { FINANCES_BASE } from '@/test/constants'
 import {
   createTransaction,
   createTransfer,
+  getTransaction,
   listTransactions,
   postTransaction,
   voidTransaction,
@@ -52,6 +53,16 @@ describe('transactions.service', () => {
     expect(result).toHaveLength(1)
     expect(seenUrl?.searchParams.get('accountId')).toBe('a1')
     expect(seenUrl?.searchParams.get('status')).toBe('posted')
+  })
+
+  it('fetches a single transaction by id', async () => {
+    server.use(
+      http.get(`${FINANCES_BASE}/transactions/x1`, () =>
+        HttpResponse.json({ success: true, data: tx }),
+      ),
+    )
+    const result = await getTransaction('x1')
+    expect(result.id).toBe('x1')
   })
 
   it('creates a single transaction', async () => {

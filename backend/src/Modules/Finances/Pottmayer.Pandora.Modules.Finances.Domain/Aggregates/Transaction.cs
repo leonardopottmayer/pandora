@@ -326,6 +326,16 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
         ReversedTransactionId = reversedTransactionId;
     }
 
+    /// <summary>
+    /// Links this transaction to the import row and inbox entry it was approved from.
+    /// Sets <see cref="Origin"/> to <c>"import"</c>.
+    /// </summary>
+    public void MarkAsImport(Guid pendingTransactionId)
+    {
+        Origin = "import";
+        PendingTransactionId = pendingTransactionId;
+    }
+
     /// <summary>Edits the cosmetic fields. Value, destination and kind are intentionally absent.</summary>
     public void UpdateDetails(
         string description, string? payee, string? notes, Guid? systemCategoryId, Guid? userCategoryId)

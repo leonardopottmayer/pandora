@@ -35,7 +35,9 @@
     "cards": "Cartoes",
     "categories": "Categorias",
     "tags": "Etiquetas",
-    "audit": "Auditoria"
+    "audit": "Auditoria",
+    "imports": "Importacoes",
+    "importLayouts": "Layouts de importacao"
   },
   "theme": {
     "toLight": "Tema claro",
@@ -153,7 +155,11 @@
     "lowCodes": "Poucos codigos de recuperacao restantes. Considere regenera-los.",
     "regenerate": "Regenerar codigos de recuperacao",
     "disable": "Desabilitar MFA",
-    "steps": { "start": "Iniciar", "confirm": "Confirmar", "codes": "Codigos" },
+    "steps": {
+      "start": "Iniciar",
+      "confirm": "Confirmar",
+      "codes": "Codigos"
+    },
     "startDesc": "Voce vai precisar de um aplicativo autenticador (Google Authenticator, Authy, etc.).",
     "startButton": "Iniciar configuracao",
     "startError": "Nao foi possivel iniciar a configuracao.",
@@ -264,7 +270,8 @@
       "installment": "Parcela",
       "statement": "Fatura",
       "effectiveDate": "Vencimento",
-      "creditCard": "Cartao de Credito"
+      "creditCard": "Cartao de Credito",
+      "detailTitle": "Detalhes da transação"
     },
     "filters": {
       "from": "De",
@@ -313,7 +320,8 @@
     "inbox": {
       "source": "Origem",
       "sources": {
-        "recurrence": "Recorrencia"
+        "recurrence": "Recorrencia",
+        "import": "Importacao"
       },
       "approve": "Aprovar",
       "reject": "Rejeitar",
@@ -327,7 +335,12 @@
       "batchApproved": "{{count}} sugestao(oes) aprovada(s).",
       "updated": "Sugestao atualizada.",
       "saveError": "Nao foi possivel salvar a sugestao.",
-      "actionError": "Nao foi possivel concluir a acao."
+      "actionError": "Nao foi possivel concluir a acao.",
+      "makeTransfer": "Tornar transferência",
+      "transferTitle": "Criar transferência a partir das sugestões",
+      "transferConfirm": "Criar transferência",
+      "transferInvalid": "Selecione uma sugestão de saída e uma de entrada, ambas em contas.",
+      "transferDone": "Transferência criada a partir das duas sugestões."
     },
     "categories": {
       "userTitle": "Minhas categorias",
@@ -500,6 +513,78 @@
         "refund": "Estorno",
         "cardStatementPayment": "Pagamento de fatura"
       }
+    },
+    "imports": {
+      "title": "Importacoes",
+      "upload": "Enviar arquivo",
+      "uploaded": "Arquivo enviado e na fila para processamento.",
+      "uploadError": "Nao foi possivel enviar o arquivo.",
+      "selectDestinationFirst": "Selecione uma conta ou cartao antes de enviar.",
+      "selectAccount": "Selecione a conta",
+      "selectCard": "Selecione o cartao",
+      "account": "Conta",
+      "card": "Cartao",
+      "fileName": "Arquivo",
+      "status": "Status",
+      "rows": "Linhas",
+      "createdAt": "Enviado em",
+      "completedAt": "Concluido em",
+      "totalRows": "Total de linhas",
+      "parsedRows": "Processadas",
+      "suggestions": "Sugestoes",
+      "duplicates": "Duplicatas",
+      "errors": "Erros",
+      "errorMessage": "Erro",
+      "rowsTitle": "Linhas",
+      "rowStatus": "Status",
+      "dedupStatus": "Dedup",
+      "rawData": "Dados brutos",
+      "externalId": "ID externo",
+      "installment": "Parcela",
+      "suggestion": "Sugestao",
+      "duplicate": "Duplicata",
+      "error": "Erro",
+      "viewInbox": "Ver na caixa de entrada",
+      "existingTx": "Transacao existente",
+      "existingSuggestion": "Sugestao existente",
+      "abort": "Cancelar",
+      "retry": "Tentar novamente",
+      "aborted": "Importacao cancelada.",
+      "retried": "Importacao colocada na fila novamente.",
+      "actionError": "Nao foi possivel concluir a acao.",
+      "statuses": {
+        "received": "Recebido",
+        "parsing": "Processando",
+        "completed": "Concluido",
+        "failed": "Falhou",
+        "aborted": "Cancelado"
+      },
+      "rowStatuses": {
+        "pending": "Pendente",
+        "skipped": "Ignorado",
+        "suggestion-created": "Sugestao criada",
+        "error": "Erro"
+      },
+      "dedupStatuses": {
+        "new": "Novo",
+        "certain": "Duplicata certa",
+        "suspected": "Duplicata suspeita",
+        "matched": "Correspondido"
+      },
+      "link": "Vincular",
+      "linked": "Sugestão vinculada à transação existente.",
+      "linkTitle": "Vincular a uma transação existente",
+      "linkConfirm": "Vincular",
+      "linkSearchPlaceholder": "Buscar por descrição ou beneficiário",
+      "viewTransaction": "Ver transação"
+    },
+    "importLayouts": {
+      "title": "Layouts de importacao",
+      "name": "Nome",
+      "bank": "Banco",
+      "format": "Formato",
+      "accountType": "Tipo",
+      "code": "Codigo"
     }
   }
 }

@@ -1,5 +1,6 @@
 import { apiClient } from '@/lib/api/client'
 import type {
+  CreateTransferFromPendingRequest,
   PendingTransactionDto,
   PendingTransactionFilters,
   TransactionDto,
@@ -48,5 +49,20 @@ export async function rejectPendingTransaction(
 
 export async function approvePendingTransactionBatch(ids: string[]): Promise<number> {
   const { data } = await apiClient.post<number>(`${BASE}/approve-batch`, { ids })
+  return data
+}
+
+export async function linkPendingTransaction(
+  id: string,
+  transactionId: string,
+): Promise<PendingTransactionDto> {
+  const { data } = await apiClient.post<PendingTransactionDto>(`${BASE}/${id}/link`, { transactionId })
+  return data
+}
+
+export async function createTransferFromPending(
+  body: CreateTransferFromPendingRequest,
+): Promise<TransactionDto[]> {
+  const { data } = await apiClient.post<TransactionDto[]>(`${BASE}/transfer`, body)
   return data
 }

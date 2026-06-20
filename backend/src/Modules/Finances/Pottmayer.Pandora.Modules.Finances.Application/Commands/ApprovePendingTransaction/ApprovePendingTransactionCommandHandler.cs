@@ -98,14 +98,18 @@ public sealed class ApprovePendingTransactionCommandHandler(
                 await statementRepo.UpdateAsync(statement, token);
             }
 
-            tx.MarkAsRecurrence(pending.RecurringTransactionId!.Value, pending.Id);
+            if (pending.IsImportSource)
+                tx.MarkAsImport(pending.Id);
+            else
+                tx.MarkAsRecurrence(pending.RecurringTransactionId!.Value, pending.Id);
             await txRepo.AddAsync(tx, token);
 
             pending.Approve(tx.Id, input.UserId, timeProvider);
             await pendingRepo.UpdateAsync(pending, token);
 
+            var origin = pending.IsImportSource ? "import" : "recurrence";
             await ctx.RecordAsync(input.UserId, input.UserId, "transaction", tx.Id,
-                "transaction.created", now, new { origin = "recurrence" }, ct: token);
+                "transaction.created", now, new { origin }, ct: token);
             await ctx.RecordAsync(input.UserId, input.UserId, "pending-transaction", pending.Id,
                 "pending.approved", now, new { transactionId = tx.Id }, ct: token);
 

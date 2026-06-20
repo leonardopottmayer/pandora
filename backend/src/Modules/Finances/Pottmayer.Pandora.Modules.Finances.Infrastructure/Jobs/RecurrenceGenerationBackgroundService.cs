@@ -57,6 +57,21 @@ public sealed class RecurrenceGenerationBackgroundService : BackgroundService
 
     private async Task RunAsync(CancellationToken ct)
     {
+        try
+        {
+            await RunOnceAsync(ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (JobConcurrency.IsUniqueViolation(ex))
+        {
+            // The statement lifecycle job created the same statement concurrently; re-run so the
+            // existence checks see the now-committed row and skip it.
+            _logger.LogInformation("Recurrence generation hit a concurrent statement creation; retrying once.");
+            await RunOnceAsync(ct).ConfigureAwait(false);
+        }
+    }
+
+    private async Task RunOnceAsync(CancellationToken ct)
+    {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
         var today = DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime);

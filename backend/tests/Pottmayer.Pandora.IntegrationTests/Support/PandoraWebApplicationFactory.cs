@@ -40,12 +40,17 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
         await _connection.OpenAsync();
 
         // Resets only the module schemas; the migration tracking table lives in "public" and is left intact.
-        // fin002 holds seeded system-category reference data — preserve it across resets.
+        // fin002 (system categories) and fin012 (import layouts) hold seeded reference data the
+        // migrations create once — preserve them across resets or imports can't detect a layout.
         _respawner = await Respawner.CreateAsync(_connection, new RespawnerOptions
         {
             DbAdapter = DbAdapter.Postgres,
             SchemasToInclude = ["identity", "notifications", "finances"],
-            TablesToIgnore = [new Respawn.Graph.Table("finances", "fin002_system_category")]
+            TablesToIgnore =
+            [
+                new Respawn.Graph.Table("finances", "fin002_system_category"),
+                new Respawn.Graph.Table("finances", "fin012_import_layout")
+            ]
         });
     }
 

@@ -24,6 +24,10 @@ public sealed record PendingTransactionDto(
     Guid? DecidedBy,
     string? RejectionReason,
     Guid? TransactionId,
+    // import provenance / dedup (null for recurrence-sourced suggestions)
+    Guid? ImportRowId,
+    string? DedupStatus,
+    Guid? DuplicateOfTransactionId,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt)
 {
@@ -49,6 +53,9 @@ public sealed record PendingTransactionDto(
         p.DecidedBy,
         p.RejectionReason,
         p.TransactionId,
+        p.ImportRowId,
+        p.DedupStatus,
+        p.DuplicateOfTransactionId,
         p.CreatedAt,
         p.UpdatedAt);
 }

@@ -17,6 +17,13 @@ internal sealed class PendingTransactionEntityConfiguration : IEntityTypeConfigu
         builder.Property(p => p.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(p => p.Source).HasColumnName("source").HasMaxLength(15).IsRequired();
         builder.Property(p => p.RecurringTransactionId).HasColumnName("recurring_transaction_id");
+        builder.Property(p => p.ImportRowId).HasColumnName("import_row_id");
+        builder.Property(p => p.DuplicateOfTransactionId).HasColumnName("duplicate_of_transaction_id");
+        builder.Property(p => p.DuplicateOfPendingId).HasColumnName("duplicate_of_pending_id");
+        builder.Property(p => p.DedupStatus).HasColumnName("dedup_status").HasMaxLength(15);
+        builder.Property(p => p.InstallmentNumber).HasColumnName("installment_number");
+        builder.Property(p => p.InstallmentCount).HasColumnName("installment_count");
+        builder.Property(p => p.MatchedInstallmentPlanId).HasColumnName("matched_installment_plan_id");
 
         // payload
         builder.Property(p => p.AccountId).HasColumnName("account_id");

@@ -23,6 +23,9 @@ import { CardsListPage } from '@/modules/finances/pages/cards/CardsListPage'
 import { CardDetailPage } from '@/modules/finances/pages/cards/CardDetailPage'
 import { StatementDetailPage } from '@/modules/finances/pages/statements/StatementDetailPage'
 import { AuditPage } from '@/modules/finances/pages/audit/AuditPage'
+import { ImportsListPage } from '@/modules/finances/pages/imports/ImportsListPage'
+import { ImportDetailPage } from '@/modules/finances/pages/imports/ImportDetailPage'
+import { ImportLayoutsPage } from '@/modules/finances/pages/imports/ImportLayoutsPage'
 
 export const router = createBrowserRouter([
   // Public (redirect if already authenticated)
@@ -57,6 +60,9 @@ export const router = createBrowserRouter([
       { path: 'finances/categories', element: <CategoriesListPage /> },
       { path: 'finances/tags', element: <TagsListPage /> },
       { path: 'finances/audit', element: <AuditPage /> },
+      { path: 'finances/imports', element: <ImportsListPage /> },
+      { path: 'finances/imports/:id', element: <ImportDetailPage /> },
+      { path: 'finances/import-layouts', element: <ImportLayoutsPage /> },
     ],
   },
 
