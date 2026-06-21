@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateRecurringTransaction;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.DeleteRecurringTransaction;
+using Pottmayer.Pandora.Modules.Finances.Application.Commands.GenerateRecurringTransactionOccurrence;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.PauseRecurringTransaction;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.ResumeRecurringTransaction;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.UpdateRecurringTransaction;
@@ -64,7 +65,8 @@ public sealed class RecurringTransactionsController(
             request.StartDate,
             request.EndDate,
             request.MaxOccurrences,
-            request.AutoPost));
+            request.AutoPost,
+            request.AutoGenerate));
 
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
@@ -84,7 +86,8 @@ public sealed class RecurringTransactionsController(
             request.UserCategoryId,
             request.EndDate,
             request.MaxOccurrences,
-            request.AutoPost));
+            request.AutoPost,
+            request.AutoGenerate));
 
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
@@ -111,6 +114,25 @@ public sealed class RecurringTransactionsController(
     {
         var result = await sender.Send(
             new ResumeRecurringTransactionCommand(new ResumeRecurringTransactionInput(UserId, id)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpPost("{id:guid}/generate")]
+    public async Task<IActionResult> GenerateAsync(Guid id, GenerateRecurringTransactionOccurrenceRequest request, CancellationToken ct)
+    {
+        var command = new GenerateRecurringTransactionOccurrenceCommand(new GenerateRecurringTransactionOccurrenceInput(
+            UserId, id,
+            request.Destination,
+            request.AdvanceSchedule,
+            request.OccurredOn,
+            request.Amount,
+            request.Description,
+            request.Payee,
+            request.Notes,
+            request.SystemCategoryId,
+            request.UserCategoryId));
+
+        var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
 }

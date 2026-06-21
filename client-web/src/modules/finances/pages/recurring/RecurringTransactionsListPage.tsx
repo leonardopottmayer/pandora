@@ -18,12 +18,14 @@ import {
   useSetRecurringPaused,
 } from '../../hooks/useRecurringTransactions'
 import { RecurringTransactionFormModal } from './RecurringTransactionFormModal'
+import { GenerateOccurrenceModal } from './GenerateOccurrenceModal'
 
 export function RecurringTransactionsListPage() {
   const { t } = useTranslation()
   const { message } = App.useApp()
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<RecurringTransactionDto | null>(null)
+  const [generating, setGenerating] = useState<RecurringTransactionDto | null>(null)
 
   const { data, isLoading } = useRecurringTransactions()
   const { data: accounts } = useAccounts()
@@ -155,6 +157,11 @@ export function RecurringTransactionsListPage() {
             {t('common.edit')}
           </Button>
           {r.status !== 'finished' && (
+            <Button size="small" type="primary" ghost onClick={() => setGenerating(r)}>
+              {t('finances.recurring.generate')}
+            </Button>
+          )}
+          {r.status !== 'finished' && (
             <Button size="small" onClick={() => handlePauseToggle(r)}>
               {r.status === 'active' ? t('finances.recurring.pause') : t('finances.recurring.resume')}
             </Button>
@@ -198,6 +205,12 @@ export function RecurringTransactionsListPage() {
         open={modalOpen}
         recurring={editing}
         onClose={() => setModalOpen(false)}
+      />
+
+      <GenerateOccurrenceModal
+        open={!!generating}
+        recurring={generating}
+        onClose={() => setGenerating(null)}
       />
     </Card>
   )

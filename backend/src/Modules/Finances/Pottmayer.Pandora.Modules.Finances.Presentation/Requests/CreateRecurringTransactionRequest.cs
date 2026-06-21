@@ -18,4 +18,5 @@ public sealed record CreateRecurringTransactionRequest(
     DateOnly StartDate,
     DateOnly? EndDate,
     int? MaxOccurrences,
-    bool AutoPost);
+    bool AutoPost,
+    bool AutoGenerate = true);

@@ -266,6 +266,7 @@ export interface RecurringTransactionDto {
   maxOccurrences: number | null
   status: RecurringStatus
   autoPost: boolean
+  autoGenerate: boolean
   nextOccurrenceOn: string
   occurrencesCount: number
   createdAt: string
@@ -452,6 +453,7 @@ export interface CreateRecurringTransactionRequest {
   endDate?: string | null
   maxOccurrences?: number | null
   autoPost: boolean
+  autoGenerate: boolean
 }
 
 export interface UpdateRecurringTransactionRequest {
@@ -465,6 +467,25 @@ export interface UpdateRecurringTransactionRequest {
   endDate?: string | null
   maxOccurrences?: number | null
   autoPost: boolean
+  autoGenerate: boolean
+}
+
+export interface GenerateRecurringTransactionOccurrenceRequest {
+  destination: 'inbox' | 'transactions'
+  advanceSchedule: boolean
+  occurredOn?: string | null
+  amount?: number | null
+  description?: string | null
+  payee?: string | null
+  notes?: string | null
+  systemCategoryId?: string | null
+  userCategoryId?: string | null
+}
+
+export interface GeneratedOccurrenceDto {
+  destination: 'inbox' | 'transactions'
+  pending: PendingTransactionDto | null
+  transaction: TransactionDto | null
 }
 
 export interface UpdatePendingTransactionRequest {

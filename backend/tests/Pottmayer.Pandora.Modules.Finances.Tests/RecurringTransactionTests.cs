@@ -32,6 +32,7 @@ public sealed class RecurringTransactionTests
             endDate: endDate,
             maxOccurrences: maxOccurrences,
             autoPost: autoPost,
+            autoGenerate: true,
             timeProvider: new FixedTimeProvider(Now));
 
     [Fact]
@@ -130,7 +131,7 @@ public sealed class RecurringTransactionTests
     public void UpdateTemplate_trims_name_and_description()
     {
         var r = NewMonthly();
-        r.UpdateTemplate("  Updated  ", 2000m, false, "  New desc  ", null, null, null, null, null, false);
+        r.UpdateTemplate("  Updated  ", 2000m, false, "  New desc  ", null, null, null, null, null, false, true);
 
         Assert.Equal("Updated", r.Name);
         Assert.Equal(2000m, r.Amount);
@@ -140,7 +141,7 @@ public sealed class RecurringTransactionTests
     public void UpdateTemplate_does_not_change_frequency_or_destination()
     {
         var r = NewMonthly();
-        r.UpdateTemplate("Name", 100m, false, "Desc", null, null, null, null, null, false);
+        r.UpdateTemplate("Name", 100m, false, "Desc", null, null, null, null, null, false, true);
 
         Assert.Equal("monthly", r.Frequency);
         Assert.Equal(AccountId, r.AccountId);

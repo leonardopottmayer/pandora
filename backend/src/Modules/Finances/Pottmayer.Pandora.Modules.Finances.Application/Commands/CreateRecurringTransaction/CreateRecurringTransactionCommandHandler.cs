@@ -84,6 +84,7 @@ public sealed class CreateRecurringTransactionCommandHandler(
                 input.EndDate,
                 input.MaxOccurrences,
                 input.AutoPost,
+                input.AutoGenerate,
                 timeProvider);
 
             await repo.AddAsync(recurring, token);

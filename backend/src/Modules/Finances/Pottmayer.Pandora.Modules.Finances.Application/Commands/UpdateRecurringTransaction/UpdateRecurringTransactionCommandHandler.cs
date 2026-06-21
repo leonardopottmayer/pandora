@@ -47,7 +47,8 @@ public sealed class UpdateRecurringTransactionCommandHandler(
                 input.UserCategoryId,
                 input.EndDate,
                 input.MaxOccurrences,
-                input.AutoPost);
+                input.AutoPost,
+                input.AutoGenerate);
 
             await repo.UpdateAsync(recurring, token);
             await ctx.RecordAsync(input.UserId, input.UserId, "recurring-transaction", recurring.Id,

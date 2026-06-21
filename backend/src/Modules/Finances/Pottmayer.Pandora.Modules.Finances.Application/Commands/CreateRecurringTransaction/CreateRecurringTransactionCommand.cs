@@ -22,7 +22,8 @@ public sealed record CreateRecurringTransactionInput(
     DateOnly StartDate,
     DateOnly? EndDate,
     int? MaxOccurrences,
-    bool AutoPost);
+    bool AutoPost,
+    bool AutoGenerate);
 
 public sealed class CreateRecurringTransactionCommand(CreateRecurringTransactionInput input)
     : CommandBase<CreateRecurringTransactionInput, RecurringTransactionDto>(input);

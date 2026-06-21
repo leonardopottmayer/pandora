@@ -21,6 +21,6 @@ public sealed class RecurringTransactionRepository(IDataContextAccessor accessor
     public async Task<IReadOnlyList<RecurringTransaction>> GetActiveWithOccurrencesBeforeAsync(
         DateOnly horizon, CancellationToken ct = default)
         => await Queryable()
-            .Where(r => r.Status == "active" && r.NextOccurrenceOn <= horizon)
+            .Where(r => r.Status == "active" && r.AutoGenerate && r.NextOccurrenceOn <= horizon)
             .ToListAsync(ct);
 }

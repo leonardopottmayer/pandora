@@ -284,6 +284,231 @@ public sealed class RecurringTransactionsTests : IAsyncLifetime
         Assert.Contains(pending, p => p.Description == "Streaming subscription");
     }
 
+    [Fact]
+    public async Task Generation_job_skips_recurrence_with_autoGenerate_false()
+    {
+        await AuthAsync("rec-gen-noauto");
+        var account = await CreateAccountAsync();
+        var startDate = new DateOnly(2026, 6, 1);
+
+        await CreateRecurringAsync(new
+        {
+            name = "ManualOnly",
+            accountId = account,
+            kind = "expense",
+            amount = 80m,
+            amountIsEstimate = false,
+            description = "Manual only bill",
+            frequency = "monthly",
+            interval = 1,
+            startDate = startDate,
+            autoPost = false,
+            autoGenerate = false
+        });
+
+        await RunGenerationAsync(new DateOnly(2026, 6, 1), horizonDays: 0);
+
+        var pending = await ListPendingAsync();
+        Assert.DoesNotContain(pending, p => p.Description == "Manual only bill");
+    }
+
+    [Fact]
+    public async Task Manual_generation_to_inbox_creates_pending_and_advances_cursor()
+    {
+        await AuthAsync("rec-manual-inbox");
+        var account = await CreateAccountAsync();
+        var startDate = new DateOnly(2026, 6, 1);
+
+        var r = await CreateRecurringAsync(new
+        {
+            name = "Gym",
+            accountId = account,
+            kind = "expense",
+            amount = 80m,
+            amountIsEstimate = false,
+            description = "Monthly gym",
+            frequency = "monthly",
+            interval = 1,
+            startDate = startDate,
+            autoPost = false,
+            autoGenerate = false
+        });
+
+        var response = await _client.PostAsJsonAsync($"{RecurringTransactions}/{r.Id}/generate", new
+        {
+            destination = "inbox",
+            description = "Gym (manual)",
+            amount = 95m
+        });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var generated = (await response.Content.ReadFromJsonAsync<SingleEnvelope<GeneratedNode>>())!.Data;
+        Assert.Equal("inbox", generated.Destination);
+        Assert.NotNull(generated.Pending);
+
+        var pending = await ListPendingAsync();
+        Assert.Contains(pending, p => p.Description == "Gym (manual)" && p.OccurredOn == startDate);
+
+        // cursor advanced one month, occurrence counted
+        var refreshed = await GetRecurringAsync(r.Id);
+        Assert.Equal(1, refreshed.OccurrencesCount);
+    }
+
+    [Fact]
+    public async Task Manual_generation_to_transactions_posts_directly()
+    {
+        await AuthAsync("rec-manual-tx");
+        var account = await CreateAccountAsync();
+        var startDate = new DateOnly(2026, 6, 1);
+
+        var r = await CreateRecurringAsync(new
+        {
+            name = "Salary",
+            accountId = account,
+            kind = "income",
+            amount = 5000m,
+            amountIsEstimate = false,
+            description = "Monthly salary",
+            frequency = "monthly",
+            interval = 1,
+            startDate = startDate,
+            autoPost = false,
+            autoGenerate = false
+        });
+
+        var overrideDate = new DateOnly(2026, 6, 5);
+        var response = await _client.PostAsJsonAsync($"{RecurringTransactions}/{r.Id}/generate", new
+        {
+            destination = "transactions",
+            occurredOn = overrideDate
+        });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var generated = (await response.Content.ReadFromJsonAsync<SingleEnvelope<GeneratedNode>>())!.Data;
+        Assert.Equal("transactions", generated.Destination);
+        Assert.NotNull(generated.Transaction);
+
+        // posted to official transactions with the overridden date; inbox untouched
+        var txList = (await _client.GetFromJsonAsync<ListEnvelope<TxNode>>($"{Transactions}?accountId={account}"))!.Data;
+        Assert.Contains(txList, t => t.Description == "Monthly salary" && t.OccurredOn == overrideDate);
+
+        var pending = await ListPendingAsync();
+        Assert.DoesNotContain(pending, p => p.Description == "Monthly salary");
+    }
+
+    [Fact]
+    public async Task Manual_generation_without_advance_keeps_schedule()
+    {
+        await AuthAsync("rec-manual-noadvance");
+        var account = await CreateAccountAsync();
+        var startDate = new DateOnly(2026, 6, 1);
+
+        var r = await CreateRecurringAsync(new
+        {
+            name = "Gym",
+            accountId = account,
+            kind = "expense",
+            amount = 80m,
+            amountIsEstimate = false,
+            description = "Monthly gym",
+            frequency = "monthly",
+            interval = 1,
+            startDate = startDate,
+            autoPost = false,
+            autoGenerate = false
+        });
+
+        // Generate twice for the same occurrence without advancing the schedule. Official transactions
+        // carry no per-occurrence uniqueness, so duplicates are allowed.
+        for (var i = 0; i < 2; i++)
+        {
+            var response = await _client.PostAsJsonAsync($"{RecurringTransactions}/{r.Id}/generate", new
+            {
+                destination = "transactions",
+                advanceSchedule = false
+            });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        var txList = (await _client.GetFromJsonAsync<ListEnvelope<TxNode>>($"{Transactions}?accountId={account}"))!.Data;
+        Assert.Equal(2, txList.Count(t => t.Description == "Monthly gym" && t.OccurredOn == startDate));
+
+        // schedule untouched: still at the first occurrence, nothing counted
+        var refreshed = await GetRecurringAsync(r.Id);
+        Assert.Equal(0, refreshed.OccurrencesCount);
+    }
+
+    [Fact]
+    public async Task Manual_generation_to_inbox_rejects_duplicate_occurrence()
+    {
+        await AuthAsync("rec-manual-inbox-dup");
+        var account = await CreateAccountAsync();
+        var startDate = new DateOnly(2026, 6, 1);
+
+        var r = await CreateRecurringAsync(new
+        {
+            name = "Gym",
+            accountId = account,
+            kind = "expense",
+            amount = 80m,
+            amountIsEstimate = false,
+            description = "Monthly gym",
+            frequency = "monthly",
+            interval = 1,
+            startDate = startDate,
+            autoPost = false,
+            autoGenerate = false
+        });
+
+        var first = await _client.PostAsJsonAsync($"{RecurringTransactions}/{r.Id}/generate", new
+        {
+            destination = "inbox",
+            advanceSchedule = false
+        });
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+
+        // Same recurrence + date in the inbox violates idempotency → clean conflict, not a 500.
+        var second = await _client.PostAsJsonAsync($"{RecurringTransactions}/{r.Id}/generate", new
+        {
+            destination = "inbox",
+            advanceSchedule = false
+        });
+        Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
+    }
+
+    [Fact]
+    public async Task Manual_generation_to_transactions_for_card_creates_statement_and_posts()
+    {
+        await AuthAsync("rec-manual-card-tx");
+        var card = await CreateCardAsync();
+        var startDate = new DateOnly(2026, 6, 15);
+
+        var r = await CreateRecurringAsync(new
+        {
+            name = "Netflix",
+            cardId = card,
+            kind = "expense",
+            amount = 30m,
+            amountIsEstimate = false,
+            description = "Streaming subscription",
+            frequency = "monthly",
+            interval = 1,
+            startDate = startDate,
+            autoPost = false,
+            autoGenerate = false
+        });
+
+        var response = await _client.PostAsJsonAsync($"{RecurringTransactions}/{r.Id}/generate", new
+        {
+            destination = "transactions"
+        });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var generated = (await response.Content.ReadFromJsonAsync<SingleEnvelope<GeneratedNode>>())!.Data;
+        Assert.Equal("transactions", generated.Destination);
+        Assert.NotNull(generated.Transaction);
+
+        var txList = (await _client.GetFromJsonAsync<ListEnvelope<TxNode>>($"{Transactions}?cardId={card}"))!.Data;
+        Assert.Contains(txList, t => t.Description == "Streaming subscription" && t.OccurredOn == startDate);
+    }
+
     // ── helpers ──
 
     private Task AuthAsync(string username) =>
@@ -347,4 +572,5 @@ public sealed class RecurringTransactionsTests : IAsyncLifetime
     private sealed record RecurringTxNode(Guid Id, string Name, string Status, string Frequency, decimal? Amount, int OccurrencesCount);
     private sealed record PendingTxNode(Guid Id, string Description, DateOnly OccurredOn, string Status);
     private sealed record TxNode(Guid Id, string Description, DateOnly OccurredOn);
+    private sealed record GeneratedNode(string Destination, PendingTxNode? Pending, TxNode? Transaction);
 }

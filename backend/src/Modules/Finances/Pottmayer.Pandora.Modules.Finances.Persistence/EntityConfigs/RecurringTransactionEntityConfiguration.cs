@@ -40,6 +40,7 @@ internal sealed class RecurringTransactionEntityConfiguration : IEntityTypeConfi
         // execution
         builder.Property(r => r.Status).HasColumnName("status").HasMaxLength(10).IsRequired();
         builder.Property(r => r.AutoPost).HasColumnName("auto_post").IsRequired();
+        builder.Property(r => r.AutoGenerate).HasColumnName("auto_generate").IsRequired();
         builder.Property(r => r.NextOccurrenceOn).HasColumnName("next_occurrence_on").IsRequired();
         builder.Property(r => r.OccurrencesCount).HasColumnName("occurrences_count").IsRequired();
 

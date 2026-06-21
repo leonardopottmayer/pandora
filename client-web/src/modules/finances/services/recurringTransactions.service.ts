@@ -1,6 +1,8 @@
 import { apiClient } from '@/lib/api/client'
 import type {
   CreateRecurringTransactionRequest,
+  GeneratedOccurrenceDto,
+  GenerateRecurringTransactionOccurrenceRequest,
   RecurringTransactionDto,
   UpdateRecurringTransactionRequest,
 } from '../models'
@@ -43,5 +45,13 @@ export async function pauseRecurringTransaction(id: string): Promise<RecurringTr
 
 export async function resumeRecurringTransaction(id: string): Promise<RecurringTransactionDto> {
   const { data } = await apiClient.post<RecurringTransactionDto>(`${BASE}/${id}/resume`)
+  return data
+}
+
+export async function generateRecurringTransactionOccurrence(
+  id: string,
+  body: GenerateRecurringTransactionOccurrenceRequest,
+): Promise<GeneratedOccurrenceDto> {
+  const { data } = await apiClient.post<GeneratedOccurrenceDto>(`${BASE}/${id}/generate`, body)
   return data
 }

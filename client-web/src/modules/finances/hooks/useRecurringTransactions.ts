@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { financeKeys } from './queryKeys'
 import type {
   CreateRecurringTransactionRequest,
+  GenerateRecurringTransactionOccurrenceRequest,
   UpdateRecurringTransactionRequest,
 } from '../models'
 import * as recurringService from '../services/recurringTransactions.service'
@@ -50,6 +51,28 @@ export function useDeleteRecurringTransaction() {
   return useMutation({
     mutationFn: (id: string) => recurringService.deleteRecurringTransaction(id),
     onSuccess: invalidate,
+  })
+}
+
+export function useGenerateRecurringOccurrence() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      id,
+      body,
+    }: {
+      id: string
+      body: GenerateRecurringTransactionOccurrenceRequest
+    }) => recurringService.generateRecurringTransactionOccurrence(id, body),
+    onSuccess: () => {
+      // Generation advances the recurrence cursor and creates a pending or a posted transaction.
+      queryClient.invalidateQueries({ queryKey: financeKeys.recurring() })
+      queryClient.invalidateQueries({ queryKey: financeKeys.pending() })
+      queryClient.invalidateQueries({ queryKey: financeKeys.transactions() })
+      queryClient.invalidateQueries({ queryKey: financeKeys.accounts() })
+      queryClient.invalidateQueries({ queryKey: financeKeys.cards() })
+      queryClient.invalidateQueries({ queryKey: financeKeys.statements() })
+    },
   })
 }
 

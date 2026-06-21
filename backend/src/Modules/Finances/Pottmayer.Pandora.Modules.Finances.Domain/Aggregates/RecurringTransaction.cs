@@ -32,6 +32,7 @@ public sealed class RecurringTransaction : AggregateRoot<Guid>, IAuditable
     // execution
     public string Status { get; private set; } = "active";
     public bool AutoPost { get; private set; }
+    public bool AutoGenerate { get; private set; } = true;
     public DateOnly NextOccurrenceOn { get; private set; }
     public int OccurrencesCount { get; private set; }
 
@@ -66,6 +67,7 @@ public sealed class RecurringTransaction : AggregateRoot<Guid>, IAuditable
         DateOnly? endDate,
         int? maxOccurrences,
         bool autoPost,
+        bool autoGenerate,
         TimeProvider timeProvider)
     {
         return new RecurringTransaction
@@ -91,6 +93,7 @@ public sealed class RecurringTransaction : AggregateRoot<Guid>, IAuditable
             MaxOccurrences = maxOccurrences,
             Status = "active",
             AutoPost = autoPost,
+            AutoGenerate = autoGenerate,
             NextOccurrenceOn = startDate,
             OccurrencesCount = 0,
             CreatedAt = timeProvider.GetUtcNow()
@@ -116,7 +119,8 @@ public sealed class RecurringTransaction : AggregateRoot<Guid>, IAuditable
         Guid? userCategoryId,
         DateOnly? endDate,
         int? maxOccurrences,
-        bool autoPost)
+        bool autoPost,
+        bool autoGenerate)
     {
         Name = name.Trim();
         Amount = amount;
@@ -128,6 +132,7 @@ public sealed class RecurringTransaction : AggregateRoot<Guid>, IAuditable
         EndDate = endDate;
         MaxOccurrences = maxOccurrences;
         AutoPost = autoPost;
+        AutoGenerate = autoGenerate;
     }
 
     /// <summary>Pauses generation. No-op if already paused.</summary>

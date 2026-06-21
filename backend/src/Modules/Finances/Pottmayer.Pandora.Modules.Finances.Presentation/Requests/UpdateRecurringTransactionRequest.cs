@@ -10,4 +10,5 @@ public sealed record UpdateRecurringTransactionRequest(
     Guid? UserCategoryId,
     DateOnly? EndDate,
     int? MaxOccurrences,
-    bool AutoPost);
+    bool AutoPost,
+    bool AutoGenerate = true);

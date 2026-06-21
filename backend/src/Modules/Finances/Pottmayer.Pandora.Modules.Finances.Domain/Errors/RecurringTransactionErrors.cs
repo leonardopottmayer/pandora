@@ -39,4 +39,13 @@ public static class RecurringTransactionErrors
 
     public static Error MissingDescription =>
         Error.Validation("RecurringTransactions.MissingDescription", "Description is required.");
+
+    public static Error InvalidDestination =>
+        Error.Validation("RecurringTransactions.InvalidDestination", "Destination must be 'inbox' or 'transactions'.");
+
+    public static Error ManualGenerationRequiresAmount =>
+        Error.Validation("RecurringTransactions.ManualGenerationRequiresAmount", "Posting directly to transactions requires an amount.");
+
+    public static Error OccurrenceAlreadyInInbox =>
+        Error.Conflict("RecurringTransactions.OccurrenceAlreadyInInbox", "An inbox suggestion already exists for this recurrence and date.");
 }

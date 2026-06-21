@@ -56,6 +56,7 @@ interface RecurringFormValues {
   endDate?: Dayjs
   maxOccurrences?: number
   autoPost: boolean
+  autoGenerate: boolean
 }
 
 interface RecurringTransactionFormModalProps {
@@ -103,6 +104,7 @@ export function RecurringTransactionFormModal({
         endDate: recurring.endDate ? dayjs(recurring.endDate) : undefined,
         maxOccurrences: recurring.maxOccurrences ?? undefined,
         autoPost: recurring.autoPost,
+        autoGenerate: recurring.autoGenerate,
       })
     } else {
       form.resetFields()
@@ -114,6 +116,7 @@ export function RecurringTransactionFormModal({
         interval: 1,
         startDate: dayjs(),
         autoPost: false,
+        autoGenerate: true,
       })
     }
   }, [open, recurring, form])
@@ -139,6 +142,7 @@ export function RecurringTransactionFormModal({
             endDate: values.endDate ? values.endDate.format('YYYY-MM-DD') : null,
             maxOccurrences: values.maxOccurrences ?? null,
             autoPost: values.target === 'account' ? values.autoPost : false,
+            autoGenerate: values.autoGenerate,
           },
         })
         message.success(t('finances.recurring.updated'))
@@ -160,6 +164,7 @@ export function RecurringTransactionFormModal({
           endDate: values.endDate ? values.endDate.format('YYYY-MM-DD') : null,
           maxOccurrences: values.maxOccurrences ?? null,
           autoPost: values.target === 'account' ? values.autoPost : false,
+          autoGenerate: values.autoGenerate,
         })
         message.success(t('finances.recurring.created'))
       }
@@ -309,6 +314,15 @@ export function RecurringTransactionFormModal({
         ) : (
           <Alert type="info" showIcon message={t('finances.recurring.cardAlwaysInbox')} />
         )}
+
+        <Form.Item
+          name="autoGenerate"
+          label={t('finances.recurring.autoGenerate')}
+          tooltip={t('finances.recurring.autoGenerateHint')}
+          valuePropName="checked"
+        >
+          <Switch />
+        </Form.Item>
       </Form>
     </Modal>
   )

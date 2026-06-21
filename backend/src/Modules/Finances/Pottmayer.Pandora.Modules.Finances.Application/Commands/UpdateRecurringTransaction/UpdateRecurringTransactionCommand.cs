@@ -15,7 +15,8 @@ public sealed record UpdateRecurringTransactionInput(
     Guid? UserCategoryId,
     DateOnly? EndDate,
     int? MaxOccurrences,
-    bool AutoPost);
+    bool AutoPost,
+    bool AutoGenerate);
 
 public sealed class UpdateRecurringTransactionCommand(UpdateRecurringTransactionInput input)
     : CommandBase<UpdateRecurringTransactionInput, RecurringTransactionDto>(input);
