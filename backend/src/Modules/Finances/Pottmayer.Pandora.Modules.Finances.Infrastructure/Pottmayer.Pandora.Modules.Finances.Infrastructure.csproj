@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Pottmayer.Pandora.Modules.Finances.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Finances.Abstractions/Pottmayer.Pandora.Modules.Finances.Abstractions.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Finances.Application/Pottmayer.Pandora.Modules.Finances.Application.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Finances.Domain/Pottmayer.Pandora.Modules.Finances.Domain.csproj" />

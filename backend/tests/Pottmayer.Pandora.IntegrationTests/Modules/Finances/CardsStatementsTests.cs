@@ -87,7 +87,13 @@ public sealed class CardsStatementsTests : IAsyncLifetime
             defaultPaymentAccountId = account
         });
 
-        var tx = await CreateCardTxAsync(new { cardId = card, kind = "expense", amount = 120m, occurredOn = new DateOnly(2026, 6, 5), description = "Market" });
+        // Anchor the purchase a couple of months ahead of "today" so the statement's due date is
+        // always in the future: a closed, not-fully-paid statement past its due date is legitimately
+        // "overdue", which would mask the partially-paid → paid transition this test exercises.
+        var anchor = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(2);
+        var purchaseDate = new DateOnly(anchor.Year, anchor.Month, 5);
+
+        var tx = await CreateCardTxAsync(new { cardId = card, kind = "expense", amount = 120m, occurredOn = purchaseDate, description = "Market" });
         Assert.Equal(HttpStatusCode.OK, (await _client.PostAsync($"{Statements}/{tx.CardStatementId}/close", null)).StatusCode);
 
         var partial = await _client.PostAsJsonAsync($"{Statements}/{tx.CardStatementId}/pay", new { accountId = account, amount = 50m });
