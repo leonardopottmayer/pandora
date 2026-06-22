@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Test artifacts
+coverage
+test-output.txt
+
 # Local env (keep .env.example versioned)
 .env
 .env.*.local
