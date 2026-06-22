@@ -21,6 +21,14 @@ interface RenderWithProvidersOptions extends Omit<RenderOptions, 'wrapper'> {
   queryClient?: QueryClient
 }
 
+/** Minimal QueryClient-only wrapper for hook tests, plus a spy on invalidateQueries. */
+export function createHookWrapper(client = createTestQueryClient()) {
+  function Wrapper({ children }: { children: ReactNode }) {
+    return <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  }
+  return { client, wrapper: Wrapper }
+}
+
 /** Renders `ui` wrapped in the providers a finances page expects (Query, Router, antd App, i18n). */
 export function renderWithProviders(
   ui: ReactElement,

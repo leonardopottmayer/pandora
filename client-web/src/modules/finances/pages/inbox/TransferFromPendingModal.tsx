@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, DatePicker, Descriptions, Input, Modal } from 'antd'
 import dayjs from 'dayjs'
@@ -31,12 +31,18 @@ export function TransferFromPendingModal({
   const [description, setDescription] = useState('')
   const [occurredOn, setOccurredOn] = useState(dayjs())
 
-  useEffect(() => {
+  // Seed the editable fields from the outflow leg when the modal opens.
+  // Adjusting state during render (guarded by an open-transition check) instead
+  // of in an effect avoids a cascading re-render and satisfies
+  // react-hooks/set-state-in-effect.
+  const [prevOpen, setPrevOpen] = useState(false)
+  if (open !== prevOpen) {
+    setPrevOpen(open)
     if (open && outflow) {
       setDescription(outflow.description)
       setOccurredOn(dayjs(outflow.occurredOn))
     }
-  }, [open, outflow])
+  }
 
   const valid = !!outflow && !!inflow
 

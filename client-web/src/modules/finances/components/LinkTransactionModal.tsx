@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Input, Modal, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
@@ -32,12 +32,17 @@ export function LinkTransactionModal({
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<string | null>(null)
 
-  useEffect(() => {
+  // Reset the search/selection when the modal opens. Adjusting state during
+  // render (guarded by an open-transition check) instead of in an effect avoids
+  // a cascading re-render and satisfies react-hooks/set-state-in-effect.
+  const [prevOpen, setPrevOpen] = useState(false)
+  if (open !== prevOpen) {
+    setPrevOpen(open)
     if (open) {
       setSearch(defaultSearch ?? '')
       setSelected(null)
     }
-  }, [open, defaultSearch])
+  }
 
   const { data, isLoading } = useTransactions({
     text: search || undefined,

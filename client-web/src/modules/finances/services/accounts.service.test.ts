@@ -6,8 +6,13 @@ import { ApiResponseError } from '@/lib/api/envelope'
 import {
   archiveAccount,
   createAccount,
+  deleteAccount,
+  getAccount,
   getAccountBalance,
+  getAccountTransactions,
   listAccounts,
+  setAccountTags,
+  unarchiveAccount,
   updateAccount,
 } from './accounts.service'
 import type { AccountDto } from '../models'
@@ -110,5 +115,61 @@ describe('accounts.service', () => {
     await expect(
       createAccount({ name: 'x', type: 'checking', currency: 'BRL', displayOrder: 0 }),
     ).rejects.toBeInstanceOf(ApiResponseError)
+  })
+
+  it('fetches a single account', async () => {
+    server.use(
+      http.get(`${FINANCES_BASE}/accounts/a1`, () =>
+        HttpResponse.json({ success: true, data: sampleAccount }),
+      ),
+    )
+    expect((await getAccount('a1')).id).toBe('a1')
+  })
+
+  it('lists account transactions forwarding filters', async () => {
+    let seenUrl: URL | undefined
+    server.use(
+      http.get(`${FINANCES_BASE}/accounts/a1/transactions`, ({ request }) => {
+        seenUrl = new URL(request.url)
+        return HttpResponse.json({ success: true, data: [] })
+      }),
+    )
+    await getAccountTransactions('a1', { from: '2026-06-01', to: '2026-06-30', status: 'posted', take: 50 })
+    expect(seenUrl?.searchParams.get('from')).toBe('2026-06-01')
+    expect(seenUrl?.searchParams.get('status')).toBe('posted')
+    expect(seenUrl?.searchParams.get('take')).toBe('50')
+  })
+
+  it('deletes an account', async () => {
+    let called = false
+    server.use(
+      http.delete(`${FINANCES_BASE}/accounts/a1`, () => {
+        called = true
+        return HttpResponse.json({ success: true, data: null })
+      }),
+    )
+    await deleteAccount('a1')
+    expect(called).toBe(true)
+  })
+
+  it('unarchives via POST', async () => {
+    server.use(
+      http.post(`${FINANCES_BASE}/accounts/a1/unarchive`, () =>
+        HttpResponse.json({ success: true, data: { ...sampleAccount, archivedAt: null } }),
+      ),
+    )
+    expect((await unarchiveAccount('a1')).archivedAt).toBeNull()
+  })
+
+  it('sets account tags via PUT', async () => {
+    let body: unknown
+    server.use(
+      http.put(`${FINANCES_BASE}/accounts/a1/tags`, async ({ request }) => {
+        body = await request.json()
+        return HttpResponse.json({ success: true, data: null })
+      }),
+    )
+    await setAccountTags('a1', { tagIds: ['t1', 't2'] })
+    expect(body).toEqual({ tagIds: ['t1', 't2'] })
   })
 })
