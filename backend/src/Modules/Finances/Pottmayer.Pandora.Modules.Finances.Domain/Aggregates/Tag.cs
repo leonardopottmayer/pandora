@@ -34,6 +34,7 @@ public sealed class Tag : AggregateRoot<Guid>, IAuditable
             CreatedAt = timeProvider.GetUtcNow()
         };
 
+    /// <summary>Renames and/or recolors the tag. Uniqueness within the user is enforced by the caller.</summary>
     public void Update(string name, string? color)
     {
         Name = name.Trim();

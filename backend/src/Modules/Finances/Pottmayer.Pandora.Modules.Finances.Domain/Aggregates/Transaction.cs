@@ -5,7 +5,7 @@ using Pottmayer.Tars.Core.Ddd;
 namespace Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 
 /// <summary>
-/// An atomic movement in the ledger (fin008). In this phase it always targets one account; the
+/// An atomic movement in the ledger. In this phase it always targets one account; the
 /// account balance is the signed sum of its <c>posted</c> transactions, never a stored field (D1).
 /// The amount is always positive — direction comes from <see cref="Kind"/>. A <c>posted</c>
 /// transaction is immutable in value/destination/kind: corrections are made with <see cref="Void"/>
@@ -72,6 +72,7 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
 
     private Transaction() { }
 
+    /// <summary>Records a movement against an account, posted immediately or scheduled as pending.</summary>
     public static Transaction CreateAccountTransaction(
         Guid userId,
         Guid accountId,
@@ -110,6 +111,7 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
         };
     }
 
+    /// <summary>Records a card purchase or refund against a statement, posted immediately.</summary>
     public static Transaction CreateStatementTransaction(
         Guid userId,
         Guid cardId,
@@ -191,6 +193,7 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
         };
     }
 
+    /// <summary>Records a payment made from an account toward a card statement's balance.</summary>
     public static Transaction CreateStatementPayment(
         Guid userId,
         Guid accountId,

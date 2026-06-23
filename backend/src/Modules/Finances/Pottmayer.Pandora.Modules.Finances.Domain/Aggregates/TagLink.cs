@@ -23,6 +23,7 @@ public sealed class TagLink : AggregateRoot<Guid>, IAuditable
 
     private TagLink() { }
 
+    /// <summary>Attaches a tag to an entity. That the entity exists and is owned by the user is enforced by the caller.</summary>
     public static TagLink Create(Guid tagId, TaggableEntityType entityType, Guid entityId, TimeProvider timeProvider) =>
         new()
         {

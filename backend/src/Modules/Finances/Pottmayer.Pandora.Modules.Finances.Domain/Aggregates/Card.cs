@@ -4,6 +4,11 @@ using Pottmayer.Tars.Core.Ddd;
 
 namespace Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 
+/// <summary>
+/// A credit card owned by the user, billed through monthly <see cref="CardStatement"/>s rather than
+/// posting directly to an account. <see cref="Currency"/> is fixed at creation. An archived card
+/// keeps its history but rejects business mutations.
+/// </summary>
 public sealed class Card : AggregateRoot<Guid>, IAuditable
 {
     public Guid UserId { get; private set; }
@@ -26,6 +31,7 @@ public sealed class Card : AggregateRoot<Guid>, IAuditable
 
     private Card() { }
 
+    /// <summary>Registers a new card for the user with its currency fixed for life.</summary>
     public static Card Create(
         Guid userId,
         string name,
@@ -52,6 +58,10 @@ public sealed class Card : AggregateRoot<Guid>, IAuditable
             CreatedAt = timeProvider.GetUtcNow()
         };
 
+    /// <summary>
+    /// Edits the mutable configuration. Currency is intentionally absent: it is fixed at creation.
+    /// Returns <c>false</c> if the card is archived (no business mutation allowed).
+    /// </summary>
     public bool Update(
         string name,
         string? brand,
@@ -73,17 +83,20 @@ public sealed class Card : AggregateRoot<Guid>, IAuditable
         return true;
     }
 
+    /// <summary>Retires the card from active use while preserving its history. No-op if already archived.</summary>
     public void Archive(TimeProvider timeProvider)
     {
         if (IsArchived) return;
         ArchivedAt = timeProvider.GetUtcNow();
     }
 
+    /// <summary>Brings an archived card back into active use.</summary>
     public void Unarchive()
     {
         ArchivedAt = null;
     }
 
+    /// <summary>Trims a free-text field down to <c>null</c> when it is blank.</summary>
     private static string? Normalize(string? value)
     {
         var trimmed = value?.Trim();

@@ -5,7 +5,7 @@ using Pottmayer.Tars.Core.Ddd;
 namespace Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 
 /// <summary>
-/// User-defined category (fin003). Hierarchical, max 2 levels (a child cannot have children); a
+/// User-defined category. Hierarchical, max 2 levels (a child cannot have children); a
 /// child's <see cref="Nature"/> equals its parent's. Nature and parent are fixed at creation;
 /// renaming, re-colouring, reordering and (de)activation are the only mutations. Deactivation is
 /// non-destructive — it keeps the row so existing transactions stay intact, hiding it from new use.
@@ -57,6 +57,7 @@ public sealed class UserCategory : AggregateRoot<Guid>, IAuditable
             CreatedAt = timeProvider.GetUtcNow()
         };
 
+    /// <summary>Edits the cosmetic fields. Nature and parent are intentionally absent: both are fixed at creation.</summary>
     public void Update(string name, string? color, string? icon, int displayOrder)
     {
         Name = name.Trim();
@@ -65,7 +66,12 @@ public sealed class UserCategory : AggregateRoot<Guid>, IAuditable
         DisplayOrder = displayOrder;
     }
 
+    /// <summary>Makes the category available for new use again.</summary>
     public void Activate() => IsActive = true;
 
+    /// <summary>
+    /// Hides the category from new use without deleting it, so existing transactions that reference
+    /// it stay intact.
+    /// </summary>
     public void Deactivate() => IsActive = false;
 }

@@ -28,6 +28,7 @@ public sealed class ImportRow : AggregateRoot<Guid>
 
     private ImportRow() { }
 
+    /// <summary>Stores a raw extracted line for an import file, awaiting parsing.</summary>
     public static ImportRow CreatePending(
         Guid importFileId,
         int rowIndex,
@@ -45,6 +46,7 @@ public sealed class ImportRow : AggregateRoot<Guid>
         };
     }
 
+    /// <summary>Records the structured data extracted from the raw line.</summary>
     public void SetParsed(
         string parsedPayload,
         string? externalId,
@@ -59,6 +61,7 @@ public sealed class ImportRow : AggregateRoot<Guid>
         InstallmentCount = installmentCount;
     }
 
+    /// <summary>Records the duplicate-detection outcome for this row and any match it points to.</summary>
     public void SetDedup(
         DedupStatus dedupStatus,
         Guid? matchedTransactionId,
@@ -69,6 +72,7 @@ public sealed class ImportRow : AggregateRoot<Guid>
         MatchedPendingTransactionId = matchedPendingTransactionId;
     }
 
+    /// <summary>Links this row to the installment plan its purchase belongs to.</summary>
     public void SetMatchedInstallmentPlan(Guid installmentPlanId)
         => MatchedInstallmentPlanId = installmentPlanId;
 
@@ -83,15 +87,18 @@ public sealed class ImportRow : AggregateRoot<Guid>
         DedupStatus = DedupStatus.Matched;
     }
 
+    /// <summary>Links this row to the suggestion created from it for the user to review.</summary>
     public void MarkSuggestionCreated(Guid pendingTransactionId)
     {
         PendingTransactionId = pendingTransactionId;
         Status = ImportRowStatus.SuggestionCreated;
     }
 
+    /// <summary>Marks the row as deliberately skipped (e.g. a confirmed duplicate) — no suggestion is created.</summary>
     public void MarkSkipped()
         => Status = ImportRowStatus.Skipped;
 
+    /// <summary>Records that processing this row failed, with the reason.</summary>
     public void MarkError(string errorMessage)
     {
         ErrorMessage = errorMessage;

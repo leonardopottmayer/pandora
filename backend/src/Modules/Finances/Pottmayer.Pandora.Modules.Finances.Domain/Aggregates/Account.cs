@@ -32,6 +32,7 @@ public sealed class Account : AggregateRoot<Guid>, IAuditable
 
     private Account() { }
 
+    /// <summary>Opens a new account for the user with its currency fixed for life.</summary>
     public static Account Create(
         Guid userId,
         string name,
@@ -77,12 +78,14 @@ public sealed class Account : AggregateRoot<Guid>, IAuditable
         return true;
     }
 
+    /// <summary>Retires the account from active use while preserving its history. No-op if already archived.</summary>
     public void Archive(TimeProvider timeProvider)
     {
         if (IsArchived) return;
         ArchivedAt = timeProvider.GetUtcNow();
     }
 
+    /// <summary>Brings an archived account back into active use.</summary>
     public void Unarchive()
     {
         ArchivedAt = null;

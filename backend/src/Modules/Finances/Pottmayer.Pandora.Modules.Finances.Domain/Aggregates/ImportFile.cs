@@ -44,6 +44,7 @@ public sealed class ImportFile : AggregateRoot<Guid>, IAuditable
 
     private ImportFile() { }
 
+    /// <summary>Registers a newly uploaded file as received, awaiting parsing.</summary>
     public static ImportFile Create(
         Guid userId,
         Guid? layoutId,
@@ -71,6 +72,7 @@ public sealed class ImportFile : AggregateRoot<Guid>, IAuditable
         };
     }
 
+    /// <summary>Begins parsing the file. No-op unless the file is still in the received state.</summary>
     public bool StartParsing(TimeProvider timeProvider)
     {
         if (!IsReceived) return false;
@@ -79,6 +81,7 @@ public sealed class ImportFile : AggregateRoot<Guid>, IAuditable
         return true;
     }
 
+    /// <summary>Records the outcome of a finished parse run and reaches the terminal completed state.</summary>
     public void Complete(int total, int parsed, int errors, int duplicates, int suggestions, TimeProvider timeProvider)
     {
         Status = ImportFileStatus.Completed;
@@ -90,6 +93,7 @@ public sealed class ImportFile : AggregateRoot<Guid>, IAuditable
         CompletedAt = timeProvider.GetUtcNow();
     }
 
+    /// <summary>Marks the parse run as failed and counts the attempt. A failed file can still be retried.</summary>
     public void Fail(string errorMessage, TimeProvider timeProvider)
     {
         Status = ImportFileStatus.Failed;
@@ -98,6 +102,7 @@ public sealed class ImportFile : AggregateRoot<Guid>, IAuditable
         CompletedAt = timeProvider.GetUtcNow();
     }
 
+    /// <summary>Cancels the import for good. No-op once the file has already reached a terminal state.</summary>
     public bool Abort(TimeProvider timeProvider)
     {
         if (IsTerminal) return false;
@@ -106,6 +111,7 @@ public sealed class ImportFile : AggregateRoot<Guid>, IAuditable
         return true;
     }
 
+    /// <summary>Resets a failed file back to received so it can be parsed again. No-op unless it failed.</summary>
     public bool Retry(TimeProvider timeProvider)
     {
         if (Status != ImportFileStatus.Failed) return false;

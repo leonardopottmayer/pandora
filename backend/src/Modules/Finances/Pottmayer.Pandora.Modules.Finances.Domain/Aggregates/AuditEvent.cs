@@ -31,6 +31,7 @@ public sealed class AuditEvent : AggregateRoot<Guid>
 
     private AuditEvent() { }
 
+    /// <summary>Records a single audit entry. Once recorded, an event is never changed.</summary>
     public static AuditEvent Record(
         Guid userId,
         Guid? actorUserId,

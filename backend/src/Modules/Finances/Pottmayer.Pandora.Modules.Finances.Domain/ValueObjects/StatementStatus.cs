@@ -2,6 +2,10 @@ using Pottmayer.Pandora.Shared.Domain;
 
 namespace Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 
+/// <summary>
+/// Lifecycle of a <c>CardStatement</c>: open while accepting purchases, then closed and tracked
+/// through paid/partially paid until settled, or overdue if past its due date unpaid.
+/// </summary>
 public sealed class StatementStatus : IDomainValue<StatementStatus>
 {
     public static readonly StatementStatus Open = new("open");

@@ -4,6 +4,12 @@ using Pottmayer.Tars.Core.Ddd;
 
 namespace Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 
+/// <summary>
+/// A suggested movement awaiting the user's decision before it becomes a real
+/// <see cref="Transaction"/>: generated from a <see cref="RecurringTransaction"/> occurrence or from
+/// an imported file row. The payload stays editable while pending; once approved, rejected, or
+/// linked to an existing transaction, the decision is terminal.
+/// </summary>
 public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
 {
     public Guid UserId { get; private set; }
@@ -53,6 +59,7 @@ public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
 
     private PendingTransaction() { }
 
+    /// <summary>Builds a suggestion from a due occurrence of a recurring template, awaiting the user's decision.</summary>
     public static PendingTransaction CreateFromRecurrence(
         Guid userId,
         Guid recurringTransactionId,
@@ -93,6 +100,7 @@ public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
         };
     }
 
+    /// <summary>Builds a suggestion from an imported row, carrying its dedup outcome and installment data.</summary>
     public static PendingTransaction CreateFromImport(
         Guid userId,
         Guid importRowId,

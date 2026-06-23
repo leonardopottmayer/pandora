@@ -4,6 +4,13 @@ using Pottmayer.Tars.Core.Ddd;
 
 namespace Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 
+/// <summary>
+/// A template for a movement that repeats on a schedule (e.g. rent, a subscription): the recurrence
+/// rule and destination are fixed at creation, while each due occurrence produces either a posted
+/// <see cref="Transaction"/> directly (<see cref="AutoPost"/>) or a <see cref="PendingTransaction"/>
+/// for the user to confirm. Can be paused and resumed, and finishes on its own once the end date or
+/// occurrence limit is reached.
+/// </summary>
 public sealed class RecurringTransaction : AggregateRoot<Guid>, IAuditable
 {
     public Guid UserId { get; private set; }
@@ -47,6 +54,7 @@ public sealed class RecurringTransaction : AggregateRoot<Guid>, IAuditable
 
     private RecurringTransaction() { }
 
+    /// <summary>Sets up a new recurring template, active from its start date.</summary>
     public static RecurringTransaction Create(
         Guid userId,
         string name,

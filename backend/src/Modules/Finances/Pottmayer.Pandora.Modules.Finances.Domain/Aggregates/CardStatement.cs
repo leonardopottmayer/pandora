@@ -4,6 +4,11 @@ using Pottmayer.Tars.Core.Ddd;
 
 namespace Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 
+/// <summary>
+/// A monthly billing cycle of a <see cref="Card"/>: accumulates purchases until closed, then tracks
+/// how much of the closed total has been paid. <see cref="StatementStatus"/> follows the closing and
+/// payment lifecycle (open → closed → partially paid/paid, or overdue past the due date).
+/// </summary>
 public sealed class CardStatement : AggregateRoot<Guid>, IAuditable
 {
     public Guid UserId { get; private set; }
@@ -28,6 +33,7 @@ public sealed class CardStatement : AggregateRoot<Guid>, IAuditable
 
     private CardStatement() { }
 
+    /// <summary>Opens a new, empty billing cycle for the card's given reference month.</summary>
     public static CardStatement Create(
         Guid userId,
         Guid cardId,
@@ -49,6 +55,7 @@ public sealed class CardStatement : AggregateRoot<Guid>, IAuditable
             CreatedAt = timeProvider.GetUtcNow()
         };
 
+    /// <summary>Closes the statement to new purchases. No-op unless currently open.</summary>
     public bool Close(TimeProvider timeProvider)
     {
         if (Status != StatementStatus.Open) return false;
@@ -57,6 +64,10 @@ public sealed class CardStatement : AggregateRoot<Guid>, IAuditable
         return true;
     }
 
+    /// <summary>
+    /// Reopens a closed statement to new purchases, recomputing its status from the current amounts
+    /// and date. No-op if the statement is still open or already fully paid.
+    /// </summary>
     public bool Reopen(DateOnly today, TimeProvider timeProvider)
     {
         if (Status == StatementStatus.Open || Status == StatementStatus.Paid) return false;
@@ -65,6 +76,9 @@ public sealed class CardStatement : AggregateRoot<Guid>, IAuditable
         return true;
     }
 
+    /// <summary>
+    /// Flags the statement as overdue. No-op if it has nothing left to pay or is already paid/overdue.
+    /// </summary>
     public bool MarkOverdue(TimeProvider timeProvider)
     {
         if (RemainingAmount <= 0m || Status == StatementStatus.Paid || Status == StatementStatus.Overdue)
@@ -75,6 +89,10 @@ public sealed class CardStatement : AggregateRoot<Guid>, IAuditable
         return true;
     }
 
+    /// <summary>
+    /// Recomputes the statement's totals and derives its status from them: paid once nothing remains,
+    /// overdue once past the due date with an outstanding balance, partially paid/closed/open otherwise.
+    /// </summary>
     public void SyncAmounts(decimal totalAmount, decimal paidAmount, DateOnly today, TimeProvider timeProvider)
     {
         TotalAmount = totalAmount;

@@ -19,7 +19,6 @@ public sealed partial class InstallmentPlan : AggregateRoot<Guid>, IAuditable
     public Guid UserId { get; private set; }
     public Guid CardId { get; private set; }
 
-    /// <summary>Provenance. Only <see cref="EntryOrigin.Manual"/> exists in this phase (<see cref="EntryOrigin.Import"/> arrives in phase 10).</summary>
     public EntryOrigin Origin { get; private set; } = EntryOrigin.Manual;
 
     public decimal TotalAmount { get; private set; }
@@ -41,6 +40,7 @@ public sealed partial class InstallmentPlan : AggregateRoot<Guid>, IAuditable
 
     private InstallmentPlan() { }
 
+    /// <summary>Opens a manually-entered installment plan, splitting evenly across its installments.</summary>
     public static InstallmentPlan CreateManual(
         Guid userId,
         Guid cardId,
