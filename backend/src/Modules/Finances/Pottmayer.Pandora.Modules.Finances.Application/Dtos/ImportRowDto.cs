@@ -29,14 +29,14 @@ public sealed record ImportRowDto(
         r.ParsedPayload,
         r.ExternalId,
         r.DedupKey,
-        r.DedupStatus,
+        r.DedupStatus.Value,
         r.MatchedTransactionId,
         r.MatchedPendingTransactionId,
         r.InstallmentNumber,
         r.InstallmentCount,
         r.MatchedInstallmentPlanId,
         r.PendingTransactionId,
-        r.Status,
+        r.Status.Value,
         r.ErrorMessage,
         r.CreatedAt);
 }

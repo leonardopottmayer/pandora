@@ -1,4 +1,5 @@
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Finances.Tests.Fakes;
 using Xunit;
 
@@ -33,7 +34,7 @@ public sealed class PendingTransactionTests
         var pending = NewFromRecurrence(new FixedTimeProvider(Now));
 
         Assert.True(pending.IsPending);
-        Assert.Equal("recurrence", pending.Source);
+        Assert.Equal(EntryOrigin.Recurrence, pending.Source);
         Assert.False(pending.IsImportSource);
         Assert.Equal(Now, pending.CreatedAt);
     }
@@ -53,7 +54,7 @@ public sealed class PendingTransactionTests
             description: "Market",
             payee: null,
             suggestedStatementId: null,
-            dedupStatus: "new",
+            dedupStatus: DedupStatus.New,
             duplicateOfTransactionId: null,
             duplicateOfPendingId: null,
             installmentNumber: null,
@@ -62,8 +63,8 @@ public sealed class PendingTransactionTests
             timeProvider: new FixedTimeProvider(Now));
 
         Assert.True(pending.IsImportSource);
-        Assert.Equal("import", pending.Source);
-        Assert.Equal("new", pending.DedupStatus);
+        Assert.Equal(EntryOrigin.Import, pending.Source);
+        Assert.Equal(DedupStatus.New, pending.DedupStatus);
     }
 
     [Fact]
@@ -76,7 +77,7 @@ public sealed class PendingTransactionTests
 
         Assert.True(pending.Approve(txId, userId, time));
         Assert.False(pending.IsPending);
-        Assert.Equal("approved", pending.Status);
+        Assert.Equal(PendingTransactionStatus.Approved, pending.Status);
         Assert.Equal(txId, pending.TransactionId);
         Assert.Equal(userId, pending.DecidedBy);
         Assert.Equal(Now, pending.DecidedAt);
@@ -93,7 +94,7 @@ public sealed class PendingTransactionTests
         var pending = NewFromRecurrence(time);
 
         Assert.True(pending.Reject("not mine", Guid.NewGuid(), time));
-        Assert.Equal("rejected", pending.Status);
+        Assert.Equal(PendingTransactionStatus.Rejected, pending.Status);
         Assert.Equal("not mine", pending.RejectionReason);
 
         Assert.False(pending.Reject("again", Guid.NewGuid(), time));
@@ -108,8 +109,8 @@ public sealed class PendingTransactionTests
         var existingTxId = Guid.NewGuid();
 
         Assert.True(pending.MarkLinkedToExisting(existingTxId, Guid.NewGuid(), time));
-        Assert.Equal("rejected", pending.Status);
-        Assert.Equal("matched", pending.DedupStatus);
+        Assert.Equal(PendingTransactionStatus.Rejected, pending.Status);
+        Assert.Equal(DedupStatus.Matched, pending.DedupStatus);
         Assert.Equal(existingTxId, pending.DuplicateOfTransactionId);
         Assert.Equal("linked-to-existing-transaction", pending.RejectionReason);
         Assert.Null(pending.TransactionId); // no new transaction was created

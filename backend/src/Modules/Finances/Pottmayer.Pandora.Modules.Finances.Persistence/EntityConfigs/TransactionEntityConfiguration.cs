@@ -78,7 +78,11 @@ internal sealed class TransactionEntityConfiguration : IEntityTypeConfiguration<
         builder.Property(t => t.InstallmentPlanId).HasColumnName("installment_plan_id");
         builder.Property(t => t.InstallmentNumber).HasColumnName("installment_number");
 
-        builder.Property(t => t.Origin).HasColumnName("origin").HasMaxLength(15).IsRequired();
+        builder.Property(t => t.Origin)
+            .HasColumnName("origin")
+            .HasConversion(o => o.Value, v => EntryOrigin.FromValue(v))
+            .HasMaxLength(15)
+            .IsRequired();
         builder.Property(t => t.ReversedTransactionId).HasColumnName("reversed_transaction_id");
         builder.Property(t => t.PendingTransactionId).HasColumnName("pending_transaction_id");
         builder.Property(t => t.RecurringTransactionId).HasColumnName("recurring_transaction_id");

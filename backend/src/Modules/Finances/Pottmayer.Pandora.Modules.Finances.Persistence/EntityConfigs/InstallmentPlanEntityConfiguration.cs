@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Pottmayer.Pandora.Modules.Finances.Abstractions;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 
 namespace Pottmayer.Pandora.Modules.Finances.Persistence.EntityConfigs;
 
@@ -16,7 +17,11 @@ internal sealed class InstallmentPlanEntityConfiguration : IEntityTypeConfigurat
         builder.Property(p => p.Id).HasColumnName("id").ValueGeneratedNever();
         builder.Property(p => p.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(p => p.CardId).HasColumnName("card_id").IsRequired();
-        builder.Property(p => p.Origin).HasColumnName("origin").HasMaxLength(10).IsRequired();
+        builder.Property(p => p.Origin)
+            .HasColumnName("origin")
+            .HasConversion(o => o.Value, v => EntryOrigin.FromValue(v))
+            .HasMaxLength(10)
+            .IsRequired();
         builder.Property(p => p.TotalAmount).HasColumnName("total_amount").HasColumnType("numeric(20,8)").IsRequired();
         builder.Property(p => p.TotalIsEstimate).HasColumnName("total_is_estimate").IsRequired();
         builder.Property(p => p.InstallmentCount).HasColumnName("installment_count").IsRequired();

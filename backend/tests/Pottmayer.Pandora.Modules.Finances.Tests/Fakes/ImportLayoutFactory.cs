@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 
 namespace Pottmayer.Pandora.Modules.Finances.Tests.Fakes;
 
@@ -19,7 +20,7 @@ internal static class ImportLayoutFactory
     private static ImportLayout Build(string fileFormat, string config, string layoutCode)
     {
         var layout = (ImportLayout)RuntimeHelpers.GetUninitializedObject(typeof(ImportLayout));
-        Set(layout, nameof(ImportLayout.FileFormat), fileFormat);
+        Set(layout, nameof(ImportLayout.FileFormat), LayoutFileFormat.FromValue(fileFormat));
         Set(layout, nameof(ImportLayout.Config), config);
         Set(layout, nameof(ImportLayout.LayoutCode), layoutCode);
         return layout;

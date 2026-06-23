@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Tars.Data.Abstractions.DataContext;
 using Pottmayer.Tars.Data.Relational.Repositories;
 
@@ -15,10 +16,10 @@ public sealed class PendingTransactionRepository(IDataContextAccessor accessor)
     public async Task<IReadOnlyList<PendingTransaction>> QueryAsync(
         Guid userId, PendingTransactionFilter filter, CancellationToken ct = default)
     {
-        var query = Queryable().Where(p => p.UserId == userId && p.Status == "pending");
+        var query = Queryable().Where(p => p.UserId == userId && p.Status == PendingTransactionStatus.Pending);
 
         if (filter.Source is not null)
-            query = query.Where(p => p.Source == filter.Source);
+            query = query.Where(p => p.Source == EntryOrigin.FromValue(filter.Source));
         if (filter.AccountId is not null)
             query = query.Where(p => p.AccountId == filter.AccountId);
         if (filter.CardId is not null)
@@ -39,7 +40,7 @@ public sealed class PendingTransactionRepository(IDataContextAccessor accessor)
     public async Task<IReadOnlyList<PendingTransaction>> GetPendingByIdsForUserAsync(
         Guid userId, IReadOnlyCollection<Guid> ids, CancellationToken ct = default)
         => await Queryable()
-            .Where(p => p.UserId == userId && p.Status == "pending" && ids.Contains(p.Id))
+            .Where(p => p.UserId == userId && p.Status == PendingTransactionStatus.Pending && ids.Contains(p.Id))
             .ToListAsync(ct);
 
     public Task<bool> ExistsForRecurrenceOnDateAsync(

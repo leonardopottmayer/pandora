@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Tars.Data.Abstractions.DataContext;
 using Pottmayer.Tars.Data.Relational.Repositories;
 
@@ -14,7 +15,7 @@ public sealed class ImportFileRepository(IDataContextAccessor accessor)
 
     public Task<ImportFile?> ClaimNextReceivedAsync(CancellationToken ct = default)
         => Queryable()
-            .Where(f => f.Status == "received")
+            .Where(f => f.Status == ImportFileStatus.Received)
             .OrderBy(f => f.CreatedAt)
             .FirstOrDefaultAsync(ct);
 

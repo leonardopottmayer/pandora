@@ -5,10 +5,10 @@ using Pottmayer.Tars.Core.Ddd;
 namespace Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 
 /// <summary>
-/// A balance repository owned by the user (fin001): wallet/cash, checking, savings, international,
+/// A balance repository owned by the user: wallet/cash, checking, savings, international,
 /// crypto, investment. The <see cref="Currency"/> is fixed at creation — there is no mutator for it,
 /// so it can never change. An archived account keeps its history but rejects business mutations.
-/// Balance is not stored here; it is derived from the ledger (phase 04).
+/// Balance is not stored here; it is derived from the ledger.
 /// </summary>
 public sealed class Account : AggregateRoot<Guid>, IAuditable
 {

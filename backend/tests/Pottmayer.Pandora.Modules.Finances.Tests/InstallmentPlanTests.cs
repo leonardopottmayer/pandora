@@ -1,4 +1,5 @@
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Finances.Tests.Fakes;
 using Xunit;
 
@@ -44,7 +45,7 @@ public sealed class InstallmentPlanTests
         var plan = InstallmentPlan.CreateManual(
             Guid.NewGuid(), Guid.NewGuid(), 1200m, 12, "2026-06", "Loja X 03/12", new FixedTimeProvider(Now));
 
-        Assert.Equal("manual", plan.Origin);
+        Assert.Equal(EntryOrigin.Manual, plan.Origin);
         Assert.False(plan.TotalIsEstimate);
         Assert.Equal("loja x", plan.NormalizedDescription);
     }

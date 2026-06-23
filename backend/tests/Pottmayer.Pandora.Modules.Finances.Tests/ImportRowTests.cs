@@ -1,4 +1,5 @@
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Xunit;
 
 namespace Pottmayer.Pandora.Modules.Finances.Tests;
@@ -15,8 +16,8 @@ public sealed class ImportRowTests
     {
         var row = NewRow();
 
-        Assert.Equal("pending", row.Status);
-        Assert.Equal("new", row.DedupStatus);
+        Assert.Equal(ImportRowStatus.Pending, row.Status);
+        Assert.Equal(DedupStatus.New, row.DedupStatus);
         Assert.Equal(5, row.RowIndex);
         Assert.Equal("2026-06-10,Coffee,12.50", row.RawData);
         Assert.Equal(Now, row.CreatedAt);
@@ -44,9 +45,9 @@ public sealed class ImportRowTests
         var txId = Guid.NewGuid();
         var pendingId = Guid.NewGuid();
 
-        row.SetDedup("certain", txId, pendingId);
+        row.SetDedup(DedupStatus.Certain, txId, pendingId);
 
-        Assert.Equal("certain", row.DedupStatus);
+        Assert.Equal(DedupStatus.Certain, row.DedupStatus);
         Assert.Equal(txId, row.MatchedTransactionId);
         Assert.Equal(pendingId, row.MatchedPendingTransactionId);
     }
@@ -60,7 +61,7 @@ public sealed class ImportRowTests
         row.MarkMatched(txId);
 
         Assert.Equal(txId, row.MatchedTransactionId);
-        Assert.Equal("matched", row.DedupStatus);
+        Assert.Equal(DedupStatus.Matched, row.DedupStatus);
     }
 
     [Fact]
@@ -72,7 +73,7 @@ public sealed class ImportRowTests
         row.MarkSuggestionCreated(pendingId);
 
         Assert.Equal(pendingId, row.PendingTransactionId);
-        Assert.Equal("suggestion-created", row.Status);
+        Assert.Equal(ImportRowStatus.SuggestionCreated, row.Status);
     }
 
     [Fact]
@@ -80,11 +81,11 @@ public sealed class ImportRowTests
     {
         var skipped = NewRow();
         skipped.MarkSkipped();
-        Assert.Equal("skipped", skipped.Status);
+        Assert.Equal(ImportRowStatus.Skipped, skipped.Status);
 
         var errored = NewRow();
         errored.MarkError("bad row");
-        Assert.Equal("error", errored.Status);
+        Assert.Equal(ImportRowStatus.Error, errored.Status);
         Assert.Equal("bad row", errored.ErrorMessage);
     }
 

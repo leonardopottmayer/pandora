@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Pottmayer.Pandora.Modules.Finances.Abstractions;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 
 namespace Pottmayer.Pandora.Modules.Finances.Persistence.EntityConfigs;
 
@@ -18,8 +19,16 @@ internal sealed class ImportLayoutEntityConfiguration : IEntityTypeConfiguration
         builder.Property(l => l.LayoutCode).HasColumnName("layout_code").HasMaxLength(60).IsRequired();
         builder.Property(l => l.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
         builder.Property(l => l.BankName).HasColumnName("bank_name").HasMaxLength(60);
-        builder.Property(l => l.FileFormat).HasColumnName("file_format").HasMaxLength(5).IsRequired();
-        builder.Property(l => l.AccountType).HasColumnName("account_type").HasMaxLength(10).IsRequired();
+        builder.Property(l => l.FileFormat)
+            .HasColumnName("file_format")
+            .HasConversion(f => f.Value, v => LayoutFileFormat.FromValue(v))
+            .HasMaxLength(5)
+            .IsRequired();
+        builder.Property(l => l.AccountType)
+            .HasColumnName("account_type")
+            .HasConversion(a => a.Value, v => ImportLayoutAccountType.FromValue(v))
+            .HasMaxLength(10)
+            .IsRequired();
         builder.Property(l => l.Config).HasColumnName("config").HasColumnType("jsonb").IsRequired();
         builder.Property(l => l.CreatedAt).HasColumnName("created_at").IsRequired();
     }

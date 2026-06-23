@@ -3,8 +3,7 @@ using Pottmayer.Tars.Core.Ddd;
 namespace Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 
 /// <summary>
-/// Append-only audit record (fin016). Written within the same unit of work as the mutation it
-/// describes, so a rolled-back use case never leaves an orphan event. Never updated or deleted.
+/// Append-only audit record. Never updated or deleted.
 /// </summary>
 public sealed class AuditEvent : AggregateRoot<Guid>
 {

@@ -1,4 +1,5 @@
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Finances.Tests.Fakes;
 using Xunit;
 
@@ -24,7 +25,7 @@ public sealed class RecurringTransactionTests
             payee: null,
             systemCategoryId: null,
             userCategoryId: null,
-            frequency: "monthly",
+            frequency: RecurrenceFrequency.Monthly,
             interval: 1,
             dayOfMonth: null,
             weekday: null,
@@ -143,7 +144,7 @@ public sealed class RecurringTransactionTests
         var r = NewMonthly();
         r.UpdateTemplate("Name", 100m, false, "Desc", null, null, null, null, null, false, true);
 
-        Assert.Equal("monthly", r.Frequency);
+        Assert.Equal(RecurrenceFrequency.Monthly, r.Frequency);
         Assert.Equal(AccountId, r.AccountId);
         Assert.Null(r.CardId);
     }
@@ -154,7 +155,7 @@ public sealed class RecurringTransactionTests
         var r = NewMonthly();
         var rule = r.GetRule();
 
-        Assert.Equal("monthly", rule.Frequency);
+        Assert.Equal(RecurrenceFrequency.Monthly, rule.Frequency);
         Assert.Equal(1, rule.Interval);
         Assert.Equal(Start, rule.StartDate);
     }

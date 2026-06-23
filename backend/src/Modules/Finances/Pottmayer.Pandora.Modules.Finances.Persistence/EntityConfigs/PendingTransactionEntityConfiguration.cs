@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Pottmayer.Pandora.Modules.Finances.Abstractions;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 
 namespace Pottmayer.Pandora.Modules.Finances.Persistence.EntityConfigs;
 
@@ -15,12 +16,19 @@ internal sealed class PendingTransactionEntityConfiguration : IEntityTypeConfigu
 
         builder.Property(p => p.Id).HasColumnName("id").ValueGeneratedNever();
         builder.Property(p => p.UserId).HasColumnName("user_id").IsRequired();
-        builder.Property(p => p.Source).HasColumnName("source").HasMaxLength(15).IsRequired();
+        builder.Property(p => p.Source)
+            .HasColumnName("source")
+            .HasConversion(s => s.Value, v => EntryOrigin.FromValue(v))
+            .HasMaxLength(15)
+            .IsRequired();
         builder.Property(p => p.RecurringTransactionId).HasColumnName("recurring_transaction_id");
         builder.Property(p => p.ImportRowId).HasColumnName("import_row_id");
         builder.Property(p => p.DuplicateOfTransactionId).HasColumnName("duplicate_of_transaction_id");
         builder.Property(p => p.DuplicateOfPendingId).HasColumnName("duplicate_of_pending_id");
-        builder.Property(p => p.DedupStatus).HasColumnName("dedup_status").HasMaxLength(15);
+        builder.Property(p => p.DedupStatus)
+            .HasColumnName("dedup_status")
+            .HasConversion(d => d!.Value, v => DedupStatus.FromValue(v))
+            .HasMaxLength(15);
         builder.Property(p => p.InstallmentNumber).HasColumnName("installment_number");
         builder.Property(p => p.InstallmentCount).HasColumnName("installment_count");
         builder.Property(p => p.MatchedInstallmentPlanId).HasColumnName("matched_installment_plan_id");
@@ -42,7 +50,11 @@ internal sealed class PendingTransactionEntityConfiguration : IEntityTypeConfigu
         builder.Property(p => p.OriginalPayload).HasColumnName("original_payload").HasColumnType("jsonb").IsRequired();
 
         // decision
-        builder.Property(p => p.Status).HasColumnName("status").HasMaxLength(10).IsRequired();
+        builder.Property(p => p.Status)
+            .HasColumnName("status")
+            .HasConversion(s => s.Value, v => PendingTransactionStatus.FromValue(v))
+            .HasMaxLength(10)
+            .IsRequired();
         builder.Property(p => p.DecidedAt).HasColumnName("decided_at");
         builder.Property(p => p.DecidedBy).HasColumnName("decided_by");
         builder.Property(p => p.RejectionReason).HasColumnName("rejection_reason").HasMaxLength(255);

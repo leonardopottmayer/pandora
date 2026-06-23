@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Pottmayer.Pandora.Modules.Finances.Abstractions;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 
 namespace Pottmayer.Pandora.Modules.Finances.Persistence.EntityConfigs;
 
@@ -20,14 +21,22 @@ internal sealed class ImportRowEntityConfiguration : IEntityTypeConfiguration<Im
         builder.Property(r => r.ParsedPayload).HasColumnName("parsed_payload").HasColumnType("jsonb");
         builder.Property(r => r.ExternalId).HasColumnName("external_id").HasMaxLength(255);
         builder.Property(r => r.DedupKey).HasColumnName("dedup_key").HasMaxLength(64);
-        builder.Property(r => r.DedupStatus).HasColumnName("dedup_status").HasMaxLength(15).IsRequired();
+        builder.Property(r => r.DedupStatus)
+            .HasColumnName("dedup_status")
+            .HasConversion(d => d.Value, v => DedupStatus.FromValue(v))
+            .HasMaxLength(15)
+            .IsRequired();
         builder.Property(r => r.MatchedTransactionId).HasColumnName("matched_transaction_id");
         builder.Property(r => r.MatchedPendingTransactionId).HasColumnName("matched_pending_transaction_id");
         builder.Property(r => r.InstallmentNumber).HasColumnName("installment_number");
         builder.Property(r => r.InstallmentCount).HasColumnName("installment_count");
         builder.Property(r => r.MatchedInstallmentPlanId).HasColumnName("matched_installment_plan_id");
         builder.Property(r => r.PendingTransactionId).HasColumnName("pending_transaction_id");
-        builder.Property(r => r.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
+        builder.Property(r => r.Status)
+            .HasColumnName("status")
+            .HasConversion(s => s.Value, v => ImportRowStatus.FromValue(v))
+            .HasMaxLength(20)
+            .IsRequired();
         builder.Property(r => r.ErrorMessage).HasColumnName("error_message");
         builder.Property(r => r.CreatedAt).HasColumnName("created_at").IsRequired();
 

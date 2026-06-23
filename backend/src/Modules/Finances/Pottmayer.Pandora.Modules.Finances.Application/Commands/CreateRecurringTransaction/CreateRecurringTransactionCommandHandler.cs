@@ -25,7 +25,7 @@ public sealed class CreateRecurringTransactionCommandHandler(
             return Fail(RecurringTransactionErrors.MissingName);
         if (string.IsNullOrWhiteSpace(input.Description))
             return Fail(RecurringTransactionErrors.MissingDescription);
-        if (!RecurrenceRule.IsValidFrequency(input.Frequency))
+        if (!RecurrenceFrequency.IsSupported(input.Frequency))
             return Fail(RecurringTransactionErrors.InvalidFrequency(input.Frequency));
         if (input.Interval < 1)
             return Fail(RecurringTransactionErrors.InvalidInterval);
@@ -76,7 +76,7 @@ public sealed class CreateRecurringTransactionCommandHandler(
                 input.Payee,
                 input.SystemCategoryId,
                 input.UserCategoryId,
-                input.Frequency,
+                RecurrenceFrequency.FromValue(input.Frequency),
                 input.Interval,
                 input.DayOfMonth,
                 input.Weekday,
@@ -92,7 +92,7 @@ public sealed class CreateRecurringTransactionCommandHandler(
                 "recurring.created", now, new
                 {
                     recurring.Name,
-                    recurring.Frequency,
+                    Frequency = recurring.Frequency.Value,
                     recurring.Interval,
                     recurring.StartDate,
                     recurring.EndDate,

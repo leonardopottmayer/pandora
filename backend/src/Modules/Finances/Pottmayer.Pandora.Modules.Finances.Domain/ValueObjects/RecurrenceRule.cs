@@ -7,7 +7,7 @@ namespace Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 /// </summary>
 public sealed class RecurrenceRule
 {
-    public string Frequency { get; }
+    public RecurrenceFrequency Frequency { get; }
     public short Interval { get; }
     public short? DayOfMonth { get; }
     public short? Weekday { get; }
@@ -15,7 +15,7 @@ public sealed class RecurrenceRule
     public DateOnly? EndDate { get; }
     public int? MaxOccurrences { get; }
 
-    private RecurrenceRule(string frequency, short interval, short? dayOfMonth, short? weekday,
+    private RecurrenceRule(RecurrenceFrequency frequency, short interval, short? dayOfMonth, short? weekday,
         DateOnly startDate, DateOnly? endDate, int? maxOccurrences)
     {
         Frequency = frequency;
@@ -27,11 +27,8 @@ public sealed class RecurrenceRule
         MaxOccurrences = maxOccurrences;
     }
 
-    public static bool IsValidFrequency(string? value) =>
-        value is "daily" or "weekly" or "monthly" or "yearly";
-
     public static RecurrenceRule Create(
-        string frequency, short interval, short? dayOfMonth, short? weekday,
+        RecurrenceFrequency frequency, short interval, short? dayOfMonth, short? weekday,
         DateOnly startDate, DateOnly? endDate, int? maxOccurrences) =>
         new(frequency, interval, dayOfMonth, weekday, startDate, endDate, maxOccurrences);
 
@@ -40,14 +37,14 @@ public sealed class RecurrenceRule
     /// For monthly/yearly, <see cref="DayOfMonth"/> is clamped to the last valid day of the target month
     /// (e.g. day 31 in February → 28/29).
     /// </summary>
-    public DateOnly NextOccurrenceAfter(DateOnly current) => Frequency switch
+    public DateOnly NextOccurrenceAfter(DateOnly current)
     {
-        "daily" => current.AddDays(Interval),
-        "weekly" => current.AddDays(Interval * 7),
-        "monthly" => NextMonthly(current),
-        "yearly" => NextYearly(current),
-        _ => throw new InvalidOperationException($"Unsupported frequency: {Frequency}")
-    };
+        if (Frequency == RecurrenceFrequency.Daily) return current.AddDays(Interval);
+        if (Frequency == RecurrenceFrequency.Weekly) return current.AddDays(Interval * 7);
+        if (Frequency == RecurrenceFrequency.Monthly) return NextMonthly(current);
+        if (Frequency == RecurrenceFrequency.Yearly) return NextYearly(current);
+        throw new InvalidOperationException($"Unsupported frequency: {Frequency}");
+    }
 
     /// <summary>
     /// Returns <c>true</c> when no further occurrences should be generated: the next proposed date

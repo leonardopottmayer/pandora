@@ -77,13 +77,13 @@ public sealed class RunImportParsingCommandHandler(
                         var payload = SerializePayload(pr);
                         dedupByIndex.TryGetValue(pr.RowIndex, out var dedup);
                         var dedupKey = dedup?.DedupKey ?? string.Empty;
-                        var dedupStatus = dedup?.DedupStatus ?? "new";
+                        var dedupStatus = DedupStatus.FromValue(dedup?.DedupStatus ?? "new");
 
                         row.SetParsed(payload, pr.ExternalId, dedupKey, pr.InstallmentNumber, pr.InstallmentCount);
                         row.SetDedup(dedupStatus, dedup?.MatchedTransactionId, dedup?.MatchedPendingTransactionId);
                         await rowRepo.AddAsync(row, token);
 
-                        if (dedupStatus == "certain") duplicates++;
+                        if (dedupStatus == DedupStatus.Certain) duplicates++;
 
                         // Always generate a suggestion, even for certain duplicates
                         var kind = DetermineKind(pr.IsCredit, layout.IsCardLayout);

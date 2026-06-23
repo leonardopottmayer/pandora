@@ -4,9 +4,9 @@ using Pottmayer.Tars.Core.Ddd;
 namespace Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 
 /// <summary>
-/// System category (fin002): global, seed-maintained reference data, hierarchical (2 levels). Root
-/// of its own table, retrieved through its own reader — an aggregate root, just an immutable one:
-/// read-only at runtime, written only by migration, no behaviour. Mirrors <see cref="UserCategory"/>.
+/// System category (fin002): global, seed-maintained reference data, hierarchical (2 levels). An
+/// aggregate root, just an immutable one: read-only at runtime, with no behaviour of its own.
+/// Mirrors <see cref="UserCategory"/>.
 /// </summary>
 public sealed class SystemCategory : AggregateRoot<Guid>
 {

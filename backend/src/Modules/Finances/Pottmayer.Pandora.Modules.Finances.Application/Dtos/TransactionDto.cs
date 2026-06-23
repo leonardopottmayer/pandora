@@ -51,7 +51,7 @@ public sealed record TransactionDto(
 
         return new(t.Id, t.AccountId, t.CardStatementId, t.CardId, t.PaidStatementId, t.Kind.Value, t.Status.Value,
             t.Amount, t.Currency.Value, t.OccurredOn, description, t.Payee, t.Notes, t.SystemCategoryId,
-            t.UserCategoryId, t.TransferGroupId, t.FxRate, t.InstallmentPlanId, t.InstallmentNumber, t.Origin,
+            t.UserCategoryId, t.TransferGroupId, t.FxRate, t.InstallmentPlanId, t.InstallmentNumber, t.Origin.Value,
             t.ReversedTransactionId, t.PostedAt, t.VoidedAt, t.VoidReason, t.SystemDescription?.Key, t.SystemDescription?.Args,
             statement?.ReferenceMonth, statement?.DueDate);
     }

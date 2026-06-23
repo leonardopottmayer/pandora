@@ -45,7 +45,7 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
     public Guid? InstallmentPlanId { get; private set; }
     public short? InstallmentNumber { get; private set; }
 
-    public string Origin { get; private set; } = "manual";
+    public EntryOrigin Origin { get; private set; } = EntryOrigin.Manual;
 
     public Guid? ReversedTransactionId { get; private set; }
 
@@ -233,7 +233,7 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
     /// Builds the two legs of a transfer sharing a <see cref="TransferGroupId"/>: a
     /// <c>transfer-out</c> on the source and a <c>transfer-in</c> on the destination. Same currency
     /// implies equal amounts; different currencies require both amounts plus the rate. Both legs are
-    /// posted immediately and are meant to be persisted in the same database transaction.
+    /// posted immediately and must be saved together, atomically.
     /// </summary>
     public static (Transaction Out, Transaction In) CreateTransferPair(
         Guid userId,
@@ -307,32 +307,32 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
 
     /// <summary>
     /// Links this transaction to the recurring-transaction template and optional pending-transaction
-    /// record it was generated from. Sets <see cref="Origin"/> to <c>"recurrence"</c>.
+    /// record it was generated from. Sets <see cref="Origin"/> to <see cref="EntryOrigin.Recurrence"/>.
     /// </summary>
     public void MarkAsRecurrence(Guid recurringTransactionId, Guid? pendingTransactionId)
     {
-        Origin = "recurrence";
+        Origin = EntryOrigin.Recurrence;
         RecurringTransactionId = recurringTransactionId;
         PendingTransactionId = pendingTransactionId;
     }
 
     /// <summary>
     /// Marks a freshly-created transaction as the reversal of <paramref name="reversedTransactionId"/>:
-    /// sets <see cref="Origin"/> to <c>"reversal"</c> and links back to the original.
+    /// sets <see cref="Origin"/> to <see cref="EntryOrigin.Reversal"/> and links back to the original.
     /// </summary>
     public void MarkAsReversal(Guid reversedTransactionId)
     {
-        Origin = "reversal";
+        Origin = EntryOrigin.Reversal;
         ReversedTransactionId = reversedTransactionId;
     }
 
     /// <summary>
     /// Links this transaction to the import row and inbox entry it was approved from.
-    /// Sets <see cref="Origin"/> to <c>"import"</c>.
+    /// Sets <see cref="Origin"/> to <see cref="EntryOrigin.Import"/>.
     /// </summary>
     public void MarkAsImport(Guid pendingTransactionId)
     {
-        Origin = "import";
+        Origin = EntryOrigin.Import;
         PendingTransactionId = pendingTransactionId;
     }
 

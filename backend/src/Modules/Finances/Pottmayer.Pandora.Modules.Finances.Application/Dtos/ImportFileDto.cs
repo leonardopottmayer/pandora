@@ -34,7 +34,7 @@ public sealed record ImportFileDto(
         f.FileHash,
         f.FileSize,
         f.CorrelationId,
-        f.Status,
+        f.Status.Value,
         f.TotalRows,
         f.ParsedRows,
         f.ErrorRows,

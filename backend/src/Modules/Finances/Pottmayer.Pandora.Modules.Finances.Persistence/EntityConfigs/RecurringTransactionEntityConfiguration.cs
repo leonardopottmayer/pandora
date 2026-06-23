@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Pottmayer.Pandora.Modules.Finances.Abstractions;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 
 namespace Pottmayer.Pandora.Modules.Finances.Persistence.EntityConfigs;
 
@@ -29,7 +30,11 @@ internal sealed class RecurringTransactionEntityConfiguration : IEntityTypeConfi
         builder.Property(r => r.UserCategoryId).HasColumnName("user_category_id");
 
         // rule
-        builder.Property(r => r.Frequency).HasColumnName("frequency").HasMaxLength(10).IsRequired();
+        builder.Property(r => r.Frequency)
+            .HasColumnName("frequency")
+            .HasConversion(f => f.Value, v => RecurrenceFrequency.FromValue(v))
+            .HasMaxLength(10)
+            .IsRequired();
         builder.Property(r => r.Interval).HasColumnName("interval").IsRequired();
         builder.Property(r => r.DayOfMonth).HasColumnName("day_of_month");
         builder.Property(r => r.Weekday).HasColumnName("weekday");
@@ -38,7 +43,11 @@ internal sealed class RecurringTransactionEntityConfiguration : IEntityTypeConfi
         builder.Property(r => r.MaxOccurrences).HasColumnName("max_occurrences");
 
         // execution
-        builder.Property(r => r.Status).HasColumnName("status").HasMaxLength(10).IsRequired();
+        builder.Property(r => r.Status)
+            .HasColumnName("status")
+            .HasConversion(s => s.Value, v => RecurringTransactionStatus.FromValue(v))
+            .HasMaxLength(10)
+            .IsRequired();
         builder.Property(r => r.AutoPost).HasColumnName("auto_post").IsRequired();
         builder.Property(r => r.AutoGenerate).HasColumnName("auto_generate").IsRequired();
         builder.Property(r => r.NextOccurrenceOn).HasColumnName("next_occurrence_on").IsRequired();

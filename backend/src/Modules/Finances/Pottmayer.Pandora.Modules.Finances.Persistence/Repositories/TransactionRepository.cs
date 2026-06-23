@@ -51,7 +51,7 @@ public sealed class TransactionRepository(IDataContextAccessor accessor)
         if (filter.UserCategoryId is not null)
             query = query.Where(t => t.UserCategoryId == filter.UserCategoryId);
         if (filter.Origin is not null)
-            query = query.Where(t => t.Origin == filter.Origin);
+            query = query.Where(t => t.Origin == EntryOrigin.FromValue(filter.Origin));
         if (filter.Ids is not null)
             query = query.Where(t => filter.Ids.Contains(t.Id));
         if (!string.IsNullOrWhiteSpace(filter.Text))

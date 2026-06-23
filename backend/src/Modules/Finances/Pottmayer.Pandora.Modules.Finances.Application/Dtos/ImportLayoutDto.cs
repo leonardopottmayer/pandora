@@ -17,8 +17,8 @@ public sealed record ImportLayoutDto(
         l.LayoutCode,
         l.Name,
         l.BankName,
-        l.FileFormat,
-        l.AccountType,
+        l.FileFormat.Value,
+        l.AccountType.Value,
         l.IsSystemLayout,
         l.CreatedAt);
 }

@@ -1,4 +1,5 @@
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Finances.Tests.Fakes;
 using Xunit;
 
@@ -56,7 +57,7 @@ public sealed class ImportFileTests
         file.Complete(total: 10, parsed: 8, errors: 1, duplicates: 1, suggestions: 7, timeProvider: time);
 
         Assert.True(file.IsTerminal);
-        Assert.Equal("completed", file.Status);
+        Assert.Equal(ImportFileStatus.Completed, file.Status);
         Assert.Equal(10, file.TotalRows);
         Assert.Equal(8, file.ParsedRows);
         Assert.Equal(1, file.ErrorRows);
@@ -74,7 +75,7 @@ public sealed class ImportFileTests
 
         file.Fail("boom", time);
 
-        Assert.Equal("failed", file.Status);
+        Assert.Equal(ImportFileStatus.Failed, file.Status);
         Assert.Equal("boom", file.ErrorMessage);
         Assert.Equal(1, file.RetryCount);
         Assert.False(file.IsTerminal); // failed is not terminal — retry is available
@@ -105,7 +106,7 @@ public sealed class ImportFileTests
         var file = NewFile(time);
 
         Assert.True(file.Abort(time));
-        Assert.Equal("aborted", file.Status);
+        Assert.Equal(ImportFileStatus.Aborted, file.Status);
         Assert.True(file.IsTerminal);
 
         Assert.False(file.Abort(time)); // already terminal
@@ -120,6 +121,6 @@ public sealed class ImportFileTests
         file.Complete(1, 1, 0, 0, 1, time);
 
         Assert.False(file.Abort(time));
-        Assert.Equal("completed", file.Status);
+        Assert.Equal(ImportFileStatus.Completed, file.Status);
     }
 }

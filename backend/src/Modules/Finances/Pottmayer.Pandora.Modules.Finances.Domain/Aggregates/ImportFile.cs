@@ -1,3 +1,4 @@
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Core.Ddd;
 
@@ -21,7 +22,7 @@ public sealed class ImportFile : AggregateRoot<Guid>, IAuditable
     public byte[] FileContent { get; private set; } = [];
     public int FileSize { get; private set; }
     public Guid CorrelationId { get; private set; }
-    public string Status { get; private set; } = "received";
+    public ImportFileStatus Status { get; private set; } = ImportFileStatus.Received;
     public int TotalRows { get; private set; }
     public int ParsedRows { get; private set; }
     public int ErrorRows { get; private set; }
@@ -37,9 +38,9 @@ public sealed class ImportFile : AggregateRoot<Guid>, IAuditable
     public Guid? UpdatedBy { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
 
-    public bool IsReceived => Status == "received";
-    public bool IsParsing => Status == "parsing";
-    public bool IsTerminal => Status is "completed" or "aborted";
+    public bool IsReceived => Status == ImportFileStatus.Received;
+    public bool IsParsing => Status == ImportFileStatus.Parsing;
+    public bool IsTerminal => Status == ImportFileStatus.Completed || Status == ImportFileStatus.Aborted;
 
     private ImportFile() { }
 
@@ -65,7 +66,7 @@ public sealed class ImportFile : AggregateRoot<Guid>, IAuditable
             FileContent = fileContent,
             FileSize = fileContent.Length,
             CorrelationId = Guid.CreateVersion7(),
-            Status = "received",
+            Status = ImportFileStatus.Received,
             CreatedAt = timeProvider.GetUtcNow()
         };
     }
@@ -73,14 +74,14 @@ public sealed class ImportFile : AggregateRoot<Guid>, IAuditable
     public bool StartParsing(TimeProvider timeProvider)
     {
         if (!IsReceived) return false;
-        Status = "parsing";
+        Status = ImportFileStatus.Parsing;
         StartedAt = timeProvider.GetUtcNow();
         return true;
     }
 
     public void Complete(int total, int parsed, int errors, int duplicates, int suggestions, TimeProvider timeProvider)
     {
-        Status = "completed";
+        Status = ImportFileStatus.Completed;
         TotalRows = total;
         ParsedRows = parsed;
         ErrorRows = errors;
@@ -91,7 +92,7 @@ public sealed class ImportFile : AggregateRoot<Guid>, IAuditable
 
     public void Fail(string errorMessage, TimeProvider timeProvider)
     {
-        Status = "failed";
+        Status = ImportFileStatus.Failed;
         ErrorMessage = errorMessage;
         RetryCount++;
         CompletedAt = timeProvider.GetUtcNow();
@@ -100,15 +101,15 @@ public sealed class ImportFile : AggregateRoot<Guid>, IAuditable
     public bool Abort(TimeProvider timeProvider)
     {
         if (IsTerminal) return false;
-        Status = "aborted";
+        Status = ImportFileStatus.Aborted;
         CompletedAt = timeProvider.GetUtcNow();
         return true;
     }
 
     public bool Retry(TimeProvider timeProvider)
     {
-        if (Status != "failed") return false;
-        Status = "received";
+        if (Status != ImportFileStatus.Failed) return false;
+        Status = ImportFileStatus.Received;
         ErrorMessage = null;
         StartedAt = null;
         CompletedAt = null;

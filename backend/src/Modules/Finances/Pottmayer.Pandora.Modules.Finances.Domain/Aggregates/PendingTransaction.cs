@@ -1,3 +1,4 @@
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Core.Ddd;
 
@@ -6,14 +7,14 @@ namespace Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
 {
     public Guid UserId { get; private set; }
-    public string Source { get; private set; } = "recurrence";
+    public EntryOrigin Source { get; private set; } = EntryOrigin.Recurrence;
     public Guid? RecurringTransactionId { get; private set; }
 
     // import provenance
     public Guid? ImportRowId { get; private set; }
     public Guid? DuplicateOfTransactionId { get; private set; }
     public Guid? DuplicateOfPendingId { get; private set; }
-    public string? DedupStatus { get; private set; }
+    public DedupStatus? DedupStatus { get; private set; }
     public short? InstallmentNumber { get; private set; }
     public short? InstallmentCount { get; private set; }
     public Guid? MatchedInstallmentPlanId { get; private set; }
@@ -36,7 +37,7 @@ public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
     public string OriginalPayload { get; private set; } = string.Empty;
 
     // decision
-    public string Status { get; private set; } = "pending";
+    public PendingTransactionStatus Status { get; private set; } = PendingTransactionStatus.Pending;
     public DateTimeOffset? DecidedAt { get; private set; }
     public Guid? DecidedBy { get; private set; }
     public string? RejectionReason { get; private set; }
@@ -47,8 +48,8 @@ public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
     public Guid? UpdatedBy { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
 
-    public bool IsPending => Status == "pending";
-    public bool IsImportSource => Source == "import";
+    public bool IsPending => Status == PendingTransactionStatus.Pending;
+    public bool IsImportSource => Source == EntryOrigin.Import;
 
     private PendingTransaction() { }
 
@@ -73,7 +74,7 @@ public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
         {
             Id = Guid.CreateVersion7(),
             UserId = userId,
-            Source = "recurrence",
+            Source = EntryOrigin.Recurrence,
             RecurringTransactionId = recurringTransactionId,
             AccountId = accountId,
             CardId = cardId,
@@ -87,7 +88,7 @@ public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
             UserCategoryId = userCategoryId,
             SuggestedStatementId = suggestedStatementId,
             OriginalPayload = originalPayload,
-            Status = "pending",
+            Status = PendingTransactionStatus.Pending,
             CreatedAt = timeProvider.GetUtcNow()
         };
     }
@@ -104,7 +105,7 @@ public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
         string description,
         string? payee,
         Guid? suggestedStatementId,
-        string dedupStatus,
+        DedupStatus dedupStatus,
         Guid? duplicateOfTransactionId,
         Guid? duplicateOfPendingId,
         short? installmentNumber,
@@ -116,7 +117,7 @@ public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
         {
             Id = Guid.CreateVersion7(),
             UserId = userId,
-            Source = "import",
+            Source = EntryOrigin.Import,
             ImportRowId = importRowId,
             AccountId = accountId,
             CardId = cardId,
@@ -132,7 +133,7 @@ public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
             InstallmentNumber = installmentNumber,
             InstallmentCount = installmentCount,
             OriginalPayload = originalPayload,
-            Status = "pending",
+            Status = PendingTransactionStatus.Pending,
             CreatedAt = timeProvider.GetUtcNow()
         };
     }
@@ -169,12 +170,15 @@ public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
     public bool Approve(Guid transactionId, Guid decidedBy, TimeProvider timeProvider)
     {
         if (!IsPending) return false;
-        Status = "approved";
+        Status = PendingTransactionStatus.Approved;
         TransactionId = transactionId;
         DecidedBy = decidedBy;
         DecidedAt = timeProvider.GetUtcNow();
         return true;
     }
+
+    /// <summary>Reason recorded by <see cref="MarkLinkedToExisting"/>.</summary>
+    public const string LinkedToExistingTransactionReason = "linked-to-existing-transaction";
 
     /// <summary>
     /// Resolves the suggestion by linking it to an existing transaction the user identified as the
@@ -184,10 +188,10 @@ public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
     public bool MarkLinkedToExisting(Guid transactionId, Guid decidedBy, TimeProvider timeProvider)
     {
         if (!IsPending) return false;
-        Status = "rejected";
-        DedupStatus = "matched";
+        Status = PendingTransactionStatus.Rejected;
+        DedupStatus = DedupStatus.Matched;
         DuplicateOfTransactionId = transactionId;
-        RejectionReason = "linked-to-existing-transaction";
+        RejectionReason = LinkedToExistingTransactionReason;
         DecidedBy = decidedBy;
         DecidedAt = timeProvider.GetUtcNow();
         return true;
@@ -199,7 +203,7 @@ public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
     public bool Reject(string? reason, Guid decidedBy, TimeProvider timeProvider)
     {
         if (!IsPending) return false;
-        Status = "rejected";
+        Status = PendingTransactionStatus.Rejected;
         RejectionReason = reason;
         DecidedBy = decidedBy;
         DecidedAt = timeProvider.GetUtcNow();

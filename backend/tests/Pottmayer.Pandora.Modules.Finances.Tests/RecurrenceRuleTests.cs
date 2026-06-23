@@ -6,16 +6,16 @@ namespace Pottmayer.Pandora.Modules.Finances.Tests;
 public sealed class RecurrenceRuleTests
 {
     private static RecurrenceRule Daily(short interval = 1) =>
-        RecurrenceRule.Create("daily", interval, null, null, new DateOnly(2026, 1, 1), null, null);
+        RecurrenceRule.Create(RecurrenceFrequency.Daily, interval, null, null, new DateOnly(2026, 1, 1), null, null);
 
     private static RecurrenceRule Weekly(short interval = 1) =>
-        RecurrenceRule.Create("weekly", interval, null, null, new DateOnly(2026, 1, 1), null, null);
+        RecurrenceRule.Create(RecurrenceFrequency.Weekly, interval, null, null, new DateOnly(2026, 1, 1), null, null);
 
     private static RecurrenceRule Monthly(short interval = 1, short? dayOfMonth = null) =>
-        RecurrenceRule.Create("monthly", interval, dayOfMonth, null, new DateOnly(2026, 1, 1), null, null);
+        RecurrenceRule.Create(RecurrenceFrequency.Monthly, interval, dayOfMonth, null, new DateOnly(2026, 1, 1), null, null);
 
     private static RecurrenceRule Yearly(short interval = 1, short? dayOfMonth = null) =>
-        RecurrenceRule.Create("yearly", interval, dayOfMonth, null, new DateOnly(2026, 1, 1), null, null);
+        RecurrenceRule.Create(RecurrenceFrequency.Yearly, interval, dayOfMonth, null, new DateOnly(2026, 1, 1), null, null);
 
     [Theory]
     [InlineData("daily", true)]
@@ -25,8 +25,8 @@ public sealed class RecurrenceRuleTests
     [InlineData("hourly", false)]
     [InlineData("", false)]
     [InlineData(null, false)]
-    public void IsValidFrequency_returns_expected(string? value, bool expected) =>
-        Assert.Equal(expected, RecurrenceRule.IsValidFrequency(value));
+    public void IsSupported_returns_expected(string? value, bool expected) =>
+        Assert.Equal(expected, RecurrenceFrequency.IsSupported(value));
 
     [Fact]
     public void Daily_advances_by_interval_days()
@@ -108,7 +108,7 @@ public sealed class RecurrenceRuleTests
         var rule = Yearly(1, dayOfMonth: 29);
         // March 2024 → March 2025: day 29 in February — but yearly advances month = same month
         // Let's test: Feb 29, 2024 → Feb 28, 2025 (2025 is not leap)
-        var rule2 = RecurrenceRule.Create("yearly", 1, 29, null, new DateOnly(2024, 2, 29), null, null);
+        var rule2 = RecurrenceRule.Create(RecurrenceFrequency.Yearly, 1, 29, null, new DateOnly(2024, 2, 29), null, null);
         var next = rule2.NextOccurrenceAfter(new DateOnly(2024, 2, 29));
         Assert.Equal(new DateOnly(2025, 2, 28), next);
     }
@@ -123,7 +123,7 @@ public sealed class RecurrenceRuleTests
     [Fact]
     public void IsTerminated_true_when_count_reaches_maxOccurrences()
     {
-        var rule = RecurrenceRule.Create("monthly", 1, null, null, new DateOnly(2026, 1, 1), null, 3);
+        var rule = RecurrenceRule.Create(RecurrenceFrequency.Monthly, 1, null, null, new DateOnly(2026, 1, 1), null, 3);
         Assert.False(rule.IsTerminated(new DateOnly(2026, 4, 1), 2));
         Assert.True(rule.IsTerminated(new DateOnly(2026, 4, 1), 3));
     }
@@ -132,7 +132,7 @@ public sealed class RecurrenceRuleTests
     public void IsTerminated_true_when_nextDate_exceeds_endDate()
     {
         var endDate = new DateOnly(2026, 6, 30);
-        var rule = RecurrenceRule.Create("monthly", 1, null, null, new DateOnly(2026, 1, 1), endDate, null);
+        var rule = RecurrenceRule.Create(RecurrenceFrequency.Monthly, 1, null, null, new DateOnly(2026, 1, 1), endDate, null);
         Assert.False(rule.IsTerminated(new DateOnly(2026, 6, 30), 5));
         Assert.True(rule.IsTerminated(new DateOnly(2026, 7, 1), 5));
     }
@@ -140,7 +140,7 @@ public sealed class RecurrenceRuleTests
     [Fact]
     public void IsTerminated_true_when_both_limits_reached_via_maxOccurrences()
     {
-        var rule = RecurrenceRule.Create("monthly", 1, null, null, new DateOnly(2026, 1, 1),
+        var rule = RecurrenceRule.Create(RecurrenceFrequency.Monthly, 1, null, null, new DateOnly(2026, 1, 1),
             new DateOnly(2027, 1, 1), 3);
         // Count limit reached first
         Assert.True(rule.IsTerminated(new DateOnly(2026, 4, 1), 3));

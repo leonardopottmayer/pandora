@@ -1,3 +1,4 @@
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Ddd;
 
 namespace Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
@@ -14,14 +15,14 @@ public sealed class ImportRow : AggregateRoot<Guid>
     public string? ParsedPayload { get; private set; }
     public string? ExternalId { get; private set; }
     public string? DedupKey { get; private set; }
-    public string DedupStatus { get; private set; } = "new";
+    public DedupStatus DedupStatus { get; private set; } = DedupStatus.New;
     public Guid? MatchedTransactionId { get; private set; }
     public Guid? MatchedPendingTransactionId { get; private set; }
     public short? InstallmentNumber { get; private set; }
     public short? InstallmentCount { get; private set; }
     public Guid? MatchedInstallmentPlanId { get; private set; }
     public Guid? PendingTransactionId { get; private set; }
-    public string Status { get; private set; } = "pending";
+    public ImportRowStatus Status { get; private set; } = ImportRowStatus.Pending;
     public string? ErrorMessage { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
 
@@ -39,7 +40,7 @@ public sealed class ImportRow : AggregateRoot<Guid>
             ImportFileId = importFileId,
             RowIndex = rowIndex,
             RawData = rawData,
-            Status = "pending",
+            Status = ImportRowStatus.Pending,
             CreatedAt = now
         };
     }
@@ -59,7 +60,7 @@ public sealed class ImportRow : AggregateRoot<Guid>
     }
 
     public void SetDedup(
-        string dedupStatus,
+        DedupStatus dedupStatus,
         Guid? matchedTransactionId,
         Guid? matchedPendingTransactionId)
     {
@@ -79,21 +80,21 @@ public sealed class ImportRow : AggregateRoot<Guid>
     public void MarkMatched(Guid transactionId)
     {
         MatchedTransactionId = transactionId;
-        DedupStatus = "matched";
+        DedupStatus = DedupStatus.Matched;
     }
 
     public void MarkSuggestionCreated(Guid pendingTransactionId)
     {
         PendingTransactionId = pendingTransactionId;
-        Status = "suggestion-created";
+        Status = ImportRowStatus.SuggestionCreated;
     }
 
     public void MarkSkipped()
-        => Status = "skipped";
+        => Status = ImportRowStatus.Skipped;
 
     public void MarkError(string errorMessage)
     {
         ErrorMessage = errorMessage;
-        Status = "error";
+        Status = ImportRowStatus.Error;
     }
 }

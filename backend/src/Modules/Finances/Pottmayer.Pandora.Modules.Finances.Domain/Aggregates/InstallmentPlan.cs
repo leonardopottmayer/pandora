@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Core.Ddd;
 
@@ -18,8 +19,8 @@ public sealed partial class InstallmentPlan : AggregateRoot<Guid>, IAuditable
     public Guid UserId { get; private set; }
     public Guid CardId { get; private set; }
 
-    /// <summary>Provenance. Only <c>manual</c> exists in this phase (<c>import</c> arrives in phase 10).</summary>
-    public string Origin { get; private set; } = "manual";
+    /// <summary>Provenance. Only <see cref="EntryOrigin.Manual"/> exists in this phase (<see cref="EntryOrigin.Import"/> arrives in phase 10).</summary>
+    public EntryOrigin Origin { get; private set; } = EntryOrigin.Manual;
 
     public decimal TotalAmount { get; private set; }
     public bool TotalIsEstimate { get; private set; }
@@ -53,7 +54,7 @@ public sealed partial class InstallmentPlan : AggregateRoot<Guid>, IAuditable
             Id = Guid.CreateVersion7(),
             UserId = userId,
             CardId = cardId,
-            Origin = "manual",
+            Origin = EntryOrigin.Manual,
             TotalAmount = totalAmount,
             TotalIsEstimate = false,
             InstallmentCount = installmentCount,

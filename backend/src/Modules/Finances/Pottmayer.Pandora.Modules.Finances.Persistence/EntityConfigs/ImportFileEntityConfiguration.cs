@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Pottmayer.Pandora.Modules.Finances.Abstractions;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 
 namespace Pottmayer.Pandora.Modules.Finances.Persistence.EntityConfigs;
 
@@ -23,7 +24,11 @@ internal sealed class ImportFileEntityConfiguration : IEntityTypeConfiguration<I
         builder.Property(f => f.FileContent).HasColumnName("file_content").HasColumnType("bytea").IsRequired();
         builder.Property(f => f.FileSize).HasColumnName("file_size").IsRequired();
         builder.Property(f => f.CorrelationId).HasColumnName("correlation_id").IsRequired();
-        builder.Property(f => f.Status).HasColumnName("status").HasMaxLength(15).IsRequired();
+        builder.Property(f => f.Status)
+            .HasColumnName("status")
+            .HasConversion(s => s.Value, v => ImportFileStatus.FromValue(v))
+            .HasMaxLength(15)
+            .IsRequired();
         builder.Property(f => f.TotalRows).HasColumnName("total_rows").IsRequired();
         builder.Property(f => f.ParsedRows).HasColumnName("parsed_rows").IsRequired();
         builder.Property(f => f.ErrorRows).HasColumnName("error_rows").IsRequired();

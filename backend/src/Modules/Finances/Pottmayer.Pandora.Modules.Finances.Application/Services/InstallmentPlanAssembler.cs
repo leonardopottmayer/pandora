@@ -43,7 +43,7 @@ internal static class InstallmentPlanAssembler
         return new InstallmentPlanDto(
             plan.Id,
             plan.CardId,
-            plan.Origin,
+            plan.Origin.Value,
             plan.Description,
             plan.InstallmentCount,
             plan.TotalAmount,

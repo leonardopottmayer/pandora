@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Tars.Data.Abstractions.DataContext;
 using Pottmayer.Tars.Data.Relational.Repositories;
 
@@ -21,6 +22,6 @@ public sealed class RecurringTransactionRepository(IDataContextAccessor accessor
     public async Task<IReadOnlyList<RecurringTransaction>> GetActiveWithOccurrencesBeforeAsync(
         DateOnly horizon, CancellationToken ct = default)
         => await Queryable()
-            .Where(r => r.Status == "active" && r.AutoGenerate && r.NextOccurrenceOn <= horizon)
+            .Where(r => r.Status == RecurringTransactionStatus.Active && r.AutoGenerate && r.NextOccurrenceOn <= horizon)
             .ToListAsync(ct);
 }

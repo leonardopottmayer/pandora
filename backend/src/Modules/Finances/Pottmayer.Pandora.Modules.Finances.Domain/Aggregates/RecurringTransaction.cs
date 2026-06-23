@@ -21,7 +21,7 @@ public sealed class RecurringTransaction : AggregateRoot<Guid>, IAuditable
     public Guid? UserCategoryId { get; private set; }
 
     // rule fields (stored flat; logic in RecurrenceRule)
-    public string Frequency { get; private set; } = string.Empty;
+    public RecurrenceFrequency Frequency { get; private set; } = null!;
     public short Interval { get; private set; }
     public short? DayOfMonth { get; private set; }
     public short? Weekday { get; private set; }
@@ -30,7 +30,7 @@ public sealed class RecurringTransaction : AggregateRoot<Guid>, IAuditable
     public int? MaxOccurrences { get; private set; }
 
     // execution
-    public string Status { get; private set; } = "active";
+    public RecurringTransactionStatus Status { get; private set; } = RecurringTransactionStatus.Active;
     public bool AutoPost { get; private set; }
     public bool AutoGenerate { get; private set; } = true;
     public DateOnly NextOccurrenceOn { get; private set; }
@@ -41,9 +41,9 @@ public sealed class RecurringTransaction : AggregateRoot<Guid>, IAuditable
     public Guid? UpdatedBy { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
 
-    public bool IsActive => Status == "active";
-    public bool IsPaused => Status == "paused";
-    public bool IsFinished => Status == "finished";
+    public bool IsActive => Status == RecurringTransactionStatus.Active;
+    public bool IsPaused => Status == RecurringTransactionStatus.Paused;
+    public bool IsFinished => Status == RecurringTransactionStatus.Finished;
 
     private RecurringTransaction() { }
 
@@ -59,7 +59,7 @@ public sealed class RecurringTransaction : AggregateRoot<Guid>, IAuditable
         string? payee,
         Guid? systemCategoryId,
         Guid? userCategoryId,
-        string frequency,
+        RecurrenceFrequency frequency,
         short interval,
         short? dayOfMonth,
         short? weekday,
@@ -91,7 +91,7 @@ public sealed class RecurringTransaction : AggregateRoot<Guid>, IAuditable
             StartDate = startDate,
             EndDate = endDate,
             MaxOccurrences = maxOccurrences,
-            Status = "active",
+            Status = RecurringTransactionStatus.Active,
             AutoPost = autoPost,
             AutoGenerate = autoGenerate,
             NextOccurrenceOn = startDate,
@@ -138,16 +138,16 @@ public sealed class RecurringTransaction : AggregateRoot<Guid>, IAuditable
     /// <summary>Pauses generation. No-op if already paused.</summary>
     public bool Pause()
     {
-        if (Status != "active") return false;
-        Status = "paused";
+        if (Status != RecurringTransactionStatus.Active) return false;
+        Status = RecurringTransactionStatus.Paused;
         return true;
     }
 
     /// <summary>Resumes generation. No-op unless currently paused.</summary>
     public bool Resume()
     {
-        if (Status != "paused") return false;
-        Status = "active";
+        if (Status != RecurringTransactionStatus.Paused) return false;
+        Status = RecurringTransactionStatus.Active;
         return true;
     }
 
@@ -162,6 +162,6 @@ public sealed class RecurringTransaction : AggregateRoot<Guid>, IAuditable
         var next = rule.NextOccurrenceAfter(generatedDate);
         NextOccurrenceOn = next;
         if (rule.IsTerminated(next, OccurrencesCount))
-            Status = "finished";
+            Status = RecurringTransactionStatus.Finished;
     }
 }

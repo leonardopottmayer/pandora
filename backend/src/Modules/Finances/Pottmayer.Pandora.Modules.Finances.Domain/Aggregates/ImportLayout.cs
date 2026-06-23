@@ -1,3 +1,4 @@
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Ddd;
 
 namespace Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
@@ -13,15 +14,15 @@ public sealed class ImportLayout : AggregateRoot<Guid>
     public string LayoutCode { get; private set; } = string.Empty;
     public string Name { get; private set; } = string.Empty;
     public string? BankName { get; private set; }
-    public string FileFormat { get; private set; } = string.Empty;
-    public string AccountType { get; private set; } = string.Empty;
+    public LayoutFileFormat FileFormat { get; private set; } = null!;
+    public ImportLayoutAccountType AccountType { get; private set; } = null!;
     public string Config { get; private set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; private set; }
 
     public bool IsSystemLayout => UserId is null;
-    public bool IsOfx => FileFormat == "ofx";
-    public bool IsCsv => FileFormat == "csv";
-    public bool IsCardLayout => AccountType == "card";
+    public bool IsOfx => FileFormat == LayoutFileFormat.Ofx;
+    public bool IsCsv => FileFormat == LayoutFileFormat.Csv;
+    public bool IsCardLayout => AccountType == ImportLayoutAccountType.Card;
 
     private ImportLayout() { }
 }

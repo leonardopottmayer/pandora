@@ -33,7 +33,7 @@ public sealed record PendingTransactionDto(
 {
     public static PendingTransactionDto From(PendingTransaction p) => new(
         p.Id,
-        p.Source,
+        p.Source.Value,
         p.RecurringTransactionId,
         p.AccountId,
         p.CardId,
@@ -48,13 +48,13 @@ public sealed record PendingTransactionDto(
         p.UserCategoryId,
         p.SuggestedStatementId,
         p.OriginalPayload,
-        p.Status,
+        p.Status.Value,
         p.DecidedAt,
         p.DecidedBy,
         p.RejectionReason,
         p.TransactionId,
         p.ImportRowId,
-        p.DedupStatus,
+        p.DedupStatus?.Value,
         p.DuplicateOfTransactionId,
         p.CreatedAt,
         p.UpdatedAt);

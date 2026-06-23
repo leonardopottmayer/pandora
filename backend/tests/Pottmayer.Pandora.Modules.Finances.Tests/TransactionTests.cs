@@ -42,7 +42,7 @@ public sealed class TransactionTests
         Assert.True(tx.IsPosted);
         Assert.Equal(Now, tx.PostedAt);
         Assert.Equal(Now, tx.CreatedAt);
-        Assert.Equal("manual", tx.Origin);
+        Assert.Equal(EntryOrigin.Manual, tx.Origin);
     }
 
     [Fact]
@@ -215,7 +215,7 @@ public sealed class TransactionTests
 
         tx.MarkAsRecurrence(recurringId, pendingId);
 
-        Assert.Equal("recurrence", tx.Origin);
+        Assert.Equal(EntryOrigin.Recurrence, tx.Origin);
         Assert.Equal(recurringId, tx.RecurringTransactionId);
         Assert.Equal(pendingId, tx.PendingTransactionId);
     }
@@ -228,7 +228,7 @@ public sealed class TransactionTests
 
         tx.MarkAsReversal(originalId);
 
-        Assert.Equal("reversal", tx.Origin);
+        Assert.Equal(EntryOrigin.Reversal, tx.Origin);
         Assert.Equal(originalId, tx.ReversedTransactionId);
     }
 
@@ -240,7 +240,7 @@ public sealed class TransactionTests
 
         tx.MarkAsImport(pendingId);
 
-        Assert.Equal("import", tx.Origin);
+        Assert.Equal(EntryOrigin.Import, tx.Origin);
         Assert.Equal(pendingId, tx.PendingTransactionId);
     }
 
