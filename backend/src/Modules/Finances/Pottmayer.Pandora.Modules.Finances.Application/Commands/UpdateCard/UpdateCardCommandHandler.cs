@@ -36,6 +36,7 @@ public sealed class UpdateCardCommandHandler(IUnitOfWorkFactory factory, TimePro
             if (card is null)
                 return Result<Card>.Failure([CardErrors.NotFound]);
 
+            // Excludes the card itself, so renaming to the same name is allowed.
             if (await repo.ExistsWithNameAsync(input.UserId, input.Name, input.CardId, token))
                 return Result<Card>.Failure([CardErrors.NameAlreadyExists]);
 
@@ -47,11 +48,12 @@ public sealed class UpdateCardCommandHandler(IUnitOfWorkFactory factory, TimePro
                     return Result<Card>.Failure([CardErrors.DefaultPaymentAccountNotFound]);
             }
 
+            // The aggregate itself refuses the update once archived.
             if (!card.Update(input.Name, input.Brand, input.LastFour, input.CreditLimit, input.ClosingDay, input.DueDay, input.DefaultPaymentAccountId))
                 return Result<Card>.Failure([CardErrors.Archived]);
 
             await repo.UpdateAsync(card, token);
-            await ctx.RecordAsync(input.UserId, input.UserId, "card", card.Id, "card.updated", now, ct: token);
+            await ctx.RecordAsync(input.UserId, input.UserId, CardEvents.EntityType, card.Id, CardEvents.Updated, now, ct: token);
             return Result<Card>.Success(card);
         }, cancellationToken: ct);
 

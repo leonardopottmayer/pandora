@@ -32,7 +32,7 @@ public sealed class CreateTagCommandHandler(IUnitOfWorkFactory factory, TimeProv
             await repo.AddAsync(tag, token);
 
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "tag", tag.Id, "tag.created", now,
+                input.UserId, input.UserId, TagEvents.EntityType, tag.Id, TagEvents.Created, now,
                 new { name = tag.Name, color = tag.Color }, ct: token);
 
             return Result<Tag>.Success(tag);

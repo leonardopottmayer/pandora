@@ -41,8 +41,8 @@ public sealed class RunRecurrenceGenerationCommandHandler(
             {
                 tx.Post(timeProvider);
                 await transactionRepo.UpdateAsync(tx, token);
-                await ctx.RecordAsync(tx.UserId, null, "transaction", tx.Id,
-                    "transaction.posted", now, new { source = "auto-post-scheduled" }, ct: token);
+                await ctx.RecordAsync(tx.UserId, null, TransactionEvents.EntityType, tx.Id,
+                    TransactionEvents.Posted, now, new { source = "auto-post-scheduled" }, ct: token);
                 generated++;
             }
 
@@ -54,8 +54,12 @@ public sealed class RunRecurrenceGenerationCommandHandler(
                 var rule = recurring.GetRule();
                 var cursor = recurring.NextOccurrenceOn;
 
+                // Walks every due date up to the horizon, advancing the cursor each iteration —
+                // this is what catches up a template that missed several runs (e.g. job was down).
                 while (!rule.IsTerminated(cursor, recurring.OccurrencesCount) && cursor <= horizon)
                 {
+                    // A manual generation (GenerateRecurringTransactionOccurrence) may have already
+                    // produced this date's suggestion; skip it instead of duplicating.
                     var alreadyExists = await pendingRepo.ExistsForRecurrenceOnDateAsync(recurring.Id, cursor, token);
                     if (!alreadyExists)
                     {
@@ -85,10 +89,10 @@ public sealed class RunRecurrenceGenerationCommandHandler(
 
                                 tx.MarkAsRecurrence(recurring.Id, pendingTransactionId: null);
                                 await transactionRepo.AddAsync(tx, token);
-                                await ctx.RecordAsync(recurring.UserId, null, "transaction", tx.Id,
-                                    "transaction.created", now, new { origin = "recurrence", recurring.Id }, ct: token);
-                                await ctx.RecordAsync(recurring.UserId, null, "recurring-transaction", recurring.Id,
-                                    "recurring.occurrence-generated", now, new { date = cursor, autoPosted = true, transactionId = tx.Id }, ct: token);
+                                await ctx.RecordAsync(recurring.UserId, null, TransactionEvents.EntityType, tx.Id,
+                                    TransactionEvents.Created, now, new { origin = "recurrence", recurring.Id }, ct: token);
+                                await ctx.RecordAsync(recurring.UserId, null, RecurringTransactionEvents.EntityType, recurring.Id,
+                                    RecurringTransactionEvents.OccurrenceGenerated, now, new { date = cursor, autoPosted = true, transactionId = tx.Id }, ct: token);
                                 generated++;
                             }
                         }
@@ -137,10 +141,10 @@ public sealed class RunRecurrenceGenerationCommandHandler(
                                 timeProvider);
 
                             await pendingRepo.AddAsync(pending, token);
-                            await ctx.RecordAsync(recurring.UserId, null, "pending-transaction", pending.Id,
-                                "pending.created", now, new { source = "recurrence", recurringTransactionId = recurring.Id, date = cursor }, ct: token);
-                            await ctx.RecordAsync(recurring.UserId, null, "recurring-transaction", recurring.Id,
-                                "recurring.occurrence-generated", now, new { date = cursor, autoPosted = false, pendingId = pending.Id }, ct: token);
+                            await ctx.RecordAsync(recurring.UserId, null, PendingTransactionEvents.EntityType, pending.Id,
+                                PendingTransactionEvents.Created, now, new { source = "recurrence", recurringTransactionId = recurring.Id, date = cursor }, ct: token);
+                            await ctx.RecordAsync(recurring.UserId, null, RecurringTransactionEvents.EntityType, recurring.Id,
+                                RecurringTransactionEvents.OccurrenceGenerated, now, new { date = cursor, autoPosted = false, pendingId = pending.Id }, ct: token);
                             generated++;
                         }
                     }
@@ -152,8 +156,8 @@ public sealed class RunRecurrenceGenerationCommandHandler(
                 await recurringRepo.UpdateAsync(recurring, token);
 
                 if (recurring.IsFinished)
-                    await ctx.RecordAsync(recurring.UserId, null, "recurring-transaction", recurring.Id,
-                        "recurring.finished", now, ct: token);
+                    await ctx.RecordAsync(recurring.UserId, null, RecurringTransactionEvents.EntityType, recurring.Id,
+                        RecurringTransactionEvents.Finished, now, ct: token);
             }
 
             return Result<int>.Success(generated);

@@ -49,11 +49,14 @@ public sealed class CreateTransferCommandHandler(IUnitOfWorkFactory factory, Tim
 
             if (sameCurrency)
             {
+                // Same currency: the destination receives exactly what left the source, no rate needed.
                 amountIn = input.AmountOut;
                 fxRate = null;
             }
             else
             {
+                // Cross-currency: the caller must supply both the converted amount and the rate used —
+                // this command never computes a rate on its own.
                 if (input.AmountIn is not { } providedIn || providedIn <= 0 || input.FxRate is not { } rate || rate <= 0)
                     return Result<(Transaction, Transaction)>.Failure([TransactionErrors.CrossCurrencyNeedsBothAmounts]);
                 amountIn = providedIn;
@@ -68,10 +71,12 @@ public sealed class CreateTransferCommandHandler(IUnitOfWorkFactory factory, Tim
             await transactions.AddAsync(outLeg, token);
             await transactions.AddAsync(inLeg, token);
 
+            // Both legs share the same correlation id (the transfer group) so they read as one
+            // operation in the audit trail rather than two unrelated transactions.
             var correlationId = outLeg.TransferGroupId!.Value;
             foreach (var leg in new[] { outLeg, inLeg })
                 await ctx.RecordAsync(
-                    input.UserId, input.UserId, "transaction", leg.Id, "transaction.created", now,
+                    input.UserId, input.UserId, TransactionEvents.EntityType, leg.Id, TransactionEvents.Created, now,
                     new
                     {
                         accountId = leg.AccountId,

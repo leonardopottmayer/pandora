@@ -16,5 +16,9 @@ public sealed record UpdatePendingTransactionInput(
     Guid? UserCategoryId,
     Guid? SuggestedStatementId);
 
+/// <summary>
+/// Edits a pending suggestion's details before deciding it (e.g. correcting the kind or category an
+/// importer guessed wrong). Fails once the suggestion has been approved, rejected, or linked.
+/// </summary>
 public sealed class UpdatePendingTransactionCommand(UpdatePendingTransactionInput input)
     : CommandBase<UpdatePendingTransactionInput, PendingTransactionDto>(input);

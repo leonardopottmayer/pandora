@@ -47,6 +47,8 @@ public sealed class CreateRecurringTransactionCommandHandler(
             var accounts = ctx.AcquireRepository<IAccountRepository>();
             var cards = ctx.AcquireRepository<ICardRepository>();
 
+            // Destination validation only — Input itself doesn't enforce "exactly one of account/card"
+            // since a recurring template with neither is valid (a reminder-only occurrence).
             if (input.AccountId is not null)
             {
                 var account = await accounts.FindByIdForUserAsync(input.AccountId.Value, input.UserId, token);
@@ -88,8 +90,8 @@ public sealed class CreateRecurringTransactionCommandHandler(
                 timeProvider);
 
             await repo.AddAsync(recurring, token);
-            await ctx.RecordAsync(input.UserId, input.UserId, "recurring-transaction", recurring.Id,
-                "recurring.created", now, new
+            await ctx.RecordAsync(input.UserId, input.UserId, RecurringTransactionEvents.EntityType, recurring.Id,
+                RecurringTransactionEvents.Created, now, new
                 {
                     recurring.Name,
                     Frequency = recurring.Frequency.Value,

@@ -34,6 +34,7 @@ public sealed class UpdatePendingTransactionCommandHandler(
             if (pending is null) return Result<Domain.Aggregates.PendingTransaction>.Failure([PendingTransactionErrors.NotFound]);
             if (!pending.IsPending) return Result<Domain.Aggregates.PendingTransaction>.Failure([PendingTransactionErrors.AlreadyDecided]);
 
+            // Captured before the mutation so the audit event shows both the prior and new payload.
             var before = new
             {
                 pending.Kind,
@@ -59,8 +60,8 @@ public sealed class UpdatePendingTransactionCommandHandler(
                 input.SuggestedStatementId);
 
             await repo.UpdateAsync(pending, token);
-            await ctx.RecordAsync(input.UserId, input.UserId, "pending-transaction", pending.Id,
-                "pending.edited", now, new { before, after = new
+            await ctx.RecordAsync(input.UserId, input.UserId, PendingTransactionEvents.EntityType, pending.Id,
+                PendingTransactionEvents.Edited, now, new { before, after = new
                 {
                     pending.Kind,
                     pending.Amount,

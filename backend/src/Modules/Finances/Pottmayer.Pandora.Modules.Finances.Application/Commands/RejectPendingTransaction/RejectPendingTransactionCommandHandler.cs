@@ -30,8 +30,8 @@ public sealed class RejectPendingTransactionCommandHandler(
             pending.Reject(input.Reason, input.UserId, timeProvider);
             await repo.UpdateAsync(pending, token);
 
-            await ctx.RecordAsync(input.UserId, input.UserId, "pending-transaction", pending.Id,
-                "pending.rejected", now, new { input.Reason }, ct: token);
+            await ctx.RecordAsync(input.UserId, input.UserId, PendingTransactionEvents.EntityType, pending.Id,
+                PendingTransactionEvents.Rejected, now, new { input.Reason }, ct: token);
 
             return Result<Domain.Aggregates.PendingTransaction>.Success(pending);
         }, cancellationToken: ct);

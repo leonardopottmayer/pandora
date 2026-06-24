@@ -69,6 +69,9 @@ public sealed class CreateTransferFromPendingCommandHandler(IUnitOfWorkFactory f
             }
             else
             {
+                // Unlike CreateTransfer, the rate isn't supplied — it's derived from the two
+                // suggestions' own amounts, since both already came from independent sources (e.g.
+                // two separate bank statement imports) that recorded their own converted value.
                 amountIn = inflow.Amount.Value;
                 fxRate = decimal.Round(amountIn / amountOut, 8);
             }
@@ -93,7 +96,7 @@ public sealed class CreateTransferFromPendingCommandHandler(IUnitOfWorkFactory f
             var correlationId = outLeg.TransferGroupId!.Value;
             foreach (var leg in new[] { outLeg, inLeg })
                 await ctx.RecordAsync(
-                    input.UserId, input.UserId, "transaction", leg.Id, "transaction.created", now,
+                    input.UserId, input.UserId, TransactionEvents.EntityType, leg.Id, TransactionEvents.Created, now,
                     new
                     {
                         origin = "import",
@@ -106,8 +109,8 @@ public sealed class CreateTransferFromPendingCommandHandler(IUnitOfWorkFactory f
                     },
                     correlationId, token);
             foreach (var (pending, leg) in new[] { (outflow, outLeg), (inflow, inLeg) })
-                await ctx.RecordAsync(input.UserId, input.UserId, "pending-transaction", pending.Id,
-                    "pending.approved", now, new { transactionId = leg.Id, transferGroupId = correlationId }, correlationId, token);
+                await ctx.RecordAsync(input.UserId, input.UserId, PendingTransactionEvents.EntityType, pending.Id,
+                    PendingTransactionEvents.Approved, now, new { transactionId = leg.Id, transferGroupId = correlationId }, correlationId, token);
 
             return Result<(Transaction, Transaction)>.Success((outLeg, inLeg));
         }, cancellationToken: ct);

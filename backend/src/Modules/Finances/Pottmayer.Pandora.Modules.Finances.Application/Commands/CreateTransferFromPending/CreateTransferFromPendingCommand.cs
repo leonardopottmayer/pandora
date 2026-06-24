@@ -10,5 +10,9 @@ public sealed record CreateTransferFromPendingInput(
     string? Description,
     DateOnly? OccurredOn);
 
+/// <summary>
+/// Resolves two pending suggestions that are really the same transfer's two legs into an actual
+/// transfer, approving both suggestions in the process.
+/// </summary>
 public sealed class CreateTransferFromPendingCommand(CreateTransferFromPendingInput input)
     : CommandBase<CreateTransferFromPendingInput, IReadOnlyList<TransactionDto>>(input);

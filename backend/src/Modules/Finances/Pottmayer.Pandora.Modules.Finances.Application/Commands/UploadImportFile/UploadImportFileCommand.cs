@@ -10,5 +10,9 @@ public sealed record UploadImportFileInput(
     string FileName,
     byte[] FileContent);
 
+/// <summary>
+/// Uploads a file for import, auto-detecting its layout from the registered system layouts and
+/// validating it matches the chosen destination (account or card).
+/// </summary>
 public sealed class UploadImportFileCommand(UploadImportFileInput input)
     : CommandBase<UploadImportFileInput, ImportFileDto>(input);

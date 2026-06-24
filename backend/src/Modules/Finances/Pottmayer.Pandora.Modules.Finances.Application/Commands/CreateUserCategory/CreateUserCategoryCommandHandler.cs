@@ -37,8 +37,11 @@ public sealed class CreateUserCategoryCommandHandler(IUnitOfWorkFactory factory,
                 var parent = await repo.FindByIdForUserAsync(parentId, input.UserId, token);
                 if (parent is null)
                     return Result<UserCategory>.Failure([CategoryErrors.ParentNotFound]);
+                // Only one level of nesting: a child cannot itself become a parent.
                 if (!parent.IsRoot)
                     return Result<UserCategory>.Failure([CategoryErrors.ParentIsNotRoot]);
+                // The requested nature must agree with the parent's; the parent's value then wins,
+                // so a child's nature can never drift from its parent through some other path.
                 if (parent.Nature.Value != input.Nature)
                     return Result<UserCategory>.Failure([CategoryErrors.NatureMismatch]);
 
@@ -54,7 +57,7 @@ public sealed class CreateUserCategoryCommandHandler(IUnitOfWorkFactory factory,
             await repo.AddAsync(category, token);
 
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "user-category", category.Id, "category.created", now,
+                input.UserId, input.UserId, UserCategoryEvents.EntityType, category.Id, UserCategoryEvents.Created, now,
                 new
                 {
                     name = category.Name,

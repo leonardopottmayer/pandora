@@ -23,6 +23,7 @@ public sealed class AbortImportFileCommandHandler(
             var file = await repo.FindByIdForUserAsync(input.ImportFileId, input.UserId, token);
             if (file is null) return Result<bool>.Failure([ImportErrors.NotFound]);
 
+            // Aggregate rejects the abort once the file is already completed or aborted.
             var aborted = file.Abort(timeProvider);
             if (!aborted) return Result<bool>.Failure([ImportErrors.AlreadyTerminal]);
 

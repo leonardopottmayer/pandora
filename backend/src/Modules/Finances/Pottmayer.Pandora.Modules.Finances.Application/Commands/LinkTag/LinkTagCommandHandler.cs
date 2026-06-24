@@ -46,7 +46,7 @@ public sealed class LinkTagCommandHandler(IUnitOfWorkFactory factory, TimeProvid
             await links.AddAsync(link, token);
 
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "tag", tag.Id, "tag.linked", now,
+                input.UserId, input.UserId, TagEvents.EntityType, tag.Id, TagEvents.Linked, now,
                 new { entityType = entityType.Value, entityId = input.EntityId }, ct: token);
 
             return Result<TagLink>.Success(link);

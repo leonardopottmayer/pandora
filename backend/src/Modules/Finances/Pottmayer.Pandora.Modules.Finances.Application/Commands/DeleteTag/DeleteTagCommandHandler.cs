@@ -34,7 +34,7 @@ public sealed class DeleteTagCommandHandler(IUnitOfWorkFactory factory, TimeProv
             await tags.RemoveAsync(tag, token);
 
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "tag", tag.Id, "tag.deleted", now,
+                input.UserId, input.UserId, TagEvents.EntityType, tag.Id, TagEvents.Deleted, now,
                 new
                 {
                     name = tag.Name,

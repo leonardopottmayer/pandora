@@ -25,5 +25,10 @@ public sealed record CreateRecurringTransactionInput(
     bool AutoPost,
     bool AutoGenerate);
 
+/// <summary>
+/// Sets up a new recurring template (e.g. rent, a subscription), active from its start date.
+/// The destination, frequency and schedule anchors are fixed at creation — only the cosmetic and
+/// future-facing fields can be edited later through <c>UpdateRecurringTransaction</c>.
+/// </summary>
 public sealed class CreateRecurringTransactionCommand(CreateRecurringTransactionInput input)
     : CommandBase<CreateRecurringTransactionInput, RecurringTransactionDto>(input);

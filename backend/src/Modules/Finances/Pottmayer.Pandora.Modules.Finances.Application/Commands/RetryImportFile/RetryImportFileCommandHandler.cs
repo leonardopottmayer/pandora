@@ -23,6 +23,7 @@ public sealed class RetryImportFileCommandHandler(
             var file = await repo.FindByIdForUserAsync(input.ImportFileId, input.UserId, token);
             if (file is null) return Result<bool>.Failure([ImportErrors.NotFound]);
 
+            // Only a file currently in the failed state is eligible for another attempt.
             var retried = file.Retry(timeProvider);
             if (!retried) return Result<bool>.Failure([ImportErrors.NotFailed]);
 

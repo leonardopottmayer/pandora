@@ -13,5 +13,9 @@ public sealed record PayStatementInput(
     string? Notes,
     decimal? FxRate);
 
+/// <summary>
+/// Pays down a statement from an account: creates the payment transaction and applies it to the
+/// statement's balance. Cross-currency payments require an explicit FX rate.
+/// </summary>
 public sealed class PayStatementCommand(PayStatementInput input)
     : CommandBase<PayStatementInput, CardStatementDto>(input);

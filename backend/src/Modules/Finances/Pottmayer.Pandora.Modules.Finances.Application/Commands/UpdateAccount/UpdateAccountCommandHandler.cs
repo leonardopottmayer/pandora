@@ -38,9 +38,11 @@ public sealed class UpdateAccountCommandHandler(IUnitOfWorkFactory factory, Time
             if (account.IsArchived)
                 return Result<Account>.Failure([AccountErrors.Archived]);
 
+            // Excludes the account itself, so renaming to the same name is allowed.
             if (await repo.ExistsWithNameAsync(input.UserId, input.Name, account.Id, token))
                 return Result<Account>.Failure([AccountErrors.NameAlreadyExists]);
 
+            // Captured before the mutation so the audit event records both sides of the change.
             var diff = new
             {
                 name = new { old = account.Name, @new = input.Name.Trim() },
@@ -57,7 +59,7 @@ public sealed class UpdateAccountCommandHandler(IUnitOfWorkFactory factory, Time
             await repo.UpdateAsync(account, token);
 
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "account", account.Id, "account.updated", now, diff, ct: token);
+                input.UserId, input.UserId, AccountEvents.EntityType, account.Id, AccountEvents.Updated, now, diff, ct: token);
 
             return Result<Account>.Success(account);
         }, cancellationToken: ct);

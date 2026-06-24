@@ -30,6 +30,7 @@ public sealed class CreateCardCommandHandler(IUnitOfWorkFactory factory, TimePro
             if (await repo.ExistsWithNameAsync(input.UserId, input.Name, null, token))
                 return Result<Card>.Failure([CardErrors.NameAlreadyExists]);
 
+            // The default payment account, if given, must belong to the same user.
             if (input.DefaultPaymentAccountId is not null)
             {
                 var account = await ctx.AcquireRepository<IAccountRepository>()
@@ -51,7 +52,7 @@ public sealed class CreateCardCommandHandler(IUnitOfWorkFactory factory, TimePro
                 timeProvider);
 
             await repo.AddAsync(card, token);
-            await ctx.RecordAsync(input.UserId, input.UserId, "card", card.Id, "card.created", now, new
+            await ctx.RecordAsync(input.UserId, input.UserId, CardEvents.EntityType, card.Id, CardEvents.Created, now, new
             {
                 card.Name,
                 card.ClosingDay,
@@ -65,6 +66,7 @@ public sealed class CreateCardCommandHandler(IUnitOfWorkFactory factory, TimePro
         return result.IsFailure ? Fail([.. result.Errors]) : Ok(CardDto.From(result.Value!));
     }
 
+    /// <summary>Validates the card's input shape. Shared with <see cref="UpdateCard"/> validation rules.</summary>
     internal static Result<bool> Validate(string name, string? lastFour, decimal? creditLimit, int closingDay, int dueDay, string currency)
     {
         if (string.IsNullOrWhiteSpace(name))

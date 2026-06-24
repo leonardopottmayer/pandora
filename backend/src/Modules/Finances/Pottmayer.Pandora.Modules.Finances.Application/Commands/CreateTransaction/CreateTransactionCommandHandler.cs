@@ -37,9 +37,12 @@ public sealed class CreateTransactionCommandHandler(
             return Fail(TransactionErrors.InvalidKind(input.Kind));
 
         var kind = TransactionKind.FromValue(input.Kind);
+        // transfer-in/transfer-out only ever come in pairs from CreateTransfer; a lone leg here
+        // would have no matching counterpart.
         if (kind.IsTransferLeg)
             return Fail(TransactionErrors.TransferLegNotAllowed);
 
+        // Exactly one destination: an account movement and a card statement movement are mutually exclusive.
         var hasAccount = input.AccountId is not null;
         var hasCard = input.CardId is not null;
         if (hasAccount == hasCard)
@@ -50,6 +53,7 @@ public sealed class CreateTransactionCommandHandler(
 
         if (input.Installments > 1)
         {
+            // Installments are a card-only, expense-only concept in this phase.
             if (!hasCard)
                 return Fail(InstallmentErrors.RequiresCard);
             if (kind != TransactionKind.Expense)
@@ -74,9 +78,12 @@ public sealed class CreateTransactionCommandHandler(
                 if (kind.RequiresInvestmentAccount && account.Type != AccountType.Investment)
                     return Result<Transaction>.Failure([TransactionErrors.KindRequiresInvestmentAccount(kind.Value)]);
 
+                // Statement payments are created exclusively through PayStatement, which also
+                // updates the statement's balance — never as a generic account transaction.
                 if (kind.IsStatementPayment)
                     return Result<Transaction>.Failure([TransactionErrors.InvalidKind(kind.Value)]);
 
+                // A future-dated entry is scheduled as pending rather than posted immediately.
                 var post = input.OccurredOn <= today;
                 var transaction = Transaction.CreateAccountTransaction(
                     input.UserId, account.Id, kind, account.Currency, input.Amount, input.OccurredOn,
@@ -85,7 +92,7 @@ public sealed class CreateTransactionCommandHandler(
 
                 await transactions.AddAsync(transaction, token);
                 await ctx.RecordAsync(
-                    input.UserId, input.UserId, "transaction", transaction.Id, "transaction.created", now,
+                    input.UserId, input.UserId, TransactionEvents.EntityType, transaction.Id, TransactionEvents.Created, now,
                     new
                     {
                         accountId = transaction.AccountId,
@@ -103,9 +110,13 @@ public sealed class CreateTransactionCommandHandler(
             return result.IsFailure ? Fail([.. result.Errors]) : Ok(TransactionDto.From(result.Value!));
         }
 
+        // Only expense/refund kinds make sense as a standalone card statement movement; everything
+        // else (income, transfers, investment kinds) requires an account.
         if (!kind.CanTargetStatement)
             return Fail(TransactionErrors.InvalidKind(kind.Value));
 
+        // Resolving/creating the statement runs in its own unit of work, separate from the
+        // transaction write below, so its "statement.created" event (if any) is recorded up front.
         var statementResult = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
         {
             var cards = ctx.AcquireRepository<ICardRepository>();
@@ -125,7 +136,7 @@ public sealed class CreateTransactionCommandHandler(
             if (resolved.Created)
             {
                 await ctx.RecordAsync(
-                    input.UserId, input.UserId, "statement", resolved.Statement.Id, "statement.created", now,
+                    input.UserId, input.UserId, StatementEvents.EntityType, resolved.Statement.Id, StatementEvents.Created, now,
                     new
                     {
                         resolved.Statement.CardId,
@@ -170,10 +181,11 @@ public sealed class CreateTransactionCommandHandler(
                 timeProvider);
 
             await transactions.AddAsync(transaction, token);
+            // StatementSign flips the contribution for a refund vs. an expense.
             StatementAmountSync.Apply(statement, input.Amount * kind.StatementSign, 0m, today, timeProvider);
             await statements.UpdateAsync(statement, token);
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "transaction", transaction.Id, "transaction.created", now,
+                input.UserId, input.UserId, TransactionEvents.EntityType, transaction.Id, TransactionEvents.Created, now,
                 new
                 {
                     cardId = cardContext.Id,
@@ -218,6 +230,8 @@ public sealed class CreateTransactionCommandHandler(
             if (card.IsArchived)
                 return Result<Transaction>.Failure([CardErrors.Archived]);
 
+            // Groups every event this purchase generates (plan, statements, installments) so the
+            // user can trace the whole operation as one unit in the audit trail.
             var correlationId = Guid.CreateVersion7();
 
             var ensured = await StatementMaintenance.EnsureStatementForPurchaseAsync(
@@ -236,10 +250,12 @@ public sealed class CreateTransactionCommandHandler(
                 input.UserId, card.Id, input.Amount, count, firstStatement.ReferenceMonth, input.Description, timeProvider);
             await plans.AddAsync(plan, token);
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "installment-plan", plan.Id, "installment-plan.created", now,
+                input.UserId, input.UserId, InstallmentPlanEvents.EntityType, plan.Id, InstallmentPlanEvents.Created, now,
                 new { plan.CardId, plan.TotalAmount, plan.InstallmentCount, plan.FirstReferenceMonth, plan.NormalizedDescription },
                 correlationId, token);
 
+            // Cents-accurate split: any rounding remainder lands on the first installment so the
+            // parts always sum back to the original purchase amount exactly.
             var parts = InstallmentPlan.SplitAmount(input.Amount, count);
             Transaction? firstInstallment = null;
 
@@ -249,11 +265,14 @@ public sealed class CreateTransactionCommandHandler(
                 bool created;
                 if (i == 1)
                 {
+                    // The first installment reuses the statement already resolved above.
                     statement = firstStatement;
                     created = firstCreated;
                 }
                 else
                 {
+                    // Each later installment lands on the statement N months after the first,
+                    // anchored to the card's own closing day so it always picks the right cycle.
                     var anchorMonth = firstMonth.AddMonths(i - 1);
                     var anchor = new DateOnly(anchorMonth.Year, anchorMonth.Month, card.ClosingDay);
                     var ensuredI = await StatementMaintenance.EnsureExactStatementAsync(
@@ -272,11 +291,13 @@ public sealed class CreateTransactionCommandHandler(
 
                 // Expense raises the statement total; recompute the cache in this same transaction (D1).
                 StatementAmountSync.Apply(statement, amount, 0m, today, timeProvider);
+                // A statement just created above is added (not updated) by EnsureExactStatementAsync
+                // itself, so only a pre-existing statement needs an explicit update here.
                 if (!created)
                     await statements.UpdateAsync(statement, token);
 
                 await ctx.RecordAsync(
-                    input.UserId, input.UserId, "transaction", tx.Id, "transaction.created", now,
+                    input.UserId, input.UserId, TransactionEvents.EntityType, tx.Id, TransactionEvents.Created, now,
                     new
                     {
                         cardId = card.Id,
@@ -298,14 +319,16 @@ public sealed class CreateTransactionCommandHandler(
         return result.IsFailure ? Fail([.. result.Errors]) : Ok(TransactionDto.From(result.Value!));
     }
 
+    /// <summary>Shared "statement.created" audit event for any statement opened on demand while purchasing.</summary>
     private static Task RecordStatementCreatedAsync(
         IDataContext ctx,
         Guid userId, CardStatement statement, DateTimeOffset now, Guid correlationId, CancellationToken ct) =>
         ctx.RecordAsync(
-            userId, userId, "statement", statement.Id, "statement.created", now,
+            userId, userId, StatementEvents.EntityType, statement.Id, StatementEvents.Created, now,
             new { statement.CardId, statement.ReferenceMonth, statement.ClosingDate, statement.DueDate },
             correlationId, ct);
 
+    /// <summary>Parses a <c>yyyy-MM</c> reference month into its first calendar day.</summary>
     private static DateOnly ParseFirstOfMonth(string referenceMonth)
     {
         var year = int.Parse(referenceMonth[..4]);

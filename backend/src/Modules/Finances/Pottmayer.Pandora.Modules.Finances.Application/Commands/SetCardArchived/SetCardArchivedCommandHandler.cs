@@ -26,15 +26,15 @@ public sealed class SetCardArchivedCommandHandler(IUnitOfWorkFactory factory, Ti
                 return Result<Card>.Failure([CardErrors.NotFound]);
 
             if (card.IsArchived == input.Archived)
-                return Result<Card>.Success(card);
+                return Result<Card>.Success(card); // idempotent: no change, no event
 
             if (input.Archived) card.Archive(timeProvider);
             else card.Unarchive();
 
             await repo.UpdateAsync(card, token);
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "card", card.Id,
-                input.Archived ? "card.archived" : "card.unarchived", now, ct: token);
+                input.UserId, input.UserId, CardEvents.EntityType, card.Id,
+                input.Archived ? CardEvents.Archived : CardEvents.Unarchived, now, ct: token);
 
             return Result<Card>.Success(card);
         }, cancellationToken: ct);

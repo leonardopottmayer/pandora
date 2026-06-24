@@ -26,8 +26,8 @@ public sealed class DeleteRecurringTransactionCommandHandler(
             if (recurring is null) return Result<bool>.Failure([RecurringTransactionErrors.NotFound]);
 
             await repo.RemoveAsync(recurring, token);
-            await ctx.RecordAsync(input.UserId, input.UserId, "recurring-transaction", recurring.Id,
-                "recurring.deleted", now, ct: token);
+            await ctx.RecordAsync(input.UserId, input.UserId, RecurringTransactionEvents.EntityType, recurring.Id,
+                RecurringTransactionEvents.Deleted, now, ct: token);
 
             return Result<bool>.Success(true);
         }, cancellationToken: ct);

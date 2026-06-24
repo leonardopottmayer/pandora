@@ -29,8 +29,8 @@ public sealed class PauseRecurringTransactionCommandHandler(
             if (!recurring.Pause()) return Result<Domain.Aggregates.RecurringTransaction>.Failure([RecurringTransactionErrors.AlreadyPaused]);
 
             await repo.UpdateAsync(recurring, token);
-            await ctx.RecordAsync(input.UserId, input.UserId, "recurring-transaction", recurring.Id,
-                "recurring.paused", now, ct: token);
+            await ctx.RecordAsync(input.UserId, input.UserId, RecurringTransactionEvents.EntityType, recurring.Id,
+                RecurringTransactionEvents.Paused, now, ct: token);
 
             return Result<Domain.Aggregates.RecurringTransaction>.Success(recurring);
         }, cancellationToken: ct);

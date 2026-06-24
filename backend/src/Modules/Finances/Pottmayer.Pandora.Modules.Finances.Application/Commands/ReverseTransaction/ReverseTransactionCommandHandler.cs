@@ -204,7 +204,7 @@ public sealed class ReverseTransactionCommandHandler(
             if (resolved.Created)
             {
                 await ctx.RecordAsync(
-                    input.UserId, input.UserId, "statement", resolved.Statement.Id, "statement.created", now,
+                    input.UserId, input.UserId, StatementEvents.EntityType, resolved.Statement.Id, StatementEvents.Created, now,
                     new
                     {
                         resolved.Statement.CardId,
@@ -259,11 +259,11 @@ public sealed class ReverseTransactionCommandHandler(
         var correlationId = Guid.CreateVersion7();
 
         await ctx.RecordAsync(
-            userId, userId, "transaction", original.Id, "transaction.reversed", now,
+            userId, userId, TransactionEvents.EntityType, original.Id, TransactionEvents.Reversed, now,
             new { reversalTransactionId = reversal.Id }, correlationId, ct);
 
         await ctx.RecordAsync(
-            userId, userId, "transaction", reversal.Id, "transaction.created", now,
+            userId, userId, TransactionEvents.EntityType, reversal.Id, TransactionEvents.Created, now,
             new
             {
                 accountId = reversal.AccountId,

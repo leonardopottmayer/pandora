@@ -38,8 +38,8 @@ public sealed class SetUserCategoryActiveCommandHandler(IUnitOfWorkFactory facto
             await repo.UpdateAsync(category, token);
 
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "user-category", category.Id,
-                input.Active ? "category.activated" : "category.deactivated", now, ct: token);
+                input.UserId, input.UserId, UserCategoryEvents.EntityType, category.Id,
+                input.Active ? UserCategoryEvents.Activated : UserCategoryEvents.Deactivated, now, ct: token);
 
             return Result<UserCategory>.Success(category);
         }, cancellationToken: ct);

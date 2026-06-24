@@ -34,6 +34,7 @@ public sealed class CreateAccountCommandHandler(IUnitOfWorkFactory factory, Time
         {
             var repo = ctx.AcquireRepository<IAccountRepository>();
 
+            // Name uniqueness is per user, so the check happens here rather than in the aggregate.
             if (await repo.ExistsWithNameAsync(input.UserId, input.Name, null, token))
                 return Result<Account>.Failure([AccountErrors.NameAlreadyExists]);
 
@@ -43,7 +44,7 @@ public sealed class CreateAccountCommandHandler(IUnitOfWorkFactory factory, Time
             await repo.AddAsync(account, token);
 
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "account", account.Id, "account.created", now,
+                input.UserId, input.UserId, AccountEvents.EntityType, account.Id, AccountEvents.Created, now,
                 new
                 {
                     name = account.Name,
@@ -66,7 +67,7 @@ public sealed class CreateAccountCommandHandler(IUnitOfWorkFactory factory, Time
                 await ctx.AcquireRepository<ITransactionRepository>().AddAsync(opening, token);
 
                 await ctx.RecordAsync(
-                    input.UserId, input.UserId, "transaction", opening.Id, "transaction.created", now,
+                    input.UserId, input.UserId, TransactionEvents.EntityType, opening.Id, TransactionEvents.Created, now,
                     new
                     {
                         accountId = opening.AccountId,

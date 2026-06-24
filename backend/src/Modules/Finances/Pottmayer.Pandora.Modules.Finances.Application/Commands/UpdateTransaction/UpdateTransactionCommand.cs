@@ -13,5 +13,6 @@ public sealed record UpdateTransactionInput(
     Guid? SystemCategoryId,
     Guid? UserCategoryId);
 
+/// <summary>Edits a transaction's cosmetic fields. Fails on a voided transaction.</summary>
 public sealed class UpdateTransactionCommand(UpdateTransactionInput input)
     : CommandBase<UpdateTransactionInput, TransactionDto>(input);

@@ -28,11 +28,14 @@ public sealed class CloseStatementCommandHandler(IUnitOfWorkFactory factory, Tim
             if (statement is null)
                 return Result<CardStatement>.Failure([StatementErrors.NotFound]);
 
+            // Close() no-ops on a statement that isn't open; only record the event when it actually changed.
             if (statement.Close(timeProvider))
             {
+                // Closing can immediately flip the status further (e.g. straight to paid/overdue)
+                // depending on the amounts already on the statement, so resync right away.
                 statement.SyncAmounts(statement.TotalAmount, statement.PaidAmount, today, timeProvider);
                 await statements.UpdateAsync(statement, token);
-                await ctx.RecordAsync(input.UserId, input.UserId, "statement", statement.Id, "statement.closed", now, ct: token);
+                await ctx.RecordAsync(input.UserId, input.UserId, StatementEvents.EntityType, statement.Id, StatementEvents.Closed, now, ct: token);
             }
 
             return Result<CardStatement>.Success(statement);

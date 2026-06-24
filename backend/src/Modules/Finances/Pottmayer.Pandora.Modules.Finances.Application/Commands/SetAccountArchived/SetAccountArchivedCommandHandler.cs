@@ -38,8 +38,8 @@ public sealed class SetAccountArchivedCommandHandler(IUnitOfWorkFactory factory,
             await repo.UpdateAsync(account, token);
 
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "account", account.Id,
-                input.Archived ? "account.archived" : "account.unarchived", now, ct: token);
+                input.UserId, input.UserId, AccountEvents.EntityType, account.Id,
+                input.Archived ? AccountEvents.Archived : AccountEvents.Unarchived, now, ct: token);
 
             return Result<Account>.Success(account);
         }, cancellationToken: ct);

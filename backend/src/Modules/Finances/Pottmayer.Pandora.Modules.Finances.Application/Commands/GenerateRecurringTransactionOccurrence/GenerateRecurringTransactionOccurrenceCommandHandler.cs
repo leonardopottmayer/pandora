@@ -51,7 +51,8 @@ public sealed class GenerateRecurringTransactionOccurrenceCommandHandler(
             var kind = TransactionKind.FromValue(recurring.Kind);
             var targetIsCard = recurring.CardId is not null;
 
-            // Resolve destination currency (and statement for cards).
+            // Resolves the destination's currency and, for a card target, also ensures the
+            // statement the occurrence would land on exists.
             string currency;
             Guid? suggestedStatementId = null;
             CardStatement? cardStatement = null;
@@ -113,8 +114,8 @@ public sealed class GenerateRecurringTransactionOccurrenceCommandHandler(
                     timeProvider);
 
                 await pendingRepo.AddAsync(pending, token);
-                await ctx.RecordAsync(input.UserId, input.UserId, "pending-transaction", pending.Id,
-                    "pending.created", now, new { source = "manual-recurrence", recurringTransactionId = recurring.Id, date = occurredOn }, ct: token);
+                await ctx.RecordAsync(input.UserId, input.UserId, PendingTransactionEvents.EntityType, pending.Id,
+                    PendingTransactionEvents.Created, now, new { source = "manual-recurrence", recurringTransactionId = recurring.Id, date = occurredOn }, ct: token);
                 dto = new GeneratedOccurrenceDto(ToInbox, PendingTransactionDto.From(pending), null);
             }
             else
@@ -175,8 +176,8 @@ public sealed class GenerateRecurringTransactionOccurrenceCommandHandler(
 
                 tx.MarkAsRecurrence(recurring.Id, pendingTransactionId: null);
                 await txRepo.AddAsync(tx, token);
-                await ctx.RecordAsync(input.UserId, input.UserId, "transaction", tx.Id,
-                    "transaction.created", now, new { origin = "recurrence", source = "manual", recurringTransactionId = recurring.Id }, ct: token);
+                await ctx.RecordAsync(input.UserId, input.UserId, TransactionEvents.EntityType, tx.Id,
+                    TransactionEvents.Created, now, new { origin = "recurrence", source = "manual", recurringTransactionId = recurring.Id }, ct: token);
                 dto = new GeneratedOccurrenceDto(ToTransactions, null, TransactionDto.From(tx));
             }
 
@@ -188,12 +189,12 @@ public sealed class GenerateRecurringTransactionOccurrenceCommandHandler(
                 recurring.AdvanceCursor(scheduledDate);
                 await recurringRepo.UpdateAsync(recurring, token);
                 if (recurring.IsFinished)
-                    await ctx.RecordAsync(input.UserId, input.UserId, "recurring-transaction", recurring.Id,
-                        "recurring.finished", now, ct: token);
+                    await ctx.RecordAsync(input.UserId, input.UserId, RecurringTransactionEvents.EntityType, recurring.Id,
+                        RecurringTransactionEvents.Finished, now, ct: token);
             }
 
-            await ctx.RecordAsync(input.UserId, input.UserId, "recurring-transaction", recurring.Id,
-                "recurring.occurrence-generated", now,
+            await ctx.RecordAsync(input.UserId, input.UserId, RecurringTransactionEvents.EntityType, recurring.Id,
+                RecurringTransactionEvents.OccurrenceGenerated, now,
                 new { date = scheduledDate, destination = input.Destination, manual = true, advancedSchedule = input.AdvanceSchedule }, ct: token);
 
             return Result<GeneratedOccurrenceDto>.Success(dto);
@@ -202,6 +203,7 @@ public sealed class GenerateRecurringTransactionOccurrenceCommandHandler(
         return result.IsFailure ? Fail([.. result.Errors]) : Ok(result.Value!);
     }
 
+    /// <summary>Serializes the generated occurrence as the immutable original-suggestion snapshot.</summary>
     private static string SerializePayload(
         RecurringTransaction r, DateOnly occurredOn, string currency, decimal? amount,
         string description, string? payee, Guid? systemCategoryId, Guid? userCategoryId) =>

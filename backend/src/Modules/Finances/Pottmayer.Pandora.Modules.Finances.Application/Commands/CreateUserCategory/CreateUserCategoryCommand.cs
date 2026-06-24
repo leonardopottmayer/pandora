@@ -12,5 +12,9 @@ public sealed record CreateUserCategoryInput(
     string? Icon,
     int DisplayOrder);
 
+/// <summary>
+/// Creates a custom category the user can apply to transactions, either as a root category or a
+/// child of one. A child always inherits its parent's nature, regardless of what's requested.
+/// </summary>
 public sealed class CreateUserCategoryCommand(CreateUserCategoryInput input)
     : CommandBase<CreateUserCategoryInput, UserCategoryDto>(input);

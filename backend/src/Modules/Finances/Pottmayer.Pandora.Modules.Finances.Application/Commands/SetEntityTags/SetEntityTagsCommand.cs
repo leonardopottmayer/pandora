@@ -9,5 +9,6 @@ public sealed record SetEntityTagsInput(
     Guid EntityId,
     IReadOnlyList<Guid> TagIds);
 
+/// <summary>Replaces an entity's entire tag set in one call. See <see cref="SetEntityTagsCommandHandler"/>.</summary>
 public sealed class SetEntityTagsCommand(SetEntityTagsInput input)
     : CommandBase<SetEntityTagsInput, IReadOnlyList<TagDto>>(input);

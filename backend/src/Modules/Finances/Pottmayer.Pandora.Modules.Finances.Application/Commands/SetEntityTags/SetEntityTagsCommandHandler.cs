@@ -48,11 +48,13 @@ public sealed class SetEntityTagsCommandHandler(IUnitOfWorkFactory factory, Time
             var existingTagIds = existing.Select(l => l.TagId).ToHashSet();
             var desiredSet = desiredIds.ToHashSet();
 
+            // Diff against the current links: only the additions and removals actually touch the
+            // database and get an event — tags already in both sets are left untouched.
             foreach (var link in existing.Where(l => !desiredSet.Contains(l.TagId)))
             {
                 await links.RemoveAsync(link, token);
                 await ctx.RecordAsync(
-                    input.UserId, input.UserId, "tag", link.TagId, "tag.unlinked", now,
+                    input.UserId, input.UserId, TagEvents.EntityType, link.TagId, TagEvents.Unlinked, now,
                     new { entityType = entityType.Value, entityId = input.EntityId }, ct: token);
             }
 
@@ -60,7 +62,7 @@ public sealed class SetEntityTagsCommandHandler(IUnitOfWorkFactory factory, Time
             {
                 await links.AddAsync(TagLink.Create(tag.Id, entityType, input.EntityId, timeProvider), token);
                 await ctx.RecordAsync(
-                    input.UserId, input.UserId, "tag", tag.Id, "tag.linked", now,
+                    input.UserId, input.UserId, TagEvents.EntityType, tag.Id, TagEvents.Linked, now,
                     new { entityType = entityType.Value, entityId = input.EntityId }, ct: token);
             }
 

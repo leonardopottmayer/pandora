@@ -5,5 +5,6 @@ namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.ResumeRecurrin
 
 public sealed record ResumeRecurringTransactionInput(Guid UserId, Guid Id);
 
+/// <summary>Resumes generation for a paused recurring template. Fails if it's not currently paused.</summary>
 public sealed class ResumeRecurringTransactionCommand(ResumeRecurringTransactionInput input)
     : CommandBase<ResumeRecurringTransactionInput, RecurringTransactionDto>(input);

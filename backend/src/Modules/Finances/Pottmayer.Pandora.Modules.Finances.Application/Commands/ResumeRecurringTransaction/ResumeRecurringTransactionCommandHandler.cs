@@ -29,8 +29,8 @@ public sealed class ResumeRecurringTransactionCommandHandler(
             if (!recurring.Resume()) return Result<Domain.Aggregates.RecurringTransaction>.Failure([RecurringTransactionErrors.AlreadyActive]);
 
             await repo.UpdateAsync(recurring, token);
-            await ctx.RecordAsync(input.UserId, input.UserId, "recurring-transaction", recurring.Id,
-                "recurring.resumed", now, ct: token);
+            await ctx.RecordAsync(input.UserId, input.UserId, RecurringTransactionEvents.EntityType, recurring.Id,
+                RecurringTransactionEvents.Resumed, now, ct: token);
 
             return Result<Domain.Aggregates.RecurringTransaction>.Success(recurring);
         }, cancellationToken: ct);

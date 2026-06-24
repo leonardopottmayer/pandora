@@ -33,6 +33,7 @@ public sealed class UpdateTransactionCommandHandler(IUnitOfWorkFactory factory, 
             if (transaction.IsVoid)
                 return Result<Transaction>.Failure([TransactionErrors.AlreadyVoid]);
 
+            // Captured before the mutation so the audit event records both sides of the change.
             var diff = new
             {
                 description = new { old = transaction.Description, @new = input.Description.Trim() },
@@ -47,7 +48,7 @@ public sealed class UpdateTransactionCommandHandler(IUnitOfWorkFactory factory, 
             await repo.UpdateAsync(transaction, token);
 
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "transaction", transaction.Id, "transaction.edited", now, diff, ct: token);
+                input.UserId, input.UserId, TransactionEvents.EntityType, transaction.Id, TransactionEvents.Edited, now, diff, ct: token);
 
             return Result<Transaction>.Success(transaction);
         }, cancellationToken: ct);

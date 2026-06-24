@@ -34,6 +34,7 @@ public sealed class UpdateUserCategoryCommandHandler(IUnitOfWorkFactory factory,
                     input.UserId, input.Name, category.ParentCategoryId, category.Id, token))
                 return Result<UserCategory>.Failure([CategoryErrors.NameAlreadyExists]);
 
+            // Captured before the mutation so the audit event records both sides of the change.
             var diff = new
             {
                 name = new { old = category.Name, @new = input.Name.Trim() },
@@ -46,7 +47,7 @@ public sealed class UpdateUserCategoryCommandHandler(IUnitOfWorkFactory factory,
             await repo.UpdateAsync(category, token);
 
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "user-category", category.Id, "category.updated", now, diff, ct: token);
+                input.UserId, input.UserId, UserCategoryEvents.EntityType, category.Id, UserCategoryEvents.Updated, now, diff, ct: token);
 
             return Result<UserCategory>.Success(category);
         }, cancellationToken: ct);

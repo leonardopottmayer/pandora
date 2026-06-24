@@ -71,7 +71,7 @@ public sealed class UnvoidTransactionCommandHandler(IUnitOfWorkFactory factory, 
                 }
 
                 await ctx.RecordAsync(
-                    input.UserId, input.UserId, "transaction", entry.Id, "transaction.restored", now,
+                    input.UserId, input.UserId, TransactionEvents.EntityType, entry.Id, TransactionEvents.Restored, now,
                     data: null, correlationId, token);
             }
 
@@ -118,14 +118,14 @@ public sealed class UnvoidTransactionCommandHandler(IUnitOfWorkFactory factory, 
             await statements.UpdateAsync(statement, ct);
 
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "transaction", entry.Id, "transaction.restored", now,
+                input.UserId, input.UserId, TransactionEvents.EntityType, entry.Id, TransactionEvents.Restored, now,
                 new { installmentNumber = entry.InstallmentNumber }, correlationId, ct);
         }
 
         if (input.UnvoidEntirePlan)
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "installment-plan", transaction.InstallmentPlanId!.Value,
-                "installment-plan.restored", now, ct: ct);
+                input.UserId, input.UserId, InstallmentPlanEvents.EntityType, transaction.InstallmentPlanId!.Value,
+                InstallmentPlanEvents.Restored, now, ct: ct);
 
         return Result<Transaction>.Success(transaction);
     }

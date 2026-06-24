@@ -44,10 +44,13 @@ public sealed class PayStatementCommandHandler(IUnitOfWorkFactory factory, TimeP
             var card = await ctx.AcquireRepository<ICardRepository>().FindByIdForUserAsync(statement.CardId, input.UserId, token);
             if (card is null)
                 return Result<CardStatement>.Failure([CardErrors.NotFound]);
+            // Same-currency payments don't need a rate; cross-currency ones must supply one explicitly.
             if (account.Currency != card.Currency && input.FxRate is null)
                 return Result<CardStatement>.Failure([StatementErrors.MissingFxRate]);
 
             var occurredOn = input.OccurredOn ?? today;
+            // Without a user description, the transaction renders a localized system description
+            // (e.g. "Payment — June 2026") built from the statement's reference month at read time.
             var hasUserDescription = !string.IsNullOrWhiteSpace(input.Description);
             var category = await categories.GetByCodeAsync("credit-card-payment", token);
             var payment = Transaction.CreateStatementPayment(
@@ -66,11 +69,13 @@ public sealed class PayStatementCommandHandler(IUnitOfWorkFactory factory, TimeP
                 systemDescription: hasUserDescription ? null : SystemDescription.StatementPayment(statement.ReferenceMonth));
 
             await transactions.AddAsync(payment, token);
+            // Applies the payment to the statement's balance and derives its new status (e.g. paid,
+            // partially paid) from the updated amounts.
             StatementAmountSync.Apply(statement, 0m, input.Amount, today, timeProvider);
             await statements.UpdateAsync(statement, token);
 
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "transaction", payment.Id, "transaction.created", now,
+                input.UserId, input.UserId, TransactionEvents.EntityType, payment.Id, TransactionEvents.Created, now,
                 new
                 {
                     accountId = payment.AccountId,
@@ -82,14 +87,15 @@ public sealed class PayStatementCommandHandler(IUnitOfWorkFactory factory, TimeP
                 },
                 ct: token);
 
-            await ctx.RecordAsync(input.UserId, input.UserId, "statement", statement.Id, "statement.payment-received", now, new
+            await ctx.RecordAsync(input.UserId, input.UserId, StatementEvents.EntityType, statement.Id, StatementEvents.PaymentReceived, now, new
             {
                 amount = input.Amount,
                 accountId = account.Id
             }, ct: token);
 
+            // Extra event only when this payment was the one that fully settled the statement.
             if (statement.Status.Value == "paid")
-                await ctx.RecordAsync(input.UserId, input.UserId, "statement", statement.Id, "statement.paid", now, ct: token);
+                await ctx.RecordAsync(input.UserId, input.UserId, StatementEvents.EntityType, statement.Id, StatementEvents.Paid, now, ct: token);
 
             return Result<CardStatement>.Success(statement);
         }, cancellationToken: ct);

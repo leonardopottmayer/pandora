@@ -42,6 +42,8 @@ public sealed class LinkPendingTransactionCommandHandler(
             var tx = await txRepo.FindByIdForUserAsync(input.TransactionId, input.UserId, token);
             if (tx is null) return Result<PendingTransaction>.Failure([TransactionErrors.NotFound]);
 
+            // Recording the match on the source row is what lets a future re-import of the same
+            // statement line resolve straight to this transaction instead of raising a new suggestion.
             var row = await rowRepo.GetByIdAsync(pending.ImportRowId.Value, token);
             if (row is not null)
             {
@@ -52,8 +54,8 @@ public sealed class LinkPendingTransactionCommandHandler(
             pending.MarkLinkedToExisting(tx.Id, input.UserId, timeProvider);
             await pendingRepo.UpdateAsync(pending, token);
 
-            await ctx.RecordAsync(input.UserId, input.UserId, "pending-transaction", pending.Id,
-                "pending.linked", now, new { transactionId = tx.Id }, ct: token);
+            await ctx.RecordAsync(input.UserId, input.UserId, PendingTransactionEvents.EntityType, pending.Id,
+                PendingTransactionEvents.Linked, now, new { transactionId = tx.Id }, ct: token);
 
             return Result<PendingTransaction>.Success(pending);
         }, cancellationToken: ct);

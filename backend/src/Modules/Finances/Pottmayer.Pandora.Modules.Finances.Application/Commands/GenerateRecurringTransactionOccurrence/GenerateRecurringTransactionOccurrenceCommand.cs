@@ -21,5 +21,6 @@ public sealed record GenerateRecurringTransactionOccurrenceInput(
     Guid? SystemCategoryId,
     Guid? UserCategoryId);
 
+/// <summary>Manually triggers one occurrence of a recurring template ahead of the scheduled job.</summary>
 public sealed class GenerateRecurringTransactionOccurrenceCommand(GenerateRecurringTransactionOccurrenceInput input)
     : CommandBase<GenerateRecurringTransactionOccurrenceInput, GeneratedOccurrenceDto>(input);

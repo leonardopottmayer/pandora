@@ -11,6 +11,12 @@ using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.RunImportParsing;
 
+/// <summary>
+/// Drives one full pass of the import pipeline for a single claimed file: parses the raw content,
+/// runs duplicate detection on every row, and turns each non-skipped row into a
+/// <see cref="PendingTransaction"/> suggestion for the user to review. A row that fails on its own
+/// is recorded as an error and does not abort the rest of the file.
+/// </summary>
 public sealed class RunImportParsingCommandHandler(
     IUnitOfWorkFactory factory,
     IEnumerable<IImportParser> parsers,
@@ -24,6 +30,7 @@ public sealed class RunImportParsingCommandHandler(
     {
         var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
         {
+            // Claiming locks the file to this run; a null result means there is nothing to do right now.
             var fileRepo = ctx.AcquireRepository<IImportFileRepository>();
             var file = await fileRepo.ClaimNextReceivedAsync(token);
             if (file is null) return Result<bool>.Success(false);
@@ -34,6 +41,8 @@ public sealed class RunImportParsingCommandHandler(
 
             try
             {
+                // The layout (chosen at upload time) tells us both how to parse the file and which
+                // registered parser implementation understands that format.
                 var layoutRepo = ctx.AcquireRepository<IImportLayoutRepository>();
                 ImportLayout? layout = null;
                 if (file.LayoutId.HasValue)
@@ -53,6 +62,8 @@ public sealed class RunImportParsingCommandHandler(
                 var statementRepo = ctx.AcquireRepository<ICardStatementRepository>();
                 var cardRepo = ctx.AcquireRepository<ICardRepository>();
 
+                // Dedup runs once for the whole file (cheaper than per-row) and is then looked up by
+                // row index as each parsed row is processed below.
                 var dedupResults = await duplicateDetector.DetectAsync(
                     file.UserId, file.AccountId, file.CardId, parsedRows,
                     rowRepo, fileRepo, transactionRepo, pendingRepo, token);
@@ -63,6 +74,8 @@ public sealed class RunImportParsingCommandHandler(
 
                 foreach (var pr in parsedRows)
                 {
+                    // Every parsed line gets an ImportRow regardless of outcome, so the user can
+                    // audit the full pipeline (skipped, suggested or errored) afterwards.
                     var row = ImportRow.CreatePending(file.Id, pr.RowIndex, pr.RawData, now);
 
                     if (pr.ShouldSkip)
@@ -85,10 +98,13 @@ public sealed class RunImportParsingCommandHandler(
 
                         if (dedupStatus == DedupStatus.Certain) duplicates++;
 
-                        // Always generate a suggestion, even for certain duplicates
+                        // Always generate a suggestion, even for certain duplicates — the user makes
+                        // the final call on whether to link it to the existing record or reject it.
                         var kind = DetermineKind(pr.IsCredit, layout.IsCardLayout);
                         Guid? suggestedStatementId = null;
 
+                        // For card imports, pre-resolve (or open) the statement the purchase would
+                        // land on, so the suggestion already carries it.
                         if (file.CardId.HasValue)
                         {
                             var card = await cardRepo.FindByIdForUserAsync(file.CardId.Value, file.UserId, token);
@@ -130,6 +146,8 @@ public sealed class RunImportParsingCommandHandler(
                     }
                     catch (Exception ex)
                     {
+                        // A single bad row must not abort the rest of the file — it is recorded and
+                        // the loop moves on to the next line.
                         row.MarkError(ex.Message);
                         await rowRepo.AddAsync(row, token);
                         errors++;
@@ -143,6 +161,8 @@ public sealed class RunImportParsingCommandHandler(
             }
             catch (Exception ex)
             {
+                // A failure at the file level (bad layout, parser crash) still counts as "a file was
+                // processed" from the caller's perspective — it just landed in the failed state.
                 file.Fail(ex.Message, timeProvider);
                 await fileRepo.UpdateAsync(file, token);
                 return Result<bool>.Success(true);
@@ -152,6 +172,7 @@ public sealed class RunImportParsingCommandHandler(
         return result.IsFailure ? Fail([.. result.Errors]) : Ok(result.Value);
     }
 
+    /// <summary>Maps the parser's raw credit/debit flag to a transaction kind for the row's destination.</summary>
     private static string DetermineKind(bool isCredit, bool isCardLayout)
     {
         // For card layouts: most transactions are expenses (debit); isCredit = payment/credit
@@ -161,6 +182,7 @@ public sealed class RunImportParsingCommandHandler(
         return isCredit ? TransactionKind.Income.Value : TransactionKind.Expense.Value;
     }
 
+    /// <summary>Serializes the parsed row as the immutable original-suggestion snapshot.</summary>
     private static string SerializePayload(ParsedImportRow pr) =>
         JsonSerializer.Serialize(new
         {

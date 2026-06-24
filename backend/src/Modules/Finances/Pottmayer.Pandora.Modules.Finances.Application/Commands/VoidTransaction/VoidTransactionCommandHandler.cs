@@ -72,7 +72,7 @@ public sealed class VoidTransactionCommandHandler(IUnitOfWorkFactory factory, Ti
                 }
 
                 await ctx.RecordAsync(
-                    input.UserId, input.UserId, "transaction", entry.Id, "transaction.voided", now,
+                    input.UserId, input.UserId, TransactionEvents.EntityType, entry.Id, TransactionEvents.Voided, now,
                     new { reason = input.Reason }, correlationId, token);
             }
 
@@ -132,14 +132,14 @@ public sealed class VoidTransactionCommandHandler(IUnitOfWorkFactory factory, Ti
             await statements.UpdateAsync(statement, ct);
 
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "transaction", entry.Id, "transaction.voided", now,
+                input.UserId, input.UserId, TransactionEvents.EntityType, entry.Id, TransactionEvents.Voided, now,
                 new { reason = input.Reason, installmentNumber = entry.InstallmentNumber }, correlationId, ct);
         }
 
         if (input.VoidEntirePlan)
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "installment-plan", transaction.InstallmentPlanId!.Value,
-                "installment-plan.voided", now, new { reason = input.Reason }, correlationId, ct);
+                input.UserId, input.UserId, InstallmentPlanEvents.EntityType, transaction.InstallmentPlanId!.Value,
+                InstallmentPlanEvents.Voided, now, new { reason = input.Reason }, correlationId, ct);
 
         return Result<Transaction>.Success(transaction);
     }

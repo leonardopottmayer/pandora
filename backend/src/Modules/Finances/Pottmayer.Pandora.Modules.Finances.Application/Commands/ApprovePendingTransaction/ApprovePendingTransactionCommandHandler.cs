@@ -38,6 +38,8 @@ public sealed class ApprovePendingTransactionCommandHandler(
             var kind = TransactionKind.FromValue(pending.Kind);
             Transaction tx;
 
+            // Every field of the new transaction is copied from the suggestion as it stands now —
+            // any edits made via UpdatePendingTransaction are already baked into these values.
             if (pending.AccountId is not null)
             {
                 var accountRepo = ctx.AcquireRepository<IAccountRepository>();
@@ -68,6 +70,8 @@ public sealed class ApprovePendingTransactionCommandHandler(
                 var card = await cardRepo.FindByIdForUserAsync(pending.CardId!.Value, input.UserId, token);
                 if (card is null) return Result<Transaction>.Failure([CardErrors.NotFound]);
 
+                // Honors the suggestion's own statement hint when present (e.g. an imported row
+                // already matched to a specific cycle); otherwise resolves/creates the current one.
                 var statementResult = await StatementMaintenance.EnsureStatementForPurchaseAsync(
                     statementRepo, resolver, card, input.UserId, pending.OccurredOn,
                     pending.SuggestedStatementId, timeProvider, token);
@@ -98,6 +102,8 @@ public sealed class ApprovePendingTransactionCommandHandler(
                 await statementRepo.UpdateAsync(statement, token);
             }
 
+            // Links the new transaction back to whatever produced the suggestion, so its provenance
+            // is traceable from either the transaction or the original import/recurrence side.
             if (pending.IsImportSource)
                 tx.MarkAsImport(pending.Id);
             else
@@ -108,10 +114,10 @@ public sealed class ApprovePendingTransactionCommandHandler(
             await pendingRepo.UpdateAsync(pending, token);
 
             var origin = pending.IsImportSource ? "import" : "recurrence";
-            await ctx.RecordAsync(input.UserId, input.UserId, "transaction", tx.Id,
-                "transaction.created", now, new { origin }, ct: token);
-            await ctx.RecordAsync(input.UserId, input.UserId, "pending-transaction", pending.Id,
-                "pending.approved", now, new { transactionId = tx.Id }, ct: token);
+            await ctx.RecordAsync(input.UserId, input.UserId, TransactionEvents.EntityType, tx.Id,
+                TransactionEvents.Created, now, new { origin }, ct: token);
+            await ctx.RecordAsync(input.UserId, input.UserId, PendingTransactionEvents.EntityType, pending.Id,
+                PendingTransactionEvents.Approved, now, new { transactionId = tx.Id }, ct: token);
 
             return Result<Transaction>.Success(tx);
         }, cancellationToken: ct);

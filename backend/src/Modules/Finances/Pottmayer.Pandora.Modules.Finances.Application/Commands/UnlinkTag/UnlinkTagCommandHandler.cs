@@ -38,7 +38,7 @@ public sealed class UnlinkTagCommandHandler(IUnitOfWorkFactory factory, TimeProv
             await links.RemoveAsync(link, token);
 
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "tag", tag.Id, "tag.unlinked", now,
+                input.UserId, input.UserId, TagEvents.EntityType, tag.Id, TagEvents.Unlinked, now,
                 new { entityType = entityType.Value, entityId = input.EntityId }, ct: token);
 
             return Result<bool>.Success(true);

@@ -23,13 +23,15 @@ public sealed class DeleteCardCommandHandler(IUnitOfWorkFactory factory, TimePro
             if (card is null)
                 return Result<bool>.Failure([CardErrors.NotFound]);
 
+            // A hard delete is only safe for a card with no billing history; otherwise archiving is
+            // the right tool — any existing statement is enough to tell.
             var statements = ctx.AcquireRepository<ICardStatementRepository>();
             var existingStatements = await statements.GetByCardAsync(card.Id, input.UserId, token);
             if (existingStatements.Count > 0)
                 return Result<bool>.Failure([CardErrors.HasHistory]);
 
             await repo.RemoveAsync(card, token);
-            await ctx.RecordAsync(input.UserId, input.UserId, "card", card.Id, "card.deleted", now, new { card.Name }, ct: token);
+            await ctx.RecordAsync(input.UserId, input.UserId, CardEvents.EntityType, card.Id, CardEvents.Deleted, now, new { card.Name }, ct: token);
             return Result<bool>.Success(true);
         }, cancellationToken: ct);
 

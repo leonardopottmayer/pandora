@@ -18,5 +18,10 @@ public sealed record UpdateRecurringTransactionInput(
     bool AutoPost,
     bool AutoGenerate);
 
+/// <summary>
+/// Edits a recurring template's non-structural fields. The destination, frequency, interval, day
+/// anchors and start date are intentionally absent: they're fixed at creation to keep past
+/// occurrences consistent.
+/// </summary>
 public sealed class UpdateRecurringTransactionCommand(UpdateRecurringTransactionInput input)
     : CommandBase<UpdateRecurringTransactionInput, RecurringTransactionDto>(input);

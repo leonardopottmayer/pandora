@@ -27,6 +27,8 @@ public sealed class ReopenStatementCommandHandler(IUnitOfWorkFactory factory, Ti
             if (statement is null)
                 return Result<CardStatement>.Failure([StatementErrors.NotFound]);
 
+            // These two checks are handler-level guards with their own error codes; the aggregate's
+            // own Reopen() also rejects both cases, but with a single generic no-op.
             if (statement.Status == StatementStatus.Open)
                 return Result<CardStatement>.Failure([StatementErrors.AlreadyOpen]);
 
@@ -35,7 +37,7 @@ public sealed class ReopenStatementCommandHandler(IUnitOfWorkFactory factory, Ti
 
             statement.Reopen(today, timeProvider);
             await statements.UpdateAsync(statement, token);
-            await ctx.RecordAsync(input.UserId, input.UserId, "statement", statement.Id, "statement.reopened", now, ct: token);
+            await ctx.RecordAsync(input.UserId, input.UserId, StatementEvents.EntityType, statement.Id, StatementEvents.Reopened, now, ct: token);
 
             return Result<CardStatement>.Success(statement);
         }, cancellationToken: ct);

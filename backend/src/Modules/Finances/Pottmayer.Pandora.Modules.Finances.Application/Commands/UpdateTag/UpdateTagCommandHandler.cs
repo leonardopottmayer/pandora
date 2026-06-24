@@ -41,7 +41,7 @@ public sealed class UpdateTagCommandHandler(IUnitOfWorkFactory factory, TimeProv
             tag.Update(input.Name, input.Color);
             await repo.UpdateAsync(tag, token);
 
-            await ctx.RecordAsync(input.UserId, input.UserId, "tag", tag.Id, "tag.updated", now, diff, ct: token);
+            await ctx.RecordAsync(input.UserId, input.UserId, TagEvents.EntityType, tag.Id, TagEvents.Updated, now, diff, ct: token);
 
             return Result<Tag>.Success(tag);
         }, cancellationToken: ct);

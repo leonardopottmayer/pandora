@@ -27,6 +27,7 @@ public sealed class UploadImportFileCommandHandler(
         if (input.FileContent.Length > MaxFileSizeBytes)
             return Fail([ImportErrors.FileTooLarge]);
 
+        // Exactly one destination must be set: an account import and a card import are mutually exclusive.
         if (input.AccountId is null && input.CardId is null)
             return Fail([ImportErrors.InvalidDestination]);
         if (input.AccountId is not null && input.CardId is not null)
@@ -34,6 +35,8 @@ public sealed class UploadImportFileCommandHandler(
 
         var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
         {
+            // The layout is inferred from the file's own content/headers rather than chosen by the
+            // user — they only pick the destination (account or card).
             var layoutRepo = ctx.AcquireRepository<IImportLayoutRepository>();
             var systemLayouts = await layoutRepo.GetSystemLayoutsAsync(token);
 
@@ -45,12 +48,14 @@ public sealed class UploadImportFileCommandHandler(
 
             var layout = detectResult.Value!;
 
-            // Validate destination matches layout account type
+            // The detected layout's own account type must agree with the destination the user picked
+            // (a card statement layout can't be imported into a plain account, and vice versa).
             if (layout.IsCardLayout && input.AccountId is not null)
                 return Result<ImportFile>.Failure([ImportErrors.InvalidDestination]);
             if (!layout.IsCardLayout && input.CardId is not null)
                 return Result<ImportFile>.Failure([ImportErrors.InvalidDestination]);
 
+            // The hash is what the dedup pipeline later uses to recognize a re-uploaded file.
             var fileHash = Convert.ToHexString(SHA256.HashData(input.FileContent)).ToLowerInvariant();
 
             var file = ImportFile.Create(

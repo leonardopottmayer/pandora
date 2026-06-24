@@ -14,4 +14,5 @@ public sealed record CreateCardInput(
     string Currency,
     Guid? DefaultPaymentAccountId);
 
+/// <summary>Registers a new credit card for the user, optionally linked to a default payment account.</summary>
 public sealed class CreateCardCommand(CreateCardInput input) : CommandBase<CreateCardInput, CardDto>(input);

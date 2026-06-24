@@ -33,6 +33,7 @@ public sealed class UpdateRecurringTransactionCommandHandler(
             var repo = ctx.AcquireRepository<IRecurringTransactionRepository>();
             var recurring = await repo.FindByIdForUserAsync(input.Id, input.UserId, token);
             if (recurring is null) return Result<Domain.Aggregates.RecurringTransaction>.Failure([RecurringTransactionErrors.NotFound]);
+            // A finished template is terminal — editing it further makes no sense once it stopped generating.
             if (recurring.IsFinished) return Result<Domain.Aggregates.RecurringTransaction>.Failure([RecurringTransactionErrors.Finished]);
             if (input.EndDate.HasValue && input.EndDate.Value <= recurring.StartDate)
                 return Result<Domain.Aggregates.RecurringTransaction>.Failure([RecurringTransactionErrors.EndDateBeforeStart]);
@@ -51,8 +52,8 @@ public sealed class UpdateRecurringTransactionCommandHandler(
                 input.AutoGenerate);
 
             await repo.UpdateAsync(recurring, token);
-            await ctx.RecordAsync(input.UserId, input.UserId, "recurring-transaction", recurring.Id,
-                "recurring.updated", now, new
+            await ctx.RecordAsync(input.UserId, input.UserId, RecurringTransactionEvents.EntityType, recurring.Id,
+                RecurringTransactionEvents.Updated, now, new
                 {
                     recurring.Name,
                     recurring.Amount,

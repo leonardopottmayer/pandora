@@ -27,13 +27,14 @@ public sealed class PostTransactionCommandHandler(IUnitOfWorkFactory factory, Ti
             if (transaction is null)
                 return Result<Transaction>.Failure([TransactionErrors.NotFound]);
 
+            // Post() itself is the source of truth on eligibility — a non-pending entry is rejected here.
             if (!transaction.Post(timeProvider))
                 return Result<Transaction>.Failure([TransactionErrors.NotPending]);
 
             await repo.UpdateAsync(transaction, token);
 
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "transaction", transaction.Id, "transaction.posted", now, ct: token);
+                input.UserId, input.UserId, TransactionEvents.EntityType, transaction.Id, TransactionEvents.Posted, now, ct: token);
 
             return Result<Transaction>.Success(transaction);
         }, cancellationToken: ct);

@@ -29,6 +29,8 @@ public sealed class RunStatementLifecycleCommandHandler(
             var processed = 0;
             var activeCards = await cards.GetAllActiveAsync(token);
 
+            // Ensures every active card always has both its current and next billing cycle open, so
+            // purchases never have nowhere to land.
             foreach (var card in activeCards)
             {
                 var current = resolver.Resolve(card, today);
@@ -37,7 +39,7 @@ public sealed class RunStatementLifecycleCommandHandler(
                     var statement = Pottmayer.Pandora.Modules.Finances.Domain.Aggregates.CardStatement.Create(
                         card.UserId, card.Id, current.ReferenceMonth, current.ClosingDate, current.DueDate, timeProvider);
                     await statements.AddAsync(statement, token);
-                    await ctx.RecordAsync(card.UserId, card.UserId, "statement", statement.Id, "statement.created", now, new
+                    await ctx.RecordAsync(card.UserId, card.UserId, StatementEvents.EntityType, statement.Id, StatementEvents.Created, now, new
                     {
                         statement.CardId,
                         statement.ReferenceMonth,
@@ -53,7 +55,7 @@ public sealed class RunStatementLifecycleCommandHandler(
                     var statement = Pottmayer.Pandora.Modules.Finances.Domain.Aggregates.CardStatement.Create(
                         card.UserId, card.Id, next.ReferenceMonth, next.ClosingDate, next.DueDate, timeProvider);
                     await statements.AddAsync(statement, token);
-                    await ctx.RecordAsync(card.UserId, card.UserId, "statement", statement.Id, "statement.created", now, new
+                    await ctx.RecordAsync(card.UserId, card.UserId, StatementEvents.EntityType, statement.Id, StatementEvents.Created, now, new
                     {
                         statement.CardId,
                         statement.ReferenceMonth,
@@ -64,24 +66,29 @@ public sealed class RunStatementLifecycleCommandHandler(
                 }
             }
 
+            // Candidates are statements past their closing or due date that still need a status
+            // transition (close, mark paid/partially-paid, or flag overdue).
             var lifecycleCandidates = await statements.GetLifecycleCandidatesAsync(today, token);
             foreach (var statement in lifecycleCandidates)
             {
                 var changed = false;
                 if (statement.Close(timeProvider))
                 {
-                    await ctx.RecordAsync(statement.UserId, statement.UserId, "statement", statement.Id, "statement.closed", now, ct: token);
+                    await ctx.RecordAsync(statement.UserId, statement.UserId, StatementEvents.EntityType, statement.Id, StatementEvents.Closed, now, ct: token);
                     changed = true;
                 }
 
+                // Re-deriving the status from the current amounts/date is what actually decides
+                // paid/partially-paid/overdue — closing alone doesn't.
                 var previousStatus = statement.Status.Value;
                 statement.SyncAmounts(statement.TotalAmount, statement.PaidAmount, today, timeProvider);
                 await statements.UpdateAsync(statement, token);
                 if (statement.Status.Value == "overdue")
                 {
+                    // Only emit the event the moment it newly becomes overdue, not on every run after.
                     if (previousStatus != "overdue")
                     {
-                        await ctx.RecordAsync(statement.UserId, statement.UserId, "statement", statement.Id, "statement.overdue", now, ct: token);
+                        await ctx.RecordAsync(statement.UserId, statement.UserId, StatementEvents.EntityType, statement.Id, StatementEvents.Overdue, now, ct: token);
                         changed = true;
                     }
                 }

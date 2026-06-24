@@ -24,6 +24,8 @@ public sealed class DeleteAccountCommandHandler(IUnitOfWorkFactory factory, Time
             if (account is null)
                 return Result<bool>.Failure([AccountErrors.NotFound]);
 
+            // A hard delete is only safe for an account with no ledger history; otherwise archiving
+            // is the right tool — checking for a single existing transaction is enough to tell.
             var transactions = ctx.AcquireRepository<ITransactionRepository>();
             var existingTransactions = await transactions.QueryAsync(
                 input.UserId, new TransactionFilter(AccountId: account.Id, Take: 1), token);
@@ -33,7 +35,7 @@ public sealed class DeleteAccountCommandHandler(IUnitOfWorkFactory factory, Time
             await repo.RemoveAsync(account, token);
 
             await ctx.RecordAsync(
-                input.UserId, input.UserId, "account", account.Id, "account.deleted", now,
+                input.UserId, input.UserId, AccountEvents.EntityType, account.Id, AccountEvents.Deleted, now,
                 new { name = account.Name }, ct: token);
 
             return Result<bool>.Success(true);

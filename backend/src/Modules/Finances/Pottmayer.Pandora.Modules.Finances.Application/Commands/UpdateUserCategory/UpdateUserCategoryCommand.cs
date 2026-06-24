@@ -11,5 +11,6 @@ public sealed record UpdateUserCategoryInput(
     string? Icon,
     int DisplayOrder);
 
+/// <summary>Edits a category's display fields. Nature and parent are fixed once created.</summary>
 public sealed class UpdateUserCategoryCommand(UpdateUserCategoryInput input)
     : CommandBase<UpdateUserCategoryInput, UserCategoryDto>(input);
