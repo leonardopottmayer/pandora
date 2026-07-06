@@ -8,7 +8,8 @@ public sealed record UploadImportFileInput(
     Guid? AccountId,
     Guid? CardId,
     string FileName,
-    byte[] FileContent);
+    byte[] FileContent,
+    DateOnly? CutoffDate = null);
 
 /// <summary>
 /// Uploads a file for import, auto-detecting its layout from the registered system layouts and

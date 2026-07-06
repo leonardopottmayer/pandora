@@ -197,6 +197,49 @@ public sealed class CardsStatementsTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Settling_without_cash_pays_statement_without_debiting_any_account()
+    {
+        await AuthAsync("card-settle");
+        var account = await CreateAccountAsync(new { name = "Checking", type = "checking", currency = "BRL", displayOrder = 0, openingBalance = 500m });
+        var card = await CreateCardAsync(new { name = "Legacy", closingDay = 10, dueDay = 20, currency = "BRL", defaultPaymentAccountId = account });
+
+        // A pre-Pandora purchase that landed on an old statement at import time.
+        var tx = await CreateCardTxAsync(new { cardId = card, kind = "expense", amount = 80m, occurredOn = new DateOnly(2026, 6, 5), description = "Old purchase" });
+        Assert.Equal(HttpStatusCode.OK, (await _client.PostAsync($"{Statements}/{tx.CardStatementId}/close", null)).StatusCode);
+
+        // Settle it without cash.
+        var settle = await _client.PostAsJsonAsync($"{Statements}/{tx.CardStatementId}/settle", new { });
+        Assert.Equal(HttpStatusCode.OK, settle.StatusCode);
+        var settled = (await settle.Content.ReadFromJsonAsync<SingleEnvelope<CardStatementNode>>())!.Data;
+        Assert.Equal("paid", settled.Status);
+
+        // The checking account is untouched — no fake money left it.
+        var balance = await _client.GetFromJsonAsync<SingleEnvelope<BalanceNode>>($"{Accounts}/{account}/balance");
+        Assert.Equal(500m, balance!.Data.Posted);
+
+        // Durability: the recompute run by the lifecycle job keeps it paid (the write-off is a real,
+        // posted ledger row that counts toward the paid total — it is not lost on resync).
+        await RunLifecycleAsync(new DateOnly(2026, 7, 15));
+        var afterSync = (await _client.GetFromJsonAsync<ListEnvelope<CardStatementNode>>($"{Cards}/{card}/statements"))!.Data;
+        Assert.Contains(afterSync, s => s.Id == tx.CardStatementId && s.Status == "paid");
+    }
+
+    [Fact]
+    public async Task Settling_a_statement_with_no_balance_returns_conflict()
+    {
+        await AuthAsync("card-settle-empty");
+        var card = await CreateCardAsync(new { name = "Card", closingDay = 10, dueDay = 20, currency = "BRL" });
+        var tx = await CreateCardTxAsync(new { cardId = card, kind = "expense", amount = 40m, occurredOn = new DateOnly(2026, 6, 5), description = "Purchase" });
+
+        // First settle clears the balance.
+        Assert.Equal(HttpStatusCode.OK, (await _client.PostAsJsonAsync($"{Statements}/{tx.CardStatementId}/settle", new { })).StatusCode);
+
+        // Second settle has nothing left to clear.
+        var again = await _client.PostAsJsonAsync($"{Statements}/{tx.CardStatementId}/settle", new { });
+        Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
+    }
+
     private Task AuthAsync(string username) =>
         IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, $"{username}@example.com", username);
 

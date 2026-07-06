@@ -64,6 +64,9 @@
   <data name="transaction.statement-payment" xml:space="preserve">
     <value>Pagamento da fatura {0}</value>
   </data>
+  <data name="transaction.statement-writeoff" xml:space="preserve">
+    <value>Baixa da fatura {0}</value>
+  </data>
   <data name="category.housing" xml:space="preserve">
     <value>Moradia</value>
   </data>

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.CloseStatement;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.PayStatement;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.ReopenStatement;
+using Pottmayer.Pandora.Modules.Finances.Application.Commands.SettleStatement;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.SetEntityTags;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetStatement;
 using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
@@ -39,6 +40,15 @@ public sealed class StatementsController(
     {
         var command = new PayStatementCommand(new PayStatementInput(
             UserId, id, request.AccountId, request.Amount, request.OccurredOn, request.Description, request.Notes, request.FxRate));
+        var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpPost("{id:guid}/settle")]
+    public async Task<IActionResult> SettleAsync(Guid id, SettleStatementRequest request, CancellationToken ct)
+    {
+        var command = new SettleStatementCommand(new SettleStatementInput(
+            UserId, id, request.OccurredOn, request.Notes));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }

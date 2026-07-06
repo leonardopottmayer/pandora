@@ -5,6 +5,7 @@ import {
   App,
   Button,
   Card,
+  DatePicker,
   Flex,
   Select,
   Space,
@@ -17,6 +18,7 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import { CloudUploadOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
+import type { Dayjs } from 'dayjs'
 import { toErrorMessage } from '@/lib/api/envelope'
 import type { ImportFileDto } from '../../models'
 import { useAccounts } from '../../hooks/useAccounts'
@@ -40,6 +42,7 @@ export function ImportsListPage() {
 
   const [destinationId, setDestinationId] = useState<string | undefined>()
   const [destinationType, setDestinationType] = useState<'account' | 'card'>('account')
+  const [cutoffDate, setCutoffDate] = useState<Dayjs | null>(null)
 
   const { data, isLoading } = useImportFiles({ take: 100 })
   const { data: accounts } = useAccounts()
@@ -62,7 +65,12 @@ export function ImportsListPage() {
       try {
         const accountId = destinationType === 'account' ? destinationId : undefined
         const cardId = destinationType === 'card' ? destinationId : undefined
-        await uploadMutation.mutateAsync({ file, accountId, cardId })
+        await uploadMutation.mutateAsync({
+          file,
+          accountId,
+          cardId,
+          cutoffDate: cutoffDate?.format('YYYY-MM-DD'),
+        })
         message.success(t('finances.imports.uploaded'))
       } catch (err) {
         message.error(toErrorMessage(err, t('finances.imports.uploadError')))
@@ -184,6 +192,15 @@ export function ImportsListPage() {
             onChange={setDestinationId}
             allowClear
           />
+          <Tooltip title={t('finances.imports.cutoffHint')}>
+            <DatePicker
+              style={{ width: 150 }}
+              format="DD/MM/YYYY"
+              placeholder={t('finances.imports.cutoffDate')}
+              value={cutoffDate}
+              onChange={setCutoffDate}
+            />
+          </Tooltip>
           <Upload {...uploadProps}>
             <Button
               type="primary"

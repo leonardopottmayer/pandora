@@ -24,6 +24,10 @@ public sealed class SystemDescription : IEquatable<SystemDescription>
     public static SystemDescription StatementPayment(string referenceMonth) =>
         new("transaction.statement-payment", [referenceMonth]);
 
+    /// <summary>Cashless settlement of a pre-Pandora statement; <paramref name="referenceMonth"/> is "yyyy-MM".</summary>
+    public static SystemDescription StatementWriteoff(string referenceMonth) =>
+        new("transaction.statement-writeoff", [referenceMonth]);
+
     /// <summary>Rehydration from persistence.</summary>
     public static SystemDescription Create(string key, IReadOnlyList<string>? args) =>
         new(key, args ?? []);

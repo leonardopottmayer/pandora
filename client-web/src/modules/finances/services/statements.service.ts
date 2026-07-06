@@ -21,6 +21,11 @@ export async function payStatement(
   return data
 }
 
+export async function settleStatement(id: string): Promise<CardStatementDto> {
+  const { data } = await apiClient.post<CardStatementDto>(`${BASE}/${id}/settle`, {})
+  return data
+}
+
 export async function closeStatement(id: string): Promise<CardStatementDto> {
   const { data } = await apiClient.post<CardStatementDto>(`${BASE}/${id}/close`)
   return data

@@ -77,6 +77,7 @@ const KIND_DIRECTION: Record<TransactionKind, FlowDirection> = {
   adjustment: 'neutral',
   refund: 'in',
   'card-statement-payment': 'out',
+  'statement-writeoff': 'neutral',
 }
 
 export function kindDirection(kind: TransactionKind): FlowDirection {

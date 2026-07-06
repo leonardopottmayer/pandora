@@ -419,6 +419,9 @@
       "reopened": "Statement reopened.",
       "reopenError": "Could not reopen the statement.",
       "pay": "Pay statement",
+      "settle": "Settle without cash",
+      "settleConfirm": "Marks the statement as paid without debiting any account. Use for pre-Pandora statements. Records a write-off for the remaining amount.",
+      "settled": "Statement settled without cash.",
       "paid": "Payment recorded.",
       "payAccount": "Payment account",
       "payAmount": "Payment amount",
@@ -523,7 +526,8 @@
         "yield": "Yield",
         "adjustment": "Adjustment",
         "refund": "Refund",
-        "cardStatementPayment": "Statement payment"
+        "cardStatementPayment": "Statement payment",
+        "statementWriteoff": "Statement write-off"
       }
     },
     "imports": {
@@ -534,6 +538,8 @@
       "selectDestinationFirst": "Select an account or card before uploading.",
       "selectAccount": "Select account",
       "selectCard": "Select card",
+      "cutoffDate": "Cutoff date",
+      "cutoffHint": "Optional: entries dated before this are ignored on import (no suggestion created). Leave empty to import everything.",
       "account": "Account",
       "card": "Card",
       "fileName": "File",

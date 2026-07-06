@@ -44,11 +44,13 @@ export function useUploadImportFile() {
       file,
       accountId,
       cardId,
+      cutoffDate,
     }: {
       file: File
       accountId?: string
       cardId?: string
-    }) => importsService.uploadImportFile(file, accountId, cardId),
+      cutoffDate?: string
+    }) => importsService.uploadImportFile(file, accountId, cardId, cutoffDate),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: financeKeys.imports() })
     },

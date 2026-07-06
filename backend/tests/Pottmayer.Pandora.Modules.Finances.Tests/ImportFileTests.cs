@@ -9,7 +9,7 @@ public sealed class ImportFileTests
 {
     private static readonly DateTimeOffset Now = new(2026, 6, 13, 11, 0, 0, TimeSpan.Zero);
 
-    private static ImportFile NewFile(TimeProvider time, byte[]? content = null) =>
+    private static ImportFile NewFile(TimeProvider time, byte[]? content = null, DateOnly? cutoffDate = null) =>
         ImportFile.Create(
             userId: Guid.NewGuid(),
             layoutId: Guid.NewGuid(),
@@ -18,6 +18,7 @@ public sealed class ImportFileTests
             fileName: "extrato.csv",
             fileHash: "abc",
             fileContent: content ?? [1, 2, 3, 4],
+            cutoffDate: cutoffDate,
             timeProvider: time);
 
     [Fact]
@@ -30,7 +31,17 @@ public sealed class ImportFileTests
         Assert.False(file.IsTerminal);
         Assert.Equal(3, file.FileSize);
         Assert.NotEqual(Guid.Empty, file.CorrelationId);
+        Assert.Null(file.CutoffDate);
         Assert.Equal(Now, file.CreatedAt);
+    }
+
+    [Fact]
+    public void Create_captures_optional_cutoff_date()
+    {
+        var cutoff = new DateOnly(2026, 7, 1);
+        var file = NewFile(new FixedTimeProvider(Now), cutoffDate: cutoff);
+
+        Assert.Equal(cutoff, file.CutoffDate);
     }
 
     [Fact]

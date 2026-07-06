@@ -78,7 +78,11 @@ public sealed class RunImportParsingCommandHandler(
                     // audit the full pipeline (skipped, suggested or errored) afterwards.
                     var row = ImportRow.CreatePending(file.Id, pr.RowIndex, pr.RawData, now);
 
-                    if (pr.ShouldSkip)
+                    // Onboarding cutoff: rows dated before the go-live date are skipped outright so
+                    // historical movements never reach the inbox as suggestions.
+                    var beforeCutoff = file.CutoffDate is { } cutoff && pr.OccurredOn < cutoff;
+
+                    if (pr.ShouldSkip || beforeCutoff)
                     {
                         row.MarkSkipped();
                         await rowRepo.AddAsync(row, token);

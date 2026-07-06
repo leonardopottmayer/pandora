@@ -30,6 +30,7 @@ export const TRANSACTION_KINDS = [
   'adjustment',
   'refund',
   'card-statement-payment',
+  'statement-writeoff',
 ] as const
 export type TransactionKind = (typeof TRANSACTION_KINDS)[number]
 
@@ -557,6 +558,7 @@ export interface ImportFileDto {
   fileHash: string
   fileSize: number
   correlationId: string
+  cutoffDate: string | null
   status: ImportStatus
   totalRows: number
   parsedRows: number

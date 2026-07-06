@@ -21,6 +21,12 @@ public sealed class TransactionKind : IDomainValue<TransactionKind>
     public static readonly TransactionKind Refund = new("refund", sign: +1);
     public static readonly TransactionKind CardStatementPayment = new("card-statement-payment", sign: -1);
 
+    /// <summary>
+    /// Cashless settlement of a statement: clears its balance without moving any account (sign 0).
+    /// Carries a <c>paid_statement_id</c> like a payment, but has no account or purchase leg.
+    /// </summary>
+    public static readonly TransactionKind StatementWriteoff = new("statement-writeoff", sign: 0);
+
     private static readonly Dictionary<string, TransactionKind> All = new()
     {
         [OpeningBalance.Value] = OpeningBalance,
@@ -33,7 +39,8 @@ public sealed class TransactionKind : IDomainValue<TransactionKind>
         [Yield.Value] = Yield,
         [Adjustment.Value] = Adjustment,
         [Refund.Value] = Refund,
-        [CardStatementPayment.Value] = CardStatementPayment
+        [CardStatementPayment.Value] = CardStatementPayment,
+        [StatementWriteoff.Value] = StatementWriteoff
     };
 
     public string Value { get; }

@@ -22,6 +22,12 @@ public sealed class ImportFile : AggregateRoot<Guid>, IAuditable
     public byte[] FileContent { get; private set; } = [];
     public int FileSize { get; private set; }
     public Guid CorrelationId { get; private set; }
+
+    /// <summary>
+    /// Optional onboarding cutoff: rows dated before this are skipped during parsing (no suggestion).
+    /// <c>null</c> imports everything. The cutoff day itself is kept (rows on/after it are imported).
+    /// </summary>
+    public DateOnly? CutoffDate { get; private set; }
     public ImportFileStatus Status { get; private set; } = ImportFileStatus.Received;
     public int TotalRows { get; private set; }
     public int ParsedRows { get; private set; }
@@ -53,6 +59,7 @@ public sealed class ImportFile : AggregateRoot<Guid>, IAuditable
         string fileName,
         string fileHash,
         byte[] fileContent,
+        DateOnly? cutoffDate,
         TimeProvider timeProvider)
     {
         return new ImportFile
@@ -67,6 +74,7 @@ public sealed class ImportFile : AggregateRoot<Guid>, IAuditable
             FileContent = fileContent,
             FileSize = fileContent.Length,
             CorrelationId = Guid.CreateVersion7(),
+            CutoffDate = cutoffDate,
             Status = ImportFileStatus.Received,
             CreatedAt = timeProvider.GetUtcNow()
         };

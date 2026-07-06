@@ -31,6 +31,14 @@ export function usePayStatement() {
   })
 }
 
+export function useSettleStatement() {
+  const invalidate = useInvalidateStatementEffects()
+  return useMutation({
+    mutationFn: (id: string) => statementsService.settleStatement(id),
+    onSuccess: invalidate,
+  })
+}
+
 export function useCloseStatement() {
   const invalidate = useInvalidateStatementEffects()
   return useMutation({

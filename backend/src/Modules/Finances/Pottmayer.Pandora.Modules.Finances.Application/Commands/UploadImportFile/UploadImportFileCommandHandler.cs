@@ -66,6 +66,7 @@ public sealed class UploadImportFileCommandHandler(
                 input.FileName,
                 fileHash,
                 input.FileContent,
+                input.CutoffDate,
                 timeProvider);
 
             var fileRepo = ctx.AcquireRepository<IImportFileRepository>();

@@ -193,6 +193,44 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
         };
     }
 
+    /// <summary>
+    /// Records a cashless write-off that settles a statement's balance without debiting any account
+    /// (used at onboarding for pre-Pandora statements). No account leg, no purchase leg — only the
+    /// <paramref name="paidStatementId"/> link, so it counts toward the statement's paid total but
+    /// leaves every account balance untouched.
+    /// </summary>
+    public static Transaction CreateStatementWriteoff(
+        Guid userId,
+        Guid paidStatementId,
+        CurrencyCode currency,
+        decimal amount,
+        DateOnly occurredOn,
+        string description,
+        string? notes,
+        TimeProvider timeProvider,
+        Guid? systemCategoryId = null,
+        SystemDescription? systemDescription = null)
+    {
+        var now = timeProvider.GetUtcNow();
+        return new Transaction
+        {
+            Id = Guid.CreateVersion7(),
+            UserId = userId,
+            PaidStatementId = paidStatementId,
+            Kind = TransactionKind.StatementWriteoff,
+            Status = TransactionStatus.Posted,
+            Amount = amount,
+            Currency = currency,
+            OccurredOn = occurredOn,
+            Description = description.Trim(),
+            SystemDescription = systemDescription,
+            Notes = notes,
+            SystemCategoryId = systemCategoryId,
+            PostedAt = now,
+            CreatedAt = now
+        };
+    }
+
     /// <summary>Records a payment made from an account toward a card statement's balance.</summary>
     public static Transaction CreateStatementPayment(
         Guid userId,

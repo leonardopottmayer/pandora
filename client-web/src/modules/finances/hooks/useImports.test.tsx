@@ -32,7 +32,7 @@ describe('useUploadImportFile', () => {
     const { result } = renderHook(() => useUploadImportFile(), { wrapper })
     const file = new File(['x'], 'a.ofx')
     await result.current.mutateAsync({ file, accountId: 'a1' })
-    expect(importsService.uploadImportFile).toHaveBeenCalledWith(file, 'a1', undefined)
+    expect(importsService.uploadImportFile).toHaveBeenCalledWith(file, 'a1', undefined, undefined)
     expect(spy).toHaveBeenCalledWith({ queryKey: financeKeys.imports() })
   })
 })

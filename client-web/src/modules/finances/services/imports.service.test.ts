@@ -23,6 +23,7 @@ const importFile: ImportFileDto = {
   fileHash: 'hash',
   fileSize: 1024,
   correlationId: 'corr1',
+  cutoffDate: null,
   status: 'completed',
   totalRows: 10,
   parsedRows: 9,

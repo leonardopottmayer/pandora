@@ -64,4 +64,7 @@
   <data name="transaction.statement-payment" xml:space="preserve">
     <value>Statement payment {0}</value>
   </data>
+  <data name="transaction.statement-writeoff" xml:space="preserve">
+    <value>Statement write-off {0}</value>
+  </data>
 </root>

@@ -34,6 +34,7 @@ public sealed class ImportsController(
         IFormFile file,
         [FromForm] Guid? accountId,
         [FromForm] Guid? cardId,
+        [FromForm] DateOnly? cutoffDate,
         CancellationToken ct)
     {
         await using var stream = file.OpenReadStream();
@@ -42,7 +43,7 @@ public sealed class ImportsController(
         var bytes = ms.ToArray();
 
         var result = await sender.Send(new UploadImportFileCommand(new UploadImportFileInput(
-            UserId, accountId, cardId, file.FileName, bytes)), ct);
+            UserId, accountId, cardId, file.FileName, bytes, cutoffDate)), ct);
 
         return result.ToActionResult(errorMapper);
     }

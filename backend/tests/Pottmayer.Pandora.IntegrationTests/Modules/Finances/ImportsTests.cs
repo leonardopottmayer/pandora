@@ -113,6 +113,39 @@ public sealed class ImportsTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Upload_with_cutoff_skips_rows_dated_before_it()
+    {
+        await AuthAsync("parse-cutoff");
+        var card = await CreateCardAsync();
+
+        var ofx = BuildNubankCardOfx([
+            new("CO-001", new DateOnly(2026, 6, 28), 10.00m, "Before cutoff", IsCredit: false),
+            new("CO-002", new DateOnly(2026, 6, 30), 20.00m, "Before cutoff", IsCredit: false),
+            new("CO-003", new DateOnly(2026, 7, 1), 30.00m, "On cutoff (kept)", IsCredit: false),
+            new("CO-004", new DateOnly(2026, 7, 5), 40.00m, "After cutoff", IsCredit: false),
+        ]);
+
+        var file = await UploadAsync(ofx, "nubank.ofx", cardId: card, cutoffDate: new DateOnly(2026, 7, 1));
+        Assert.Equal(new DateOnly(2026, 7, 1), file.CutoffDate);
+
+        await RunParsingAsync();
+
+        var parsed = await GetFileAsync(file.Id);
+        Assert.True(parsed.Status == "completed", $"parse failed: {parsed.ErrorMessage}");
+        // All four lines are recorded as rows, but only the two on/after the cutoff become suggestions.
+        Assert.Equal(4, parsed.TotalRows);
+        Assert.Equal(2, parsed.SuggestionRows);
+
+        var rows = await GetRowsAsync(file.Id);
+        Assert.Equal(2, rows.Count(r => r.Status == "skipped"));
+        Assert.Equal(2, rows.Count(r => r.Status == "suggestion-created"));
+
+        // The inbox only holds the on/after-cutoff purchases.
+        var pending = await ListPendingAsync();
+        Assert.Equal(2, pending.Count);
+    }
+
+    [Fact]
     public async Task Reimport_same_file_creates_new_suggestions_with_certain_dedup()
     {
         await AuthAsync("reimport-dedup");
@@ -463,17 +496,17 @@ public sealed class ImportsTests : IAsyncLifetime
 
     private async Task<ImportFileNode> UploadAsync(
         string ofxContent, string fileName,
-        Guid? accountId = null, Guid? cardId = null)
+        Guid? accountId = null, Guid? cardId = null, DateOnly? cutoffDate = null)
     {
         var bytes = Encoding.UTF8.GetBytes(ofxContent);
-        var response = await UploadRawAsync(bytes, fileName, accountId, cardId);
+        var response = await UploadRawAsync(bytes, fileName, accountId, cardId, cutoffDate);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<SingleEnvelope<ImportFileNode>>())!.Data;
     }
 
     private async Task<HttpResponseMessage> UploadRawAsync(
         byte[] bytes, string fileName,
-        Guid? accountId = null, Guid? cardId = null)
+        Guid? accountId = null, Guid? cardId = null, DateOnly? cutoffDate = null)
     {
         using var content = new MultipartFormDataContent();
         var fileContent = new ByteArrayContent(bytes);
@@ -481,6 +514,7 @@ public sealed class ImportsTests : IAsyncLifetime
         content.Add(fileContent, "file", fileName);
         if (accountId.HasValue) content.Add(new StringContent(accountId.Value.ToString()), "accountId");
         if (cardId.HasValue) content.Add(new StringContent(cardId.Value.ToString()), "cardId");
+        if (cutoffDate.HasValue) content.Add(new StringContent(cutoffDate.Value.ToString("yyyy-MM-dd")), "cutoffDate");
         return await _client.PostAsync(Imports, content);
     }
 
@@ -587,7 +621,7 @@ public sealed class ImportsTests : IAsyncLifetime
     private sealed record LayoutNode(Guid Id, string LayoutCode, string FileFormat, bool IsSystemLayout);
     private sealed record ImportFileNode(
         Guid Id, string Status, int TotalRows, int ParsedRows, int ErrorRows,
-        int SuggestionRows, int DuplicateRows, string? ErrorMessage, DateTimeOffset CreatedAt);
+        int SuggestionRows, int DuplicateRows, string? ErrorMessage, DateOnly? CutoffDate, DateTimeOffset CreatedAt);
     private sealed record ImportRowNode(
         Guid Id, Guid? PendingTransactionId, string DedupStatus, string Status,
         Guid? MatchedTransactionId, Guid? MatchedPendingTransactionId);

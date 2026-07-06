@@ -20,6 +20,7 @@ function importFile(overrides: Partial<ImportFileDto> = {}): ImportFileDto {
     fileHash: 'h',
     fileSize: 10,
     correlationId: 'c',
+    cutoffDate: null,
     status: 'parsing',
     totalRows: 0,
     parsedRows: 0,

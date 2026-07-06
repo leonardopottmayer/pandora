@@ -419,6 +419,9 @@
       "reopened": "Fatura reaberta.",
       "reopenError": "Nao foi possivel reabrir a fatura.",
       "pay": "Pagar fatura",
+      "settle": "Quitar sem caixa",
+      "settleConfirm": "Marca a fatura como paga sem debitar nenhuma conta. Use para faturas antigas (anteriores ao Pandora). Registra uma baixa no valor restante.",
+      "settled": "Fatura quitada sem caixa.",
       "paid": "Pagamento registrado.",
       "payAccount": "Conta de pagamento",
       "payAmount": "Valor do pagamento",
@@ -523,7 +526,8 @@
         "yield": "Rendimento",
         "adjustment": "Ajuste",
         "refund": "Estorno",
-        "cardStatementPayment": "Pagamento de fatura"
+        "cardStatementPayment": "Pagamento de fatura",
+        "statementWriteoff": "Baixa de fatura"
       }
     },
     "imports": {
@@ -534,6 +538,8 @@
       "selectDestinationFirst": "Selecione uma conta ou cartao antes de enviar.",
       "selectAccount": "Selecione a conta",
       "selectCard": "Selecione o cartao",
+      "cutoffDate": "Data de corte",
+      "cutoffHint": "Opcional: lancamentos anteriores a esta data sao ignorados na importacao (nao geram sugestao). Deixe em branco para importar tudo.",
       "account": "Conta",
       "card": "Cartao",
       "fileName": "Arquivo",

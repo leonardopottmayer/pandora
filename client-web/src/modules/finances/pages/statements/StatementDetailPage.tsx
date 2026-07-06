@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import {
-  App, Breadcrumb, Button, Card, Col, DatePicker, Input, InputNumber, Row, Select, Space, Statistic, Table, Typography,
+  App, Breadcrumb, Button, Card, Col, DatePicker, Input, InputNumber, Popconfirm, Row, Select, Space, Statistic, Table, Typography,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { toErrorMessage } from '@/lib/api/envelope'
@@ -24,7 +24,7 @@ import { CurrencyAmount } from '../../components/CurrencyAmount'
 import { EnumTag } from '../../components/EnumTag'
 import { useCard } from '../../hooks/useCards'
 import { useCategoryNames } from '../../hooks/useCategories'
-import { useCloseStatement, useReopenStatement, useStatement } from '../../hooks/useStatements'
+import { useCloseStatement, useReopenStatement, useSettleStatement, useStatement } from '../../hooks/useStatements'
 import { PayStatementModal } from './PayStatementModal'
 
 interface TxFilters {
@@ -48,6 +48,7 @@ export function StatementDetailPage() {
   const { data, isLoading } = useStatement(id)
   const closeMutation = useCloseStatement()
   const reopenMutation = useReopenStatement()
+  const settleMutation = useSettleStatement()
   const categoryNames = useCategoryNames()
 
   const statement = data?.statement
@@ -113,6 +114,15 @@ export function StatementDetailPage() {
       message.success(t('finances.statements.reopened'))
     } catch (err) {
       message.error(toErrorMessage(err, t('finances.statements.reopenError')))
+    }
+  }
+
+  async function handleSettle() {
+    try {
+      await settleMutation.mutateAsync(id)
+      message.success(t('finances.statements.settled'))
+    } catch (err) {
+      message.error(toErrorMessage(err, t('finances.statements.saveError')))
     }
   }
 
@@ -184,6 +194,7 @@ export function StatementDetailPage() {
   const canClose = statement?.status === 'open'
   const canReopen = statement != null && statement.status !== 'open' && statement.status !== 'paid'
   const canPay = statement != null && statement.status !== 'paid'
+  const canSettle = statement != null && statement.remainingAmount > 0
 
   return (
     <div className="flex flex-col gap-4">
@@ -219,6 +230,19 @@ export function StatementDetailPage() {
                 <Button type="primary" onClick={() => setPayOpen(true)}>
                   {t('finances.statements.pay')}
                 </Button>
+              )}
+              {canSettle && (
+                <Popconfirm
+                  title={t('finances.statements.settle')}
+                  description={t('finances.statements.settleConfirm')}
+                  okText={t('finances.statements.settle')}
+                  cancelText={t('common.cancel')}
+                  onConfirm={handleSettle}
+                >
+                  <Button loading={settleMutation.isPending}>
+                    {t('finances.statements.settle')}
+                  </Button>
+                </Popconfirm>
               )}
             </Space>
             <Row gutter={16}>

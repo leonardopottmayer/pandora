@@ -30,11 +30,13 @@ export async function uploadImportFile(
   file: File,
   accountId?: string,
   cardId?: string,
+  cutoffDate?: string,
 ): Promise<ImportFileDto> {
   const formData = new FormData()
   formData.append('file', file)
   if (accountId) formData.append('accountId', accountId)
   if (cardId) formData.append('cardId', cardId)
+  if (cutoffDate) formData.append('cutoffDate', cutoffDate)
 
   const { data } = await apiClient.post<ImportFileDto>(BASE, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

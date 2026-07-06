@@ -24,6 +24,7 @@ internal sealed class ImportFileEntityConfiguration : IEntityTypeConfiguration<I
         builder.Property(f => f.FileContent).HasColumnName("file_content").HasColumnType("bytea").IsRequired();
         builder.Property(f => f.FileSize).HasColumnName("file_size").IsRequired();
         builder.Property(f => f.CorrelationId).HasColumnName("correlation_id").IsRequired();
+        builder.Property(f => f.CutoffDate).HasColumnName("cutoff_date");
         builder.Property(f => f.Status)
             .HasColumnName("status")
             .HasConversion(s => s.Value, v => ImportFileStatus.FromValue(v))

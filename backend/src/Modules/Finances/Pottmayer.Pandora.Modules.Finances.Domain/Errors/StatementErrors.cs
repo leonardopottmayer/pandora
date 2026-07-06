@@ -30,4 +30,7 @@ public static class StatementErrors
 
     public static Error AlreadyPaid =>
         Error.Conflict("Statements.AlreadyPaid", "The statement is fully paid. Void or reverse the payment before reopening.");
+
+    public static Error NothingToSettle =>
+        Error.Conflict("Statements.NothingToSettle", "The statement has no outstanding balance to settle.");
 }

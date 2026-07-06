@@ -13,7 +13,7 @@ import { ImportDetailPage } from './ImportDetailPage'
 function file(overrides: Partial<ImportFileDto> = {}): ImportFileDto {
   return {
     id: 'imp1', userId: 'u1', layoutId: null, accountId: 'a1', cardId: null,
-    fileName: 'extrato.ofx', fileHash: 'h', fileSize: 10, correlationId: 'c',
+    fileName: 'extrato.ofx', fileHash: 'h', fileSize: 10, correlationId: 'c', cutoffDate: null,
     status: 'completed', totalRows: 1, parsedRows: 1, errorRows: 0, duplicateRows: 0,
     suggestionRows: 1, retryCount: 0, errorMessage: null, startedAt: null, completedAt: null,
     createdAt: '2026-06-13T00:00:00Z', ...overrides,
