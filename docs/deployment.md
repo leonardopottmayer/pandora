@@ -96,6 +96,7 @@ cp .env.example .env.staging    # COMPOSE_PROJECT_NAME=pandora-staging, HTTP_POR
 Generate strong secrets and fill each file:
 
 ```bash
+openssl rand -hex 24      # POSTGRES_PASSWORD (hex: no +/= that could break the connection string)
 openssl rand -base64 48   # JWT_SIGNING_KEY
 openssl rand -base64 32   # MFA_ENCRYPTION_KEY
 ```
@@ -156,31 +157,32 @@ The first sign the token works: the backend job's build step gets past
 
 ## From zero to running
 
-On the homelab, from a clean checkout:
+On the homelab, from a clean checkout. Example uses **staging** (the first
+environment to bring up); swap `.env.staging` for `.env.prod` to do production.
 
 ```bash
-# 0. One-time: docker login ghcr.io (see setup) and create .env.prod
+# 0. One-time: docker login ghcr.io (see setup) and create .env.staging
 
 # 1. Pull the images built by CI
-docker compose --env-file .env.prod pull
+docker compose --env-file .env.staging pull
 
 # 2. Start the stack (postgres waits healthy before backend starts)
-docker compose --env-file .env.prod up -d
+docker compose --env-file .env.staging up -d
 
 # 3. Apply database migrations (see "Migrations" below)
-migris apply prod
+migris apply staging
 
 # 4. Open the app on the LAN
-#    http://<homelab-ip>:8730
+#    http://<homelab-ip>:8731
 ```
 
 Building locally instead of pulling (optional):
 
 ```bash
 export GITHUB_TOKEN=<PAT with read:packages>
-docker compose --env-file .env.prod \
+docker compose --env-file .env.staging \
   build --secret id=github_token,env=GITHUB_TOKEN backend
-docker compose --env-file .env.prod build frontend
+docker compose --env-file .env.staging build frontend
 ```
 
 ---

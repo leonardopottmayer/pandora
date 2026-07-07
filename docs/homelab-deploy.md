@@ -38,7 +38,7 @@ Itens criados:
 3. `Dockerfile` do client-web (build Vite -> nginx servindo estático + proxy `/api`).
 4. `docker-compose.yml`: postgres + backend + frontend, rede interna, volumes nomeados, variáveis lidas de um `.env`.
 5. `ForwardedHeaders` + `HttpsRedirection` condicional no `Program.cs` (necessário para rodar atrás de proxy — já prepara para a fase 2).
-6. `.env` (não commitado) com os secrets: senha do Postgres, `Jwt:SigningKey`, `Mfa:EncryptionKey`. Cópia guardada no Bitwarden.
+6. `.env.<ambiente>` (não commitado) com os secrets: senha do Postgres, `Jwt:SigningKey`, `Mfa:EncryptionKey`. Cópia guardada no Bitwarden.
 
 Nesta fase, `Cors:AllowedOrigins`, `ActivationUrlTemplate` e `PasswordResetUrlTemplate` podem usar o IP local ou ficar sem configuração de URL pública ainda. E-mail pode continuar apontando para Mailhog (captura local) enquanto não há URL definitiva.
 
@@ -63,8 +63,10 @@ Nesta fase, `Cors:AllowedOrigins`, `ActivationUrlTemplate` e `PasswordResetUrlTe
 
 ### 1.5 Pendências da fase 1
 
-- [ ] Gerar e guardar no Bitwarden os secrets de produção (`Jwt:SigningKey`, `Mfa:EncryptionKey`, senha do Postgres).
-- [ ] Criar o PAT `read:packages` e adicioná-lo como secret `NUGET_GITHUB_TOKEN` do repositório (necessário pro build do backend no CI).
+- [x] Criar o PAT `read:packages` e adicioná-lo como secret `NUGET_GITHUB_TOKEN` do repositório. CI verde, imagens publicadas no GHCR.
+- [x] Secrets de **staging** gerados (`.env.staging`) e guardados no Bitwarden.
+- [ ] Subir o staging no homelab e testar; depois replicar pra prod.
+- [ ] Gerar e guardar no Bitwarden os secrets de **produção** (`.env.prod`).
 - [ ] `docker login ghcr.io` no homelab com o PAT `read:packages` (imagens são privadas).
 - [ ] Config local (não versionada) do `migris` no homelab com as conexões prod/staging apontando pra `127.0.0.1:POSTGRES_PORT` — não commitar senha de prod no `migrations/config.json` (repo público).
 - [ ] Backup: adiado (pulado por ora).
