@@ -1,0 +1,4 @@
+# Local/per-environment env files (keep .env.example versioned)
+.env
+.env.*
+!.env.example

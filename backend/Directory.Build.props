@@ -1,0 +1,10 @@
+<Project>
+
+  <!-- Single source of truth for the version: the VERSION file at the repo root. -->
+  <PropertyGroup>
+    <PandoraVersionFile>$(MSBuildThisFileDirectory)..\VERSION</PandoraVersionFile>
+    <PandoraVersion Condition="Exists('$(PandoraVersionFile)')">$([System.IO.File]::ReadAllText('$(PandoraVersionFile)').Trim())</PandoraVersion>
+    <Version Condition="'$(PandoraVersion)' != ''">$(PandoraVersion)</Version>
+  </PropertyGroup>
+
+</Project>

@@ -6,12 +6,13 @@ Plano para rodar Pandora (front + back + Postgres) na máquina homelab (Windows,
 
 | Camada | Onde roda | Como |
 |---|---|---|
-| Postgres | homelab, container Docker, named volume | 1 instância, 1 banco por app (`pottmayer_pandora_*`, futuros apps depois) |
+| Ambientes | homelab, 1 stack Docker por ambiente | `prod` e `staging` isolados via project name do Compose; mesma imagem, `.env` por ambiente. Ver [deployment.md](deployment.md) |
+| Postgres | homelab, container Docker, named volume | 1 instância **por ambiente**; dentro do ambiente, 1 banco por app (`pottmayer_pandora`, futuros apps depois) |
 | Backend (.NET) | homelab, container Docker | imagem buildada via CI (GitHub Actions), publicada no GHCR |
 | Frontend (client-web) | homelab, container Docker (nginx) | serve estático + proxy `/api` -> backend (mesma origem, sem CORS) |
 | Acesso público (fase 2) | Cloudflare Tunnel | `cloudflared` na máquina, sem porta aberta no roteador, com Cloudflare Access na frente |
 | Backup do banco | `pg_dump` semanal -> subpasta dedicada na área já monitorada pelo iDrive | 3-2-1 já coberto pelo iDrive existente |
-| Secrets/config | arquivo `.env` ao lado do `docker-compose.yml`, cópia guardada no Bitwarden | `docker compose up -d` injeta tudo automaticamente |
+| Secrets/config | arquivo `.env.<ambiente>` ao lado do `docker-compose.yml`, cópia guardada no Bitwarden | `docker compose --env-file .env.<ambiente> up -d` injeta tudo |
 
 Princípio de isolamento: nada do Docker/Postgres usa volume dentro das pastas de arquivos pessoais do HD de 20TB (exceto a subpasta de backup). Tailscale fora do escopo por enquanto.
 
@@ -21,11 +22,16 @@ Princípio de isolamento: nada do Docker/Postgres usa volume dentro das pastas d
 
 **Meta:** Pandora acessível de qualquer máquina na rede de casa via IP local do homelab (ex. `http://192.168.1.X`).
 
-### 1.1 Containerização
+### 1.1 Containerização — ✅ implementado
 
-Estado atual do monorepo: não há `Dockerfile`, `docker-compose.yml` nem `VERSION` no `main`. Construir do zero, simples e documentado (o stash antigo `gambi-docker` foi descartado).
+Guia operacional (build/run/ambientes): [deployment.md](deployment.md).
 
-Itens a criar:
+Decisões tomadas na implementação:
+- **Ambientes:** `prod` (porta 8730, tag fixa) e `staging` (porta 8731, `:latest`), cada um um stack completo isolado por `COMPOSE_PROJECT_NAME`. Só o nginx publica porta no host; Postgres/backend ficam internos. Mesma imagem serve os dois; só o `.env.<ambiente>` muda.
+- **Banco:** um `pottmayer_pandora` por ambiente (as 3 connection strings do app apontam pro mesmo DB com schemas separados).
+- **Feed NuGet privado:** os pacotes `Pottmayer.Tars.*` vêm do GitHub Packages; o build do backend autentica via build secret (`github_token`, PAT com `read:packages`).
+
+Itens criados:
 
 1. `VERSION` na raiz (fonte única de versão) + `Directory.Build.props` lendo ele.
 2. `Dockerfile` do backend (multi-stage build .NET SDK -> runtime).
@@ -40,6 +46,7 @@ Nesta fase, `Cors:AllowedOrigins`, `ActivationUrlTemplate` e `PasswordResetUrlTe
 
 - Container Postgres único, named volume Docker (não bind mount na área de arquivos pessoais).
 - Volume sobrevive a `docker rm`/`docker compose down` — só apagado com comando explícito.
+- Porta publicada só em `127.0.0.1` (não na LAN), pra o `migris` do host conectar. Uma porta por ambiente (`POSTGRES_PORT`: prod 5432, staging 5433).
 
 ### 1.3 Backup
 
@@ -48,16 +55,19 @@ Nesta fase, `Cors:AllowedOrigins`, `ActivationUrlTemplate` e `PasswordResetUrlTe
 - Script de retenção apaga dumps além do limite acordado.
 - Confirmar que o iDrive está monitorando essa subpasta específica.
 
-### 1.4 CI / deploy
+### 1.4 CI / deploy — ✅ implementado (workflow)
 
-- GitHub Actions (runner padrão) builda as imagens e publica no GHCR a cada push na `main`.
-- No homelab: `docker compose pull && docker compose up -d` manual, seguido de `migris apply <env>` quando houver migração nova.
+- Workflow `.github/workflows/build-images.yml` builda backend + frontend e publica no GHCR a cada push na `main`. Tags: `latest`, versão do `VERSION` e `sha-<commit>`.
+- Push no GHCR usa o `GITHUB_TOKEN` automático; o restore dos `Pottmayer.Tars.*` (repo separado) usa o secret **`NUGET_GITHUB_TOKEN`** (PAT com `read:packages`).
+- No homelab: `docker compose --env-file .env.<ambiente> pull && ... up -d` manual, seguido de `migris apply <ambiente>` quando houver migração nova.
 
 ### 1.5 Pendências da fase 1
 
 - [ ] Gerar e guardar no Bitwarden os secrets de produção (`Jwt:SigningKey`, `Mfa:EncryptionKey`, senha do Postgres).
-- [ ] Criar subpasta de backup e confirmar que o iDrive a monitora.
-- [ ] Definir retenção dos dumps semanais (quantas semanas manter).
+- [ ] Criar o PAT `read:packages` e adicioná-lo como secret `NUGET_GITHUB_TOKEN` do repositório (necessário pro build do backend no CI).
+- [ ] `docker login ghcr.io` no homelab com o PAT `read:packages` (imagens são privadas).
+- [ ] Config local (não versionada) do `migris` no homelab com as conexões prod/staging apontando pra `127.0.0.1:POSTGRES_PORT` — não commitar senha de prod no `migrations/config.json` (repo público).
+- [ ] Backup: adiado (pulado por ora).
 
 ---
 

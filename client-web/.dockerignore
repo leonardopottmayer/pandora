@@ -1,0 +1,7 @@
+node_modules
+dist
+coverage
+test-output.txt
+# Exclude local env so dev API URL is never baked into the image.
+.env
+.env.*.local

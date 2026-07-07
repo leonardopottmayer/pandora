@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using Pottmayer.Pandora.Host;
 using Pottmayer.Pandora.Host.Localization;
@@ -72,6 +73,15 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
 builder.Services.AddSwaggerGen();
 
+// Forwarded headers (running behind a reverse proxy: nginx now, Cloudflare in phase 2).
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // The proxy is not on a fixed address inside the Docker network; trust it.
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 // CORS
 builder.Services.AddCors(options =>
 {
@@ -96,6 +106,9 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Must run first so downstream middleware sees the real scheme/host.
+app.UseForwardedHeaders();
 
 // Swagger UI
 if (app.Environment.IsDevelopment())
@@ -124,7 +137,13 @@ app.UseRequestLocalization(options =>
 });
 
 // Middleware
-app.UseHttpsRedirection();
+// HTTPS is terminated by the reverse proxy in container/prod; only redirect
+// where Kestrel actually serves HTTPS (local dev).
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseCors("PandoraClient");
 
 app.UseAuthentication();

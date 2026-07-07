@@ -1,0 +1,12 @@
+# Backend build context is the repo root — keep it small and reproducible.
+.git
+**/bin
+**/obj
+**/.vs
+**/node_modules
+**/dist
+**/coverage
+client-web
+docs
+.env
+*.md
