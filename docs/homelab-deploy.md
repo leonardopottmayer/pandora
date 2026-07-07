@@ -30,6 +30,7 @@ Decisões tomadas na implementação:
 - **Ambientes:** `prod` (porta 8730, tag fixa) e `staging` (porta 8731, `:latest`), cada um um stack completo isolado por `COMPOSE_PROJECT_NAME`. Só o nginx publica porta no host; Postgres/backend ficam internos. Mesma imagem serve os dois; só o `.env.<ambiente>` muda.
 - **Banco:** um `pottmayer_pandora` por ambiente (as 3 connection strings do app apontam pro mesmo DB com schemas separados).
 - **Feed NuGet privado:** os pacotes `Pottmayer.Tars.*` vêm do GitHub Packages; o build do backend autentica via build secret (`github_token`, PAT com `read:packages`).
+- **E-mail:** `mailhog` como serviço sob profile do Compose (`COMPOSE_PROFILES=mailhog`) — sobe no staging (captura, UI na LAN em 8732), fica de fora do prod. SMTP host/porta do backend vêm do `.env`; prod aponta pra provedor real (fase 2).
 
 Itens criados:
 

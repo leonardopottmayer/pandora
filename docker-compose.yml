@@ -38,6 +38,9 @@ services:
       Tars__Data__Connections__finances__ConnectionString: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       Tars__Security__Identity__Jwt__SigningKey: ${JWT_SIGNING_KEY}
       Pandora__Identity__Mfa__EncryptionKey: ${MFA_ENCRYPTION_KEY}
+      # SMTP target. Staging -> mailhog (capture); prod -> a real provider.
+      Tars__Communication__Email__Smtp__Host: ${SMTP_HOST:-mailhog}
+      Tars__Communication__Email__Smtp__Port: ${SMTP_PORT:-1025}
 
   frontend:
     image: ${FRONTEND_IMAGE:-ghcr.io/leonardopottmayer/pandora-frontend:latest}
@@ -49,6 +52,16 @@ services:
       - backend
     ports:
       - "${HTTP_PORT:-80}:80"
+
+  # Email catcher. Only starts when the "mailhog" profile is active
+  # (COMPOSE_PROFILES=mailhog in the env file) — e.g. staging, not prod.
+  mailhog:
+    image: mailhog/mailhog:latest
+    restart: unless-stopped
+    profiles: ["mailhog"]
+    ports:
+      # Web UI, exposed to the LAN. SMTP (1025) stays internal to the network.
+      - "${MAILHOG_UI_PORT:-8025}:8025"
 
 volumes:
   pandora_pgdata:

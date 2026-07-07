@@ -16,7 +16,8 @@ Everything here is reproducible from a clean checkout — follow
 |---|---|---|
 | `postgres` | `postgres:17` | Database. Data in the named volume `pandora_pgdata` (survives `down`). Port published on `127.0.0.1` only. |
 | `backend` | `pandora-backend` (GHCR) | .NET API, HTTP on `8080` **inside** the Docker network (no host port). |
-| `frontend` | `pandora-frontend` (GHCR) | nginx: serves the built SPA and proxies `/api` -> `backend:8080` (same origin, no CORS). The only service with a LAN-visible port. |
+| `frontend` | `pandora-frontend` (GHCR) | nginx: serves the built SPA and proxies `/api` -> `backend:8080` (same origin, no CORS). |
+| `mailhog` | `mailhog/mailhog` | Email catcher. **Profile-gated** (`COMPOSE_PROFILES=mailhog`) — runs in staging, not prod. SMTP on `1025` (internal); web UI exposed to the LAN. |
 
 The frontend is built with an empty `VITE_API_URL`, so the browser talks to the
 same origin and nginx forwards `/api` to the backend.
@@ -105,10 +106,13 @@ openssl rand -base64 32   # MFA_ENCRYPTION_KEY
 |---|---|
 | `COMPOSE_PROJECT_NAME` | Isolates containers/network/volumes between environments. |
 | `ASPNETCORE_ENVIRONMENT` | ASP.NET Core environment (`Production` for real deploys). |
+| `COMPOSE_PROFILES` | `mailhog` to run the email catcher (staging); empty in prod. |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Postgres + all three connection strings. |
 | `POSTGRES_PORT` | Localhost-only port for host tools (migris). Unique per env. |
 | `JWT_SIGNING_KEY` | Overrides `Tars:Security:Identity:Jwt:SigningKey`. |
 | `MFA_ENCRYPTION_KEY` | Overrides `Pandora:Identity:Mfa:EncryptionKey`. |
+| `SMTP_HOST` / `SMTP_PORT` | Backend SMTP target. Staging: `mailhog`/`1025`; prod: real provider. |
+| `MAILHOG_UI_PORT` | Host port for the Mailhog web UI (only when the profile is on). |
 | `BACKEND_IMAGE` / `FRONTEND_IMAGE` | Which image tag to run (prod: pinned; staging: `:latest`). |
 | `HTTP_PORT` | The LAN-visible frontend port. Unique per env. |
 
@@ -200,6 +204,22 @@ the environment's `POSTGRES_*` credentials and database.
 
 Run migrations after `up -d`, and again whenever a deploy includes new migration
 files.
+
+---
+
+## Email
+
+Staging captures all outgoing mail with **Mailhog** instead of sending for real
+(single user, no need for real delivery yet):
+
+- The backend sends to `mailhog:1025` (set via `SMTP_HOST`/`SMTP_PORT`).
+- Mailhog only runs when `COMPOSE_PROFILES=mailhog` is set (staging's env file).
+- Read captured emails at the web UI: `http://<homelab-ip>:${MAILHOG_UI_PORT}`
+  (staging default `8732`).
+
+For **prod**, leave `COMPOSE_PROFILES` empty and point `SMTP_HOST`/`SMTP_PORT`
+(plus, when needed, TLS/credentials in `appsettings.json` or extra env vars) at a
+real provider — see phase 2 in [homelab-deploy.md](homelab-deploy.md).
 
 ---
 
