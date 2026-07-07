@@ -7,7 +7,7 @@ Plano para rodar Pandora (front + back + Postgres) na máquina homelab (Windows,
 | Camada | Onde roda | Como |
 |---|---|---|
 | Ambientes | homelab, 1 stack Docker por ambiente | `prod` e `staging` isolados via project name do Compose; mesma imagem, `.env` por ambiente. Ver [deployment.md](deployment.md) |
-| Postgres | homelab, container Docker, named volume | 1 instância **por ambiente**; dentro do ambiente, 1 banco por app (`pottmayer_pandora`, futuros apps depois) |
+| Postgres | homelab, stack de infra separado por tier (`infra/postgres`) | 1 instância **compartilhada por tier** (`staging-db`, `prod-db`), 1 banco+role por app dentro dela; apps conectam via rede Docker do tier |
 | Backend (.NET) | homelab, container Docker | imagem buildada via CI (GitHub Actions), publicada no GHCR |
 | Frontend (client-web) | homelab, container Docker (nginx) | serve estático + proxy `/api` -> backend (mesma origem, sem CORS) |
 | Acesso público (fase 2) | Cloudflare Tunnel | `cloudflared` na máquina, sem porta aberta no roteador, com Cloudflare Access na frente |
@@ -28,7 +28,7 @@ Guia operacional (build/run/ambientes): [deployment.md](deployment.md).
 
 Decisões tomadas na implementação:
 - **Ambientes:** `prod` (porta 8730, tag fixa) e `staging` (porta 8731, `:latest`), cada um um stack completo isolado por `COMPOSE_PROJECT_NAME`. Só o nginx publica porta no host; Postgres/backend ficam internos. Mesma imagem serve os dois; só o `.env.<ambiente>` muda.
-- **Banco:** um `pottmayer_pandora` por ambiente (as 3 connection strings do app apontam pro mesmo DB com schemas separados).
+- **Banco:** Postgres compartilhado por tier (`infra/postgres` → `staging-db`/`prod-db`), numa rede Docker do tier (`staging`/`prod`). O Pandora tem role+banco próprios (`pandora`/`pottmayer_pandora`); as 3 connection strings apontam pro mesmo DB com schemas separados. Superusuário do banco é separado, só pra provisionar apps.
 - **Feed NuGet privado:** os pacotes `Pottmayer.Tars.*` vêm do GitHub Packages; o build do backend autentica via build secret (`github_token`, PAT com `read:packages`).
 - **E-mail:** `mailhog` como serviço sob profile do Compose (`COMPOSE_PROFILES=mailhog`) — sobe no staging (captura, UI na LAN em 8732), fica de fora do prod. SMTP host/porta do backend vêm do `.env`; prod aponta pra provedor real (fase 2).
 
@@ -45,9 +45,11 @@ Nesta fase, `Cors:AllowedOrigins`, `ActivationUrlTemplate` e `PasswordResetUrlTe
 
 ### 1.2 Banco de dados
 
-- Container Postgres único, named volume Docker (não bind mount na área de arquivos pessoais).
-- Volume sobrevive a `docker rm`/`docker compose down` — só apagado com comando explícito.
-- Porta publicada só em `127.0.0.1` (não na LAN), pra o `migris` do host conectar. Uma porta por ambiente (`POSTGRES_PORT`: prod 5432, staging 5433).
+- Postgres compartilhado por tier em `infra/postgres` (stack próprio), named volume Docker (`staging-db_pgdata`/`prod-db_pgdata`, não bind mount na área de arquivos pessoais).
+- Rede Docker externa por tier (`staging`/`prod`, criada uma vez com `docker network create`); apps se conectam nela pelo host `staging-db`/`prod-db`.
+- Cada app cria seu database+role via SQL de bootstrap (`infra/postgres/bootstrap-pandora.sql`) rodado com o superusuário.
+- Volume sobrevive a `docker compose down` — só apagado com `down -v` no stack de banco.
+- Porta publicada só em `127.0.0.1` (não na LAN), pra o `migris`/psql do host conectar (staging 5433, prod 5432).
 
 ### 1.3 Backup
 

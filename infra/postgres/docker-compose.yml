@@ -1,0 +1,40 @@
+# Shared Postgres for ONE homelab tier (staging or prod). Brought up once per
+# tier; every app in that tier connects to it over the shared "${TIER_NETWORK}"
+# Docker network, each with its own database + role.
+#
+# The tier network must exist first (one-time):
+#   docker network create staging
+#   docker network create prod
+name: ${DB_PROJECT_NAME:-tier-db}
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPERUSER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERPASSWORD}
+      POSTGRES_DB: postgres
+    ports:
+      # Localhost only: reachable by host tools (migris/psql), not the LAN.
+      - "127.0.0.1:${DB_PORT}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      tier:
+        # Apps connect using this hostname (e.g. staging-db).
+        aliases:
+          - ${DB_HOST}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SUPERUSER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  tier:
+    name: ${TIER_NETWORK}
+    external: true
+
+volumes:
+  pgdata:

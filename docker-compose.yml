@@ -1,41 +1,26 @@
 # Project name is per-environment (pandora-prod, pandora-staging, ...) so each
-# environment gets its own isolated containers, network and volumes.
+# environment gets its own isolated containers and network.
 name: ${COMPOSE_PROJECT_NAME:-pandora}
 
-services:
-  postgres:
-    image: postgres:17
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      # Bound to localhost only: reachable by host tools (migris) but NOT the LAN.
-      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - pandora_pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+# The database lives in a shared per-tier stack (infra/postgres), reachable on
+# the external "${TIER_NETWORK}" network as "${DB_HOST}". Bring that up first.
 
+services:
   backend:
     image: ${BACKEND_IMAGE:-ghcr.io/leonardopottmayer/pandora-backend:latest}
     build:
       context: .
       dockerfile: backend/Dockerfile
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
+    networks:
+      - default
+      - tier
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ASPNETCORE_HTTP_PORTS: "8080"
-      Tars__Data__Connections__identity__ConnectionString: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
-      Tars__Data__Connections__notifications__ConnectionString: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
-      Tars__Data__Connections__finances__ConnectionString: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Tars__Data__Connections__identity__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Tars__Data__Connections__notifications__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Tars__Data__Connections__finances__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       Tars__Security__Identity__Jwt__SigningKey: ${JWT_SIGNING_KEY}
       Pandora__Identity__Mfa__EncryptionKey: ${MFA_ENCRYPTION_KEY}
       # SMTP target. Staging -> mailhog (capture); prod -> a real provider.
@@ -63,5 +48,9 @@ services:
       # Web UI, exposed to the LAN. SMTP (1025) stays internal to the network.
       - "${MAILHOG_UI_PORT:-8025}:8025"
 
-volumes:
-  pandora_pgdata:
+networks:
+  # Shared per-tier network where the DB stack lives. Created once:
+  #   docker network create staging   (and: docker network create prod)
+  tier:
+    name: ${TIER_NETWORK}
+    external: true
