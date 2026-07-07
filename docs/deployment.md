@@ -197,10 +197,10 @@ docker compose --env-file .env.staging build frontend
 publishes a `127.0.0.1` port. Point migris at `127.0.0.1:${POSTGRES_PORT}` with
 the environment's `POSTGRES_*` credentials and database.
 
-> The prod/staging DB credentials are secrets. **Do not** add them to the
-> committed `migrations/config.json` (public repo) — keep the prod/staging
-> connection in a local, untracked migris config on the homelab. The committed
-> `config.json` should only carry the throwaway `local` dev entry.
+> The prod/staging DB credentials are secrets, so `migrations/config.json` is
+> **gitignored** (a `migrations/config.example.json` template is committed).
+> Copy the template and add a `staging`/`prod` environment pointing at
+> `localhost:${POSTGRES_PORT}` with the environment's `POSTGRES_*` credentials.
 
 Run migrations after `up -d`, and again whenever a deploy includes new migration
 files.
