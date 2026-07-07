@@ -254,12 +254,12 @@ export function CardDetailPage() {
           </Col>
           <Col xs={24} sm={12} lg={8}>
             <Space.Compact style={{ width: '100%' }}>
-              <InputNumber
+              <InputNumber<number>
                 style={{ width: '50%' }}
                 placeholder={t('finances.statements.total') + ' ' + t('finances.filters.from')}
                 onChange={(v) => updStmt('totalMin', v ?? undefined)}
               />
-              <InputNumber
+              <InputNumber<number>
                 style={{ width: '50%' }}
                 placeholder={t('finances.statements.total') + ' ' + t('finances.filters.to')}
                 onChange={(v) => updStmt('totalMax', v ?? undefined)}
@@ -301,12 +301,12 @@ export function CardDetailPage() {
           )}
           <Col xs={24} sm={12} lg={8}>
             <Space.Compact style={{ width: '100%' }}>
-              <InputNumber
+              <InputNumber<number>
                 style={{ width: '50%' }}
                 placeholder={t('finances.installments.total') + ' ' + t('finances.filters.from')}
                 onChange={(v) => updPlan('totalMin', v ?? undefined)}
               />
-              <InputNumber
+              <InputNumber<number>
                 style={{ width: '50%' }}
                 placeholder={t('finances.installments.total') + ' ' + t('finances.filters.to')}
                 onChange={(v) => updPlan('totalMax', v ?? undefined)}
@@ -315,12 +315,12 @@ export function CardDetailPage() {
           </Col>
           <Col xs={24} sm={12} lg={8}>
             <Space.Compact style={{ width: '100%' }}>
-              <InputNumber
+              <InputNumber<number>
                 style={{ width: '50%' }}
                 placeholder={t('finances.installments.remaining') + ' ' + t('finances.filters.from')}
                 onChange={(v) => updPlan('remainingMin', v ?? undefined)}
               />
-              <InputNumber
+              <InputNumber<number>
                 style={{ width: '50%' }}
                 placeholder={t('finances.installments.remaining') + ' ' + t('finances.filters.to')}
                 onChange={(v) => updPlan('remainingMax', v ?? undefined)}

@@ -11,7 +11,7 @@ import { PendingTransactionEditModal } from './PendingTransactionEditModal'
 
 const pending: PendingTransactionDto = {
   id: 'p1',
-  source: 'recurring',
+  source: 'recurrence',
   recurringTransactionId: 'r1',
   accountId: 'a1',
   cardId: null,

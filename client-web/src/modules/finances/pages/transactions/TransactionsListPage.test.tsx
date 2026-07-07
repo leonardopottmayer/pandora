@@ -35,6 +35,8 @@ const pendingTx: TransactionDto = {
   voidReason: null,
   descriptionKey: null,
   descriptionArgs: null,
+  statementReferenceMonth: null,
+  statementDueDate: null,
 }
 
 beforeAll(async () => {

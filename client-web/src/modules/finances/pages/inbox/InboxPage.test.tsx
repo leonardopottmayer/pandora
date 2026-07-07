@@ -12,7 +12,7 @@ import { InboxPage } from './InboxPage'
 function pending(overrides: Partial<PendingTransactionDto> = {}): PendingTransactionDto {
   return {
     id: 'p1',
-    source: 'recurring',
+    source: 'recurrence',
     recurringTransactionId: 'r1',
     accountId: 'a1',
     cardId: null,

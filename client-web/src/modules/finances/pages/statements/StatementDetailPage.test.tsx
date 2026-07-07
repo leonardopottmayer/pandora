@@ -34,6 +34,7 @@ function detail(status: CardStatementDetailDto['statement']['status']): CardStat
         transferGroupId: null, fxRate: null, installmentPlanId: null, installmentNumber: null,
         origin: 'manual', postedAt: '2026-06-03T00:00:00Z', voidedAt: null, voidReason: null,
         descriptionKey: null, descriptionArgs: null,
+        statementReferenceMonth: null, statementDueDate: null,
       },
     ],
   }

@@ -33,6 +33,7 @@ const recurring: RecurringTransactionDto = {
   maxOccurrences: null,
   status: 'active',
   autoPost: false,
+  autoGenerate: true,
   nextOccurrenceOn: '2026-07-01',
   occurrencesCount: 0,
   createdAt: '2026-06-16T00:00:00Z',
@@ -68,6 +69,7 @@ describe('recurringTransactions.service', () => {
       interval: 1,
       startDate: '2026-07-01',
       autoPost: false,
+      autoGenerate: true,
     })
     expect(created.id).toBe('r1')
     expect((body as { frequency: string }).frequency).toBe('monthly')
@@ -84,6 +86,7 @@ describe('recurringTransactions.service', () => {
       amountIsEstimate: false,
       description: 'Aluguel mensal',
       autoPost: false,
+      autoGenerate: true,
     })
     expect(updated.name).toBe('Aluguel novo')
   })

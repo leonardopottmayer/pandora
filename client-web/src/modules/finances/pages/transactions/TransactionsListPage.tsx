@@ -405,12 +405,12 @@ export function TransactionsListPage() {
         </Col>
         <Col xs={24} sm={12} lg={8}>
           <Space.Compact style={{ width: '100%' }}>
-            <InputNumber
+            <InputNumber<number>
               style={{ width: '50%' }}
               placeholder={t('finances.transactions.amount') + ' ' + t('finances.filters.from')}
               onChange={(v) => upd('amountMin', v ?? undefined)}
             />
-            <InputNumber
+            <InputNumber<number>
               style={{ width: '50%' }}
               placeholder={t('finances.transactions.amount') + ' ' + t('finances.filters.to')}
               onChange={(v) => upd('amountMax', v ?? undefined)}
