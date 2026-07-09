@@ -2,8 +2,9 @@
 # environment gets its own isolated containers and network.
 name: ${COMPOSE_PROJECT_NAME:-pandora}
 
-# The database lives in a shared per-tier stack (infra/postgres), reachable on
-# the external "${TIER_NETWORK}" network as "${DB_HOST}". Bring that up first.
+# The database lives in a shared per-tier stack (set up from the homelab repo),
+# reachable on the external "${TIER_NETWORK}" network as "${DB_HOST}". Bring that
+# up first.
 
 services:
   backend:

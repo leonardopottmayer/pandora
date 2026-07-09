@@ -23,19 +23,20 @@ same origin and nginx forwards `/api` to the backend.
 
 ### Database topology
 
-Postgres is **not** in the app stack. Each homelab **tier** (staging, prod) runs
-one shared Postgres — `infra/postgres` — that every app in that tier connects to,
-each with its own database and role:
+Postgres is **not** in the app stack, and not in this repo. Each homelab **tier**
+(staging, prod) runs one shared Postgres, set up from the **homelab repo**
+(`G:\dev\homelab`), that every app in that tier connects to — each with its own
+database and role:
 
-| Tier | DB stack | Network | Host alias | Localhost port |
+| Tier | Container | Network | Host alias | Localhost port |
 |---|---|---|---|---|
 | Staging | `staging-db` | `staging` | `staging-db` | `5433` |
 | Production | `prod-db` | `prod` | `prod-db` | `5432` |
 
 The app's `backend` joins the tier network and connects to `${DB_HOST}` using
 Pandora's own role (`POSTGRES_USER`/`POSTGRES_PASSWORD`) and database
-(`POSTGRES_DB`). The DB stack's superuser is separate and used only to provision
-per-app databases/roles.
+(`POSTGRES_DB`). The shared DB's superuser lives in the homelab repo and is used
+only to provision per-app databases/roles.
 
 **Config override via env vars.** ASP.NET Core maps `__` (double underscore) in an
 environment variable to `:` in a config key. That is why the compose file sets
@@ -54,9 +55,7 @@ e.g. `Tars__Data__Connections__identity__ConnectionString` — it overrides
 | `client-web/nginx.conf` | SPA fallback + `/api` reverse proxy to the backend. |
 | `docker-compose.yml` | The Pandora app stack. Project name, ports, secrets from an env file. |
 | `.env.example` | Template for the per-environment app env files. |
-| `infra/postgres/docker-compose.yml` | Shared per-tier Postgres stack. |
-| `infra/postgres/.env.example` | Template for the DB stack's per-tier env file. |
-| `infra/postgres/bootstrap-pandora.sql` | Creates Pandora's role + database in the shared DB. |
+| `deploy/bootstrap-pandora.sql` | Creates Pandora's role + database in the tier's shared Postgres. |
 | `.github/workflows/build-images.yml` | CI: builds both images and pushes to GHCR on push to `main`. |
 | `.dockerignore`, `client-web/.dockerignore` | Keep build contexts small; **exclude `.env`** so no dev config is baked in. |
 
@@ -123,14 +122,9 @@ files it uses:
 | `BACKEND_IMAGE` / `FRONTEND_IMAGE` | Which image tag to run (prod: pinned; staging: `:latest`). |
 | `HTTP_PORT` | The LAN-visible frontend port. Unique per env. |
 
-**DB stack env file** (`infra/postgres/.env.<tier>`, gitignored):
-
-| Variable | What it does |
-|---|---|
-| `DB_PROJECT_NAME` / `DB_HOST` | Container project + network alias (`staging-db`, `prod-db`). |
-| `TIER_NETWORK` | Shared network the DB and apps join (`staging`, `prod`). |
-| `POSTGRES_SUPERUSER` / `POSTGRES_SUPERPASSWORD` | DB admin, used only to provision per-app databases/roles. |
-| `DB_PORT` | Localhost-only port for host tools (staging `5433`, prod `5432`). |
+The shared tier Postgres (the `${DB_HOST}` the app connects to) is **not** part of
+this repo — it's set up once per tier from the homelab repo (`G:\dev\homelab`).
+Bring it up before deploying Pandora into that tier.
 
 Keep a copy of every env file in Bitwarden. **Never** commit real secrets.
 
@@ -178,21 +172,30 @@ The first sign the token works: the backend job's build step gets past
 
 ## Creating an environment (step by step)
 
-Commands are **PowerShell** (the homelab is Windows), run from the repo root.
-The worked example is **staging**; per-tier values:
+Commands are **PowerShell** (the homelab is Windows), run from the Pandora repo
+root. The worked example is **staging**; per-tier values:
 
 | | staging | prod |
 |---|---|---|
 | Tier network | `staging` | `prod` |
-| DB stack / host alias | `staging-db` | `prod-db` |
+| DB container / host alias | `staging-db` | `prod-db` |
 | DB localhost port | `5433` | `5432` |
 | App env file | `.env.staging` | `.env.prod` |
-| DB env file | `infra/postgres/.env.staging` | `infra/postgres/.env.prod` |
 | Frontend port | `8731` | `8730` |
 | Mailhog | yes (UI `8732`) | no |
 
 Prereqs done once per machine: the [CI token](#1-ci-token-restore-of-the-private-tars-packages)
 and `docker login ghcr.io` (see One-time setup).
+
+### 0. Ensure the homelab tier is up
+
+The tier network + shared Postgres come from the **homelab repo**
+(`G:\dev\homelab`): create the `staging` network and bring up `staging-db` per its
+docs. Confirm the container is running before continuing:
+
+```powershell
+docker ps --filter name=staging-db
+```
 
 ### 1. Generate secrets
 
@@ -203,41 +206,28 @@ function New-Secret([int]$bytes, [string]$fmt = 'base64') {
   if ($fmt -eq 'hex') { ($b | ForEach-Object { $_.ToString('x2') }) -join '' }
   else { [Convert]::ToBase64String($b) }
 }
-New-Secret 24 hex   # DB superuser password (infra/postgres env)
 New-Secret 24 hex   # Pandora DB role password (POSTGRES_PASSWORD)
 New-Secret 48       # JWT_SIGNING_KEY
 New-Secret 32       # MFA_ENCRYPTION_KEY
 ```
 
-Save all four in Bitwarden. (`hex` for DB passwords avoids `+/=` breaking the
+Save all three in Bitwarden. (`hex` for the DB password avoids `+/=` breaking the
 connection string.)
 
-### 2. Create the tier network (once per tier)
+### 2. Provision Pandora's database + role (once per tier)
+
+Run the bootstrap against the tier's Postgres as the superuser, passing the role
+password from step 1:
 
 ```powershell
-docker network create staging
+Get-Content deploy/bootstrap-pandora.sql | `
+  docker exec -i staging-db psql -U postgres -d postgres -v pandora_password='<Pandora DB role secret>'
 ```
 
-### 3. Bring up the shared tier database
+(Or paste `deploy/bootstrap-pandora.sql` into the tier server's Query Tool in
+pgAdmin.)
 
-```powershell
-Copy-Item infra/postgres/.env.example infra/postgres/.env.staging
-# Edit infra/postgres/.env.staging:
-#   DB_PROJECT_NAME=staging-db  DB_HOST=staging-db  TIER_NETWORK=staging
-#   DB_PORT=5433  POSTGRES_SUPERPASSWORD=<DB superuser secret>
-docker compose --env-file infra/postgres/.env.staging -f infra/postgres/docker-compose.yml up -d
-```
-
-### 4. Provision Pandora's database + role (once per tier)
-
-```powershell
-Get-Content infra/postgres/bootstrap-pandora.sql | `
-  docker compose -p staging-db -f infra/postgres/docker-compose.yml `
-    --env-file infra/postgres/.env.staging `
-    exec -T db psql -U postgres -d postgres -v pandora_password='<Pandora DB role secret>'
-```
-
-### 5. Create the app env file
+### 3. Create the app env file
 
 ```powershell
 Copy-Item .env.example .env.staging
@@ -249,7 +239,7 @@ Copy-Item .env.example .env.staging
 #   SMTP_HOST=mailhog  SMTP_PORT=1025  MAILHOG_UI_PORT=8732  HTTP_PORT=8731
 ```
 
-### 6. Register the environment for migrations
+### 4. Register the environment for migrations
 
 ```powershell
 # First time on this machine only: create the local (gitignored) migris config
@@ -268,14 +258,14 @@ Add a `staging` entry under `environments` in `migrations/config.json`:
 }
 ```
 
-### 7. Deploy the app
+### 5. Deploy the app
 
 ```powershell
 docker compose --env-file .env.staging pull
 docker compose --env-file .env.staging up -d
 ```
 
-### 8. Run migrations
+### 6. Run migrations
 
 ```powershell
 cd migrations
@@ -283,7 +273,7 @@ migris apply staging -y
 cd ..
 ```
 
-### 9. Verify
+### 7. Verify
 
 ```powershell
 docker compose --env-file .env.staging ps
@@ -359,8 +349,8 @@ Swap `.env.prod` for `.env.staging` to operate the other environment — both ca
 run at once on different ports.
 
 > `down` on the app stack removes only app containers — the data lives in the
-> tier DB stack. The Postgres volume is deleted only by running `down -v` on the
-> **DB** stack (`infra/postgres`), never by app-stack commands.
+> tier's shared Postgres (homelab repo). The Postgres volume is deleted only by
+> `down -v` on that DB stack, never by Pandora app-stack commands.
 
 For reproducible prod deploys, pin `BACKEND_IMAGE` / `FRONTEND_IMAGE` to the
 `VERSION` tag rather than `:latest`.
