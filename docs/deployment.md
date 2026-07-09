@@ -4,7 +4,7 @@ Operational runbook for building and running Pandora with Docker on the homelab.
 For the roadmap and rationale, see [homelab-deploy.md](homelab-deploy.md).
 
 Everything here is reproducible from a clean checkout — follow
-[From zero to running](#from-zero-to-running) top to bottom.
+[Creating an environment](#creating-an-environment-step-by-step) top to bottom.
 
 ---
 
@@ -97,32 +97,21 @@ The workflow passes it to the backend build as the Docker build secret
 ### 2. Homelab GHCR login (to pull the images)
 
 Images pushed to GHCR are **private by default**, even though the repo is public.
-Keep them private and authenticate the homelab once:
+Keep them private and authenticate the homelab once (PowerShell):
 
-```bash
-echo "<PAT with read:packages>" | docker login ghcr.io -u leonardopottmayer --password-stdin
+```powershell
+docker login ghcr.io -u leonardopottmayer   # paste the PAT (read:packages) as the password
 ```
 
-### 3. Per-environment env files
+The full step-by-step for bringing up an environment is in
+[Creating an environment](#creating-an-environment-step-by-step). The two env
+files it uses:
 
-Each environment is one env file (gitignored). Create them from the template:
-
-```bash
-cp .env.example .env.prod       # COMPOSE_PROJECT_NAME=pandora-prod,    HTTP_PORT=8730, POSTGRES_PORT=5432
-cp .env.example .env.staging    # COMPOSE_PROJECT_NAME=pandora-staging, HTTP_PORT=8731, POSTGRES_PORT=5433
-```
-
-Generate strong secrets and fill each file:
-
-```bash
-openssl rand -hex 24      # POSTGRES_PASSWORD (hex: no +/= that could break the connection string)
-openssl rand -base64 48   # JWT_SIGNING_KEY
-openssl rand -base64 32   # MFA_ENCRYPTION_KEY
-```
+**App env file** (`.env.<tier>`, gitignored):
 
 | Variable | What it does |
 |---|---|
-| `COMPOSE_PROJECT_NAME` | Isolates containers/network/volumes between environments. |
+| `COMPOSE_PROJECT_NAME` | Isolates the app stack per environment (`pandora-staging`, `pandora-prod`). |
 | `ASPNETCORE_ENVIRONMENT` | ASP.NET Core environment (`Production` for real deploys). |
 | `COMPOSE_PROFILES` | `mailhog` to run the email catcher (staging); empty in prod. |
 | `TIER_NETWORK` / `DB_HOST` | Which shared tier DB to use (`staging`/`staging-db`, `prod`/`prod-db`). |
@@ -134,26 +123,16 @@ openssl rand -base64 32   # MFA_ENCRYPTION_KEY
 | `BACKEND_IMAGE` / `FRONTEND_IMAGE` | Which image tag to run (prod: pinned; staging: `:latest`). |
 | `HTTP_PORT` | The LAN-visible frontend port. Unique per env. |
 
-Keep a copy of each env file in Bitwarden. **Never** commit real secrets.
+**DB stack env file** (`infra/postgres/.env.<tier>`, gitignored):
 
-### 4. Shared tier database (once per tier)
+| Variable | What it does |
+|---|---|
+| `DB_PROJECT_NAME` / `DB_HOST` | Container project + network alias (`staging-db`, `prod-db`). |
+| `TIER_NETWORK` | Shared network the DB and apps join (`staging`, `prod`). |
+| `POSTGRES_SUPERUSER` / `POSTGRES_SUPERPASSWORD` | DB admin, used only to provision per-app databases/roles. |
+| `DB_PORT` | Localhost-only port for host tools (staging `5433`, prod `5432`). |
 
-```bash
-# Create the shared network for the tier
-docker network create staging
-
-# Configure and start the tier's Postgres
-cp infra/postgres/.env.example infra/postgres/.env.staging   # edit superuser pw, DB_PORT, names
-docker compose --env-file infra/postgres/.env.staging -f infra/postgres/docker-compose.yml up -d
-
-# Provision Pandora's database + role (uses POSTGRES_PASSWORD from .env.staging)
-Get-Content infra/postgres/bootstrap-pandora.sql | \
-  docker compose -p staging-db -f infra/postgres/docker-compose.yml \
-    --env-file infra/postgres/.env.staging \
-    exec -T db psql -U postgres -d postgres -v pandora_password='<PANDORA_DB_PASSWORD>'
-```
-
-Repeat with `prod` / `.env.prod` / port `5432` for production.
+Keep a copy of every env file in Bitwarden. **Never** commit real secrets.
 
 ---
 
@@ -197,34 +176,133 @@ The first sign the token works: the backend job's build step gets past
 
 ---
 
-## From zero to running
+## Creating an environment (step by step)
 
-On the homelab, from a clean checkout. Example uses **staging** (the first
-environment to bring up); swap `.env.staging` for `.env.prod` to do production.
+Commands are **PowerShell** (the homelab is Windows), run from the repo root.
+The worked example is **staging**; per-tier values:
 
-```bash
-# 0. One-time: docker login ghcr.io, and bring up the shared tier DB +
-#    bootstrap Pandora's role/database (see "One-time setup" above).
+| | staging | prod |
+|---|---|---|
+| Tier network | `staging` | `prod` |
+| DB stack / host alias | `staging-db` | `prod-db` |
+| DB localhost port | `5433` | `5432` |
+| App env file | `.env.staging` | `.env.prod` |
+| DB env file | `infra/postgres/.env.staging` | `infra/postgres/.env.prod` |
+| Frontend port | `8731` | `8730` |
+| Mailhog | yes (UI `8732`) | no |
 
-# 1. Pull the images built by CI
-docker compose --env-file .env.staging pull
+Prereqs done once per machine: the [CI token](#1-ci-token-restore-of-the-private-tars-packages)
+and `docker login ghcr.io` (see One-time setup).
 
-# 2. Start the app stack (connects to the shared staging-db)
-docker compose --env-file .env.staging up -d
+### 1. Generate secrets
 
-# 3. Apply database migrations (see "Migrations" below)
-cd migrations && migris apply staging -y && cd ..
-
-# 4. Open the app on the LAN
-#    http://<homelab-ip>:8731        (Mailhog: http://<homelab-ip>:8732)
+```powershell
+function New-Secret([int]$bytes, [string]$fmt = 'base64') {
+  $b = New-Object byte[] $bytes
+  (New-Object System.Security.Cryptography.RNGCryptoServiceProvider).GetBytes($b)
+  if ($fmt -eq 'hex') { ($b | ForEach-Object { $_.ToString('x2') }) -join '' }
+  else { [Convert]::ToBase64String($b) }
+}
+New-Secret 24 hex   # DB superuser password (infra/postgres env)
+New-Secret 24 hex   # Pandora DB role password (POSTGRES_PASSWORD)
+New-Secret 48       # JWT_SIGNING_KEY
+New-Secret 32       # MFA_ENCRYPTION_KEY
 ```
 
-Building locally instead of pulling (optional):
+Save all four in Bitwarden. (`hex` for DB passwords avoids `+/=` breaking the
+connection string.)
 
-```bash
-export GITHUB_TOKEN=<PAT with read:packages>
-docker compose --env-file .env.staging \
-  build --secret id=github_token,env=GITHUB_TOKEN backend
+### 2. Create the tier network (once per tier)
+
+```powershell
+docker network create staging
+```
+
+### 3. Bring up the shared tier database
+
+```powershell
+Copy-Item infra/postgres/.env.example infra/postgres/.env.staging
+# Edit infra/postgres/.env.staging:
+#   DB_PROJECT_NAME=staging-db  DB_HOST=staging-db  TIER_NETWORK=staging
+#   DB_PORT=5433  POSTGRES_SUPERPASSWORD=<DB superuser secret>
+docker compose --env-file infra/postgres/.env.staging -f infra/postgres/docker-compose.yml up -d
+```
+
+### 4. Provision Pandora's database + role (once per tier)
+
+```powershell
+Get-Content infra/postgres/bootstrap-pandora.sql | `
+  docker compose -p staging-db -f infra/postgres/docker-compose.yml `
+    --env-file infra/postgres/.env.staging `
+    exec -T db psql -U postgres -d postgres -v pandora_password='<Pandora DB role secret>'
+```
+
+### 5. Create the app env file
+
+```powershell
+Copy-Item .env.example .env.staging
+# Edit .env.staging:
+#   COMPOSE_PROJECT_NAME=pandora-staging  ASPNETCORE_ENVIRONMENT=Production
+#   COMPOSE_PROFILES=mailhog  TIER_NETWORK=staging  DB_HOST=staging-db
+#   POSTGRES_USER=pandora  POSTGRES_PASSWORD=<Pandora DB role secret>  POSTGRES_DB=pottmayer_pandora
+#   JWT_SIGNING_KEY=<secret>  MFA_ENCRYPTION_KEY=<secret>
+#   SMTP_HOST=mailhog  SMTP_PORT=1025  MAILHOG_UI_PORT=8732  HTTP_PORT=8731
+```
+
+### 6. Register the environment for migrations
+
+```powershell
+# First time on this machine only: create the local (gitignored) migris config
+Copy-Item migrations/config.example.json migrations/config.json   # skip if it exists
+```
+
+Add a `staging` entry under `environments` in `migrations/config.json`:
+
+```json
+"staging": {
+  "host": "localhost",
+  "port": 5433,
+  "user": "pandora",
+  "password": "<Pandora DB role secret>",
+  "database": "pottmayer_pandora"
+}
+```
+
+### 7. Deploy the app
+
+```powershell
+docker compose --env-file .env.staging pull
+docker compose --env-file .env.staging up -d
+```
+
+### 8. Run migrations
+
+```powershell
+cd migrations
+migris apply staging -y
+cd ..
+```
+
+### 9. Verify
+
+```powershell
+docker compose --env-file .env.staging ps
+docker compose --env-file .env.staging logs -f backend
+```
+
+Open the app at `http://<homelab-ip>:8731` and Mailhog at `http://<homelab-ip>:8732`.
+
+**Production deltas:** use the `prod` column above, leave `COMPOSE_PROFILES` empty
+(no Mailhog) and point `SMTP_HOST`/`SMTP_PORT` at a real provider, and pin
+`BACKEND_IMAGE` / `FRONTEND_IMAGE` to a version tag instead of `:latest`.
+
+### Building images locally (optional)
+
+CI normally builds and pushes the images. To build on the host instead:
+
+```powershell
+$env:GITHUB_TOKEN = "<PAT with read:packages>"
+docker compose --env-file .env.staging build --secret id=github_token,env=GITHUB_TOKEN backend
 docker compose --env-file .env.staging build frontend
 ```
 

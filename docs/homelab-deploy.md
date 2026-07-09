@@ -71,7 +71,7 @@ Nesta fase, `Cors:AllowedOrigins`, `ActivationUrlTemplate` e `PasswordResetUrlTe
 - [ ] Subir o staging no homelab e testar; depois replicar pra prod.
 - [ ] Gerar e guardar no Bitwarden os secrets de **produção** (`.env.prod`).
 - [ ] `docker login ghcr.io` no homelab com o PAT `read:packages` (imagens são privadas).
-- [ ] Config local (não versionada) do `migris` no homelab com as conexões prod/staging apontando pra `127.0.0.1:POSTGRES_PORT` — não commitar senha de prod no `migrations/config.json` (repo público).
+- [ ] Config local (não versionada) do `migris` no homelab com as conexões prod/staging apontando pra `127.0.0.1:<DB_PORT>` (staging 5433, prod 5432) — não commitar senha de prod no `migrations/config.json` (repo público).
 - [ ] Backup: adiado (pulado por ora).
 
 ---
