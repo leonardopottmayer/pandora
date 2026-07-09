@@ -12,4 +12,4 @@
 -- The password must match POSTGRES_PASSWORD in the Pandora env file (.env.<tier>).
 
 CREATE ROLE pandora LOGIN PASSWORD :'pandora_password';
-CREATE DATABASE pottmayer_pandora OWNER pandora;
+CREATE DATABASE pandora OWNER pandora;

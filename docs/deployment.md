@@ -234,7 +234,7 @@ Copy-Item .env.example .env.staging
 # Edit .env.staging:
 #   COMPOSE_PROJECT_NAME=pandora-staging  ASPNETCORE_ENVIRONMENT=Production
 #   COMPOSE_PROFILES=mailhog  TIER_NETWORK=staging  DB_HOST=staging-db
-#   POSTGRES_USER=pandora  POSTGRES_PASSWORD=<Pandora DB role secret>  POSTGRES_DB=pottmayer_pandora
+#   POSTGRES_USER=pandora  POSTGRES_PASSWORD=<Pandora DB role secret>  POSTGRES_DB=pandora
 #   JWT_SIGNING_KEY=<secret>  MFA_ENCRYPTION_KEY=<secret>
 #   SMTP_HOST=mailhog  SMTP_PORT=1025  MAILHOG_UI_PORT=8732  HTTP_PORT=8731
 ```
@@ -254,7 +254,7 @@ Add a `staging` entry under `environments` in `migrations/config.json`:
   "port": 5433,
   "user": "pandora",
   "password": "<Pandora DB role secret>",
-  "database": "pottmayer_pandora"
+  "database": "pandora"
 }
 ```
 
@@ -302,7 +302,7 @@ docker compose --env-file .env.staging build frontend
 
 `migris` runs on the homelab host and connects over TCP, which is why the tier DB
 publishes a `127.0.0.1` port. Point migris at `127.0.0.1:<DB_PORT>` (staging
-`5433`, prod `5432`) with Pandora's role/database (`pandora` / `pottmayer_pandora`).
+`5433`, prod `5432`) with Pandora's role/database (both `pandora`).
 
 > The DB credentials are secrets, so `migrations/config.json` is **gitignored**
 > (a `migrations/config.example.json` template is committed). Copy the template
