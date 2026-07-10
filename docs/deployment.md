@@ -119,6 +119,7 @@ files it uses:
 | `MFA_ENCRYPTION_KEY` | Overrides `Pandora:Identity:Mfa:EncryptionKey`. |
 | `SMTP_HOST` / `SMTP_PORT` | Backend SMTP target. Staging: `mailhog`/`1025`; prod: real provider. |
 | `MAILHOG_UI_PORT` | Host port for the Mailhog web UI (only when the profile is on). |
+| `APP_BASE_URL` | Public base URL for emailed activation/reset links (e.g. `http://<lan-ip>:8731`). No trailing slash. |
 | `BACKEND_IMAGE` / `FRONTEND_IMAGE` | Which image tag to run (prod: pinned; staging: `:latest`). |
 | `HTTP_PORT` | The LAN-visible frontend port. Unique per env. |
 
@@ -237,6 +238,7 @@ Copy-Item .env.example .env.staging
 #   POSTGRES_USER=pandora  POSTGRES_PASSWORD=<Pandora DB role secret>  POSTGRES_DB=pandora
 #   JWT_SIGNING_KEY=<secret>  MFA_ENCRYPTION_KEY=<secret>
 #   SMTP_HOST=mailhog  SMTP_PORT=1025  MAILHOG_UI_PORT=8732  HTTP_PORT=8731
+#   APP_BASE_URL=http://<homelab-lan-ip>:8731   (emailed links)
 ```
 
 ### 4. Register the environment for migrations
