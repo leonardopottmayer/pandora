@@ -27,9 +27,10 @@ services:
       # SMTP target. Staging -> mailhog (capture); prod -> a real provider.
       Tars__Communication__Email__Smtp__Host: ${SMTP_HOST:-mailhog}
       Tars__Communication__Email__Smtp__Port: ${SMTP_PORT:-1025}
-      # Public base URL of the app (used in emailed links). {token} is literal.
-      Pandora__Notifications__ActivationUrlTemplate: "${APP_BASE_URL}/activate?token={token}"
-      Pandora__Notifications__PasswordResetUrlTemplate: "${APP_BASE_URL}/reset-password?token={token}"
+      # Public base URL for emailed links. Defaults to localhost + the frontend
+      # port; override APP_BASE_URL for a LAN IP or a real domain. {token} is literal.
+      Pandora__Notifications__ActivationUrlTemplate: "${APP_BASE_URL:-http://localhost:${HTTP_PORT:-80}}/activate?token={token}"
+      Pandora__Notifications__PasswordResetUrlTemplate: "${APP_BASE_URL:-http://localhost:${HTTP_PORT:-80}}/reset-password?token={token}"
 
   frontend:
     image: ${FRONTEND_IMAGE:-ghcr.io/leonardopottmayer/pandora-frontend:latest}
