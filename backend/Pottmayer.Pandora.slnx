@@ -30,6 +30,15 @@
     <Project Path="src/Modules/Finances/Pottmayer.Pandora.Modules.Finances.Persistence/Pottmayer.Pandora.Modules.Finances.Persistence.csproj" Id="b0000007-0000-0000-0000-000000000004" />
     <Project Path="src/Modules/Finances/Pottmayer.Pandora.Modules.Finances.Presentation/Pottmayer.Pandora.Modules.Finances.Presentation.csproj" Id="b0000007-0000-0000-0000-000000000005" />
   </Folder>
+  <Folder Name="/src/Modules/Notes/">
+    <Project Path="src/Modules/Notes/Pottmayer.Pandora.Modules.Notes.Abstractions/Pottmayer.Pandora.Modules.Notes.Abstractions.csproj" Id="b0000008-0000-0000-0000-000000000006" />
+    <Project Path="src/Modules/Notes/Pottmayer.Pandora.Modules.Notes.Contracts/Pottmayer.Pandora.Modules.Notes.Contracts.csproj" Id="b0000008-0000-0000-0000-000000000000" />
+    <Project Path="src/Modules/Notes/Pottmayer.Pandora.Modules.Notes.Domain/Pottmayer.Pandora.Modules.Notes.Domain.csproj" Id="b0000008-0000-0000-0000-000000000001" />
+    <Project Path="src/Modules/Notes/Pottmayer.Pandora.Modules.Notes.Application/Pottmayer.Pandora.Modules.Notes.Application.csproj" Id="b0000008-0000-0000-0000-000000000002" />
+    <Project Path="src/Modules/Notes/Pottmayer.Pandora.Modules.Notes.Infrastructure/Pottmayer.Pandora.Modules.Notes.Infrastructure.csproj" Id="b0000008-0000-0000-0000-000000000003" />
+    <Project Path="src/Modules/Notes/Pottmayer.Pandora.Modules.Notes.Persistence/Pottmayer.Pandora.Modules.Notes.Persistence.csproj" Id="b0000008-0000-0000-0000-000000000004" />
+    <Project Path="src/Modules/Notes/Pottmayer.Pandora.Modules.Notes.Presentation/Pottmayer.Pandora.Modules.Notes.Presentation.csproj" Id="b0000008-0000-0000-0000-000000000005" />
+  </Folder>
   <Folder Name="/src/Host/">
     <Project Path="src/Host/Pottmayer.Pandora.Host/Pottmayer.Pandora.Host.csproj" Id="b0000004-0000-0000-0000-000000000001" />
   </Folder>
@@ -37,6 +46,7 @@
     <Project Path="tests/Pottmayer.Pandora.Modules.Identity.Tests/Pottmayer.Pandora.Modules.Identity.Tests.csproj" Id="b0000006-0000-0000-0000-000000000001" />
     <Project Path="tests/Pottmayer.Pandora.Modules.Notifications.Tests/Pottmayer.Pandora.Modules.Notifications.Tests.csproj" Id="b0000006-0000-0000-0000-000000000002" />
     <Project Path="tests/Pottmayer.Pandora.Modules.Finances.Tests/Pottmayer.Pandora.Modules.Finances.Tests.csproj" Id="b0000006-0000-0000-0000-000000000004" />
+    <Project Path="tests/Pottmayer.Pandora.Modules.Notes.Tests/Pottmayer.Pandora.Modules.Notes.Tests.csproj" Id="b0000006-0000-0000-0000-000000000005" />
     <Project Path="tests/Pottmayer.Pandora.IntegrationTests/Pottmayer.Pandora.IntegrationTests.csproj" Id="b0000006-0000-0000-0000-000000000003" />
   </Folder>
 </Solution>
