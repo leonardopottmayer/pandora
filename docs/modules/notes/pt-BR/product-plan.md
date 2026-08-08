@@ -99,7 +99,8 @@ Novo módulo `Notes`, mesma anatomia dos demais. Aggregate root: `Page`.
 - **Page** (root): `Id, ParentId?, Title, Slug, ContentMarkdown, Icon?, OrderIndex,
   IsFavorite, IsArchived, CreatedAt, UpdatedAt`.
 - **Attachment**: `Id, PageId?, FileName, ContentType, SizeBytes, StorageBackend,
-  StorageKey, CreatedAt` — ver §6 para `StorageBackend`/`StorageKey`.
+  StorageKey, CreatedAt` — ver §6. No MVP, `StorageBackend` é sempre `Database` e o
+  binário mora na tabela de blobs; o campo existe já para permitir S3 no futuro sem migração.
 - **PageLink** (aresta derivada do conteúdo): `SourcePageId, TargetPageId,
   Kind (Wikilink|Embed)`. Reconstruída a cada save da source. Alimenta backlinks **e** grafo.
 - **Tag** + link (opcional no MVP; pode espelhar o padrão de tags do módulo Finances).
@@ -118,20 +119,25 @@ Regras de agregado:
 Obsidian-like: markdown cru + live preview. Mais simples e fiel ao markdown do que uma
 abordagem WYSIWYG/ProseMirror.
 
-### Storage de anexos — plugável via feature flag (DB ↔ S3/MinIO)
+### Storage de anexos — tabela no banco (MVP), abstração pronta para S3
 
-Requisito: dois backends de armazenamento, alternáveis por configuração.
+MVP: um único backend real — **tabela no Postgres**. A abstração fica pronta para um
+bucket (MinIO / AWS S3) no futuro, mas nada de S3 é implementado agora.
 
-- Abstração `IFileStorage` no `Shared` (não existe hoje — criar), com implementações:
-  - **DatabaseFileStorage** — binário salvo em tabela dedicada no Postgres.
-  - **S3FileStorage** — S3-compatível (MinIO / AWS S3).
-- Uma **feature flag** de configuração decide qual backend é usado **na escrita**.
-- O registro `Attachment` grava **`StorageBackend`** (Database | S3) e **`StorageKey`**
-  (id da linha de blob, ou chave do objeto no bucket). Assim a **leitura** é
-  auto-descritiva: o sistema lê o backend do próprio registro e busca no lugar certo,
-  independentemente de a flag ter mudado depois.
+- Abstração `IFileStorage` no `Shared` (não existe hoje — criar), com uma implementação
+  no MVP: **DatabaseFileStorage** — binário salvo em tabela dedicada no Postgres.
+- Tabela de blob genérica, guardando `Id, FileName, ContentType (MIME), SizeBytes,
+  Content (bytea), CreatedAt`. Aceita qualquer arquivo — zip, imagem para embedar, PDF, etc.
+- O registro `Attachment` grava **`StorageBackend`** (hoje sempre `Database`) e
+  **`StorageKey`** (id da linha de blob). Quando existir S3, `StorageBackend = S3` e
+  `StorageKey` vira a chave do objeto — a **leitura** é auto-descritiva e anexos antigos
+  continuam legíveis sem migração.
 - Servido por endpoint autenticado `GET /api/notes/attachments/{id}` (auth via Identity),
-  nunca por path direto no disco/bucket.
+  com `Content-Type` e `Content-Disposition` corretos, nunca por path direto.
+
+> Observação sobre tamanho: guardar binário em `bytea` é ótimo para imagens e arquivos
+> pequenos/médios. Se um dia entrarem uploads grandes (vídeos, zips pesados), esse é o
+> gatilho natural para ligar o backend S3 — a abstração já cobre isso.
 
 ### Parse de wikilinks — no backend
 
@@ -157,9 +163,9 @@ regrava as arestas `PageLink` da source. Mantém o frontend simples e a fonte da
 
 ### Fase 1 — MVP editor
 
-3. `IFileStorage` (Database + S3) + feature flag + endpoint upload/download de attachment →
-   *verify: subir imagem em cada backend, recuperar por URL autenticada; alternar a flag
-   e confirmar que anexos antigos continuam legíveis pelo `StorageBackend` gravado.*
+3. `IFileStorage` (DatabaseFileStorage) + tabela de blob + endpoint upload/download de
+   attachment → *verify: subir imagem e zip, recuperar por URL autenticada com o
+   `Content-Type` correto; embedar imagem no markdown e ela renderizar.*
 4. Frontend: sidebar em árvore + editor CodeMirror + autosave → *verify: criar page,
    escrever markdown, colar imagem, recarregar e persistir.*
 5. Wikilinks + `PageLink` + painel de backlinks → *verify: `[[B]]` em A aparece como
@@ -174,5 +180,7 @@ regrava as arestas `PageLink` da source. Mantém o frontend simples e a fonte da
 ## 8. Decisões travadas
 
 - **Editor**: Obsidian-like (CodeMirror 6), markdown cru + live preview.
-- **Storage**: plugável DB ↔ S3/MinIO via feature flag; backend gravado no registro do anexo.
+- **Storage**: MVP em tabela no Postgres (`bytea`), aceitando qualquer tipo de arquivo;
+  abstração `IFileStorage` pronta para plugar S3/MinIO no futuro; backend gravado no
+  registro do anexo para leitura auto-descritiva.
 - **Grafo**: v2.
