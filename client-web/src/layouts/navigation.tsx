@@ -14,6 +14,8 @@ import {
   InboxOutlined,
   CloudUploadOutlined,
   LayoutOutlined,
+  BookOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons'
 import type { ReactNode } from 'react'
 
@@ -54,6 +56,14 @@ export const navigationModules: NavModule[] = [
       { key: 'fin-audit', labelKey: 'nav.audit', path: '/finances/audit', icon: <AuditOutlined /> },
       { key: 'fin-imports', labelKey: 'nav.imports', path: '/finances/imports', icon: <CloudUploadOutlined /> },
       { key: 'fin-import-layouts', labelKey: 'nav.importLayouts', path: '/finances/import-layouts', icon: <LayoutOutlined /> },
+    ],
+  },
+  {
+    key: 'notes',
+    labelKey: 'nav.notes',
+    icon: <BookOutlined />,
+    screens: [
+      { key: 'notes-pages', labelKey: 'nav.notesPages', path: '/notes', icon: <FileTextOutlined /> },
     ],
   },
   {

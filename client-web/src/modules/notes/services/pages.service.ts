@@ -1,0 +1,49 @@
+import { apiClient } from '@/lib/api/client'
+import type {
+  CreatePageRequest,
+  MovePageRequest,
+  PageDto,
+  PageSummaryDto,
+  UpdatePageRequest,
+} from '../models'
+
+const BASE = '/api/v1/notes/pages'
+
+export async function listPages(includeArchived = false): Promise<PageSummaryDto[]> {
+  const { data } = await apiClient.get<PageSummaryDto[]>(BASE, { params: { includeArchived } })
+  return data
+}
+
+export async function getPage(id: string): Promise<PageDto> {
+  const { data } = await apiClient.get<PageDto>(`${BASE}/${id}`)
+  return data
+}
+
+export async function createPage(body: CreatePageRequest): Promise<PageDto> {
+  const { data } = await apiClient.post<PageDto>(BASE, body)
+  return data
+}
+
+export async function updatePage(id: string, body: UpdatePageRequest): Promise<PageDto> {
+  const { data } = await apiClient.put<PageDto>(`${BASE}/${id}`, body)
+  return data
+}
+
+export async function movePage(id: string, body: MovePageRequest): Promise<PageDto> {
+  const { data } = await apiClient.post<PageDto>(`${BASE}/${id}/move`, body)
+  return data
+}
+
+export async function setPageFavorite(id: string, favorite: boolean): Promise<PageDto> {
+  const { data } = await apiClient.post<PageDto>(`${BASE}/${id}/${favorite ? 'favorite' : 'unfavorite'}`)
+  return data
+}
+
+export async function setPageArchived(id: string, archived: boolean): Promise<PageDto> {
+  const { data } = await apiClient.post<PageDto>(`${BASE}/${id}/${archived ? 'archive' : 'unarchive'}`)
+  return data
+}
+
+export async function deletePage(id: string): Promise<void> {
+  await apiClient.delete(`${BASE}/${id}`)
+}

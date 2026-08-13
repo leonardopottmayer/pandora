@@ -37,7 +37,9 @@
     "tags": "Tags",
     "audit": "Audit",
     "imports": "Imports",
-    "importLayouts": "Import Layouts"
+    "importLayouts": "Import Layouts",
+    "notes": "Notes",
+    "notesPages": "Pages"
   },
   "theme": {
     "toLight": "Light theme",
@@ -604,5 +606,29 @@
       "accountType": "Type",
       "code": "Code"
     }
+  },
+  "notes": {
+    "untitled": "Untitled",
+    "newPage": "New page",
+    "newChild": "New subpage",
+    "favorite": "Add to favorites",
+    "unfavorite": "Remove from favorites",
+    "archive": "Archive",
+    "unarchive": "Unarchive",
+    "showArchived": "Show archived",
+    "empty": "No pages yet. Create your first one.",
+    "noSelection": "Select a page to start editing.",
+    "titlePlaceholder": "Page title",
+    "contentPlaceholder": "Write in markdown. Paste or drop a file to attach it.",
+    "viewMode": "View mode",
+    "unsaved": "Unsaved changes",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "saveError": "Could not save the page.",
+    "uploadError": "Could not upload the file.",
+    "actionError": "Could not complete the action.",
+    "deleteConfirm": "Delete this page? Its subpages stay, moved to the root.",
+    "deleteError": "Could not delete the page.",
+    "moveCycle": "A page cannot be moved into itself or one of its subpages."
   }
 }

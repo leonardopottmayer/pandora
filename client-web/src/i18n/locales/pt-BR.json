@@ -37,7 +37,9 @@
     "tags": "Etiquetas",
     "audit": "Auditoria",
     "imports": "Importacoes",
-    "importLayouts": "Layouts de importacao"
+    "importLayouts": "Layouts de importacao",
+    "notes": "Notas",
+    "notesPages": "Paginas"
   },
   "theme": {
     "toLight": "Tema claro",
@@ -604,5 +606,29 @@
       "accountType": "Tipo",
       "code": "Codigo"
     }
+  },
+  "notes": {
+    "untitled": "Sem título",
+    "newPage": "Nova página",
+    "newChild": "Nova subpágina",
+    "favorite": "Adicionar aos favoritos",
+    "unfavorite": "Remover dos favoritos",
+    "archive": "Arquivar",
+    "unarchive": "Desarquivar",
+    "showArchived": "Mostrar arquivadas",
+    "empty": "Nenhuma página ainda. Crie a primeira.",
+    "noSelection": "Selecione uma página para começar a editar.",
+    "titlePlaceholder": "Título da página",
+    "contentPlaceholder": "Escreva em markdown. Cole ou arraste um arquivo para anexá-lo.",
+    "viewMode": "Modo de visualização",
+    "unsaved": "Alterações não salvas",
+    "saving": "Salvando...",
+    "saved": "Salvo",
+    "saveError": "Não foi possível salvar a página.",
+    "uploadError": "Não foi possível enviar o arquivo.",
+    "actionError": "Não foi possível concluir a ação.",
+    "deleteConfirm": "Excluir esta página? As subpáginas permanecem, movidas para a raiz.",
+    "deleteError": "Não foi possível excluir a página.",
+    "moveCycle": "Uma página não pode ser movida para dentro dela mesma ou de uma subpágina."
   }
 }

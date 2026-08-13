@@ -3,3 +3,6 @@ export const TEST_API_BASE = 'http://localhost'
 
 /** Convenience prefix for finances endpoints. */
 export const FINANCES_BASE = `${TEST_API_BASE}/api/v1.0/finances`
+
+/** Convenience prefix for notes endpoints. */
+export const NOTES_BASE = `${TEST_API_BASE}/api/v1/notes`
