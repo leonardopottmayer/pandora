@@ -27,6 +27,7 @@ import { ImportsListPage } from '@/modules/finances/pages/imports/ImportsListPag
 import { ImportDetailPage } from '@/modules/finances/pages/imports/ImportDetailPage'
 import { ImportLayoutsPage } from '@/modules/finances/pages/imports/ImportLayoutsPage'
 import { NotesPage } from '@/modules/notes/pages/NotesPage'
+import { NotesGraphPage } from '@/modules/notes/pages/NotesGraphPage'
 
 export const router = createBrowserRouter([
   // Public (redirect if already authenticated)
@@ -67,6 +68,8 @@ export const router = createBrowserRouter([
 
       // Notes
       { path: 'notes', element: <NotesPage /> },
+      // Before the :id route, so "graph" is read as the view and not as a page id.
+      { path: 'notes/graph', element: <NotesGraphPage /> },
       { path: 'notes/:id', element: <NotesPage /> },
     ],
   },

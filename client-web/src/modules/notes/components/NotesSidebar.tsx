@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { App, Button, Dropdown, Flex, Switch, Tree, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import type { DataNode } from 'antd/es/tree'
 import {
   EllipsisOutlined,
   FileTextOutlined,
+  PartitionOutlined,
   PlusOutlined,
   StarFilled,
 } from '@ant-design/icons'
@@ -35,6 +37,7 @@ export function NotesSidebar({
 }: NotesSidebarProps) {
   const { t } = useTranslation()
   const { message, modal } = App.useApp()
+  const navigate = useNavigate()
   const { tree, isLoading } = usePageTree(includeArchived)
 
   const createMutation = useCreatePage()
@@ -169,13 +172,22 @@ export function NotesSidebar({
     <Flex vertical style={{ height: '100%' }}>
       <Flex align="center" justify="space-between" className="mb-2 px-2">
         <Typography.Text strong>{t('nav.notes')}</Typography.Text>
-        <Button
-          type="text"
-          size="small"
-          icon={<PlusOutlined />}
-          title={t('notes.newPage')}
-          onClick={() => handleCreate(null)}
-        />
+        <Flex align="center" gap={2}>
+          <Button
+            type="text"
+            size="small"
+            icon={<PartitionOutlined />}
+            title={t('notes.openGraph')}
+            onClick={() => navigate('/notes/graph')}
+          />
+          <Button
+            type="text"
+            size="small"
+            icon={<PlusOutlined />}
+            title={t('notes.newPage')}
+            onClick={() => handleCreate(null)}
+          />
+        </Flex>
       </Flex>
 
       <div style={{ flex: 1, overflow: 'auto' }}>

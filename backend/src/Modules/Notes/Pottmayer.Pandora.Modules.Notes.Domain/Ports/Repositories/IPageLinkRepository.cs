@@ -15,6 +15,13 @@ public interface IPageLinkRepository : IStandardRepository<PageLink, Guid>
     /// <summary>Edges pointing at this page — the backlinks ("linked mentions") panel.</summary>
     Task<IReadOnlyList<PageLink>> GetByTargetAsync(Guid targetPageId, CancellationToken ct = default);
 
+    /// <summary>
+    /// Every edge leaving any of these pages — the whole graph of one user in a single read, given the
+    /// user's page ids. Feeds the graph view, which needs the edges before it can pick a neighborhood.
+    /// </summary>
+    Task<IReadOnlyList<PageLink>> GetBySourcesAsync(
+        IReadOnlyCollection<Guid> sourcePageIds, CancellationToken ct = default);
+
     /// <summary>Drops every edge leaving this page. Runs when the page is deleted.</summary>
     Task RemoveBySourceAsync(Guid sourcePageId, CancellationToken ct = default);
 }

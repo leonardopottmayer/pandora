@@ -635,6 +635,11 @@
     "embed": "incorporado",
     "searchPlaceholder": "Buscar páginas...",
     "searchHint": "Digite para buscar suas páginas por título ou conteúdo.",
-    "searchEmpty": "Nenhuma página corresponde a esta busca."
+    "searchEmpty": "Nenhuma página corresponde a esta busca.",
+    "graph": "Grafo",
+    "localGraph": "Grafo local",
+    "graphDepth": "Profundidade",
+    "openGraph": "Abrir a visão em grafo",
+    "graphEmpty": "Nenhuma página para desenhar ainda."
   }
 }

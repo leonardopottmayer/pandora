@@ -77,6 +77,29 @@ export interface PageSearchResultDto {
   excerpt: string
 }
 
+/** One page as a node of the wiki graph; `degree` counts the edges touching it in that same graph. */
+export interface GraphNodeDto {
+  id: string
+  title: string
+  slug: string
+  icon: string | null
+  isArchived: boolean
+  degree: number
+}
+
+/** One link between two pages. A page that both links and embeds another yields two edges. */
+export interface GraphEdgeDto {
+  sourceId: string
+  targetId: string
+  kind: 'wikilink' | 'embed'
+}
+
+/** Nodes plus edges for the graph view; both endpoints of every edge are always in `nodes`. */
+export interface PageGraphDto {
+  nodes: GraphNodeDto[]
+  edges: GraphEdgeDto[]
+}
+
 /** A sidebar node with its children nested (built on the frontend from the flat list). */
 export interface PageTreeNode extends PageSummaryDto {
   children: PageTreeNode[]

@@ -30,6 +30,23 @@ export function useBacklinks(id: string | null) {
   })
 }
 
+/** The whole wiki graph — nodes and edges for the global graph view. */
+export function useGraph() {
+  return useQuery({
+    queryKey: noteKeys.graph(),
+    queryFn: () => pagesService.getGraph(),
+  })
+}
+
+/** The neighborhood of one page, for the local graph panel. */
+export function useLocalGraph(id: string | null, depth: number) {
+  return useQuery({
+    queryKey: noteKeys.localGraph(id ?? '', depth),
+    queryFn: () => pagesService.getLocalGraph(id!, depth),
+    enabled: !!id,
+  })
+}
+
 /**
  * Full-text search for the command palette. The term is expected to be debounced by the caller;
  * previous results stay on screen while the next ones load, so the list does not blink per keystroke.
@@ -69,8 +86,10 @@ export function useUpdatePage() {
       queryClient.setQueryData(noteKeys.page(page.id), page)
       queryClient.invalidateQueries({ queryKey: noteKeys.pages(), refetchType: 'none' })
       queryClient.invalidateQueries({ queryKey: [...noteKeys.pages(), 'tree'] })
-      // A save rewrites this page's outgoing links, so any other page's backlinks may have changed.
+      // A save rewrites this page's outgoing links, so any other page's backlinks — and the
+      // shape of the graph — may have changed.
       queryClient.invalidateQueries({ queryKey: noteKeys.allBacklinks() })
+      queryClient.invalidateQueries({ queryKey: noteKeys.allGraphs() })
     },
   })
 }

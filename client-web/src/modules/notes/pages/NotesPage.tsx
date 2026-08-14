@@ -6,6 +6,7 @@ import { EditOutlined, EyeOutlined, SplitCellsOutlined } from '@ant-design/icons
 import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { BacklinksPanel } from '../components/BacklinksPanel'
+import { LocalGraphPanel } from '../components/LocalGraphPanel'
 import { MarkdownEditor } from '../components/MarkdownEditor'
 import { MarkdownPreview } from '../components/MarkdownPreview'
 import { NotesSidebar } from '../components/NotesSidebar'
@@ -217,6 +218,7 @@ export function NotesPage() {
             </Flex>
 
             <BacklinksPanel pageId={selectedId} onSelect={handleSelect} />
+            <LocalGraphPanel pageId={selectedId} onSelect={handleSelect} />
           </>
         )}
       </Card>

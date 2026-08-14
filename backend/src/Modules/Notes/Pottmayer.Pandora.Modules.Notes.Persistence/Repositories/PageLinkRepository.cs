@@ -17,6 +17,15 @@ public sealed class PageLinkRepository(IDataContextAccessor accessor)
         Guid targetPageId, CancellationToken ct = default)
         => await Queryable().Where(l => l.TargetPageId == targetPageId).ToListAsync(ct);
 
+    public async Task<IReadOnlyList<PageLink>> GetBySourcesAsync(
+        IReadOnlyCollection<Guid> sourcePageIds, CancellationToken ct = default)
+    {
+        if (sourcePageIds.Count == 0)
+            return [];
+
+        return await Queryable().Where(l => sourcePageIds.Contains(l.SourcePageId)).ToListAsync(ct);
+    }
+
     public async Task RemoveBySourceAsync(Guid sourcePageId, CancellationToken ct = default)
     {
         var links = await Queryable().Where(l => l.SourcePageId == sourcePageId).ToListAsync(ct);

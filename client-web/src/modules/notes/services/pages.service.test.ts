@@ -5,6 +5,8 @@ import { NOTES_BASE } from '@/test/constants'
 import {
   createPage,
   deletePage,
+  getGraph,
+  getLocalGraph,
   getPage,
   listPages,
   movePage,
@@ -115,6 +117,32 @@ describe('pages.service', () => {
     const results = await searchPages('trecho')
     expect(q).toBe('trecho')
     expect(results[0].excerpt).toBe('...trecho...')
+  })
+
+  it('reads the global graph', async () => {
+    server.use(
+      http.get(`${NOTES_BASE}/pages/graph`, () =>
+        HttpResponse.json({
+          success: true,
+          data: { nodes: [{ ...summary, degree: 1 }], edges: [{ sourceId: 'p1', targetId: 'p2', kind: 'wikilink' }] },
+        }),
+      ),
+    )
+    const graph = await getGraph()
+    expect(graph.edges[0].kind).toBe('wikilink')
+  })
+
+  it('reads a local graph with the depth as a query parameter', async () => {
+    let depth: string | null = null
+    server.use(
+      http.get(`${NOTES_BASE}/pages/p1/graph`, ({ request }) => {
+        depth = new URL(request.url).searchParams.get('depth')
+        return HttpResponse.json({ success: true, data: { nodes: [{ ...summary, degree: 0 }], edges: [] } })
+      }),
+    )
+    const graph = await getLocalGraph('p1', 2)
+    expect(depth).toBe('2')
+    expect(graph.nodes).toHaveLength(1)
   })
 
   it('deletes a page', async () => {

@@ -4,6 +4,7 @@ import type {
   CreatePageRequest,
   MovePageRequest,
   PageDto,
+  PageGraphDto,
   PageSearchResultDto,
   PageSummaryDto,
   UpdatePageRequest,
@@ -28,6 +29,18 @@ export async function getBacklinks(id: string): Promise<BacklinkDto[]> {
 
 export async function searchPages(term: string): Promise<PageSearchResultDto[]> {
   const { data } = await apiClient.get<PageSearchResultDto[]>(`${BASE}/search`, { params: { q: term } })
+  return data
+}
+
+/** The whole wiki graph of the user. */
+export async function getGraph(): Promise<PageGraphDto> {
+  const { data } = await apiClient.get<PageGraphDto>(`${BASE}/graph`)
+  return data
+}
+
+/** The neighborhood of one page, `depth` hops out in either direction. */
+export async function getLocalGraph(id: string, depth: number): Promise<PageGraphDto> {
+  const { data } = await apiClient.get<PageGraphDto>(`${BASE}/${id}/graph`, { params: { depth } })
   return data
 }
 

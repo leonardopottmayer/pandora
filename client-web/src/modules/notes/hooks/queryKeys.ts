@@ -8,4 +8,7 @@ export const noteKeys = {
   allBacklinks: () => [...noteKeys.pages(), 'backlinks'] as const,
   backlinks: (id: string) => [...noteKeys.allBacklinks(), id] as const,
   search: (term: string) => [...noteKeys.pages(), 'search', term] as const,
+  allGraphs: () => [...noteKeys.pages(), 'graph'] as const,
+  graph: () => [...noteKeys.allGraphs(), 'global'] as const,
+  localGraph: (id: string, depth: number) => [...noteKeys.allGraphs(), 'local', id, depth] as const,
 }

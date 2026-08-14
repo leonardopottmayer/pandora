@@ -9,6 +9,7 @@ using Pottmayer.Pandora.Modules.Notes.Application.Commands.SetPageFavorite;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.UpdatePage;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetBacklinks;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPage;
+using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPageGraph;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPageTree;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.SearchPages;
 using Pottmayer.Pandora.Modules.Notes.Presentation.Requests;
@@ -47,6 +48,14 @@ public sealed class PagesController(
         return result.ToActionResult(errorMapper);
     }
 
+    [HttpGet("graph")]
+    public async Task<IActionResult> GraphAsync(CancellationToken ct)
+    {
+        var result = await sender.Send(
+            new GetPageGraphQuery(new GetPageGraphInput(UserId, RootPageId: null, Depth: 1)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetAsync(Guid id, CancellationToken ct)
     {
@@ -58,6 +67,13 @@ public sealed class PagesController(
     public async Task<IActionResult> BacklinksAsync(Guid id, CancellationToken ct)
     {
         var result = await sender.Send(new GetBacklinksQuery(new GetBacklinksInput(UserId, id)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpGet("{id:guid}/graph")]
+    public async Task<IActionResult> LocalGraphAsync(Guid id, [FromQuery] int depth = 1, CancellationToken ct = default)
+    {
+        var result = await sender.Send(new GetPageGraphQuery(new GetPageGraphInput(UserId, id, depth)), ct);
         return result.ToActionResult(errorMapper);
     }
 
