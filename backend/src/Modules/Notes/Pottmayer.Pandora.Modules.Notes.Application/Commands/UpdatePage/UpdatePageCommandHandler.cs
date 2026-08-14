@@ -1,5 +1,6 @@
 using Pottmayer.Pandora.Modules.Notes.Abstractions;
 using Pottmayer.Pandora.Modules.Notes.Application.Dtos;
+using Pottmayer.Pandora.Modules.Notes.Application.Services;
 using Pottmayer.Pandora.Modules.Notes.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Notes.Domain.Errors;
 using Pottmayer.Pandora.Modules.Notes.Domain.Ports.Repositories;
@@ -9,7 +10,7 @@ using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 
 namespace Pottmayer.Pandora.Modules.Notes.Application.Commands.UpdatePage;
 
-public sealed class UpdatePageCommandHandler(IUnitOfWorkFactory factory)
+public sealed class UpdatePageCommandHandler(IUnitOfWorkFactory factory, TimeProvider timeProvider)
     : CommandHandlerBase<UpdatePageCommand, PageDto>
 {
     protected override async Task<Result<PageDto>> HandleAsync(UpdatePageCommand request, CancellationToken ct)
@@ -29,6 +30,10 @@ public sealed class UpdatePageCommandHandler(IUnitOfWorkFactory factory)
 
             page.Update(input.Title, input.Icon, input.ContentMarkdown);
             await repo.UpdateAsync(page, token);
+
+            // The save is where the wiki graph is materialized: rewrite this page's outgoing edges.
+            var links = ctx.AcquireRepository<IPageLinkRepository>();
+            await PageLinkSynchronizer.RebuildAsync(page, repo, links, timeProvider, token);
 
             return Result<Page>.Success(page);
         }, cancellationToken: ct);

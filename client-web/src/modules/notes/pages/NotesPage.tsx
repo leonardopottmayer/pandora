@@ -1,15 +1,17 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { App, Card, Empty, Flex, Input, Segmented, Spin, Tooltip, Typography, theme } from 'antd'
 import { EditOutlined, EyeOutlined, SplitCellsOutlined } from '@ant-design/icons'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { toErrorMessage } from '@/lib/api/envelope'
+import { BacklinksPanel } from '../components/BacklinksPanel'
 import { MarkdownEditor } from '../components/MarkdownEditor'
 import { MarkdownPreview } from '../components/MarkdownPreview'
 import { NotesSidebar } from '../components/NotesSidebar'
 import { useAutosave } from '../hooks/useAutosave'
-import { usePage, useUpdatePage } from '../hooks/usePages'
+import { useCreatePage, usePage, usePageTree, useUpdatePage } from '../hooks/usePages'
+import { buildPageIndex } from '../lib/wikilinks'
 import { uploadAttachment } from '../services/attachments.service'
 import '../components/notes.css'
 
@@ -40,6 +42,12 @@ export function NotesPage() {
 
   const { data: page, isLoading } = usePage(selectedId)
   const updateMutation = useUpdatePage()
+  const createMutation = useCreatePage()
+
+  // Wikilinks resolve against every page, archived included: archiving hides a page from the
+  // sidebar but does not break links to it (and the backend resolves it the same way).
+  const { data: allPages } = usePageTree(true)
+  const pageIndex = useMemo(() => buildPageIndex(allPages ?? []), [allPages])
 
   // The page the draft belongs to — also the id autosave writes to. It trails `selectedId`
   // while the next page loads, so a flush during a switch still targets the page being left.
@@ -82,6 +90,16 @@ export function NotesPage() {
       schedule(next)
       return next
     })
+  }
+
+  // Clicking a `[[link]]` that resolves to nothing: create that page, then open it.
+  async function handleCreateFromLink(title: string) {
+    try {
+      const created = await createMutation.mutateAsync({ title })
+      await handleSelect(created.id)
+    } catch (err) {
+      message.error(toErrorMessage(err, t('notes.saveError')))
+    }
   }
 
   async function handleUpload(file: File) {
@@ -185,10 +203,17 @@ export function NotesPage() {
               )}
               {viewMode !== 'edit' && (
                 <div style={{ flex: 1, minWidth: 0, height: '100%', overflow: 'auto' }}>
-                  <MarkdownPreview markdown={draft.contentMarkdown} />
+                  <MarkdownPreview
+                    markdown={draft.contentMarkdown}
+                    pageIndex={pageIndex}
+                    onOpenPage={handleSelect}
+                    onCreatePage={handleCreateFromLink}
+                  />
                 </div>
               )}
             </Flex>
+
+            <BacklinksPanel pageId={selectedId} onSelect={handleSelect} />
           </>
         )}
       </Card>

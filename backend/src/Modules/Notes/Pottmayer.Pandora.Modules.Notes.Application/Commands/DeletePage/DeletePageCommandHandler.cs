@@ -23,12 +23,18 @@ public sealed class DeletePageCommandHandler(IUnitOfWorkFactory factory, TimePro
             if (page is null)
                 return Result<bool>.Failure([PageErrors.NotFound]);
 
+            var links = ctx.AcquireRepository<IPageLinkRepository>();
+
             // Soft-delete the whole subtree so no child is left pointing at a deleted parent.
             var all = await repo.GetTreeForUserAsync(input.UserId, includeArchived: true, token);
             foreach (var descendant in Subtree(page.Id, all))
             {
                 descendant.Delete(timeProvider);
                 await repo.UpdateAsync(descendant, token);
+
+                // Edges leaving a deleted page are gone for good; edges pointing at it stay and are
+                // filtered out on read, so restoring the row would restore its inbound mentions.
+                await links.RemoveBySourceAsync(descendant.Id, token);
             }
 
             return Result<bool>.Success(true);

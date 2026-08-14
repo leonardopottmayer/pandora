@@ -1,5 +1,6 @@
 using Pottmayer.Pandora.Modules.Notes.Abstractions;
 using Pottmayer.Pandora.Modules.Notes.Application.Dtos;
+using Pottmayer.Pandora.Modules.Notes.Application.Services;
 using Pottmayer.Pandora.Modules.Notes.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Notes.Domain.Errors;
 using Pottmayer.Pandora.Modules.Notes.Domain.Ports.Repositories;
@@ -35,6 +36,10 @@ public sealed class CreatePageCommandHandler(IUnitOfWorkFactory factory, TimePro
                 input.UserId, input.Title, slug, input.ParentId, input.Icon,
                 orderIndex: 0, input.ContentMarkdown ?? string.Empty, timeProvider);
             await repo.AddAsync(page, token);
+
+            // A page may already carry wikilinks in its initial content (e.g. a duplicated note).
+            var links = ctx.AcquireRepository<IPageLinkRepository>();
+            await PageLinkSynchronizer.RebuildAsync(page, repo, links, timeProvider, token);
 
             return Result<Page>.Success(page);
         }, cancellationToken: ct);

@@ -23,4 +23,19 @@ public interface IPageRepository : IStandardRepository<Page, Guid>
 
     /// <summary>Whether the user already has a non-deleted page with this slug.</summary>
     Task<bool> ExistsWithSlugAsync(Guid userId, string slug, CancellationToken ct = default);
+
+    /// <summary>
+    /// Candidate wikilink targets: the user's non-deleted pages whose title (case-insensitive) is in
+    /// <paramref name="lowerTitles"/> or whose slug is in <paramref name="slugs"/>. Archived pages
+    /// count — archiving hides a page from the sidebar, it does not unlink it.
+    /// </summary>
+    Task<IReadOnlyList<Page>> FindByTitlesOrSlugsAsync(
+        Guid userId,
+        IReadOnlyCollection<string> lowerTitles,
+        IReadOnlyCollection<string> slugs,
+        CancellationToken ct = default);
+
+    /// <summary>The user's non-deleted pages among <paramref name="ids"/>, ordered by title.</summary>
+    Task<IReadOnlyList<Page>> GetByIdsForUserAsync(
+        IReadOnlyCollection<Guid> ids, Guid userId, CancellationToken ct = default);
 }

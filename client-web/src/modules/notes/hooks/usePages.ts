@@ -22,6 +22,14 @@ export function usePage(id: string | null) {
   })
 }
 
+export function useBacklinks(id: string | null) {
+  return useQuery({
+    queryKey: noteKeys.backlinks(id ?? ''),
+    queryFn: () => pagesService.getBacklinks(id!),
+    enabled: !!id,
+  })
+}
+
 /** Invalidates every notes query after a structural mutation (create/move/archive/delete). */
 function useInvalidatePages() {
   const queryClient = useQueryClient()
@@ -48,6 +56,8 @@ export function useUpdatePage() {
       queryClient.setQueryData(noteKeys.page(page.id), page)
       queryClient.invalidateQueries({ queryKey: noteKeys.pages(), refetchType: 'none' })
       queryClient.invalidateQueries({ queryKey: [...noteKeys.pages(), 'tree'] })
+      // A save rewrites this page's outgoing links, so any other page's backlinks may have changed.
+      queryClient.invalidateQueries({ queryKey: noteKeys.allBacklinks() })
     },
   })
 }

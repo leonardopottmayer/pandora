@@ -629,6 +629,9 @@
     "actionError": "Could not complete the action.",
     "deleteConfirm": "Delete this page? Its subpages stay, moved to the root.",
     "deleteError": "Could not delete the page.",
-    "moveCycle": "A page cannot be moved into itself or one of its subpages."
+    "moveCycle": "A page cannot be moved into itself or one of its subpages.",
+    "backlinks": "Linked mentions",
+    "backlinksEmpty": "No page links here yet.",
+    "embed": "embed"
   }
 }

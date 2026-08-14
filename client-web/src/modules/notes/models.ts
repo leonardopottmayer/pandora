@@ -57,6 +57,16 @@ export interface AttachmentDto {
   createdAt: string
 }
 
+/** A page that mentions the one being read ("linked mention"), and how it mentions it. */
+export interface BacklinkDto {
+  pageId: string
+  title: string
+  slug: string
+  icon: string | null
+  isArchived: boolean
+  kind: 'wikilink' | 'embed'
+}
+
 /** A sidebar node with its children nested (built on the frontend from the flat list). */
 export interface PageTreeNode extends PageSummaryDto {
   children: PageTreeNode[]

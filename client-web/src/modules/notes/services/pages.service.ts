@@ -1,5 +1,6 @@
 import { apiClient } from '@/lib/api/client'
 import type {
+  BacklinkDto,
   CreatePageRequest,
   MovePageRequest,
   PageDto,
@@ -16,6 +17,11 @@ export async function listPages(includeArchived = false): Promise<PageSummaryDto
 
 export async function getPage(id: string): Promise<PageDto> {
   const { data } = await apiClient.get<PageDto>(`${BASE}/${id}`)
+  return data
+}
+
+export async function getBacklinks(id: string): Promise<BacklinkDto[]> {
+  const { data } = await apiClient.get<BacklinkDto[]>(`${BASE}/${id}/backlinks`)
   return data
 }
 

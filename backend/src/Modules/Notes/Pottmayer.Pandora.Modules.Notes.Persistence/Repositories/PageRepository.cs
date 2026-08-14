@@ -42,4 +42,31 @@ public sealed class PageRepository(IDataContextAccessor accessor)
     public Task<bool> ExistsWithSlugAsync(Guid userId, string slug, CancellationToken ct = default)
         => Queryable().AnyAsync(
             p => p.UserId == userId && p.Slug == slug && p.DeletedAt == null, ct);
+
+    public async Task<IReadOnlyList<Page>> FindByTitlesOrSlugsAsync(
+        Guid userId,
+        IReadOnlyCollection<string> lowerTitles,
+        IReadOnlyCollection<string> slugs,
+        CancellationToken ct = default)
+    {
+        if (lowerTitles.Count == 0 && slugs.Count == 0)
+            return [];
+
+        return await Queryable()
+            .Where(p => p.UserId == userId && p.DeletedAt == null &&
+                        (slugs.Contains(p.Slug) || lowerTitles.Contains(p.Title.ToLower())))
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<Page>> GetByIdsForUserAsync(
+        IReadOnlyCollection<Guid> ids, Guid userId, CancellationToken ct = default)
+    {
+        if (ids.Count == 0)
+            return [];
+
+        return await Queryable()
+            .Where(p => ids.Contains(p.Id) && p.UserId == userId && p.DeletedAt == null)
+            .OrderBy(p => p.Title)
+            .ToListAsync(ct);
+    }
 }

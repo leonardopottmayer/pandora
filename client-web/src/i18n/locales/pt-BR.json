@@ -629,6 +629,9 @@
     "actionError": "Não foi possível concluir a ação.",
     "deleteConfirm": "Excluir esta página? As subpáginas permanecem, movidas para a raiz.",
     "deleteError": "Não foi possível excluir a página.",
-    "moveCycle": "Uma página não pode ser movida para dentro dela mesma ou de uma subpágina."
+    "moveCycle": "Uma página não pode ser movida para dentro dela mesma ou de uma subpágina.",
+    "backlinks": "Menções",
+    "backlinksEmpty": "Nenhuma página aponta para esta ainda.",
+    "embed": "incorporado"
   }
 }

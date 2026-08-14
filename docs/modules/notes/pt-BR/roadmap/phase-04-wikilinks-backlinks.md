@@ -36,3 +36,20 @@ na page. Este modelo de links é a **fundação do grafo (Fase 06)**.
 ## Fora de escopo
 
 - Visualização em grafo (Fase 06) — aqui só materializamos os dados que ela vai consumir.
+
+## Notas de implementação (fase concluída)
+
+- Tabela `notes.nte004_page_link` (`source_page_id`, `target_page_id`, `kind`), única por
+  `(source, target, kind)`. O save faz **diff** contra as arestas existentes em vez de
+  apagar-e-recriar — mesmo resultado idempotente, sem colidir com o índice único dentro da
+  mesma transação.
+- Resolução do alvo: título (case-insensitive) primeiro, depois slug. `[[Meeting Notes]]` e
+  `[[meeting-notes]]` viram uma aresta só; `![[X]]` vira uma aresta `embed` separada.
+- Backend: `GET /api/v1/notes/pages/{id}/backlinks`. O parse roda no save **e** no create
+  (uma page pode nascer com conteúdo).
+- Frontend: `lib/wikilinks.ts` espelha o parser/slugger do backend para o preview resolver o
+  link do mesmo jeito que o save vai resolver. Embed é renderizado como link comum — embutir
+  o conteúdo do alvo inline não faz parte desta fase.
+- **Registrado (não feito): autocomplete de `[[` no editor.** Exigiria adicionar
+  `@codemirror/autocomplete` como dependência direta; fica para quando houver mais um motivo
+  para mexer no editor (Fase 07, slash commands, é o encaixe natural).

@@ -7,6 +7,7 @@ using Pottmayer.Pandora.Modules.Notes.Application.Commands.MovePage;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.SetPageArchived;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.SetPageFavorite;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.UpdatePage;
+using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetBacklinks;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPage;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPageTree;
 using Pottmayer.Pandora.Modules.Notes.Presentation.Requests;
@@ -42,6 +43,13 @@ public sealed class PagesController(
     public async Task<IActionResult> GetAsync(Guid id, CancellationToken ct)
     {
         var result = await sender.Send(new GetPageQuery(new GetPageInput(UserId, id)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpGet("{id:guid}/backlinks")]
+    public async Task<IActionResult> BacklinksAsync(Guid id, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetBacklinksQuery(new GetBacklinksInput(UserId, id)), ct);
         return result.ToActionResult(errorMapper);
     }
 
