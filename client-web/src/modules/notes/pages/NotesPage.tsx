@@ -9,6 +9,7 @@ import { BacklinksPanel } from '../components/BacklinksPanel'
 import { MarkdownEditor } from '../components/MarkdownEditor'
 import { MarkdownPreview } from '../components/MarkdownPreview'
 import { NotesSidebar } from '../components/NotesSidebar'
+import { SearchPalette } from '../components/SearchPalette'
 import { useAutosave } from '../hooks/useAutosave'
 import { useCreatePage, usePage, usePageTree, useUpdatePage } from '../hooks/usePages'
 import { buildPageIndex } from '../lib/wikilinks'
@@ -132,6 +133,8 @@ export function NotesPage() {
 
   return (
     <Flex gap={16} align="stretch" style={{ height: 'calc(100vh - 112px)' }}>
+      <SearchPalette onSelect={handleSelect} />
+
       <Card
         styles={{ body: { padding: 12, height: '100%', overflow: 'hidden' } }}
         style={{ width: SIDEBAR_WIDTH, flexShrink: 0, height: '100%' }}

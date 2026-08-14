@@ -1,4 +1,5 @@
 using Pottmayer.Pandora.Modules.Notes.Domain.Aggregates;
+using Pottmayer.Pandora.Modules.Notes.Domain.ValueObjects;
 using Pottmayer.Tars.Data.Relational.Abstractions.Repositories;
 
 namespace Pottmayer.Pandora.Modules.Notes.Domain.Ports.Repositories;
@@ -38,4 +39,12 @@ public interface IPageRepository : IStandardRepository<Page, Guid>
     /// <summary>The user's non-deleted pages among <paramref name="ids"/>, ordered by title.</summary>
     Task<IReadOnlyList<Page>> GetByIdsForUserAsync(
         IReadOnlyCollection<Guid> ids, Guid userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// The user's non-deleted pages whose title or body match <paramref name="tsQuery"/> (built by
+    /// <see cref="PageSearch.ToTsQuery"/>), ordered by title and capped at <paramref name="limit"/>.
+    /// Archived pages count — they are hidden from the sidebar, not from search.
+    /// </summary>
+    Task<IReadOnlyList<Page>> SearchAsync(
+        Guid userId, string tsQuery, int limit, CancellationToken ct = default);
 }

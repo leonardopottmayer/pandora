@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { noteKeys } from './queryKeys'
 import { buildTree } from '../lib/buildTree'
 import type { CreatePageRequest, MovePageRequest, PageTreeNode, UpdatePageRequest } from '../models'
@@ -27,6 +27,19 @@ export function useBacklinks(id: string | null) {
     queryKey: noteKeys.backlinks(id ?? ''),
     queryFn: () => pagesService.getBacklinks(id!),
     enabled: !!id,
+  })
+}
+
+/**
+ * Full-text search for the command palette. The term is expected to be debounced by the caller;
+ * previous results stay on screen while the next ones load, so the list does not blink per keystroke.
+ */
+export function useSearchPages(term: string) {
+  return useQuery({
+    queryKey: noteKeys.search(term),
+    queryFn: () => pagesService.searchPages(term),
+    enabled: term.trim().length > 0,
+    placeholderData: keepPreviousData,
   })
 }
 

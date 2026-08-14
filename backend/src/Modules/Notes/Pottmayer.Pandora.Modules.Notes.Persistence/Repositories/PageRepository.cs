@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using NpgsqlTypes;
 using Pottmayer.Pandora.Modules.Notes.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Notes.Domain.Ports.Repositories;
+using Pottmayer.Pandora.Modules.Notes.Persistence.EntityConfigs;
 using Pottmayer.Tars.Data.Abstractions.DataContext;
 using Pottmayer.Tars.Data.Relational.Repositories;
 
@@ -67,6 +69,23 @@ public sealed class PageRepository(IDataContextAccessor accessor)
         return await Queryable()
             .Where(p => ids.Contains(p.Id) && p.UserId == userId && p.DeletedAt == null)
             .OrderBy(p => p.Title)
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<Page>> SearchAsync(
+        Guid userId, string tsQuery, int limit, CancellationToken ct = default)
+    {
+        if (string.IsNullOrEmpty(tsQuery))
+            return [];
+
+        // Matches against the stored tsvector, so the GIN index does the work. The configuration
+        // ('simple') is the one the generated column was built with — they have to agree.
+        return await Queryable()
+            .Where(p => p.UserId == userId && p.DeletedAt == null &&
+                        EF.Property<NpgsqlTsVector>(p, PageColumns.SearchVector)
+                          .Matches(EF.Functions.ToTsQuery("simple", tsQuery)))
+            .OrderBy(p => p.Title)
+            .Take(limit)
             .ToListAsync(ct);
     }
 }

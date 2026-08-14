@@ -1,9 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using NpgsqlTypes;
 using Pottmayer.Pandora.Modules.Notes.Abstractions;
 using Pottmayer.Pandora.Modules.Notes.Domain.Aggregates;
 
 namespace Pottmayer.Pandora.Modules.Notes.Persistence.EntityConfigs;
+
+/// <summary>Names of the page columns that exist only in the store, shared by the config and the query.</summary>
+internal static class PageColumns
+{
+    public const string SearchVector = "SearchVector";
+}
 
 internal sealed class PageEntityConfiguration : IEntityTypeConfiguration<Page>
 {
@@ -29,6 +36,15 @@ internal sealed class PageEntityConfiguration : IEntityTypeConfiguration<Page>
         builder.Property(p => p.CreatedBy).HasColumnName("created_by");
         builder.Property(p => p.UpdatedAt).HasColumnName("updated_at");
         builder.Property(p => p.UpdatedBy).HasColumnName("updated_by");
+
+        // Full-text vector over title + body. It is a shadow property because the search vector is a
+        // storage detail (Postgres generates it), not something the aggregate knows about; the search
+        // query reaches it with EF.Property.
+        builder.Property<NpgsqlTsVector>(PageColumns.SearchVector)
+               .HasColumnName("search_vector")
+               .HasComputedColumnSql(
+                   "to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(content_markdown, ''))",
+                   stored: true);
 
         builder.HasIndex(p => p.UserId).HasDatabaseName("ix_nte001_user_id");
         builder.HasIndex(p => p.ParentId).HasDatabaseName("ix_nte001_parent_id");

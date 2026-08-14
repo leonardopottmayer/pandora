@@ -7,4 +7,5 @@ export const noteKeys = {
   page: (id: string) => [...noteKeys.pages(), 'detail', id] as const,
   allBacklinks: () => [...noteKeys.pages(), 'backlinks'] as const,
   backlinks: (id: string) => [...noteKeys.allBacklinks(), id] as const,
+  search: (term: string) => [...noteKeys.pages(), 'search', term] as const,
 }

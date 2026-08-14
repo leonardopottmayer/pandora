@@ -10,6 +10,7 @@ using Pottmayer.Pandora.Modules.Notes.Application.Commands.UpdatePage;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetBacklinks;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPage;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPageTree;
+using Pottmayer.Pandora.Modules.Notes.Application.Queries.SearchPages;
 using Pottmayer.Pandora.Modules.Notes.Presentation.Requests;
 using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
@@ -36,6 +37,13 @@ public sealed class PagesController(
         CancellationToken ct = default)
     {
         var result = await sender.Send(new GetPageTreeQuery(new GetPageTreeInput(UserId, includeArchived)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchAsync([FromQuery] string? q, CancellationToken ct)
+    {
+        var result = await sender.Send(new SearchPagesQuery(new SearchPagesInput(UserId, q)), ct);
         return result.ToActionResult(errorMapper);
     }
 

@@ -8,6 +8,7 @@ import {
   getPage,
   listPages,
   movePage,
+  searchPages,
   setPageArchived,
   setPageFavorite,
   updatePage,
@@ -101,6 +102,19 @@ describe('pages.service', () => {
     await setPageArchived('p1', true)
     await setPageArchived('p1', false)
     expect(paths).toEqual(['archive', 'unarchive'])
+  })
+
+  it('searches pages with the term as the q parameter', async () => {
+    let q: string | null = null
+    server.use(
+      http.get(`${NOTES_BASE}/pages/search`, ({ request }) => {
+        q = new URL(request.url).searchParams.get('q')
+        return HttpResponse.json({ success: true, data: [{ ...summary, excerpt: '...trecho...' }] })
+      }),
+    )
+    const results = await searchPages('trecho')
+    expect(q).toBe('trecho')
+    expect(results[0].excerpt).toBe('...trecho...')
   })
 
   it('deletes a page', async () => {

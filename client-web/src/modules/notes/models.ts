@@ -67,6 +67,16 @@ export interface BacklinkDto {
   kind: 'wikilink' | 'embed'
 }
 
+/** One hit of the full-text search; `excerpt` is a plain slice of the body, no highlighting. */
+export interface PageSearchResultDto {
+  id: string
+  title: string
+  slug: string
+  icon: string | null
+  isArchived: boolean
+  excerpt: string
+}
+
 /** A sidebar node with its children nested (built on the frontend from the flat list). */
 export interface PageTreeNode extends PageSummaryDto {
   children: PageTreeNode[]

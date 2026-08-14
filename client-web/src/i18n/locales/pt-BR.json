@@ -632,6 +632,9 @@
     "moveCycle": "Uma página não pode ser movida para dentro dela mesma ou de uma subpágina.",
     "backlinks": "Menções",
     "backlinksEmpty": "Nenhuma página aponta para esta ainda.",
-    "embed": "incorporado"
+    "embed": "incorporado",
+    "searchPlaceholder": "Buscar páginas...",
+    "searchHint": "Digite para buscar suas páginas por título ou conteúdo.",
+    "searchEmpty": "Nenhuma página corresponde a esta busca."
   }
 }

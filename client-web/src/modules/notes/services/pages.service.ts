@@ -4,6 +4,7 @@ import type {
   CreatePageRequest,
   MovePageRequest,
   PageDto,
+  PageSearchResultDto,
   PageSummaryDto,
   UpdatePageRequest,
 } from '../models'
@@ -22,6 +23,11 @@ export async function getPage(id: string): Promise<PageDto> {
 
 export async function getBacklinks(id: string): Promise<BacklinkDto[]> {
   const { data } = await apiClient.get<BacklinkDto[]>(`${BASE}/${id}/backlinks`)
+  return data
+}
+
+export async function searchPages(term: string): Promise<PageSearchResultDto[]> {
+  const { data } = await apiClient.get<PageSearchResultDto[]>(`${BASE}/search`, { params: { q: term } })
   return data
 }
 
