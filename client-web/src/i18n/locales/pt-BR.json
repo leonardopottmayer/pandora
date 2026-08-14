@@ -640,6 +640,27 @@
     "localGraph": "Grafo local",
     "graphDepth": "Profundidade",
     "openGraph": "Abrir a visão em grafo",
-    "graphEmpty": "Nenhuma página para desenhar ainda."
+    "graphEmpty": "Nenhuma página para desenhar ainda.",
+    "callout": {
+      "note": "Nota",
+      "tip": "Dica",
+      "info": "Informação",
+      "warning": "Atenção",
+      "danger": "Perigo",
+      "quote": "Citação"
+    },
+    "slash": {
+      "h1": "Título 1",
+      "h2": "Título 2",
+      "h3": "Título 3",
+      "bulletList": "Lista com marcadores",
+      "numberedList": "Lista numerada",
+      "todo": "Tarefa",
+      "quote": "Citação",
+      "codeBlock": "Bloco de código",
+      "divider": "Divisor",
+      "table": "Tabela",
+      "wikilink": "Link para uma página"
+    }
   }
 }

@@ -640,6 +640,27 @@
     "localGraph": "Local graph",
     "graphDepth": "Depth",
     "openGraph": "Open the graph view",
-    "graphEmpty": "No pages to draw yet."
+    "graphEmpty": "No pages to draw yet.",
+    "callout": {
+      "note": "Note",
+      "tip": "Tip",
+      "info": "Info",
+      "warning": "Warning",
+      "danger": "Danger",
+      "quote": "Quote"
+    },
+    "slash": {
+      "h1": "Heading 1",
+      "h2": "Heading 2",
+      "h3": "Heading 3",
+      "bulletList": "Bulleted list",
+      "numberedList": "Numbered list",
+      "todo": "To-do",
+      "quote": "Quote",
+      "codeBlock": "Code block",
+      "divider": "Divider",
+      "table": "Table",
+      "wikilink": "Link to a page"
+    }
   }
 }

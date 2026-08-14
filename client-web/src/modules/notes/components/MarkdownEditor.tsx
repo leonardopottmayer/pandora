@@ -1,10 +1,13 @@
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { minimalSetup } from 'codemirror'
 import { EditorState } from '@codemirror/state'
-import { EditorView, keymap, placeholder as cmPlaceholder } from '@codemirror/view'
+import { EditorView, keymap, placeholder as cmPlaceholder, tooltips } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { oneDark } from '@codemirror/theme-one-dark'
+import { autocompletion } from '@codemirror/autocomplete'
+import { moveTableCell, slashSource } from '../lib/editorCommands'
 import type { AttachmentDto } from '../models'
 
 interface MarkdownEditorProps {
@@ -32,15 +35,18 @@ export function MarkdownEditor({
   onChange,
   onUpload,
 }: MarkdownEditorProps) {
+  const { t } = useTranslation()
   const hostRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
 
   // Keep the latest callbacks in refs so the editor isn't rebuilt when they change.
   const onChangeRef = useRef(onChange)
   const onUploadRef = useRef(onUpload)
+  const tRef = useRef(t)
   useEffect(() => {
     onChangeRef.current = onChange
     onUploadRef.current = onUpload
+    tRef.current = t
   })
 
   // Inserts markdown at the current selection (used after an async upload completes).
@@ -63,6 +69,9 @@ export function MarkdownEditor({
   // (Re)build the editor whenever the open page or the theme changes.
   useEffect(() => {
     if (!hostRef.current) return
+
+    // Labels are read through the ref, so switching language doesn't rebuild the editor.
+    const slashCompletions = slashSource((command) => tRef.current(command.labelKey))
 
     const uploadHandlers = EditorView.domEventHandlers({
       paste(event, view) {
@@ -88,6 +97,15 @@ export function MarkdownEditor({
     const extensions = [
       minimalSetup,
       history(),
+      autocompletion({ override: [slashCompletions], icons: false }),
+      // The editor sits inside a Card with `overflow: hidden`, which would clip the menu near the
+      // bottom of the pane; hanging the tooltip off the body keeps it whole.
+      tooltips({ parent: document.body }),
+      // Ahead of the default keymap: inside a table Tab walks cells, everywhere else it declines.
+      keymap.of([
+        { key: 'Tab', run: moveTableCell(1) },
+        { key: 'Shift-Tab', run: moveTableCell(-1) },
+      ]),
       keymap.of([...defaultKeymap, ...historyKeymap]),
       markdown(),
       EditorView.lineWrapping,

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { marked } from 'marked'
+import { useTranslation } from 'react-i18next'
+import { Marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { fetchAttachmentBlob } from '../services/attachments.service'
+import { calloutExtension, CALLOUT_TYPES, type CalloutLabels } from '../lib/callouts'
 import { renderWikilinks, type PageIndex } from '../lib/wikilinks'
 
 interface MarkdownPreviewProps {
@@ -16,9 +18,9 @@ interface MarkdownPreviewProps {
 
 const ATTACHMENT_PREFIX = '/api/v1/notes/attachments/'
 
-function renderHtml(md: string, pageIndex?: PageIndex): string {
+function renderHtml(parser: Marked, md: string, pageIndex?: PageIndex): string {
   const withLinks = pageIndex ? renderWikilinks(md, pageIndex) : md
-  const raw = marked.parse(withLinks, { async: false }) as string
+  const raw = parser.parse(withLinks, { async: false })
   return DOMPurify.sanitize(raw)
 }
 
@@ -33,8 +35,20 @@ export function MarkdownPreview({
   onOpenPage,
   onCreatePage,
 }: MarkdownPreviewProps) {
+  const { t, i18n } = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
-  const html = useMemo(() => renderHtml(md, pageIndex), [md, pageIndex])
+
+  // A callout written without a title falls back to the name of its type, so the parser is rebuilt
+  // when the language changes.
+  const parser = useMemo(() => {
+    const labels = Object.fromEntries(
+      CALLOUT_TYPES.map((type) => [type, t(`notes.callout.${type}`)]),
+    ) as CalloutLabels
+    return new Marked({ extensions: [calloutExtension(labels)] })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i18n.language])
+
+  const html = useMemo(() => renderHtml(parser, md, pageIndex), [parser, md, pageIndex])
 
   // Wikilinks are anchors with no real href; a delegated handler turns a click into navigation (or
   // into creating the page that is still missing).
