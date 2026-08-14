@@ -6,19 +6,22 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { useSearchPages } from '../hooks/usePages'
 
 interface SearchPaletteProps {
+  open: boolean
+  /** Opened by Ctrl+K from within, or by the sidebar's search button from outside. */
+  onOpenChange: (open: boolean) => void
   /** Opens the chosen page. */
   onSelect: (id: string) => void
 }
 
 /**
  * Ctrl+K (Cmd+K on a Mac) command palette: full-text search over the user's pages, driven from the
- * keyboard end to end — type, arrow through the hits, Enter to open, Esc to close.
+ * keyboard end to end — type, arrow through the hits, Enter to open, Esc to close. The shortcut
+ * lives here; whether the palette is open is the page's state, so the sidebar can raise it too.
  */
-export function SearchPalette({ onSelect }: SearchPaletteProps) {
+export function SearchPalette({ open, onOpenChange, onSelect }: SearchPaletteProps) {
   const { t } = useTranslation()
   const { token } = theme.useToken()
 
-  const [open, setOpen] = useState(false)
   const [term, setTerm] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
 
@@ -30,18 +33,18 @@ export function SearchPalette({ onSelect }: SearchPaletteProps) {
     function handleKeyDown(event: KeyboardEvent) {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault()
-        setOpen(true)
+        onOpenChange(true)
       }
     }
     window.addEventListener('keydown', handleKeyDown, true)
     return () => window.removeEventListener('keydown', handleKeyDown, true)
-  }, [])
+  }, [onOpenChange])
 
   // A shorter list may no longer reach where the cursor was.
   if (activeIndex > 0 && activeIndex >= results.length) setActiveIndex(0)
 
   function close() {
-    setOpen(false)
+    onOpenChange(false)
     setTerm('')
     setActiveIndex(0)
   }

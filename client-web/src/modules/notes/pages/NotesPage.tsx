@@ -37,6 +37,7 @@ export function NotesPage() {
 
   const selectedId = routeId ?? null
   const [includeArchived, setIncludeArchived] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('split')
 
   // Local draft of the open page; the source of truth while typing.
@@ -135,7 +136,7 @@ export function NotesPage() {
 
   return (
     <Flex gap={16} align="stretch" style={{ height: 'calc(100vh - 112px)' }}>
-      <SearchPalette onSelect={handleSelect} />
+      <SearchPalette open={searchOpen} onOpenChange={setSearchOpen} onSelect={handleSelect} />
 
       <Card
         styles={{ body: { padding: 12, height: '100%', overflow: 'hidden' } }}
@@ -146,6 +147,7 @@ export function NotesPage() {
           onSelect={handleSelect}
           includeArchived={includeArchived}
           onToggleArchived={setIncludeArchived}
+          onSearch={() => setSearchOpen(true)}
         />
       </Card>
 

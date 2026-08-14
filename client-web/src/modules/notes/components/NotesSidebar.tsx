@@ -8,6 +8,7 @@ import {
   FileTextOutlined,
   PartitionOutlined,
   PlusOutlined,
+  SearchOutlined,
   StarFilled,
 } from '@ant-design/icons'
 import { toErrorMessage } from '@/lib/api/envelope'
@@ -27,6 +28,8 @@ interface NotesSidebarProps {
   onSelect: (id: string | null) => void
   includeArchived: boolean
   onToggleArchived: (value: boolean) => void
+  /** Raises the search palette — the same one Ctrl+K opens. */
+  onSearch: () => void
 }
 
 export function NotesSidebar({
@@ -34,6 +37,7 @@ export function NotesSidebar({
   onSelect,
   includeArchived,
   onToggleArchived,
+  onSearch,
 }: NotesSidebarProps) {
   const { t } = useTranslation()
   const { message, modal } = App.useApp()
@@ -173,6 +177,13 @@ export function NotesSidebar({
       <Flex align="center" justify="space-between" className="mb-2 px-2">
         <Typography.Text strong>{t('nav.notes')}</Typography.Text>
         <Flex align="center" gap={2}>
+          <Button
+            type="text"
+            size="small"
+            icon={<SearchOutlined />}
+            title={t('notes.openSearch')}
+            onClick={onSearch}
+          />
           <Button
             type="text"
             size="small"

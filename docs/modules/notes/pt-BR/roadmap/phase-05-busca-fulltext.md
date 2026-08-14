@@ -46,5 +46,11 @@ um command palette (Ctrl+K). Fecha o MVP.
 - Frontend: `SearchPalette` montado na `NotesPage` — Ctrl+K (Cmd+K no Mac) em *capture*, para
   ganhar do editor; termo com debounce de 200ms; setas/Enter/Esc. O palette é do módulo Notes,
   não do `AppLayout`: ele só busca pages.
-- **Registrado (não feito): não há botão de busca visível.** O atalho é a única porta de entrada;
-  se a descoberta incomodar, o encaixe natural é um item no topo da sidebar.
+- **Botão de busca: feito depois**, no lugar que já estava previsto — uma lupa no topo da sidebar,
+  ao lado das de grafo e nova page. O atalho tinha ficado como única porta de entrada, e o que não
+  se vê não se usa; o `title` do botão mostra `Ctrl+K`, então ele também ensina o atalho.
+  - Para o botão abrir o mesmo modal, o estado `open` **subiu para a página** (`SearchPalette` virou
+    controlado, com `open`/`onOpenChange`); o listener do atalho continua dentro do palette, que é
+    de quem ele é. Nada da busca em si foi duplicado.
+  - A `NotesGraphPage` monta a mesma sidebar, então passou a montar o palette também — senão o botão
+    ficaria morto (ou sumiria) numa das duas rotas. De brinde, Ctrl+K passou a funcionar no grafo.

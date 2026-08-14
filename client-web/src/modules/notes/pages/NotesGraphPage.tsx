@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Card, Empty, Flex, Spin, Typography } from 'antd'
 import { NotesSidebar } from '../components/NotesSidebar'
 import { GraphView } from '../components/GraphView'
+import { SearchPalette } from '../components/SearchPalette'
 import { useGraph } from '../hooks/usePages'
 
 const SIDEBAR_WIDTH = 280
@@ -13,6 +14,8 @@ export function NotesGraphPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [includeArchived, setIncludeArchived] = useState(false)
+  // The sidebar here is the same one the editor page shows, search button included.
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const { data: graph, isLoading } = useGraph()
 
@@ -22,6 +25,8 @@ export function NotesGraphPage() {
 
   return (
     <Flex gap={16} align="stretch" style={{ height: 'calc(100vh - 112px)' }}>
+      <SearchPalette open={searchOpen} onOpenChange={setSearchOpen} onSelect={openPage} />
+
       <Card
         styles={{ body: { padding: 12, height: '100%', overflow: 'hidden' } }}
         style={{ width: SIDEBAR_WIDTH, flexShrink: 0, height: '100%' }}
@@ -31,6 +36,7 @@ export function NotesGraphPage() {
           onSelect={openPage}
           includeArchived={includeArchived}
           onToggleArchived={setIncludeArchived}
+          onSearch={() => setSearchOpen(true)}
         />
       </Card>
 

@@ -636,6 +636,7 @@
     "searchPlaceholder": "Search pages...",
     "searchHint": "Type to search your pages by title or content.",
     "searchEmpty": "No page matches this search.",
+    "openSearch": "Search pages (Ctrl+K)",
     "graph": "Graph",
     "localGraph": "Local graph",
     "graphDepth": "Depth",
