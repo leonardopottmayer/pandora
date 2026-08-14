@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { buildPageIndex, renderWikilinks, resolveWikilink, slugify } from './wikilinks'
+import {
+  buildPageIndex,
+  filterPages,
+  renderWikilinks,
+  resolveWikilink,
+  slugify,
+  wikilinkTriggerAt,
+} from './wikilinks'
 import type { PageSummaryDto } from '../models'
 
 function page(id: string, title: string, slug: string): PageSummaryDto {
@@ -83,5 +90,60 @@ describe('renderWikilinks', () => {
 
   it('leaves empty and non-wikilink brackets alone', () => {
     expect(renderWikilinks('[[]] and [a](b)', index)).toBe('[[]] and [a](b)')
+  })
+})
+
+describe('wikilinkTriggerAt', () => {
+  it('opens on the bare brackets with an empty query', () => {
+    expect(wikilinkTriggerAt('see [[', 6)).toEqual({ from: 6, query: '' })
+  })
+
+  it('collects what was typed after the brackets, spaces included', () => {
+    expect(wikilinkTriggerAt('see [[meeting no', 16)).toEqual({ from: 6, query: 'meeting no' })
+  })
+
+  it('triggers on an embed too', () => {
+    expect(wikilinkTriggerAt('![[meet', 7)?.query).toBe('meet')
+  })
+
+  it('stays quiet outside a link', () => {
+    expect(wikilinkTriggerAt('just a paragraph', 6)).toBeNull()
+  })
+
+  it('stays quiet once the link is closed', () => {
+    expect(wikilinkTriggerAt('[[Meeting Notes]] and more', 26)).toBeNull()
+  })
+
+  it('stays quiet on the alias half', () => {
+    expect(wikilinkTriggerAt('[[Meeting Notes|yester', 22)).toBeNull()
+  })
+
+  it('reads the innermost brackets when the cursor sits after a finished link', () => {
+    const line = '[[Meeting Notes]] then [[caf'
+    expect(wikilinkTriggerAt(line, line.length)?.query).toBe('caf')
+  })
+})
+
+describe('filterPages', () => {
+  const pages = [page('id-notes', 'Meeting Notes', 'meeting-notes'), page('id-cafe', 'Café com Pão', 'cafe-com-pao')]
+
+  it('offers everything on an empty query', () => {
+    expect(filterPages(pages, '')).toHaveLength(2)
+  })
+
+  it('matches part of a title, case-insensitively', () => {
+    expect(filterPages(pages, 'notes').map((p) => p.id)).toEqual(['id-notes'])
+  })
+
+  it('matches by slug, so the accent-free spelling finds the page', () => {
+    expect(filterPages(pages, 'cafe').map((p) => p.id)).toEqual(['id-cafe'])
+  })
+
+  it('caps the list', () => {
+    expect(filterPages(pages, '', 1)).toHaveLength(1)
+  })
+
+  it('returns nothing when no page matches', () => {
+    expect(filterPages(pages, 'zzz')).toEqual([])
   })
 })

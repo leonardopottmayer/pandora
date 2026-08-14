@@ -50,6 +50,18 @@ na page. Este modelo de links é a **fundação do grafo (Fase 06)**.
 - Frontend: `lib/wikilinks.ts` espelha o parser/slugger do backend para o preview resolver o
   link do mesmo jeito que o save vai resolver. Embed é renderizado como link comum — embutir
   o conteúdo do alvo inline não faz parte desta fase.
-- **Registrado (não feito): autocomplete de `[[` no editor.** Exigiria adicionar
-  `@codemirror/autocomplete` como dependência direta; fica para quando houver mais um motivo
-  para mexer no editor (Fase 07, slash commands, é o encaixe natural).
+- **Autocomplete de `[[`: feito depois da Fase 07**, que era o encaixe previsto — ela trouxe
+  `@codemirror/autocomplete` como dependência direta (o único motivo do adiamento) e o menu de
+  slash commands, ao lado de quem o de wikilink agora se registra.
+  - `wikilinkTriggerAt` (em `lib/wikilinks.ts`, junto do resto do parse) abre o menu depois de
+    `[[` — e de `![[`, que escreve o alvo igual — e **recusa** depois de `]` ou de `|`: link
+    fechado ou metade do alias não são mais o alvo sendo digitado.
+  - `filterPages` casa por **título e por slug**, então `cafe` acha `Café com Pão`; teto de 10
+    opções. Mesmo motivo do menu de `/`: o `CompletionResult` vai com `filter: false`, senão a
+    página que casou pelo slug seria descartada por não casar com o `label` (o título).
+  - Ao aplicar, se já houver um `]]` logo depois do cursor ele é **reaproveitado** em vez de
+    duplicado — é exatamente o estado que o slash command `/wikilink` deixa (`[[]]` com o cursor
+    no meio).
+  - A lista de pages entra por **ref** (`() => pagesRef.current`), pelo mesmo motivo do `t`: uma
+    page nova não pode reconstruir o editor e perder o histórico de undo. São as mesmas pages que
+    o preview usa para resolver — arquivadas incluídas.

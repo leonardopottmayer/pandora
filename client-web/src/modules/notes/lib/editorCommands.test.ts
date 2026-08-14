@@ -2,8 +2,9 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { EditorState } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
 import { CompletionContext } from '@codemirror/autocomplete'
-import { moveTableCell, slashSource } from './editorCommands'
+import { moveTableCell, slashSource, wikilinkSource } from './editorCommands'
 import type { SlashCommand } from './slashCommands'
+import type { PageSummaryDto } from '../models'
 
 let view: EditorView | null = null
 
@@ -150,5 +151,79 @@ describe('slashSource', () => {
 
     expect(view.state.doc.toString()).toBe('> [!warning] ')
     expect(view.state.selection.main.head).toBe(13)
+  })
+})
+
+const pages: PageSummaryDto[] = [
+  {
+    id: 'id-notes',
+    parentId: null,
+    title: 'Meeting Notes',
+    slug: 'meeting-notes',
+    icon: null,
+    orderIndex: 0,
+    isFavorite: false,
+    isArchived: false,
+  },
+]
+const wikilinks = wikilinkSource(() => pages)
+
+/** Runs the wikilink source with the cursor at `pos` (end of `doc` by default). */
+function completeLink(doc: string, pos = doc.length) {
+  const state = EditorState.create({ doc, selection: { anchor: pos } })
+  return wikilinks(new CompletionContext(state, pos, false))
+}
+
+/** Applies an option the way CodeMirror would, from the source's `from` to the cursor. */
+function applyOption(
+  view: EditorView,
+  result: { from: number; options: readonly { apply?: unknown }[] },
+  to: number,
+) {
+  const option = result.options[0]
+  ;(option.apply as (v: EditorView, c: unknown, f: number, t: number) => void)(
+    view,
+    option,
+    result.from,
+    to,
+  )
+}
+
+describe('wikilinkSource', () => {
+  it('offers every page on the bare brackets', () => {
+    const result = completeLink('see [[')
+    expect(result?.options.map((o) => o.label)).toEqual(['Meeting Notes'])
+    expect(result?.from).toBe(6)
+  })
+
+  it('finds a page by its slug and offers the title', () => {
+    expect(completeLink('[[meeting-')?.options[0].label).toBe('Meeting Notes')
+  })
+
+  it('stays quiet outside a link', () => {
+    expect(completeLink('plain text')).toBeNull()
+  })
+
+  it('returns null when nothing matches', () => {
+    expect(completeLink('[[zzz')).toBeNull()
+  })
+
+  it('writes the title and closes the link', () => {
+    const doc = 'see [[meet'
+    const view = editor(doc, doc.length)
+    applyOption(view, completeLink(doc)!, doc.length)
+
+    expect(view.state.doc.toString()).toBe('see [[Meeting Notes]]')
+    expect(view.state.selection.main.head).toBe(21)
+  })
+
+  it('reuses brackets that are already closed instead of doubling them', () => {
+    // What `/wikilink` leaves behind: `[[]]` with the cursor between the pairs.
+    const doc = '[[]]'
+    const view = editor(doc, 2)
+    applyOption(view, completeLink(doc, 2)!, 2)
+
+    expect(view.state.doc.toString()).toBe('[[Meeting Notes]]')
+    expect(view.state.selection.main.head).toBe(17)
   })
 })

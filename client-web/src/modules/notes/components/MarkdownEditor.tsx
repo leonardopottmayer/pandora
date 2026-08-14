@@ -7,8 +7,8 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { autocompletion } from '@codemirror/autocomplete'
-import { moveTableCell, slashSource } from '../lib/editorCommands'
-import type { AttachmentDto } from '../models'
+import { moveTableCell, slashSource, wikilinkSource } from '../lib/editorCommands'
+import type { AttachmentDto, PageSummaryDto } from '../models'
 
 interface MarkdownEditorProps {
   /** Changing this resets the document (a different page was opened). */
@@ -16,6 +16,8 @@ interface MarkdownEditorProps {
   initialValue: string
   placeholder?: string
   isDark: boolean
+  /** Targets offered by the `[[` autocomplete. */
+  pages: PageSummaryDto[]
   onChange: (value: string) => void
   /** Uploads a pasted/dropped file and returns its attachment metadata for embedding. */
   onUpload: (file: File) => Promise<AttachmentDto>
@@ -32,6 +34,7 @@ export function MarkdownEditor({
   initialValue,
   placeholder,
   isDark,
+  pages,
   onChange,
   onUpload,
 }: MarkdownEditorProps) {
@@ -43,10 +46,12 @@ export function MarkdownEditor({
   const onChangeRef = useRef(onChange)
   const onUploadRef = useRef(onUpload)
   const tRef = useRef(t)
+  const pagesRef = useRef(pages)
   useEffect(() => {
     onChangeRef.current = onChange
     onUploadRef.current = onUpload
     tRef.current = t
+    pagesRef.current = pages
   })
 
   // Inserts markdown at the current selection (used after an async upload completes).
@@ -70,8 +75,10 @@ export function MarkdownEditor({
   useEffect(() => {
     if (!hostRef.current) return
 
-    // Labels are read through the ref, so switching language doesn't rebuild the editor.
+    // Labels and page list are read through refs, so neither a language switch nor a new page
+    // rebuilds the editor.
     const slashCompletions = slashSource((command) => tRef.current(command.labelKey))
+    const wikilinkCompletions = wikilinkSource(() => pagesRef.current)
 
     const uploadHandlers = EditorView.domEventHandlers({
       paste(event, view) {
@@ -97,7 +104,7 @@ export function MarkdownEditor({
     const extensions = [
       minimalSetup,
       history(),
-      autocompletion({ override: [slashCompletions], icons: false }),
+      autocompletion({ override: [slashCompletions, wikilinkCompletions], icons: false }),
       // The editor sits inside a Card with `overflow: hidden`, which would clip the menu near the
       // bottom of the pane; hanging the tooltip off the body keeps it whole.
       tooltips({ parent: document.body }),

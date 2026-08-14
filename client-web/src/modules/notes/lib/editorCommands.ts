@@ -2,6 +2,8 @@ import type { EditorView } from '@codemirror/view'
 import type { CompletionContext, CompletionResult } from '@codemirror/autocomplete'
 import { cellAt, cellOffset, findTableAt, formatTable, nextCell, withEmptyRow } from './markdownTables'
 import { filterCommands, SLASH_COMMANDS, slashTriggerAt, type SlashCommand } from './slashCommands'
+import { filterPages, wikilinkTriggerAt } from './wikilinks'
+import type { PageSummaryDto } from '../models'
 
 // The CodeMirror side of the rich blocks: what `/` and Tab do to the document.
 
@@ -87,6 +89,45 @@ export function slashSource(label: (command: SlashCommand) => string) {
         displayLabel: label(command),
         apply: (view: EditorView, _completion: unknown, from: number, to: number) =>
           applyCommand(view, command, from, to),
+      })),
+    }
+  }
+}
+
+/** Writes the chosen title and closes the link, reusing a `]]` that is already sitting there. */
+function applyWikilink(view: EditorView, title: string, from: number, to: number) {
+  const closed = view.state.doc.sliceString(to, to + 2) === ']]'
+  const insert = `${title}]]`
+  view.dispatch({
+    changes: { from, to: closed ? to + 2 : to, insert },
+    selection: { anchor: from + insert.length },
+    scrollIntoView: true,
+  })
+}
+
+/**
+ * The `[[` menu. `pages` is read at completion time (a function, not an array) so the list stays
+ * current without rebuilding the editor.
+ */
+export function wikilinkSource(pages: () => PageSummaryDto[]) {
+  return (context: CompletionContext): CompletionResult | null => {
+    const line = context.state.doc.lineAt(context.pos)
+    const trigger = wikilinkTriggerAt(line.text, context.pos - line.from)
+    if (!trigger) return null
+
+    const matches = filterPages(pages(), trigger.query)
+    if (matches.length === 0) return null
+
+    return {
+      from: line.from + trigger.from,
+      // Same reason as the slash menu: `filterPages` already decided, and the titles it matched by
+      // slug would not survive CodeMirror's own filter.
+      filter: false,
+      options: matches.map((page) => ({
+        label: page.title,
+        detail: page.slug,
+        apply: (view: EditorView, _completion: unknown, from: number, to: number) =>
+          applyWikilink(view, page.title, from, to),
       })),
     }
   }

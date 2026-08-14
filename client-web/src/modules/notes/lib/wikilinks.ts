@@ -39,6 +39,46 @@ export function resolveWikilink(target: string, index: PageIndex): PageSummaryDt
   return index.get(target.trim().toLowerCase()) ?? index.get(slugify(target))
 }
 
+export interface WikilinkTrigger {
+  /** Offset in the line right after the `[[` — the replacement starts here. */
+  from: number
+  /** What was typed after the brackets, used to filter the page list. */
+  query: string
+}
+
+/**
+ * The `[[target` being typed at `ch`, or `null` when the cursor isn't in one. `![[` triggers too:
+ * an embed's target is written the same way.
+ */
+export function wikilinkTriggerAt(line: string, ch: number): WikilinkTrigger | null {
+  const before = line.slice(0, ch)
+  const open = before.lastIndexOf('[[')
+  if (open === -1) return null
+
+  const query = before.slice(open + 2)
+  // `]` closes the link and `|` starts the alias — past either, the target is no longer being typed.
+  if (/[[\]|]/.test(query)) return null
+
+  return { from: open + 2, query }
+}
+
+/** Pages whose title or slug matches what was typed after `[[`, capped for the menu. */
+export function filterPages(
+  pages: PageSummaryDto[],
+  query: string,
+  limit = 10,
+): PageSummaryDto[] {
+  const term = query.trim().toLowerCase()
+  const matches =
+    term.length === 0
+      ? pages
+      : pages.filter(
+          (page) =>
+            page.title.toLowerCase().includes(term) || page.slug.toLowerCase().includes(term),
+        )
+  return matches.slice(0, limit)
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')

@@ -127,6 +127,7 @@ export function NotesPage() {
       initialValue={page?.contentMarkdown ?? ''}
       placeholder={t('notes.contentPlaceholder')}
       isDark={isDark}
+      pages={allPages ?? []}
       onChange={(value) => updateDraft({ contentMarkdown: value })}
       onUpload={handleUpload}
     />
