@@ -74,6 +74,29 @@ export function formatTable(table: TableBlock): string[] {
   })
 }
 
+/**
+ * A blank table with `rows` rows — the header is the first of them — and `columns` columns. The
+ * padding comes from `formatTable`, so a generated table is indistinguishable from one the Tab key
+ * realigned.
+ */
+export function emptyTable(rows: number, columns: number): string[] {
+  const width = Math.max(1, Math.trunc(columns))
+  // The header is a row like any other in the count, and the separator is structure, not a row.
+  const bodyRows = Math.max(0, Math.trunc(rows) - 1)
+  const blankRow = () => Array<string>(width).fill('')
+
+  return formatTable({
+    startLine: 0,
+    endLine: bodyRows + 1,
+    rows: [
+      blankRow(),
+      Array<string>(width).fill('---'),
+      ...Array.from({ length: bodyRows }, blankRow),
+    ],
+    separatorRow: 1,
+  })
+}
+
 export interface CellPosition {
   /** Line index in the document. */
   line: number

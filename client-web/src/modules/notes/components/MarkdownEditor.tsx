@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { minimalSetup } from 'codemirror'
 import { EditorState } from '@codemirror/state'
@@ -7,7 +7,14 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { autocompletion } from '@codemirror/autocomplete'
-import { moveTableCell, slashSource, tagSource, wikilinkSource } from '../lib/editorCommands'
+import {
+  insertTable,
+  moveTableCell,
+  slashSource,
+  tagSource,
+  wikilinkSource,
+} from '../lib/editorCommands'
+import { TableSizeModal } from './TableSizeModal'
 import type { AttachmentDto, PageSummaryDto, TagDto } from '../models'
 
 interface MarkdownEditorProps {
@@ -44,6 +51,8 @@ export function MarkdownEditor({
   const { t } = useTranslation()
   const hostRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  // `/table` asked for a size and is waiting on the dialog.
+  const [tableSizeOpen, setTableSizeOpen] = useState(false)
 
   // Keep the latest callbacks in refs so the editor isn't rebuilt when they change.
   const onChangeRef = useRef(onChange)
@@ -82,7 +91,10 @@ export function MarkdownEditor({
 
     // Labels and page list are read through refs, so neither a language switch nor a new page
     // rebuilds the editor.
-    const slashCompletions = slashSource((command) => tRef.current(command.labelKey))
+    const slashCompletions = slashSource(
+      (command) => tRef.current(command.labelKey),
+      () => setTableSizeOpen(true),
+    )
     const wikilinkCompletions = wikilinkSource(() => pagesRef.current)
     const tagCompletions = tagSource(() => tagsRef.current)
 
@@ -148,5 +160,25 @@ export function MarkdownEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docId, isDark])
 
-  return <div ref={hostRef} className="notes-editor" style={{ height: '100%', overflow: 'auto' }} />
+  // Either way the editor takes the focus back: the dialog took it, and the cursor is still sitting
+  // where the `/table` was typed.
+  function closeTableSize() {
+    setTableSizeOpen(false)
+    viewRef.current?.focus()
+  }
+
+  return (
+    <>
+      <div ref={hostRef} className="notes-editor" style={{ height: '100%', overflow: 'auto' }} />
+      {tableSizeOpen && (
+        <TableSizeModal
+          onCancel={closeTableSize}
+          onConfirm={(rows, columns) => {
+            if (viewRef.current) insertTable(viewRef.current, rows, columns)
+            closeTableSize()
+          }}
+        />
+      )}
+    </>
+  )
 }

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   cellAt,
   cellOffset,
+  emptyTable,
   findTableAt,
   formatTable,
   nextCell,
@@ -101,6 +102,38 @@ describe('cellOffset', () => {
   it('lands on the content of the requested cell', () => {
     const line = '| Name  | Qty  |'
     expect(line.slice(cellOffset(line, 1))).toBe('Qty  |')
+  })
+})
+
+describe('emptyTable', () => {
+  it('counts the header among the rows', () => {
+    expect(emptyTable(3, 2)).toEqual([
+      '|     |     |',
+      '| --- | --- |',
+      '|     |     |',
+      '|     |     |',
+    ])
+  })
+
+  it('writes a header-only table when asked for a single row', () => {
+    expect(emptyTable(1, 2)).toEqual(['|     |     |', '| --- | --- |'])
+  })
+
+  it('writes as many columns as asked', () => {
+    expect(splitRow(emptyTable(2, 4)[0])).toHaveLength(4)
+  })
+
+  it('produces a table the rest of the module reads back', () => {
+    const table = findTableAt(emptyTable(4, 3), 0)
+    expect(table!.separatorRow).toBe(1)
+    expect(table!.rows).toHaveLength(5)
+  })
+
+  it.each([
+    [0, 1],
+    [-3, 0],
+  ])('clamps a nonsensical size (%i x %i)', (rows, columns) => {
+    expect(emptyTable(rows, columns)).toEqual(['|     |', '| --- |'])
   })
 })
 

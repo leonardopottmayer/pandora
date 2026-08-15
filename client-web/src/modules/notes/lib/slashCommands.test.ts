@@ -57,9 +57,15 @@ describe('filterCommands', () => {
 describe('SLASH_COMMANDS', () => {
   it('places the cursor inside the inserted text', () => {
     for (const command of SLASH_COMMANDS) {
+      if (command.kind !== 'insert') continue
       expect(command.cursor).toBeGreaterThanOrEqual(0)
       expect(command.cursor).toBeLessThanOrEqual(command.text.length)
     }
+  })
+
+  it('asks for a size before inserting a table', () => {
+    const table = SLASH_COMMANDS.find((command) => command.id === 'table')
+    expect(table).toMatchObject({ kind: 'prompt', prompt: 'table' })
   })
 
   it('has unique ids', () => {

@@ -3,29 +3,40 @@ import { CALLOUT_TYPES } from './callouts'
 // The `/` menu inserts plain markdown — every block below is something the user could have typed by
 // hand, which is what keeps the document round-trippable.
 
-export interface SlashCommand {
+interface SlashCommandBase {
   id: string
   /** i18n key of the label shown in the menu. */
   labelKey: string
   group: 'block' | 'callout'
+}
+
+/** Replaces the typed `/query` with its markdown right away. */
+export interface InsertCommand extends SlashCommandBase {
+  kind: 'insert'
   /** Markdown that replaces the typed `/query`. */
   text: string
   /** Where the cursor lands afterwards, as an offset into `text`. */
   cursor: number
 }
 
-/** `| ` + three spaces + ` |`, the same padding `formatTable` produces. */
-const TABLE_SNIPPET = ['|     |     |', '| --- | --- |', '|     |     |', ''].join('\n')
-
-function block(id: string, text: string, cursor = text.length): SlashCommand {
-  return { id, labelKey: `notes.slash.${id}`, group: 'block', text, cursor }
+/** Asks for something first: the editor opens the matching dialog and inserts what it answers. */
+export interface PromptCommand extends SlashCommandBase {
+  kind: 'prompt'
+  prompt: 'table'
 }
 
-function callout(type: string): SlashCommand {
+export type SlashCommand = InsertCommand | PromptCommand
+
+function block(id: string, text: string, cursor = text.length): InsertCommand {
+  return { id, labelKey: `notes.slash.${id}`, group: 'block', kind: 'insert', text, cursor }
+}
+
+function callout(type: string): InsertCommand {
   return {
     id: `callout-${type}`,
     labelKey: `notes.callout.${type}`,
     group: 'callout',
+    kind: 'insert',
     text: `> [!${type}] `,
     cursor: `> [!${type}] `.length,
   }
@@ -41,7 +52,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   block('quote', '> '),
   block('codeBlock', '```\n\n```\n', 4),
   block('divider', '---\n\n'),
-  block('table', TABLE_SNIPPET, 2),
+  { id: 'table', labelKey: 'notes.slash.table', group: 'block', kind: 'prompt', prompt: 'table' },
   block('wikilink', '[[]]', 2),
   ...CALLOUT_TYPES.map((type) => callout(type)),
 ]

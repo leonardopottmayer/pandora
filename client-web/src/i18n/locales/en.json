@@ -649,6 +649,13 @@
     "graphDepth": "Depth",
     "openGraph": "Open the graph view",
     "graphEmpty": "No pages to draw yet.",
+    "tableSize": {
+      "title": "Insert table",
+      "rows": "Rows",
+      "columns": "Columns",
+      "insert": "Insert",
+      "hint": "The first row is the header."
+    },
     "callout": {
       "note": "Note",
       "tip": "Tip",

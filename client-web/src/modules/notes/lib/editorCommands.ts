@@ -1,7 +1,21 @@
 import type { EditorView } from '@codemirror/view'
 import type { CompletionContext, CompletionResult } from '@codemirror/autocomplete'
-import { cellAt, cellOffset, findTableAt, formatTable, nextCell, withEmptyRow } from './markdownTables'
-import { filterCommands, SLASH_COMMANDS, slashTriggerAt, type SlashCommand } from './slashCommands'
+import {
+  cellAt,
+  cellOffset,
+  emptyTable,
+  findTableAt,
+  formatTable,
+  nextCell,
+  withEmptyRow,
+} from './markdownTables'
+import {
+  filterCommands,
+  SLASH_COMMANDS,
+  slashTriggerAt,
+  type PromptCommand,
+  type SlashCommand,
+} from './slashCommands'
 import { filterTags, tagTriggerAt } from './tags'
 import { filterPages, wikilinkTriggerAt } from './wikilinks'
 import type { PageSummaryDto, TagDto } from '../models'
@@ -58,8 +72,41 @@ export function moveTableCell(direction: 1 | -1) {
   }
 }
 
-/** Replaces the typed `/query` with the command's markdown and puts the cursor where it belongs. */
-function applyCommand(view: EditorView, command: SlashCommand, from: number, to: number) {
+/**
+ * Writes a blank table of the chosen size at the cursor, landing in the first header cell — the
+ * answer to the `/table` dialog.
+ */
+export function insertTable(view: EditorView, rows: number, columns: number) {
+  const lines = emptyTable(rows, columns)
+  const insert = `${lines.join('\n')}\n`
+  const { from, to } = view.state.selection.main
+
+  view.dispatch({
+    changes: { from, to, insert },
+    selection: { anchor: from + cellOffset(lines[0], 0) },
+    scrollIntoView: true,
+  })
+  view.focus()
+}
+
+/**
+ * Replaces the typed `/query` with the command's markdown and puts the cursor where it belongs. A
+ * command that asks something first only clears the `/query`, so the dialog answers into a document
+ * that no longer holds it and the insertion point is simply where the cursor now sits.
+ */
+function applyCommand(
+  view: EditorView,
+  command: SlashCommand,
+  from: number,
+  to: number,
+  onPrompt: (prompt: PromptCommand['prompt']) => void,
+) {
+  if (command.kind === 'prompt') {
+    view.dispatch({ changes: { from, to, insert: '' }, selection: { anchor: from } })
+    onPrompt(command.prompt)
+    return
+  }
+
   view.dispatch({
     changes: { from, to, insert: command.text },
     selection: { anchor: from + command.cursor },
@@ -69,9 +116,12 @@ function applyCommand(view: EditorView, command: SlashCommand, from: number, to:
 
 /**
  * The `/` menu. `label` translates a command for display, so the list also filters in the language
- * on screen.
+ * on screen; `onPrompt` hands a command that needs an answer over to the React side.
  */
-export function slashSource(label: (command: SlashCommand) => string) {
+export function slashSource(
+  label: (command: SlashCommand) => string,
+  onPrompt: (prompt: PromptCommand['prompt']) => void,
+) {
   return (context: CompletionContext): CompletionResult | null => {
     const line = context.state.doc.lineAt(context.pos)
     const trigger = slashTriggerAt(line.text, context.pos - line.from)
@@ -89,7 +139,7 @@ export function slashSource(label: (command: SlashCommand) => string) {
         label: `/${command.id}`,
         displayLabel: label(command),
         apply: (view: EditorView, _completion: unknown, from: number, to: number) =>
-          applyCommand(view, command, from, to),
+          applyCommand(view, command, from, to, onPrompt),
       })),
     }
   }

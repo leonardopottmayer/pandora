@@ -649,6 +649,13 @@
     "graphDepth": "Profundidade",
     "openGraph": "Abrir a visão em grafo",
     "graphEmpty": "Nenhuma página para desenhar ainda.",
+    "tableSize": {
+      "title": "Inserir tabela",
+      "rows": "Linhas",
+      "columns": "Colunas",
+      "insert": "Inserir",
+      "hint": "A primeira linha é o cabeçalho."
+    },
     "callout": {
       "note": "Nota",
       "tip": "Dica",
