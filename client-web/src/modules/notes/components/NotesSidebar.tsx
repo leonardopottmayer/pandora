@@ -22,12 +22,16 @@ import {
   useSetPageFavorite,
 } from '../hooks/usePages'
 import { computeReorder, isSelfOrDescendant } from '../lib/moveMath'
+import { TagFilter } from './TagFilter'
 
 interface NotesSidebarProps {
   selectedId: string | null
   onSelect: (id: string | null) => void
   includeArchived: boolean
   onToggleArchived: (value: boolean) => void
+  /** Tags the list is narrowed by; with any picked, the tree flattens into the matching pages. */
+  tagIds: string[]
+  onTagIdsChange: (tagIds: string[]) => void
   /** Raises the search palette — the same one Ctrl+K opens. */
   onSearch: () => void
 }
@@ -37,12 +41,17 @@ export function NotesSidebar({
   onSelect,
   includeArchived,
   onToggleArchived,
+  tagIds,
+  onTagIdsChange,
   onSearch,
 }: NotesSidebarProps) {
   const { t } = useTranslation()
   const { message, modal } = App.useApp()
   const navigate = useNavigate()
-  const { tree, isLoading } = usePageTree(includeArchived)
+  const { tree, isLoading } = usePageTree(includeArchived, tagIds)
+  // Filtering by tag leaves matching children with no matching parent, so the backend answers with
+  // the matches alone and buildTree lays them out flat — which is what "who carries this tag?" asks.
+  const isFiltered = tagIds.length > 0
 
   const createMutation = useCreatePage()
   const favoriteMutation = useSetPageFavorite()
@@ -201,10 +210,16 @@ export function NotesSidebar({
         </Flex>
       </Flex>
 
+      <div className="mb-2 px-2">
+        <TagFilter value={tagIds} onChange={onTagIdsChange} />
+      </div>
+
       <div style={{ flex: 1, overflow: 'auto' }}>
         <Tree
           blockNode
-          draggable
+          // Dragging is off while filtering: the list is no longer the tree, so a drop would be
+          // reordering against siblings that are not on screen.
+          draggable={!isFiltered}
           showIcon={false}
           selectedKeys={selectedId ? [selectedId] : []}
           onSelect={(keys) => onSelect(keys.length > 0 ? String(keys[0]) : null)}
@@ -214,7 +229,7 @@ export function NotesSidebar({
         />
         {!isLoading && tree.length === 0 && (
           <Typography.Text type="secondary" className="block px-2 py-4">
-            {t('notes.empty')}
+            {isFiltered ? t('notes.tagFilterEmpty') : t('notes.empty')}
           </Typography.Text>
         )}
       </div>

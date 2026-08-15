@@ -35,24 +35,29 @@ public sealed class PagesController(
     [HttpGet]
     public async Task<IActionResult> ListAsync(
         [FromQuery] bool includeArchived = false,
+        [FromQuery] Guid[]? tagIds = null,
         CancellationToken ct = default)
     {
-        var result = await sender.Send(new GetPageTreeQuery(new GetPageTreeInput(UserId, includeArchived)), ct);
+        var result = await sender.Send(
+            new GetPageTreeQuery(new GetPageTreeInput(UserId, includeArchived, tagIds)), ct);
         return result.ToActionResult(errorMapper);
     }
 
     [HttpGet("search")]
-    public async Task<IActionResult> SearchAsync([FromQuery] string? q, CancellationToken ct)
+    public async Task<IActionResult> SearchAsync(
+        [FromQuery] string? q,
+        [FromQuery] Guid[]? tagIds = null,
+        CancellationToken ct = default)
     {
-        var result = await sender.Send(new SearchPagesQuery(new SearchPagesInput(UserId, q)), ct);
+        var result = await sender.Send(new SearchPagesQuery(new SearchPagesInput(UserId, q, tagIds)), ct);
         return result.ToActionResult(errorMapper);
     }
 
     [HttpGet("graph")]
-    public async Task<IActionResult> GraphAsync(CancellationToken ct)
+    public async Task<IActionResult> GraphAsync([FromQuery] Guid[]? tagIds = null, CancellationToken ct = default)
     {
         var result = await sender.Send(
-            new GetPageGraphQuery(new GetPageGraphInput(UserId, RootPageId: null, Depth: 1)), ct);
+            new GetPageGraphQuery(new GetPageGraphInput(UserId, RootPageId: null, Depth: 1, tagIds)), ct);
         return result.ToActionResult(errorMapper);
     }
 
@@ -71,9 +76,13 @@ public sealed class PagesController(
     }
 
     [HttpGet("{id:guid}/graph")]
-    public async Task<IActionResult> LocalGraphAsync(Guid id, [FromQuery] int depth = 1, CancellationToken ct = default)
+    public async Task<IActionResult> LocalGraphAsync(
+        Guid id,
+        [FromQuery] int depth = 1,
+        [FromQuery] Guid[]? tagIds = null,
+        CancellationToken ct = default)
     {
-        var result = await sender.Send(new GetPageGraphQuery(new GetPageGraphInput(UserId, id, depth)), ct);
+        var result = await sender.Send(new GetPageGraphQuery(new GetPageGraphInput(UserId, id, depth, tagIds)), ct);
         return result.ToActionResult(errorMapper);
     }
 

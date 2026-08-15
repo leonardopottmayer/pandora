@@ -44,7 +44,7 @@ Usuário único (Leonardo). JTBDs:
 | Busca full-text (básica) | ✅ | ranking/realce | |
 | **Graph view** | | ✅ | |
 | Slash commands / blocos ricos (tabelas, callouts) | | ✅ | |
-| Tags, favoritos, arquivar | ✅ (mínimo) | filtros | |
+| Tags, favoritos, arquivar | ✅ (mínimo) | ✅ filtros | |
 | Histórico de versões | | | ✅ |
 | Templates de page | | | ✅ |
 | Colaboração / share público | | | ✅ (talvez nunca) |

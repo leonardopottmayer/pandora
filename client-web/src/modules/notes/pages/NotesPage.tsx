@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
-import { App, Card, Empty, Flex, Input, Segmented, Spin, Tooltip, Typography, theme } from 'antd'
+import { App, Card, Empty, Flex, Input, Segmented, Spin, Tag, Tooltip, Typography, theme } from 'antd'
 import { EditOutlined, EyeOutlined, SplitCellsOutlined } from '@ant-design/icons'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { toErrorMessage } from '@/lib/api/envelope'
@@ -13,6 +13,7 @@ import { NotesSidebar } from '../components/NotesSidebar'
 import { SearchPalette } from '../components/SearchPalette'
 import { useAutosave } from '../hooks/useAutosave'
 import { useCreatePage, usePage, usePageTree, useUpdatePage } from '../hooks/usePages'
+import { useTags } from '../hooks/useTags'
 import { buildPageIndex } from '../lib/wikilinks'
 import { uploadAttachment } from '../services/attachments.service'
 import '../components/notes.css'
@@ -37,6 +38,7 @@ export function NotesPage() {
 
   const selectedId = routeId ?? null
   const [includeArchived, setIncludeArchived] = useState(false)
+  const [tagIds, setTagIds] = useState<string[]>([])
   const [searchOpen, setSearchOpen] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('split')
 
@@ -51,6 +53,15 @@ export function NotesPage() {
   // sidebar but does not break links to it (and the backend resolves it the same way).
   const { data: allPages } = usePageTree(true)
   const pageIndex = useMemo(() => buildPageIndex(allPages ?? []), [allPages])
+
+  // The tags exist module-wide: the preview paints the `#tag` chips with them, and clicking one
+  // (in the body or in the header) is what fills the sidebar filter.
+  const { tags, index: tagIndex } = useTags()
+
+  function filterByTagSlug(slug: string) {
+    const tag = tags.find((candidate) => candidate.slug === slug)
+    if (tag) setTagIds([tag.id])
+  }
 
   // The page the draft belongs to — also the id autosave writes to. It trails `selectedId`
   // while the next page loads, so a flush during a switch still targets the page being left.
@@ -129,6 +140,7 @@ export function NotesPage() {
       placeholder={t('notes.contentPlaceholder')}
       isDark={isDark}
       pages={allPages ?? []}
+      tags={tags}
       onChange={(value) => updateDraft({ contentMarkdown: value })}
       onUpload={handleUpload}
     />
@@ -147,6 +159,8 @@ export function NotesPage() {
           onSelect={handleSelect}
           includeArchived={includeArchived}
           onToggleArchived={setIncludeArchived}
+          tagIds={tagIds}
+          onTagIdsChange={setTagIds}
           onSearch={() => setSearchOpen(true)}
         />
       </Card>
@@ -194,6 +208,26 @@ export function NotesPage() {
               </Tooltip>
             </Flex>
 
+            {page && page.tags.length > 0 && (
+              <Flex
+                wrap
+                gap={4}
+                style={{ padding: '8px 16px', borderBottom: `1px solid ${token.colorBorderSecondary}` }}
+              >
+                {/* The tags the saved body mentions — clicking one narrows the sidebar to it. */}
+                {page.tags.map((tag) => (
+                  <Tag
+                    key={tag.id}
+                    color={tag.color ?? undefined}
+                    style={{ cursor: 'pointer', marginInlineEnd: 0 }}
+                    onClick={() => setTagIds([tag.id])}
+                  >
+                    #{tag.name}
+                  </Tag>
+                ))}
+              </Flex>
+            )}
+
             <Flex style={{ flex: 1, minHeight: 0 }}>
               {viewMode !== 'preview' && (
                 <div
@@ -213,8 +247,10 @@ export function NotesPage() {
                   <MarkdownPreview
                     markdown={draft.contentMarkdown}
                     pageIndex={pageIndex}
+                    tagIndex={tagIndex}
                     onOpenPage={handleSelect}
                     onCreatePage={handleCreateFromLink}
+                    onSelectTag={filterByTagSlug}
                   />
                 </div>
               )}

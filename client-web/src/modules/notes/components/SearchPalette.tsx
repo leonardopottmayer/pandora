@@ -4,6 +4,7 @@ import { Empty, Flex, Input, Modal, Spin, Typography, theme } from 'antd'
 import { FileTextOutlined, SearchOutlined } from '@ant-design/icons'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { useSearchPages } from '../hooks/usePages'
+import { TagFilter } from './TagFilter'
 
 interface SearchPaletteProps {
   open: boolean
@@ -23,10 +24,11 @@ export function SearchPalette({ open, onOpenChange, onSelect }: SearchPalettePro
   const { token } = theme.useToken()
 
   const [term, setTerm] = useState('')
+  const [tagIds, setTagIds] = useState<string[]>([])
   const [activeIndex, setActiveIndex] = useState(0)
 
   const debouncedTerm = useDebouncedValue(term)
-  const { data: results = [], isFetching } = useSearchPages(debouncedTerm)
+  const { data: results = [], isFetching } = useSearchPages(debouncedTerm, tagIds)
 
   // Capture phase: the editor below has its own key handling, and the palette wins over it.
   useEffect(() => {
@@ -46,6 +48,7 @@ export function SearchPalette({ open, onOpenChange, onSelect }: SearchPalettePro
   function close() {
     onOpenChange(false)
     setTerm('')
+    setTagIds([])
     setActiveIndex(0)
   }
 
@@ -93,11 +96,17 @@ export function SearchPalette({ open, onOpenChange, onSelect }: SearchPalettePro
         style={{ borderBottom: `1px solid ${token.colorBorderSecondary}`, borderRadius: 0 }}
       />
 
+      <div style={{ padding: 8, borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
+        <TagFilter value={tagIds} onChange={setTagIds} placeholder={t('notes.searchByTag')} />
+      </div>
+
       <div style={{ maxHeight: 360, overflowY: 'auto', padding: 4 }}>
         {results.length === 0 ? (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={debouncedTerm.trim() ? t('notes.searchEmpty') : t('notes.searchHint')}
+            description={
+              debouncedTerm.trim() || tagIds.length > 0 ? t('notes.searchEmpty') : t('notes.searchHint')
+            }
             style={{ margin: '24px 0' }}
           />
         ) : (

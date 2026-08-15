@@ -1,5 +1,6 @@
 using Pottmayer.Pandora.Modules.Notes.Abstractions;
 using Pottmayer.Pandora.Modules.Notes.Application.Dtos;
+using Pottmayer.Pandora.Modules.Notes.Application.Services;
 using Pottmayer.Pandora.Modules.Notes.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Notes.Domain.Errors;
 using Pottmayer.Pandora.Modules.Notes.Domain.Ports.Repositories;
@@ -22,19 +23,20 @@ public sealed class SetPageFavoriteCommandHandler(IUnitOfWorkFactory factory)
 
             var page = await repo.FindByIdForUserAsync(input.PageId, input.UserId, token);
             if (page is null)
-                return Result<Page>.Failure([PageErrors.NotFound]);
+                return Result<PageDto>.Failure([PageErrors.NotFound]);
 
             if (page.IsFavorite == input.Favorite)
-                return Result<Page>.Success(page); // idempotent: no change
+                return Result<PageDto>.Success(
+                    PageDto.From(page, await PageTagReader.LoadAsync(ctx, page.Id, input.UserId, token))); // idempotent: no change
 
             page.SetFavorite(input.Favorite);
             await repo.UpdateAsync(page, token);
 
-            return Result<Page>.Success(page);
+            // The tags did not change here, but the page view carries them.
+            return Result<PageDto>.Success(
+                PageDto.From(page, await PageTagReader.LoadAsync(ctx, page.Id, input.UserId, token)));
         }, cancellationToken: ct);
 
-        return result.IsFailure
-            ? Fail([.. result.Errors])
-            : Ok(PageDto.From(result.Value!));
+        return result.IsFailure ? Fail([.. result.Errors]) : Ok(result.Value!);
     }
 }

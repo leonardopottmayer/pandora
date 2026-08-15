@@ -5,10 +5,10 @@ import { buildTree } from '../lib/buildTree'
 import type { CreatePageRequest, MovePageRequest, PageTreeNode, UpdatePageRequest } from '../models'
 import * as pagesService from '../services/pages.service'
 
-export function usePageTree(includeArchived = false) {
+export function usePageTree(includeArchived = false, tagIds: string[] = []) {
   const query = useQuery({
-    queryKey: noteKeys.pageTree(includeArchived),
-    queryFn: () => pagesService.listPages(includeArchived),
+    queryKey: noteKeys.pageTree(includeArchived, tagIds),
+    queryFn: () => pagesService.listPages(includeArchived, tagIds),
   })
   const tree: PageTreeNode[] = useMemo(() => buildTree(query.data ?? []), [query.data])
   return { ...query, tree }
@@ -30,11 +30,11 @@ export function useBacklinks(id: string | null) {
   })
 }
 
-/** The whole wiki graph — nodes and edges for the global graph view. */
-export function useGraph() {
+/** The whole wiki graph — nodes and edges for the global graph view, optionally cut by tag. */
+export function useGraph(tagIds: string[] = []) {
   return useQuery({
-    queryKey: noteKeys.graph(),
-    queryFn: () => pagesService.getGraph(),
+    queryKey: noteKeys.graph(tagIds),
+    queryFn: () => pagesService.getGraph(tagIds),
   })
 }
 
@@ -51,11 +51,12 @@ export function useLocalGraph(id: string | null, depth: number) {
  * Full-text search for the command palette. The term is expected to be debounced by the caller;
  * previous results stay on screen while the next ones load, so the list does not blink per keystroke.
  */
-export function useSearchPages(term: string) {
+export function useSearchPages(term: string, tagIds: string[] = []) {
   return useQuery({
-    queryKey: noteKeys.search(term),
-    queryFn: () => pagesService.searchPages(term),
-    enabled: term.trim().length > 0,
+    queryKey: noteKeys.search(term, tagIds),
+    queryFn: () => pagesService.searchPages(term, tagIds),
+    // With tags picked, an empty term is not an empty search: it browses those tags' pages.
+    enabled: term.trim().length > 0 || tagIds.length > 0,
     placeholderData: keepPreviousData,
   })
 }
@@ -66,11 +67,24 @@ function useInvalidatePages() {
   return () => queryClient.invalidateQueries({ queryKey: noteKeys.pages() })
 }
 
+/**
+ * The mutations that write or drop content also decide which tags exist: a body mentioning a new
+ * `#tag` creates it, and deleting the last page that carried one sweeps it away.
+ */
+function useInvalidateTags() {
+  const queryClient = useQueryClient()
+  return () => queryClient.invalidateQueries({ queryKey: noteKeys.tags() })
+}
+
 export function useCreatePage() {
   const invalidate = useInvalidatePages()
+  const invalidateTags = useInvalidateTags()
   return useMutation({
     mutationFn: (body: CreatePageRequest) => pagesService.createPage(body),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate()
+      invalidateTags()
+    },
   })
 }
 
@@ -90,6 +104,8 @@ export function useUpdatePage() {
       // shape of the graph — may have changed.
       queryClient.invalidateQueries({ queryKey: noteKeys.allBacklinks() })
       queryClient.invalidateQueries({ queryKey: noteKeys.allGraphs() })
+      // The same save may have written the first #tag of a new one, or dropped the last of an old.
+      queryClient.invalidateQueries({ queryKey: noteKeys.tags() })
     },
   })
 }
@@ -137,8 +153,12 @@ export function useSetPageArchived() {
 
 export function useDeletePage() {
   const invalidate = useInvalidatePages()
+  const invalidateTags = useInvalidateTags()
   return useMutation({
     mutationFn: (id: string) => pagesService.deletePage(id),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate()
+      invalidateTags()
+    },
   })
 }

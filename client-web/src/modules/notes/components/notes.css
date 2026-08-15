@@ -72,6 +72,22 @@
 .notes-preview .notes-wikilink-missing:hover {
   border-bottom-color: #d4380d;
 }
+/* Tags: an inline chip. Uncolored ones borrow the text color, painted ones override both the
+   text and the border inline (see renderTags). */
+.notes-preview .notes-tag {
+  display: inline-block;
+  padding: 0 0.45em;
+  border: 1px solid rgba(128, 128, 128, 0.45);
+  border-radius: 10px;
+  font-size: 0.85em;
+  line-height: 1.6;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.notes-preview .notes-tag:hover {
+  background: rgba(128, 128, 128, 0.12);
+}
+
 /* Callouts: a tinted blockquote. The accent drives both the rule and the wash. */
 .notes-callout {
   --notes-callout-accent: #8c8c8c;

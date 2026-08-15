@@ -28,7 +28,7 @@ public sealed class CreatePageCommandHandler(IUnitOfWorkFactory factory, TimePro
             // A child page must hang off one the user actually owns (404-on-foreign-resource rule).
             if (input.ParentId is { } parentId &&
                 await repo.FindByIdForUserAsync(parentId, input.UserId, token) is null)
-                return Result<Page>.Failure([PageErrors.ParentNotFound]);
+                return Result<PageDto>.Failure([PageErrors.ParentNotFound]);
 
             var slug = await ResolveUniqueSlugAsync(repo, input.UserId, Slugger.From(input.Title), token);
 
@@ -37,16 +37,21 @@ public sealed class CreatePageCommandHandler(IUnitOfWorkFactory factory, TimePro
                 orderIndex: 0, input.ContentMarkdown ?? string.Empty, timeProvider);
             await repo.AddAsync(page, token);
 
-            // A page may already carry wikilinks in its initial content (e.g. a duplicated note).
+            // A page may already carry wikilinks and tags in its initial content (e.g. a duplicated note).
             var links = ctx.AcquireRepository<IPageLinkRepository>();
             await PageLinkSynchronizer.RebuildAsync(page, repo, links, timeProvider, token);
 
-            return Result<Page>.Success(page);
+            var tags = await PageTagSynchronizer.RebuildAsync(
+                page,
+                ctx.AcquireRepository<ITagRepository>(),
+                ctx.AcquireRepository<IPageTagRepository>(),
+                timeProvider,
+                token);
+
+            return Result<PageDto>.Success(PageDto.From(page, tags));
         }, cancellationToken: ct);
 
-        return result.IsFailure
-            ? Fail([.. result.Errors])
-            : Ok(PageDto.From(result.Value!));
+        return result.IsFailure ? Fail([.. result.Errors]) : Ok(result.Value!);
     }
 
     /// <summary>Appends "-2", "-3", … to the base slug until it is free for this user.</summary>

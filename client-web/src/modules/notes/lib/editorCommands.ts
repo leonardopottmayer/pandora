@@ -2,8 +2,9 @@ import type { EditorView } from '@codemirror/view'
 import type { CompletionContext, CompletionResult } from '@codemirror/autocomplete'
 import { cellAt, cellOffset, findTableAt, formatTable, nextCell, withEmptyRow } from './markdownTables'
 import { filterCommands, SLASH_COMMANDS, slashTriggerAt, type SlashCommand } from './slashCommands'
+import { filterTags, tagTriggerAt } from './tags'
 import { filterPages, wikilinkTriggerAt } from './wikilinks'
-import type { PageSummaryDto } from '../models'
+import type { PageSummaryDto, TagDto } from '../models'
 
 // The CodeMirror side of the rich blocks: what `/` and Tab do to the document.
 
@@ -128,6 +129,33 @@ export function wikilinkSource(pages: () => PageSummaryDto[]) {
         detail: page.slug,
         apply: (view: EditorView, _completion: unknown, from: number, to: number) =>
           applyWikilink(view, page.title, from, to),
+      })),
+    }
+  }
+}
+
+/**
+ * The `#` menu, offering the tags that already exist. It only completes what is there — a brand new
+ * tag is simply typed, which is the point of tags living in the text.
+ */
+export function tagSource(tags: () => TagDto[]) {
+  return (context: CompletionContext): CompletionResult | null => {
+    const line = context.state.doc.lineAt(context.pos)
+    const trigger = tagTriggerAt(line.text, context.pos - line.from)
+    if (!trigger) return null
+
+    const matches = filterTags(tags(), trigger.query)
+    if (matches.length === 0) return null
+
+    return {
+      from: line.from + trigger.from,
+      // Same reason as the other two menus: the match was decided by `filterTags`, and a tag found
+      // by its slug would not survive CodeMirror's own filter against the label.
+      filter: false,
+      options: matches.map((tag) => ({
+        label: tag.name,
+        detail: String(tag.pageCount),
+        apply: tag.name,
       })),
     }
   }

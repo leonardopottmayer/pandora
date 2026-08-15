@@ -1,5 +1,6 @@
 using Pottmayer.Pandora.Modules.Notes.Abstractions;
 using Pottmayer.Pandora.Modules.Notes.Application.Dtos;
+using Pottmayer.Pandora.Modules.Notes.Application.Services;
 using Pottmayer.Pandora.Modules.Notes.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Notes.Domain.Errors;
 using Pottmayer.Pandora.Modules.Notes.Domain.Ports.Repositories;
@@ -39,10 +40,24 @@ public sealed class GetPageGraphQueryHandler(IUnitOfWorkFactory factory)
             if (input.RootPageId is { } rootId && !byId.ContainsKey(rootId))
                 return null;
 
+            // The tag cut comes before the neighborhood walk: with a filter on, depth is counted over
+            // the pages that survived it, not over the ones that were about to be hidden.
+            var tagged = await TagFilter.MatchingPageIdsAsync(
+                input.TagIds, ctx.AcquireRepository<IPageTagRepository>(), token);
+            if (tagged is not null)
+            {
+                // The root itself may be filtered out — then there is no local graph to draw.
+                if (input.RootPageId is { } filteredRoot && !tagged.Contains(filteredRoot))
+                    return new PageGraphDto([], []);
+
+                byId = byId.Where(p => tagged.Contains(p.Key)).ToDictionary(p => p.Key, p => p.Value);
+            }
+
             var links = await ctx.AcquireRepository<IPageLinkRepository>()
                 .GetBySourcesAsync([.. byId.Keys], token);
 
-            // An edge whose target no longer resolves is broken, not a node: drop it.
+            // An edge whose target no longer resolves — deleted, or cut by the tag filter — is
+            // broken, not a node: drop it.
             var edges = links.Where(l => byId.ContainsKey(l.TargetPageId)).ToList();
 
             if (input.RootPageId is { } root)

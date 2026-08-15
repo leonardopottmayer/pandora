@@ -16,8 +16,10 @@ export function NotesGraphPage() {
   const [includeArchived, setIncludeArchived] = useState(false)
   // The sidebar here is the same one the editor page shows, search button included.
   const [searchOpen, setSearchOpen] = useState(false)
+  // One filter for both panes: picking a tag narrows the graph and the sidebar at once.
+  const [tagIds, setTagIds] = useState<string[]>([])
 
-  const { data: graph, isLoading } = useGraph()
+  const { data: graph, isLoading } = useGraph(tagIds)
 
   function openPage(id: string | null) {
     navigate(id ? `/notes/${id}` : '/notes')
@@ -36,6 +38,8 @@ export function NotesGraphPage() {
           onSelect={openPage}
           includeArchived={includeArchived}
           onToggleArchived={setIncludeArchived}
+          tagIds={tagIds}
+          onTagIdsChange={setTagIds}
           onSearch={() => setSearchOpen(true)}
         />
       </Card>
@@ -53,7 +57,7 @@ export function NotesGraphPage() {
           <GraphView graph={graph} onSelect={openPage} />
         ) : (
           <Flex align="center" justify="center" style={{ height: '100%' }}>
-            <Empty description={t('notes.graphEmpty')} />
+            <Empty description={tagIds.length > 0 ? t('notes.tagFilterEmpty') : t('notes.graphEmpty')} />
           </Flex>
         )}
       </Card>

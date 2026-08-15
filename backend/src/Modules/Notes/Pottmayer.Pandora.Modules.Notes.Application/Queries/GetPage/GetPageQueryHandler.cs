@@ -15,14 +15,21 @@ public sealed class GetPageQueryHandler(IUnitOfWorkFactory factory)
     {
         var input = request.Input;
 
-        var page = await factory.ExecuteAsync(NotesModule.Name, async (ctx, token) =>
+        var dto = await factory.ExecuteAsync(NotesModule.Name, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IPageRepository>();
-            return await repo.FindByIdForUserAsync(input.PageId, input.UserId, token);
+            var page = await repo.FindByIdForUserAsync(input.PageId, input.UserId, token);
+            if (page is null)
+                return null;
+
+            // The tags the page's markdown carries, resolved through the rows the last save wrote.
+            var pageTags = await ctx.AcquireRepository<IPageTagRepository>().GetByPageAsync(page.Id, token);
+            var tags = await ctx.AcquireRepository<ITagRepository>()
+                .GetByIdsForUserAsync([.. pageTags.Select(t => t.TagId)], input.UserId, token);
+
+            return PageDto.From(page, tags);
         }, cancellationToken: ct);
 
-        return page is null
-            ? Fail(PageErrors.NotFound)
-            : Ok(PageDto.From(page));
+        return dto is null ? Fail(PageErrors.NotFound) : Ok(dto);
     }
 }

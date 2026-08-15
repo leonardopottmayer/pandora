@@ -7,8 +7,8 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { autocompletion } from '@codemirror/autocomplete'
-import { moveTableCell, slashSource, wikilinkSource } from '../lib/editorCommands'
-import type { AttachmentDto, PageSummaryDto } from '../models'
+import { moveTableCell, slashSource, tagSource, wikilinkSource } from '../lib/editorCommands'
+import type { AttachmentDto, PageSummaryDto, TagDto } from '../models'
 
 interface MarkdownEditorProps {
   /** Changing this resets the document (a different page was opened). */
@@ -18,6 +18,8 @@ interface MarkdownEditorProps {
   isDark: boolean
   /** Targets offered by the `[[` autocomplete. */
   pages: PageSummaryDto[]
+  /** Tags offered by the `#` autocomplete — the ones that already exist somewhere. */
+  tags: TagDto[]
   onChange: (value: string) => void
   /** Uploads a pasted/dropped file and returns its attachment metadata for embedding. */
   onUpload: (file: File) => Promise<AttachmentDto>
@@ -35,6 +37,7 @@ export function MarkdownEditor({
   placeholder,
   isDark,
   pages,
+  tags,
   onChange,
   onUpload,
 }: MarkdownEditorProps) {
@@ -47,11 +50,13 @@ export function MarkdownEditor({
   const onUploadRef = useRef(onUpload)
   const tRef = useRef(t)
   const pagesRef = useRef(pages)
+  const tagsRef = useRef(tags)
   useEffect(() => {
     onChangeRef.current = onChange
     onUploadRef.current = onUpload
     tRef.current = t
     pagesRef.current = pages
+    tagsRef.current = tags
   })
 
   // Inserts markdown at the current selection (used after an async upload completes).
@@ -79,6 +84,7 @@ export function MarkdownEditor({
     // rebuilds the editor.
     const slashCompletions = slashSource((command) => tRef.current(command.labelKey))
     const wikilinkCompletions = wikilinkSource(() => pagesRef.current)
+    const tagCompletions = tagSource(() => tagsRef.current)
 
     const uploadHandlers = EditorView.domEventHandlers({
       paste(event, view) {
@@ -104,7 +110,10 @@ export function MarkdownEditor({
     const extensions = [
       minimalSetup,
       history(),
-      autocompletion({ override: [slashCompletions, wikilinkCompletions], icons: false }),
+      autocompletion({
+        override: [slashCompletions, wikilinkCompletions, tagCompletions],
+        icons: false,
+      }),
       // The editor sits inside a Card with `overflow: hidden`, which would clip the menu near the
       // bottom of the pane; hanging the tooltip off the body keeps it whole.
       tooltips({ parent: document.body }),

@@ -18,8 +18,11 @@ Referência de arquitetura: espelha o módulo Finances em
 | [05](phase-05-busca-fulltext.md) | Busca full-text + Ctrl+K | MVP §7.1.6 | 01, 03 |
 | [06](phase-06-graph-view.md) | Graph view (global + local) | v2 §7.2.7 | 04 |
 | [07](phase-07-blocos-ricos.md) | Slash commands, callouts, tabelas | v2 §7.2.8 | 03 |
+| [08](phase-08-tags.md) | Tags (`#tag` no markdown) + filtros | MVP §3 | 04, 05, 06 |
 
-**MVP (v1)** = fases 00–05. **v2** = fases 06–07.
+**MVP (v1)** = fases 00–05. **v2** = fases 06–07. A Fase 08 fecha as tags, que o §3 marcava
+como MVP mas a Fase 01 adiou — e sem as quais o filtro por tag do grafo (Fase 06) não tinha
+o que filtrar.
 
 ## Convenções por fase
 

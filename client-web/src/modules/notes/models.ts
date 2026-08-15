@@ -26,6 +26,21 @@ export interface PageDto {
   isArchived: boolean
   createdAt: string
   updatedAt: string | null
+  /** The tags the body mentions, rewritten by the backend on every save. */
+  tags: PageTagDto[]
+}
+
+/** A tag as the page carries it — no usage count, this is one page's list. */
+export interface PageTagDto {
+  id: string
+  slug: string
+  name: string
+  color: string | null
+}
+
+/** A tag as the filters list it; `pageCount` counts the live pages carrying it. */
+export interface TagDto extends PageTagDto {
+  pageCount: number
 }
 
 export interface CreatePageRequest {

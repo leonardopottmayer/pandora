@@ -1,7 +1,6 @@
 using Pottmayer.Pandora.Modules.Notes.Abstractions;
 using Pottmayer.Pandora.Modules.Notes.Application.Dtos;
 using Pottmayer.Pandora.Modules.Notes.Application.Services;
-using Pottmayer.Pandora.Modules.Notes.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Notes.Domain.Errors;
 using Pottmayer.Pandora.Modules.Notes.Domain.Ports.Repositories;
 using Pottmayer.Tars.Core.Cqrs.Commands;
@@ -26,7 +25,7 @@ public sealed class UpdatePageCommandHandler(IUnitOfWorkFactory factory, TimePro
 
             var page = await repo.FindByIdForUserAsync(input.PageId, input.UserId, token);
             if (page is null)
-                return Result<Page>.Failure([PageErrors.NotFound]);
+                return Result<PageDto>.Failure([PageErrors.NotFound]);
 
             page.Update(input.Title, input.Icon, input.ContentMarkdown);
             await repo.UpdateAsync(page, token);
@@ -35,11 +34,17 @@ public sealed class UpdatePageCommandHandler(IUnitOfWorkFactory factory, TimePro
             var links = ctx.AcquireRepository<IPageLinkRepository>();
             await PageLinkSynchronizer.RebuildAsync(page, repo, links, timeProvider, token);
 
-            return Result<Page>.Success(page);
+            // Same for the tags the body mentions — derived from the text, rewritten on every save.
+            var tags = await PageTagSynchronizer.RebuildAsync(
+                page,
+                ctx.AcquireRepository<ITagRepository>(),
+                ctx.AcquireRepository<IPageTagRepository>(),
+                timeProvider,
+                token);
+
+            return Result<PageDto>.Success(PageDto.From(page, tags));
         }, cancellationToken: ct);
 
-        return result.IsFailure
-            ? Fail([.. result.Errors])
-            : Ok(PageDto.From(result.Value!));
+        return result.IsFailure ? Fail([.. result.Errors]) : Ok(result.Value!);
     }
 }
