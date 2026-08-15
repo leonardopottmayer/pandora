@@ -637,6 +637,7 @@
     "searchHint": "Digite para buscar suas páginas por título ou conteúdo.",
     "searchEmpty": "Nenhuma página corresponde a esta busca.",
     "openSearch": "Buscar páginas (Ctrl+K)",
+    "downloadError": "Não foi possível baixar o anexo.",
     "icon": "Ícone da página",
     "iconPlaceholder": "Digite ou cole um emoji (Win+.)",
     "iconRemove": "Remover ícone",

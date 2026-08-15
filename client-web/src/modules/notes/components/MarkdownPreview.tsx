@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { App } from 'antd'
 import { Marked } from 'marked'
 import DOMPurify from 'dompurify'
-import { fetchAttachmentBlob } from '../services/attachments.service'
+import { downloadAttachment } from '../services/attachments.service'
+import { useAttachmentUrls } from '../hooks/useAttachmentUrls'
+import { attachmentFileName, isAttachmentUrl, withAttachmentUrls } from '../lib/attachments'
 import { calloutExtension, CALLOUT_TYPES, type CalloutLabels } from '../lib/callouts'
 import { renderTags, type TagIndex } from '../lib/tags'
 import { renderWikilinks, type PageIndex } from '../lib/wikilinks'
@@ -21,21 +24,29 @@ interface MarkdownPreviewProps {
   onSelectTag?: (slug: string) => void
 }
 
-const ATTACHMENT_PREFIX = '/api/v1/notes/attachments/'
-
-function renderHtml(parser: Marked, md: string, pageIndex?: PageIndex, tagIndex?: TagIndex): string {
+function renderHtml(
+  parser: Marked,
+  md: string,
+  attachmentUrls: ReadonlyMap<string, string>,
+  pageIndex?: PageIndex,
+  tagIndex?: TagIndex,
+): string {
   const withLinks = pageIndex ? renderWikilinks(md, pageIndex) : md
   // Tags after the wikilinks: neither pass can produce the other's syntax, and both run before the
   // markdown lexer so what they emit is HTML the parser passes through.
   const withTags = renderTags(withLinks, tagIndex ?? new Map())
   const raw = parser.parse(withTags, { async: false })
-  return DOMPurify.sanitize(raw)
+
+  // The object URLs go in after the sanitizer, and they are part of the rendered HTML: an image
+  // whose src is only set on the DOM node is lost on the next re-render.
+  return withAttachmentUrls(DOMPurify.sanitize(raw), attachmentUrls)
 }
 
 /**
- * Renders markdown to HTML. Embedded attachment images point at an authenticated endpoint that a
- * plain `<img src>` can't reach (the Bearer token lives in localStorage, not a cookie), so after
- * each render we fetch those blobs through the API client and swap in object URLs.
+ * Renders markdown to HTML. Embedded attachments point at an authenticated endpoint that the browser
+ * cannot reach on its own (the Bearer token lives in localStorage, not a cookie): images are fetched
+ * through the API client and rendered as object URLs, and a click on an attachment link is turned
+ * into a download rather than a navigation to a URL that would answer 401.
  */
 export function MarkdownPreview({
   markdown: md,
@@ -46,7 +57,8 @@ export function MarkdownPreview({
   onSelectTag,
 }: MarkdownPreviewProps) {
   const { t, i18n } = useTranslation()
-  const containerRef = useRef<HTMLDivElement>(null)
+  const { message } = App.useApp()
+  const attachmentUrls = useAttachmentUrls(md)
 
   // A callout written without a title falls back to the name of its type, so the parser is rebuilt
   // when the language changes.
@@ -59,8 +71,8 @@ export function MarkdownPreview({
   }, [i18n.language])
 
   const html = useMemo(
-    () => renderHtml(parser, md, pageIndex, tagIndex),
-    [parser, md, pageIndex, tagIndex],
+    () => renderHtml(parser, md, attachmentUrls, pageIndex, tagIndex),
+    [parser, md, attachmentUrls, pageIndex, tagIndex],
   )
 
   // Wikilinks are anchors with no real href; a delegated handler turns a click into navigation (or
@@ -73,8 +85,21 @@ export function MarkdownPreview({
       return
     }
 
-    const anchor = (event.target as HTMLElement).closest<HTMLAnchorElement>('a.notes-wikilink')
+    const anchor = (event.target as HTMLElement).closest<HTMLAnchorElement>('a')
     if (!anchor) return
+
+    // An attachment link: the href is an API path, so letting the browser follow it would replace
+    // the tab with an unauthenticated request. Fetch it and save it instead.
+    const href = anchor.getAttribute('href') ?? ''
+    if (isAttachmentUrl(href)) {
+      event.preventDefault()
+      void downloadAttachment(href, attachmentFileName(href, anchor.textContent)).catch(() =>
+        message.error(t('notes.downloadError')),
+      )
+      return
+    }
+
+    if (!anchor.classList.contains('notes-wikilink')) return
 
     event.preventDefault()
     const pageId = anchor.dataset.pageId
@@ -82,40 +107,8 @@ export function MarkdownPreview({
     else if (anchor.dataset.pageTitle) onCreatePage?.(anchor.dataset.pageTitle)
   }
 
-  useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
-
-    const objectUrls: string[] = []
-    let cancelled = false
-
-    const images = container.querySelectorAll<HTMLImageElement>('img')
-    images.forEach((img) => {
-      // getAttribute keeps the original path; img.src would already be absolute.
-      const src = img.getAttribute('src') ?? ''
-      if (!src.includes(ATTACHMENT_PREFIX)) return
-      const path = src.slice(src.indexOf(ATTACHMENT_PREFIX))
-      void fetchAttachmentBlob(path)
-        .then((blob) => {
-          if (cancelled) return
-          const objectUrl = URL.createObjectURL(blob)
-          objectUrls.push(objectUrl)
-          img.src = objectUrl
-        })
-        .catch(() => {
-          /* leave the broken image; the source path stays visible for debugging */
-        })
-    })
-
-    return () => {
-      cancelled = true
-      for (const url of objectUrls) URL.revokeObjectURL(url)
-    }
-  }, [html])
-
   return (
     <div
-      ref={containerRef}
       className="notes-preview"
       onClick={handleClick}
       // Sanitized above with DOMPurify.

@@ -637,6 +637,7 @@
     "searchHint": "Type to search your pages by title or content.",
     "searchEmpty": "No page matches this search.",
     "openSearch": "Search pages (Ctrl+K)",
+    "downloadError": "Could not download the attachment.",
     "icon": "Page icon",
     "iconPlaceholder": "Type or paste an emoji (Win+.)",
     "iconRemove": "Remove icon",

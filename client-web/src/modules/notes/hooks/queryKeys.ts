@@ -17,4 +17,8 @@ export const noteKeys = {
   // Tags sit outside the pages subtree, since they outlive any single page. The mutations that can
   // change the list (a save writing a new #tag, a delete sweeping the last one) invalidate it by name.
   tags: () => [...noteKeys.all, 'tags'] as const,
+
+  // An attachment id addresses immutable bytes, so this entry is never invalidated — it is a
+  // download cache, keyed by the path the markdown stores.
+  attachment: (path: string) => [...noteKeys.all, 'attachments', path] as const,
 }
