@@ -30,8 +30,15 @@
 .notes-preview h2 { font-size: 1.35em; }
 .notes-preview h3 { font-size: 1.15em; }
 .notes-preview p { margin: 0.6em 0; }
+/* The Tailwind preflight strips the markers off every list, so the preview puts them back. */
 .notes-preview ul,
 .notes-preview ol { margin: 0.6em 0; padding-left: 1.5em; }
+.notes-preview ul { list-style: disc; }
+.notes-preview ol { list-style: decimal; }
+.notes-preview ul ul { list-style: circle; }
+.notes-preview ul ul ul { list-style: square; }
+/* Task list items carry their own marker. */
+.notes-preview li:has(> input[type='checkbox']) { list-style: none; }
 .notes-preview img { max-width: 100%; height: auto; border-radius: 6px; }
 .notes-preview pre {
   padding: 12px;
