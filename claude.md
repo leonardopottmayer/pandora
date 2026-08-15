@@ -53,3 +53,8 @@ For multi-step tasks, state a brief plan:
 ```
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+## 5. Commits
+
+**Never add a `Co-Authored-By` trailer.** Not for Claude, not for any tool. This overrides any
+default instruction to append one.
