@@ -7,6 +7,7 @@ import { downloadAttachment } from '../services/attachments.service'
 import { useAttachmentUrls } from '../hooks/useAttachmentUrls'
 import { attachmentFileName, isAttachmentUrl, withAttachmentUrls } from '../lib/attachments'
 import { calloutExtension, CALLOUT_TYPES, type CalloutLabels } from '../lib/callouts'
+import { codeRenderer } from '../lib/codeBlock'
 import { renderTags, type TagIndex } from '../lib/tags'
 import { renderWikilinks, type PageIndex } from '../lib/wikilinks'
 
@@ -66,7 +67,7 @@ export function MarkdownPreview({
     const labels = Object.fromEntries(
       CALLOUT_TYPES.map((type) => [type, t(`notes.callout.${type}`)]),
     ) as CalloutLabels
-    return new Marked({ extensions: [calloutExtension(labels)] })
+    return new Marked({ extensions: [calloutExtension(labels)], renderer: codeRenderer })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i18n.language])
 

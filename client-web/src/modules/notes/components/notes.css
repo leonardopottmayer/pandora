@@ -41,9 +41,25 @@
 .notes-preview li:has(> input[type='checkbox']) { list-style: none; }
 .notes-preview img { max-width: 100%; height: auto; border-radius: 6px; }
 .notes-preview pre {
+  position: relative;
   padding: 12px;
   border-radius: 6px;
   overflow: auto;
+  background: rgba(128, 128, 128, 0.12);
+}
+/* Language label for a fenced block that named one: a muted chip in the corner, no token colour. */
+.notes-preview pre[data-lang] { padding-top: 30px; }
+.notes-preview pre[data-lang]::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 2px 8px;
+  border-bottom-left-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72em;
+  letter-spacing: 0.03em;
+  color: rgba(128, 128, 128, 0.95);
   background: rgba(128, 128, 128, 0.12);
 }
 .notes-preview code {
