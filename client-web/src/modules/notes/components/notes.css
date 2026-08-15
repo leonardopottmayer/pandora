@@ -95,21 +95,19 @@
   background: rgba(128, 128, 128, 0.12);
 }
 
-/* Callouts: a tinted blockquote. The accent drives both the rule and the wash. */
+/* Callouts: a plain blockquote with a labelled heading. The type is carried by the icon, not
+   by colour, so callouts read as part of the monochrome markdown around them. */
 .notes-callout {
-  --notes-callout-accent: #8c8c8c;
   margin: 0.8em 0;
-  padding: 10px 14px;
-  border-left: 3px solid var(--notes-callout-accent);
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--notes-callout-accent) 10%, transparent);
+  padding: 2px 14px;
+  border-left: 3px solid rgba(128, 128, 128, 0.45);
 }
 .notes-callout-title {
   display: flex;
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  color: var(--notes-callout-accent);
+  color: inherit;
 }
 .notes-callout-icon {
   font-size: 0.95em;
@@ -117,13 +115,6 @@
 }
 .notes-callout-body > :first-child { margin-top: 0.3em; }
 .notes-callout-body > :last-child { margin-bottom: 0; }
-
-.notes-callout-note { --notes-callout-accent: #1677ff; }
-.notes-callout-tip { --notes-callout-accent: #52c41a; }
-.notes-callout-info { --notes-callout-accent: #13c2c2; }
-.notes-callout-warning { --notes-callout-accent: #faad14; }
-.notes-callout-danger { --notes-callout-accent: #ff4d4f; }
-.notes-callout-quote { --notes-callout-accent: #8c8c8c; }
 
 .notes-preview table {
   border-collapse: collapse;
