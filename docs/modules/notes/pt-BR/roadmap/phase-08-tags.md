@@ -147,5 +147,13 @@ lista plana** — é o que a pergunta "quem tem essa tag?" quer ver.
 
 - **Sem preview do filtro na rota**: os filtros são estado de componente, não entram na URL — não dá
   para mandar link de "as pages com #x". O lugar seria um search param na `NotesPage`.
-- **Sem seletor de emoji para o ícone da page**: o campo existe no domínio, na API e na sidebar, mas
-  continua sem UI — é a pendência remanescente do §4 do plano.
+- ~~Sem seletor de emoji para o ícone da page~~ — **feito depois**, ainda nesta sessão, no lugar
+  previsto: um botão à esquerda do título na `NotesPage`, abrindo um popover com campo livre, uma
+  fileira de sugestões e "remover".
+  - Sem lib de emoji: todo sistema já traz um painel com busca (Win+. no Windows), e o que se digita
+    é reduzido ao **primeiro grafema** (`Intl.Segmenter`), então o campo não vira um segundo título.
+    Grafema e não caractere porque emoji costuma ser vários code points — bandeira, tom de pele,
+    família —, e cortar por índice devolveria outro emoji, ou metade de um.
+  - O ícone entrou no `PageDraft`, então ele salva pelo **mesmo autosave** do título e do corpo. Antes
+    o `handleSave` reenviava `page?.icon` só para não apagar o que já estava lá; agora manda o do
+    rascunho.

@@ -10,6 +10,7 @@ import { LocalGraphPanel } from '../components/LocalGraphPanel'
 import { MarkdownEditor } from '../components/MarkdownEditor'
 import { MarkdownPreview } from '../components/MarkdownPreview'
 import { NotesSidebar } from '../components/NotesSidebar'
+import { PageIconPicker } from '../components/PageIconPicker'
 import { SearchPalette } from '../components/SearchPalette'
 import { useAutosave } from '../hooks/useAutosave'
 import { useCreatePage, usePage, usePageTree, useUpdatePage } from '../hooks/usePages'
@@ -25,6 +26,7 @@ const SIDEBAR_WIDTH = 280
 /** What autosave writes: the whole editable surface of a page. */
 interface PageDraft {
   title: string
+  icon: string | null
   contentMarkdown: string
 }
 
@@ -43,7 +45,7 @@ export function NotesPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('split')
 
   // Local draft of the open page; the source of truth while typing.
-  const [draft, setDraft] = useState<PageDraft>({ title: '', contentMarkdown: '' })
+  const [draft, setDraft] = useState<PageDraft>({ title: '', icon: null, contentMarkdown: '' })
 
   const { data: page, isLoading } = usePage(selectedId)
   const updateMutation = useUpdatePage()
@@ -70,7 +72,7 @@ export function NotesPage() {
   // Seed the draft when a different page arrives (render-phase adjustment, not an effect).
   if (page && page.id !== draftPageId) {
     setDraftPageId(page.id)
-    setDraft({ title: page.title, contentMarkdown: page.contentMarkdown })
+    setDraft({ title: page.title, icon: page.icon, contentMarkdown: page.contentMarkdown })
   }
 
   const handleSave = useCallback(
@@ -78,10 +80,10 @@ export function NotesPage() {
       if (!draftPageId) return
       await updateMutation.mutateAsync({
         id: draftPageId,
-        body: { title: value.title, icon: page?.icon ?? null, contentMarkdown: value.contentMarkdown },
+        body: { title: value.title, icon: value.icon, contentMarkdown: value.contentMarkdown },
       })
     },
-    [updateMutation, draftPageId, page?.icon],
+    [updateMutation, draftPageId],
   )
 
   const { status, schedule, flush, reset } = useAutosave<PageDraft>({ onSave: handleSave })
@@ -184,6 +186,7 @@ export function NotesPage() {
               gap={12}
               style={{ padding: '12px 16px', borderBottom: `1px solid ${token.colorBorderSecondary}` }}
             >
+              <PageIconPicker value={draft.icon} onChange={(icon) => updateDraft({ icon })} />
               <Input
                 variant="borderless"
                 value={draft.title}

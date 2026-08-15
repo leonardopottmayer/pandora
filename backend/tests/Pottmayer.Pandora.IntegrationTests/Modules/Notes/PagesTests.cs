@@ -164,6 +164,28 @@ public sealed class PagesTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Icon_round_trips_through_the_save_and_can_be_cleared()
+    {
+        await AuthAsync("notes-icon");
+
+        var created = await CreateAsync(new { title = "Com icone", icon = "📝", contentMarkdown = "corpo" });
+        var id = created.dto!.Id;
+        Assert.Equal("📝", created.dto.Icon);
+
+        // The picker saves through the same PUT the autosave uses, icon included.
+        await _client.PutAsJsonAsync($"{Url}/{id}",
+            new { title = "Com icone", icon = "🚀", contentMarkdown = "corpo" });
+        Assert.Equal("🚀", (await _client.GetFromJsonAsync<SingleEnvelope>($"{Url}/{id}"))!.Data.Icon);
+
+        // It reaches the sidebar, which is the whole point of having one.
+        Assert.Equal("🚀", Assert.Single(await TreeAsync(), p => p.Id == id).Icon);
+
+        await _client.PutAsJsonAsync($"{Url}/{id}",
+            new { title = "Com icone", icon = (string?)null, contentMarkdown = "corpo" });
+        Assert.Null((await _client.GetFromJsonAsync<SingleEnvelope>($"{Url}/{id}"))!.Data.Icon);
+    }
+
+    [Fact]
     public async Task Foreign_page_returns_not_found()
     {
         await AuthAsync("notes-owner2");
