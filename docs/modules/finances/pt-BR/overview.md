@@ -74,7 +74,7 @@ usuário, reversibilidade (cancelar/desfazer/estornar + proteções de exclusão
 |---|---|
 | **Regras de categorização** (auto-categorizar importações, `fin015`) | Projetado, ainda não implementado. |
 | **Relatórios** (fluxo de caixa, por categoria, histórico de saldo, agenda) | Ainda não implementado (só existe a timeline de auditoria). |
-| **Eventos de integração com Notifications** (fatura fechada/a vencer/vencida, importação concluída) | Projeto Contracts existe mas está vazio. |
+| **Eventos de integração com Channels** (fatura fechada/a vencer/vencida, importação concluída) | Projeto Contracts existe mas está vazio. |
 | **Split de transação** (um lançamento, várias categorias) | Futuro — tabela filha aditiva. |
 | **Orçamentos / metas** | Futuro. |
 | **Anexos / comprovantes** | Futuro. |

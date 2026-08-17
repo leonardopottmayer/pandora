@@ -6,7 +6,7 @@
 
 ## 1. Estrutura dos projetos
 
-O módulo espelha os módulos Identity/Notifications, dividido em projetos por camada em
+O módulo espelha os módulos Identity/Channels, dividido em projetos por camada em
 `backend/src/Modules/Finances/`:
 
 ```

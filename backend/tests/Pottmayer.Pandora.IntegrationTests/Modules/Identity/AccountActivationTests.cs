@@ -18,13 +18,13 @@ public sealed class AccountActivationTests : IAsyncLifetime
 
     private readonly PandoraWebApplicationFactory _factory;
     private readonly HttpClient _client;
-    private readonly NotificationsProbe _notifications;
+    private readonly ChannelsProbe _notifications;
 
     public AccountActivationTests(PandoraWebApplicationFactory factory)
     {
         _factory = factory;
         _client = factory.CreateClient();
-        _notifications = new NotificationsProbe(factory.ConnectionString);
+        _notifications = new ChannelsProbe(factory.ConnectionString);
     }
 
     public Task InitializeAsync() => _factory.ResetDatabaseAsync();

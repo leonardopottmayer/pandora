@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Modules/Channels/Pottmayer.Pandora.Modules.Channels.Application/Pottmayer.Pandora.Modules.Channels.Application.csproj" />
+    <ProjectReference Include="../../src/Modules/Channels/Pottmayer.Pandora.Modules.Channels.Domain/Pottmayer.Pandora.Modules.Channels.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/Channels/Pottmayer.Pandora.Modules.Channels.Infrastructure/Pottmayer.Pandora.Modules.Channels.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

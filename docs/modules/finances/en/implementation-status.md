@@ -45,7 +45,7 @@ The implementation evolved past the first design proposal. Notable additions:
 |---|---|
 | **Categorization rules** (`fin015`) | Auto-categorize import suggestions ("description contains UBER → Transport"). Table and use cases not created. |
 | **Reports** | Cash-flow, by-category, balance-history, and the upcoming-agenda endpoints are not implemented — only the audit timeline exists. |
-| **Notifications integration events** | The `Contracts` project is empty; `StatementClosed`/`StatementDueSoon`/`StatementOverdue`/`ImportCompleted`/`PendingTransactionsGenerated` are not published, and there are no Notifications subscribers/templates yet. |
+| **Channels integration events** | The `Contracts` project is empty; `StatementClosed`/`StatementDueSoon`/`StatementOverdue`/`ImportCompleted`/`PendingTransactionsGenerated` are not published, and there are no Channels subscribers/templates yet. |
 | **User-created import layouts** | Only system layouts are seeded; user layouts + preview endpoint are reserved for a future phase. |
 | **Transaction split, budgets, goals, attachments, balance snapshots, multi-currency consolidation, open finance, multi-user households** | Future — the model leaves room without a core rewrite. |
 

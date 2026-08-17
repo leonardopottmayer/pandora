@@ -32,7 +32,7 @@ síncrona (ex.: logo após criar uma recorrência, ou em testes).
 ## Eventos de integração (status)
 
 O projeto `Pottmayer.Pandora.Modules.Finances.Contracts` existe como a casa pretendida dos eventos de
-integração consumidos por outros módulos (Notifications é o consumidor óbvio), mas está atualmente
+integração consumidos por outros módulos (Channels é o consumidor óbvio), mas está atualmente
 **vazio** — nenhum evento de integração é publicado ainda.
 
 Eventos planejados (não implementados):
@@ -46,5 +46,5 @@ Eventos planejados (não implementados):
 | `PendingTransactionsGenerated` | Job de recorrência produziu sugestões | Lembrete de revisão |
 
 Quando implementados, seriam publicados pelos casos de uso/jobs existentes e assinados pelo módulo
-Notifications, com idempotência (um evento por transição) e `correlation_id` propagado do evento de
+Channels, com idempotência (um evento por transição) e `correlation_id` propagado do evento de
 domínio até a notificação. Ver [Status de implementação](implementation-status.md).

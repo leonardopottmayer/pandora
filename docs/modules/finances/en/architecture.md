@@ -6,7 +6,7 @@
 
 ## 1. Project layout
 
-The module mirrors the Identity/Notifications modules, split into layered projects under
+The module mirrors the Identity/Channels modules, split into layered projects under
 `backend/src/Modules/Finances/`:
 
 ```

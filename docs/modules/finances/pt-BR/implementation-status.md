@@ -45,7 +45,7 @@ A implementação evoluiu além da primeira proposta de design. Adições notáv
 |---|---|
 | **Regras de categorização** (`fin015`) | Auto-categorizar sugestões de importação ("descrição contém UBER → Transporte"). Tabela e casos de uso não criados. |
 | **Relatórios** | Endpoints de fluxo de caixa, por categoria, histórico de saldo e agenda de vencimentos não implementados — só existe a timeline de auditoria. |
-| **Eventos de integração com Notifications** | O projeto `Contracts` está vazio; `StatementClosed`/`StatementDueSoon`/`StatementOverdue`/`ImportCompleted`/`PendingTransactionsGenerated` não são publicados, e não há subscribers/templates no Notifications. |
+| **Eventos de integração com Channels** | O projeto `Contracts` está vazio; `StatementClosed`/`StatementDueSoon`/`StatementOverdue`/`ImportCompleted`/`PendingTransactionsGenerated` não são publicados, e não há subscribers/templates no Channels. |
 | **Layouts de importação criados pelo usuário** | Só há seed de layouts de sistema; layouts do usuário + endpoint de preview estão reservados para uma fase futura. |
 | **Split de transação, orçamentos, metas, anexos, snapshots de saldo, consolidação multi-moeda, open finance, household multiusuário** | Futuro — o modelo deixa espaço sem reescrever o core. |
 

@@ -72,7 +72,7 @@ reversibility (void/unvoid/reverse + delete guards), and the audit trail.
 |---|---|
 | **Categorization rules** (auto-categorize imports, `fin015`) | Designed, not yet implemented. |
 | **Reports** (cash-flow, by-category, balance-history, upcoming agenda) | Not yet implemented (only the audit timeline exists). |
-| **Notifications integration events** (statement closed/due/overdue, import completed) | Contracts project exists but is empty. |
+| **Channels integration events** (statement closed/due/overdue, import completed) | Contracts project exists but is empty. |
 | **Transaction split** (one entry, several categories) | Future — additive child table. |
 | **Budgets / goals** | Future. |
 | **Attachments / receipts** | Future. |

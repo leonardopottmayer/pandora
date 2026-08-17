@@ -32,7 +32,7 @@ synchronously (e.g. right after creating a recurrence, or in tests).
 ## Integration events (status)
 
 The `Pottmayer.Pandora.Modules.Finances.Contracts` project exists as the intended home for
-integration events consumed by other modules (Notifications is the obvious consumer), but it is
+integration events consumed by other modules (Channels is the obvious consumer), but it is
 currently **empty** — no integration events are published yet.
 
 Planned events (not implemented):
@@ -46,5 +46,5 @@ Planned events (not implemented):
 | `PendingTransactionsGenerated` | Recurrence job produced suggestions | Review reminder |
 
 When implemented, these would be published by the existing use cases/jobs and subscribed to by the
-Notifications module, with idempotency (one event per transition) and `correlation_id` propagated
+Channels module, with idempotency (one event per transition) and `correlation_id` propagated
 from the domain event to the notification. See [Implementation Status](implementation-status.md).

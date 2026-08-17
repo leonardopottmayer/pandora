@@ -8,9 +8,9 @@ using Pottmayer.Pandora.Modules.Identity.Application.DI;
 using Pottmayer.Pandora.Modules.Identity.Infrastructure.DI;
 using Pottmayer.Pandora.Modules.Identity.Persistence.DI;
 using Pottmayer.Pandora.Modules.Identity.Presentation.DI;
-using Pottmayer.Pandora.Modules.Notifications.Application.DI;
-using Pottmayer.Pandora.Modules.Notifications.Infrastructure.DI;
-using Pottmayer.Pandora.Modules.Notifications.Persistence.DI;
+using Pottmayer.Pandora.Modules.Channels.Application.DI;
+using Pottmayer.Pandora.Modules.Channels.Infrastructure.DI;
+using Pottmayer.Pandora.Modules.Channels.Persistence.DI;
 using Pottmayer.Pandora.Modules.Finances.Application.DI;
 using Pottmayer.Pandora.Modules.Finances.Infrastructure.DI;
 using Pottmayer.Pandora.Modules.Finances.Persistence.DI;
@@ -37,9 +37,9 @@ builder.Services.AddIdentityPersistence();
 builder.AddIdentityInfrastructure();
 builder.Services.AddIdentityApplication();
 
-builder.Services.AddNotificationsPersistence();
-builder.AddNotificationsInfrastructure();
-builder.Services.AddNotificationsApplication();
+builder.Services.AddChannelsPersistence();
+builder.AddChannelsInfrastructure();
+builder.Services.AddChannelsApplication();
 
 builder.Services.AddFinancesPersistence();
 builder.AddFinancesInfrastructure();

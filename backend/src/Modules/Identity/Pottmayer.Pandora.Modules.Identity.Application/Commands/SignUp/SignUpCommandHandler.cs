@@ -72,7 +72,7 @@ public sealed class SignUpCommandHandler(
             return Ok(new SignUpResult(user.Id));
         }, cancellationToken: ct);
 
-        // After commit, ask Notifications to send the activation e-mail (in-process; broker-ready).
+        // After commit, ask Channels to send the activation e-mail (in-process; broker-ready).
         if (result.IsSuccess && result.Value is { } signUp)
         {
             var activationRequested = new AccountActivationRequested(

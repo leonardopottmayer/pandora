@@ -45,7 +45,7 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
         _respawner = await Respawner.CreateAsync(_connection, new RespawnerOptions
         {
             DbAdapter = DbAdapter.Postgres,
-            SchemasToInclude = ["identity", "notifications", "finances", "notes"],
+            SchemasToInclude = ["identity", "channels", "finances", "notes"],
             TablesToIgnore =
             [
                 new Respawn.Graph.Table("finances", "fin002_system_category"),
@@ -63,7 +63,7 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Tars:Data:Connections:identity:ConnectionString"] = ConnectionString,
-                ["Tars:Data:Connections:notifications:ConnectionString"] = ConnectionString,
+                ["Tars:Data:Connections:channels:ConnectionString"] = ConnectionString,
                 ["Tars:Data:Connections:finances:ConnectionString"] = ConnectionString,
                 ["Tars:Data:Connections:notes:ConnectionString"] = ConnectionString,
                 // Deliver e-mails to the log (always succeeds) instead of SMTP — no Mailpit needed.

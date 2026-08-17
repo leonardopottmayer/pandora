@@ -20,12 +20,12 @@ public sealed class MfaTests : IAsyncLifetime
     private const string ChallengeUrl = "/api/v1/identity/mfa/challenge";
 
     private readonly PandoraWebApplicationFactory _factory;
-    private readonly NotificationsProbe _notifications;
+    private readonly ChannelsProbe _notifications;
 
     public MfaTests(PandoraWebApplicationFactory factory)
     {
         _factory = factory;
-        _notifications = new NotificationsProbe(factory.ConnectionString);
+        _notifications = new ChannelsProbe(factory.ConnectionString);
     }
 
     public Task InitializeAsync() => _factory.ResetDatabaseAsync();

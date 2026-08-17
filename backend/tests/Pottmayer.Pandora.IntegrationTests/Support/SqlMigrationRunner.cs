@@ -77,7 +77,7 @@ internal static class SqlMigrationRunner
     {
         public string FilePath { get; } = filePath;
 
-        // "20260604120001-create-table-not001-notification.up.sql" -> "20260604120001"
+        // "20260817120001-create-table-chn006-notification.up.sql" -> "20260817120001"
         public string Version { get; } = Path.GetFileName(filePath).Split('-')[0];
     }
 }
