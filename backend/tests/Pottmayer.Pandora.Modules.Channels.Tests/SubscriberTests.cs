@@ -37,7 +37,7 @@ public sealed class SubscriberTests
 
         var n = Assert.Single(repo.Added);
         Assert.Equal("email", n.Channel.Value);
-        Assert.Equal("carol@example.com", n.Recipient.Value);
+        Assert.Equal("carol@example.com", n.Address.Value);
         Assert.Equal("account-activation", n.TemplateKey.Value);
         Assert.Equal("pt-BR", n.Locale);
         Assert.Equal(eventId, n.CorrelationId);
@@ -69,7 +69,7 @@ public sealed class SubscriberTests
 
         var n = Assert.Single(repo.Added);
         Assert.Equal("email", n.Channel.Value);
-        Assert.Equal("frank@example.com", n.Recipient.Value);
+        Assert.Equal("frank@example.com", n.Address.Value);
         Assert.Equal("password-reset", n.TemplateKey.Value);
         Assert.Equal("pt-BR", n.Locale);
         Assert.Equal(eventId, n.CorrelationId);
@@ -105,7 +105,7 @@ public sealed class SubscriberTests
 
         var n = Assert.Single(repo.Added);
         Assert.Equal("email", n.Channel.Value);
-        Assert.Equal("erin@example.com", n.Recipient.Value);
+        Assert.Equal("erin@example.com", n.Address.Value);
         Assert.Equal("custom-welcome", n.TemplateKey.Value);
         Assert.Equal(eventId, n.CorrelationId);
     }

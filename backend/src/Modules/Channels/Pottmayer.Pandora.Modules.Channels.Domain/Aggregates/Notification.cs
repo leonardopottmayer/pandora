@@ -1,6 +1,5 @@
 using Pottmayer.Pandora.Modules.Channels.Domain.ValueObjects;
 using Pottmayer.Pandora.Shared.Domain;
-using Pottmayer.Pandora.Shared.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Ddd;
 
 namespace Pottmayer.Pandora.Modules.Channels.Domain.Aggregates;
@@ -11,7 +10,7 @@ public sealed class Notification : AggregateRoot<Guid>, IAuditable
     private const int MaxErrorLength = 1000;
 
     public Channel Channel { get; private set; } = Channel.Email;
-    public Email Recipient { get; private set; } = null!;
+    public NotificationAddress Address { get; private set; } = null!;
     public TemplateKey TemplateKey { get; private set; } = null!;
     public string Locale { get; private set; } = "en";
     public string Payload { get; private set; } = "{}";
@@ -39,7 +38,7 @@ public sealed class Notification : AggregateRoot<Guid>, IAuditable
     /// </summary>
     public static Notification Queue(
         Channel channel,
-        Email recipient,
+        NotificationAddress address,
         TemplateKey templateKey,
         string locale,
         string payload,
@@ -53,7 +52,7 @@ public sealed class Notification : AggregateRoot<Guid>, IAuditable
         {
             Id = Guid.CreateVersion7(),
             Channel = channel,
-            Recipient = recipient,
+            Address = address,
             TemplateKey = templateKey,
             Locale = locale,
             Payload = payload,

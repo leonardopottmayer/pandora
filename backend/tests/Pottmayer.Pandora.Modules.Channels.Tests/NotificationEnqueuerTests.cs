@@ -4,7 +4,6 @@ using Pottmayer.Pandora.Modules.Channels.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Channels.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Channels.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Channels.Tests.Fakes;
-using Pottmayer.Pandora.Shared.Domain.ValueObjects;
 using Xunit;
 
 namespace Pottmayer.Pandora.Modules.Channels.Tests;
@@ -36,7 +35,7 @@ public sealed class NotificationEnqueuerTests
 
         var n = Assert.Single(repo.Added);
         Assert.Equal(NotificationStatus.Pending, n.Status);
-        Assert.Equal("alice@example.com", n.Recipient.Value); // Email normalizes
+        Assert.Equal("alice@example.com", n.Address.Value); // Email normalizes
         Assert.Equal("account-activation", n.TemplateKey.Value);
         Assert.Equal("pt-BR", n.Locale);
         Assert.Equal("Hello", n.Subject);
@@ -55,7 +54,7 @@ public sealed class NotificationEnqueuerTests
     {
         var correlationId = Guid.NewGuid();
         var existing = Notification.Queue(
-            Channel.Email, Email.Create("bob@example.com"), TemplateKey.Create("account-activation"),
+            Channel.Email, NotificationAddress.Create(Channel.Email, "bob@example.com"), TemplateKey.Create("account-activation"),
             "en", "{}", new NotificationContent("s", "b", false), correlationId, new FixedTimeProvider(Now));
         var (enqueuer, repo, _) = Build(existing);
 
@@ -73,6 +72,32 @@ public sealed class NotificationEnqueuerTests
 
         await Assert.ThrowsAsync<ArgumentException>(() => enqueuer.EnqueueAsync(
             Channel.Email, "not-an-email", TemplateKey.Create("account-activation"), "en",
+            new Dictionary<string, string>(), Guid.NewGuid()));
+
+        Assert.Empty(repo.Added);
+    }
+
+    [Fact]
+    public async Task Telegram_recipient_is_a_chat_id()
+    {
+        var (enqueuer, repo, _) = Build();
+
+        await enqueuer.EnqueueAsync(
+            Channel.Telegram, "123456789", TemplateKey.Create("account-activation"), "en",
+            new Dictionary<string, string>(), Guid.NewGuid());
+
+        var n = Assert.Single(repo.Added);
+        Assert.Equal(Channel.Telegram, n.Channel);
+        Assert.Equal("123456789", n.Address.Value);
+    }
+
+    [Fact]
+    public async Task Telegram_recipient_that_is_not_a_chat_id_throws_before_persisting()
+    {
+        var (enqueuer, repo, _) = Build();
+
+        await Assert.ThrowsAsync<ArgumentException>(() => enqueuer.EnqueueAsync(
+            Channel.Telegram, "alice@example.com", TemplateKey.Create("account-activation"), "en",
             new Dictionary<string, string>(), Guid.NewGuid()));
 
         Assert.Empty(repo.Added);

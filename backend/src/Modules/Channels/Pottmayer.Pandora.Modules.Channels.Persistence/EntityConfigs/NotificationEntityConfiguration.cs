@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Pottmayer.Pandora.Modules.Channels.Abstractions;
 using Pottmayer.Pandora.Modules.Channels.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Channels.Domain.ValueObjects;
-using Pottmayer.Pandora.Shared.Persistence.ValueConverters;
 
 namespace Pottmayer.Pandora.Modules.Channels.Persistence.EntityConfigs;
 
@@ -26,9 +25,9 @@ internal sealed class NotificationEntityConfiguration : IEntityTypeConfiguration
                .HasMaxLength(20)
                .IsRequired();
 
-        builder.Property(n => n.Recipient)
+        builder.Property(n => n.Address)
                .HasColumnName("recipient")
-               .HasConversion(new EmailValueConverter())
+               .HasConversion(a => a.Value, v => NotificationAddress.FromValue(v))
                .HasMaxLength(255)
                .IsRequired();
 

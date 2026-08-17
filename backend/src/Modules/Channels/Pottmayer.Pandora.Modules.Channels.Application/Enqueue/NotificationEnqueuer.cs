@@ -4,7 +4,6 @@ using Pottmayer.Pandora.Modules.Channels.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Channels.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Channels.Domain.Ports.Services;
 using Pottmayer.Pandora.Modules.Channels.Domain.ValueObjects;
-using Pottmayer.Pandora.Shared.Domain.ValueObjects;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 
 namespace Pottmayer.Pandora.Modules.Channels.Application.Enqueue;
@@ -28,7 +27,7 @@ public sealed class NotificationEnqueuer(
         CancellationToken ct = default)
     {
         var content = renderer.Render(templateKey, locale, payload);
-        var address = Email.Create(recipient);
+        var address = NotificationAddress.Create(channel, recipient);
         var payloadJson = JsonSerializer.Serialize(payload);
 
         await factory.ExecuteAsync(ChannelsModule.Name, async (context, token) =>

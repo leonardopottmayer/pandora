@@ -39,7 +39,7 @@ public sealed class DispatchPendingNotificationsCommandHandler(
                 {
                     var delivery = await emailSender.SendAsync(
                         new EmailMessage(
-                            To: [notification.Recipient.Value],
+                            To: [notification.Address.Value],
                             Subject: notification.Subject,
                             Body: notification.Body,
                             IsHtml: notification.IsHtml),

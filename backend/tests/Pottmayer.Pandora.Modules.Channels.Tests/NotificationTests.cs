@@ -1,7 +1,6 @@
 using Pottmayer.Pandora.Modules.Channels.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Channels.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Channels.Tests.Fakes;
-using Pottmayer.Pandora.Shared.Domain.ValueObjects;
 using Xunit;
 
 namespace Pottmayer.Pandora.Modules.Channels.Tests;
@@ -13,7 +12,7 @@ public sealed class NotificationTests
     private static Notification Queue(TimeProvider time, int maxAttempts = Notification.DefaultMaxAttempts)
         => Notification.Queue(
             Channel.Email,
-            Email.Create("alice@example.com"),
+            NotificationAddress.Create(Channel.Email, "alice@example.com"),
             TemplateKey.Create("account-activation"),
             "en",
             payload: "{}",

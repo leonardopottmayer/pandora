@@ -3,7 +3,6 @@ using Pottmayer.Pandora.Modules.Channels.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Channels.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Channels.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Channels.Tests.Fakes;
-using Pottmayer.Pandora.Shared.Domain.ValueObjects;
 using Xunit;
 
 namespace Pottmayer.Pandora.Modules.Channels.Tests;
@@ -25,7 +24,7 @@ public sealed class DispatchPendingNotificationsCommandHandlerTests
 
     private Notification Pending(int maxAttempts = Notification.DefaultMaxAttempts)
         => Notification.Queue(
-            Channel.Email, Email.Create("alice@example.com"), TemplateKey.Create("account-activation"),
+            Channel.Email, NotificationAddress.Create(Channel.Email, "alice@example.com"), TemplateKey.Create("account-activation"),
             "en", "{}", new NotificationContent("Subject", "Body", false), Guid.NewGuid(), _time, maxAttempts);
 
     private static DispatchPendingNotificationsCommand Command(int batchSize = 20)
