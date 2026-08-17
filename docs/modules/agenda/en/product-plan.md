@@ -60,12 +60,11 @@ outgrows the module, it leaves with its tables intact.
 2. **Occurrences are computed, never stored.** A recurring event is one row plus an RRULE. Reads
    expand it in memory for the requested window. Only *deviations* from the rule get rows.
    Materializing a year of occurrences would make every edit a migration. *(D2)*
-3. **The scheduling job lives here, not in Channels — nor on the broker.** Agenda decides *when*;
-   Channels only knows how to *send now*. Rescheduling or completing an item before it fires is a
-   local update with nothing to cancel downstream. A delayed message on a queue
-   (`x-delayed-message`, TTL + DLX) can be neither cancelled nor rescheduled, and a reminder is
-   exactly the thing whose time changes — see the
-   [messaging doc](../../../architecture/en/messaging.md#6-what-does-not-go-on-the-broker). *(D3)*
+3. **The scheduling job lives here, not in Channels.** Agenda decides *when*; Channels only knows how
+   to *send now*. A due time is a column on a row, so rescheduling or completing an item before it
+   fires is a local update with nothing to cancel downstream — which is exactly what a reminder
+   needs, being the thing whose time changes. See the
+   [messaging doc](../../../architecture/en/messaging.md#5-what-does-not-go-through-the-bus). *(D3)*
 4. **Time is stored absolute, displayed local, recurred in the user's zone.** `timestamptz`
    everywhere, plus an IANA zone on the item, because "every Monday at 09:00" must survive DST.
    *(D4)*
@@ -303,7 +302,7 @@ in Channels. What Agenda declares is *what can be done with the message*, becaus
 
 When Channels sends a message with buttons, it registers each button in `chn003_interaction` with the
 `owner_module` Agenda declared. On the click it resolves that id and publishes with the routing key
-**`inbound.interaction.agenda.<action>`** — consumed only by Agenda's queue. There is no broadcast
+**`inbound.interaction.agenda.<action>`** — handled only by Agenda's subscriber. There is no broadcast
 and Agenda filters nothing.
 
 The contract received is `InboundInteractionReceived(userId, channel, ownerModule, action, payload,
@@ -468,7 +467,7 @@ Phases are ordered so that something useful lands early and nothing is built twi
 - Seven projects, `agenda` schema, DI wiring, module registration.
 - `Reminder`, `Alert`, `AlertDispatch`; sweep job; publishing `NotifyUserRequested` with declared
   buttons, and the template variants in Channels.
-- `agenda.interactions` queue bound to `inbound.interaction.agenda.#`; `task_done` and `snooze_*`
+- Subscriber bound to `inbound.interaction.agenda.#`; `task_done` and `snooze_*`
   handlers.
 - CRUD endpoints, acknowledge, snooze; inline buttons wired end to end.
 - Frontend: Reminders screen + settings.

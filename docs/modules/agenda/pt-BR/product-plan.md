@@ -61,11 +61,11 @@ crescer além do módulo, sai daqui com suas tabelas intactas.
 2. **Ocorrências são calculadas, nunca armazenadas.** Um evento recorrente é uma linha mais um RRULE.
    As leituras expandem em memória para a janela pedida. Só *desvios* da regra viram linha.
    Materializar um ano de ocorrências transformaria toda edição numa migração. *(D2)*
-3. **O job de agendamento vive aqui, não no Channels — nem no broker.** A Agenda decide *quando*; o
-   Channels só sabe *enviar agora*. Reagendar ou concluir um item antes de disparar é um update
-   local, sem nada para cancelar a jusante. Mensagem atrasada em fila (`x-delayed-message`, TTL +
-   DLX) não pode ser cancelada nem reagendada, e lembrete é exatamente a coisa que muda de horário —
-   ver o [doc de mensageria](../../../architecture/pt-BR/messaging.md#6-o-que-não-vai-no-broker).
+3. **O job de agendamento vive aqui, não no Channels.** A Agenda decide *quando*; o Channels só sabe
+   *enviar agora*. Hora de vencimento é coluna de uma linha, então reagendar ou concluir um item
+   antes de disparar é um update local, sem nada para cancelar a jusante — que é exatamente o que um
+   lembrete precisa, sendo ele a coisa que muda de horário. Ver o
+   [doc de mensageria](../../../architecture/pt-BR/messaging.md#5-o-que-não-passa-pelo-barramento).
    *(D3)*
 4. **Tempo é gravado absoluto, exibido local e recorrido no fuso do usuário.** `timestamptz` em todo
    lugar, mais um fuso IANA no item, porque "toda segunda às 09:00" precisa sobreviver ao horário de
@@ -307,7 +307,7 @@ domínio dela.
 
 Quando o Channels envia uma mensagem com botões, ele registra cada botão em `chn003_interaction` com
 o `owner_module` que a Agenda declarou. No clique, ele resolve esse id e publica com a chave de
-roteamento **`inbound.interaction.agenda.<ação>`** — que só a fila da Agenda consome. Não há
+roteamento **`inbound.interaction.agenda.<ação>`** — que só o subscriber da Agenda trata. Não há
 broadcast e a Agenda não filtra eventos alheios.
 
 O contrato recebido é `InboundInteractionReceived(userId, channel, ownerModule, action, payload,
@@ -473,7 +473,7 @@ As fases são ordenadas para que algo útil chegue cedo e nada seja construído 
 - Sete projetos, schema `agenda`, DI, registro do módulo.
 - `Reminder`, `Alert`, `AlertDispatch`; job de varredura; publicação de `NotifyUserRequested` com
   botões declarados, e as variantes de template no Channels.
-- Fila `agenda.interactions` ligada a `inbound.interaction.agenda.#`; handlers de `task_done` e
+- Subscriber ligado a `inbound.interaction.agenda.#`; handlers de `task_done` e
   `snooze_*`.
 - Endpoints de CRUD, reconhecer, adiar; botões inline ponta a ponta.
 - Frontend: tela de Lembretes + configurações.

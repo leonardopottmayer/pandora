@@ -99,9 +99,16 @@ text?, mediaRef?, mediaMimeType?)` — já normalizado pelo
 [Channels](../../channels/pt-BR/product-plan.md#82-saída-de-entrada) — e busca os bytes de mídia pela
 porta `IInboundMediaReader`. Trocar por WhatsApp, ou entrar pela web, não toca em nada aqui.
 
-A fila `assistant.inbound` roda com **`prefetch=1`**: transcrever e rodar tool-calling num modelo
-local leva de segundos a dezenas de segundos, e um Ollama self-hosted não deve receber trabalho
-concorrente. Ver o [doc de mensageria](../../../architecture/pt-BR/messaging.md#3-topologia).
+**A entrada não roda o pipeline inline.** Transcrever e rodar tool-calling num modelo local leva de
+segundos a dezenas de segundos, tempo demais para segurar quem chamou — e um Ollama self-hosted não
+deve receber trabalho concorrente. Então o subscriber faz só a parte barata: grava uma linha para a
+invocação e retorna. Um job em background deste módulo pega a linha e roda os sete passos, **um de
+cada vez**, que é onde a garantia do `prefetch=1` do antigo plano de broker passa a morar.
+
+Esse é o padrão de job no módulo dono que o resto do Pandora já usa — mesmo formato do dispatcher do
+Channels e da varredura da Agenda. E ganha a durabilidade de brinde: uma execução que morre no meio é
+uma linha com estado, não uma mensagem perdida. Ver o
+[doc de mensageria §3](../../../architecture/pt-BR/messaging.md#3-assincronia-sem-broker).
 
 ### 4.1 Catálogo de comandos
 
@@ -174,7 +181,7 @@ Depois: `create_note` e `search_notes` (Notes), `record_transaction` e `balance_
 
 Uma confirmação pendente é uma linha `ast004` em `pending_confirmation`, expirando em 10 minutos. Os
 botões são declarados no `NotifyUserRequested` com `owner_module: "assistant"`, então o clique volta
-pela chave `inbound.interaction.assistant.confirm` (ou `.cancel`) direto para a fila deste módulo —
+pela chave `inbound.interaction.assistant.confirm` (ou `.cancel`) direto para o subscriber deste módulo —
 o mesmo mecanismo que a Agenda usa, sem nenhum código compartilhado entre os dois.
 
 A expiração e o uso único do botão são garantidos pelo `chn003_interaction`; a expiração da
@@ -280,9 +287,9 @@ GET    /assistant/commands               → o catálogo vivo (debug e painel de
   certo, e o log de invocação mostra a tool call exata.
 
 ### Fase A3 — Entrada por chat, texto *(depende de [Channels C4](../../channels/pt-BR/product-plan.md#fase-c4--entrada))*
-- Fila `assistant.inbound` ligada a `inbound.message.#`, com `prefetch=1`; responder por
+- Subscriber ligado a `inbound.message.#`, gravando uma linha de invocação drenada uma de cada vez; responder por
   `NotifyUserRequested`.
-- Confirmação com botões `owner_module: "assistant"`; fila `assistant.interactions` ligada a
+- Confirmação com botões `owner_module: "assistant"`; subscriber ligado a
   `inbound.interaction.assistant.#`.
 - **Pronto quando:** a mesma frase digitada no Telegram faz a mesma coisa, e *Confirmar* funciona.
 

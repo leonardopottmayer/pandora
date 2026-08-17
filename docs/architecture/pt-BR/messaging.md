@@ -1,6 +1,7 @@
 # Mensageria — Barramento de Eventos de Integração
 
-> **Status:** Plano. O barramento in-process existe hoje; o broker não.
+> **Status:** Decidido. Tudo roda in-process, num deployable só. Não há broker nem workers
+> separados.
 > 🇺🇸 [English version](../en/messaging.md)
 >
 > Documento transversal: descreve uma decisão que nenhum módulo é dono sozinho.
@@ -12,169 +13,132 @@
 
 ## 1. Onde estamos
 
-O Tars já abstrai o transporte. `IIntegrationEventBus` tem hoje uma implementação —
-`InProcessIntegrationEventBus`, que despacha síncrono num escopo de DI novo — e o roteamento já é
-feito pelo `IntegrationEventName` lógico, não pelo tipo .NET. Essa é exatamente a costura que uma
-implementação sobre broker precisa.
+O Tars já abstrai o transporte. `IIntegrationEventBus` tem uma implementação —
+`InProcessIntegrationEventBus`, que despacha síncrono num escopo de DI novo — e o roteamento é feito
+pelo `IntegrationEventName` lógico, não pelo tipo .NET.
 
-Trocar o transporte é, por construção, uma mudança de composition root: produtores e consumidores não
-mudam.
-
----
-
-## 2. Por que um broker
-
-O barramento in-process é suficiente enquanto todo trabalho entre módulos é curto e o processo é um
-só. Três coisas quebram isso:
-
-1. **O webhook precisa devolver 200 rápido.** Um `callback_query` do Telegram não pode esperar a
-   Agenda concluir uma tarefa e publicar os fatos dela. O trabalho de domínio tem que ir para depois
-   do ack.
-2. **O Assistant é lento por natureza.** Transcrever um áudio e rodar tool-calling num modelo local
-   leva de segundos a dezenas de segundos. Isso não pode acontecer dentro de um request HTTP nem
-   segurando o loop de long polling.
-3. **Perder um evento fica caro.** Hoje uma exceção num subscriber in-process derruba o fluxo
-   inteiro ou é engolida. Com fila durável e dead-letter, uma falha é visível e reprocessável.
-
-O que o broker **não** resolve, e nem deve: latência de leitura, consistência, e — principalmente —
-agendamento (§6).
+Esse é o mecanismo inteiro. Um produtor publica um fato, e os handlers registrados para aquele nome
+rodam. Não há mais nada envolvido.
 
 ---
 
-## 3. Topologia
+## 2. A decisão: in-process, um processo só
 
-Dois exchanges do tipo **topic**, uma fila por consumidor lógico, uma DLX para todas.
+O Pandora é um monolito modular e continua sendo. Os módulos conversam pelo barramento in-process e
+por portas síncronas; nada atravessa fronteira de rede para alcançar outro módulo.
 
-```
-pandora.events    (topic)   fatos de domínio       identity.*  agenda.*  finances.*  notify.*
-pandora.inbound   (topic)   o que entra pela borda inbound.interaction.*  inbound.message.*
-pandora.dlx       (topic)   dead letters de todas as filas
-```
+O motivo é o tamanho do problema. Isso é um sistema pessoal, com um usuário e um deploy. Um broker
+compra durabilidade entre reinícios de processo e back-pressure entre máquinas — nenhum dos dois é
+problema aqui — e cobra infraestrutura para rodar, um segundo caminho de entrega para manter
+funcionando, e uma classe de falha (mensagem parada numa fila que ninguém olha) mais difícil de
+depurar do que a exceção que ela substituiu. Os módulos que consumiriam das filas estão no mesmo
+processo que os que publicam nelas.
 
-A chave de roteamento é o `IntegrationEventName`. Nada além disso precisa ser configurado por
-mensagem.
+O que isso **não** abre mão é da costura. Produtores e consumidores só conhecem o
+`IIntegrationEventBus` e um nome lógico de evento. Se o formato do problema mudar, outro transporte é
+uma mudança de composition root e nenhum handler se move. É isso que torna essa decisão barata de
+revisitar, em vez de uma parede — ver §6.
 
-| Fila | Binding | Consumidor |
+---
+
+## 3. Assincronia sem broker
+
+Algum trabalho genuinamente não pode acontecer dentro da requisição que o disparou: um handler HTTP
+que precisa responder rápido, ou uma tarefa que leva dezenas de segundos. A resposta é um **job no
+módulo dono do trabalho**, sobre a tabela desse módulo — não uma fila na frente de outro processo.
+
+O formato já está no código três vezes:
+
+| Módulo | Tabela | Job |
 |---|---|---|
-| `channels.dispatch` | `notify.user.requested` | Channels — entrega |
-| `assistant.inbound` | `inbound.message.#` | Assistant (`prefetch=1`) |
-| `agenda.interactions` | `inbound.interaction.agenda.#` | Agenda |
-| `assistant.interactions` | `inbound.interaction.assistant.#` | Assistant |
-| `channels.identity` | `identity.#` | Channels — subscribers de segurança |
-| `<módulo>.events` | `agenda.# · finances.# · notes.#` | conforme o interesse de cada um |
+| Channels | `chn006_notification` | `NotificationDispatcherBackgroundService` drena o que venceu |
+| Finances | `fin011_pending_transaction` | varredura de recorrência gera o que venceu |
+| Agenda *(planejado)* | `agd00x_alert` | `AlertSweepBackgroundService` dispara o que venceu |
 
-Três coisas que essa tabela codifica:
+O padrão em todos: quem chama grava uma linha durável na mesma transação da sua mudança de estado e
+retorna; um `PeriodicTimer` num `BackgroundService` pega a linha num escopo novo, faz o trabalho e
+registra o resultado. Retry com backoff, contador de tentativas e estado morto vivem na tabela — que
+é exatamente a durabilidade que a fila ofereceria, com a diferença de que o estado é uma linha que
+dá para consultar, corrigir e reprocessar na mão.
 
-- **A entrada é roteada, não transmitida.** `inbound.interaction.<módulo>.<ação>` entrega ao dono, e
-  o dono é uma coluna que ele mesmo escreveu quando pediu o botão (ver
-  [Channels §7.3](../../modules/channels/pt-BR/product-plan.md#73-tokens-de-interação)). Nenhum
-  módulo filtra eventos que não são dele.
-- **`prefetch=1` no Assistant.** Trabalho longo e um Ollama local que não deve ser afogado. As demais
-  filas usam o prefetch padrão.
-- **Uma DLX só.** Filas separadas dariam granularidade que ninguém vai olhar; um lugar só para "o que
-  falhou" é o que se consulta na prática.
+Duas regras impedem isso de virar um broker particular por módulo:
 
----
-
-## 4. Outbox no produtor
-
-Publicar depois do commit é um segundo commit que pode falhar sozinho — e o evento some sem ninguém
-perceber. O padrão é conhecido e a implementação vai para o Tars:
-
-`Pottmayer.Tars.Messaging.Outbox` — tabela de outbox em EF Core, gravada **na mesma transação** que a
-mudança de estado, mais um relay em background que publica e marca enviado.
-
-O produtor continua chamando `IIntegrationEventBus.PublishAsync`; a diferença é que a implementação
-registrada grava na outbox em vez de ir direto ao broker. Nenhum handler muda.
+- **A tabela é do módulo que faz o trabalho**, não do que pediu. O Channels é dono da fila de
+  notificações porque quem envia é ele; a Agenda é dona da varredura de alertas porque quem decide
+  *quando* é ela.
+- **Job não é scheduler do domínio alheio.** Ele drena o que venceu nas tabelas dele e publica fatos;
+  não aceita "roda isso pra mim depois" de outro módulo.
 
 ---
 
-## 5. Consumidor idempotente
+## 4. Idempotência
 
-Entrega no RabbitMQ é **at-least-once**. "Criar lembrete" não é operação que se queira duas vezes.
+O despacho in-process é síncrono e entregue uma vez, então a deduplicação que o at-least-once de um
+broker obrigaria não é necessária para o barramento em si. Ela continua necessária onde um **job
+reprocessa**, que é em todo o §3.
 
-Todo consumidor deduplica por `EventId` — que já é a identidade estável da ocorrência no contrato do
-Tars — contra uma tabela de eventos processados por módulo, na mesma transação do trabalho. Um evento
-já visto é ack e descarte.
+Onde existe idempotência natural, ela resolve e nenhuma tabela extra é necessária:
 
-Onde já existe idempotência natural, ela vale e dispensa a tabela:
-
-- `chn004_inbound_update` tem `provider_update_id` como PK — reprocessar um update do Telegram é
-  inofensivo por construção.
 - `chn006_notification` deduplica por `(correlation_id, channel)`.
-- `chn003_interaction` tem `consumed_at` — um botão só age uma vez.
+- `chn004_inbound_update` *(planejado)* tem `provider_update_id` como PK — reprocessar um update do
+  Telegram é inofensivo por construção.
+- `chn003_interaction` *(planejado)* tem `consumed_at` — um botão age uma vez só.
+
+Todas são chave natural sobre o próprio trabalho, que é a forma a preferir. Uma tabela genérica de
+eventos processados é o plano B para quando não existe chave assim, e até aqui nenhum módulo precisou
+de uma.
 
 ---
 
-## 6. O que não vai no broker
+## 5. O que não passa pelo barramento
 
-**Agendamento.** Nada de `x-delayed-message`, nada de TTL + dead-letter para "me lembre às 14:00".
-Uma mensagem atrasada não pode ser cancelada, reagendada nem corrigida quando o usuário muda de fuso
-— e lembrete é exatamente a coisa que muda de horário. O agendamento fica no scheduler sobre tabela
-do módulo dono (o `AlertSweepBackgroundService` da Agenda), publicando **na hora**. Isso é o
+**Agendamento.** "Me lembre às 14:00" não é evento a ser atrasado; é uma linha com hora de
+vencimento. O agendamento fica no job sobre tabela do módulo dono (o `AlertSweepBackgroundService` da
+Agenda), que publica **na hora em que dispara**. Lembrete é exatamente a coisa que muda de horário, e
+uma linha pode ser reagendada, cancelada ou corrigida quando o usuário muda de fuso. Isso é o
 princípio D3 da Agenda e o C1 do Channels, e os dois estão certos.
 
 **Request/response.** Pedir um token válido ao Integrations, ou os bytes de um áudio ao Channels, é
-uma pergunta com resposta imediata, não um fato que aconteceu. Isso é chamada de porta síncrona,
-in-process, e continua assim mesmo depois de o broker entrar. Se um dia esses módulos virarem
-serviços, essas portas viram HTTP — não mensagem.
+uma pergunta com resposta imediata, não um fato que aconteceu. Isso é chamada de porta síncrona.
 
 **Leitura.** Nenhum módulo replica dado de outro por evento para poder ler. Quem precisa ler chama a
 porta.
 
 ---
 
-## 7. Building blocks no Tars
+## 6. O que foi descartado, e por quê
 
-| Projeto | Conteúdo |
-|---|---|
-| `Pottmayer.Tars.Messaging.RabbitMq` | `IIntegrationEventBus` sobre topic exchange, roteando pelo `IntegrationEventName`; host de consumidor com prefetch configurável, ack manual, DLX e política de retry; re-despacho da mensagem desserializada para os `IIntegrationEventHandler<T>` locais (o "último quilômetro" que a doc do Tars já descreve). |
-| `Pottmayer.Tars.Messaging.Outbox` | Tabela de outbox em EF Core, `IIntegrationEventBus` que grava nela, e o relay em background. |
+Três coisas estavam planejadas aqui e não estão mais:
 
-Nenhum dos dois conhece Pandora. A documentação vai no repositório do Tars, em `docs/messaging/`.
+**Um broker RabbitMQ** — dois topic exchanges, uma fila por consumidor lógico, uma DLX comum.
+Descartado porque os problemas que ele vinha resolver são resolvidos pelo §3 a uma fração do custo:
+ack rápido do webhook vira linha mais job, trabalho lento do Assistant vira linha mais job, e evento
+perdido vira linha com contador de tentativas. O que o broker acrescenta além disso é infraestrutura
+para rodar e vigiar, que esse sistema não tem volume para justificar.
 
----
+**O padrão outbox** (`Messaging.Outbox`) — tabela em EF Core gravada na mesma transação da mudança de
+estado, mais um relay. Ele existia para resolver dual-write contra um broker. Sem broker não há
+segundo commit a perder: um handler in-process roda dentro do fluxo de quem chamou, e o trabalho que
+precisa sobreviver a um crash já é uma linha na tabela do próprio módulo.
 
-## 8. Quando isso entra
+**Extração como serviço** — Assistant primeiro, Channels depois. Descartado como objetivo. Os módulos
+mantêm as propriedades que a tornariam possível, porque essas propriedades valem por si: cada um é
+dono do próprio `DbContext`, não toca schema alheio, publica contratos POCO e conversa por portas.
+Isso é bom design modular, não preparação para uma separação.
 
-Depois da entrada funcionar in-process, não antes. A ordem é:
-
-1. [Channels C4](../../modules/channels/pt-BR/product-plan.md#fase-c4--entrada) — entrada, triagem e
-   roteamento por chave, ainda no barramento in-process. O roteamento por chave já é escrito como se
-   houvesse broker, porque o `IntegrationEventName` é o mesmo nos dois transportes.
-2. **Troca de transporte** — `Messaging.RabbitMq` + `Messaging.Outbox`, `docker-compose` ganha o
-   serviço, composition root registra o bus novo. Nenhum handler muda.
-   **Pronto quando:** derrubar o broker por um minuto não perde nenhum evento.
-3. [Assistant A3](../../modules/assistant/pt-BR/product-plan.md) — quando o trabalho lento entra, a
-   fila já existe.
-
-Fazer na ordem inversa significaria depurar roteamento e infraestrutura ao mesmo tempo.
-
----
-
-## 9. Extração como serviço
-
-O broker não é um passo em direção a microserviços; é o que torna a decisão adiável sem custo. Se e
-quando um módulo sair:
-
-- **O primeiro candidato é o Assistant.** Trabalho longo, cadência de deploy própria, possível
-  afinidade de GPU, e ele já conversa só por evento e por uma porta (`IInboundMediaReader`).
-- **O segundo é o Channels**, se o ingress público justificar isolá-lo.
-- Os dois já são donos do próprio `DbContext` e não tocam schema alheio.
-
-O que a extração acrescenta, e que não vale pagar antes: um consumer group, uma decisão sobre
-replicar ou consultar dado por API, e transformar as portas síncronas em HTTP.
+Nada disso é porta que trancou. Produtores e consumidores conhecem uma interface de barramento e um
+nome lógico de evento, então no dia em que aparecer um motivo real — carga sustentada, cadência de
+deploy genuinamente separada, trabalho que precisa de uma máquina que essa não é — o transporte muda
+no composition root. O motivo tem que aparecer primeiro.
 
 ---
 
-## 10. Questões em aberto
+## 7. Questões em aberto
 
-1. **Um `docker-compose` só ou um perfil.** O RabbitMQ no compose de desenvolvimento é obrigatório ou
-   opcional? Se o bus in-process continuar sendo uma opção de configuração, dá para desenvolver sem
-   subir o broker — ao custo de dois caminhos que precisam funcionar. Inclinação: manter os dois,
-   porque o in-process é o que os testes de integração usam.
-2. **Versionamento de contrato.** `IntegrationEventName` já carrega sufixo de versão
-   (`identity.account-activation.v1`). Falta a regra de quando bumpar e como conviver com duas
-   versões numa fila. Decidir quando o primeiro contrato mudar de verdade.
-3. **Observabilidade.** Correlação ponta a ponta entre o `correlation_id` do domínio e o message id
-   do broker. Provavelmente um header e um enricher de log; ainda não desenhado.
+1. **Versionamento de contrato.** O `IntegrationEventName` já carrega sufixo de versão
+   (`identity.account-activation.v1`). Falta a regra de quando bumpar. Menos urgente in-process, onde
+   produtor e consumidores sobem juntos, mas o sufixo está nos contratos e deveria significar alguma
+   coisa. Decidir quando o primeiro contrato mudar de verdade.
+2. **Visibilidade de falha.** Uma exceção num handler in-process aparece no fluxo de quem chamou, o
+   que é honesto mas nem sempre é onde alguém está olhando. As tabelas de job carregam `last_error` e
+   estado morto; falta um lugar só que responda "o que falhou recentemente" entre os módulos.

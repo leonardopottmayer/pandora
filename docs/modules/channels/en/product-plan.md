@@ -20,7 +20,7 @@
 - `NotificationEnqueuer` — renders a template and persists a row, deduplicated by `correlation_id`.
 - `NotificationDispatcherBackgroundService` — picks up due rows and sends them.
 - Subscribers for Identity's events (activation, password reset/change, MFA enable/disable).
-- `SendNotificationRequested` — a broker-ready POCO, the escape hatch for ad-hoc sends.
+- `SendNotificationRequested` — a plain serializable POCO, the escape hatch for ad-hoc sends.
 
 And it has four hard limits:
 
@@ -424,7 +424,7 @@ interpret text to find out.
 
 ## 8. Contracts
 
-Published from `Channels.Contracts`. All broker-ready POCOs, no domain value objects.
+Published from `Channels.Contracts`. All plain serializable POCOs, no domain value objects.
 
 ### 8.1 Work coming in
 
@@ -516,8 +516,8 @@ Deliberately thin: transport plus models. Templates, retries, addressing, triage
 Pandora's business and already exist here. Its documentation goes in the Tars repository
 (`docs/communication/telegram.md`), next to the email building block.
 
-The other building blocks this plan assumes — `Messaging.RabbitMq` and `Messaging.Outbox` — are
-described in the [messaging doc](../../../architecture/en/messaging.md).
+No other new building block is assumed. The integration events in this plan travel on the in-process
+bus Tars already provides; see the [messaging doc](../../../architecture/en/messaging.md).
 
 ---
 
@@ -557,11 +557,14 @@ described in the [messaging doc](../../../architecture/en/messaging.md).
 - Metrics: queue depth, dispatch latency, failure rate per channel, discarded updates.
 - **Done when:** "did my reminder actually go out?" has an answer in the UI.
 
-### Phase C6 — Extraction as a service *(future, no date)*
-Not the first candidate — [Assistant](../../assistant/en/product-plan.md) is, because of the
-long-running work. But the seams are established: POCO contracts, its own `ChannelsDbContext`, no
-access to anyone else's schema, an independent HTTP surface. See the
-[messaging doc](../../../architecture/en/messaging.md).
+### Extraction as a service — *dropped*
+This phase used to plan for the module leaving the monolith. It is no longer a goal: Pandora stays
+one deployable, in-process. See the
+[messaging doc §6](../../../architecture/en/messaging.md#6-dropped-and-why).
+
+What the phase described as preparation stays anyway, on its own merits: POCO contracts, its own
+`ChannelsDbContext`, no access to anyone else's schema. That is what keeps the module honest inside
+the monolith — and, incidentally, what would make the decision reversible if it ever needed to be.
 
 ---
 

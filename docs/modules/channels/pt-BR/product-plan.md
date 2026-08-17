@@ -21,7 +21,7 @@
   `correlation_id`.
 - `NotificationDispatcherBackgroundService` — busca as linhas vencidas e envia.
 - Subscribers dos eventos do Identity (ativação, reset/troca de senha, habilitar/desabilitar MFA).
-- `SendNotificationRequested` — um POCO pronto para broker, escape hatch para envios ad-hoc.
+- `SendNotificationRequested` — um POCO simples e serializável, escape hatch para envios ad-hoc.
 
 E tem quatro limites duros:
 
@@ -425,7 +425,7 @@ interpretar texto para descobrir isso.
 
 ## 8. Contratos
 
-Publicados de `Channels.Contracts`. Todos são POCOs prontos para broker, sem value object de domínio.
+Publicados de `Channels.Contracts`. Todos são POCOs simples e serializáveis, sem value object de domínio.
 
 ### 8.1 Entrada de trabalho
 
@@ -517,8 +517,9 @@ Fica deliberadamente fino: transporte mais modelos. Templates, retries, endereç
 persistência são assunto do Pandora e já existem aqui. A documentação vai no repositório do Tars
 (`docs/communication/telegram.md`), junto do building block de email.
 
-Os outros building blocks que este plano assume — `Messaging.RabbitMq` e `Messaging.Outbox` — estão
-descritos no [doc de mensageria](../../../architecture/pt-BR/messaging.md).
+Nenhum outro building block novo é assumido. Os eventos de integração deste plano trafegam pelo
+barramento in-process que o Tars já oferece; ver o
+[doc de mensageria](../../../architecture/pt-BR/messaging.md).
 
 ---
 
@@ -557,11 +558,14 @@ descritos no [doc de mensageria](../../../architecture/pt-BR/messaging.md).
 - Métricas: profundidade da fila, latência de despacho, taxa de falha por canal, updates descartados.
 - **Pronto quando:** "meu lembrete saiu mesmo?" tem resposta na UI.
 
-### Fase C6 — Extração como serviço *(futuro, sem data)*
-Não é o primeiro candidato — o [Assistant](../../assistant/pt-BR/product-plan.md) é, por causa do
-trabalho longo. Mas as costuras estão estabelecidas: contratos POCO, `ChannelsDbContext` próprio,
-nenhum acesso a schema alheio, superfície HTTP independente. Ver o
-[doc de mensageria](../../../architecture/pt-BR/messaging.md).
+### Extração como serviço — *descartada*
+Esta fase planejava o módulo saindo do monolito. Não é mais objetivo: o Pandora continua um
+deployable só, in-process. Ver o
+[doc de mensageria §6](../../../architecture/pt-BR/messaging.md#6-o-que-foi-descartado-e-por-quê).
+
+O que a fase descrevia como preparação fica de qualquer forma, por mérito próprio: contratos POCO,
+`ChannelsDbContext` próprio, nenhum acesso a schema alheio. É isso que mantém o módulo honesto dentro
+do monolito — e, de quebra, o que tornaria a decisão reversível se um dia precisasse ser.
 
 ---
 

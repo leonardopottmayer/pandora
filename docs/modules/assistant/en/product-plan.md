@@ -100,9 +100,16 @@ channel, text?, mediaRef?, mediaMimeType?)` — already normalized by
 the `IInboundMediaReader` port. Swapping to WhatsApp, or coming in from the web, touches nothing
 here.
 
-The `assistant.inbound` queue runs with **`prefetch=1`**: transcribing and running tool-calling on a
-local model takes seconds to tens of seconds, and a self-hosted Ollama should not receive concurrent
-work. See the [messaging doc](../../../architecture/en/messaging.md#3-topology).
+**Inbound does not run the pipeline inline.** Transcribing and running tool-calling on a local model
+takes seconds to tens of seconds, which is too long to hold the caller — and a self-hosted Ollama
+should not receive concurrent work. So the subscriber does the cheap part only: it writes a row for
+the invocation and returns. A background job in this module picks the row up and runs the seven
+steps, **one at a time**, which is where the old broker plan's `prefetch=1` guarantee now lives.
+
+That is the module-owned job pattern the rest of Pandora already uses — the same shape as Channels'
+dispatcher and Agenda's sweep. It also gets the durability for free: a run that dies mid-way is a row
+with a state, not a lost message. See the
+[messaging doc §3](../../../architecture/en/messaging.md#3-asynchrony-without-a-broker).
 
 ### 4.1 Command catalog
 
@@ -178,7 +185,7 @@ to yesterday.
 A pending confirmation is an `ast004` row in `pending_confirmation`, expiring after 10 minutes. The
 buttons are declared on `NotifyUserRequested` with `owner_module: "assistant"`, so the click comes
 back on the key `inbound.interaction.assistant.confirm` (or `.cancel`) straight to this module's
-queue — the same mechanism Agenda uses, with no code shared between the two.
+subscriber — the same mechanism Agenda uses, with no code shared between the two.
 
 Button expiry and single use are guaranteed by `chn003_interaction`; the *invocation's* expiry
 (`ast004`) stays this module's business, because that is what decides whether executing still makes
@@ -282,9 +289,9 @@ GET    /assistant/commands               → the live catalog (debugging, and th
   reminder, and the invocation log shows the exact tool call.
 
 ### Phase A3 — Chat inbound, text *(depends on [Channels C4](../../channels/en/product-plan.md#phase-c4--inbound))*
-- `assistant.inbound` queue bound to `inbound.message.#`, with `prefetch=1`; reply through
+- Subscriber bound to `inbound.message.#`, writing an invocation row drained one at a time; reply through
   `NotifyUserRequested`.
-- Confirmation with `owner_module: "assistant"` buttons; `assistant.interactions` queue bound to
+- Confirmation with `owner_module: "assistant"` buttons; subscriber bound to
   `inbound.interaction.assistant.#`.
 - **Done when:** the same sentence typed into Telegram does the same thing, and *Confirm* works.
 
