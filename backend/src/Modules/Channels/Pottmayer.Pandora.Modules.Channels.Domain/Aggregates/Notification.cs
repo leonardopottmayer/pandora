@@ -17,6 +17,13 @@ public sealed class Notification : AggregateRoot<Guid>, IAuditable
     public string Subject { get; private set; } = string.Empty;
     public string Body { get; private set; } = string.Empty;
     public bool IsHtml { get; private set; }
+
+    /// <summary>
+    /// Structured content for channels that subject/body/html cannot express, as JSON. Null for
+    /// e-mail, which needs nothing beyond the three columns above.
+    /// </summary>
+    public string? RenderedPayload { get; private set; }
+
     public NotificationStatus Status { get; private set; }
     public int AttemptCount { get; private set; }
     public int MaxAttempts { get; private set; }
@@ -45,6 +52,7 @@ public sealed class Notification : AggregateRoot<Guid>, IAuditable
         NotificationContent content,
         Guid correlationId,
         TimeProvider timeProvider,
+        string? renderedPayload = null,
         int maxAttempts = DefaultMaxAttempts)
     {
         var now = timeProvider.GetUtcNow();
@@ -59,6 +67,7 @@ public sealed class Notification : AggregateRoot<Guid>, IAuditable
             Subject = content.Subject,
             Body = content.Body,
             IsHtml = content.IsHtml,
+            RenderedPayload = renderedPayload,
             Status = NotificationStatus.Pending,
             AttemptCount = 0,
             MaxAttempts = maxAttempts,

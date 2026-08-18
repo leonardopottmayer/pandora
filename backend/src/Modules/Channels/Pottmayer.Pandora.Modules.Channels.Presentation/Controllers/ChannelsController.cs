@@ -1,0 +1,67 @@
+using System.Globalization;
+using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Pottmayer.Pandora.Modules.Channels.Application.Commands.CreateChannelLink;
+using Pottmayer.Pandora.Modules.Channels.Application.Commands.SendTestNotification;
+using Pottmayer.Pandora.Modules.Channels.Application.Commands.UnlinkChannel;
+using Pottmayer.Pandora.Modules.Channels.Application.Queries.GetUserChannels;
+using Pottmayer.Pandora.Shared.Domain;
+using Pottmayer.Tars.Core.Mediator.Abstractions;
+using Pottmayer.Tars.UserContext.Abstractions.Context;
+using Pottmayer.Tars.Web.Http.Abstractions;
+using Pottmayer.Tars.Web.Http.AspNetCore.Extensions;
+
+namespace Pottmayer.Pandora.Modules.Channels.Presentation.Controllers;
+
+[ApiController]
+[Authorize]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/channels")]
+public sealed class ChannelsController(
+    ISender sender,
+    IHttpErrorMapper errorMapper,
+    IUserContextAccessor<UserData> userContextAccessor) : ControllerBase
+{
+    /// <summary>The user's addresses, linked or disabled, for the settings screen.</summary>
+    [HttpGet]
+    public async Task<IActionResult> GetAsync(CancellationToken ct)
+    {
+        var query = new GetUserChannelsQuery(new GetUserChannelsInput(UserId));
+        var result = await sender.Send(query, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>
+    /// Starts the handshake: returns the deep link the user taps. The chat id arrives later, from
+    /// Telegram, carrying the code this issued.
+    /// </summary>
+    [HttpPost("{channel}/link")]
+    public async Task<IActionResult> LinkAsync(string channel, CancellationToken ct)
+    {
+        var command = new CreateChannelLinkCommand(
+            new CreateChannelLinkInput(UserId, channel, CultureInfo.CurrentUICulture.Name));
+        var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>Forgets the address on this channel.</summary>
+    [HttpDelete("{channel}/link")]
+    public async Task<IActionResult> UnlinkAsync(string channel, CancellationToken ct)
+    {
+        var command = new UnlinkChannelCommand(new UnlinkChannelInput(UserId, channel));
+        var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>Queues a test message to the user's own address on this channel.</summary>
+    [HttpPost("{channel}/test")]
+    public async Task<IActionResult> TestAsync(string channel, CancellationToken ct)
+    {
+        var command = new SendTestNotificationCommand(new SendTestNotificationInput(UserId, channel));
+        var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    private Guid UserId => userContextAccessor.Context.User!.Id;
+}

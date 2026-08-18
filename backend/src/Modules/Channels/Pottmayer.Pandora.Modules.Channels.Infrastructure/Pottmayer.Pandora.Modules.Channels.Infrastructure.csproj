@@ -7,6 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Templates ship inside the assembly: they are content reviewed with the code that fills them.
+         WithCulture=false stops MSBuild from reading the ".en" / ".pt-BR" segment as a culture and
+         exiling those files into satellite assemblies; LogicalName then keeps the name verbatim,
+         hyphens and all. -->
+    <EmbeddedResource Include="Templates/Files/*.txt"
+                      WithCulture="false"
+                      LogicalName="Pottmayer.Pandora.Modules.Channels.Infrastructure.Templates.Files.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Channels.Abstractions/Pottmayer.Pandora.Modules.Channels.Abstractions.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Channels.Application/Pottmayer.Pandora.Modules.Channels.Application.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Channels.Domain/Pottmayer.Pandora.Modules.Channels.Domain.csproj" />

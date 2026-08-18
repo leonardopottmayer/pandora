@@ -20,6 +20,7 @@
     <Project Path="src/Modules/Channels/Pottmayer.Pandora.Modules.Channels.Application/Pottmayer.Pandora.Modules.Channels.Application.csproj" Id="b0000005-0000-0000-0000-000000000002" />
     <Project Path="src/Modules/Channels/Pottmayer.Pandora.Modules.Channels.Infrastructure/Pottmayer.Pandora.Modules.Channels.Infrastructure.csproj" Id="b0000005-0000-0000-0000-000000000003" />
     <Project Path="src/Modules/Channels/Pottmayer.Pandora.Modules.Channels.Persistence/Pottmayer.Pandora.Modules.Channels.Persistence.csproj" Id="b0000005-0000-0000-0000-000000000004" />
+    <Project Path="src/Modules/Channels/Pottmayer.Pandora.Modules.Channels.Presentation/Pottmayer.Pandora.Modules.Channels.Presentation.csproj" Id="b0000005-0000-0000-0000-000000000005" />
   </Folder>
   <Folder Name="/src/Modules/Finances/">
     <Project Path="src/Modules/Finances/Pottmayer.Pandora.Modules.Finances.Abstractions/Pottmayer.Pandora.Modules.Finances.Abstractions.csproj" Id="b0000007-0000-0000-0000-000000000006" />

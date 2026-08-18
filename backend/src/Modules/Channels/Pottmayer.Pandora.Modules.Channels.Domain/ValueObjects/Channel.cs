@@ -22,5 +22,22 @@ public sealed class Channel : IDomainValue<Channel>
         _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown notification channel.")
     };
 
+    /// <summary>Parses without throwing, for values that arrive from outside (a route, a request body).</summary>
+    public static bool TryFromValue(string? value, out Channel channel)
+    {
+        switch (value?.ToLowerInvariant())
+        {
+            case "email":
+                channel = Email;
+                return true;
+            case "telegram":
+                channel = Telegram;
+                return true;
+            default:
+                channel = Email;
+                return false;
+        }
+    }
+
     public override string ToString() => Value;
 }

@@ -19,6 +19,7 @@
     <ProjectReference Include="../../Modules/Channels/Pottmayer.Pandora.Modules.Channels.Application/Pottmayer.Pandora.Modules.Channels.Application.csproj" />
     <ProjectReference Include="../../Modules/Channels/Pottmayer.Pandora.Modules.Channels.Infrastructure/Pottmayer.Pandora.Modules.Channels.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Channels/Pottmayer.Pandora.Modules.Channels.Persistence/Pottmayer.Pandora.Modules.Channels.Persistence.csproj" />
+    <ProjectReference Include="../../Modules/Channels/Pottmayer.Pandora.Modules.Channels.Presentation/Pottmayer.Pandora.Modules.Channels.Presentation.csproj" />
     <!-- Finances module -->
     <ProjectReference Include="../../Modules/Finances/Pottmayer.Pandora.Modules.Finances.Application/Pottmayer.Pandora.Modules.Finances.Application.csproj" />
     <ProjectReference Include="../../Modules/Finances/Pottmayer.Pandora.Modules.Finances.Infrastructure/Pottmayer.Pandora.Modules.Finances.Infrastructure.csproj" />

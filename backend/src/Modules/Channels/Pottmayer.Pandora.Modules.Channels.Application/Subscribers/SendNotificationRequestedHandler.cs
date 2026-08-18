@@ -21,6 +21,6 @@ public sealed class SendNotificationRequestedHandler(NotificationEnqueuer enqueu
             Locale.Normalize(@event.Locale),
             @event.Payload,
             @event.EventId,
-            cancellationToken);
+            ct: cancellationToken);
     }
 }

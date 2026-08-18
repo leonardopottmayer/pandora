@@ -12,6 +12,10 @@ namespace Pottmayer.Pandora.Modules.Channels.Application.Enqueue;
 /// Renders a template and persists a <see cref="Notification"/> in the durable queue.
 /// Shared by all integration-event subscribers. Idempotent on <paramref name="correlationId"/>.
 /// </summary>
+/// <remarks>
+/// Rendering happens here, not at send time: what went out is on the row, a retry re-sends the same
+/// bytes, and editing a template tomorrow does not rewrite history.
+/// </remarks>
 public sealed class NotificationEnqueuer(
     IUnitOfWorkFactory factory,
     INotificationTemplateRenderer renderer,
@@ -24,9 +28,10 @@ public sealed class NotificationEnqueuer(
         string locale,
         IReadOnlyDictionary<string, string> payload,
         Guid correlationId,
+        string? renderedPayload = null,
         CancellationToken ct = default)
     {
-        var content = renderer.Render(templateKey, locale, payload);
+        var content = renderer.Render(templateKey, channel, locale, payload);
         var address = NotificationAddress.Create(channel, recipient);
         var payloadJson = JsonSerializer.Serialize(payload);
 
@@ -39,7 +44,8 @@ public sealed class NotificationEnqueuer(
                 return false;
 
             var notification = Notification.Queue(
-                channel, address, templateKey, locale, payloadJson, content, correlationId, timeProvider);
+                channel, address, templateKey, locale, payloadJson, content, correlationId, timeProvider,
+                renderedPayload);
 
             await notifications.AddAsync(notification, token);
             return true;

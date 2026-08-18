@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Pottmayer.Pandora.Modules.Channels.Abstractions;
 using Pottmayer.Pandora.Modules.Channels.Application.Commands.DispatchPending;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 

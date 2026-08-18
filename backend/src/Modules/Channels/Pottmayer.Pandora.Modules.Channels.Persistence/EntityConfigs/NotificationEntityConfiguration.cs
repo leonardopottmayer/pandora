@@ -61,6 +61,10 @@ internal sealed class NotificationEntityConfiguration : IEntityTypeConfiguration
                .HasColumnName("is_html")
                .IsRequired();
 
+        builder.Property(n => n.RenderedPayload)
+               .HasColumnName("rendered_payload")
+               .HasColumnType("jsonb");
+
         builder.Property(n => n.Status)
                .HasColumnName("status")
                .HasConversion<string>()

@@ -1,4 +1,6 @@
 using Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
+using Microsoft.Extensions.Options;
+using Pottmayer.Pandora.Modules.Channels.Abstractions;
 using Pottmayer.Pandora.Modules.Channels.Application.Enqueue;
 using Pottmayer.Pandora.Modules.Channels.Application.Subscribers;
 using Pottmayer.Pandora.Modules.Channels.Contracts;
@@ -16,6 +18,13 @@ public sealed class SubscriberTests
 {
     private static readonly DateTimeOffset Now = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
 
+    private static readonly IOptions<ChannelsOptions> Options = Microsoft.Extensions.Options.Options.Create(
+        new ChannelsOptions
+        {
+            ActivationUrlTemplate = "https://app/activate?token={token}",
+            PasswordResetUrlTemplate = "https://app/reset-password?token={token}"
+        });
+
     private static (NotificationEnqueuer Enqueuer, FakeNotificationRepository Repo) Build()
     {
         var repo = new FakeNotificationRepository();
@@ -28,7 +37,7 @@ public sealed class SubscriberTests
     public async Task AccountActivation_maps_to_the_activation_template_email()
     {
         var (enqueuer, repo) = Build();
-        var handler = new AccountActivationRequestedHandler(enqueuer);
+        var handler = new AccountActivationRequestedHandler(enqueuer, Options);
         var eventId = Guid.NewGuid();
         var @event = new AccountActivationRequested(
             eventId, Now, UserId: Guid.NewGuid(), Email: "Carol@Example.com", Token: "tok-1", Locale: "pt-BR");
@@ -47,7 +56,7 @@ public sealed class SubscriberTests
     public async Task AccountActivation_normalizes_unsupported_locale_to_default()
     {
         var (enqueuer, repo) = Build();
-        var handler = new AccountActivationRequestedHandler(enqueuer);
+        var handler = new AccountActivationRequestedHandler(enqueuer, Options);
         var @event = new AccountActivationRequested(
             Guid.NewGuid(), Now, Guid.NewGuid(), "dave@example.com", "tok", Locale: "fr");
 
@@ -60,7 +69,7 @@ public sealed class SubscriberTests
     public async Task PasswordResetRequested_maps_to_the_password_reset_template_email()
     {
         var (enqueuer, repo) = Build();
-        var handler = new PasswordResetRequestedHandler(enqueuer);
+        var handler = new PasswordResetRequestedHandler(enqueuer, Options);
         var eventId = Guid.NewGuid();
         var @event = new PasswordResetRequested(
             eventId, Now, UserId: Guid.NewGuid(), Email: "Frank@Example.com", Token: "tok-2", Locale: "pt-BR");

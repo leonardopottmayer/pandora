@@ -68,6 +68,8 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
                 ["Tars:Data:Connections:notes:ConnectionString"] = ConnectionString,
                 // Deliver e-mails to the log (always succeeds) instead of SMTP — no Mailpit needed.
                 ["Tars:Communication:Email:Provider"] = "logging",
+                // A bot username is all the linking flow needs; no token, because nothing calls Telegram here.
+                ["Pandora:Channels:Telegram:BotUsername"] = "pandora_test_bot",
                 // Fixed AES-256 key (Base64 of 32 bytes) so MFA secrets can be encrypted in tests.
                 ["Pandora:Identity:Mfa:EncryptionKey"] = "7Mzi45PyKOyGH1hWmXvnDKCVOY9qKeEB8P8NTuZe3T4="
             });

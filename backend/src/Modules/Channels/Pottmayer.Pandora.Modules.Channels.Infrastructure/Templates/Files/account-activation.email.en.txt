@@ -1,0 +1,3 @@
+Activate your Pandora account
+Welcome to Pandora! Confirm your account using the link:
+{{activationUrl}}

@@ -1,0 +1,13 @@
+namespace Pottmayer.Pandora.Modules.Channels.Application.Dtos;
+
+/// <summary>One of the user's addresses, for the settings screen.</summary>
+public sealed record UserChannelDto(
+    string Channel,
+    string Address,
+    bool IsVerified,
+    bool IsEnabled,
+    string? DisabledReason,
+    DateTimeOffset? VerifiedAt);
+
+/// <summary>The deep link the user taps to finish linking, and how long it is good for.</summary>
+public sealed record ChannelLinkDto(string Url, DateTimeOffset ExpiresAt);

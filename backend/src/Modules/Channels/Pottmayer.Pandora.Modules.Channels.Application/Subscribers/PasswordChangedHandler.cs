@@ -29,6 +29,6 @@ public sealed class PasswordChangedHandler(NotificationEnqueuer enqueuer)
             Locale.Normalize(@event.Locale),
             payload,
             @event.EventId,
-            cancellationToken);
+            ct: cancellationToken);
     }
 }

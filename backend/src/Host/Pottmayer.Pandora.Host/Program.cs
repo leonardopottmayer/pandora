@@ -11,6 +11,7 @@ using Pottmayer.Pandora.Modules.Identity.Presentation.DI;
 using Pottmayer.Pandora.Modules.Channels.Application.DI;
 using Pottmayer.Pandora.Modules.Channels.Infrastructure.DI;
 using Pottmayer.Pandora.Modules.Channels.Persistence.DI;
+using Pottmayer.Pandora.Modules.Channels.Presentation.DI;
 using Pottmayer.Pandora.Modules.Finances.Application.DI;
 using Pottmayer.Pandora.Modules.Finances.Infrastructure.DI;
 using Pottmayer.Pandora.Modules.Finances.Persistence.DI;
@@ -58,6 +59,7 @@ builder.Services.AddTarsProblemDetails();
 // Presentation
 builder.Services.AddControllers()
                 .AddIdentityPresentationPart()
+                .AddChannelsPresentationPart()
                 .AddFinancesPresentationPart()
                 .AddNotesPresentationPart();
 

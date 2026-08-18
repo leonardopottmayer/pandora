@@ -1,0 +1,2 @@
+Verificação em duas etapas desativada
+A verificação em duas etapas (MFA) foi desativada na sua conta Pandora. Se não foi você, redefina sua senha e entre em contato com o suporte imediatamente.

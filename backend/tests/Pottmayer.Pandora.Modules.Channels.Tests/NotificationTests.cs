@@ -19,7 +19,7 @@ public sealed class NotificationTests
             new NotificationContent("Subject", "Body", IsHtml: true),
             correlationId: Guid.NewGuid(),
             time,
-            maxAttempts);
+            maxAttempts: maxAttempts);
 
     [Fact]
     public void Queue_starts_pending_due_now_with_content_copied()

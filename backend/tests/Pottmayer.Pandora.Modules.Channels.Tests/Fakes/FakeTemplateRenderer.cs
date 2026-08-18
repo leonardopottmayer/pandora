@@ -9,13 +9,14 @@ namespace Pottmayer.Pandora.Modules.Channels.Tests.Fakes;
 /// </summary>
 internal sealed class FakeTemplateRenderer : INotificationTemplateRenderer
 {
-    public List<(TemplateKey TemplateKey, string Locale, IReadOnlyDictionary<string, string> Payload)> Calls { get; } = [];
+    public List<(TemplateKey TemplateKey, Channel Channel, string Locale, IReadOnlyDictionary<string, string> Payload)> Calls { get; } = [];
 
     public NotificationContent Content { get; set; } = new("subject", "body", IsHtml: false);
 
-    public NotificationContent Render(TemplateKey templateKey, string locale, IReadOnlyDictionary<string, string> payload)
+    public NotificationContent Render(
+        TemplateKey templateKey, Channel channel, string locale, IReadOnlyDictionary<string, string> payload)
     {
-        Calls.Add((templateKey, locale, payload));
+        Calls.Add((templateKey, channel, locale, payload));
         return Content;
     }
 }
