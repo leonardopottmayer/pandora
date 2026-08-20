@@ -10,6 +10,10 @@ CREATE TABLE channels.chn006_notification (
 	subject VARCHAR(255) NOT NULL,
 	body TEXT NOT NULL,
 	is_html BOOLEAN NOT NULL DEFAULT false,
+	-- Structured, already-rendered content for channels that e-mail's subject/body/is_html cannot
+	-- express -- today, a Telegram inline keyboard. Null for e-mail, which keeps using the columns it
+	-- always had.
+	rendered_payload JSONB NULL,
 	status VARCHAR(20) NOT NULL,
 	attempt_count INT NOT NULL DEFAULT 0,
 	max_attempts INT NOT NULL DEFAULT 5,
