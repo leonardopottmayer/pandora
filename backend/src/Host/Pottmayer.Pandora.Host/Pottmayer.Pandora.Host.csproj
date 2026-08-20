@@ -31,15 +31,15 @@
     <ProjectReference Include="../../Modules/Notes/Pottmayer.Pandora.Modules.Notes.Persistence/Pottmayer.Pandora.Modules.Notes.Persistence.csproj" />
     <ProjectReference Include="../../Modules/Notes/Pottmayer.Pandora.Modules.Notes.Presentation/Pottmayer.Pandora.Modules.Notes.Presentation.csproj" />
     <!-- Tars: Core -->
-    <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.4" />
+    <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.5" />
     <!-- Tars: Web -->
-    <PackageReference Include="Pottmayer.Tars.Web.Http" Version="0.0.4" />
-    <PackageReference Include="Pottmayer.Tars.Web.Http.AspNetCore" Version="0.0.4" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http" Version="0.0.5" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http.AspNetCore" Version="0.0.5" />
     <!-- Tars: UserContext -->
-    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.4" />
+    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.5" />
     <!-- Tars: Caching -->
-    <PackageReference Include="Pottmayer.Tars.Caching.Core" Version="0.0.4" />
-    <PackageReference Include="Pottmayer.Tars.Caching.Memory" Version="0.0.4" />
+    <PackageReference Include="Pottmayer.Tars.Caching.Core" Version="0.0.5" />
+    <PackageReference Include="Pottmayer.Tars.Caching.Memory" Version="0.0.5" />
   </ItemGroup>
 
   <ItemGroup>

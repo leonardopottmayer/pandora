@@ -28,7 +28,7 @@
 
   <ItemGroup>
     <!-- Tars: Data (IUnitOfWorkFactory) -->
-    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.4" />
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.5" />
   </ItemGroup>
 
 </Project>
