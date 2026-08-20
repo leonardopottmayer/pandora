@@ -5,6 +5,8 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Hosting;
 using Npgsql;
+using Pottmayer.Tars.Communication.Email.Abstractions;
+using Pottmayer.Tars.Communication.Email.DI;
 using Respawn;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -66,8 +68,6 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
                 ["Tars:Data:Connections:channels:ConnectionString"] = ConnectionString,
                 ["Tars:Data:Connections:finances:ConnectionString"] = ConnectionString,
                 ["Tars:Data:Connections:notes:ConnectionString"] = ConnectionString,
-                // Deliver e-mails to the log (always succeeds) instead of SMTP — no Mailpit needed.
-                ["Tars:Communication:Email:Provider"] = "logging",
                 // A bot username is all the linking flow needs; no token, because nothing calls Telegram here.
                 ["Pandora:Channels:Telegram:BotUsername"] = "pandora_test_bot",
                 // Fixed AES-256 key (Base64 of 32 bytes) so MFA secrets can be encrypted in tests.
@@ -75,8 +75,19 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
             });
         });
 
-        // Drop the periodic dispatcher: tests drive dispatch explicitly so timing is deterministic.
-        builder.ConfigureServices(services => services.RemoveAll<IHostedService>());
+        builder.ConfigureServices(services =>
+        {
+            // Drop the periodic dispatcher: tests drive dispatch explicitly so timing is deterministic.
+            services.RemoveAll<IHostedService>();
+
+            // Force the logging e-mail sender. The module picks its provider at registration time
+            // from configuration (appsettings says "mailkit"), which runs before the test's in-memory
+            // config is layered on — so overriding "Provider" there cannot switch it. Swapping the
+            // resolved service here is the override point that actually takes effect, and keeps the
+            // suite off a live SMTP server.
+            services.RemoveAll<IEmailSender>();
+            services.AddTarsLoggingEmailSender();
+        });
     }
 
     /// <summary>Wipes business data so each test starts from a clean slate.</summary>
