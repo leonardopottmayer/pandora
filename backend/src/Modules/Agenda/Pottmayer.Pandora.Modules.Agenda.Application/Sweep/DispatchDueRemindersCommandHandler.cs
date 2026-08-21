@@ -151,7 +151,7 @@ public sealed class DispatchDueRemindersCommandHandler(
             EventId: Guid.CreateVersion7(),
             OccurredAt: now,
             UserId: reminder.UserId,
-            Category: AgendaModule.ReminderCategory,
+            Category: AgendaCategories.Reminder,
             TemplateKey: TemplateKey,
             Locale: null, // Channels renders in the user's channel locale.
             Channels: null, // Channels resolves from the user's preference.

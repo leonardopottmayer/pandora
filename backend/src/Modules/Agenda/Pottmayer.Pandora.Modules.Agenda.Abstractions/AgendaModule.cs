@@ -13,9 +13,4 @@ public static class AgendaModule
 
     /// <summary>Database schema that owns this module's tables.</summary>
     public const string Schema = Name;
-
-    /// <summary>
-    /// The notification category reminders raise, used by Channels to resolve the user's channels.
-    /// </summary>
-    public const string ReminderCategory = "agenda.reminder";
 }

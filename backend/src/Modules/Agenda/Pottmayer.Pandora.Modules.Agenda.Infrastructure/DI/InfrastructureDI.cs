@@ -14,6 +14,7 @@ public static class InfrastructureDI
             .Bind(builder.Configuration.GetSection(AgendaOptions.SectionName));
 
         builder.Services.AddHostedService<ReminderSweepBackgroundService>();
+        builder.Services.AddHostedService<TaskAlertSweepBackgroundService>();
 
         return builder;
     }

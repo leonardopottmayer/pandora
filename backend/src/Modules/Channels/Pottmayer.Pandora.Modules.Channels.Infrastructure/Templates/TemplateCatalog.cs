@@ -24,6 +24,7 @@ internal static class TemplateCatalog
             ["mfa-disabled"] = [Channel.Email],
             ["channel-test"] = [Channel.Email, Channel.Telegram],
             ["agenda.reminder.due"] = [Channel.Email, Channel.Telegram],
+            ["agenda.task.due"] = [Channel.Email, Channel.Telegram],
         };
 
     /// <summary>Every variant that has to be present, for the startup check to walk.</summary>

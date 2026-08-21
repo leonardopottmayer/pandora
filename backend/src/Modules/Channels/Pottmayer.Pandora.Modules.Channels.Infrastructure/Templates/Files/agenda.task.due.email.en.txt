@@ -1,0 +1,5 @@
+Task due: {{title}}
+This task is due:
+
+{{title}}
+{{notes}}
