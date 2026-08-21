@@ -10,6 +10,7 @@ using Pottmayer.Pandora.Modules.Channels.Domain.ValueObjects;
 using Pottmayer.Tars.Communication.Telegram.Abstractions;
 using Pottmayer.Tars.Communication.Telegram.Abstractions.Models;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
+using Pottmayer.Tars.Data.Abstractions.DataContext;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 using Pottmayer.Tars.Messaging.Abstractions;
 
@@ -37,6 +38,8 @@ public sealed class TelegramInboundTriage(
     private const string Provider = "telegram";
 
     private sealed record Outcome(InboundClassification Classification, Guid? UserId, IIntegrationEvent? Event);
+
+    private sealed record CallbackResolution(Guid? UserId, Interaction? Consumed);
 
     public async Task HandleAsync(TelegramUpdate update, CancellationToken ct)
     {
@@ -68,11 +71,7 @@ public sealed class TelegramInboundTriage(
     private async Task<Outcome> RouteAsync(TelegramUpdate update, CancellationToken ct)
     {
         if (update.CallbackQuery is { } callback)
-        {
-            await TryAsync(client.AnswerCallbackQueryAsync(callback.Id, "This button is no longer active.", ct));
-            var owner = callback.Chat is { } chat ? await ResolveUserAsync(ChatId(chat), ct) : null;
-            return new Outcome(InboundClassification.Interaction, owner, Event: null);
-        }
+            return await HandleCallbackAsync(callback, ct);
 
         if (update.Message is not { } message)
             return new Outcome(InboundClassification.Discarded, UserId: null, Event: null);
@@ -119,14 +118,55 @@ public sealed class TelegramInboundTriage(
         return new Outcome(InboundClassification.Command, await ResolveUserAsync(chatId, ct), Event: null);
     }
 
-    private Task<Guid?> ResolveUserAsync(string chatId, CancellationToken ct) =>
-        factory.ExecuteAsync(ChannelsModule.Name, async (context, token) =>
+    private async Task<Outcome> HandleCallbackAsync(TelegramCallbackQuery callback, CancellationToken ct)
+    {
+        var chatId = callback.Chat is { } chat ? ChatId(chat) : null;
+
+        // Resolve the sender, then the button it points at, and burn it — all in one unit of work, so
+        // a double tap cannot act twice.
+        var resolution = await factory.ExecuteAsync(ChannelsModule.Name, async (context, token) =>
         {
-            var address = NotificationAddress.Create(Channel.Telegram, chatId);
-            var link = await context.AcquireRepository<IUserChannelRepository>()
-                .FindByAddressAsync(Channel.Telegram, address, token);
-            return link?.UserId;
+            Guid? userId = chatId is null ? null : await ResolveUserInContextAsync(context, chatId, token);
+
+            if (userId is null || !Guid.TryParse(callback.Data, out var interactionId))
+                return new CallbackResolution(userId, Consumed: null);
+
+            var interactions = context.AcquireRepository<IInteractionRepository>();
+            var interaction = await interactions.GetByIdAsync(interactionId, token);
+
+            // Authenticity is the user on the row, never the client: a tap only counts for its owner.
+            if (interaction is null || interaction.UserId != userId || !interaction.IsUsable(timeProvider.GetUtcNow()))
+                return new CallbackResolution(userId, Consumed: null);
+
+            interaction.Consume(timeProvider);
+            await interactions.UpdateAsync(interaction, token);
+            return new CallbackResolution(userId, interaction);
         }, cancellationToken: ct);
+
+        if (resolution.Consumed is { } acted)
+        {
+            await TryAsync(client.AnswerCallbackQueryAsync(callback.Id, "Done.", ct));
+            var evt = new InboundInteractionReceived(
+                Guid.CreateVersion7(), timeProvider.GetUtcNow(), acted.UserId, Provider,
+                acted.OwnerModule, acted.Action, acted.Payload);
+            return new Outcome(InboundClassification.Interaction, resolution.UserId, evt);
+        }
+
+        await TryAsync(client.AnswerCallbackQueryAsync(callback.Id, "This button is no longer active.", ct));
+        return new Outcome(InboundClassification.Interaction, resolution.UserId, Event: null);
+    }
+
+    private Task<Guid?> ResolveUserAsync(string chatId, CancellationToken ct) =>
+        factory.ExecuteAsync(ChannelsModule.Name,
+            (context, token) => ResolveUserInContextAsync(context, chatId, token), cancellationToken: ct);
+
+    private static async Task<Guid?> ResolveUserInContextAsync(IDataContext context, string chatId, CancellationToken ct)
+    {
+        var address = NotificationAddress.Create(Channel.Telegram, chatId);
+        var link = await context.AcquireRepository<IUserChannelRepository>()
+            .FindByAddressAsync(Channel.Telegram, address, ct);
+        return link?.UserId;
+    }
 
     private async Task ReplyAsync(string chatId, string text, CancellationToken ct) =>
         await TryAsync(client.SendMessageAsync(new TelegramMessage(chatId, text), ct));

@@ -22,4 +22,12 @@ public sealed record NotifyUserRequested(
     string? Locale,
     IReadOnlyList<string>? Channels,
     IReadOnlyDictionary<string, string> Payload,
-    Guid CorrelationId) : IIntegrationEvent;
+    Guid CorrelationId,
+    IReadOnlyList<NotificationButton>? Buttons = null) : IIntegrationEvent;
+
+/// <summary>
+/// An inline button the caller wants on the message. The label is display text the caller owns
+/// (localized on their side); the action and payload are their domain, opaque to Channels and
+/// returned intact when the button is tapped. Only channels that support buttons render them.
+/// </summary>
+public sealed record NotificationButton(string OwnerModule, string Action, string Label, string? Payload = null);

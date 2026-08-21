@@ -1,6 +1,7 @@
 using System.Globalization;
 using Pottmayer.Pandora.Modules.Channels.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Channels.Domain.Ports.Services;
+using Pottmayer.Pandora.Modules.Channels.Domain.Rendering;
 using Pottmayer.Pandora.Modules.Channels.Domain.ValueObjects;
 using Pottmayer.Tars.Communication.Telegram.Abstractions;
 using Pottmayer.Tars.Communication.Telegram.Abstractions.Models;
@@ -27,9 +28,14 @@ public sealed class TelegramChannelTransport(ITelegramClient client) : IChannelT
 
     public async Task<ChannelDeliveryResult> SendAsync(Notification notification, CancellationToken ct = default)
     {
+        // Structured content (text + inline buttons) when the enqueue produced it; otherwise the
+        // plain body, which is what e-mail-shaped notifications carry.
+        var rendered = TelegramRenderedPayload.Deserialize(notification.RenderedPayload);
+
         var message = new TelegramMessage(
             ChatId: notification.Address.Value,
-            Text: notification.Body);
+            Text: rendered?.Text ?? notification.Body,
+            Keyboard: ToKeyboard(rendered));
 
         try
         {
@@ -41,5 +47,18 @@ public sealed class TelegramChannelTransport(ITelegramClient client) : IChannelT
         {
             throw new PermanentDeliveryException(ex.Message, ex);
         }
+    }
+
+    // One button per row: the readable default for the two or three actions a notification carries.
+    private static InlineKeyboard? ToKeyboard(TelegramRenderedPayload? rendered)
+    {
+        if (rendered is null || rendered.Buttons.Count == 0)
+            return null;
+
+        var buttons = rendered.Buttons
+            .Select(b => InlineButton.Callback(b.Label, b.InteractionId))
+            .ToArray();
+
+        return InlineKeyboard.Stacked(buttons);
     }
 }

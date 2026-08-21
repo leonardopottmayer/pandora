@@ -85,6 +85,13 @@ public sealed class Notification : AggregateRoot<Guid>, IAuditable
         };
     }
 
+    /// <summary>
+    /// Attaches structured, already-rendered content (e.g. a Telegram inline keyboard) after the row
+    /// exists — the buttons carry interaction ids that are only known once those rows are created
+    /// against this notification.
+    /// </summary>
+    public void SetRenderedPayload(string renderedPayload) => RenderedPayload = renderedPayload;
+
     public bool IsDue(DateTimeOffset now) =>
         Status is NotificationStatus.Pending or NotificationStatus.Failed && NextAttemptAt <= now;
 

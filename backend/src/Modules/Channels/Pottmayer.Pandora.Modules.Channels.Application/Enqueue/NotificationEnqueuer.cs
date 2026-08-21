@@ -1,8 +1,10 @@
 using System.Text.Json;
 using Pottmayer.Pandora.Modules.Channels.Abstractions;
+using Pottmayer.Pandora.Modules.Channels.Contracts;
 using Pottmayer.Pandora.Modules.Channels.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Channels.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Channels.Domain.Ports.Services;
+using Pottmayer.Pandora.Modules.Channels.Domain.Rendering;
 using Pottmayer.Pandora.Modules.Channels.Domain.ValueObjects;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 
@@ -21,6 +23,10 @@ public sealed class NotificationEnqueuer(
     INotificationTemplateRenderer renderer,
     TimeProvider timeProvider)
 {
+    // How long a rendered inline button stays actionable. A button from yesterday is expired, not
+    // a fresh command.
+    private static readonly TimeSpan InteractionLifetime = TimeSpan.FromHours(24);
+
     public async Task EnqueueAsync(
         Channel channel,
         string recipient,
@@ -30,6 +36,8 @@ public sealed class NotificationEnqueuer(
         Guid correlationId,
         string? renderedPayload = null,
         Guid? groupId = null,
+        Guid? userId = null,
+        IReadOnlyList<NotificationButton>? buttons = null,
         CancellationToken ct = default)
     {
         var content = renderer.Render(templateKey, channel, locale, payload);
@@ -50,7 +58,40 @@ public sealed class NotificationEnqueuer(
                 renderedPayload, groupId);
 
             await notifications.AddAsync(notification, token);
+
+            // Buttons only materialize on a channel that renders them. Registering each as an
+            // interaction — in this same unit of work, so the FK to the notification holds — is what
+            // lets a 64-byte callback resolve back to a full action later.
+            if (channel == Channel.Telegram && userId is { } owner && buttons is { Count: > 0 })
+                await AttachButtonsAsync(context, notification, owner, buttons, content.Body, token);
+
             return true;
         }, cancellationToken: ct);
+    }
+
+    private async Task AttachButtonsAsync(
+        Pottmayer.Tars.Data.Abstractions.DataContext.IDataContext context,
+        Notification notification,
+        Guid userId,
+        IReadOnlyList<NotificationButton> buttons,
+        string text,
+        CancellationToken ct)
+    {
+        var interactions = context.AcquireRepository<IInteractionRepository>();
+        var expiresAt = timeProvider.GetUtcNow() + InteractionLifetime;
+
+        var rendered = new List<TelegramRenderedButton>(buttons.Count);
+        foreach (var button in buttons)
+        {
+            var interaction = Interaction.Register(
+                userId, button.OwnerModule, button.Action, button.Payload, notification.Id, expiresAt, timeProvider);
+            await interactions.AddAsync(interaction, ct);
+            rendered.Add(new TelegramRenderedButton(interaction.Id.ToString(), button.Label));
+        }
+
+        // The notification is already change-tracked from AddAsync above; mutating it before the unit
+        // of work commits is enough. Calling UpdateAsync here would flip its state from Added to
+        // Modified and turn the pending INSERT into an UPDATE of a row that does not exist yet.
+        notification.SetRenderedPayload(new TelegramRenderedPayload(text, rendered).Serialize());
     }
 }
