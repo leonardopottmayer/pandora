@@ -7,6 +7,8 @@ public sealed record ReminderDto(
     string? Notes,
     DateTimeOffset RemindAt,
     string TimeZone,
+    string? Rrule,
+    DateTimeOffset? RecurrenceEndsAt,
     string Status,
     DateTimeOffset? SnoozedUntil,
     DateTimeOffset? AcknowledgedAt);

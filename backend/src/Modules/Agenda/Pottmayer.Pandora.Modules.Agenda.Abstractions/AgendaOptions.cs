@@ -10,4 +10,11 @@ public sealed class AgendaOptions
 
     /// <summary>How many reminders the sweep fires per tick.</summary>
     public int SweepBatchSize { get; set; } = 50;
+
+    /// <summary>
+    /// How far back the sweep looks for missed recurring occurrences. Covers a suspended machine: an
+    /// occurrence within this window is still delivered once (marked late); one older than it is
+    /// missed rather than replayed, so waking up does not flood.
+    /// </summary>
+    public int SweepGraceMinutes { get; set; } = 15;
 }

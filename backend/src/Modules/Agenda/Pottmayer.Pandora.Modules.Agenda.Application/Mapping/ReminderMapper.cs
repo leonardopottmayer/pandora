@@ -11,6 +11,8 @@ internal static class ReminderMapper
         reminder.Notes,
         reminder.RemindAt,
         reminder.TimeZone,
+        reminder.Rrule,
+        reminder.RecurrenceEndsAt,
         reminder.Status.ToString(),
         reminder.SnoozedUntil,
         reminder.AcknowledgedAt);

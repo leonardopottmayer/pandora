@@ -12,15 +12,32 @@ public sealed class ReminderRepository(IDataContextAccessor accessor)
 {
     public async Task<IReadOnlyList<Reminder>> GetDueAsync(DateTimeOffset now, int batchSize, CancellationToken ct = default)
     {
-        // Effective time is snoozed_until when set, else remind_at — mirrors Reminder.EffectiveRemindAt.
+        // Single-shot only (rrule null): recurring reminders are driven by the dispatch ledger, not
+        // the status guard. Effective time is snoozed_until when set, else remind_at.
         var due = await Queryable()
-            .Where(r => (r.Status == ReminderStatus.Scheduled || r.Status == ReminderStatus.Snoozed)
+            .Where(r => r.Rrule == null
+                        && (r.Status == ReminderStatus.Scheduled || r.Status == ReminderStatus.Snoozed)
                         && (r.SnoozedUntil ?? r.RemindAt) <= now)
             .OrderBy(r => r.SnoozedUntil ?? r.RemindAt)
             .Take(batchSize)
             .ToListAsync(ct);
 
         return due;
+    }
+
+    public async Task<IReadOnlyList<Reminder>> GetActiveRecurringAsync(DateTimeOffset windowStart, int batchSize, CancellationToken ct = default)
+    {
+        // Recurring rows whose series is still live: not cancelled, and either open-ended
+        // (recurrence_ends_at null) or ending on/after the window start.
+        var active = await Queryable()
+            .Where(r => r.Rrule != null
+                        && r.Status != ReminderStatus.Cancelled
+                        && (r.RecurrenceEndsAt == null || r.RecurrenceEndsAt >= windowStart))
+            .OrderBy(r => r.RemindAt)
+            .Take(batchSize)
+            .ToListAsync(ct);
+
+        return active;
     }
 
     public async Task<IReadOnlyList<Reminder>> GetByUserAsync(Guid userId, CancellationToken ct = default) =>

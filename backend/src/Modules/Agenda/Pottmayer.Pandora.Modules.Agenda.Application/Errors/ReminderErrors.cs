@@ -9,4 +9,7 @@ public static class ReminderErrors
 
     public static Error TitleRequired =>
         Error.Validation("Agenda.ReminderTitleRequired", "A reminder needs a title.");
+
+    public static Error InvalidRecurrence(string detail) =>
+        Error.Validation("Agenda.ReminderInvalidRecurrence", detail);
 }

@@ -38,7 +38,7 @@ public sealed class RemindersController(
     {
         var timeZone = string.IsNullOrWhiteSpace(body.TimeZone) ? CultureInfo.CurrentUICulture.Name : body.TimeZone;
         var command = new CreateReminderCommand(
-            new CreateReminderInput(UserId, body.Title, body.Notes, body.RemindAt, timeZone));
+            new CreateReminderInput(UserId, body.Title, body.Notes, body.RemindAt, timeZone, body.Rrule));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
@@ -70,6 +70,6 @@ public sealed class RemindersController(
 
     private Guid UserId => userContextAccessor.Context.User!.Id;
 
-    public sealed record CreateReminderRequest(string Title, string? Notes, DateTimeOffset RemindAt, string? TimeZone);
+    public sealed record CreateReminderRequest(string Title, string? Notes, DateTimeOffset RemindAt, string? TimeZone, string? Rrule = null);
     public sealed record SnoozeReminderRequest(DateTimeOffset Until);
 }

@@ -40,6 +40,13 @@ internal sealed class ReminderEntityConfiguration : IEntityTypeConfiguration<Rem
                .HasMaxLength(100)
                .IsRequired();
 
+        builder.Property(r => r.Rrule)
+               .HasColumnName("rrule")
+               .HasColumnType("text");
+
+        builder.Property(r => r.RecurrenceEndsAt)
+               .HasColumnName("recurrence_ends_at");
+
         builder.Property(r => r.Status)
                .HasColumnName("status")
                .HasConversion<string>()

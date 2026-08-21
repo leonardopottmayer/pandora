@@ -20,15 +20,30 @@ public sealed class CreateReminderCommandHandler(IUnitOfWorkFactory factory, Tim
         if (string.IsNullOrWhiteSpace(input.Title))
             return Fail(ReminderErrors.TitleRequired);
 
-        var reminder = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        Reminder created;
+        try
+        {
+            created = Reminder.Create(
+                input.UserId, input.Title, input.Notes, input.RemindAt, input.TimeZone ?? "UTC", timeProvider, input.Rrule);
+        }
+        catch (FormatException ex)
+        {
+            // An RRULE outside the supported subset, or malformed — a write-time rejection.
+            return Fail(ReminderErrors.InvalidRecurrence(ex.Message));
+        }
+        catch (ArgumentException ex)
+        {
+            // An unknown IANA time zone for a recurring reminder.
+            return Fail(ReminderErrors.InvalidRecurrence(ex.Message));
+        }
+
+        await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
         {
             var reminders = context.AcquireRepository<IReminderRepository>();
-            var created = Reminder.Create(
-                input.UserId, input.Title, input.Notes, input.RemindAt, input.TimeZone ?? "UTC", timeProvider);
             await reminders.AddAsync(created, token);
-            return created;
+            return true;
         }, cancellationToken: ct);
 
-        return Ok(reminder.ToDto());
+        return Ok(created.ToDto());
     }
 }
