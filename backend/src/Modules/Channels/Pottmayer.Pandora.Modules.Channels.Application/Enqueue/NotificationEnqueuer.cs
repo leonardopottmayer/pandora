@@ -29,6 +29,7 @@ public sealed class NotificationEnqueuer(
         IReadOnlyDictionary<string, string> payload,
         Guid correlationId,
         string? renderedPayload = null,
+        Guid? groupId = null,
         CancellationToken ct = default)
     {
         var content = renderer.Render(templateKey, channel, locale, payload);
@@ -39,13 +40,14 @@ public sealed class NotificationEnqueuer(
         {
             var notifications = context.AcquireRepository<INotificationRepository>();
 
-            // Dedup: the same integration event must not enqueue twice.
-            if (await notifications.ExistsByCorrelationIdAsync(correlationId, token))
+            // Dedup per channel: the same integration event must not enqueue twice on one channel,
+            // but a fan-out legitimately writes the same correlation id once per channel.
+            if (await notifications.ExistsByCorrelationAndChannelAsync(correlationId, channel, token))
                 return false;
 
             var notification = Notification.Queue(
                 channel, address, templateKey, locale, payloadJson, content, correlationId, timeProvider,
-                renderedPayload);
+                renderedPayload, groupId);
 
             await notifications.AddAsync(notification, token);
             return true;

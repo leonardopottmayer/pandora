@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Channels.Application.Commands.CreateChannelLink;
 using Pottmayer.Pandora.Modules.Channels.Application.Commands.SendTestNotification;
+using Pottmayer.Pandora.Modules.Channels.Application.Commands.SetNotificationPreference;
 using Pottmayer.Pandora.Modules.Channels.Application.Commands.UnlinkChannel;
+using Pottmayer.Pandora.Modules.Channels.Application.Queries.GetNotificationPreferences;
 using Pottmayer.Pandora.Modules.Channels.Application.Queries.GetUserChannels;
 using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
@@ -63,5 +65,31 @@ public sealed class ChannelsController(
         return result.ToActionResult(errorMapper);
     }
 
+    /// <summary>The user's channel choices per category, for the settings screen.</summary>
+    [HttpGet("preferences")]
+    public async Task<IActionResult> GetPreferencesAsync(CancellationToken ct)
+    {
+        var query = new GetNotificationPreferencesQuery(new GetNotificationPreferencesInput(UserId));
+        var result = await sender.Send(query, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>
+    /// Sets the channels a category goes out on. An empty list mutes the category; unknown channels
+    /// are rejected.
+    /// </summary>
+    [HttpPut("preferences/{category}")]
+    public async Task<IActionResult> SetPreferenceAsync(
+        string category, [FromBody] SetPreferenceRequest body, CancellationToken ct)
+    {
+        var command = new SetNotificationPreferenceCommand(
+            new SetNotificationPreferenceInput(UserId, category, body.Channels ?? []));
+        var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
     private Guid UserId => userContextAccessor.Context.User!.Id;
+
+    /// <summary>Body for setting a category's channels.</summary>
+    public sealed record SetPreferenceRequest(IReadOnlyList<string>? Channels);
 }

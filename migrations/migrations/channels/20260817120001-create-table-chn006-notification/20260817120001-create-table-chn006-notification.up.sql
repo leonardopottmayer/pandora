@@ -22,6 +22,9 @@ CREATE TABLE channels.chn006_notification (
 	provider VARCHAR(100) NULL,
 	provider_message_id VARCHAR(255) NULL,
 	correlation_id uuid NOT NULL,
+	-- Common to the N rows one request fans out into (e-mail + Telegram), so they read as one
+	-- notification with independent retry and status.
+	group_id uuid NULL,
 	created_by UUID NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
 	updated_by UUID NULL,
@@ -31,8 +34,10 @@ CREATE TABLE channels.chn006_notification (
 ALTER TABLE channels.chn006_notification
 ADD CONSTRAINT pk_chn006 PRIMARY KEY (id);
 
-ALTER TABLE channels.chn006_notification
-ADD CONSTRAINT uq_chn006_correlation_id UNIQUE (correlation_id);
+-- Dedup is per channel: a fan-out to e-mail and Telegram shares one correlation id, so uniqueness
+-- must include the channel or the second row is rejected as a duplicate.
+CREATE UNIQUE INDEX uq_chn006_correlation_channel
+ON channels.chn006_notification (correlation_id, channel);
 
 ALTER TABLE channels.chn006_notification
 ADD CONSTRAINT chk_chn006_status

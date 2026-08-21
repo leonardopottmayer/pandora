@@ -99,8 +99,12 @@ internal sealed class NotificationEntityConfiguration : IEntityTypeConfiguration
                .HasColumnName("correlation_id")
                .IsRequired();
 
-        builder.HasIndex(n => n.CorrelationId)
-               .HasDatabaseName("uq_chn006_correlation_id")
+        builder.Property(n => n.GroupId)
+               .HasColumnName("group_id");
+
+        // Dedup is per channel: a fan-out shares one correlation id across e-mail and Telegram.
+        builder.HasIndex(n => new { n.CorrelationId, n.Channel })
+               .HasDatabaseName("uq_chn006_correlation_channel")
                .IsUnique();
 
         builder.HasIndex(n => new { n.Status, n.NextAttemptAt })

@@ -33,6 +33,12 @@ public sealed class Notification : AggregateRoot<Guid>, IAuditable
     public string? ProviderMessageId { get; private set; }
     public Guid CorrelationId { get; private set; }
 
+    /// <summary>
+    /// Common to the rows one request fans out into. Null for a single-channel enqueue that never
+    /// fanned out.
+    /// </summary>
+    public Guid? GroupId { get; private set; }
+
     public Guid? CreatedBy { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public Guid? UpdatedBy { get; set; }
@@ -53,6 +59,7 @@ public sealed class Notification : AggregateRoot<Guid>, IAuditable
         Guid correlationId,
         TimeProvider timeProvider,
         string? renderedPayload = null,
+        Guid? groupId = null,
         int maxAttempts = DefaultMaxAttempts)
     {
         var now = timeProvider.GetUtcNow();
@@ -73,6 +80,7 @@ public sealed class Notification : AggregateRoot<Guid>, IAuditable
             MaxAttempts = maxAttempts,
             NextAttemptAt = now,
             CorrelationId = correlationId,
+            GroupId = groupId,
             CreatedAt = now
         };
     }

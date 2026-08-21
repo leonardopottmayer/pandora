@@ -2,6 +2,7 @@
 using System.Linq.Expressions;
 using Pottmayer.Pandora.Modules.Channels.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Channels.Domain.Ports.Repositories;
+using Pottmayer.Pandora.Modules.Channels.Domain.ValueObjects;
 using Pottmayer.Tars.Data.Abstractions.Query;
 
 namespace Pottmayer.Pandora.Modules.Channels.Tests.Fakes;
@@ -20,8 +21,8 @@ internal sealed class FakeNotificationRepository : INotificationRepository
     public List<Notification> Added { get; } = [];
     public List<Notification> Updated { get; } = [];
 
-    public Task<bool> ExistsByCorrelationIdAsync(Guid correlationId, CancellationToken ct = default)
-        => Task.FromResult(_items.Any(n => n.CorrelationId == correlationId));
+    public Task<bool> ExistsByCorrelationAndChannelAsync(Guid correlationId, Channel channel, CancellationToken ct = default)
+        => Task.FromResult(_items.Any(n => n.CorrelationId == correlationId && n.Channel == channel));
 
     public Task<IReadOnlyList<Notification>> GetDueAsync(DateTimeOffset now, int batchSize, CancellationToken ct = default)
         => Task.FromResult<IReadOnlyList<Notification>>(

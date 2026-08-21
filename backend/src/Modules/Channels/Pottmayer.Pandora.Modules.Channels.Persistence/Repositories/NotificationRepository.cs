@@ -10,8 +10,8 @@ namespace Pottmayer.Pandora.Modules.Channels.Persistence.Repositories;
 public sealed class NotificationRepository(IDataContextAccessor accessor)
     : StandardRepository<Notification, Guid>(accessor), INotificationRepository
 {
-    public Task<bool> ExistsByCorrelationIdAsync(Guid correlationId, CancellationToken ct = default) =>
-        Queryable().AnyAsync(n => n.CorrelationId == correlationId, ct);
+    public Task<bool> ExistsByCorrelationAndChannelAsync(Guid correlationId, Channel channel, CancellationToken ct = default) =>
+        Queryable().AnyAsync(n => n.CorrelationId == correlationId && n.Channel == channel, ct);
 
     public async Task<IReadOnlyList<Notification>> GetDueAsync(DateTimeOffset now, int batchSize, CancellationToken ct = default)
     {

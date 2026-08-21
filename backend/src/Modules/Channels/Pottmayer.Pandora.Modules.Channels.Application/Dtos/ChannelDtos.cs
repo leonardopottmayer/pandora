@@ -11,3 +11,6 @@ public sealed record UserChannelDto(
 
 /// <summary>The deep link the user taps to finish linking, and how long it is good for.</summary>
 public sealed record ChannelLinkDto(string Url, DateTimeOffset ExpiresAt);
+
+/// <summary>A user's channel choice for one category. Empty channels means the category is muted.</summary>
+public sealed record NotificationPreferenceDto(string Category, IReadOnlyList<string> Channels);
