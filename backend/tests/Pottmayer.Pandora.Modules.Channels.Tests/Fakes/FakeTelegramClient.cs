@@ -10,6 +10,7 @@ namespace Pottmayer.Pandora.Modules.Channels.Tests.Fakes;
 public sealed class FakeTelegramClient : ITelegramClient
 {
     public List<TelegramMessage> Sent { get; } = [];
+    public List<string> AnsweredCallbacks { get; } = [];
     public long MessageId { get; set; } = 100;
     public Exception? Throw { get; set; }
 
@@ -23,7 +24,10 @@ public sealed class FakeTelegramClient : ITelegramClient
     }
 
     public Task AnswerCallbackQueryAsync(string callbackQueryId, string? text = null, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
+    {
+        AnsweredCallbacks.Add(callbackQueryId);
+        return Task.CompletedTask;
+    }
 
     public Task<IReadOnlyList<TelegramUpdate>> GetUpdatesAsync(long offset, TimeSpan pollTimeout, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();

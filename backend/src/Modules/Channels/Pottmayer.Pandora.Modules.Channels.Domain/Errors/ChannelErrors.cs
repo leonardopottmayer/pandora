@@ -18,4 +18,7 @@ public static class ChannelErrors
 
     public static Error TelegramNotConfigured =>
         Error.Validation("Channels.TelegramNotConfigured", "Telegram is not configured on this server.");
+
+    public static Error LinkTokenInvalid =>
+        Error.Validation("Channels.LinkTokenInvalid", "This link is invalid or has expired. Start linking again from settings.");
 }

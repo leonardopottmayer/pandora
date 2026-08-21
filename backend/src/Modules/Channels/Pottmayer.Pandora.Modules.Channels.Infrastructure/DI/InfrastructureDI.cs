@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Pottmayer.Pandora.Modules.Channels.Abstractions;
 using Pottmayer.Pandora.Modules.Channels.Domain.Ports.Services;
+using Pottmayer.Pandora.Modules.Channels.Infrastructure.Ingress;
 using Pottmayer.Pandora.Modules.Channels.Infrastructure.Jobs;
 using Pottmayer.Pandora.Modules.Channels.Infrastructure.Templates;
 using Pottmayer.Pandora.Modules.Channels.Infrastructure.Transports;
@@ -49,6 +50,14 @@ public static class InfrastructureDI
             builder.AddTarsTelegramOptions();
             builder.Services.AddTarsTelegramClient();
             builder.Services.AddScoped<IChannelTransport, TelegramChannelTransport>();
+
+            // Inbound Telegram: the media reader and the triage the long-polling driver feeds.
+            builder.Services.AddScoped<IInboundMediaReader, TelegramInboundMediaReader>();
+            builder.Services.AddScoped<TelegramInboundTriage>();
+
+            // The long-poll driver only actually pulls when LongPolling is on (checked inside), but it
+            // needs a client to exist, which is why it lives under the bot-token guard.
+            builder.Services.AddHostedService<TelegramLongPollingService>();
         }
 
         builder.Services.AddHostedService<NotificationDispatcherBackgroundService>();

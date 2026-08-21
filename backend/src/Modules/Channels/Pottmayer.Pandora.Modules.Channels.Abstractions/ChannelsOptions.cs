@@ -34,4 +34,14 @@ public sealed class TelegramChannelOptions
     /// Empty means Telegram is not configured, and linking is refused instead of half-working.
     /// </summary>
     public string BotUsername { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether to pull inbound updates by long polling. Off by default: it needs a bot token and, being
+    /// a singleton consumer, must not run in a second replica against the same bot. The webhook is the
+    /// eventual alternative and needs public HTTPS, which the homelab does not expose.
+    /// </summary>
+    public bool LongPolling { get; set; }
+
+    /// <summary>How long each <c>getUpdates</c> call hangs waiting for an update, in seconds.</summary>
+    public int PollTimeoutSeconds { get; set; } = 30;
 }

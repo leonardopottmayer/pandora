@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using Pottmayer.Pandora.Modules.Channels.Abstractions;
+using Pottmayer.Pandora.Modules.Channels.Application.Commands.ConsumeTelegramLink;
 using Pottmayer.Pandora.Modules.Channels.Application.Commands.CreateChannelLink;
 using Pottmayer.Pandora.Modules.Channels.Application.Commands.SendTestNotification;
 using Pottmayer.Pandora.Modules.Channels.Application.Commands.UnlinkChannel;
@@ -101,6 +102,63 @@ public sealed class ChannelLinkingTests
 
         Assert.True(result.IsFailure);
         Assert.Empty(_tokens.Added);
+    }
+
+    // ── Consuming the /start handshake ──
+
+    [Fact]
+    public async Task Consuming_a_valid_start_token_links_the_chat()
+    {
+        var userId = Guid.NewGuid();
+        var created = await new CreateChannelLinkCommandHandler(Factory(), Options(), _time).Handle(
+            new CreateChannelLinkCommand(new CreateChannelLinkInput(userId, "telegram", "pt-BR")), CancellationToken.None);
+        var code = created.Value!.Url.Split("?start=")[1];
+
+        var result = await new ConsumeTelegramLinkCommandHandler(Factory(), _time).Handle(
+            new ConsumeTelegramLinkCommand(new ConsumeTelegramLinkInput("123456789", code, "alice", "Alice")),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(userId, result.Value);
+
+        var linked = Assert.Single(_channels.Added);
+        Assert.Equal("123456789", linked.Address.Value);
+        Assert.True(linked.IsUsable);
+        Assert.Single(_tokens.Updated); // the token was burned
+    }
+
+    [Fact]
+    public async Task Consuming_an_unknown_token_fails_and_links_nothing()
+    {
+        var result = await new ConsumeTelegramLinkCommandHandler(Factory(), _time).Handle(
+            new ConsumeTelegramLinkCommand(new ConsumeTelegramLinkInput("123456789", "not-a-real-code", null, null)),
+            CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Empty(_channels.Added);
+    }
+
+    [Fact]
+    public async Task Consuming_from_a_chat_relinks_an_existing_channel()
+    {
+        var userId = Guid.NewGuid();
+        var channels = new FakeUserChannelRepository(Linked(userId)); // already linked at 123456789
+        var tokens = new FakeChannelLinkTokenRepository();
+        var factory = new FakeUnitOfWorkFactory(new FakeDataContext()
+            .Register<IChannelLinkTokenRepository>(tokens)
+            .Register<IUserChannelRepository>(channels));
+
+        var created = await new CreateChannelLinkCommandHandler(factory, Options(), _time).Handle(
+            new CreateChannelLinkCommand(new CreateChannelLinkInput(userId, "telegram", "en")), CancellationToken.None);
+        var code = created.Value!.Url.Split("?start=")[1];
+
+        var result = await new ConsumeTelegramLinkCommandHandler(factory, _time).Handle(
+            new ConsumeTelegramLinkCommand(new ConsumeTelegramLinkInput("123456789", code, null, null)),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Empty(channels.Added);    // not a second row
+        Assert.Single(channels.Updated); // relinked in place
     }
 
     // ── Unlinking ──
