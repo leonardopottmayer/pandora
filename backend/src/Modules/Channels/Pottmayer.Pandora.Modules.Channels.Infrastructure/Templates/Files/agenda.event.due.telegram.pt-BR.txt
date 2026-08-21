@@ -1,0 +1,3 @@
+📅 Evento a começar: {{title}}
+{{location}}
+{{url}}

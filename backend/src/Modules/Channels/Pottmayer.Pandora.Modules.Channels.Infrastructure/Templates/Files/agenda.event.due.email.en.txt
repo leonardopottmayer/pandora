@@ -1,0 +1,6 @@
+Event starting: {{title}}
+This event is about to start:
+
+{{title}}
+{{location}}
+{{url}}

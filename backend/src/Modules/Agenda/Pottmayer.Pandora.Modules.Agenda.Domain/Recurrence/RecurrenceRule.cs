@@ -265,6 +265,29 @@ public sealed class RecurrenceRule
         _ => throw new FormatException($"Unknown weekday '{code}'."),
     };
 
+    /// <summary>
+    /// A copy of this rule's raw text bounded to end at <paramref name="until"/>: any existing
+    /// <c>UNTIL</c> or <c>COUNT</c> part is dropped and replaced by <c>UNTIL=&lt;until, UTC basic
+    /// format&gt;</c>. This is what the "this and future" split uses to end the original series just
+    /// before the cut occurrence, leaving a new event to carry the tail.
+    /// </summary>
+    public string WithUntil(DateTimeOffset until)
+    {
+        var formatted = until.ToUniversalTime().UtcDateTime
+            .ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture);
+
+        var body = Raw.Trim();
+        if (body.StartsWith("RRULE:", StringComparison.OrdinalIgnoreCase))
+            body = body["RRULE:".Length..];
+
+        var parts = body
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(p => p.Split('=', 2)[0].Trim().ToUpperInvariant() is not "UNTIL" and not "COUNT")
+            .Append($"UNTIL={formatted}");
+
+        return string.Join(';', parts);
+    }
+
     // ── Expansion ──
 
     /// <summary>

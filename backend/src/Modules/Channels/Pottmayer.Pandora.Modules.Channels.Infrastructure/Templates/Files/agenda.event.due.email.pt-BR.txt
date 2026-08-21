@@ -1,0 +1,6 @@
+Evento a começar: {{title}}
+Este evento está prestes a começar:
+
+{{title}}
+{{location}}
+{{url}}

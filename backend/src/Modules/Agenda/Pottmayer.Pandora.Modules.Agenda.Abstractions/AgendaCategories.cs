@@ -11,4 +11,7 @@ public static class AgendaCategories
 
     /// <summary>The category task alerts raise.</summary>
     public const string Task = "agenda.task";
+
+    /// <summary>The category event alerts raise.</summary>
+    public const string Event = "agenda.event";
 }

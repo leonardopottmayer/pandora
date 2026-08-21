@@ -20,7 +20,7 @@ public sealed class AlertsController(
     IHttpErrorMapper errorMapper,
     IUserContextAccessor<UserData> userContextAccessor) : ControllerBase
 {
-    /// <summary>Adds an alert to a subject. Only <c>task</c> is supported in this version.</summary>
+    /// <summary>Adds an alert to a subject. <c>task</c> and <c>event</c> are supported in this version.</summary>
     [HttpPost("{subjectType}/{id:guid}/alerts")]
     public async Task<IActionResult> CreateAsync(
         string subjectType, Guid id, [FromBody] CreateAlertRequest body, CancellationToken ct)

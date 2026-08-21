@@ -18,23 +18,37 @@ public sealed class CreateAlertCommandHandler(IUnitOfWorkFactory factory, TimePr
     {
         var input = request.Input;
 
-        // Only tasks carry alerts in this version.
-        if (!string.Equals(input.SubjectType, "task", StringComparison.OrdinalIgnoreCase))
+        // Tasks and events carry alerts; reminders keep their own agd006x ledger for now.
+        AlertSubjectType subjectType;
+        if (string.Equals(input.SubjectType, "task", StringComparison.OrdinalIgnoreCase))
+            subjectType = AlertSubjectType.Task;
+        else if (string.Equals(input.SubjectType, "event", StringComparison.OrdinalIgnoreCase))
+            subjectType = AlertSubjectType.Event;
+        else
             return Fail(AlertErrors.UnsupportedSubjectType);
 
         var result = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
         {
-            var tasks = context.AcquireRepository<ITaskRepository>();
             var alerts = context.AcquireRepository<IAlertRepository>();
 
-            var task = await tasks.FindAsync(input.UserId, input.SubjectId, token);
-            if (task is null)
-                return Result<AlertDto>.Failure([AlertErrors.SubjectNotFound]);
-            if (task.DueAt is null)
-                return Result<AlertDto>.Failure([AlertErrors.SubjectHasNoDueDate]);
+            // Validate the subject exists (and, for a task, is due-dated — its alert anchor).
+            if (subjectType == AlertSubjectType.Task)
+            {
+                var task = await context.AcquireRepository<ITaskRepository>().FindAsync(input.UserId, input.SubjectId, token);
+                if (task is null)
+                    return Result<AlertDto>.Failure([AlertErrors.SubjectNotFound]);
+                if (task.DueAt is null)
+                    return Result<AlertDto>.Failure([AlertErrors.SubjectHasNoDueDate]);
+            }
+            else
+            {
+                var ev = await context.AcquireRepository<IEventRepository>().FindAsync(input.UserId, input.SubjectId, token);
+                if (ev is null)
+                    return Result<AlertDto>.Failure([AlertErrors.SubjectNotFound]);
+            }
 
             var alert = Alert.Create(
-                input.UserId, AlertSubjectType.Task, input.SubjectId, input.OffsetMinutes, input.Channels, timeProvider);
+                input.UserId, subjectType, input.SubjectId, input.OffsetMinutes, input.Channels, timeProvider);
             await alerts.AddAsync(alert, token);
             return Result<AlertDto>.Success(alert.ToDto());
         }, cancellationToken: ct);

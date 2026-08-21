@@ -11,7 +11,7 @@ public static class AlertErrors
         Error.NotFound("Agenda.AlertSubjectNotFound", "The subject of this alert does not exist.");
 
     public static Error UnsupportedSubjectType =>
-        Error.Validation("Agenda.AlertUnsupportedSubjectType", "Alerts are only supported on tasks in this version.");
+        Error.Validation("Agenda.AlertUnsupportedSubjectType", "Alerts are only supported on tasks and events in this version.");
 
     public static Error SubjectHasNoDueDate =>
         Error.Validation("Agenda.AlertSubjectHasNoDueDate", "A task needs a due date before it can carry an alert.");

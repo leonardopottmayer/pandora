@@ -26,4 +26,11 @@ public sealed class AlertRepository(IDataContextAccessor accessor)
             .OrderBy(a => a.CreatedAt)
             .Take(batchSize)
             .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<Alert>> GetEnabledEventAlertsAsync(int batchSize, CancellationToken ct = default) =>
+        await Queryable()
+            .Where(a => a.IsEnabled && a.SubjectType == AlertSubjectType.Event)
+            .OrderBy(a => a.CreatedAt)
+            .Take(batchSize)
+            .ToListAsync(ct);
 }

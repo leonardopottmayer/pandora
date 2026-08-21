@@ -15,4 +15,7 @@ public interface IAlertRepository : IStandardRepository<Alert, Guid>
 
     /// <summary>Enabled task alerts, across users — the scan root of the task-alert sweep.</summary>
     Task<IReadOnlyList<Alert>> GetEnabledTaskAlertsAsync(int batchSize, CancellationToken ct = default);
+
+    /// <summary>Enabled event alerts, across users — the scan root of the event-alert sweep.</summary>
+    Task<IReadOnlyList<Alert>> GetEnabledEventAlertsAsync(int batchSize, CancellationToken ct = default);
 }

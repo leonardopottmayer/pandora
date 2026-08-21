@@ -15,6 +15,7 @@ public static class InfrastructureDI
 
         builder.Services.AddHostedService<ReminderSweepBackgroundService>();
         builder.Services.AddHostedService<TaskAlertSweepBackgroundService>();
+        builder.Services.AddHostedService<EventAlertSweepBackgroundService>();
 
         return builder;
     }
