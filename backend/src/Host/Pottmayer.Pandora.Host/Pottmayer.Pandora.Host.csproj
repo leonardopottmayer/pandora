@@ -30,6 +30,11 @@
     <ProjectReference Include="../../Modules/Notes/Pottmayer.Pandora.Modules.Notes.Infrastructure/Pottmayer.Pandora.Modules.Notes.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Notes/Pottmayer.Pandora.Modules.Notes.Persistence/Pottmayer.Pandora.Modules.Notes.Persistence.csproj" />
     <ProjectReference Include="../../Modules/Notes/Pottmayer.Pandora.Modules.Notes.Presentation/Pottmayer.Pandora.Modules.Notes.Presentation.csproj" />
+    <!-- Agenda module -->
+    <ProjectReference Include="../../Modules/Agenda/Pottmayer.Pandora.Modules.Agenda.Application/Pottmayer.Pandora.Modules.Agenda.Application.csproj" />
+    <ProjectReference Include="../../Modules/Agenda/Pottmayer.Pandora.Modules.Agenda.Infrastructure/Pottmayer.Pandora.Modules.Agenda.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Agenda/Pottmayer.Pandora.Modules.Agenda.Persistence/Pottmayer.Pandora.Modules.Agenda.Persistence.csproj" />
+    <ProjectReference Include="../../Modules/Agenda/Pottmayer.Pandora.Modules.Agenda.Presentation/Pottmayer.Pandora.Modules.Agenda.Presentation.csproj" />
     <!-- Tars: Core -->
     <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.5" />
     <!-- Tars: Web -->

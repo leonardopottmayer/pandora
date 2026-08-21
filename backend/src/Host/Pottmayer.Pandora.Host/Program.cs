@@ -20,6 +20,10 @@ using Pottmayer.Pandora.Modules.Notes.Application.DI;
 using Pottmayer.Pandora.Modules.Notes.Infrastructure.DI;
 using Pottmayer.Pandora.Modules.Notes.Persistence.DI;
 using Pottmayer.Pandora.Modules.Notes.Presentation.DI;
+using Pottmayer.Pandora.Modules.Agenda.Application.DI;
+using Pottmayer.Pandora.Modules.Agenda.Infrastructure.DI;
+using Pottmayer.Pandora.Modules.Agenda.Persistence.DI;
+using Pottmayer.Pandora.Modules.Agenda.Presentation.DI;
 using Pottmayer.Pandora.Shared.Infrastructure.DI;
 using Pottmayer.Pandora.Shared.Persistence.DI;
 using Pottmayer.Tars.Core.Localization.DI;
@@ -50,6 +54,10 @@ builder.Services.AddNotesPersistence();
 builder.AddNotesInfrastructure();
 builder.Services.AddNotesApplication();
 
+builder.Services.AddAgendaPersistence();
+builder.AddAgendaInfrastructure();
+builder.Services.AddAgendaApplication();
+
 // Web HTTP
 builder.Services.AddTarsLocalization();
 builder.Services.AddPandoraLocalization();
@@ -61,7 +69,8 @@ builder.Services.AddControllers()
                 .AddIdentityPresentationPart()
                 .AddChannelsPresentationPart()
                 .AddFinancesPresentationPart()
-                .AddNotesPresentationPart();
+                .AddNotesPresentationPart()
+                .AddAgendaPresentationPart();
 
 // API Versioning
 builder.Services.AddApiVersioning(options =>

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Agenda.Abstractions/Pottmayer.Pandora.Modules.Agenda.Abstractions.csproj" />
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Agenda.Domain/Pottmayer.Pandora.Modules.Agenda.Domain.csproj" />
+    <!-- Produces NotifyUserRequested and consumes InboundInteractionReceived, both from Channels -->
+    <ProjectReference Include="../../Channels/Pottmayer.Pandora.Modules.Channels.Contracts/Pottmayer.Pandora.Modules.Channels.Contracts.csproj" />
+    <!-- Tars: Messaging impl (DI handler scanning) -->
+    <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.0.5" />
+    <!-- Tars: Core -->
+    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.5" />
+    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.5" />
+    <!-- Tars: Data -->
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.5" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Agenda.Abstractions/Pottmayer.Pandora.Modules.Agenda.Abstractions.csproj" />
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Agenda.Application/Pottmayer.Pandora.Modules.Agenda.Application.csproj" />
+    <!-- Hosting / options / logging for the alert sweep worker -->
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
+    <!-- Tars: Core (mediator ISender for the sweep command) -->
+    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.5" />
+  </ItemGroup>
+
+</Project>

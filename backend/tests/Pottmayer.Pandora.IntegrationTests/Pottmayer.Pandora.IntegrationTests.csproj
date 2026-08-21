@@ -24,6 +24,8 @@
     <ProjectReference Include="../../src/Host/Pottmayer.Pandora.Host/Pottmayer.Pandora.Host.csproj" />
     <!-- Finances: write audit events through the real unit of work in tests -->
     <ProjectReference Include="../../src/Modules/Finances/Pottmayer.Pandora.Modules.Finances.Application/Pottmayer.Pandora.Modules.Finances.Application.csproj" />
+    <!-- Agenda: drive the reminder sweep command directly in tests -->
+    <ProjectReference Include="../../src/Modules/Agenda/Pottmayer.Pandora.Modules.Agenda.Application/Pottmayer.Pandora.Modules.Agenda.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>
