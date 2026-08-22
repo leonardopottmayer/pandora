@@ -16,6 +16,10 @@ import {
   LayoutOutlined,
   BookOutlined,
   FileTextOutlined,
+  ScheduleOutlined,
+  CalendarOutlined,
+  CheckSquareOutlined,
+  BellOutlined,
 } from '@ant-design/icons'
 import type { ReactNode } from 'react'
 
@@ -56,6 +60,17 @@ export const navigationModules: NavModule[] = [
       { key: 'fin-audit', labelKey: 'nav.audit', path: '/finances/audit', icon: <AuditOutlined /> },
       { key: 'fin-imports', labelKey: 'nav.imports', path: '/finances/imports', icon: <CloudUploadOutlined /> },
       { key: 'fin-import-layouts', labelKey: 'nav.importLayouts', path: '/finances/import-layouts', icon: <LayoutOutlined /> },
+    ],
+  },
+  {
+    key: 'agenda',
+    labelKey: 'nav.agenda',
+    icon: <ScheduleOutlined />,
+    screens: [
+      { key: 'agenda-today', labelKey: 'nav.agendaToday', path: '/agenda', icon: <ScheduleOutlined /> },
+      { key: 'agenda-calendar', labelKey: 'nav.agendaCalendar', path: '/agenda/calendar', icon: <CalendarOutlined /> },
+      { key: 'agenda-tasks', labelKey: 'nav.agendaTasks', path: '/agenda/tasks', icon: <CheckSquareOutlined /> },
+      { key: 'agenda-reminders', labelKey: 'nav.agendaReminders', path: '/agenda/reminders', icon: <BellOutlined /> },
     ],
   },
   {

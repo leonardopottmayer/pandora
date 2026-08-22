@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateAlert;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.DeleteAlert;
+using Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetAlerts;
 using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using Pottmayer.Tars.UserContext.Abstractions.Context;
@@ -20,6 +21,14 @@ public sealed class AlertsController(
     IHttpErrorMapper errorMapper,
     IUserContextAccessor<UserData> userContextAccessor) : ControllerBase
 {
+    /// <summary>Lists the alerts on a subject. <c>task</c> and <c>event</c> are supported in this version.</summary>
+    [HttpGet("{subjectType}/{id:guid}/alerts")]
+    public async Task<IActionResult> GetAsync(string subjectType, Guid id, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetAlertsQuery(new GetAlertsInput(UserId, subjectType, id)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
     /// <summary>Adds an alert to a subject. <c>task</c> and <c>event</c> are supported in this version.</summary>
     [HttpPost("{subjectType}/{id:guid}/alerts")]
     public async Task<IActionResult> CreateAsync(

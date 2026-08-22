@@ -39,7 +39,12 @@
     "imports": "Imports",
     "importLayouts": "Import Layouts",
     "notes": "Notes",
-    "notesPages": "Pages"
+    "notesPages": "Pages",
+    "agenda": "Agenda",
+    "agendaToday": "Today",
+    "agendaReminders": "Reminders",
+    "agendaTasks": "Tasks",
+    "agendaCalendar": "Calendar"
   },
   "theme": {
     "toLight": "Light theme",
@@ -676,6 +681,220 @@
       "divider": "Divider",
       "table": "Table",
       "wikilink": "Link to a page"
+    }
+  },
+  "agenda": {
+    "today": {
+      "empty": "Nothing scheduled for today.",
+      "allDay": "All day"
+    },
+    "reminders": {
+      "title": "Reminders",
+      "new": "New reminder",
+      "newTitle": "New reminder",
+      "titleLabel": "Title",
+      "titleRequired": "Enter a title.",
+      "notes": "Notes",
+      "remindAt": "Remind at",
+      "remindAtRequired": "Choose when to be reminded.",
+      "status": "Status",
+      "acknowledge": "Acknowledge",
+      "acknowledged": "Reminder acknowledged.",
+      "snooze": "Snooze",
+      "snoozeUntil": "Snooze until",
+      "snoozed": "Reminder snoozed.",
+      "cancel": "Cancel",
+      "deleteConfirm": "Cancel this reminder?",
+      "created": "Reminder created.",
+      "deleted": "Reminder cancelled.",
+      "saveError": "Could not save the reminder.",
+      "deleteError": "Could not cancel the reminder.",
+      "empty": "No reminders yet."
+    },
+    "tasks": {
+      "title": "Tasks",
+      "new": "New task",
+      "newTitle": "New task",
+      "editTitle": "Edit task",
+      "titleLabel": "Title",
+      "titleRequired": "Enter a title.",
+      "notes": "Notes",
+      "list": "List",
+      "listRequired": "Choose a list.",
+      "priority": "Priority",
+      "dueAt": "Due date",
+      "dueHasTime": "Include time",
+      "status": "Status",
+      "complete": "Complete",
+      "completed": "Task completed.",
+      "reopen": "Reopen",
+      "reopened": "Task reopened.",
+      "alerts": "Alerts",
+      "deleteConfirm": "Delete this task?",
+      "created": "Task created.",
+      "updated": "Task updated.",
+      "deleted": "Task deleted.",
+      "saveError": "Could not save the task.",
+      "deleteError": "Could not delete the task.",
+      "empty": "No tasks here.",
+      "buckets": {
+        "overdue": "Overdue",
+        "today": "Today",
+        "week": "This week",
+        "later": "Later",
+        "none": "No date"
+      }
+    },
+    "taskLists": {
+      "title": "Lists",
+      "new": "New list",
+      "newTitle": "New list",
+      "editTitle": "Edit list",
+      "name": "Name",
+      "nameRequired": "Enter a name.",
+      "allTasks": "All tasks",
+      "default": "Default",
+      "archive": "Archive",
+      "deleteConfirm": "Delete this list?",
+      "created": "List created.",
+      "updated": "List updated.",
+      "deleted": "List deleted.",
+      "saveError": "Could not save the list.",
+      "deleteError": "Could not delete the list.",
+      "notEmptyHint": "This list still has tasks. Archive it instead."
+    },
+    "calendars": {
+      "title": "Calendars",
+      "new": "New calendar",
+      "newTitle": "New calendar",
+      "editTitle": "Edit calendar",
+      "name": "Name",
+      "nameRequired": "Enter a name.",
+      "color": "Colour",
+      "default": "Default",
+      "visible": "Visible",
+      "archive": "Archive",
+      "deleteConfirm": "Delete this calendar?",
+      "created": "Calendar created.",
+      "updated": "Calendar updated.",
+      "deleted": "Calendar deleted.",
+      "saveError": "Could not save the calendar.",
+      "deleteError": "Could not delete the calendar.",
+      "notEmptyHint": "This calendar still has events. Archive it instead."
+    },
+    "events": {
+      "new": "New event",
+      "newTitle": "New event",
+      "editTitle": "Edit event",
+      "detailTitle": "Event",
+      "titleLabel": "Title",
+      "titleRequired": "Enter a title.",
+      "calendar": "Calendar",
+      "calendarRequired": "Choose a calendar.",
+      "description": "Description",
+      "location": "Location",
+      "url": "URL",
+      "startsAt": "Starts",
+      "endsAt": "Ends",
+      "startRequired": "Choose a start.",
+      "endRequired": "Choose an end.",
+      "isAllDay": "All day",
+      "status": "Status",
+      "alerts": "Alerts",
+      "created": "Event created.",
+      "updated": "Event updated.",
+      "deleted": "Event deleted.",
+      "saveError": "Could not save the event.",
+      "deleteError": "Could not delete the event.",
+      "scopeTitle": "Apply to",
+      "scopeThis": "This event",
+      "scopeThisAndFuture": "This and following",
+      "scopeAll": "All events",
+      "deleteConfirm": "Delete this event?",
+      "view": {
+        "month": "Month",
+        "week": "Week",
+        "day": "Day"
+      },
+      "weekDayComingSoon": "Week and day views are coming soon."
+    },
+    "alerts": {
+      "title": "Alerts",
+      "add": "Add alert",
+      "offset": "Minutes before",
+      "offsetHint": "Negative = before the start (e.g. -15).",
+      "atTime": "At time of event",
+      "added": "Alert added.",
+      "removed": "Alert removed.",
+      "saveError": "Could not add the alert.",
+      "empty": "No alerts."
+    },
+    "recurrence": {
+      "label": "Repeat",
+      "frequency": "Frequency",
+      "none": "Does not repeat",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "interval": "Every",
+      "intervalSuffix": {
+        "daily": "day(s)",
+        "weekly": "week(s)",
+        "monthly": "month(s)",
+        "yearly": "year(s)"
+      },
+      "weekdays": "On days",
+      "ends": "Ends",
+      "endNever": "Never",
+      "endUntil": "On date",
+      "endCount": "After",
+      "occurrences": "occurrence(s)",
+      "untilRequired": "Choose an end date.",
+      "day": {
+        "MO": "Mon",
+        "TU": "Tue",
+        "WE": "Wed",
+        "TH": "Thu",
+        "FR": "Fri",
+        "SA": "Sat",
+        "SU": "Sun"
+      }
+    },
+    "enums": {
+      "taskStatus": {
+        "todo": "To do",
+        "inProgress": "In progress",
+        "done": "Done",
+        "cancelled": "Cancelled"
+      },
+      "taskPriority": {
+        "none": "None",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "reminderStatus": {
+        "scheduled": "Scheduled",
+        "notified": "Notified",
+        "acknowledged": "Acknowledged",
+        "snoozed": "Snoozed",
+        "cancelled": "Cancelled"
+      },
+      "eventStatus": {
+        "confirmed": "Confirmed",
+        "tentative": "Tentative",
+        "cancelled": "Cancelled"
+      },
+      "calendarOrigin": {
+        "local": "Local",
+        "external": "External"
+      },
+      "todayKind": {
+        "event": "Event",
+        "task": "Task",
+        "reminder": "Reminder"
+      }
     }
   }
 }

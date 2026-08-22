@@ -6,6 +6,7 @@ using Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateEvent;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.DeleteEvent;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.UpdateEvent;
 using Pottmayer.Pandora.Modules.Agenda.Application.Errors;
+using Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetEvent;
 using Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetEvents;
 using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
@@ -34,6 +35,14 @@ public sealed class EventsController(
         CancellationToken ct)
     {
         var result = await sender.Send(new GetEventsQuery(new GetEventsInput(UserId, from, to, calendarIds)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>The event <em>row</em> (series), including its rrule/recurrence — the occurrence reads omit these.</summary>
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetByIdAsync(Guid id, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetEventQuery(new GetEventInput(UserId, id)), ct);
         return result.ToActionResult(errorMapper);
     }
 

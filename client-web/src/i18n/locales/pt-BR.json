@@ -39,7 +39,12 @@
     "imports": "Importacoes",
     "importLayouts": "Layouts de importacao",
     "notes": "Notas",
-    "notesPages": "Paginas"
+    "notesPages": "Paginas",
+    "agenda": "Agenda",
+    "agendaToday": "Hoje",
+    "agendaReminders": "Lembretes",
+    "agendaTasks": "Tarefas",
+    "agendaCalendar": "Calendário"
   },
   "theme": {
     "toLight": "Tema claro",
@@ -676,6 +681,220 @@
       "divider": "Divisor",
       "table": "Tabela",
       "wikilink": "Link para uma página"
+    }
+  },
+  "agenda": {
+    "today": {
+      "empty": "Nada agendado para hoje.",
+      "allDay": "Dia inteiro"
+    },
+    "reminders": {
+      "title": "Lembretes",
+      "new": "Novo lembrete",
+      "newTitle": "Novo lembrete",
+      "titleLabel": "Título",
+      "titleRequired": "Informe um título.",
+      "notes": "Notas",
+      "remindAt": "Lembrar em",
+      "remindAtRequired": "Escolha quando ser lembrado.",
+      "status": "Status",
+      "acknowledge": "Reconhecer",
+      "acknowledged": "Lembrete reconhecido.",
+      "snooze": "Adiar",
+      "snoozeUntil": "Adiar até",
+      "snoozed": "Lembrete adiado.",
+      "cancel": "Cancelar",
+      "deleteConfirm": "Cancelar este lembrete?",
+      "created": "Lembrete criado.",
+      "deleted": "Lembrete cancelado.",
+      "saveError": "Não foi possível salvar o lembrete.",
+      "deleteError": "Não foi possível cancelar o lembrete.",
+      "empty": "Nenhum lembrete ainda."
+    },
+    "tasks": {
+      "title": "Tarefas",
+      "new": "Nova tarefa",
+      "newTitle": "Nova tarefa",
+      "editTitle": "Editar tarefa",
+      "titleLabel": "Título",
+      "titleRequired": "Informe um título.",
+      "notes": "Notas",
+      "list": "Lista",
+      "listRequired": "Escolha uma lista.",
+      "priority": "Prioridade",
+      "dueAt": "Prazo",
+      "dueHasTime": "Incluir horário",
+      "status": "Status",
+      "complete": "Concluir",
+      "completed": "Tarefa concluída.",
+      "reopen": "Reabrir",
+      "reopened": "Tarefa reaberta.",
+      "alerts": "Alertas",
+      "deleteConfirm": "Excluir esta tarefa?",
+      "created": "Tarefa criada.",
+      "updated": "Tarefa atualizada.",
+      "deleted": "Tarefa excluída.",
+      "saveError": "Não foi possível salvar a tarefa.",
+      "deleteError": "Não foi possível excluir a tarefa.",
+      "empty": "Nenhuma tarefa aqui.",
+      "buckets": {
+        "overdue": "Atrasadas",
+        "today": "Hoje",
+        "week": "Esta semana",
+        "later": "Depois",
+        "none": "Sem data"
+      }
+    },
+    "taskLists": {
+      "title": "Listas",
+      "new": "Nova lista",
+      "newTitle": "Nova lista",
+      "editTitle": "Editar lista",
+      "name": "Nome",
+      "nameRequired": "Informe um nome.",
+      "allTasks": "Todas as tarefas",
+      "default": "Padrão",
+      "archive": "Arquivar",
+      "deleteConfirm": "Excluir esta lista?",
+      "created": "Lista criada.",
+      "updated": "Lista atualizada.",
+      "deleted": "Lista excluída.",
+      "saveError": "Não foi possível salvar a lista.",
+      "deleteError": "Não foi possível excluir a lista.",
+      "notEmptyHint": "Esta lista ainda tem tarefas. Arquive-a."
+    },
+    "calendars": {
+      "title": "Calendários",
+      "new": "Novo calendário",
+      "newTitle": "Novo calendário",
+      "editTitle": "Editar calendário",
+      "name": "Nome",
+      "nameRequired": "Informe um nome.",
+      "color": "Cor",
+      "default": "Padrão",
+      "visible": "Visível",
+      "archive": "Arquivar",
+      "deleteConfirm": "Excluir este calendário?",
+      "created": "Calendário criado.",
+      "updated": "Calendário atualizado.",
+      "deleted": "Calendário excluído.",
+      "saveError": "Não foi possível salvar o calendário.",
+      "deleteError": "Não foi possível excluir o calendário.",
+      "notEmptyHint": "Este calendário ainda tem eventos. Arquive-o."
+    },
+    "events": {
+      "new": "Novo evento",
+      "newTitle": "Novo evento",
+      "editTitle": "Editar evento",
+      "detailTitle": "Evento",
+      "titleLabel": "Título",
+      "titleRequired": "Informe um título.",
+      "calendar": "Calendário",
+      "calendarRequired": "Escolha um calendário.",
+      "description": "Descrição",
+      "location": "Local",
+      "url": "URL",
+      "startsAt": "Início",
+      "endsAt": "Término",
+      "startRequired": "Escolha o início.",
+      "endRequired": "Escolha o término.",
+      "isAllDay": "Dia inteiro",
+      "status": "Status",
+      "alerts": "Alertas",
+      "created": "Evento criado.",
+      "updated": "Evento atualizado.",
+      "deleted": "Evento excluído.",
+      "saveError": "Não foi possível salvar o evento.",
+      "deleteError": "Não foi possível excluir o evento.",
+      "scopeTitle": "Aplicar a",
+      "scopeThis": "Este evento",
+      "scopeThisAndFuture": "Este e os seguintes",
+      "scopeAll": "Todos os eventos",
+      "deleteConfirm": "Excluir este evento?",
+      "view": {
+        "month": "Mês",
+        "week": "Semana",
+        "day": "Dia"
+      },
+      "weekDayComingSoon": "As visões de semana e dia chegam em breve."
+    },
+    "alerts": {
+      "title": "Alertas",
+      "add": "Adicionar alerta",
+      "offset": "Minutos antes",
+      "offsetHint": "Negativo = antes do início (ex.: -15).",
+      "atTime": "Na hora do evento",
+      "added": "Alerta adicionado.",
+      "removed": "Alerta removido.",
+      "saveError": "Não foi possível adicionar o alerta.",
+      "empty": "Nenhum alerta."
+    },
+    "recurrence": {
+      "label": "Repetir",
+      "frequency": "Frequência",
+      "none": "Não repete",
+      "daily": "Diariamente",
+      "weekly": "Semanalmente",
+      "monthly": "Mensalmente",
+      "yearly": "Anualmente",
+      "interval": "A cada",
+      "intervalSuffix": {
+        "daily": "dia(s)",
+        "weekly": "semana(s)",
+        "monthly": "mês(es)",
+        "yearly": "ano(s)"
+      },
+      "weekdays": "Nos dias",
+      "ends": "Termina",
+      "endNever": "Nunca",
+      "endUntil": "Em data",
+      "endCount": "Após",
+      "occurrences": "ocorrência(s)",
+      "untilRequired": "Escolha uma data de término.",
+      "day": {
+        "MO": "Seg",
+        "TU": "Ter",
+        "WE": "Qua",
+        "TH": "Qui",
+        "FR": "Sex",
+        "SA": "Sáb",
+        "SU": "Dom"
+      }
+    },
+    "enums": {
+      "taskStatus": {
+        "todo": "A fazer",
+        "inProgress": "Em andamento",
+        "done": "Concluída",
+        "cancelled": "Cancelada"
+      },
+      "taskPriority": {
+        "none": "Nenhuma",
+        "low": "Baixa",
+        "medium": "Média",
+        "high": "Alta"
+      },
+      "reminderStatus": {
+        "scheduled": "Agendado",
+        "notified": "Notificado",
+        "acknowledged": "Reconhecido",
+        "snoozed": "Adiado",
+        "cancelled": "Cancelado"
+      },
+      "eventStatus": {
+        "confirmed": "Confirmado",
+        "tentative": "Tentativo",
+        "cancelled": "Cancelado"
+      },
+      "calendarOrigin": {
+        "local": "Local",
+        "external": "Externo"
+      },
+      "todayKind": {
+        "event": "Evento",
+        "task": "Tarefa",
+        "reminder": "Lembrete"
+      }
     }
   }
 }
