@@ -10,15 +10,27 @@ describe('preferences.service', () => {
   it('reads the current preferences', async () => {
     server.use(
       http.get(PREFERENCES, () =>
-        HttpResponse.json({ success: true, data: { theme: 'dark', language: 'pt-BR' } }),
+        HttpResponse.json({
+          success: true,
+          data: {
+            theme: 'dark',
+            language: 'pt-BR',
+            timeZone: 'America/Sao_Paulo',
+            weekStartsOn: 'monday',
+            defaultAlertOffsetMinutes: -30,
+          },
+        }),
       ),
     )
     const prefs = await getPreferences()
     expect(prefs.theme).toBe('dark')
     expect(prefs.language).toBe('pt-BR')
+    expect(prefs.timeZone).toBe('America/Sao_Paulo')
+    expect(prefs.weekStartsOn).toBe('monday')
+    expect(prefs.defaultAlertOffsetMinutes).toBe(-30)
   })
 
-  it('upserts theme and language via PUT', async () => {
+  it('upserts the full preferences object via PUT', async () => {
     let body: unknown
     server.use(
       http.put(PREFERENCES, async ({ request }) => {
@@ -26,7 +38,19 @@ describe('preferences.service', () => {
         return HttpResponse.json({ success: true, data: null })
       }),
     )
-    await upsertPreferences('light', 'en')
-    expect(body).toEqual({ theme: 'light', language: 'en' })
+    await upsertPreferences({
+      theme: 'light',
+      language: 'en',
+      timeZone: 'UTC',
+      weekStartsOn: 'sunday',
+      defaultAlertOffsetMinutes: -15,
+    })
+    expect(body).toEqual({
+      theme: 'light',
+      language: 'en',
+      timeZone: 'UTC',
+      weekStartsOn: 'sunday',
+      defaultAlertOffsetMinutes: -15,
+    })
   })
 })

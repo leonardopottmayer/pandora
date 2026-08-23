@@ -47,8 +47,14 @@ export interface RecoveryCodes {
 
 export type AppTheme = 'light' | 'dark' | 'system'
 export type AppLanguage = 'pt-BR' | 'en'
+export type WeekStartsOn = 'sunday' | 'monday'
 
 export interface UserPreferences {
   theme: AppTheme
   language: AppLanguage
+  /** IANA time zone (e.g. "America/Sao_Paulo"). */
+  timeZone: string
+  weekStartsOn: WeekStartsOn
+  /** Signed minutes, relative to the item's anchor (e.g. -15 = fifteen minutes before). */
+  defaultAlertOffsetMinutes: number
 }

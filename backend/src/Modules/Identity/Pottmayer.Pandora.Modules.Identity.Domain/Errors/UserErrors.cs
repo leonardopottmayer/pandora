@@ -22,6 +22,12 @@ public static class UserErrors
     public static Error InvalidLanguage(string language) =>
         Error.Validation("Users.InvalidLanguage", $"Language '{language}' is not supported.");
 
+    public static Error InvalidTimeZone(string timeZone) =>
+        Error.Validation("Users.InvalidTimeZone", $"Time zone '{timeZone}' is not a valid IANA time zone.");
+
+    public static Error InvalidWeekStartsOn(string weekStartsOn) =>
+        Error.Validation("Users.InvalidWeekStartsOn", $"Week start '{weekStartsOn}' is not a valid day of week.");
+
     public static Error NotFound =>
         Error.NotFound("Users.NotFound", "User not found.");
 

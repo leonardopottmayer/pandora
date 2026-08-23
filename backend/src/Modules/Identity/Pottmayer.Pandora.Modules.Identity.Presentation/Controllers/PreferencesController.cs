@@ -34,7 +34,9 @@ public sealed class PreferencesController(
     public async Task<IActionResult> UpsertAsync(UpsertPreferencesRequest request, CancellationToken ct)
     {
         var userId = userContextAccessor.Context.User!.Id;
-        var command = new UpsertPreferencesCommand(new UpsertPreferencesInput(userId, request.Theme, request.Language));
+        var command = new UpsertPreferencesCommand(new UpsertPreferencesInput(
+            userId, request.Theme, request.Language,
+            request.TimeZone, request.WeekStartsOn, request.DefaultAlertOffsetMinutes));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }

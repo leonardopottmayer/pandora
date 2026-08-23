@@ -20,6 +20,7 @@ import {
   CalendarOutlined,
   CheckSquareOutlined,
   BellOutlined,
+  NotificationOutlined,
 } from '@ant-design/icons'
 import type { ReactNode } from 'react'
 
@@ -89,6 +90,7 @@ export const navigationModules: NavModule[] = [
       { key: 'profile', labelKey: 'nav.profile', path: '/account', icon: <HomeOutlined /> },
       { key: 'security', labelKey: 'nav.security', path: '/account/security', icon: <SafetyOutlined /> },
       { key: 'settings', labelKey: 'nav.settings', path: '/settings', icon: <SettingOutlined /> },
+      { key: 'notifications', labelKey: 'nav.notifications', path: '/settings/notifications', icon: <NotificationOutlined /> },
     ],
   },
 ]

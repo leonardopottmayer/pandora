@@ -10,6 +10,7 @@ import { ProfilePage } from '@/modules/identity/pages/ProfilePage'
 import { ChangePasswordPage } from '@/modules/identity/pages/ChangePasswordPage'
 import { SecurityPage } from '@/modules/identity/pages/SecurityPage'
 import { SettingsPage } from '@/modules/identity/pages/SettingsPage'
+import { NotificationsPage } from '@/modules/channels/pages/NotificationsPage'
 import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { AccountsListPage } from '@/modules/finances/pages/accounts/AccountsListPage'
@@ -53,6 +54,7 @@ export const router = createBrowserRouter([
       { path: 'account/security', element: <SecurityPage /> },
       { path: 'account/password', element: <ChangePasswordPage /> },
       { path: 'settings', element: <SettingsPage /> },
+      { path: 'settings/notifications', element: <NotificationsPage /> },
 
       // Finances (telas reais substituem o placeholder conforme cada area e implementada)
       { path: 'finances/accounts', element: <AccountsListPage /> },

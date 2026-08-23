@@ -17,6 +17,12 @@ const prefs: PreferencesContextValue = {
   isDark: false,
   language: 'en',
   setLanguage: () => {},
+  timeZone: 'America/Sao_Paulo',
+  setTimeZone: () => {},
+  weekStartsOn: 'sunday',
+  setWeekStartsOn: () => {},
+  defaultAlertOffsetMinutes: -15,
+  setDefaultAlertOffsetMinutes: () => {},
 }
 
 function renderPage() {

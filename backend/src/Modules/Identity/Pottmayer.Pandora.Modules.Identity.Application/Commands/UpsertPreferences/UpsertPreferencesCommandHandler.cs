@@ -23,6 +23,13 @@ public sealed class UpsertPreferencesCommandHandler(IUnitOfWorkFactory factory)
         if (!AppLanguage.IsSupported(input.Language))
             return Fail(UserErrors.InvalidLanguage(input.Language));
 
+        if (!TimeZoneInfo.TryFindSystemTimeZoneById(input.TimeZone, out _))
+            return Fail(UserErrors.InvalidTimeZone(input.TimeZone));
+
+        if (!Enum.TryParse<DayOfWeek>(input.WeekStartsOn, ignoreCase: true, out var weekStartsOn)
+            || !weekStartsOn.ToString().Equals(input.WeekStartsOn, StringComparison.OrdinalIgnoreCase))
+            return Fail(UserErrors.InvalidWeekStartsOn(input.WeekStartsOn));
+
         var theme = AppTheme.FromValue(input.Theme);
         var language = AppLanguage.FromValue(input.Language);
 
@@ -34,7 +41,7 @@ public sealed class UpsertPreferencesCommandHandler(IUnitOfWorkFactory factory)
             if (user is null)
                 return null;
 
-            user.UpdatePreferences(theme, language);
+            user.UpdatePreferences(theme, language, input.TimeZone, weekStartsOn, input.DefaultAlertOffsetMinutes);
             await repo.UpdateAsync(user, token);
             return user;
         }, cancellationToken: ct);
@@ -42,6 +49,12 @@ public sealed class UpsertPreferencesCommandHandler(IUnitOfWorkFactory factory)
         if (user is null)
             return Fail(UserErrors.NotFound);
 
-        return Ok(new UserPreferencesDto(user.Preferences!.Theme.Value, user.Preferences!.Language.Value));
+        var prefs = user.Preferences!;
+        return Ok(new UserPreferencesDto(
+            prefs.Theme.Value,
+            prefs.Language.Value,
+            prefs.TimeZone,
+            prefs.WeekStartsOn.ToString().ToLowerInvariant(),
+            prefs.DefaultAlertOffsetMinutes));
     }
 }

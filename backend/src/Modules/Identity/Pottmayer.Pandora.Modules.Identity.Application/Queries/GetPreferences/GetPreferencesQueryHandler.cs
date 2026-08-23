@@ -26,6 +26,12 @@ public sealed class GetPreferencesQueryHandler(IUnitOfWorkFactory factory)
         if (user.Preferences is null)
             return Fail(UserErrors.PreferencesNotFound);
 
-        return Ok(new UserPreferencesDto(user.Preferences.Theme.Value, user.Preferences.Language.Value));
+        var prefs = user.Preferences;
+        return Ok(new UserPreferencesDto(
+            prefs.Theme.Value,
+            prefs.Language.Value,
+            prefs.TimeZone,
+            prefs.WeekStartsOn.ToString().ToLowerInvariant(),
+            prefs.DefaultAlertOffsetMinutes));
     }
 }

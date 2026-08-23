@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { AppLanguage, AppTheme } from '../models'
+import type { AppLanguage, AppTheme, WeekStartsOn } from '../models'
 
 export interface PreferencesContextValue {
   theme: AppTheme
@@ -8,6 +8,12 @@ export interface PreferencesContextValue {
   isDark: boolean
   language: AppLanguage
   setLanguage: (language: AppLanguage) => void
+  timeZone: string
+  setTimeZone: (timeZone: string) => void
+  weekStartsOn: WeekStartsOn
+  setWeekStartsOn: (weekStartsOn: WeekStartsOn) => void
+  defaultAlertOffsetMinutes: number
+  setDefaultAlertOffsetMinutes: (minutes: number) => void
 }
 
 export const PreferencesContext = createContext<PreferencesContextValue | null>(null)

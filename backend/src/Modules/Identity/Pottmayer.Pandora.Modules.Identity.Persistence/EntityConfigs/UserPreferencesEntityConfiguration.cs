@@ -20,6 +20,10 @@ internal sealed class UserPreferencesEntityConfiguration : IEntityTypeConfigurat
             tb.HasCheckConstraint(
                 "chk_idt003_language",
                 "language IN ('pt-BR', 'en')");
+
+            tb.HasCheckConstraint(
+                "chk_idt003_week_starts_on",
+                "week_starts_on IN ('sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday')");
         });
 
         builder.HasKey(p => p.Id)
@@ -47,6 +51,21 @@ internal sealed class UserPreferencesEntityConfiguration : IEntityTypeConfigurat
                .HasColumnName("language")
                .HasConversion(new AppLanguageConverter())
                .HasMaxLength(10)
+               .IsRequired();
+
+        builder.Property(p => p.TimeZone)
+               .HasColumnName("time_zone")
+               .HasMaxLength(64)
+               .IsRequired();
+
+        builder.Property(p => p.WeekStartsOn)
+               .HasColumnName("week_starts_on")
+               .HasConversion(new WeekStartConverter())
+               .HasMaxLength(10)
+               .IsRequired();
+
+        builder.Property(p => p.DefaultAlertOffsetMinutes)
+               .HasColumnName("default_alert_offset_minutes")
                .IsRequired();
 
         builder.Property(p => p.CreatedAt).HasColumnName("created_at").IsRequired();
