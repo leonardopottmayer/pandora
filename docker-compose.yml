@@ -32,6 +32,9 @@ services:
       # port; override APP_BASE_URL for a LAN IP or a real domain. {token} is literal.
       Pandora__Channels__ActivationUrlTemplate: "${APP_BASE_URL:-http://localhost:${HTTP_PORT:-80}}/activate?token={token}"
       Pandora__Channels__PasswordResetUrlTemplate: "${APP_BASE_URL:-http://localhost:${HTTP_PORT:-80}}/reset-password?token={token}"
+      # Telegram bot token (from BotFather). Secret. BotUsername and LongPolling
+      # are non-secret and live in appsettings.json.
+      Tars__Communication__Telegram__BotToken: ${TELEGRAM_BOT_TOKEN:-}
 
   frontend:
     image: ${FRONTEND_IMAGE:-ghcr.io/leonardopottmayer/pandora-frontend:latest}
