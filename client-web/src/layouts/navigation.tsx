@@ -21,6 +21,7 @@ import {
   CheckSquareOutlined,
   BellOutlined,
   NotificationOutlined,
+  ApiOutlined,
 } from '@ant-design/icons'
 import type { ReactNode } from 'react'
 
@@ -91,6 +92,7 @@ export const navigationModules: NavModule[] = [
       { key: 'security', labelKey: 'nav.security', path: '/account/security', icon: <SafetyOutlined /> },
       { key: 'settings', labelKey: 'nav.settings', path: '/settings', icon: <SettingOutlined /> },
       { key: 'notifications', labelKey: 'nav.notifications', path: '/settings/notifications', icon: <NotificationOutlined /> },
+      { key: 'connections', labelKey: 'nav.connections', path: '/settings/connections', icon: <ApiOutlined /> },
     ],
   },
 ]

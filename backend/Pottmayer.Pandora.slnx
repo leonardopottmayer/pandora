@@ -48,6 +48,15 @@
     <Project Path="src/Modules/Agenda/Pottmayer.Pandora.Modules.Agenda.Persistence/Pottmayer.Pandora.Modules.Agenda.Persistence.csproj" Id="b0000009-0000-0000-0000-000000000004" />
     <Project Path="src/Modules/Agenda/Pottmayer.Pandora.Modules.Agenda.Presentation/Pottmayer.Pandora.Modules.Agenda.Presentation.csproj" Id="b0000009-0000-0000-0000-000000000005" />
   </Folder>
+  <Folder Name="/src/Modules/Integrations/">
+    <Project Path="src/Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Abstractions/Pottmayer.Pandora.Modules.Integrations.Abstractions.csproj" />
+    <Project Path="src/Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Contracts/Pottmayer.Pandora.Modules.Integrations.Contracts.csproj" />
+    <Project Path="src/Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Domain/Pottmayer.Pandora.Modules.Integrations.Domain.csproj" />
+    <Project Path="src/Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Application/Pottmayer.Pandora.Modules.Integrations.Application.csproj" />
+    <Project Path="src/Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Infrastructure/Pottmayer.Pandora.Modules.Integrations.Infrastructure.csproj" />
+    <Project Path="src/Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Persistence/Pottmayer.Pandora.Modules.Integrations.Persistence.csproj" />
+    <Project Path="src/Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Presentation/Pottmayer.Pandora.Modules.Integrations.Presentation.csproj" />
+  </Folder>
   <Folder Name="/src/Host/">
     <Project Path="src/Host/Pottmayer.Pandora.Host/Pottmayer.Pandora.Host.csproj" Id="b0000004-0000-0000-0000-000000000001" />
   </Folder>

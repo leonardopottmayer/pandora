@@ -11,6 +11,7 @@ import { ChangePasswordPage } from '@/modules/identity/pages/ChangePasswordPage'
 import { SecurityPage } from '@/modules/identity/pages/SecurityPage'
 import { SettingsPage } from '@/modules/identity/pages/SettingsPage'
 import { NotificationsPage } from '@/modules/channels/pages/NotificationsPage'
+import { ConnectionsPage } from '@/modules/integrations/pages/ConnectionsPage'
 import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { AccountsListPage } from '@/modules/finances/pages/accounts/AccountsListPage'
@@ -55,6 +56,7 @@ export const router = createBrowserRouter([
       { path: 'account/password', element: <ChangePasswordPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'settings/notifications', element: <NotificationsPage /> },
+      { path: 'settings/connections', element: <ConnectionsPage /> },
 
       // Finances (telas reais substituem o placeholder conforme cada area e implementada)
       { path: 'finances/accounts', element: <AccountsListPage /> },

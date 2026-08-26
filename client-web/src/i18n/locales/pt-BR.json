@@ -26,6 +26,7 @@
     "security": "Seguranca",
     "settings": "Preferencias",
     "notifications": "Notificacoes",
+    "connections": "Conexoes",
     "changePassword": "Trocar senha",
     "signOut": "Sair",
     "finances": "Financas",
@@ -193,6 +194,26 @@
       "agenda.reminder": "Lembretes",
       "agenda.task": "Tarefas",
       "agenda.event": "Eventos"
+    }
+  },
+  "connections": {
+    "title": "Contas conectadas",
+    "description": "Conecte contas de terceiros que o Pandora usa em seu nome, como o Google para sincronizar a agenda.",
+    "providerDesc": "Ainda nao conectado.",
+    "connect": "Conectar {{provider}}",
+    "reconnect": "Reconectar",
+    "reconnectNeeded": "Esta conexao foi revogada. Reconecte para continuar.",
+    "disconnect": "Desconectar",
+    "disconnectConfirm": "Desconectar esta conta?",
+    "disconnected": "Conta desconectada.",
+    "connectError": "Nao foi possivel iniciar a conexao.",
+    "disconnectError": "Nao foi possivel desconectar a conta.",
+    "noneAvailable": "Nenhum provedor esta configurado neste servidor.",
+    "status": {
+      "connected": "Conectado",
+      "revoked": "Revogado",
+      "expired": "Expirado",
+      "needsConsent": "Consentimento necessario"
     }
   },
   "security": {

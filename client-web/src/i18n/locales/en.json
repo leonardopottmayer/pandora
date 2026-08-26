@@ -26,6 +26,7 @@
     "security": "Security",
     "settings": "Preferences",
     "notifications": "Notifications",
+    "connections": "Connections",
     "changePassword": "Change password",
     "signOut": "Sign out",
     "finances": "Finances",
@@ -193,6 +194,26 @@
       "agenda.reminder": "Reminders",
       "agenda.task": "Tasks",
       "agenda.event": "Events"
+    }
+  },
+  "connections": {
+    "title": "Connected accounts",
+    "description": "Connect third-party accounts Pandora uses on your behalf, such as Google to sync your agenda.",
+    "providerDesc": "Not connected yet.",
+    "connect": "Connect {{provider}}",
+    "reconnect": "Reconnect",
+    "reconnectNeeded": "This connection was revoked. Reconnect it to continue.",
+    "disconnect": "Disconnect",
+    "disconnectConfirm": "Disconnect this account?",
+    "disconnected": "Account disconnected.",
+    "connectError": "Could not start the connection.",
+    "disconnectError": "Could not disconnect the account.",
+    "noneAvailable": "No provider is configured on this server.",
+    "status": {
+      "connected": "Connected",
+      "revoked": "Revoked",
+      "expired": "Expired",
+      "needsConsent": "Consent needed"
     }
   },
   "security": {
