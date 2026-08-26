@@ -4,6 +4,10 @@ CREATE TABLE channels.chn006_notification (
 	id uuid NOT NULL DEFAULT uuid_generate_v7(),
 	channel VARCHAR(20) NOT NULL,
 	recipient VARCHAR(255) NOT NULL,
+	-- The user this notification is for, and its delivery category -- both drive the history read.
+	-- Nullable: an ad-hoc SendNotificationRequested send is addressed but not attributed.
+	user_id uuid NULL,
+	category VARCHAR(100) NULL,
 	template_key VARCHAR(100) NOT NULL,
 	locale VARCHAR(10) NOT NULL,
 	payload JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -45,3 +49,7 @@ CHECK (status IN ('Pending', 'Sending', 'Sent', 'Failed', 'Dead'));
 
 CREATE INDEX ix_chn006_status_next_attempt_at
 ON channels.chn006_notification (status, next_attempt_at);
+
+-- The delivery-history read: a user's notifications, newest first.
+CREATE INDEX ix_chn006_user_created_at
+ON channels.chn006_notification (user_id, created_at DESC);

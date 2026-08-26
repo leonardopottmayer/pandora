@@ -4,6 +4,10 @@ CREATE TABLE identity.idt003_user_preferences (
 	id uuid NOT NULL DEFAULT uuid_generate_v7(),
 	user_id uuid NOT NULL,
 	theme VARCHAR(20) NOT NULL,
+	language VARCHAR(10) NOT NULL DEFAULT 'en',
+	time_zone VARCHAR(64) NOT NULL DEFAULT 'America/Sao_Paulo',
+	week_starts_on VARCHAR(10) NOT NULL DEFAULT 'sunday',
+	default_alert_offset_minutes INTEGER NOT NULL DEFAULT -15,
 	created_by UUID NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
 	updated_by UUID NULL,
@@ -28,3 +32,11 @@ ADD CONSTRAINT fk_idt003_updated_by FOREIGN KEY (updated_by) REFERENCES identity
 ALTER TABLE identity.idt003_user_preferences
 ADD CONSTRAINT chk_idt003_theme
 CHECK (theme IN ('light', 'dark', 'system'));
+
+ALTER TABLE identity.idt003_user_preferences
+ADD CONSTRAINT chk_idt003_language
+CHECK (language IN ('pt-BR', 'en'));
+
+ALTER TABLE identity.idt003_user_preferences
+ADD CONSTRAINT chk_idt003_week_starts_on
+CHECK (week_starts_on IN ('sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'));

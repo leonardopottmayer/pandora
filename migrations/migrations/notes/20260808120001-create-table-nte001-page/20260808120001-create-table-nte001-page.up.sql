@@ -7,6 +7,13 @@ CREATE TABLE notes.nte001_page (
 	title VARCHAR(255) NOT NULL,
 	slug VARCHAR(100) NOT NULL,
 	content_markdown TEXT NOT NULL DEFAULT '',
+	-- Full-text search over the page: title and body in a single vector, kept in sync by Postgres
+	-- itself (generated column) so no save path can forget to update it. The 'simple' configuration
+	-- only lower-cases -- no stemming and no language guess, which is what a notebook holding both
+	-- PT-BR and EN text needs.
+	search_vector tsvector GENERATED ALWAYS AS (
+		to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(content_markdown, ''))
+	) STORED,
 	icon VARCHAR(50) NULL,
 	order_index INT NOT NULL DEFAULT 0,
 	is_favorite BOOLEAN NOT NULL DEFAULT false,
@@ -37,3 +44,6 @@ ON notes.nte001_page (user_id);
 
 CREATE INDEX ix_nte001_parent_id
 ON notes.nte001_page (parent_id);
+
+CREATE INDEX ix_nte001_search_vector
+ON notes.nte001_page USING GIN (search_vector);

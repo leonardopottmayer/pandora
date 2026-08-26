@@ -1,5 +1,6 @@
--- 20260616120001-create-table-fin011-pending-transaction.up.sql
--- Phase 08: source = 'recurrence' only; CHECK expanded in phase 09 to include 'import'.
+-- 20260616120002-create-table-fin011-pending-transaction.up.sql
+-- Created after fin008 so fk_fin011_transaction_id is inline. fin008's back-reference to fin011
+-- (pending_transaction_id) is the circular half, added in the next migration.
 
 CREATE TABLE finances.fin011_pending_transaction (
 	id uuid NOT NULL DEFAULT uuid_generate_v7(),
@@ -27,6 +28,14 @@ CREATE TABLE finances.fin011_pending_transaction (
 	decided_by uuid NULL,
 	rejection_reason varchar(255) NULL,
 	transaction_id uuid NULL,
+	-- import provenance and dedup (source = 'import'); no FKs on the dedup refs by design
+	import_row_id uuid NULL,
+	duplicate_of_transaction_id uuid NULL,
+	duplicate_of_pending_id uuid NULL,
+	dedup_status varchar(15) NULL,
+	installment_number smallint NULL,
+	installment_count smallint NULL,
+	matched_installment_plan_id uuid NULL,
 	-- audit
 	created_by uuid NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
@@ -38,7 +47,15 @@ ALTER TABLE finances.fin011_pending_transaction
 ADD CONSTRAINT pk_fin011 PRIMARY KEY (id);
 
 ALTER TABLE finances.fin011_pending_transaction
-ADD CONSTRAINT ck_fin011_source CHECK (source IN ('recurrence'));
+ADD CONSTRAINT ck_fin011_source CHECK (source IN ('recurrence', 'import'));
+
+ALTER TABLE finances.fin011_pending_transaction
+ADD CONSTRAINT ck_fin011_import_source
+CHECK (source <> 'import' OR import_row_id IS NOT NULL);
+
+ALTER TABLE finances.fin011_pending_transaction
+ADD CONSTRAINT ck_fin011_dedup_status
+CHECK (dedup_status IS NULL OR dedup_status IN ('new', 'certain', 'suspected', 'matched'));
 
 ALTER TABLE finances.fin011_pending_transaction
 ADD CONSTRAINT ck_fin011_status CHECK (status IN ('pending', 'approved', 'rejected'));
@@ -69,3 +86,7 @@ ON finances.fin011_pending_transaction (user_id, status);
 
 CREATE INDEX ix_fin011_recurring_transaction_id
 ON finances.fin011_pending_transaction (recurring_transaction_id);
+
+CREATE INDEX ix_fin011_import_row_id
+ON finances.fin011_pending_transaction (import_row_id)
+WHERE import_row_id IS NOT NULL;

@@ -7,7 +7,9 @@ CREATE TABLE channels.chn004_inbound_update (
 	id uuid NOT NULL DEFAULT uuid_generate_v7(),
 	provider VARCHAR(20) NOT NULL,
 	provider_update_id BIGINT NOT NULL,
-	raw JSONB NOT NULL,
+	-- Nullable: the retention job clears the raw payload to null once it ages out (personal data kept
+	-- only for debugging), while keeping the row -- it is the idempotency guard and long-polling offset.
+	raw JSONB NULL,
 	user_id uuid NULL,
 	classification VARCHAR(20) NOT NULL,
 	received_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
@@ -29,3 +31,9 @@ ON channels.chn004_inbound_update (provider, provider_update_id);
 -- "What is the highest update we have seen?" -- the long-polling offset on startup.
 CREATE INDEX ix_chn004_provider_update_id_desc
 ON channels.chn004_inbound_update (provider, provider_update_id DESC);
+
+-- Supports the retention scan ("rows received before the cutoff whose raw is still present"). Partial
+-- on `raw IS NOT NULL` so it only ever indexes rows still holding a payload -- purged rows drop out.
+CREATE INDEX ix_chn004_received_at_unpurged
+ON channels.chn004_inbound_update (received_at)
+WHERE raw IS NOT NULL;
