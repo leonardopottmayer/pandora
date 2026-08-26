@@ -36,6 +36,8 @@ public sealed class AccountActivationRequestedHandler(NotificationEnqueuer enque
             Locale.Normalize(@event.Locale),
             payload,
             @event.EventId,
+            userId: @event.UserId,
+            category: "identity.account",
             ct: cancellationToken);
     }
 }

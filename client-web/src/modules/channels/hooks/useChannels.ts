@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { channelsKeys } from './queryKeys'
-import type { ChannelId } from '../models'
+import type { ChannelId, DeliveryHistoryFilters } from '../models'
 import * as channelsService from '../services/channels.service'
 
 export function useChannels() {
@@ -14,6 +14,13 @@ export function useNotificationPreferences() {
   return useQuery({
     queryKey: channelsKeys.preferences(),
     queryFn: () => channelsService.listPreferences(),
+  })
+}
+
+export function useDeliveryHistory(filters: DeliveryHistoryFilters) {
+  return useQuery({
+    queryKey: channelsKeys.history(filters),
+    queryFn: () => channelsService.listDeliveryHistory(filters),
   })
 }
 

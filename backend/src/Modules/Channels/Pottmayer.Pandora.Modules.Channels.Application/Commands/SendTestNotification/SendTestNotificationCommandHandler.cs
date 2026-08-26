@@ -48,6 +48,8 @@ public sealed class SendTestNotificationCommandHandler(
             link.Locale,
             new Dictionary<string, string>(),
             Guid.CreateVersion7(),
+            userId: input.UserId,
+            category: "channels.test",
             ct: ct);
 
         return Ok(true);

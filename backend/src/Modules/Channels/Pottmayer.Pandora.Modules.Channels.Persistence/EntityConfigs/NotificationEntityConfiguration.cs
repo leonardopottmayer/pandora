@@ -31,6 +31,13 @@ internal sealed class NotificationEntityConfiguration : IEntityTypeConfiguration
                .HasMaxLength(255)
                .IsRequired();
 
+        builder.Property(n => n.UserId)
+               .HasColumnName("user_id");
+
+        builder.Property(n => n.Category)
+               .HasColumnName("category")
+               .HasMaxLength(100);
+
         builder.Property(n => n.TemplateKey)
                .HasColumnName("template_key")
                .HasConversion(k => k.Value, v => TemplateKey.FromValue(v))
@@ -109,6 +116,10 @@ internal sealed class NotificationEntityConfiguration : IEntityTypeConfiguration
 
         builder.HasIndex(n => new { n.Status, n.NextAttemptAt })
                .HasDatabaseName("ix_chn006_status_next_attempt_at");
+
+        // The delivery-history read: a user's notifications, newest first.
+        builder.HasIndex(n => new { n.UserId, n.CreatedAt })
+               .HasDatabaseName("ix_chn006_user_created_at");
 
         builder.Property(n => n.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(n => n.CreatedBy).HasColumnName("created_by");

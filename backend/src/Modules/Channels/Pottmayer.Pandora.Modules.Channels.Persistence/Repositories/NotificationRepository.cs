@@ -24,4 +24,35 @@ public sealed class NotificationRepository(IDataContextAccessor accessor)
 
         return due;
     }
+
+    public async Task<IReadOnlyList<Notification>> GetHistoryAsync(
+        Guid userId,
+        NotificationStatus? status,
+        Channel? channel,
+        string? category,
+        DateTimeOffset? from,
+        DateTimeOffset? to,
+        int skip,
+        int take,
+        CancellationToken ct = default)
+    {
+        var query = Queryable().Where(n => n.UserId == userId);
+
+        if (status is { } s)
+            query = query.Where(n => n.Status == s);
+        if (channel is { } c)
+            query = query.Where(n => n.Channel == c);
+        if (!string.IsNullOrWhiteSpace(category))
+            query = query.Where(n => n.Category == category);
+        if (from is { } f)
+            query = query.Where(n => n.CreatedAt >= f);
+        if (to is { } t)
+            query = query.Where(n => n.CreatedAt <= t);
+
+        return await query
+            .OrderByDescending(n => n.CreatedAt)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(ct);
+    }
 }

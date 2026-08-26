@@ -194,6 +194,26 @@
       "agenda.reminder": "Lembretes",
       "agenda.task": "Tarefas",
       "agenda.event": "Eventos"
+    },
+    "historyTitle": "Historico de envios",
+    "historyDesc": "O que saiu, por canal, e como terminou.",
+    "colWhen": "Quando",
+    "colCategory": "Categoria",
+    "colChannel": "Canal",
+    "colSubject": "Assunto",
+    "colStatus": "Status",
+    "colAttempts": "Tentativas",
+    "colError": "Erro",
+    "filterStatus": "Status",
+    "filterAll": "Todos",
+    "historyEmpty": "Nenhum envio ainda.",
+    "historyError": "Nao foi possivel carregar o historico.",
+    "status": {
+      "Pending": "Pendente",
+      "Sending": "Enviando",
+      "Sent": "Enviado",
+      "Failed": "Falhou",
+      "Dead": "Morto"
     }
   },
   "connections": {

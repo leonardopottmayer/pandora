@@ -6,6 +6,7 @@ using Pottmayer.Pandora.Modules.Channels.Application.Commands.CreateChannelLink;
 using Pottmayer.Pandora.Modules.Channels.Application.Commands.SendTestNotification;
 using Pottmayer.Pandora.Modules.Channels.Application.Commands.SetNotificationPreference;
 using Pottmayer.Pandora.Modules.Channels.Application.Commands.UnlinkChannel;
+using Pottmayer.Pandora.Modules.Channels.Application.Queries.GetDeliveryHistory;
 using Pottmayer.Pandora.Modules.Channels.Application.Queries.GetNotificationPreferences;
 using Pottmayer.Pandora.Modules.Channels.Application.Queries.GetUserChannels;
 using Pottmayer.Pandora.Shared.Domain;
@@ -62,6 +63,27 @@ public sealed class ChannelsController(
     {
         var command = new SendTestNotificationCommand(new SendTestNotificationInput(UserId, channel));
         var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>
+    /// The user's delivery history, newest first, for the settings screen. Answers "did it actually
+    /// go out?" — filterable by status, channel, category and date, paged with skip/take.
+    /// </summary>
+    [HttpGet("notifications")]
+    public async Task<IActionResult> GetHistoryAsync(
+        [FromQuery] string? status,
+        [FromQuery] string? channel,
+        [FromQuery] string? category,
+        [FromQuery] DateTimeOffset? from,
+        [FromQuery] DateTimeOffset? to,
+        [FromQuery] int skip = 0,
+        [FromQuery] int take = 50,
+        CancellationToken ct = default)
+    {
+        var query = new GetDeliveryHistoryQuery(
+            new GetDeliveryHistoryInput(UserId, status, channel, category, from, to, skip, take));
+        var result = await sender.Send(query, ct);
         return result.ToActionResult(errorMapper);
     }
 

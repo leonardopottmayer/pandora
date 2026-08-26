@@ -15,4 +15,18 @@ public interface INotificationRepository : IStandardRepository<Notification, Gui
 
     /// <summary>Loads notifications due for dispatch (Pending/Failed with NextAttemptAt &lt;= now), oldest first.</summary>
     Task<IReadOnlyList<Notification>> GetDueAsync(DateTimeOffset now, int batchSize, CancellationToken ct = default);
+
+    /// <summary>
+    /// A page of the user's delivery history, newest first, narrowed by the optional filters.
+    /// </summary>
+    Task<IReadOnlyList<Notification>> GetHistoryAsync(
+        Guid userId,
+        NotificationStatus? status,
+        Channel? channel,
+        string? category,
+        DateTimeOffset? from,
+        DateTimeOffset? to,
+        int skip,
+        int take,
+        CancellationToken ct = default);
 }

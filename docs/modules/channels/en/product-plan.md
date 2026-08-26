@@ -559,9 +559,11 @@ Polish and observability. The module is fully usable without this phase, so it l
   the row itself stays, being the idempotency guard and the long-polling offset. Two settings under
   `Channels:RawRetention`: `Enabled` (default on) and `RetentionDays` (default 7). Closes open
   question 3.
-- **Delivery history — planned.** A `GET /channels/notifications` read plus a history table in
-  settings, so "did my reminder actually go out?" has an answer. Needs `user_id` and `category` on
-  `chn006` first — today the queue row is addressed, not attributed to a user.
+- **Delivery history — done.** `GET /channels/notifications` (filterable by status, channel, category
+  and date, paged) plus a history table in settings, so "did my reminder actually go out?" has an
+  answer. Required attributing the queue row to a user: `chn006` gained `user_id` and `category`,
+  stamped at enqueue (the fan-out from `NotifyUserRequested`, the Identity security/account mails, and
+  test sends).
 - **Metrics — planned, later.** Queue depth, dispatch latency, failure rate per channel, discarded
   updates. Waits on OpenTelemetry wiring in the Host, which is a cross-cutting task rather than a
   Channels-only one.

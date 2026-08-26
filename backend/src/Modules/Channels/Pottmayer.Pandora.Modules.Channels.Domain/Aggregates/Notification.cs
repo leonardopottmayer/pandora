@@ -11,6 +11,13 @@ public sealed class Notification : AggregateRoot<Guid>, IAuditable
 
     public Channel Channel { get; private set; } = Channel.Email;
     public NotificationAddress Address { get; private set; } = null!;
+
+    /// <summary>The user this notification is for. Null for an ad-hoc send addressed directly.</summary>
+    public Guid? UserId { get; private set; }
+
+    /// <summary>Delivery category (e.g. <c>agenda.reminder</c>, <c>identity.security</c>). Null for ad-hoc sends.</summary>
+    public string? Category { get; private set; }
+
     public TemplateKey TemplateKey { get; private set; } = null!;
     public string Locale { get; private set; } = "en";
     public string Payload { get; private set; } = "{}";
@@ -60,6 +67,8 @@ public sealed class Notification : AggregateRoot<Guid>, IAuditable
         TimeProvider timeProvider,
         string? renderedPayload = null,
         Guid? groupId = null,
+        Guid? userId = null,
+        string? category = null,
         int maxAttempts = DefaultMaxAttempts)
     {
         var now = timeProvider.GetUtcNow();
@@ -68,6 +77,8 @@ public sealed class Notification : AggregateRoot<Guid>, IAuditable
             Id = Guid.CreateVersion7(),
             Channel = channel,
             Address = address,
+            UserId = userId,
+            Category = category,
             TemplateKey = templateKey,
             Locale = locale,
             Payload = payload,

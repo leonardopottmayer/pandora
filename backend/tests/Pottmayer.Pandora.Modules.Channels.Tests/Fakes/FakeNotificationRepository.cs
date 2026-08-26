@@ -28,6 +28,18 @@ internal sealed class FakeNotificationRepository : INotificationRepository
         => Task.FromResult<IReadOnlyList<Notification>>(
             _items.Where(n => n.IsDue(now)).OrderBy(n => n.CreatedAt).Take(batchSize).ToList());
 
+    public Task<IReadOnlyList<Notification>> GetHistoryAsync(
+        Guid userId, NotificationStatus? status, Channel channel, string category,
+        DateTimeOffset? from, DateTimeOffset? to, int skip, int take, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<Notification>>(_items
+            .Where(n => n.UserId == userId)
+            .Where(n => status is null || n.Status == status)
+            .Where(n => channel is null || n.Channel == channel)
+            .Where(n => category is null || n.Category == category)
+            .Where(n => from is null || n.CreatedAt >= from)
+            .Where(n => to is null || n.CreatedAt <= to)
+            .OrderByDescending(n => n.CreatedAt).Skip(skip).Take(take).ToList());
+
     public Task<Notification> AddAsync(Notification entity, CancellationToken ct = default)
     {
         _items.Add(entity);

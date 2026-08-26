@@ -37,6 +37,7 @@ public sealed class NotificationEnqueuer(
         string? renderedPayload = null,
         Guid? groupId = null,
         Guid? userId = null,
+        string? category = null,
         IReadOnlyList<NotificationButton>? buttons = null,
         CancellationToken ct = default)
     {
@@ -55,7 +56,7 @@ public sealed class NotificationEnqueuer(
 
             var notification = Notification.Queue(
                 channel, address, templateKey, locale, payloadJson, content, correlationId, timeProvider,
-                renderedPayload, groupId);
+                renderedPayload, groupId, userId, category);
 
             await notifications.AddAsync(notification, token);
 

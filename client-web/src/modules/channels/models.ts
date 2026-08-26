@@ -26,3 +26,37 @@ export interface NotificationPreference {
   category: string
   channels: ChannelId[]
 }
+
+export type NotificationStatus = 'Pending' | 'Sending' | 'Sent' | 'Failed' | 'Dead'
+
+/** All statuses, in lifecycle order — drives the history filter. */
+export const NOTIFICATION_STATUSES: NotificationStatus[] = [
+  'Pending',
+  'Sending',
+  'Sent',
+  'Failed',
+  'Dead',
+]
+
+/** One row of the delivery history: what went out, on which channel, and how it ended. */
+export interface NotificationHistoryItem {
+  id: string
+  channel: ChannelId
+  category: string | null
+  templateKey: string
+  subject: string
+  status: NotificationStatus
+  attemptCount: number
+  lastError: string | null
+  provider: string | null
+  correlationId: string
+  groupId: string | null
+  createdAt: string
+  updatedAt: string | null
+}
+
+export interface DeliveryHistoryFilters {
+  status?: NotificationStatus
+  channel?: ChannelId
+  category?: string
+}

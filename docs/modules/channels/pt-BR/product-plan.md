@@ -560,9 +560,11 @@ Polimento e observabilidade. O módulo é totalmente usável sem esta fase, ent�
   em null — a linha em si fica, por ser o guard de idempotência e o offset do long polling. Duas
   configs em `Channels:RawRetention`: `Enabled` (ligado por padrão) e `RetentionDays` (padrão 7).
   Fecha a questão em aberto 3.
-- **Histórico de entregas — planejado.** Uma leitura `GET /channels/notifications` mais uma tabela
-  de histórico no settings, pra "meu lembrete saiu mesmo?" ter resposta. Precisa antes de `user_id`
-  e `category` em `chn006` — hoje a linha da fila é endereçada, não atribuída a um usuário.
+- **Histórico de entregas — feito.** `GET /channels/notifications` (filtrável por status, canal,
+  categoria e data, paginado) mais uma tabela de histórico no settings, pra "meu lembrete saiu
+  mesmo?" ter resposta. Exigiu atribuir a linha da fila a um usuário: `chn006` ganhou `user_id` e
+  `category`, carimbados no enqueue (o fan-out do `NotifyUserRequested`, os e-mails de
+  segurança/conta do Identity, e os envios de teste).
 - **Métricas — planejado, depois.** Profundidade da fila, latência de despacho, taxa de falha por
   canal, updates descartados. Depende de plugar OpenTelemetry no Host, que é tarefa transversal e não
   só do Channels.

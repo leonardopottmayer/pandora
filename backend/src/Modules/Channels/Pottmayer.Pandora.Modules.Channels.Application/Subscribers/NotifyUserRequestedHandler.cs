@@ -47,6 +47,7 @@ public sealed class NotifyUserRequestedHandler(
                 @event.CorrelationId,
                 groupId: groupId,
                 userId: @event.UserId,
+                category: @event.Category,
                 buttons: @event.Buttons,
                 ct: cancellationToken);
         }

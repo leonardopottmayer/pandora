@@ -1,5 +1,12 @@
 import { apiClient } from '@/lib/api/client'
-import type { ChannelId, ChannelLink, NotificationPreference, UserChannel } from '../models'
+import type {
+  ChannelId,
+  ChannelLink,
+  DeliveryHistoryFilters,
+  NotificationHistoryItem,
+  NotificationPreference,
+  UserChannel,
+} from '../models'
 
 const BASE = '/api/v1.0/channels'
 
@@ -28,4 +35,14 @@ export async function listPreferences(): Promise<NotificationPreference[]> {
 
 export async function setPreference(category: string, channels: ChannelId[]): Promise<void> {
   await apiClient.put(`${BASE}/preferences/${category}`, { channels })
+}
+
+export async function listDeliveryHistory(
+  filters: DeliveryHistoryFilters = {},
+  take = 200,
+): Promise<NotificationHistoryItem[]> {
+  const { data } = await apiClient.get<NotificationHistoryItem[]>(`${BASE}/notifications`, {
+    params: { ...filters, take },
+  })
+  return data
 }

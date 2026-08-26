@@ -194,6 +194,26 @@
       "agenda.reminder": "Reminders",
       "agenda.task": "Tasks",
       "agenda.event": "Events"
+    },
+    "historyTitle": "Delivery history",
+    "historyDesc": "What went out, by channel, and how it ended.",
+    "colWhen": "When",
+    "colCategory": "Category",
+    "colChannel": "Channel",
+    "colSubject": "Subject",
+    "colStatus": "Status",
+    "colAttempts": "Attempts",
+    "colError": "Error",
+    "filterStatus": "Status",
+    "filterAll": "All",
+    "historyEmpty": "Nothing sent yet.",
+    "historyError": "Could not load the history.",
+    "status": {
+      "Pending": "Pending",
+      "Sending": "Sending",
+      "Sent": "Sent",
+      "Failed": "Failed",
+      "Dead": "Dead"
     }
   },
   "connections": {

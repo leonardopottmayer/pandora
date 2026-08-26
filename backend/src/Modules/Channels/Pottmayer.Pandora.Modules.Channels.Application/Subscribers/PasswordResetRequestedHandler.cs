@@ -36,6 +36,8 @@ public sealed class PasswordResetRequestedHandler(NotificationEnqueuer enqueuer,
             Locale.Normalize(@event.Locale),
             payload,
             @event.EventId,
+            userId: @event.UserId,
+            category: "identity.security",
             ct: cancellationToken);
     }
 }

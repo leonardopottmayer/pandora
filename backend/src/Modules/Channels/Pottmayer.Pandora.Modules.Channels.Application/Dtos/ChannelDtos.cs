@@ -14,3 +14,19 @@ public sealed record ChannelLinkDto(string Url, DateTimeOffset ExpiresAt);
 
 /// <summary>A user's channel choice for one category. Empty channels means the category is muted.</summary>
 public sealed record NotificationPreferenceDto(string Category, IReadOnlyList<string> Channels);
+
+/// <summary>One row of the delivery history: what went out, on which channel, and how it ended.</summary>
+public sealed record NotificationHistoryDto(
+    Guid Id,
+    string Channel,
+    string? Category,
+    string TemplateKey,
+    string Subject,
+    string Status,
+    int AttemptCount,
+    string? LastError,
+    string? Provider,
+    Guid CorrelationId,
+    Guid? GroupId,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? UpdatedAt);
