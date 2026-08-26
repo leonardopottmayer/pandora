@@ -13,4 +13,10 @@ public interface IInboundUpdateRepository : IStandardRepository<InboundUpdate, G
     /// after a restart, so a queued backlog is not re-delivered from the start.
     /// </summary>
     Task<long?> GetLastUpdateIdAsync(string provider, CancellationToken ct = default);
+
+    /// <summary>
+    /// Clears the raw payload (to null) of updates received before <paramref name="receivedBefore"/>
+    /// whose raw is still present, leaving the rows themselves intact. Returns the number cleared.
+    /// </summary>
+    Task<int> PurgeRawOlderThanAsync(DateTimeOffset receivedBefore, CancellationToken ct = default);
 }

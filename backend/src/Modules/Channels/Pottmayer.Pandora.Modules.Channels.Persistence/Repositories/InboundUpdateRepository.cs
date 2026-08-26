@@ -18,4 +18,9 @@ public sealed class InboundUpdateRepository(IDataContextAccessor accessor)
             .OrderByDescending(u => u.ProviderUpdateId)
             .Select(u => (long?)u.ProviderUpdateId)
             .FirstOrDefaultAsync(ct);
+
+    public Task<int> PurgeRawOlderThanAsync(DateTimeOffset receivedBefore, CancellationToken ct = default) =>
+        Queryable()
+            .Where(u => u.ReceivedAt < receivedBefore && u.Raw != null)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(u => u.Raw, (string?)null), ct);
 }

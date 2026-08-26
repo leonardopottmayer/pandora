@@ -22,6 +22,9 @@ internal sealed class FakeInboundUpdateRepository : IInboundUpdateRepository
         => Task.FromResult(_items.Where(u => u.Provider == provider)
             .Select(u => (long?)u.ProviderUpdateId).Max());
 
+    public Task<int> PurgeRawOlderThanAsync(DateTimeOffset receivedBefore, CancellationToken ct = default)
+        => Task.FromResult(_items.Count(u => u.ReceivedAt < receivedBefore && u.Raw != null));
+
     public Task<InboundUpdate> AddAsync(InboundUpdate entity, CancellationToken ct = default)
     {
         _items.Add(entity);

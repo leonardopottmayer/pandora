@@ -27,10 +27,10 @@ internal sealed class InboundUpdateEntityConfiguration : IEntityTypeConfiguratio
                .HasColumnName("provider_update_id")
                .IsRequired();
 
+        // Nullable: the retention job clears it to null once the payload ages out (see InboundUpdate.Raw).
         builder.Property(u => u.Raw)
                .HasColumnName("raw")
-               .HasColumnType("jsonb")
-               .IsRequired();
+               .HasColumnType("jsonb");
 
         builder.Property(u => u.UserId)
                .HasColumnName("user_id");

@@ -62,6 +62,10 @@ public static class InfrastructureDI
 
         builder.Services.AddHostedService<NotificationDispatcherBackgroundService>();
 
+        // Clears aged-out raw inbound payloads (chn004.raw). Runs regardless of the ingress driver;
+        // gated internally by Channels:RawRetention:Enabled.
+        builder.Services.AddHostedService<InboundUpdateRetentionBackgroundService>();
+
         return builder;
     }
 }

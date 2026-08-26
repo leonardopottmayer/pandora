@@ -553,10 +553,28 @@ barramento in-process que o Tars já oferece; ver o
 - **Pronto quando:** apertar *Feito* fecha a tarefa, e o segundo clique diz que expirou.
 
 ### Fase C5 — Operação
-- Driver de webhook, quando houver HTTPS público.
-- Endpoint de histórico de entregas; retry manual de linha morta; envio de teste por canal.
-- Métricas: profundidade da fila, latência de despacho, taxa de falha por canal, updates descartados.
-- **Pronto quando:** "meu lembrete saiu mesmo?" tem resposta na UI.
+Polimento e observabilidade. O módulo é totalmente usável sem esta fase, então ela chega aos poucos.
+
+- **Purga de retenção do raw — feita.** Um job diário (`InboundUpdateRetentionBackgroundService`)
+  limpa o payload cru das linhas de `chn004` mais velhas que a janela de retenção, colocando `raw`
+  em null — a linha em si fica, por ser o guard de idempotência e o offset do long polling. Duas
+  configs em `Channels:RawRetention`: `Enabled` (ligado por padrão) e `RetentionDays` (padrão 7).
+  Fecha a questão em aberto 3.
+- **Histórico de entregas — planejado.** Uma leitura `GET /channels/notifications` mais uma tabela
+  de histórico no settings, pra "meu lembrete saiu mesmo?" ter resposta. Precisa antes de `user_id`
+  e `category` em `chn006` — hoje a linha da fila é endereçada, não atribuída a um usuário.
+- **Métricas — planejado, depois.** Profundidade da fila, latência de despacho, taxa de falha por
+  canal, updates descartados. Depende de plugar OpenTelemetry no Host, que é tarefa transversal e não
+  só do Channels.
+- **Envio de teste por canal — já feito** na C2 (`POST /channels/{channel}/test`).
+
+#### Talvez no futuro *(não planejado)*
+- **Driver de webhook.** O long polling cobre o ingress em qualquer lugar, inclusive atrás de NAT,
+  então o webhook só se paga quando o homelab for exposto em HTTPS público. O client do Tars já
+  suporta (`SetWebhookAsync`/`DeleteWebhookAsync`), então fica uma adição pequena e adiável — o
+  controller só entregaria os updates recebidos à mesma triagem que o long polling usa.
+- **Retry manual de linha morta.** Re-enfileirar uma notificação morta pela UI. Não compensa a
+  superfície enquanto dead-letters são raras e já inspecionáveis no log; revisitar se isso mudar.
 
 ### Extração como serviço — *descartada*
 Esta fase planejava o módulo saindo do monolito. Não é mais objetivo: o Pandora continua um
@@ -576,9 +594,9 @@ do monolito — e, de quebra, o que tornaria a decisão reversível se um dia pr
 2. **Se o Finances entra.** Os eventos de fatura/importação dele estão documentados como planejados
    mas não publicados. Assim que a C3 entrar, eles ganham categorias de graça — vale uma fase pequena
    de follow-up lá.
-3. **Retenção do `raw` em `chn004`.** Guardar o update cru é ouro para depurar e é dado pessoal
-   (inclusive transcrições em potencial). Inclinação: 7 dias, purga em background, configurável.
-   Decidir na C4.
+3. ~~**Retenção do `raw` em `chn004`.**~~ **Decidido (C5):** um job diário coloca `raw` em null
+   quando mais velho que `Channels:RawRetention:RetentionDays` (padrão 7), mantendo a linha;
+   ligado/desligado por `Channels:RawRetention:Enabled`.
 4. **Categorias como registro tipado ou string.** Hoje `Category` é string no contrato. Um registro
    central daria validação no startup ("a Agenda declarou `agenda.reminder`") ao custo de um lugar a
    mais para tocar quando um módulo nasce. Inclinação: string até doer.

@@ -12,7 +12,13 @@ public sealed class InboundUpdate : AggregateRoot<Guid>
 {
     public string Provider { get; private set; } = null!;
     public long ProviderUpdateId { get; private set; }
-    public string Raw { get; private set; } = "{}";
+
+    /// <summary>
+    /// The raw provider update as JSON, kept for debugging. Cleared to <c>null</c> by the retention
+    /// job once it ages out — it is personal data (message text, voice transcripts) — while the row
+    /// itself is kept, being the idempotency guard and the long-polling offset.
+    /// </summary>
+    public string? Raw { get; private set; }
     public Guid? UserId { get; private set; }
     public InboundClassification Classification { get; private set; }
     public DateTimeOffset ReceivedAt { get; private set; }

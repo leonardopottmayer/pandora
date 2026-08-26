@@ -552,10 +552,28 @@ bus Tars already provides; see the [messaging doc](../../../architecture/en/mess
 - **Done when:** pressing *Done* closes the task, and the second click says it expired.
 
 ### Phase C5 — Operations
-- Webhook driver, once public HTTPS exists.
-- Delivery-history endpoint; manual retry of a dead row; test send per channel.
-- Metrics: queue depth, dispatch latency, failure rate per channel, discarded updates.
-- **Done when:** "did my reminder actually go out?" has an answer in the UI.
+Polish and observability. The module is fully usable without this phase, so it lands piecemeal.
+
+- **Raw retention purge — done.** A daily background job (`InboundUpdateRetentionBackgroundService`)
+  clears the raw payload of `chn004` rows older than the retention window by setting `raw` to null —
+  the row itself stays, being the idempotency guard and the long-polling offset. Two settings under
+  `Channels:RawRetention`: `Enabled` (default on) and `RetentionDays` (default 7). Closes open
+  question 3.
+- **Delivery history — planned.** A `GET /channels/notifications` read plus a history table in
+  settings, so "did my reminder actually go out?" has an answer. Needs `user_id` and `category` on
+  `chn006` first — today the queue row is addressed, not attributed to a user.
+- **Metrics — planned, later.** Queue depth, dispatch latency, failure rate per channel, discarded
+  updates. Waits on OpenTelemetry wiring in the Host, which is a cross-cutting task rather than a
+  Channels-only one.
+- **Test send per channel — already done** in C2 (`POST /channels/{channel}/test`).
+
+#### Maybe later *(not planned)*
+- **Webhook driver.** Long polling covers ingress everywhere, including behind NAT, so a webhook only
+  earns its place once the homelab is exposed over public HTTPS. The Tars client already supports it
+  (`SetWebhookAsync`/`DeleteWebhookAsync`), so it stays a small, deferrable addition — the controller
+  would just hand incoming updates to the same triage the long-polling driver uses.
+- **Manual retry of a dead row.** Re-queuing a dead notification from the UI. Not worth the surface
+  while dead-letters are rare and already inspectable in the log; revisit if that changes.
 
 ### Extraction as a service — *dropped*
 This phase used to plan for the module leaving the monolith. It is no longer a goal: Pandora stays
@@ -574,9 +592,9 @@ the monolith — and, incidentally, what would make the decision reversible if i
    constraint makes that a deliberate future change.
 2. **Whether Finances joins.** Its statement/import events are documented as planned but not
    published. Once C3 lands, they get categories for free — worth a small follow-up phase there.
-3. **Retention of `raw` in `chn004`.** Keeping the raw update is gold for debugging and is personal
-   data (potentially including transcripts). Leaning: 7 days, background purge, configurable. Decide
-   in C4.
+3. ~~**Retention of `raw` in `chn004`.**~~ **Decided (C5):** a daily background job clears `raw` to
+   null once older than `Channels:RawRetention:RetentionDays` (default 7), keeping the row; toggled
+   by `Channels:RawRetention:Enabled`.
 4. **Categories as a typed registry or a string.** Today `Category` is a string in the contract. A
    central registry would give startup validation ("Agenda declared `agenda.reminder`") at the cost
    of one more place to touch when a module is born. Leaning: string until it hurts.

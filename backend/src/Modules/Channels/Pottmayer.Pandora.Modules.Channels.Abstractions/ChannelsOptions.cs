@@ -21,6 +21,27 @@ public sealed class ChannelsOptions
 
     /// <summary>Telegram-specific settings. Empty <see cref="TelegramChannelOptions.BotUsername"/> disables the channel.</summary>
     public TelegramChannelOptions Telegram { get; set; } = new();
+
+    /// <summary>Retention policy for the raw inbound update payload stored in <c>chn004.raw</c>.</summary>
+    public RawRetentionOptions RawRetention { get; set; } = new();
+}
+
+/// <summary>
+/// Controls purging of the raw inbound update payload (<c>chn004.raw</c>). The row is never deleted —
+/// it is the idempotency guard and the long-polling offset — only the raw JSON is cleared once it
+/// ages out, because it is personal data (message text, and eventually voice transcripts) kept only
+/// for debugging.
+/// </summary>
+public sealed class RawRetentionOptions
+{
+    /// <summary>
+    /// Whether the retention job runs. Off leaves raw payloads in place indefinitely — useful while
+    /// debugging inbound, but it keeps personal data around.
+    /// </summary>
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>How many days a raw payload is kept before it is cleared. Minimum one.</summary>
+    public int RetentionDays { get; set; } = 7;
 }
 
 /// <summary>
