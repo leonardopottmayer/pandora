@@ -9,9 +9,8 @@
   <ItemGroup>
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Integrations.Abstractions/Pottmayer.Pandora.Modules.Integrations.Abstractions.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Integrations.Domain/Pottmayer.Pandora.Modules.Integrations.Domain.csproj" />
-    <!-- Temporary ProjectReference to the Tars secret protector until it is published as a NuGet
-         package (Pottmayer.Tars.Security.DataProtection). Brings the abstraction transitively. -->
-    <ProjectReference Include="../../../../../../tars/src/Security/Pottmayer.Tars.Security.DataProtection/Pottmayer.Tars.Security.DataProtection.csproj" />
+    <!-- Tars: DataProtection (AES-GCM secret protector) -->
+    <PackageReference Include="Pottmayer.Tars.Security.DataProtection" Version="0.0.6" />
     <!-- Hosting / options / http for provider config and the token endpoint client -->
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.2" />

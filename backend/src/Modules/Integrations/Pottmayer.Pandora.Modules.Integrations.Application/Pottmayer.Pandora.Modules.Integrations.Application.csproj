@@ -10,9 +10,8 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Integrations.Abstractions/Pottmayer.Pandora.Modules.Integrations.Abstractions.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Integrations.Contracts/Pottmayer.Pandora.Modules.Integrations.Contracts.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Integrations.Domain/Pottmayer.Pandora.Modules.Integrations.Domain.csproj" />
-    <!-- Temporary ProjectReference to the Tars secret protector abstraction until it is published as a
-         NuGet package (Pottmayer.Tars.Security.DataProtection.Abstractions). -->
-    <ProjectReference Include="../../../../../../tars/src/Security/Pottmayer.Tars.Security.DataProtection.Abstractions/Pottmayer.Tars.Security.DataProtection.Abstractions.csproj" />
+    <!-- Tars: DataProtection (ISecretProtector) -->
+    <PackageReference Include="Pottmayer.Tars.Security.DataProtection.Abstractions" Version="0.0.6" />
     <!-- Tars: Core -->
     <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.5" />
     <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.5" />
