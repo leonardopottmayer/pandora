@@ -96,7 +96,7 @@ consegue fazer algo que a API não consegue, isso é um bug.
 
 O módulo **nunca sabe que Telegram existe**. Ele consome `InboundMessageReceived(userId, channel,
 text?, mediaRef?, mediaMimeType?)` — já normalizado pelo
-[Channels](../../channels/pt-BR/product-plan.md#82-saída-de-entrada) — e busca os bytes de mídia pela
+[Channels](../../channels/pt-BR/inbound-and-linking.md) — e busca os bytes de mídia pela
 porta `IInboundMediaReader`. Trocar por WhatsApp, ou entrar pela web, não toca em nada aqui.
 
 **A entrada não roda o pipeline inline.** Transcrever e rodar tool-calling num modelo local leva de
@@ -286,7 +286,7 @@ GET    /assistant/commands               → o catálogo vivo (debug e painel de
 - **Pronto quando:** digitar "lembrete de pagar o aluguel dia 5 às 10h" no navegador cria o lembrete
   certo, e o log de invocação mostra a tool call exata.
 
-### Fase A3 — Entrada por chat, texto *(depende de [Channels C4](../../channels/pt-BR/product-plan.md#fase-c4--entrada))*
+### Fase A3 — Entrada por chat, texto *(depende de [Channels C4 — entrada](../../channels/pt-BR/inbound-and-linking.md), já implementado)*
 - Subscriber ligado a `inbound.message.#`, gravando uma linha de invocação drenada uma de cada vez; responder por
   `NotifyUserRequested`.
 - Confirmação com botões `owner_module: "assistant"`; subscriber ligado a
@@ -319,7 +319,7 @@ Notes para responder perguntas.
    `int001_external_account` com `auth_kind = api_key`. Um cofre cifrado só. O `credential_ref` da
    `ast001` aponta para lá, e a chave é obtida por `IExternalCredentialProvider` — a mesma porta
    síncrona que a Agenda usa para o token do Google. Ver
-   [Integrations §4.2](../../integrations/pt-BR/product-plan.md#42-portas).
+   [Integrations — OAuth e Credenciais](../../integrations/pt-BR/oauth-and-credentials.md).
 2. **Se o LLM chega a ver dado pessoal.** Leituras como `list_agenda` mandam títulos de eventos para o
    provedor. Com Ollama isso é local e tudo bem; com OpenAI/Gemini sai de casa. Mínimo: um aviso por perfil
    e uma chave para restringir provedores hospedados apenas a comandos de *escrita*. Vale resolver antes da

@@ -96,7 +96,7 @@ the assistant can do something the API cannot, that is a bug.
 
 The module **never learns that Telegram exists**. It consumes `InboundMessageReceived(userId,
 channel, text?, mediaRef?, mediaMimeType?)` — already normalized by
-[Channels](../../channels/en/product-plan.md#82-inbound-going-out) — and fetches media bytes through
+[Channels](../../channels/en/inbound-and-linking.md) — and fetches media bytes through
 the `IInboundMediaReader` port. Swapping to WhatsApp, or coming in from the web, touches nothing
 here.
 
@@ -288,7 +288,7 @@ GET    /assistant/commands               → the live catalog (debugging, and th
 - **Done when:** typing "lembrete de pagar o aluguel dia 5 às 10h" in the browser creates the right
   reminder, and the invocation log shows the exact tool call.
 
-### Phase A3 — Chat inbound, text *(depends on [Channels C4](../../channels/en/product-plan.md#phase-c4--inbound))*
+### Phase A3 — Chat inbound, text *(depends on [Channels C4 — inbound](../../channels/en/inbound-and-linking.md), already implemented)*
 - Subscriber bound to `inbound.message.#`, writing an invocation row drained one at a time; reply through
   `NotifyUserRequested`.
 - Confirmation with `owner_module: "assistant"` buttons; subscriber bound to
@@ -319,7 +319,7 @@ retrieval over Notes for question answering.
 1. ~~**Where hosted API keys live.**~~ **Decided:** in Integrations, in `int001_external_account`
    with `auth_kind = api_key`. One encrypted store. `ast001`'s `credential_ref` points there, and the
    key is obtained through `IExternalCredentialProvider` — the same synchronous port Agenda uses for
-   the Google token. See [Integrations §4.2](../../integrations/en/product-plan.md#42-ports).
+   the Google token. See [Integrations — OAuth & Credentials](../../integrations/en/oauth-and-credentials.md).
 2. **Whether the LLM ever sees personal data.** Reads like `list_agenda` mean event titles go to the
    provider. With Ollama that is local and fine; with OpenAI/Gemini it leaves the house. Minimum: a
    per-profile warning and a switch to restrict hosted providers to *write* commands only. Worth
