@@ -1,4 +1,5 @@
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.Activation;
+using Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
 using Pottmayer.Pandora.Modules.Identity.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Identity.Domain.Entities;
 using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Repositories;
@@ -10,6 +11,7 @@ namespace Pottmayer.Pandora.Modules.Identity.Tests;
 public sealed class ActivateAccountCommandHandlerTests
 {
     private readonly FakePasswordHasher _hasher = new();
+    private readonly FakeIntegrationEventBus _eventBus = new();
 
     private (ActivateAccountCommandHandler Handler, FakeUserRepository Users, FakeActivationTokenRepository Tokens) Build(
         User user, params AccountActivationToken[] tokens)
@@ -19,7 +21,7 @@ public sealed class ActivateAccountCommandHandlerTests
         var ctx       = new FakeDataContext()
             .Register<IUserRepository>(users)
             .Register<IActivationTokenRepository>(tokenRepo);
-        var handler   = new ActivateAccountCommandHandler(new FakeUnitOfWorkFactory(ctx), TimeProvider.System);
+        var handler   = new ActivateAccountCommandHandler(new FakeUnitOfWorkFactory(ctx), _eventBus, TimeProvider.System);
         return (handler, users, tokenRepo);
     }
 
@@ -44,6 +46,12 @@ public sealed class ActivateAccountCommandHandlerTests
         Assert.True(result.IsSuccess);
         Assert.True(users.Users[0].CanAuthenticate);
         Assert.NotNull(tokens.Tokens[0].ConsumedAt);
+
+        // Activation proves e-mail ownership: Channels is asked to provision the verified e-mail channel.
+        var published = Assert.Single(_eventBus.Published);
+        var activated = Assert.IsType<AccountActivated>(published);
+        Assert.Equal(user.Id, activated.UserId);
+        Assert.Equal(user.Email.Value, activated.Email);
     }
 
     [Fact]
@@ -57,6 +65,7 @@ public sealed class ActivateAccountCommandHandlerTests
         Assert.True(result.IsFailure);
         Assert.Equal("Identity.InvalidActivationToken", result.Errors[0].Code);
         Assert.False(users.Users[0].CanAuthenticate);
+        Assert.Empty(_eventBus.Published);
     }
 
     [Fact]
