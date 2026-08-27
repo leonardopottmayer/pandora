@@ -29,7 +29,7 @@ public sealed class RequestPasswordResetCommandHandler(
         var now = timeProvider.GetUtcNow();
         var resetToken = PasswordResetTokens.Generate();
 
-        var issued = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
+        var issued = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
             var users = ctx.AcquireRepository<IUserRepository>();
             var user = await users.FindByEmailAsync(email!, token);

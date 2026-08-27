@@ -26,7 +26,7 @@ public sealed class RunRecurrenceGenerationCommandHandler(
         var now = timeProvider.GetUtcNow();
         var generated = 0;
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var recurringRepo = ctx.AcquireRepository<IRecurringTransactionRepository>();
             var pendingRepo = ctx.AcquireRepository<IPendingTransactionRepository>();

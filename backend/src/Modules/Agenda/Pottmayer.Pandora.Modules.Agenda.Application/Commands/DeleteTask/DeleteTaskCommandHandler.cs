@@ -14,7 +14,7 @@ public sealed class DeleteTaskCommandHandler(IUnitOfWorkFactory factory, TimePro
     {
         var input = request.Input;
 
-        var found = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        var found = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var tasks = context.AcquireRepository<ITaskRepository>();
             var task = await tasks.FindAsync(input.UserId, input.TaskId, token);

@@ -27,7 +27,7 @@ public sealed class SendTestNotificationCommandHandler(
         if (!Channel.TryFromValue(input.Channel, out var channel))
             return Fail(ChannelErrors.UnsupportedChannel(input.Channel));
 
-        var link = await factory.ExecuteAsync(ChannelsModule.Name, async (context, token) =>
+        var link = await factory.ExecuteAsync(ChannelsModule.DatabaseKey, async (context, token) =>
         {
             var channels = context.AcquireRepository<IUserChannelRepository>();
             return await channels.FindAsync(input.UserId, channel, token);

@@ -15,7 +15,7 @@ public sealed class DeleteEventCommandHandler(IUnitOfWorkFactory factory, TimePr
     {
         var input = request.Input;
 
-        var result = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        var result = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var events = context.AcquireRepository<IEventRepository>();
             var overrides = context.AcquireRepository<IEventOccurrenceOverrideRepository>();

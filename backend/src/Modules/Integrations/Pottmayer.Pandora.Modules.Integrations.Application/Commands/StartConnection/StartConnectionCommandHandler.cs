@@ -43,7 +43,7 @@ public sealed class StartConnectionCommandHandler(
 
         var url = provider.BuildAuthorizationUrl(new OAuthAuthorizationRequest(state, challenge, scopes));
 
-        await factory.ExecuteAsync(IntegrationsModule.Name, async (context, token) =>
+        await factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
         {
             var states = context.AcquireRepository<IOAuthStateRepository>();
             var pending = OAuthState.Issue(

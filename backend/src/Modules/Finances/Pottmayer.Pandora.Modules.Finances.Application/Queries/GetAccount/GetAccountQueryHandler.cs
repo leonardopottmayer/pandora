@@ -15,7 +15,7 @@ public sealed class GetAccountQueryHandler(IUnitOfWorkFactory factory)
     {
         var input = request.Input;
 
-        var account = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var account = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IAccountRepository>();
             return await repo.FindByIdForUserAsync(input.AccountId, input.UserId, token);

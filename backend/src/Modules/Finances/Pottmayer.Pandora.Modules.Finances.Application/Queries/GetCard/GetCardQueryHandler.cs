@@ -14,7 +14,7 @@ public sealed class GetCardQueryHandler(IUnitOfWorkFactory factory)
     protected override async Task<Result<CardDto>> HandleAsync(GetCardQuery request, CancellationToken ct)
     {
         var input = request.Input;
-        var card = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var card = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             return await ctx.AcquireRepository<ICardRepository>().FindByIdForUserAsync(input.CardId, input.UserId, token);
         }, cancellationToken: ct);

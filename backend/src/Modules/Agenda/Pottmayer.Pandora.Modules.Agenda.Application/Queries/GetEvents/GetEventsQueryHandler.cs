@@ -31,7 +31,7 @@ public sealed class GetEventsQueryHandler(IUnitOfWorkFactory factory)
         if (input.To - input.From > MaxRange)
             return Fail(EventErrors.RangeTooLarge);
 
-        var occurrences = await factory.ExecuteAsync(AgendaModule.Name, async (context, ct) =>
+        var occurrences = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, ct) =>
         {
             var events = context.AcquireRepository<IEventRepository>();
             var overrides = context.AcquireRepository<IEventOccurrenceOverrideRepository>();

@@ -15,7 +15,7 @@ public sealed class GetStatementQueryHandler(IUnitOfWorkFactory factory, IMessag
     protected override async Task<Result<CardStatementDetailDto>> HandleAsync(GetStatementQuery request, CancellationToken ct)
     {
         var input = request.Input;
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var statements = ctx.AcquireRepository<ICardStatementRepository>();
             var statement = await statements.FindByIdForUserAsync(input.StatementId, input.UserId, token);

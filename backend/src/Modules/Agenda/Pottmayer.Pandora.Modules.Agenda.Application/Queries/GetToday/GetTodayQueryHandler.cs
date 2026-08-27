@@ -26,7 +26,7 @@ public sealed class GetTodayQueryHandler(IUnitOfWorkFactory factory, TimeProvide
         var dayEnd = dayStart.AddDays(1);
         var expandTo = dayEnd.AddTicks(-1); // inclusive upper bound for the expanders
 
-        var items = await factory.ExecuteAsync(AgendaModule.Name, async (context, ct) =>
+        var items = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, ct) =>
         {
             var result = new List<TodayItemDto>();
 

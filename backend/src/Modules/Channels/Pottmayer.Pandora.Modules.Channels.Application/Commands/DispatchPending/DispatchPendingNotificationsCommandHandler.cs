@@ -28,7 +28,7 @@ public sealed class DispatchPendingNotificationsCommandHandler(
         var byChannel = transports.ToDictionary(t => t.Channel);
         var disabled = new List<UserChannelDisabled>();
 
-        var result = await factory.ExecuteAsync(ChannelsModule.Name, async (context, token) =>
+        var result = await factory.ExecuteAsync(ChannelsModule.DatabaseKey, async (context, token) =>
         {
             var notifications = context.AcquireRepository<INotificationRepository>();
             var userChannels = context.AcquireRepository<IUserChannelRepository>();

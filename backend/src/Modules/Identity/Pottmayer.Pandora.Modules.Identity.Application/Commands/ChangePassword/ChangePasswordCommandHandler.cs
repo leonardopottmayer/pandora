@@ -28,7 +28,7 @@ public sealed class ChangePasswordCommandHandler(
 
         var now = timeProvider.GetUtcNow();
 
-        var result = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
             var users = ctx.AcquireRepository<IUserRepository>();
             var user = await users.GetByIdAsync(input.UserId, token);

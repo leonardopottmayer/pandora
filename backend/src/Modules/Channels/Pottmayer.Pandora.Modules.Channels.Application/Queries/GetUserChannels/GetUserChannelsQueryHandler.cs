@@ -13,7 +13,7 @@ public sealed class GetUserChannelsQueryHandler(IUnitOfWorkFactory factory)
     protected override async Task<Result<IReadOnlyList<UserChannelDto>>> HandleAsync(
         GetUserChannelsQuery request, CancellationToken cancellationToken)
     {
-        var channels = await factory.ExecuteAsync(ChannelsModule.Name, async (context, ct) =>
+        var channels = await factory.ExecuteAsync(ChannelsModule.DatabaseKey, async (context, ct) =>
         {
             var repo = context.AcquireRepository<IUserChannelRepository>();
             return await repo.GetByUserAsync(request.Input.UserId, ct);

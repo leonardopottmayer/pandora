@@ -33,7 +33,7 @@ public sealed class ResetPasswordCommandHandler(
         var now = timeProvider.GetUtcNow();
         var passwordHash = passwordHasher.Hash(input.NewPassword);
 
-        var result = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
             var resets = ctx.AcquireRepository<IPasswordResetTokenRepository>();
             var reset = await resets.FindByTokenHashAsync(tokenHash, token);

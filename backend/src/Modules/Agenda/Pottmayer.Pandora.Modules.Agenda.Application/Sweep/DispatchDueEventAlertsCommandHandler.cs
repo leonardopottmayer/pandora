@@ -44,7 +44,7 @@ public sealed class DispatchDueEventAlertsCommandHandler(
         var batchSize = request.Input.BatchSize;
         var grace = TimeSpan.FromMinutes(Math.Max(0, _options.SweepGraceMinutes));
 
-        var events = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        var events = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var alerts = context.AcquireRepository<IAlertRepository>();
             var dispatches = context.AcquireRepository<IAlertDispatchRepository>();

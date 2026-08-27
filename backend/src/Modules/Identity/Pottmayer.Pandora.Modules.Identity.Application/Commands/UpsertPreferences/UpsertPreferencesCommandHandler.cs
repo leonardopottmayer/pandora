@@ -33,7 +33,7 @@ public sealed class UpsertPreferencesCommandHandler(IUnitOfWorkFactory factory)
         var theme = AppTheme.FromValue(input.Theme);
         var language = AppLanguage.FromValue(input.Language);
 
-        var user = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
+        var user = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IUserRepository>();
 

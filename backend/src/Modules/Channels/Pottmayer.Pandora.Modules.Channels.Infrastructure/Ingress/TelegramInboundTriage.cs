@@ -44,7 +44,7 @@ public sealed class TelegramInboundTriage(
     public async Task HandleAsync(TelegramUpdate update, CancellationToken ct)
     {
         // Idempotency: a replayed poll must not act on the same update twice.
-        var alreadySeen = await factory.ExecuteAsync(ChannelsModule.Name, (context, token) =>
+        var alreadySeen = await factory.ExecuteAsync(ChannelsModule.DatabaseKey, (context, token) =>
             context.AcquireRepository<IInboundUpdateRepository>().ExistsAsync(Provider, update.UpdateId, token),
             cancellationToken: ct);
         if (alreadySeen)
@@ -53,7 +53,7 @@ public sealed class TelegramInboundTriage(
         var outcome = await RouteAsync(update, ct);
 
         // Record the update durably — this is what restores the long-polling offset after a restart.
-        await factory.ExecuteAsync(ChannelsModule.Name, async (context, token) =>
+        await factory.ExecuteAsync(ChannelsModule.DatabaseKey, async (context, token) =>
         {
             var updates = context.AcquireRepository<IInboundUpdateRepository>();
             var record = InboundUpdate.Record(
@@ -124,7 +124,7 @@ public sealed class TelegramInboundTriage(
 
         // Resolve the sender, then the button it points at, and burn it — all in one unit of work, so
         // a double tap cannot act twice.
-        var resolution = await factory.ExecuteAsync(ChannelsModule.Name, async (context, token) =>
+        var resolution = await factory.ExecuteAsync(ChannelsModule.DatabaseKey, async (context, token) =>
         {
             Guid? userId = chatId is null ? null : await ResolveUserInContextAsync(context, chatId, token);
 
@@ -157,7 +157,7 @@ public sealed class TelegramInboundTriage(
     }
 
     private Task<Guid?> ResolveUserAsync(string chatId, CancellationToken ct) =>
-        factory.ExecuteAsync(ChannelsModule.Name,
+        factory.ExecuteAsync(ChannelsModule.DatabaseKey,
             (context, token) => ResolveUserInContextAsync(context, chatId, token), cancellationToken: ct);
 
     private static async Task<Guid?> ResolveUserInContextAsync(IDataContext context, string chatId, CancellationToken ct)

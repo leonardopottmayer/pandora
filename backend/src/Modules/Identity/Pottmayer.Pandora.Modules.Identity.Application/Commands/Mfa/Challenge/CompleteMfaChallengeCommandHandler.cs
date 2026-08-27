@@ -27,7 +27,7 @@ public sealed class CompleteMfaChallengeCommandHandler(
         var now = timeProvider.GetUtcNow();
         var ticketHash = MfaTickets.Hash(input.Ticket);
 
-        var authenticated = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
+        var authenticated = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
             var challenges = ctx.AcquireRepository<IMfaChallengeRepository>();
             var challenge = await challenges.FindByTokenHashAsync(ticketHash, token);

@@ -14,7 +14,7 @@ public sealed class GetPreferencesQueryHandler(IUnitOfWorkFactory factory)
     protected override async Task<Result<UserPreferencesDto>> HandleAsync(
         GetPreferencesQuery request, CancellationToken cancellationToken)
     {
-        var user = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, ct) =>
+        var user = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, ct) =>
         {
             var repo = ctx.AcquireRepository<IUserRepository>();
             return await repo.FindByIdWithPreferencesAsync(request.Input.UserId, ct);

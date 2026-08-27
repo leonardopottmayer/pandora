@@ -29,7 +29,7 @@ public sealed class GetDeliveryHistoryQueryHandler(IUnitOfWorkFactory factory)
         Channel? channel =
             input.Channel is not null && Channel.TryFromValue(input.Channel, out var c) ? c : null;
 
-        var notifications = await factory.ExecuteAsync(ChannelsModule.Name, async (context, ct) =>
+        var notifications = await factory.ExecuteAsync(ChannelsModule.DatabaseKey, async (context, ct) =>
         {
             var repo = context.AcquireRepository<INotificationRepository>();
             return await repo.GetHistoryAsync(

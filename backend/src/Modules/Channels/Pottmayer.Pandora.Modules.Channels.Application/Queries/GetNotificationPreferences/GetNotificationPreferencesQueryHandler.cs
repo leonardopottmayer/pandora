@@ -13,7 +13,7 @@ public sealed class GetNotificationPreferencesQueryHandler(IUnitOfWorkFactory fa
     protected override async Task<Result<IReadOnlyList<NotificationPreferenceDto>>> HandleAsync(
         GetNotificationPreferencesQuery request, CancellationToken cancellationToken)
     {
-        var preferences = await factory.ExecuteAsync(ChannelsModule.Name, async (context, ct) =>
+        var preferences = await factory.ExecuteAsync(ChannelsModule.DatabaseKey, async (context, ct) =>
         {
             var repo = context.AcquireRepository<INotificationPreferenceRepository>();
             return await repo.GetByUserAsync(request.Input.UserId, ct);

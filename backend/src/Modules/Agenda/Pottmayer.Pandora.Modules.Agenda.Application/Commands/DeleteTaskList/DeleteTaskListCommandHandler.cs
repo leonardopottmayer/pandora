@@ -14,7 +14,7 @@ public sealed class DeleteTaskListCommandHandler(IUnitOfWorkFactory factory)
     {
         var input = request.Input;
 
-        var outcome = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        var outcome = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var lists = context.AcquireRepository<ITaskListRepository>();
             var tasks = context.AcquireRepository<ITaskRepository>();

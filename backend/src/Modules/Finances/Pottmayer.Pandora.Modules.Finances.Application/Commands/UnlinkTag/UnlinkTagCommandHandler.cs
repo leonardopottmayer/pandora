@@ -22,7 +22,7 @@ public sealed class UnlinkTagCommandHandler(IUnitOfWorkFactory factory, TimeProv
 
         var entityType = TaggableEntityType.FromValue(input.EntityType);
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var tags = ctx.AcquireRepository<ITagRepository>();
             var links = ctx.AcquireRepository<ITagLinkRepository>();

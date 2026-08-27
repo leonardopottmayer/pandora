@@ -26,7 +26,7 @@ public sealed class UpdateEventCommandHandler(IUnitOfWorkFactory factory, TimePr
         if (input.Title is not null && string.IsNullOrWhiteSpace(input.Title))
             return Fail(EventErrors.TitleRequired);
 
-        var result = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        var result = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var events = context.AcquireRepository<IEventRepository>();
             var overrides = context.AcquireRepository<IEventOccurrenceOverrideRepository>();

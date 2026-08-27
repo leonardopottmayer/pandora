@@ -33,7 +33,7 @@ public sealed class CreateCalendarCommandHandler(IUnitOfWorkFactory factory, Tim
             return Fail(CalendarErrors.InvalidTimeZone(ex.Message));
         }
 
-        await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             await context.AcquireRepository<ICalendarRepository>().AddAsync(created, token);
             return true;

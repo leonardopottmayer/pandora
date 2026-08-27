@@ -30,7 +30,7 @@ public sealed class GetPageGraphQueryHandler(IUnitOfWorkFactory factory)
         var input = request.Input;
         var depth = Math.Clamp(input.Depth, 1, MaxDepth);
 
-        var graph = await factory.ExecuteAsync(NotesModule.Name, async (ctx, token) =>
+        var graph = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
         {
             var pages = await ctx.AcquireRepository<IPageRepository>()
                 .GetTreeForUserAsync(input.UserId, includeArchived: true, token);

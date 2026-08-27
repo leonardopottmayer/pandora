@@ -16,7 +16,7 @@ public sealed class PurgeInboundUpdatesCommandHandler(IUnitOfWorkFactory factory
     protected override async Task<Result<int>> HandleAsync(
         PurgeInboundUpdatesCommand request, CancellationToken ct)
     {
-        var purged = await factory.ExecuteAsync(ChannelsModule.Name, async (context, token) =>
+        var purged = await factory.ExecuteAsync(ChannelsModule.DatabaseKey, async (context, token) =>
         {
             var repo = context.AcquireRepository<IInboundUpdateRepository>();
             return await repo.PurgeRawOlderThanAsync(request.Input.RawOlderThan, token);

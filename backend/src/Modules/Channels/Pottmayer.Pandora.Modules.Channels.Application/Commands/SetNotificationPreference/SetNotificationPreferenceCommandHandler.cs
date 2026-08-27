@@ -30,7 +30,7 @@ public sealed class SetNotificationPreferenceCommandHandler(IUnitOfWorkFactory f
             channels.Add(channel);
         }
 
-        await factory.ExecuteAsync(ChannelsModule.Name, async (context, token) =>
+        await factory.ExecuteAsync(ChannelsModule.DatabaseKey, async (context, token) =>
         {
             var repo = context.AcquireRepository<INotificationPreferenceRepository>();
             var existing = await repo.FindAsync(input.UserId, input.Category, token);

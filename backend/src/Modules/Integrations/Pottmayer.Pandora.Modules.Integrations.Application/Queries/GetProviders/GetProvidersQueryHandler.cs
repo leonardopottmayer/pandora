@@ -21,7 +21,7 @@ public sealed class GetProvidersQueryHandler(
     protected override async Task<Result<IReadOnlyList<ProviderCatalogItemDto>>> HandleAsync(
         GetProvidersQuery request, CancellationToken cancellationToken)
     {
-        var accounts = await factory.ExecuteAsync(IntegrationsModule.Name, async (context, ct) =>
+        var accounts = await factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, ct) =>
         {
             var repo = context.AcquireRepository<IExternalAccountRepository>();
             return await repo.GetByUserAsync(request.Input.UserId, ct);

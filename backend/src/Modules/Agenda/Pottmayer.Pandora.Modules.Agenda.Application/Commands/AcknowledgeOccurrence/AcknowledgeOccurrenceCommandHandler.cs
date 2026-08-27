@@ -18,7 +18,7 @@ public sealed class AcknowledgeOccurrenceCommandHandler(IUnitOfWorkFactory facto
     {
         var input = request.Input;
 
-        var found = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        var found = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var dispatches = context.AcquireRepository<IReminderDispatchRepository>();
             var dispatch = await dispatches.FindAsync(input.UserId, input.ReminderId, input.OccurrenceStartsAt, token);

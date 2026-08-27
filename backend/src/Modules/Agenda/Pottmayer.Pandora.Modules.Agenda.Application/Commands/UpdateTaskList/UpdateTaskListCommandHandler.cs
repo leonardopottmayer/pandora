@@ -20,7 +20,7 @@ public sealed class UpdateTaskListCommandHandler(IUnitOfWorkFactory factory, Tim
         if (input.Name is not null && string.IsNullOrWhiteSpace(input.Name))
             return Fail(TaskErrors.TitleRequired);
 
-        var list = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        var list = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var lists = context.AcquireRepository<ITaskListRepository>();
             var found = await lists.FindAsync(input.UserId, input.ListId, token);

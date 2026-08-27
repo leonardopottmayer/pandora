@@ -27,7 +27,7 @@ public sealed class SetupMfaCommandHandler(
         var secret = totp.GenerateSecret();
         var cipher = protector.Protect(secret);
 
-        return await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
+        return await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
             var users = ctx.AcquireRepository<IUserRepository>();
             var user = await users.GetByIdAsync(userId, token);

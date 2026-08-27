@@ -22,7 +22,7 @@ public sealed class CreateTaskListCommandHandler(IUnitOfWorkFactory factory, Tim
 
         var created = TaskList.Create(input.UserId, input.Name, input.IsDefault, input.Position, timeProvider);
 
-        await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             await context.AcquireRepository<ITaskListRepository>().AddAsync(created, token);
             return true;

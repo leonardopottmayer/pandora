@@ -16,7 +16,7 @@ internal sealed class DatabaseFileStorage(IUnitOfWorkFactory factory, TimeProvid
     public async Task<string> SaveAsync(
         string fileName, string contentType, byte[] content, CancellationToken ct = default)
     {
-        var id = await factory.ExecuteAsync(NotesModule.Name, async (ctx, token) =>
+        var id = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
         {
             var blob = FileBlob.Create(fileName, contentType, content, timeProvider.GetUtcNow());
             await ctx.AcquireRepository<IFileBlobRepository>().AddAsync(blob, token);
@@ -31,7 +31,7 @@ internal sealed class DatabaseFileStorage(IUnitOfWorkFactory factory, TimeProvid
         if (!Guid.TryParse(storageKey, out var id))
             return null;
 
-        var blob = await factory.ExecuteAsync(NotesModule.Name, async (ctx, token) =>
+        var blob = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
             await ctx.AcquireRepository<IFileBlobRepository>().GetByIdAsync(id, token),
             cancellationToken: ct);
 
@@ -45,7 +45,7 @@ internal sealed class DatabaseFileStorage(IUnitOfWorkFactory factory, TimeProvid
         if (!Guid.TryParse(storageKey, out var id))
             return;
 
-        await factory.ExecuteAsync(NotesModule.Name, async (ctx, token) =>
+        await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IFileBlobRepository>();
             var blob = await repo.GetByIdAsync(id, token);

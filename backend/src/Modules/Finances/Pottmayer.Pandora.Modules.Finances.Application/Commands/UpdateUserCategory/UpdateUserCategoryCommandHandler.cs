@@ -22,7 +22,7 @@ public sealed class UpdateUserCategoryCommandHandler(IUnitOfWorkFactory factory,
         if (string.IsNullOrWhiteSpace(input.Name))
             return Fail(CategoryErrors.InvalidName);
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IUserCategoryRepository>();
 

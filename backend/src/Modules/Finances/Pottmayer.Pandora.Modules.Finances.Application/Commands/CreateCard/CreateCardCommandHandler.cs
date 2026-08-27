@@ -24,7 +24,7 @@ public sealed class CreateCardCommandHandler(IUnitOfWorkFactory factory, TimePro
         var now = timeProvider.GetUtcNow();
         var currency = CurrencyCode.Create(input.Currency);
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<ICardRepository>();
             if (await repo.ExistsWithNameAsync(input.UserId, input.Name, null, token))

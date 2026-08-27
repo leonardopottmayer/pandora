@@ -14,7 +14,7 @@ public sealed class SnoozeReminderCommandHandler(IUnitOfWorkFactory factory)
     {
         var input = request.Input;
 
-        var found = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        var found = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var reminders = context.AcquireRepository<IReminderRepository>();
             var reminder = await reminders.FindAsync(input.UserId, input.ReminderId, token);

@@ -21,7 +21,7 @@ public sealed class AccountActivatedHandler(IUnitOfWorkFactory factory, TimeProv
     : IIntegrationEventHandler<AccountActivated>
 {
     public Task HandleAsync(AccountActivated @event, CancellationToken cancellationToken = default) =>
-        factory.ExecuteAsync(ChannelsModule.Name, async (context, token) =>
+        factory.ExecuteAsync(ChannelsModule.DatabaseKey, async (context, token) =>
         {
             var userChannels = context.AcquireRepository<IUserChannelRepository>();
             var address = NotificationAddress.Create(Channel.Email, @event.Email);

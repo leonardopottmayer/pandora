@@ -10,7 +10,7 @@ public static class PersistenceDI
 {
     public static IServiceCollection AddIntegrationsPersistence(this IServiceCollection services)
     {
-        services.AddTarsData<IntegrationsDbContext>(IntegrationsModule.Name, (sp, descriptor) =>
+        services.AddTarsData<IntegrationsDbContext>(IntegrationsModule.DatabaseKey, (sp, descriptor) =>
             new DbContextOptionsBuilder<IntegrationsDbContext>()
                 .UseNpgsql(descriptor.ConnectionString)
                 .AddInterceptors(sp.GetRequiredService<AuditingSaveChangesInterceptor>())

@@ -12,7 +12,7 @@ public sealed class ExternalAccountReader(IUnitOfWorkFactory factory) : IExterna
 {
     public async Task<IReadOnlyList<ExternalAccountSummary>> ListAsync(Guid userId, CancellationToken ct = default)
     {
-        var accounts = await factory.ExecuteAsync(IntegrationsModule.Name, async (context, token) =>
+        var accounts = await factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
         {
             var repo = context.AcquireRepository<IExternalAccountRepository>();
             return await repo.GetByUserAsync(userId, token);
@@ -23,7 +23,7 @@ public sealed class ExternalAccountReader(IUnitOfWorkFactory factory) : IExterna
 
     public async Task<ExternalAccountSummary?> GetAsync(Guid externalAccountId, CancellationToken ct = default)
     {
-        var account = await factory.ExecuteAsync(IntegrationsModule.Name, async (context, token) =>
+        var account = await factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
         {
             var repo = context.AcquireRepository<IExternalAccountRepository>();
             return await repo.GetByIdAsync(externalAccountId, token);

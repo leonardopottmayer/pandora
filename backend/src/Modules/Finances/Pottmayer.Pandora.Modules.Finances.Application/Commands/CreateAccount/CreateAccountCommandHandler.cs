@@ -30,7 +30,7 @@ public sealed class CreateAccountCommandHandler(IUnitOfWorkFactory factory, Time
 
         var type = AccountType.FromValue(input.Type);
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IAccountRepository>();
 

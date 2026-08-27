@@ -51,7 +51,7 @@ public sealed class HandleOAuthCallbackCommandHandler(
         var accessEnc = protector.Protect(tokens.AccessToken);
         var refreshEnc = tokens.RefreshToken is null ? null : protector.Protect(tokens.RefreshToken);
 
-        await factory.ExecuteAsync(IntegrationsModule.Name, async (context, token) =>
+        await factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
         {
             var accounts = context.AcquireRepository<IExternalAccountRepository>();
             var existing = await accounts.FindAsync(consumed.UserId, provider.Name, token);
@@ -77,7 +77,7 @@ public sealed class HandleOAuthCallbackCommandHandler(
     }
 
     private Task<OAuthState?> ConsumeStateAsync(string state, string provider, CancellationToken ct) =>
-        factory.ExecuteAsync(IntegrationsModule.Name, async (context, token) =>
+        factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
         {
             var states = context.AcquireRepository<IOAuthStateRepository>();
             var pending = await states.FindByStateAsync(state, token);

@@ -33,7 +33,7 @@ public sealed class GenerateRecurringTransactionOccurrenceCommandHandler(
 
         var now = timeProvider.GetUtcNow();
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var recurringRepo = ctx.AcquireRepository<IRecurringTransactionRepository>();
             var recurring = await recurringRepo.FindByIdForUserAsync(input.RecurringTransactionId, input.UserId, token);

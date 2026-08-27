@@ -16,7 +16,7 @@ public sealed class GetImportRowsQueryHandler(IUnitOfWorkFactory factory)
     {
         var input = request.Input;
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             // Verify the file belongs to the user before returning rows
             var fileRepo = ctx.AcquireRepository<IImportFileRepository>();

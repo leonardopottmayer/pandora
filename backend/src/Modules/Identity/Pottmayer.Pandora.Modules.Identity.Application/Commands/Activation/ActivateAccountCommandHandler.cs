@@ -27,7 +27,7 @@ public sealed class ActivateAccountCommandHandler(
         Guid activatedUserId = default;
         string? activatedEmail = null;
 
-        var result = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
             var tokens = ctx.AcquireRepository<IActivationTokenRepository>();
             var activation = await tokens.FindByTokenHashAsync(tokenHash, token);

@@ -14,7 +14,7 @@ public sealed class DeleteAlertCommandHandler(IUnitOfWorkFactory factory)
     {
         var input = request.Input;
 
-        var found = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        var found = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var alerts = context.AcquireRepository<IAlertRepository>();
             var alert = await alerts.FindAsync(input.UserId, input.AlertId, token);

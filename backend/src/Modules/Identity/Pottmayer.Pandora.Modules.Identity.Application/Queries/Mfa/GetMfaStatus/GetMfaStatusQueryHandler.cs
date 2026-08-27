@@ -14,7 +14,7 @@ public sealed class GetMfaStatusQueryHandler(IUnitOfWorkFactory factory)
     protected override async Task<Result<MfaStatusDto>> HandleAsync(
         GetMfaStatusQuery request, CancellationToken cancellationToken)
     {
-        return await factory.ExecuteAsync(IdentityModule.Name, async (ctx, ct) =>
+        return await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, ct) =>
         {
             var user = await ctx.AcquireRepository<IUserRepository>().GetByIdAsync(request.Input.UserId, ct);
             if (user is null)

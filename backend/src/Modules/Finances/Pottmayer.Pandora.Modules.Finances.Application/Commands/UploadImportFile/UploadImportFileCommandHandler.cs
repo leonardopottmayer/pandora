@@ -33,7 +33,7 @@ public sealed class UploadImportFileCommandHandler(
         if (input.AccountId is not null && input.CardId is not null)
             return Fail([ImportErrors.InvalidDestination]);
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             // The layout is inferred from the file's own content/headers rather than chosen by the
             // user — they only pick the destination (account or card).

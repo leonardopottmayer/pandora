@@ -20,7 +20,7 @@ public sealed class GetTagsQueryHandler(IUnitOfWorkFactory factory)
     {
         var input = request.Input;
 
-        var dtos = await factory.ExecuteAsync(NotesModule.Name, async (ctx, token) =>
+        var dtos = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
         {
             var tags = await ctx.AcquireRepository<ITagRepository>().GetForUserAsync(input.UserId, token);
             if (tags.Count == 0)

@@ -93,7 +93,7 @@ public sealed class AuditTrailTests : IAsyncLifetime
     {
         using var scope = _factory.Services.CreateScope();
         var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWorkFactory>();
-        await uow.ExecuteAsync(FinancesModule.Name, (ctx, ct) =>
+        await uow.ExecuteAsync(FinancesModule.DatabaseKey, (ctx, ct) =>
             ctx.RecordAsync(userId, userId, entityType, entityId, eventType, DateTimeOffset.UtcNow, data, ct: ct));
     }
 

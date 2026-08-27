@@ -83,7 +83,7 @@ public sealed class TelegramLongPollingService(
         await using var scope = serviceProvider.CreateAsyncScope();
         var factory = scope.ServiceProvider.GetRequiredService<IUnitOfWorkFactory>();
 
-        var lastId = await factory.ExecuteAsync(ChannelsModule.Name, (context, token) =>
+        var lastId = await factory.ExecuteAsync(ChannelsModule.DatabaseKey, (context, token) =>
             context.AcquireRepository<IInboundUpdateRepository>().GetLastUpdateIdAsync("telegram", token),
             cancellationToken: ct);
 

@@ -11,7 +11,7 @@ public sealed class PurgeRefreshTokensCommandHandler(IUnitOfWorkFactory factory)
 {
     protected override async Task<Result<int>> HandleAsync(PurgeRefreshTokensCommand request, CancellationToken ct)
     {
-        var purged = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
+        var purged = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IRefreshTokenRepository>();
             return await repo.PurgeOldTokensAsync(

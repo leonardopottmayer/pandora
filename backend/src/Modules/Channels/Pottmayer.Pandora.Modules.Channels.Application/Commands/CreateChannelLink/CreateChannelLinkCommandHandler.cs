@@ -38,7 +38,7 @@ public sealed class CreateChannelLinkCommandHandler(
 
         var plaintext = ChannelLinkTokens.Generate();
 
-        var issued = await factory.ExecuteAsync(ChannelsModule.Name, async (context, token) =>
+        var issued = await factory.ExecuteAsync(ChannelsModule.DatabaseKey, async (context, token) =>
         {
             var tokens = context.AcquireRepository<IChannelLinkTokenRepository>();
 

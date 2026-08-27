@@ -17,7 +17,7 @@ public sealed class AbortImportFileCommandHandler(
     {
         var input = request.Input;
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IImportFileRepository>();
             var file = await repo.FindByIdForUserAsync(input.ImportFileId, input.UserId, token);

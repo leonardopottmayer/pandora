@@ -14,7 +14,7 @@ public sealed class DeleteCalendarCommandHandler(IUnitOfWorkFactory factory)
     {
         var input = request.Input;
 
-        var outcome = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        var outcome = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var calendars = context.AcquireRepository<ICalendarRepository>();
             var events = context.AcquireRepository<IEventRepository>();

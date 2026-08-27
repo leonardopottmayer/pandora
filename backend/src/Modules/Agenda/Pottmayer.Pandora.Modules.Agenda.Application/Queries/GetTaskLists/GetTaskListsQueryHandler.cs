@@ -14,7 +14,7 @@ public sealed class GetTaskListsQueryHandler(IUnitOfWorkFactory factory)
     protected override async Task<Result<IReadOnlyList<TaskListDto>>> HandleAsync(
         GetTaskListsQuery request, CancellationToken cancellationToken)
     {
-        var lists = await factory.ExecuteAsync(AgendaModule.Name, async (context, ct) =>
+        var lists = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, ct) =>
         {
             var repo = context.AcquireRepository<ITaskListRepository>();
             return await repo.GetByUserAsync(request.Input.UserId, ct);

@@ -14,7 +14,7 @@ public sealed class GetRemindersQueryHandler(IUnitOfWorkFactory factory)
     protected override async Task<Result<IReadOnlyList<ReminderDto>>> HandleAsync(
         GetRemindersQuery request, CancellationToken cancellationToken)
     {
-        var reminders = await factory.ExecuteAsync(AgendaModule.Name, async (context, ct) =>
+        var reminders = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, ct) =>
         {
             var repo = context.AcquireRepository<IReminderRepository>();
             return await repo.GetByUserAsync(request.Input.UserId, ct);

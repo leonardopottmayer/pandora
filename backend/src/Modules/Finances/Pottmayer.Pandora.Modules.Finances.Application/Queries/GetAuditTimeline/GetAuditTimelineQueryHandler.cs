@@ -24,7 +24,7 @@ public sealed class GetAuditTimelineQueryHandler(IUnitOfWorkFactory factory)
         if (!byEntity && input.CorrelationId is null)
             return Fail(AuditErrors.MissingFilter);
 
-        var events = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var events = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var audit = ctx.AcquireRepository<IAuditEventRepository>();
             return byEntity

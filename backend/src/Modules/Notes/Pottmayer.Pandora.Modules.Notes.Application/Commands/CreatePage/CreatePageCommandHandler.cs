@@ -21,7 +21,7 @@ public sealed class CreatePageCommandHandler(IUnitOfWorkFactory factory, TimePro
         if (string.IsNullOrWhiteSpace(input.Title))
             return Fail(PageErrors.InvalidTitle);
 
-        var result = await factory.ExecuteAsync(NotesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IPageRepository>();
 

@@ -16,7 +16,7 @@ public sealed class GetEventQueryHandler(IUnitOfWorkFactory factory)
     protected override async Task<Result<EventDto>> HandleAsync(
         GetEventQuery request, CancellationToken cancellationToken)
     {
-        var result = await factory.ExecuteAsync(AgendaModule.Name, async (context, ct) =>
+        var result = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, ct) =>
         {
             var events = context.AcquireRepository<IEventRepository>();
             var ev = await events.FindAsync(request.Input.UserId, request.Input.EventId, ct);

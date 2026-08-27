@@ -27,7 +27,7 @@ public sealed class LinkPendingTransactionCommandHandler(
         var input = request.Input;
         var now = timeProvider.GetUtcNow();
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var pendingRepo = ctx.AcquireRepository<IPendingTransactionRepository>();
             var txRepo = ctx.AcquireRepository<ITransactionRepository>();

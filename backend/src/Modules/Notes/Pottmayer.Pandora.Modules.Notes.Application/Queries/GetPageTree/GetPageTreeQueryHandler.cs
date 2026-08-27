@@ -16,7 +16,7 @@ public sealed class GetPageTreeQueryHandler(IUnitOfWorkFactory factory)
     {
         var input = request.Input;
 
-        var pages = await factory.ExecuteAsync(NotesModule.Name, async (ctx, token) =>
+        var pages = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
         {
             var all = await ctx.AcquireRepository<IPageRepository>()
                 .GetTreeForUserAsync(input.UserId, input.IncludeArchived, token);

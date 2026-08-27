@@ -27,7 +27,7 @@ public sealed class ConsumeTelegramLinkCommandHandler(IUnitOfWorkFactory factory
         var tokenHash = ChannelLinkTokens.Hash(input.TokenPlaintext);
         var metadata = JsonSerializer.Serialize(new { username = input.Username, firstName = input.FirstName });
 
-        return await factory.ExecuteAsync(ChannelsModule.Name, async (context, token) =>
+        return await factory.ExecuteAsync(ChannelsModule.DatabaseKey, async (context, token) =>
         {
             var tokens = context.AcquireRepository<IChannelLinkTokenRepository>();
             var userChannels = context.AcquireRepository<IUserChannelRepository>();

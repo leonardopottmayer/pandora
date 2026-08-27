@@ -20,7 +20,7 @@ public sealed partial class SetTagColorCommandHandler(IUnitOfWorkFactory factory
         if (!string.IsNullOrWhiteSpace(input.Color) && !HexColorRegex().IsMatch(input.Color.Trim()))
             return Fail(TagErrors.InvalidColor);
 
-        var result = await factory.ExecuteAsync(NotesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<ITagRepository>();
 

@@ -31,7 +31,7 @@ public sealed class UploadAttachmentCommandHandler(
         // A pinned attachment must hang off a page the user actually owns (404-on-foreign-resource rule).
         if (input.PageId is { } pageId)
         {
-            var pageExists = await factory.ExecuteAsync(NotesModule.Name, async (ctx, token) =>
+            var pageExists = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
                 await ctx.AcquireRepository<IPageRepository>()
                          .FindByIdForUserAsync(pageId, input.UserId, token) is not null,
                 cancellationToken: ct);
@@ -44,7 +44,7 @@ public sealed class UploadAttachmentCommandHandler(
         // separately), then record the attachment that points at them.
         var storageKey = await fileStorage.SaveAsync(input.FileName, input.ContentType, input.Content, ct);
 
-        var attachment = await factory.ExecuteAsync(NotesModule.Name, async (ctx, token) =>
+        var attachment = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IAttachmentRepository>();
             var entity = Attachment.Create(

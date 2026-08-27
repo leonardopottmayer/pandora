@@ -20,7 +20,7 @@ public sealed class GetBacklinksQueryHandler(IUnitOfWorkFactory factory)
     {
         var input = request.Input;
 
-        var backlinks = await factory.ExecuteAsync(NotesModule.Name, async (ctx, token) =>
+        var backlinks = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
         {
             var pages = ctx.AcquireRepository<IPageRepository>();
 

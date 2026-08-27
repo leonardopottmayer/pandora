@@ -27,7 +27,7 @@ public sealed class CreateAlertCommandHandler(IUnitOfWorkFactory factory, TimePr
         else
             return Fail(AlertErrors.UnsupportedSubjectType);
 
-        var result = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        var result = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var alerts = context.AcquireRepository<IAlertRepository>();
 

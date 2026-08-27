@@ -21,7 +21,7 @@ public sealed class CreateTaskCommandHandler(IUnitOfWorkFactory factory, TimePro
             return Fail(TaskErrors.TitleRequired);
 
         // Build the task inside the unit of work: a subtask needs its parent, a top-level task its list.
-        var result = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        var result = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var tasks = context.AcquireRepository<ITaskRepository>();
             var lists = context.AcquireRepository<ITaskListRepository>();

@@ -37,7 +37,7 @@ public sealed class CreateReminderCommandHandler(IUnitOfWorkFactory factory, Tim
             return Fail(ReminderErrors.InvalidRecurrence(ex.Message));
         }
 
-        await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var reminders = context.AcquireRepository<IReminderRepository>();
             await reminders.AddAsync(created, token);

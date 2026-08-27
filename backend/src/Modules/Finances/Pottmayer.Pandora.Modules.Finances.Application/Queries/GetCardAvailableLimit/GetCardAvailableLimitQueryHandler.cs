@@ -15,7 +15,7 @@ public sealed class GetCardAvailableLimitQueryHandler(IUnitOfWorkFactory factory
         GetCardAvailableLimitQuery request, CancellationToken ct)
     {
         var input = request.Input;
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var card = await ctx.AcquireRepository<ICardRepository>().FindByIdForUserAsync(input.CardId, input.UserId, token);
             if (card is null)

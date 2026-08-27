@@ -17,7 +17,7 @@ public sealed class GetTasksQueryHandler(IUnitOfWorkFactory factory, TimeProvide
     {
         var input = request.Input;
 
-        var tasks = await factory.ExecuteAsync(AgendaModule.Name, async (context, ct) =>
+        var tasks = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, ct) =>
         {
             var repo = context.AcquireRepository<ITaskRepository>();
             return await repo.GetByUserAsync(input.UserId, input.ListId, input.Status, ct);

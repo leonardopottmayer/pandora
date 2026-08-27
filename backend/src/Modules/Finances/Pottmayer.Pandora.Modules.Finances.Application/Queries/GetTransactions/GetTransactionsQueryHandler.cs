@@ -24,7 +24,7 @@ public sealed class GetTransactionsQueryHandler(IUnitOfWorkFactory factory, IMes
 
         var tagIds = input.TagIds?.Distinct().ToList();
 
-        var queryResult = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var queryResult = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             // OR semantics: a transaction matches if it carries any of the requested tags. We resolve
             // the matching transaction ids first, then constrain the page query — paging stays intact.

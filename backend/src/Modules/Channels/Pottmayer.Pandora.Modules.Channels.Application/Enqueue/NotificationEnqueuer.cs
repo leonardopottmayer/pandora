@@ -45,7 +45,7 @@ public sealed class NotificationEnqueuer(
         var address = NotificationAddress.Create(channel, recipient);
         var payloadJson = JsonSerializer.Serialize(payload);
 
-        await factory.ExecuteAsync(ChannelsModule.Name, async (context, token) =>
+        await factory.ExecuteAsync(ChannelsModule.DatabaseKey, async (context, token) =>
         {
             var notifications = context.AcquireRepository<INotificationRepository>();
 

@@ -28,7 +28,7 @@ public sealed class CreateTransferFromPendingCommandHandler(IUnitOfWorkFactory f
         if (input.OutflowPendingId == input.InflowPendingId)
             return Fail(PendingTransactionErrors.InvalidTransferDirections);
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var pendingRepo = ctx.AcquireRepository<IPendingTransactionRepository>();
             var accountRepo = ctx.AcquireRepository<IAccountRepository>();

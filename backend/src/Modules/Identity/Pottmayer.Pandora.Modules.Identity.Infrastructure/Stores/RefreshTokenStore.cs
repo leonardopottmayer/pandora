@@ -21,7 +21,7 @@ internal sealed class RefreshTokenStore(IUnitOfWorkFactory factory) : IRefreshTo
         IReadOnlyDictionary<string, object?>? metadata,
         CancellationToken cancellationToken = default)
     {
-        await factory.ExecuteAsync(IdentityModule.Name, async (ctx, ct) =>
+        await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, ct) =>
         {
             var repo = ctx.AcquireRepository<IRefreshTokenRepository>();
             await repo.StoreAsync(tokenId, tokenHash, subject, claims, expiresAt, metadata, ct);
@@ -31,7 +31,7 @@ internal sealed class RefreshTokenStore(IUnitOfWorkFactory factory) : IRefreshTo
     public async ValueTask<RefreshTokenPayload?> GetAndRemoveAsync(
         string tokenId, string tokenHash, CancellationToken cancellationToken = default)
     {
-        return await factory.ExecuteAsync(IdentityModule.Name, async (ctx, ct) =>
+        return await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, ct) =>
         {
             var repo = ctx.AcquireRepository<IRefreshTokenRepository>();
             return await repo.GetAndRemoveAsync(tokenId, tokenHash, ct);
@@ -41,7 +41,7 @@ internal sealed class RefreshTokenStore(IUnitOfWorkFactory factory) : IRefreshTo
     public async ValueTask<RefreshTokenPayload?> GetAsync(
         string tokenId, string tokenHash, CancellationToken cancellationToken = default)
     {
-        return await factory.ExecuteAsync(IdentityModule.Name, async (ctx, ct) =>
+        return await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, ct) =>
         {
             var repo = ctx.AcquireRepository<IRefreshTokenRepository>();
             return await repo.GetAsync(tokenId, tokenHash, ct);
@@ -50,7 +50,7 @@ internal sealed class RefreshTokenStore(IUnitOfWorkFactory factory) : IRefreshTo
 
     public async ValueTask RevokeAsync(string tokenId, CancellationToken cancellationToken = default)
     {
-        await factory.ExecuteAsync(IdentityModule.Name, async (ctx, ct) =>
+        await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, ct) =>
         {
             var repo = ctx.AcquireRepository<IRefreshTokenRepository>();
             await repo.RevokeAsync(tokenId, ct);
@@ -60,7 +60,7 @@ internal sealed class RefreshTokenStore(IUnitOfWorkFactory factory) : IRefreshTo
     public async ValueTask RevokeAllForSubjectAsync(
         string subject, CancellationToken cancellationToken = default)
     {
-        await factory.ExecuteAsync(IdentityModule.Name, async (ctx, ct) =>
+        await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, ct) =>
         {
             var repo = ctx.AcquireRepository<IRefreshTokenRepository>();
             await repo.RevokeAllForSubjectAsync(subject, ct);
@@ -70,7 +70,7 @@ internal sealed class RefreshTokenStore(IUnitOfWorkFactory factory) : IRefreshTo
     public async ValueTask<string?> TryGetSubjectForReuseAsync(
         string tokenId, CancellationToken cancellationToken = default)
     {
-        return await factory.ExecuteAsync(IdentityModule.Name, async (ctx, ct) =>
+        return await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, ct) =>
         {
             var repo = ctx.AcquireRepository<IRefreshTokenRepository>();
             return await repo.TryGetSubjectForReuseAsync(tokenId, ct);

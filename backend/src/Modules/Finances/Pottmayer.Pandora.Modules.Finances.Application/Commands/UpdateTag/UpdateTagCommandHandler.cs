@@ -21,7 +21,7 @@ public sealed class UpdateTagCommandHandler(IUnitOfWorkFactory factory, TimeProv
         if (string.IsNullOrWhiteSpace(input.Name))
             return Fail(TagErrors.InvalidName);
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<ITagRepository>();
 

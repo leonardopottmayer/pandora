@@ -64,7 +64,7 @@ public sealed class CreateTransactionCommandHandler(
 
         if (input.AccountId is not null)
         {
-            var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+            var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
             {
                 var transactions = ctx.AcquireRepository<ITransactionRepository>();
                 var accounts = ctx.AcquireRepository<IAccountRepository>();
@@ -117,7 +117,7 @@ public sealed class CreateTransactionCommandHandler(
 
         // Resolving/creating the statement runs in its own unit of work, separate from the
         // transaction write below, so its "statement.created" event (if any) is recorded up front.
-        var statementResult = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var statementResult = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var cards = ctx.AcquireRepository<ICardRepository>();
             var statements = ctx.AcquireRepository<ICardStatementRepository>();
@@ -157,7 +157,7 @@ public sealed class CreateTransactionCommandHandler(
         var cardContext = prepared.Card;
         var statementContext = prepared.Statement.Statement;
 
-        var transactionResult = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var transactionResult = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var statements = ctx.AcquireRepository<ICardStatementRepository>();
             var transactions = ctx.AcquireRepository<ITransactionRepository>();
@@ -217,7 +217,7 @@ public sealed class CreateTransactionCommandHandler(
     {
         var count = input.Installments;
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var cards = ctx.AcquireRepository<ICardRepository>();
             var statements = ctx.AcquireRepository<ICardStatementRepository>();

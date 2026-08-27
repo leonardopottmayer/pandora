@@ -28,7 +28,7 @@ public sealed class DisconnectAccountCommandHandler(
         var input = request.Input;
 
         // Load and check ownership before touching the provider.
-        var account = await factory.ExecuteAsync(IntegrationsModule.Name, async (context, token) =>
+        var account = await factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
         {
             var repo = context.AcquireRepository<IExternalAccountRepository>();
             var found = await repo.GetByIdAsync(input.AccountId, token);
@@ -55,7 +55,7 @@ public sealed class DisconnectAccountCommandHandler(
             }
         }
 
-        await factory.ExecuteAsync(IntegrationsModule.Name, async (context, token) =>
+        await factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
         {
             var repo = context.AcquireRepository<IExternalAccountRepository>();
             var fresh = await repo.GetByIdAsync(input.AccountId, token);

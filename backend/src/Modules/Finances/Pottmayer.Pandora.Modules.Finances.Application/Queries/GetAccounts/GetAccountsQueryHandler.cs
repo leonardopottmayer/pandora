@@ -18,7 +18,7 @@ public sealed class GetAccountsQueryHandler(IUnitOfWorkFactory factory)
 
         var tagIds = input.TagIds?.Distinct().ToList();
 
-        var accounts = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var accounts = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var all = await ctx.AcquireRepository<IAccountRepository>()
                 .GetAllForUserAsync(input.UserId, input.IncludeArchived, token);

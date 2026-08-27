@@ -27,7 +27,7 @@ public sealed class GetAlertsQueryHandler(IUnitOfWorkFactory factory)
         else
             return Fail(AlertErrors.UnsupportedSubjectType);
 
-        var alerts = await factory.ExecuteAsync(AgendaModule.Name, async (context, ct) =>
+        var alerts = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, ct) =>
         {
             var repo = context.AcquireRepository<IAlertRepository>();
             return await repo.GetBySubjectAsync(input.UserId, subjectType, input.SubjectId, ct);

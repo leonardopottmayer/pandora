@@ -22,7 +22,7 @@ public sealed class UnlinkChannelCommandHandler(IUnitOfWorkFactory factory)
         if (!Channel.TryFromValue(input.Channel, out var channel))
             return Fail(ChannelErrors.UnsupportedChannel(input.Channel));
 
-        var removed = await factory.ExecuteAsync(ChannelsModule.Name, async (context, token) =>
+        var removed = await factory.ExecuteAsync(ChannelsModule.DatabaseKey, async (context, token) =>
         {
             var channels = context.AcquireRepository<IUserChannelRepository>();
 

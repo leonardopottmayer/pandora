@@ -20,7 +20,7 @@ public sealed class ReopenStatementCommandHandler(IUnitOfWorkFactory factory, Ti
         var now = timeProvider.GetUtcNow();
         var today = DateOnly.FromDateTime(now.UtcDateTime);
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var statements = ctx.AcquireRepository<ICardStatementRepository>();
             var statement = await statements.FindByIdForUserAsync(input.StatementId, input.UserId, token);

@@ -21,7 +21,7 @@ public sealed class CompleteTaskCommandHandler(IUnitOfWorkFactory factory, TimeP
     {
         var input = request.Input;
 
-        var result = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        var result = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var tasks = context.AcquireRepository<ITaskRepository>();
             var alerts = context.AcquireRepository<IAlertRepository>();

@@ -14,7 +14,7 @@ public sealed class GetCalendarsQueryHandler(IUnitOfWorkFactory factory)
     protected override async Task<Result<IReadOnlyList<CalendarDto>>> HandleAsync(
         GetCalendarsQuery request, CancellationToken cancellationToken)
     {
-        var calendars = await factory.ExecuteAsync(AgendaModule.Name, async (context, ct) =>
+        var calendars = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, ct) =>
         {
             var repo = context.AcquireRepository<ICalendarRepository>();
             return await repo.GetByUserAsync(request.Input.UserId, ct);

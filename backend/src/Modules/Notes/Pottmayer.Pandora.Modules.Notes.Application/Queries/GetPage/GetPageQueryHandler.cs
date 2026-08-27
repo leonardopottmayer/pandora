@@ -15,7 +15,7 @@ public sealed class GetPageQueryHandler(IUnitOfWorkFactory factory)
     {
         var input = request.Input;
 
-        var dto = await factory.ExecuteAsync(NotesModule.Name, async (ctx, token) =>
+        var dto = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IPageRepository>();
             var page = await repo.FindByIdForUserAsync(input.PageId, input.UserId, token);

@@ -29,7 +29,7 @@ public sealed class UpdateCardCommandHandler(IUnitOfWorkFactory factory, TimePro
             return Fail(CardErrors.InvalidDueDay);
 
         var now = timeProvider.GetUtcNow();
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<ICardRepository>();
             var card = await repo.FindByIdForUserAsync(input.CardId, input.UserId, token);

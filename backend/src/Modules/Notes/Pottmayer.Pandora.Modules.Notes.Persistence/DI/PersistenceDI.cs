@@ -12,7 +12,7 @@ public static class PersistenceDI
 {
     public static IServiceCollection AddNotesPersistence(this IServiceCollection services)
     {
-        services.AddTarsData<NotesDbContext>(NotesModule.Name, (sp, descriptor) =>
+        services.AddTarsData<NotesDbContext>(NotesModule.DatabaseKey, (sp, descriptor) =>
             new DbContextOptionsBuilder<NotesDbContext>()
                 .UseNpgsql(descriptor.ConnectionString)
                 .AddInterceptors(sp.GetRequiredService<AuditingSaveChangesInterceptor>())

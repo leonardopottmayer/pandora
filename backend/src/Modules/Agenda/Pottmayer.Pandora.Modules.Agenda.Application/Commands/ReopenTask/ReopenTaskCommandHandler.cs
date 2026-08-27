@@ -16,7 +16,7 @@ public sealed class ReopenTaskCommandHandler(IUnitOfWorkFactory factory)
     {
         var input = request.Input;
 
-        var task = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        var task = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var tasks = context.AcquireRepository<ITaskRepository>();
             var found = await tasks.FindAsync(input.UserId, input.TaskId, token);

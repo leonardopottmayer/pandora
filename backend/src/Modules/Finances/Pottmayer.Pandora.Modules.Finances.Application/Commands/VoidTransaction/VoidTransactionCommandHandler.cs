@@ -23,7 +23,7 @@ public sealed class VoidTransactionCommandHandler(IUnitOfWorkFactory factory, Ti
         var now = timeProvider.GetUtcNow();
         var today = DateOnly.FromDateTime(now.UtcDateTime);
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<ITransactionRepository>();
 

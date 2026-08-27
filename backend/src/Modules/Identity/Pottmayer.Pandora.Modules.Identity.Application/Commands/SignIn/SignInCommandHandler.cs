@@ -35,7 +35,7 @@ public sealed class SignInCommandHandler(
 
         // Verify credentials within a single transaction. MFA accounts get a challenge ticket instead of
         // tokens and only have their sign-in stamped once the second factor is completed.
-        var outcome = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
+        var outcome = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
             var users = ctx.AcquireRepository<IUserRepository>();
 

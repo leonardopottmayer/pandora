@@ -119,7 +119,7 @@ public sealed class ExternalCredentialProvider(
         var refreshEnc = tokens.RefreshToken is null ? null : protector.Protect(tokens.RefreshToken);
 
         ExternalAccessToken? issued = null;
-        await factory.ExecuteAsync(IntegrationsModule.Name, async (context, token) =>
+        await factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
         {
             var repo = context.AcquireRepository<IExternalAccountRepository>();
             var fresh = await repo.GetByIdAsync(account.Id, token);
@@ -138,14 +138,14 @@ public sealed class ExternalCredentialProvider(
     }
 
     private Task<ExternalAccount?> LoadAsync(Guid userId, string provider, CancellationToken ct) =>
-        factory.ExecuteAsync(IntegrationsModule.Name, async (context, token) =>
+        factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
         {
             var repo = context.AcquireRepository<IExternalAccountRepository>();
             return await repo.FindAsync(userId, provider, token);
         }, cancellationToken: ct);
 
     private Task PersistAsync(Guid accountId, Action<ExternalAccount> mutate, CancellationToken ct) =>
-        factory.ExecuteAsync(IntegrationsModule.Name, async (context, token) =>
+        factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
         {
             var repo = context.AcquireRepository<IExternalAccountRepository>();
             var account = await repo.GetByIdAsync(accountId, token);

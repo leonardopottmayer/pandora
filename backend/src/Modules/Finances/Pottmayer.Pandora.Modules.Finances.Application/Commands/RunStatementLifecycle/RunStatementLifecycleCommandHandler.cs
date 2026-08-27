@@ -20,7 +20,7 @@ public sealed class RunStatementLifecycleCommandHandler(
         var today = request.Input.Today;
         var now = timeProvider.GetUtcNow();
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var cards = ctx.AcquireRepository<ICardRepository>();
             var statements = ctx.AcquireRepository<ICardStatementRepository>();

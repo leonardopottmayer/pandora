@@ -29,7 +29,7 @@ public sealed class RegenerateRecoveryCodesCommandHandler(
         var now = timeProvider.GetUtcNow();
         var plaintextCodes = RecoveryCodeFactory.Generate(options.Value.RecoveryCodeCount);
 
-        var result = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
             var users = ctx.AcquireRepository<IUserRepository>();
             var user = await users.GetByIdAsync(input.UserId, token);

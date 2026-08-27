@@ -15,7 +15,7 @@ public sealed class GetPendingTransactionsQueryHandler(IUnitOfWorkFactory factor
     {
         var input = request.Input;
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IPendingTransactionRepository>();
             var items = await repo.QueryAsync(input.UserId, input.Filter, token);

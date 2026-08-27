@@ -23,7 +23,7 @@ public sealed class CreateEventCommandHandler(IUnitOfWorkFactory factory, TimePr
 
         var status = ParseStatus(input.Status);
 
-        var result = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        var result = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var calendars = context.AcquireRepository<ICalendarRepository>();
             var events = context.AcquireRepository<IEventRepository>();

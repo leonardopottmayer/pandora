@@ -32,7 +32,7 @@ public sealed class ReverseTransactionCommandHandler(
         var now = timeProvider.GetUtcNow();
         var today = DateOnly.FromDateTime(now.UtcDateTime);
 
-        var loadResult = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var loadResult = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var transactions = ctx.AcquireRepository<ITransactionRepository>();
 
@@ -77,7 +77,7 @@ public sealed class ReverseTransactionCommandHandler(
     private async Task<Result<TransactionDto>> ReverseAccountTransactionAsync(
         Transaction original, TransactionKind reversalKind, ReverseTransactionInput input, DateTimeOffset now, DateOnly today, CancellationToken ct)
     {
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var transactions = ctx.AcquireRepository<ITransactionRepository>();
 
@@ -104,7 +104,7 @@ public sealed class ReverseTransactionCommandHandler(
     private async Task<Result<TransactionDto>> ReverseTransferAsync(
         Transaction original, ReverseTransactionInput input, DateTimeOffset now, DateOnly today, CancellationToken ct)
     {
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var transactions = ctx.AcquireRepository<ITransactionRepository>();
 
@@ -146,7 +146,7 @@ public sealed class ReverseTransactionCommandHandler(
     private async Task<Result<TransactionDto>> ReverseStatementPaymentAsync(
         Transaction original, ReverseTransactionInput input, DateTimeOffset now, DateOnly today, CancellationToken ct)
     {
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var transactions = ctx.AcquireRepository<ITransactionRepository>();
             var statements = ctx.AcquireRepository<ICardStatementRepository>();
@@ -186,7 +186,7 @@ public sealed class ReverseTransactionCommandHandler(
         if (reversalKind is null)
             return Fail(TransactionErrors.ReversalNotSupported(original.Kind.Value));
 
-        var statementResult = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var statementResult = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var cards = ctx.AcquireRepository<ICardRepository>();
             var statements = ctx.AcquireRepository<ICardStatementRepository>();
@@ -223,7 +223,7 @@ public sealed class ReverseTransactionCommandHandler(
 
         var statementId = statementResult.Value!;
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var transactions = ctx.AcquireRepository<ITransactionRepository>();
             var statements = ctx.AcquireRepository<ICardStatementRepository>();

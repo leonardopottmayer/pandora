@@ -10,7 +10,7 @@ public static class PersistenceDI
 {
     public static IServiceCollection AddAgendaPersistence(this IServiceCollection services)
     {
-        services.AddTarsData<AgendaDbContext>(AgendaModule.Name, (sp, descriptor) =>
+        services.AddTarsData<AgendaDbContext>(AgendaModule.DatabaseKey, (sp, descriptor) =>
             new DbContextOptionsBuilder<AgendaDbContext>()
                 .UseNpgsql(descriptor.ConnectionString)
                 .AddInterceptors(sp.GetRequiredService<AuditingSaveChangesInterceptor>())

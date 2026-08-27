@@ -34,7 +34,7 @@ public sealed class SearchPagesQueryHandler(IUnitOfWorkFactory factory)
         if (tsQuery.Length == 0 && !hasTagFilter)
             return Ok((IReadOnlyList<PageSearchResultDto>)[]);
 
-        var pages = await factory.ExecuteAsync(NotesModule.Name, async (ctx, token) =>
+        var pages = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IPageRepository>();
             var tagged = await TagFilter.MatchingPageIdsAsync(

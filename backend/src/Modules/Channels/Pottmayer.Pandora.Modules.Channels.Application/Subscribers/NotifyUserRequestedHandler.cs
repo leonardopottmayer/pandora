@@ -54,7 +54,7 @@ public sealed class NotifyUserRequestedHandler(
     }
 
     private Task<List<Target>> ResolveTargetsAsync(NotifyUserRequested @event, CancellationToken ct) =>
-        factory.ExecuteAsync(ChannelsModule.Name, async (context, token) =>
+        factory.ExecuteAsync(ChannelsModule.DatabaseKey, async (context, token) =>
         {
             var preferences = context.AcquireRepository<INotificationPreferenceRepository>();
             var userChannels = context.AcquireRepository<IUserChannelRepository>();

@@ -10,7 +10,7 @@ public static class PersistenceDI
 {
     public static IServiceCollection AddChannelsPersistence(this IServiceCollection services)
     {
-        services.AddTarsData<ChannelsDbContext>(ChannelsModule.Name, (sp, descriptor) =>
+        services.AddTarsData<ChannelsDbContext>(ChannelsModule.DatabaseKey, (sp, descriptor) =>
             new DbContextOptionsBuilder<ChannelsDbContext>()
                 .UseNpgsql(descriptor.ConnectionString)
                 .AddInterceptors(sp.GetRequiredService<AuditingSaveChangesInterceptor>())

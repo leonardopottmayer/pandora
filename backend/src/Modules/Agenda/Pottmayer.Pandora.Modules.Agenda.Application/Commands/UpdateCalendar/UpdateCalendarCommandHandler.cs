@@ -20,7 +20,7 @@ public sealed class UpdateCalendarCommandHandler(IUnitOfWorkFactory factory, Tim
         if (input.Name is not null && string.IsNullOrWhiteSpace(input.Name))
             return Fail(CalendarErrors.NameRequired);
 
-        var result = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        var result = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var calendars = context.AcquireRepository<ICalendarRepository>();
             var found = await calendars.FindAsync(input.UserId, input.CalendarId, token);

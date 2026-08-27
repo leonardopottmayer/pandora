@@ -16,7 +16,7 @@ public sealed class DeletePageCommandHandler(IUnitOfWorkFactory factory, TimePro
     {
         var input = request.Input;
 
-        var result = await factory.ExecuteAsync(NotesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IPageRepository>();
 

@@ -16,7 +16,7 @@ public sealed class GetInstallmentPlanQueryHandler(IUnitOfWorkFactory factory)
     protected override async Task<Result<InstallmentPlanDto>> HandleAsync(GetInstallmentPlanQuery request, CancellationToken ct)
     {
         var input = request.Input;
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var plans = ctx.AcquireRepository<IInstallmentPlanRepository>();
             var plan = await plans.FindByIdForUserAsync(input.PlanId, input.UserId, token);

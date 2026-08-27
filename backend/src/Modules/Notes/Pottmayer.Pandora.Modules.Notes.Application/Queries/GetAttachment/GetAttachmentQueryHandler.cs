@@ -15,7 +15,7 @@ public sealed class GetAttachmentQueryHandler(IUnitOfWorkFactory factory, IFileS
     protected override async Task<Result<AttachmentContentDto>> HandleAsync(
         GetAttachmentQuery request, CancellationToken ct)
     {
-        var attachment = await factory.ExecuteAsync(NotesModule.Name, async (ctx, token) =>
+        var attachment = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
             await ctx.AcquireRepository<IAttachmentRepository>()
                      .GetByIdAsync(request.Input.AttachmentId, token),
             cancellationToken: ct);

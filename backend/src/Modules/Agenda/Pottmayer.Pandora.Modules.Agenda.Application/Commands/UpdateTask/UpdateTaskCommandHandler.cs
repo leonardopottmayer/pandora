@@ -19,7 +19,7 @@ public sealed class UpdateTaskCommandHandler(IUnitOfWorkFactory factory)
         if (string.IsNullOrWhiteSpace(input.Title))
             return Fail(TaskErrors.TitleRequired);
 
-        var result = await factory.ExecuteAsync(AgendaModule.Name, async (context, token) =>
+        var result = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var tasks = context.AcquireRepository<ITaskRepository>();
             var task = await tasks.FindAsync(input.UserId, input.TaskId, token);
