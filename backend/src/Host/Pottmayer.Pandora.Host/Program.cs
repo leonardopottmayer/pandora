@@ -31,13 +31,14 @@ using Pottmayer.Pandora.Modules.Integrations.Presentation.DI;
 using Pottmayer.Pandora.Shared.Infrastructure.DI;
 using Pottmayer.Pandora.Shared.Persistence.DI;
 using Pottmayer.Tars.Core.Localization.DI;
+using Pottmayer.Tars.Observability.AspNetCore.DI;
 using Pottmayer.Tars.UserContext.AspNetCore;
 using Pottmayer.Tars.Web.Http.AspNetCore.DI;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Shared
+// Shared (registers observability too — see AddPandoraSharedInfrastructure)
 builder.AddPandoraSharedInfrastructure();
 builder.AddPandoraSharedPersistence();
 
@@ -138,6 +139,10 @@ var app = builder.Build();
 
 // Must run first so downstream middleware sees the real scheme/host.
 app.UseForwardedHeaders();
+
+// Correlation id early, so every downstream log and span inherits it.
+if (builder.Configuration.GetValue("Tars:Observability:Enabled", true))
+    app.UseTarsCorrelationId();
 
 // Swagger UI
 if (app.Environment.IsDevelopment())

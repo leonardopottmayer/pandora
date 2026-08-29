@@ -50,6 +50,9 @@
     <!-- Tars: Caching -->
     <PackageReference Include="Pottmayer.Tars.Caching.Core" Version="0.0.5" />
     <PackageReference Include="Pottmayer.Tars.Caching.Memory" Version="0.0.5" />
+    <!-- Tars: Observability — DI wiring lives in Shared.Infrastructure; the host only needs the
+         correlation-id middleware. -->
+    <PackageReference Include="Pottmayer.Tars.Observability.AspNetCore" Version="0.0.7" />
   </ItemGroup>
 
   <ItemGroup>

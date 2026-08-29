@@ -18,6 +18,9 @@
     <!-- Tars: UserContext -->
     <PackageReference Include="Pottmayer.Tars.UserContext" Version="0.0.5" />
     <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.5" />
+    <!-- Tars: Observability -->
+    <PackageReference Include="Pottmayer.Tars.Observability" Version="0.0.7" />
+    <PackageReference Include="Pottmayer.Tars.Observability.AspNetCore" Version="0.0.7" />
   </ItemGroup>
 
 </Project>
