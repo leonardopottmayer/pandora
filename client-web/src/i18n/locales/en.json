@@ -46,7 +46,8 @@
     "agendaToday": "Today",
     "agendaReminders": "Reminders",
     "agendaTasks": "Tasks",
-    "agendaCalendar": "Calendar"
+    "agendaCalendar": "Calendar",
+    "agendaSettings": "Settings"
   },
   "theme": {
     "toLight": "Light theme",
@@ -766,6 +767,13 @@
     }
   },
   "agenda": {
+    "settings": {
+      "title": "Agenda settings",
+      "intro": "Defaults for new agenda items. These are your account preferences, shared with the rest of Pandora.",
+      "defaultCalendarLabel": "Default calendar",
+      "defaultCalendarDesc": "New events land on this calendar unless you pick another.",
+      "noCalendars": "No calendars yet"
+    },
     "today": {
       "empty": "Nothing scheduled for today.",
       "allDay": "All day"

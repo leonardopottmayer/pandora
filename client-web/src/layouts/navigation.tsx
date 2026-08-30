@@ -73,6 +73,7 @@ export const navigationModules: NavModule[] = [
       { key: 'agenda-calendar', labelKey: 'nav.agendaCalendar', path: '/agenda/calendar', icon: <CalendarOutlined /> },
       { key: 'agenda-tasks', labelKey: 'nav.agendaTasks', path: '/agenda/tasks', icon: <CheckSquareOutlined /> },
       { key: 'agenda-reminders', labelKey: 'nav.agendaReminders', path: '/agenda/reminders', icon: <BellOutlined /> },
+      { key: 'agenda-settings', labelKey: 'nav.agendaSettings', path: '/agenda/settings', icon: <SettingOutlined /> },
     ],
   },
   {

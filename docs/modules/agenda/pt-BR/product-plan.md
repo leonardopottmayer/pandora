@@ -60,6 +60,10 @@ acima e estão **construídos**. O que resta é sync externo e o catálogo do As
   tira de dia-inteiro, indicador de "agora", clique-para-criar e navegação unificada anterior/próximo/
   hoje. `WeekStartsOn` é honrado via um `startOfWeek` manual (matemática da semana) e o `weekStart` do
   locale do dayjs (o grid de mês do antd).
+- **Tela de Configurações da Agenda.** **Feito.** A `AgendaSettingsPage` (`/agenda/settings`) expõe os
+  padrões de agendamento (fuso, início da semana, offset de alerta padrão) via o contexto de
+  preferências compartilhado e adiciona um seletor de calendário padrão; promover um calendário a
+  padrão demove o anterior para o índice único parcial se manter.
 
 ## Além *(não agendado)*
 

@@ -40,7 +40,11 @@ adiante fica em [product-plan.md](product-plan.md).
   sobrepõem, tira de dia-inteiro, indicador de "agora" e clique-para-criar. A visão de mês mantém o
   `<Calendar>` do antd. As três honram `WeekStartsOn` (a matemática da semana via um `startOfWeek`
   manual; o grid de mês via o `weekStart` do locale do dayjs).
-- **Uma tela de Configurações da Agenda** segue adiada.
+- **Tela de Configurações da Agenda** (`AgendaSettingsPage`, `/agenda/settings`): expõe os padrões de
+  agendamento (fuso, início da semana, offset de alerta padrão) via o contexto de preferências
+  compartilhado — uma fonte de verdade com o Identity, não uma cópia — mais um seletor de
+  **calendário padrão**. Promover um calendário a padrão demove o anterior (o `UpdateCalendar` o
+  limpa antes, para o índice único parcial nunca ver dois).
 
 ## Ainda não implementado (desenhado / planejado)
 
@@ -49,7 +53,6 @@ adiante fica em [product-plan.md](product-plan.md).
 | **Sync Google Calendar** | `agd009`–`agd012` (binding/link/cursor/conflict), `ICalendarSyncProvider` + impl Google, push/supressão de eco, log de conflito — nada construído. Depende de [Integrations](../../integrations/pt-BR/overview.md) I1 (feito). | 5 |
 | **Sync Google Tasks** | `ITaskSyncProvider` reusando a maquinaria de sync. | 6 |
 | **Catálogo de comandos do Assistant** | Comandos são comandáveis (D6), mas o registro de descriptors (`create_reminder`, `create_task`, `create_event`, `complete_task`, `snooze_reminder`, `whats_my_day`) para o Assistant não está ligado. | 7 |
-| **Tela de Configurações da Agenda** | Não há página de configurações dedicada no módulo; os padrões de agendamento moram nas preferências do Identity e são consumidos de lá. Uma tela que os exponha no contexto da Agenda segue em aberto. | follow-up |
 | **Além** | Links Nota↔evento, quick-add NL, tempo de deslocamento, alertas por local, ICS/CalDAV, provedores Microsoft/Apple, vencimentos do Finances na visão do dia. | — |
 
 ## Pontos em aberto conhecidos

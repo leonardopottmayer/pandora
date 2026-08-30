@@ -20,6 +20,25 @@ public sealed class UpdateCalendarCommandHandler(IUnitOfWorkFactory factory, Tim
         if (input.Name is not null && string.IsNullOrWhiteSpace(input.Name))
             return Fail(CalendarErrors.NameRequired);
 
+        // Promoting a calendar to default: demote the current default first, in its own transaction,
+        // so the partial unique index (one default per user) never sees two at once. Guarded by the
+        // target existing, so a bad id does not leave the user with no default.
+        if (input.IsDefault == true)
+            await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
+            {
+                var calendars = context.AcquireRepository<ICalendarRepository>();
+                if (await calendars.FindAsync(input.UserId, input.CalendarId, token) is null)
+                    return false;
+
+                var all = await calendars.GetByUserAsync(input.UserId, token);
+                foreach (var other in all.Where(c => c.IsDefault && c.Id != input.CalendarId))
+                {
+                    other.SetDefault(false);
+                    await calendars.UpdateAsync(other, token);
+                }
+                return true;
+            }, cancellationToken: ct);
+
         var result = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var calendars = context.AcquireRepository<ICalendarRepository>();

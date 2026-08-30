@@ -34,6 +34,7 @@ import { TodayPage } from '@/modules/agenda/pages/today/TodayPage'
 import { RemindersListPage } from '@/modules/agenda/pages/reminders/RemindersListPage'
 import { TasksListPage } from '@/modules/agenda/pages/tasks/TasksListPage'
 import { CalendarPage } from '@/modules/agenda/pages/calendar/CalendarPage'
+import { AgendaSettingsPage } from '@/modules/agenda/pages/settings/AgendaSettingsPage'
 
 export const router = createBrowserRouter([
   // Public (redirect if already authenticated)
@@ -80,6 +81,7 @@ export const router = createBrowserRouter([
       { path: 'agenda/reminders', element: <RemindersListPage /> },
       { path: 'agenda/tasks', element: <TasksListPage /> },
       { path: 'agenda/calendar', element: <CalendarPage /> },
+      { path: 'agenda/settings', element: <AgendaSettingsPage /> },
 
       { path: 'notes', element: <NotesPage /> },
       // Before the :id route, so "graph" is read as the view and not as a page id.

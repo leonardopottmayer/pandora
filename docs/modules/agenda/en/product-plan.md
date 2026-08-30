@@ -59,6 +59,10 @@ are **built**. What remains is external sync and the Assistant catalog.
   placeholder: hour grid, greedy lane packing for overlapping events, all-day strip, now-indicator,
   click-to-create, and unified prev/next/today navigation. `WeekStartsOn` is honoured via a manual
   `startOfWeek` (week math) and the dayjs locale's `weekStart` (the antd month grid).
+- **Agenda settings screen.** **Done.** `AgendaSettingsPage` (`/agenda/settings`) surfaces the
+  scheduling defaults (time zone, week start, default alert offset) through the shared preferences
+  context and adds a default-calendar picker; promoting a calendar to default demotes the previous
+  one so the partial unique index holds.
 
 ## Beyond *(not scheduled)*
 

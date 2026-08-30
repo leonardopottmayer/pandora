@@ -46,7 +46,8 @@
     "agendaToday": "Hoje",
     "agendaReminders": "Lembretes",
     "agendaTasks": "Tarefas",
-    "agendaCalendar": "Calendário"
+    "agendaCalendar": "Calendário",
+    "agendaSettings": "Configurações"
   },
   "theme": {
     "toLight": "Tema claro",
@@ -766,6 +767,13 @@
     }
   },
   "agenda": {
+    "settings": {
+      "title": "Configurações da Agenda",
+      "intro": "Padrões para novos itens da agenda. São preferências da sua conta, compartilhadas com o resto do Pandora.",
+      "defaultCalendarLabel": "Calendário padrão",
+      "defaultCalendarDesc": "Novos eventos caem neste calendário, a menos que você escolha outro.",
+      "noCalendars": "Nenhum calendário ainda"
+    },
     "today": {
       "empty": "Nada agendado para hoje.",
       "allDay": "Dia inteiro"

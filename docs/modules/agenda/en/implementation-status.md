@@ -39,7 +39,11 @@ in [product-plan.md](product-plan.md).
   hour grid with greedy lane packing for overlapping events, an all-day strip, a now-indicator, and
   click-to-create. The month view keeps antd's `<Calendar>`. All three honour `WeekStartsOn` (the
   week math via a manual `startOfWeek`, the month grid via the dayjs locale's `weekStart`).
-- **An Agenda settings screen** is still deferred.
+- **Agenda settings screen** (`AgendaSettingsPage`, `/agenda/settings`): surfaces the scheduling
+  defaults (time zone, week start, default alert offset) via the shared preferences context — one
+  source of truth with Identity, not a copy — plus a **default-calendar** picker. Promoting a
+  calendar to default demotes the previous one (`UpdateCalendar` clears it first, so the partial
+  unique index never sees two).
 
 ## Not yet implemented (designed / planned)
 
@@ -48,7 +52,6 @@ in [product-plan.md](product-plan.md).
 | **Google Calendar sync** | `agd009`–`agd012` (binding/link/cursor/conflict), `ICalendarSyncProvider` + Google impl, push/echo suppression, conflict log — none built. Depends on [Integrations](../../integrations/en/overview.md) I1 (done). | 5 |
 | **Google Tasks sync** | `ITaskSyncProvider` reusing the sync machinery. | 6 |
 | **Assistant command catalog** | Commands are commandable (D6), but the descriptor registration (`create_reminder`, `create_task`, `create_event`, `complete_task`, `snooze_reminder`, `whats_my_day`) for Assistant is not wired. | 7 |
-| **Agenda settings screen** | No dedicated settings page in the module; the scheduling defaults live in Identity preferences and are consumed from there. A screen surfacing them in the Agenda context is still open. | follow-up |
 | **Beyond** | Note↔event links, NL quick-add, travel time, location alerts, ICS/CalDAV, Microsoft/Apple providers, Finances due dates in the day view. | — |
 
 ## Known open points
