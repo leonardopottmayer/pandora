@@ -2,16 +2,19 @@ using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 using Pottmayer.Pandora.Modules.Agenda.Application.Dtos;
 using Pottmayer.Pandora.Modules.Agenda.Application.Errors;
 using Pottmayer.Pandora.Modules.Agenda.Application.Mapping;
+using Pottmayer.Pandora.Modules.Agenda.Application.Preferences;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Agenda.Domain.ValueObjects;
+using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateEvent;
 
-public sealed class CreateEventCommandHandler(IUnitOfWorkFactory factory, TimeProvider timeProvider)
+public sealed class CreateEventCommandHandler(
+    IUnitOfWorkFactory factory, IUserPreferencesReader preferences, TimeProvider timeProvider)
     : CommandHandlerBase<CreateEventCommand, EventDto>
 {
     protected override async Task<Result<EventDto>> HandleAsync(CreateEventCommand request, CancellationToken ct)
@@ -22,6 +25,7 @@ public sealed class CreateEventCommandHandler(IUnitOfWorkFactory factory, TimePr
             return Fail(EventErrors.TitleRequired);
 
         var status = ParseStatus(input.Status);
+        var timeZone = await TimeZoneResolver.ResolveAsync(preferences, input.UserId, input.TimeZone, ct);
 
         var result = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
@@ -37,7 +41,7 @@ public sealed class CreateEventCommandHandler(IUnitOfWorkFactory factory, TimePr
             {
                 created = Event.Create(
                     input.UserId, input.CalendarId, input.Title, input.Description, input.Location, input.Url,
-                    input.StartsAt, input.EndsAt, input.IsAllDay, input.TimeZone ?? "UTC", input.Rrule, status,
+                    input.StartsAt, input.EndsAt, input.IsAllDay, timeZone, input.Rrule, status,
                     timeProvider);
             }
             catch (Exception ex) when (ex is FormatException or ArgumentException)

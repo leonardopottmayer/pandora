@@ -49,10 +49,13 @@ acima e estão **construídos**. O que resta é sync externo e o catálogo do As
 
 ## Follow-up transversal
 
-- **Consumir o fuso padrão do Identity.** O `UserPreferences` do Identity já carrega `TimeZone`,
-  `WeekStartsOn` e `DefaultAlertOffsetMinutes` (o pré-requisito da fase 0 está **feito**). A Agenda
-  ainda guarda um `time_zone` por item (recorrência expande no fuso do próprio item); ligar a
-  preferência do Identity como padrão de novos itens é um follow-up pequeno.
+- **Consumir o fuso padrão do Identity.** **Feito.** A Agenda ainda guarda um `time_zone` por item
+  (recorrência expande no fuso do próprio item), mas quando o caller não o informa, os create handlers
+  o usam como padrão a partir do `UserPreferences` do Identity via porta `IUserPreferencesReader`,
+  caindo em UTC só quando não há preferência. As forms do web enviam a preferência salva e o editor de
+  alertas usa `DefaultAlertOffsetMinutes` como offset padrão. **Ainda aberto:** `WeekStartsOn` no grid
+  do calendário, juntado ao trabalho das visões semana/dia (precisa configurar o `weekStart` do locale
+  do dayjs globalmente).
 
 ## Além *(não agendado)*
 

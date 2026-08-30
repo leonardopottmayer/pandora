@@ -4,7 +4,7 @@ import { App, Checkbox, ColorPicker, Form, Input, Modal } from 'antd'
 import type { Color } from 'antd/es/color-picker'
 import { toErrorMessage } from '@/lib/api/envelope'
 import type { CalendarDto } from '../../models'
-import { browserTimeZone } from '../../lib/datetime'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { useCreateCalendar, useUpdateCalendar } from '../../hooks/useCalendars'
 
 interface CalendarFormModalProps {
@@ -27,6 +27,7 @@ function toHex(color?: string | Color): string | null {
 export function CalendarFormModal({ open, calendar, onClose }: CalendarFormModalProps) {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { timeZone } = usePreferences()
   const [form] = Form.useForm<CalendarFormValues>()
   const isEdit = !!calendar
 
@@ -61,7 +62,7 @@ export function CalendarFormModal({ open, calendar, onClose }: CalendarFormModal
           name: values.name,
           color: toHex(values.color),
           isDefault: values.isDefault,
-          timeZone: browserTimeZone(),
+          timeZone,
         })
         message.success(t('agenda.calendars.created'))
       }

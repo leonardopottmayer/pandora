@@ -49,10 +49,13 @@ are **built**. What remains is external sync and the Assistant catalog.
 
 ## Cross-cutting follow-up
 
-- **Consume the Identity time-zone default.** Identity's `UserPreferences` already carries `TimeZone`,
-  `WeekStartsOn` and `DefaultAlertOffsetMinutes` (the phase-0 prerequisite is **done**). Agenda still
-  stores a `time_zone` per item (recurrence expands in the item's own zone); wiring the Identity
-  preference in as the default for new items is a small follow-up.
+- **Consume the Identity time-zone default.** **Done.** Agenda still stores a `time_zone` per item
+  (recurrence expands in the item's own zone), but when the caller omits it, the create handlers
+  default it from Identity's `UserPreferences` through the `IUserPreferencesReader` port, falling back
+  to UTC only when there is no preference. The web forms send the saved preference and the alert
+  editor defaults its offset from `DefaultAlertOffsetMinutes`. **Still open:** `WeekStartsOn` in the
+  calendar grid, which is folded into the week/day view work (it needs the dayjs locale's `weekStart`
+  set globally).
 
 ## Beyond *(not scheduled)*
 

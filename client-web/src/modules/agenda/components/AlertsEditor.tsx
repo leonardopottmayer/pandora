@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { App, Button, InputNumber, List, Space, Typography } from 'antd'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { toErrorMessage } from '@/lib/api/envelope'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import type { AlertSubjectType } from '../models'
 import { useAlerts, useCreateAlert, useDeleteAlert } from '../hooks/useAlerts'
 
@@ -16,7 +17,8 @@ interface AlertsEditorProps {
 export function AlertsEditor({ subjectType, subjectId }: AlertsEditorProps) {
   const { t } = useTranslation()
   const { message } = App.useApp()
-  const [offset, setOffset] = useState<number>(-15)
+  const { defaultAlertOffsetMinutes } = usePreferences()
+  const [offset, setOffset] = useState<number>(defaultAlertOffsetMinutes)
   const { data } = useAlerts(subjectType, subjectId)
   const createAlert = useCreateAlert(subjectType, subjectId)
   const deleteAlert = useDeleteAlert(subjectType, subjectId)

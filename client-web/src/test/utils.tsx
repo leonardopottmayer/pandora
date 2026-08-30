@@ -5,6 +5,22 @@ import { MemoryRouter } from 'react-router-dom'
 import { App as AntdApp, ConfigProvider } from 'antd'
 import { I18nextProvider } from 'react-i18next'
 import i18n from '@/i18n'
+import { PreferencesContext, type PreferencesContextValue } from '@/modules/identity/context/preferences-context'
+
+/** A static preferences context so components using `usePreferences()` render without the provider. */
+const testPreferences: PreferencesContextValue = {
+  theme: 'light',
+  setTheme: () => {},
+  isDark: false,
+  language: 'en',
+  setLanguage: () => {},
+  timeZone: 'America/Sao_Paulo',
+  setTimeZone: () => {},
+  weekStartsOn: 'sunday',
+  setWeekStartsOn: () => {},
+  defaultAlertOffsetMinutes: -15,
+  setDefaultAlertOffsetMinutes: () => {},
+}
 
 /** Fresh client per test: no retries, no caching across tests. */
 export function createTestQueryClient(): QueryClient {
@@ -42,7 +58,9 @@ export function renderWithProviders(
         <QueryClientProvider client={client}>
           <ConfigProvider>
             <AntdApp>
-              <MemoryRouter initialEntries={[route]}>{children}</MemoryRouter>
+              <PreferencesContext.Provider value={testPreferences}>
+                <MemoryRouter initialEntries={[route]}>{children}</MemoryRouter>
+              </PreferencesContext.Provider>
             </AntdApp>
           </ConfigProvider>
         </QueryClientProvider>

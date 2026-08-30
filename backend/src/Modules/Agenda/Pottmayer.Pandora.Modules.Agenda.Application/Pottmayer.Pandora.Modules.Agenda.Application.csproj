@@ -11,6 +11,8 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Agenda.Domain/Pottmayer.Pandora.Modules.Agenda.Domain.csproj" />
     <!-- Produces NotifyUserRequested and consumes InboundInteractionReceived, both from Channels -->
     <ProjectReference Include="../../Channels/Pottmayer.Pandora.Modules.Channels.Contracts/Pottmayer.Pandora.Modules.Channels.Contracts.csproj" />
+    <!-- Reads the user's time-zone default (IUserPreferencesReader) to default new items' zone -->
+    <ProjectReference Include="../../Identity/Pottmayer.Pandora.Modules.Identity.Abstractions/Pottmayer.Pandora.Modules.Identity.Abstractions.csproj" />
     <!-- Tars: Messaging impl (DI handler scanning) -->
     <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.0.8" />
     <!-- Tars: Core -->

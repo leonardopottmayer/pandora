@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { App, DatePicker, Form, Input, Modal } from 'antd'
 import type { Dayjs } from 'dayjs'
 import { toErrorMessage } from '@/lib/api/envelope'
-import { browserTimeZone } from '../../lib/datetime'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { RecurrencePicker } from '../../components/RecurrencePicker'
 import { useCreateReminder } from '../../hooks/useReminders'
 
@@ -21,6 +21,7 @@ interface ReminderFormValues {
 export function ReminderFormModal({ open, onClose }: ReminderFormModalProps) {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { timeZone } = usePreferences()
   const [form] = Form.useForm<ReminderFormValues>()
   const [rrule, setRrule] = useState<string | null>(null)
   const [wasOpen, setWasOpen] = useState(open)
@@ -41,7 +42,7 @@ export function ReminderFormModal({ open, onClose }: ReminderFormModalProps) {
         title: values.title,
         notes: values.notes ?? null,
         remindAt: values.remindAt.toISOString(),
-        timeZone: browserTimeZone(),
+        timeZone,
         rrule,
       })
       message.success(t('agenda.reminders.created'))

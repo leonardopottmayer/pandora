@@ -4,7 +4,7 @@ import { App, Checkbox, DatePicker, Form, Input, Modal, Select } from 'antd'
 import dayjs, { type Dayjs } from 'dayjs'
 import { toErrorMessage } from '@/lib/api/envelope'
 import type { CalendarDto } from '../../models'
-import { browserTimeZone } from '../../lib/datetime'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { RecurrencePicker } from '../../components/RecurrencePicker'
 import { useCreateEvent } from '../../hooks/useEvents'
 
@@ -29,6 +29,7 @@ interface EventFormValues {
 export function EventFormModal({ open, calendars, defaultStart, onClose }: EventFormModalProps) {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { timeZone } = usePreferences()
   const [form] = Form.useForm<EventFormValues>()
   const [rrule, setRrule] = useState<string | null>(null)
   const [wasOpen, setWasOpen] = useState(open)
@@ -65,7 +66,7 @@ export function EventFormModal({ open, calendars, defaultStart, onClose }: Event
         description: values.description ?? null,
         location: values.location ?? null,
         url: values.url ?? null,
-        timeZone: browserTimeZone(),
+        timeZone,
         rrule,
       })
       message.success(t('agenda.events.created'))

@@ -31,8 +31,10 @@ adiante fica em [product-plan.md](product-plan.md).
 - **`Alert.subject_type` admite `Task`/`Event`/`Reminder` mas só `Task` está ligado**; eventos usam o
   sweep de alerta-evento diretamente, lembretes mantêm `agd006x`.
 - **`time_zone` é carregado por linha** (lembrete/tarefa/evento/calendário) para a recorrência expandir
-  no fuso do próprio item. O `UserPreferences` do Identity agora carrega um padrão a nível de usuário; a
-  Agenda ainda não o consome como padrão de novos itens.
+  no fuso do próprio item. Quando o caller não o informa, a Agenda agora usa como padrão o
+  `UserPreferences` do Identity (via porta `IUserPreferencesReader`), caindo em UTC só quando o usuário
+  não tem preferência. As forms do web também enviam a preferência salva, e o editor de alertas usa
+  `DefaultAlertOffsetMinutes` como offset padrão.
 - **Visões semana/dia do frontend e uma tela de Configurações da Agenda** estão parcialmente adiadas.
 
 ## Ainda não implementado (desenhado / planejado)
@@ -42,7 +44,7 @@ adiante fica em [product-plan.md](product-plan.md).
 | **Sync Google Calendar** | `agd009`–`agd012` (binding/link/cursor/conflict), `ICalendarSyncProvider` + impl Google, push/supressão de eco, log de conflito — nada construído. Depende de [Integrations](../../integrations/pt-BR/overview.md) I1 (feito). | 5 |
 | **Sync Google Tasks** | `ITaskSyncProvider` reusando a maquinaria de sync. | 6 |
 | **Catálogo de comandos do Assistant** | Comandos são comandáveis (D6), mas o registro de descriptors (`create_reminder`, `create_task`, `create_event`, `complete_task`, `snooze_reminder`, `whats_my_day`) para o Assistant não está ligado. | 7 |
-| **Consumir o fuso padrão do Identity** | O `UserPreferences` do Identity já expõe `TimeZone`/`WeekStartsOn`/`DefaultAlertOffsetMinutes` (pré-requisito da fase 0 **feito**). Ligá-lo como padrão de novos itens da Agenda é um follow-up pequeno. | follow-up |
+| **Honrar `WeekStartsOn` no grid do calendário** | `TimeZone` e `DefaultAlertOffsetMinutes` já são consumidos (ver acima). Falta `WeekStartsOn`: o `<Calendar>` do antd deriva o primeiro dia da semana do locale do dayjs, então ligá-lo significa configurar o `weekStart` do locale do dayjs globalmente — juntado ao trabalho das visões semana/dia. | follow-up (fase 2) |
 | **Além** | Links Nota↔evento, quick-add NL, tempo de deslocamento, alertas por local, ICS/CalDAV, provedores Microsoft/Apple, vencimentos do Finances na visão do dia. | — |
 
 ## Pontos em aberto conhecidos

@@ -5,7 +5,7 @@ import dayjs, { type Dayjs } from 'dayjs'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { TASK_PRIORITIES, type TaskDto, type TaskPriority } from '../../models'
 import { TASK_PRIORITY_META } from '../../lib/enums'
-import { browserTimeZone } from '../../lib/datetime'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { RecurrencePicker } from '../../components/RecurrencePicker'
 import { AlertsEditor } from '../../components/AlertsEditor'
 import { useCreateTask, useUpdateTask } from '../../hooks/useTasks'
@@ -40,6 +40,7 @@ export function TaskFormModal({
 }: TaskFormModalProps) {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { timeZone } = usePreferences()
   const [form] = Form.useForm<TaskFormValues>()
   const [rrule, setRrule] = useState<string | null>(null)
   const [wasOpen, setWasOpen] = useState(open)
@@ -100,7 +101,7 @@ export function TaskFormModal({
           priority: values.priority,
           dueAt: values.dueAt ? values.dueAt.toISOString() : null,
           dueHasTime: values.dueHasTime,
-          timeZone: browserTimeZone(),
+          timeZone,
           rrule,
         })
         message.success(t('agenda.tasks.created'))
