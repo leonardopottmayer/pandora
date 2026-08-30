@@ -20,6 +20,25 @@ public sealed class UpdateTaskListCommandHandler(IUnitOfWorkFactory factory, Tim
         if (input.Name is not null && string.IsNullOrWhiteSpace(input.Name))
             return Fail(TaskErrors.TitleRequired);
 
+        // Promoting a list to default: demote the current default first, in its own transaction, so
+        // the partial unique index (one default per user) never sees two at once. Guarded by the
+        // target existing, so a bad id does not leave the user with no default.
+        if (input.IsDefault == true)
+            await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
+            {
+                var lists = context.AcquireRepository<ITaskListRepository>();
+                if (await lists.FindAsync(input.UserId, input.ListId, token) is null)
+                    return false;
+
+                var all = await lists.GetByUserAsync(input.UserId, token);
+                foreach (var other in all.Where(l => l.IsDefault && l.Id != input.ListId))
+                {
+                    other.SetDefault(false);
+                    await lists.UpdateAsync(other, token);
+                }
+                return true;
+            }, cancellationToken: ct);
+
         var list = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {
             var lists = context.AcquireRepository<ITaskListRepository>();
