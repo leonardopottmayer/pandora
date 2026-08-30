@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <!-- Ports hand back Result<T>, so consumers get a typed failure instead of an exception. -->
-    <PackageReference Include="Pottmayer.Tars.Core.Primitives" Version="0.0.5" />
+    <PackageReference Include="Pottmayer.Tars.Core.Primitives" Version="0.0.8" />
   </ItemGroup>
 
 </Project>

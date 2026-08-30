@@ -4,9 +4,15 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
 using Pottmayer.Tars.Communication.Email.Abstractions;
 using Pottmayer.Tars.Communication.Email.DI;
+using Pottmayer.Tars.Messaging.Broker.Dispatch;
+using Pottmayer.Tars.Messaging.Broker.Registry;
+using Pottmayer.Tars.Messaging.EntityFrameworkCore.Options;
+using Pottmayer.Tars.Messaging.EntityFrameworkCore.Outbox;
+using Pottmayer.Tars.Messaging.EntityFrameworkCore.Relay;
 using Respawn;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -93,6 +99,32 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
 
     /// <summary>Wipes business data so each test starts from a clean slate.</summary>
     public Task ResetDatabaseAsync() => _respawner.ResetAsync(_connection);
+
+    /// <summary>
+    /// Drains the transactional outbox synchronously, standing in for the background relay (which the
+    /// harness removes for determinism). After a producing action, call this before asserting on the
+    /// downstream effect — the outbox row is written in the producer's transaction, and this delivers
+    /// it to the handlers here and now.
+    /// </summary>
+    public async Task DrainOutboxAsync(params string[] databaseKeys)
+    {
+        var keys = databaseKeys.Length > 0 ? databaseKeys : ["identity", "channels", "agenda"];
+
+        foreach (var key in keys)
+        {
+            var processor = new OutboxRelayProcessor(
+                Services.GetRequiredService<IServiceScopeFactory>(),
+                Services.GetRequiredService<IIntegrationEventTypeRegistry>(),
+                Services.GetRequiredService<IIntegrationEventDispatcher>(),
+                Services.GetRequiredService<IIntegrationEventSerializer>(),
+                Services.GetRequiredService<TimeProvider>(),
+                NullLogger.Instance,
+                new OutboxDatabaseOptions(key) { PurgeEnabled = false });
+
+            // Drain until the outbox is empty: a batch-sized pass may leave more behind.
+            while (await processor.DrainOnceAsync() > 0) { }
+        }
+    }
 
     public new async Task DisposeAsync()
     {

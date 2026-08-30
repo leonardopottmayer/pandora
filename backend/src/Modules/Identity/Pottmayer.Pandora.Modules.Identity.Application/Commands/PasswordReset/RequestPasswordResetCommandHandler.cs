@@ -29,7 +29,7 @@ public sealed class RequestPasswordResetCommandHandler(
         var now = timeProvider.GetUtcNow();
         var resetToken = PasswordResetTokens.Generate();
 
-        var issued = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
+        _ = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
             var users = ctx.AcquireRepository<IUserRepository>();
             var user = await users.FindByEmailAsync(email!, token);
@@ -44,21 +44,19 @@ public sealed class RequestPasswordResetCommandHandler(
                 now + resetOptions.Value.TokenLifetime);
             await ctx.AcquireRepository<IPasswordResetTokenRepository>().AddAsync(reset, token);
 
-            return user.Id;
-        }, cancellationToken: ct);
-
-        if (issued is { } userId)
-        {
+            // Published inside the unit of work: the reset token and its e-mail request commit
+            // together (transactional outbox).
             var resetRequested = new PasswordResetRequested(
                 EventId: Guid.CreateVersion7(),
                 OccurredAt: now,
-                UserId: userId,
+                UserId: user.Id,
                 Email: email!.Value,
                 Token: resetToken,
                 Locale: CultureInfo.CurrentUICulture.Name);
+            await integrationEventBus.PublishAsync(resetRequested, token);
 
-            await integrationEventBus.PublishAsync(resetRequested, ct);
-        }
+            return user.Id;
+        }, cancellationToken: ct);
 
         return Ok(true);
     }

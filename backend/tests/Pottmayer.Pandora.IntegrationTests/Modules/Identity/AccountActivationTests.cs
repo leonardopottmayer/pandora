@@ -35,6 +35,7 @@ public sealed class AccountActivationTests : IAsyncLifetime
     {
         var email = "alice@example.com";
         await SignUpAsync(email, "alice");
+        await _factory.DrainOutboxAsync(); // deliver the activation event the sign-up parked in the outbox
         await _notifications.WaitForRecipientAsync(email);
         var token = await _notifications.GetActivationTokenAsync(email);
 
@@ -63,6 +64,7 @@ public sealed class AccountActivationTests : IAsyncLifetime
     {
         var email = "bob@example.com";
         await SignUpAsync(email, "bob");
+        await _factory.DrainOutboxAsync(); // deliver the activation event the sign-up parked in the outbox
         await _notifications.WaitForRecipientAsync(email);
         var token = await _notifications.GetActivationTokenAsync(email);
 

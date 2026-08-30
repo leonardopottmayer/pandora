@@ -54,6 +54,7 @@ public sealed class MfaTests : IAsyncLifetime
         Assert.False(string.IsNullOrWhiteSpace(tokens.AccessToken));
         Assert.False(string.IsNullOrWhiteSpace(tokens.RefreshToken));
 
+        await _factory.DrainOutboxAsync(); // deliver the MFA event the command parked in the outbox
         await _notifications.WaitForTemplateAsync("alice@example.com", "mfa-enabled");
     }
 
@@ -106,6 +107,7 @@ public sealed class MfaTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, signIn.StatusCode);
         Assert.Null(await IdentityHelper.ReadMfaTicketAsync(signIn));
 
+        await _factory.DrainOutboxAsync(); // deliver the MFA event the command parked in the outbox
         await _notifications.WaitForTemplateAsync("carol@example.com", "mfa-disabled");
     }
 

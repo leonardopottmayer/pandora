@@ -122,7 +122,9 @@ public sealed class EventAlertSweepTests : IAsyncLifetime
     {
         using var scope = _factory.Services.CreateScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        return await sender.Send(new DispatchDueEventAlertsCommand(new DispatchDueEventAlertsInput(BatchSize: 50)), CancellationToken.None);
+        var result = await sender.Send(new DispatchDueEventAlertsCommand(new DispatchDueEventAlertsInput(BatchSize: 50)), CancellationToken.None);
+        await _factory.DrainOutboxAsync(); // deliver the NotifyUserRequested events the sweep parked in the outbox
+        return result;
     }
 
     private Task LinkTelegramAsync(Guid userId, string chatId) => ExecuteAsync("""

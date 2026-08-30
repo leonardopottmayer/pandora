@@ -6,6 +6,7 @@ using Pottmayer.Pandora.Modules.Channels.Contracts;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Messaging.Abstractions;
+using Pottmayer.Tars.Messaging.Broker.Dispatch;
 using Xunit;
 
 namespace Pottmayer.Pandora.IntegrationTests.Modules.Agenda;
@@ -86,14 +87,18 @@ public sealed class RecurringReminderSweepTests : IAsyncLifetime
     {
         using var scope = _factory.Services.CreateScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        return await sender.Send(new DispatchDueRemindersCommand(new DispatchDueRemindersInput(BatchSize: 50)), CancellationToken.None);
+        var result = await sender.Send(new DispatchDueRemindersCommand(new DispatchDueRemindersInput(BatchSize: 50)), CancellationToken.None);
+        await _factory.DrainOutboxAsync(); // deliver the NotifyUserRequested events the sweep parked in the outbox
+        return result;
     }
 
     private async Task PublishInteractionAsync(string action, string payload)
     {
+        // Simulate the relay delivering an inbound interaction: dispatch straight to the handlers,
+        // exactly as the outbox relay would (a bare publish would need an open unit of work).
         using var scope = _factory.Services.CreateScope();
-        var bus = scope.ServiceProvider.GetRequiredService<IIntegrationEventBus>();
-        await bus.PublishAsync(new InboundInteractionReceived(
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IIntegrationEventDispatcher>();
+        await dispatcher.DispatchAsync(new InboundInteractionReceived(
             Guid.NewGuid(), DateTimeOffset.UtcNow, _userId, "telegram", "agenda", action, payload),
             CancellationToken.None);
     }

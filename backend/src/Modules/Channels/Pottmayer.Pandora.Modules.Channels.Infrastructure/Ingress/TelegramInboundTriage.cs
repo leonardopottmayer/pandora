@@ -61,11 +61,12 @@ public sealed class TelegramInboundTriage(
                 outcome.UserId, outcome.Classification, timeProvider);
             record.MarkProcessed(timeProvider);
             await updates.AddAsync(record, token);
-        }, cancellationToken: ct);
 
-        // Publish only once the update is durably recorded.
-        if (outcome.Event is { } evt)
-            await bus.PublishAsync(evt, ct);
+            // Published inside the unit of work: the event and the durable record of the update it
+            // came from commit together (transactional outbox).
+            if (outcome.Event is { } evt)
+                await bus.PublishAsync(evt, token);
+        }, cancellationToken: ct);
     }
 
     private async Task<Outcome> RouteAsync(TelegramUpdate update, CancellationToken ct)

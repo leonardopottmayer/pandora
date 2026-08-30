@@ -69,22 +69,20 @@ public sealed class SignUpCommandHandler(
                 now + activationOptions.Value.TokenLifetime);
             await ctx.AcquireRepository<IActivationTokenRepository>().AddAsync(activation, token);
 
-            return Ok(new SignUpResult(user.Id));
-        }, cancellationToken: ct);
-
-        // After commit, ask Channels to send the activation e-mail (in-process; broker-ready).
-        if (result.IsSuccess && result.Value is { } signUp)
-        {
+            // Ask Channels to send the activation e-mail. Published inside the unit of work: the
+            // outbox row commits with the new user and activation token, so the account and its
+            // "send the activation e-mail" fact can never disagree (transactional outbox).
             var activationRequested = new AccountActivationRequested(
                 EventId: Guid.CreateVersion7(),
                 OccurredAt: now,
-                UserId: signUp.UserId,
+                UserId: user.Id,
                 Email: email!.Value,
                 Token: activationToken,
                 Locale: CultureInfo.CurrentUICulture.Name);
+            await integrationEventBus.PublishAsync(activationRequested, token);
 
-            await integrationEventBus.PublishAsync(activationRequested, ct);
-        }
+            return Ok(new SignUpResult(user.Id));
+        }, cancellationToken: ct);
 
         return result;
     }

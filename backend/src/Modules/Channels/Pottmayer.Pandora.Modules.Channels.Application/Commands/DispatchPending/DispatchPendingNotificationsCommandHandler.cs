@@ -77,12 +77,13 @@ public sealed class DispatchPendingNotificationsCommandHandler(
                 await notifications.UpdateAsync(notification, token);
             }
 
+            // Published inside the unit of work: each channel disable and its announcement commit
+            // together (transactional outbox).
+            foreach (var evt in disabled)
+                await bus.PublishAsync(evt, token);
+
             return new DispatchPendingNotificationsResult(sent, failed, dead);
         }, cancellationToken: ct);
-
-        // After the unit of work committed: the fact is only true once the disable is durable.
-        foreach (var evt in disabled)
-            await bus.PublishAsync(evt, ct);
 
         return Ok(result);
     }

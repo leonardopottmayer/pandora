@@ -24,9 +24,6 @@ public sealed class ActivateAccountCommandHandler(
         var tokenHash = ActivationTokens.Hash(request.Input.Token);
         var now = timeProvider.GetUtcNow();
 
-        Guid activatedUserId = default;
-        string? activatedEmail = null;
-
         var result = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
             var tokens = ctx.AcquireRepository<IActivationTokenRepository>();
@@ -46,26 +43,19 @@ public sealed class ActivateAccountCommandHandler(
             activation.Consume(now);
             await tokens.UpdateAsync(activation, token);
 
-            activatedUserId = user.Id;
-            activatedEmail = user.Email.Value;
-
-            return Ok(true);
-        }, cancellationToken: ct);
-
-        // After commit: activation proves the user owns the e-mail, so ask Channels to provision the
-        // verified e-mail channel (in-process; broker-ready). Only fires on a genuine activation — a
-        // spent token is refused above and never reaches here.
-        if (result.IsSuccess && activatedEmail is not null)
-        {
+            // Activation proves the user owns the e-mail, so ask Channels to provision the verified
+            // e-mail channel. Published inside the unit of work: the outbox row commits with the
+            // activation, so the two can never disagree (transactional outbox).
             var activated = new AccountActivated(
                 EventId: Guid.CreateVersion7(),
                 OccurredAt: now,
-                UserId: activatedUserId,
-                Email: activatedEmail,
+                UserId: user.Id,
+                Email: user.Email.Value,
                 Locale: CultureInfo.CurrentUICulture.Name);
+            await integrationEventBus.PublishAsync(activated, token);
 
-            await integrationEventBus.PublishAsync(activated, ct);
-        }
+            return Ok(true);
+        }, cancellationToken: ct);
 
         return result;
     }

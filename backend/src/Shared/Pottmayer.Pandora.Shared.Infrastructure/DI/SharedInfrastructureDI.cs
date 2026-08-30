@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Pottmayer.Pandora.Shared.Domain;
-using Pottmayer.Tars.Messaging.DI;
 using Pottmayer.Tars.Observability.AspNetCore.DI;
 using Pottmayer.Tars.Observability.DI;
 using Pottmayer.Tars.Observability.Options;
@@ -17,7 +16,6 @@ public static class SharedInfrastructureDI
     public static IHostApplicationBuilder AddPandoraSharedInfrastructure(this IHostApplicationBuilder builder)
     {
         builder.Services.TryAddSingleton(TimeProvider.System);
-        builder.Services.AddTarsInProcessIntegrationEventBus();
         builder.Services.AddUserContext();
         builder.AddObservability();
 

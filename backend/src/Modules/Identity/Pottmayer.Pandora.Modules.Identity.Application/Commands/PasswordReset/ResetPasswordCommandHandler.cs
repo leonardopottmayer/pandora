@@ -56,20 +56,18 @@ public sealed class ResetPasswordCommandHandler(
             await ctx.AcquireRepository<IRefreshTokenRepository>()
                      .RevokeAllForSubjectAsync(user.Id.ToString(), token);
 
-            return Result<(Guid UserId, string Email)>.Success((user.Id, user.Email.Value));
-        }, cancellationToken: ct);
-
-        if (result.IsSuccess)
-        {
+            // Published inside the unit of work: the outbox row commits with the password change
+            // (transactional outbox).
             var changed = new PasswordChanged(
                 EventId: Guid.CreateVersion7(),
                 OccurredAt: now,
-                UserId: result.Value.UserId,
-                Email: result.Value.Email,
+                UserId: user.Id,
+                Email: user.Email.Value,
                 Locale: CultureInfo.CurrentUICulture.Name);
+            await integrationEventBus.PublishAsync(changed, token);
 
-            await integrationEventBus.PublishAsync(changed, ct);
-        }
+            return Result<(Guid UserId, string Email)>.Success((user.Id, user.Email.Value));
+        }, cancellationToken: ct);
 
         return result.IsSuccess ? Ok(true) : Fail([.. result.Errors]);
     }

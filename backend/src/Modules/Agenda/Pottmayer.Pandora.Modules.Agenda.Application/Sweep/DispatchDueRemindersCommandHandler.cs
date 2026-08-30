@@ -57,12 +57,15 @@ public sealed class DispatchDueRemindersCommandHandler(
             await FireRecurringAsync(reminders, dispatches, now, windowStart, batchSize, toPublish, token);
             await ReFireSnoozedAsync(reminders, dispatches, now, batchSize, toPublish, token);
 
+            // Published inside the unit of work: each fire's record (a single-shot flipped to
+            // Notified, or a per-occurrence ledger row) and its notification commit together. A fire
+            // can no longer be marked done without its notification being enqueued, nor a notification
+            // sent for a fire that rolled back (transactional outbox).
+            foreach (var evt in toPublish)
+                await bus.PublishAsync(evt, token);
+
             return toPublish;
         }, cancellationToken: ct);
-
-        // After commit: the fire is only true once it is durably recorded.
-        foreach (var evt in events)
-            await bus.PublishAsync(evt, ct);
 
         return Ok(events.Count);
     }

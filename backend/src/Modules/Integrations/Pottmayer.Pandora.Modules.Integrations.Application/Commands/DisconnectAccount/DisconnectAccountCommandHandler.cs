@@ -61,13 +61,15 @@ public sealed class DisconnectAccountCommandHandler(
             var fresh = await repo.GetByIdAsync(input.AccountId, token);
             if (fresh is not null)
                 await repo.RemoveAsync(fresh, token);
+
+            // Published inside the unit of work: the local deletion and its announcement commit
+            // together (transactional outbox).
+            await bus.PublishAsync(
+                new ExternalAccountDisconnected(
+                    Guid.CreateVersion7(), timeProvider.GetUtcNow(), account.UserId, account.Id, account.Provider),
+                token);
             return true;
         }, cancellationToken: ct);
-
-        await bus.PublishAsync(
-            new ExternalAccountDisconnected(
-                Guid.CreateVersion7(), timeProvider.GetUtcNow(), account.UserId, account.Id, account.Provider),
-            ct);
 
         return Ok(true);
     }

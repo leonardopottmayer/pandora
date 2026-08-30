@@ -11,16 +11,16 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Channels.Contracts/Pottmayer.Pandora.Modules.Channels.Contracts.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Channels.Domain/Pottmayer.Pandora.Modules.Channels.Domain.csproj" />
     <!-- Tars: Messaging impl (DI handler scanning) -->
-    <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.0.5" />
+    <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.0.8" />
     <!-- Subscribers derive links from module options before handing them to the renderer -->
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.2" />
     <!-- Consumes integration events published by Identity -->
     <ProjectReference Include="../../Identity/Pottmayer.Pandora.Modules.Identity.Contracts/Pottmayer.Pandora.Modules.Identity.Contracts.csproj" />
     <!-- Tars: Core -->
-    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.5" />
-    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.5" />
+    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.8" />
+    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.8" />
     <!-- Tars: Data -->
-    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.5" />
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.8" />
   </ItemGroup>
 
 </Project>

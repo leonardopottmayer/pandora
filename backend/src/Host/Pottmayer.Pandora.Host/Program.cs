@@ -67,6 +67,10 @@ builder.Services.AddIntegrationsPersistence();
 builder.AddIntegrationsInfrastructure();
 builder.Services.AddIntegrationsApplication();
 
+// The monolith's messaging transport — the in-process transactional outbox, wired in one place.
+// Registered after the modules so every contract assembly and database key is known.
+builder.AddPandoraOutbox();
+
 // Web HTTP
 builder.Services.AddTarsLocalization();
 builder.Services.AddPandoraLocalization();

@@ -42,6 +42,7 @@ public sealed class NotificationDispatchTests : IAsyncLifetime
 
         Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
 
+        await _factory.DrainOutboxAsync(); // deliver the activation event the sign-up parked in the outbox
         var row = await _notifications.WaitForRecipientAsync(email);
         Assert.Equal("account-activation", row.TemplateKey);
         Assert.Equal("Pending", row.Status);
@@ -54,6 +55,7 @@ public sealed class NotificationDispatchTests : IAsyncLifetime
     {
         var email = "bob@example.com";
         await SignUpAsync(email, "bob");
+        await _factory.DrainOutboxAsync(); // deliver the activation event the sign-up parked in the outbox
         await _notifications.WaitForRecipientAsync(email);
 
         var result = await DispatchAsync();
@@ -74,6 +76,7 @@ public sealed class NotificationDispatchTests : IAsyncLifetime
 
         var first = await SignUpAsync(email, "carol");
         Assert.True(first.IsSuccessStatusCode);
+        await _factory.DrainOutboxAsync(); // deliver the activation event the sign-up parked in the outbox
         await _notifications.WaitForRecipientAsync(email);
 
         // Same e-mail, different username: the second sign-up must be rejected.

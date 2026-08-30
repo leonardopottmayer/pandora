@@ -62,19 +62,21 @@ public sealed class EnableMfaCommandHandler(
             foreach (var code in plaintextCodes)
                 await recoveryCodes.AddAsync(MfaRecoveryCode.Issue(user.Id, RecoveryCodeFactory.Hash(code), now), token);
 
+            // Published inside the unit of work: the outbox row commits with the MFA change
+            // (transactional outbox).
+            var enabled = new MfaEnabled(
+                EventId: Guid.CreateVersion7(),
+                OccurredAt: now,
+                UserId: input.UserId,
+                Email: user.Email.Value,
+                Locale: CultureInfo.CurrentUICulture.Name);
+            await integrationEventBus.PublishAsync(enabled, token);
+
             return Result<string>.Success(user.Email.Value);
         }, cancellationToken: ct);
 
         if (result.IsFailure)
             return Fail([.. result.Errors]);
-
-        var enabled = new MfaEnabled(
-            EventId: Guid.CreateVersion7(),
-            OccurredAt: now,
-            UserId: input.UserId,
-            Email: result.Value,
-            Locale: CultureInfo.CurrentUICulture.Name);
-        await integrationEventBus.PublishAsync(enabled, ct);
 
         return Ok(new RecoveryCodesDto(plaintextCodes));
     }

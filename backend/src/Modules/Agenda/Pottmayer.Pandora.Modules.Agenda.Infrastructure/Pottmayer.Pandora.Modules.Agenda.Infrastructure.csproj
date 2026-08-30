@@ -14,7 +14,7 @@
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
     <!-- Tars: Core (mediator ISender for the sweep command) -->
-    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.5" />
+    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.8" />
   </ItemGroup>
 
 </Project>

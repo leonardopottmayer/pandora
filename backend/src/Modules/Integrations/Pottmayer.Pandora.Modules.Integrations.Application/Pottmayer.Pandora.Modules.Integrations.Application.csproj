@@ -11,14 +11,14 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Integrations.Contracts/Pottmayer.Pandora.Modules.Integrations.Contracts.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Integrations.Domain/Pottmayer.Pandora.Modules.Integrations.Domain.csproj" />
     <!-- Tars: DataProtection (ISecretProtector) -->
-    <PackageReference Include="Pottmayer.Tars.Security.DataProtection.Abstractions" Version="0.0.6" />
+    <PackageReference Include="Pottmayer.Tars.Security.DataProtection.Abstractions" Version="0.0.8" />
     <!-- Tars: Core -->
-    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.5" />
-    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.5" />
+    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.8" />
+    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.8" />
     <!-- Tars: Data -->
-    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.5" />
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.8" />
     <!-- Tars: Messaging -->
-    <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.0.5" />
+    <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.0.8" />
   </ItemGroup>
 
 </Project>

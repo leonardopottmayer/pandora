@@ -50,19 +50,21 @@ public sealed class DisableMfaCommandHandler(
             await credentials.RemoveByUserIdAsync(user.Id, token);
             await recoveryCodes.RemoveAllForUserAsync(user.Id, token);
 
+            // Published inside the unit of work: the outbox row commits with the MFA change
+            // (transactional outbox).
+            var disabled = new MfaDisabled(
+                EventId: Guid.CreateVersion7(),
+                OccurredAt: now,
+                UserId: input.UserId,
+                Email: user.Email.Value,
+                Locale: CultureInfo.CurrentUICulture.Name);
+            await integrationEventBus.PublishAsync(disabled, token);
+
             return Result<string>.Success(user.Email.Value);
         }, cancellationToken: ct);
 
         if (result.IsFailure)
             return Fail([.. result.Errors]);
-
-        var disabled = new MfaDisabled(
-            EventId: Guid.CreateVersion7(),
-            OccurredAt: now,
-            UserId: input.UserId,
-            Email: result.Value,
-            Locale: CultureInfo.CurrentUICulture.Name);
-        await integrationEventBus.PublishAsync(disabled, ct);
 
         return Ok(true);
     }

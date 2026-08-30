@@ -103,11 +103,24 @@ public sealed class ExternalCredentialProvider(
         }
         catch (OAuthException ex) when (ex.IsPermanent)
         {
-            await PersistAsync(account.Id, a => a.MarkRevoked(ex.Message), ct);
-            await bus.PublishAsync(
-                new ExternalAccountRevoked(
-                    Guid.CreateVersion7(), timeProvider.GetUtcNow(), userId, account.Id, provider),
-                ct);
+            // Mark revoked and announce it in one transaction (transactional outbox): the
+            // revocation and the event that disables its bindings can never disagree.
+            await factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
+            {
+                var repo = context.AcquireRepository<IExternalAccountRepository>();
+                var fresh = await repo.GetByIdAsync(account.Id, token);
+                if (fresh is null)
+                    return false;
+
+                fresh.MarkRevoked(ex.Message);
+                await repo.UpdateAsync(fresh, token);
+                await bus.PublishAsync(
+                    new ExternalAccountRevoked(
+                        Guid.CreateVersion7(), timeProvider.GetUtcNow(), userId, account.Id, provider),
+                    token);
+                return true;
+            }, cancellationToken: ct);
+
             return Result<ExternalAccessToken>.Failure(IntegrationErrors.AccountRevoked);
         }
         catch (OAuthException)

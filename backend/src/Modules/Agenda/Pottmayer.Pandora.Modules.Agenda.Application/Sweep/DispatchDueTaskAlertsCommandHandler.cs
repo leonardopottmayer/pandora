@@ -78,12 +78,14 @@ public sealed class DispatchDueTaskAlertsCommandHandler(
                     AlertDispatch.Record(alert.Id, alert.UserId, anchor, correlationId, isLate, timeProvider), token);
             }
 
+            // Published inside the unit of work: the alert-dispatch ledger row and its notification
+            // commit together, so a fire is never recorded without its notification, nor sent for a
+            // fire that rolled back (transactional outbox).
+            foreach (var evt in toPublish)
+                await bus.PublishAsync(evt, token);
+
             return toPublish;
         }, cancellationToken: ct);
-
-        // After commit: the fire is only true once it is durably recorded.
-        foreach (var evt in events)
-            await bus.PublishAsync(evt, ct);
 
         return Ok(events.Count);
     }
