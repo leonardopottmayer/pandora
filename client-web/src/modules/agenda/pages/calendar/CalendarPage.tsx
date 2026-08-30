@@ -1,24 +1,36 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Alert, Button, Calendar, Card, Flex, Segmented, Tag, Typography } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
+import { Button, Calendar, Card, Flex, Segmented, Tag, Typography } from 'antd'
+import { LeftOutlined, PlusOutlined, RightOutlined } from '@ant-design/icons'
 import dayjs, { type Dayjs } from 'dayjs'
+import updateLocale from 'dayjs/plugin/updateLocale'
 import type { CalendarDto, EventOccurrenceDto } from '../../models'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
+import { startOfWeek, weekDays } from '../../lib/datetime'
 import { useCalendars } from '../../hooks/useCalendars'
 import { useEventOccurrences } from '../../hooks/useEvents'
 import { CalendarSidebar } from './CalendarSidebar'
 import { EventFormModal } from './EventFormModal'
 import { EventDetailModal } from './EventDetailModal'
+import { WeekDayGrid } from './WeekDayGrid'
+
+dayjs.extend(updateLocale)
 
 type CalendarView = 'month' | 'week' | 'day'
 
 export function CalendarPage() {
   const { t } = useTranslation()
+  const { weekStartsOn } = usePreferences()
   const [view, setView] = useState<CalendarView>('month')
   const [cursor, setCursor] = useState<Dayjs>(() => dayjs())
   const [createOpen, setCreateOpen] = useState(false)
   const [createStart, setCreateStart] = useState<Dayjs | null>(null)
   const [detail, setDetail] = useState<EventOccurrenceDto | null>(null)
+
+  // The antd month grid derives its first column from the dayjs locale; align it with the preference.
+  useEffect(() => {
+    dayjs.updateLocale(dayjs.locale(), { weekStart: weekStartsOn === 'monday' ? 1 : 0 })
+  }, [weekStartsOn])
 
   const { data: calendarList } = useCalendars()
   const calendars = useMemo<CalendarDto[]>(
@@ -35,30 +47,58 @@ export function CalendarPage() {
     return map
   }, [calendars])
 
-  // Query the whole visible grid (month ± padding week); filter to visible calendars client-side.
-  const from = cursor.startOf('month').startOf('week')
-  const to = cursor.endOf('month').endOf('week')
+  // The visible range depends on the view; the query fetches exactly that window.
+  const range = useMemo(() => {
+    if (view === 'day') {
+      const start = cursor.startOf('day')
+      return { days: [start], from: start, to: cursor.endOf('day') }
+    }
+    if (view === 'week') {
+      const days = weekDays(cursor, weekStartsOn)
+      return { days, from: days[0], to: days[6].endOf('day') }
+    }
+    const from = startOfWeek(cursor.startOf('month'), weekStartsOn)
+    const to = startOfWeek(cursor.endOf('month'), weekStartsOn).add(6, 'day').endOf('day')
+    return { days: [] as Dayjs[], from, to }
+  }, [view, cursor, weekStartsOn])
+
   const { data: occurrences } = useEventOccurrences({
-    from: from.toISOString(),
-    to: to.toISOString(),
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
   })
+
+  const visibleOccurrences = useMemo(
+    () => (occurrences ?? []).filter((occ) => visibleIds.has(occ.calendarId)),
+    [occurrences, visibleIds],
+  )
 
   const byDay = useMemo(() => {
     const map = new Map<string, EventOccurrenceDto[]>()
-    for (const occ of occurrences ?? []) {
-      if (!visibleIds.has(occ.calendarId)) continue
+    for (const occ of visibleOccurrences) {
       const key = dayjs(occ.startsAt).format('YYYY-MM-DD')
       const arr = map.get(key) ?? []
       arr.push(occ)
       map.set(key, arr)
     }
     return map
-  }, [occurrences, visibleIds])
+  }, [visibleOccurrences])
 
-  function openCreate(day: Dayjs | null) {
-    setCreateStart(day ? day.hour(9).minute(0).second(0) : null)
+  function openCreate(start: Dayjs | null) {
+    setCreateStart(start ? (start.hour() === 0 && start.minute() === 0 ? start.hour(9) : start) : null)
     setCreateOpen(true)
   }
+
+  function shift(direction: 1 | -1) {
+    const unit = view === 'day' ? 'day' : view === 'week' ? 'week' : 'month'
+    setCursor((c) => c.add(direction, unit))
+  }
+
+  const rangeLabel =
+    view === 'day'
+      ? cursor.format('ddd, MMM D, YYYY')
+      : view === 'week'
+        ? `${range.days[0].format('MMM D')} – ${range.days[6].format('MMM D, YYYY')}`
+        : cursor.format('MMMM YYYY')
 
   function cellRender(current: Dayjs) {
     const items = byDay.get(current.format('YYYY-MM-DD')) ?? []
@@ -94,9 +134,16 @@ export function CalendarPage() {
 
       <Card style={{ flex: 1, minWidth: 360 }}>
         <Flex justify="space-between" align="center" wrap gap="small" className="mb-4">
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            {t('nav.agendaCalendar')}
-          </Typography.Title>
+          <Flex gap="small" align="center">
+            <Button size="small" onClick={() => setCursor(dayjs())}>
+              {t('agenda.events.today')}
+            </Button>
+            <Button size="small" icon={<LeftOutlined />} aria-label={t('agenda.events.prev')} onClick={() => shift(-1)} />
+            <Button size="small" icon={<RightOutlined />} aria-label={t('agenda.events.next')} onClick={() => shift(1)} />
+            <Typography.Title level={5} style={{ margin: 0 }}>
+              {rangeLabel}
+            </Typography.Title>
+          </Flex>
           <Flex gap="small" align="center">
             <Segmented<CalendarView>
               value={view}
@@ -121,6 +168,7 @@ export function CalendarPage() {
         {view === 'month' ? (
           <Calendar
             value={cursor}
+            headerRender={() => null}
             onSelect={(date, info) => {
               setCursor(date)
               // A day click (not a panel/month switch) starts a new event on that day.
@@ -130,7 +178,13 @@ export function CalendarPage() {
             cellRender={(current, info) => (info.type === 'date' ? cellRender(current) : null)}
           />
         ) : (
-          <Alert type="info" showIcon message={t('agenda.events.weekDayComingSoon')} />
+          <WeekDayGrid
+            days={range.days}
+            occurrences={visibleOccurrences}
+            colorOf={colorOf}
+            onSelectOccurrence={setDetail}
+            onCreateAt={openCreate}
+          />
         )}
       </Card>
 

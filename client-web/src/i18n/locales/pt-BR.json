@@ -898,7 +898,9 @@
         "week": "Semana",
         "day": "Dia"
       },
-      "weekDayComingSoon": "As visões de semana e dia chegam em breve."
+      "today": "Hoje",
+      "prev": "Anterior",
+      "next": "Próximo"
     },
     "alerts": {
       "title": "Alertas",

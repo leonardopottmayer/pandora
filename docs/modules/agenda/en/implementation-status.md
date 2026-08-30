@@ -35,7 +35,11 @@ in [product-plan.md](product-plan.md).
   (via the `IUserPreferencesReader` port), falling back to UTC only when the user has no preference.
   The web forms send the saved preference too, and the alert editor defaults its offset from
   `DefaultAlertOffsetMinutes`.
-- **Frontend week/day views and an Agenda settings screen** are partially deferred.
+- **Week and day views are a hand-rolled time grid** (`WeekDayGrid`), not a calendar library: an
+  hour grid with greedy lane packing for overlapping events, an all-day strip, a now-indicator, and
+  click-to-create. The month view keeps antd's `<Calendar>`. All three honour `WeekStartsOn` (the
+  week math via a manual `startOfWeek`, the month grid via the dayjs locale's `weekStart`).
+- **An Agenda settings screen** is still deferred.
 
 ## Not yet implemented (designed / planned)
 
@@ -44,12 +48,13 @@ in [product-plan.md](product-plan.md).
 | **Google Calendar sync** | `agd009`–`agd012` (binding/link/cursor/conflict), `ICalendarSyncProvider` + Google impl, push/echo suppression, conflict log — none built. Depends on [Integrations](../../integrations/en/overview.md) I1 (done). | 5 |
 | **Google Tasks sync** | `ITaskSyncProvider` reusing the sync machinery. | 6 |
 | **Assistant command catalog** | Commands are commandable (D6), but the descriptor registration (`create_reminder`, `create_task`, `create_event`, `complete_task`, `snooze_reminder`, `whats_my_day`) for Assistant is not wired. | 7 |
-| **Honour `WeekStartsOn` in the calendar grid** | `TimeZone` and `DefaultAlertOffsetMinutes` are now consumed (see above). `WeekStartsOn` is still not honoured: antd's `<Calendar>` derives the first day of the week from the dayjs locale, so wiring it means configuring the dayjs locale's `weekStart` globally — folded into the week/day view work. | follow-up (phase 2) |
+| **Agenda settings screen** | No dedicated settings page in the module; the scheduling defaults live in Identity preferences and are consumed from there. A screen surfacing them in the Agenda context is still open. | follow-up |
 | **Beyond** | Note↔event links, NL quick-add, travel time, location alerts, ICS/CalDAV, Microsoft/Apple providers, Finances due dates in the day view. | — |
 
 ## Known open points
 
-1. **Calendar UI library vs. hand-rolled grid** — affects only the week/day polish.
+1. **Calendar UI library vs. hand-rolled grid** — **decided: hand-rolled** (`WeekDayGrid`), no new
+   dependency. Revisit only if drag-to-move/resize or multi-day spanning bars are wanted.
 2. **Subtask depth** capped at one level (matches Google Tasks fidelity).
 3. **Whether Finances migrates to the RRULE engine** — not a prerequisite; revisit if a third
    recurrence consumer appears.

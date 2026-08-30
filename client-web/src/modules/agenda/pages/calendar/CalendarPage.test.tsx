@@ -59,6 +59,19 @@ describe('CalendarPage', () => {
     expect(await screen.findByText('Standup')).toBeInTheDocument()
   })
 
+  it('renders the timed event in the week view', async () => {
+    mockBase([occurrence])
+    const user = userEvent.setup()
+    renderWithProviders(<CalendarPage />)
+
+    await screen.findByText('Standup')
+    await user.click(screen.getByText('Week'))
+
+    // The hour gutter and the titled event block are specific to the time-grid week view.
+    expect(await screen.findByText('15:00')).toBeInTheDocument()
+    expect(screen.getByTitle('Standup')).toBeInTheDocument()
+  })
+
   it('opens the occurrence detail when a pill is clicked', async () => {
     mockBase([occurrence])
     server.use(

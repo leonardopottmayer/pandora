@@ -898,7 +898,9 @@
         "week": "Week",
         "day": "Day"
       },
-      "weekDayComingSoon": "Week and day views are coming soon."
+      "today": "Today",
+      "prev": "Previous",
+      "next": "Next"
     },
     "alerts": {
       "title": "Alerts",

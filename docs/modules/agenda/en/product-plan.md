@@ -53,9 +53,12 @@ are **built**. What remains is external sync and the Assistant catalog.
   (recurrence expands in the item's own zone), but when the caller omits it, the create handlers
   default it from Identity's `UserPreferences` through the `IUserPreferencesReader` port, falling back
   to UTC only when there is no preference. The web forms send the saved preference and the alert
-  editor defaults its offset from `DefaultAlertOffsetMinutes`. **Still open:** `WeekStartsOn` in the
-  calendar grid, which is folded into the week/day view work (it needs the dayjs locale's `weekStart`
-  set globally).
+  editor defaults its offset from `DefaultAlertOffsetMinutes`. `WeekStartsOn` is now honoured too, in
+  all three calendar views (see below).
+- **Week and day calendar views.** **Done.** A hand-rolled time grid (`WeekDayGrid`) replaced the
+  placeholder: hour grid, greedy lane packing for overlapping events, all-day strip, now-indicator,
+  click-to-create, and unified prev/next/today navigation. `WeekStartsOn` is honoured via a manual
+  `startOfWeek` (week math) and the dayjs locale's `weekStart` (the antd month grid).
 
 ## Beyond *(not scheduled)*
 
