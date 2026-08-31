@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Pottmayer.Pandora.Modules.Channels.Abstractions;
 using Pottmayer.Pandora.Modules.Channels.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Channels.Domain.Ports.Repositories;
@@ -19,6 +20,7 @@ public sealed class DispatchPendingNotificationsCommandHandler(
     IUnitOfWorkFactory factory,
     IEnumerable<IChannelTransport> transports,
     IIntegrationEventBus bus,
+    IChannelsMetrics metrics,
     TimeProvider timeProvider)
     : CommandHandlerBase<DispatchPendingNotificationsCommand, DispatchPendingNotificationsResult>
 {
@@ -42,6 +44,7 @@ public sealed class DispatchPendingNotificationsCommandHandler(
             foreach (var notification in due)
             {
                 notification.MarkSending();
+                var channelLabel = notification.Channel.Value;
 
                 try
                 {
@@ -51,9 +54,13 @@ public sealed class DispatchPendingNotificationsCommandHandler(
                             $"No transport is registered for channel '{notification.Channel.Value}'.");
                     }
 
+                    var startedAt = Stopwatch.GetTimestamp();
                     var delivery = await transport.SendAsync(notification, token);
+                    metrics.RecordDispatchDuration(channelLabel, Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds);
+
                     notification.MarkSent(delivery.Provider, delivery.ProviderMessageId);
                     sent++;
+                    metrics.RecordDispatched(channelLabel, "sent");
                 }
                 catch (PermanentDeliveryException ex)
                 {
@@ -61,6 +68,7 @@ public sealed class DispatchPendingNotificationsCommandHandler(
                     // burning five attempts against a wall.
                     notification.MarkDead(ex.Message);
                     dead++;
+                    metrics.RecordDispatched(channelLabel, "dead");
 
                     if (await DisableAddressAsync(userChannels, notification, ex.Message, token) is { } evt)
                         disabled.Add(evt);
@@ -69,13 +77,22 @@ public sealed class DispatchPendingNotificationsCommandHandler(
                 {
                     notification.MarkFailed(ex.Message, timeProvider);
                     if (notification.Status == NotificationStatus.Dead)
+                    {
                         dead++;
+                        metrics.RecordDispatched(channelLabel, "dead");
+                    }
                     else
+                    {
                         failed++;
+                        metrics.RecordDispatched(channelLabel, "failed");
+                    }
                 }
 
                 await notifications.UpdateAsync(notification, token);
             }
+
+            // Refresh the queue-depth gauge with what is still in flight after this batch.
+            metrics.SetQueueDepth(await notifications.CountPendingAsync(token));
 
             // Published inside the unit of work: each channel disable and its announcement commit
             // together (transactional outbox).

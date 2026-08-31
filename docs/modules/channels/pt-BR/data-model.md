@@ -18,6 +18,7 @@ As migrations ficam em `migrations/migrations/channels/`.
 | chn004 | `inbound_update` | Guarda de idempotência de entrada + trilha |
 | chn005 | `notification_preference` | Política de entrega por categoria |
 | chn006 | `notification` | A fila de saída durável |
+| chn007 | `user_notification_setting` | Ajustes entre categorias (quiet hours) |
 
 ---
 
@@ -101,9 +102,9 @@ notificações de segurança são obrigatórias.
 
 Constraint: `uq_chn005_user_category (user_id, category)`.
 
-> **Quiet hours estão ausentes de propósito.** Precisam do fuso IANA do usuário — agora disponível nas
-> preferências do Identity — então estão desbloqueadas mas ainda não construídas; entram nesta tabela
-> quando implementadas. Ver [product-plan.md](product-plan.md).
+> **Quiet hours não ficam aqui.** São um ajuste *global* por usuário, então moram na própria tabela
+> de uma linha por usuário (`chn007`), não como colunas nesta tabela por categoria. Esta tabela
+> continua puramente sobre quais canais uma categoria usa.
 
 ## chn006_notification
 
@@ -131,3 +132,23 @@ Constraints/índices: `uq_chn006_correlation_channel (correlation_id, channel)` 
 um fan-out compartilha um correlation id, então a unicidade inclui o canal), `chk_chn006_status`,
 `ix_chn006_status_next_attempt_at` (scan do dispatcher),
 `ix_chn006_user_created_at (user_id, created_at DESC)` (leitura do histórico de entrega).
+
+## chn007_user_notification_setting
+
+Ajustes de entrega do usuário entre categorias. Hoje isso é quiet hours: uma janela diária de "não
+perturbe", mantida **globalmente** e não por categoria. A janela são dois horários de relógio de
+parede sem data, avaliados contra o horário local do usuário — o fuso IANA é resolvido das
+preferências do Identity no momento da entrega, então nenhum fuso é guardado aqui. `identity.*` nunca
+consulta isso — notificações de segurança são obrigatórias.
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | |
+| `user_id` | uuid NOT NULL | único |
+| `quiet_hours_start` | time NULL | início da janela (relógio de parede local), inclusivo |
+| `quiet_hours_end` | time NULL | fim da janela (relógio de parede local), exclusivo; pode ser menor que o início (vira a meia-noite) |
+| `quiet_hours_behaviour` | varchar(20) NULL | `suppress` \| `deliver_anyway` |
+
+As três colunas `quiet_hours_*` ficam nulas juntas quando quiet hours estão desligadas. Constraint:
+`uq_chn007_user (user_id)`. A supressão é aplicada no `NotifyUserRequestedHandler` antes do fan-out;
+`deliver_anyway` mantém a janela registrada mas ainda envia.

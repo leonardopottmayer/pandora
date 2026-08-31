@@ -19,6 +19,8 @@ background service, not an HTTP endpoint. Errors are mapped from typed `Result` 
 | GET | `/notifications` | Delivery history, newest first — filterable by status, channel, category, date; paged. |
 | GET | `/preferences` | The user's channel choices per category. |
 | PUT | `/preferences/{category}` | Set the channels a category goes out on (empty list mutes; unknown channels rejected). |
+| GET | `/notification-settings` | The user's cross-category settings (quiet hours). |
+| PUT | `/notification-settings` | Set quiet hours (enable/disable, window, behaviour). |
 
 ### GET `/`
 
@@ -56,6 +58,26 @@ Returns the user's `chn005` preferences per category.
 
 Sets the ordered channel list for a category. An empty list mutes it; unknown channels are rejected.
 `identity.*` categories are mandatory and not settable.
+
+### GET `/notification-settings`
+
+Returns the user's `chn007` settings. When quiet hours are off the time/behaviour fields are null:
+
+```json
+{ "quietHoursEnabled": false, "quietHoursStart": null, "quietHoursEnd": null, "quietHoursBehaviour": null }
+```
+
+### PUT `/notification-settings`
+
+```json
+{ "quietHoursEnabled": true, "quietHoursStart": "22:00", "quietHoursEnd": "07:00", "quietHoursBehaviour": "suppress" }
+```
+
+Sets the global quiet-hours window. Times are `HH:mm` wall-clock **in the user's own time zone**; the
+end may be earlier than the start (the window wraps past midnight). `quietHoursBehaviour` is
+`suppress` (drop the delivery) or `deliver_anyway` (keep the window on record but still send). With
+`quietHoursEnabled: false` the window is cleared and the other fields are ignored. Equal start and end
+is rejected. Quiet hours never apply to `identity.*` (security) notifications.
 
 ---
 

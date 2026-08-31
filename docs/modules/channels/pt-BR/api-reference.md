@@ -19,6 +19,8 @@ long-polling, não por um endpoint HTTP. Erros vêm de falhas tipadas `Result`.
 | GET | `/notifications` | Histórico de entrega, mais recentes primeiro — filtrável por status, canal, categoria, data; paginado. |
 | GET | `/preferences` | As escolhas de canal do usuário por categoria. |
 | PUT | `/preferences/{category}` | Define os canais em que uma categoria sai (lista vazia silencia; canais desconhecidos são rejeitados). |
+| GET | `/notification-settings` | Os ajustes do usuário entre categorias (quiet hours). |
+| PUT | `/notification-settings` | Define quiet hours (ligar/desligar, janela, comportamento). |
 
 ### GET `/`
 
@@ -56,6 +58,27 @@ Devolve as preferências `chn005` do usuário por categoria.
 
 Define a lista ordenada de canais de uma categoria. Uma lista vazia a silencia; canais desconhecidos são
 rejeitados. Categorias `identity.*` são obrigatórias e não configuráveis.
+
+### GET `/notification-settings`
+
+Retorna os ajustes `chn007` do usuário. Quando quiet hours estão desligadas os campos de horário/
+comportamento são nulos:
+
+```json
+{ "quietHoursEnabled": false, "quietHoursStart": null, "quietHoursEnd": null, "quietHoursBehaviour": null }
+```
+
+### PUT `/notification-settings`
+
+```json
+{ "quietHoursEnabled": true, "quietHoursStart": "22:00", "quietHoursEnd": "07:00", "quietHoursBehaviour": "suppress" }
+```
+
+Define a janela global de quiet hours. Horários são `HH:mm` de relógio de parede **no fuso do próprio
+usuário**; o fim pode ser menor que o início (a janela vira a meia-noite). `quietHoursBehaviour` é
+`suppress` (descarta a entrega) ou `deliver_anyway` (mantém a janela registrada mas ainda envia). Com
+`quietHoursEnabled: false` a janela é limpa e os outros campos são ignorados. Início e fim iguais são
+rejeitados. Quiet hours nunca se aplicam a notificações `identity.*` (segurança).
 
 ---
 

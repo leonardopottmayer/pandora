@@ -5,6 +5,7 @@ import type {
   DeliveryHistoryFilters,
   NotificationHistoryItem,
   NotificationPreference,
+  NotificationSettings,
   UserChannel,
 } from '../models'
 
@@ -35,6 +36,15 @@ export async function listPreferences(): Promise<NotificationPreference[]> {
 
 export async function setPreference(category: string, channels: ChannelId[]): Promise<void> {
   await apiClient.put(`${BASE}/preferences/${category}`, { channels })
+}
+
+export async function getNotificationSettings(): Promise<NotificationSettings> {
+  const { data } = await apiClient.get<NotificationSettings>(`${BASE}/notification-settings`)
+  return data
+}
+
+export async function setNotificationSettings(settings: NotificationSettings): Promise<void> {
+  await apiClient.put(`${BASE}/notification-settings`, settings)
 }
 
 export async function listDeliveryHistory(

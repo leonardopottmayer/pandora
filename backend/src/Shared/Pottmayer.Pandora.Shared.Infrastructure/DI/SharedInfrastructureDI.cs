@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using OpenTelemetry.Metrics;
 using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Observability.AspNetCore.DI;
 using Pottmayer.Tars.Observability.DI;
@@ -51,6 +52,10 @@ public static class SharedInfrastructureDI
         builder.Services.AddTarsAspNetCoreMetrics();
         builder.Services.AddTarsHttpClientMetrics();
         builder.Services.AddTarsRuntimeMetrics();
+        // Pandora's own module meters (e.g. Channels' queue/dispatch metrics). Mirrors the tars
+        // wildcard: any module that names its Meter "Pottmayer.Pandora.*" is captured, no per-module
+        // wiring here. The OTLP exporter below carries these too.
+        builder.Services.AddOpenTelemetry().WithMetrics(metrics => metrics.AddMeter("Pottmayer.Pandora.*"));
         builder.Services.AddTarsMetricsOtlpExporter(options.OtlpEndpoint);
 
         builder.Services.AddTarsLogging();

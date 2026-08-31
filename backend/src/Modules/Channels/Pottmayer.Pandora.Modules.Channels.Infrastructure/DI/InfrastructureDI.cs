@@ -5,6 +5,7 @@ using Pottmayer.Pandora.Modules.Channels.Abstractions;
 using Pottmayer.Pandora.Modules.Channels.Domain.Ports.Services;
 using Pottmayer.Pandora.Modules.Channels.Infrastructure.Ingress;
 using Pottmayer.Pandora.Modules.Channels.Infrastructure.Jobs;
+using Pottmayer.Pandora.Modules.Channels.Infrastructure.Observability;
 using Pottmayer.Pandora.Modules.Channels.Infrastructure.Templates;
 using Pottmayer.Pandora.Modules.Channels.Infrastructure.Transports;
 using Pottmayer.Tars.Communication.Email.DI;
@@ -24,6 +25,10 @@ public static class InfrastructureDI
 
         builder.Services.AddScoped<INotificationTemplateRenderer, FileNotificationTemplateRenderer>();
         builder.Services.AddHostedService<TemplateCatalogValidator>();
+
+        // One meter for the module, shared by the dispatcher and the inbound triage. Its name is
+        // subscribed by the shared observability wiring's Pottmayer.Pandora.* AddMeter.
+        builder.Services.AddSingleton<IChannelsMetrics, ChannelsMetrics>();
 
         // E-mail transport (Tars.Communication): selected by config (Tars:Communication:Email:Provider).
         // "logging" (default) writes to the log; "mailkit" delivers over SMTP (e.g. Mailpit locally).

@@ -17,6 +17,12 @@ public interface INotificationRepository : IStandardRepository<Notification, Gui
     Task<IReadOnlyList<Notification>> GetDueAsync(DateTimeOffset now, int batchSize, CancellationToken ct = default);
 
     /// <summary>
+    /// How many notifications are still in flight — not in a terminal state (Pending, Failed awaiting
+    /// retry, or Sending). Backs the queue-depth metric.
+    /// </summary>
+    Task<long> CountPendingAsync(CancellationToken ct = default);
+
+    /// <summary>
     /// A page of the user's delivery history, newest first, narrowed by the optional filters.
     /// </summary>
     Task<IReadOnlyList<Notification>> GetHistoryAsync(

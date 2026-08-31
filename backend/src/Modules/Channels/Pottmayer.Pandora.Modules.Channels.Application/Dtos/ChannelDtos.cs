@@ -15,6 +15,16 @@ public sealed record ChannelLinkDto(string Url, DateTimeOffset ExpiresAt);
 /// <summary>A user's channel choice for one category. Empty channels means the category is muted.</summary>
 public sealed record NotificationPreferenceDto(string Category, IReadOnlyList<string> Channels);
 
+/// <summary>
+/// A user's cross-category delivery settings. <paramref name="QuietHoursEnabled"/> false means the
+/// other quiet-hours fields are null. Times are wall-clock in the user's own time zone, "HH:mm".
+/// </summary>
+public sealed record NotificationSettingsDto(
+    bool QuietHoursEnabled,
+    string? QuietHoursStart,
+    string? QuietHoursEnd,
+    string? QuietHoursBehaviour);
+
 /// <summary>One row of the delivery history: what went out, on which channel, and how it ended.</summary>
 public sealed record NotificationHistoryDto(
     Guid Id,

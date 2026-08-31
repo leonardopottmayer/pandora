@@ -28,6 +28,10 @@ internal sealed class FakeNotificationRepository : INotificationRepository
         => Task.FromResult<IReadOnlyList<Notification>>(
             _items.Where(n => n.IsDue(now)).OrderBy(n => n.CreatedAt).Take(batchSize).ToList());
 
+    public Task<long> CountPendingAsync(CancellationToken ct = default)
+        => Task.FromResult(_items.LongCount(n =>
+            n.Status is NotificationStatus.Pending or NotificationStatus.Failed or NotificationStatus.Sending));
+
     public Task<IReadOnlyList<Notification>> GetHistoryAsync(
         Guid userId, NotificationStatus? status, Channel channel, string category,
         DateTimeOffset? from, DateTimeOffset? to, int skip, int take, CancellationToken ct = default)

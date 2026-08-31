@@ -215,7 +215,21 @@
       "Sent": "Enviado",
       "Failed": "Falhou",
       "Dead": "Morto"
-    }
+    },
+    "quietHoursTitle": "Horario silencioso",
+    "quietHoursDesc": "Uma janela diaria de nao perturbe. Notificacoes que caem nela sao retidas — exceto alertas de seguranca, que sempre saem.",
+    "quietHoursEnable": "Ativar horario silencioso",
+    "quietHoursFrom": "De",
+    "quietHoursTo": "Ate",
+    "quietHoursBehaviour": "Durante a janela",
+    "quietHoursBehaviourOption": {
+      "suppress": "Suprimir (nao enviar)",
+      "deliver_anyway": "Enviar mesmo assim"
+    },
+    "quietHoursZoneHint": "Os horarios sao no seu proprio fuso.",
+    "quietHoursSave": "Salvar horario silencioso",
+    "quietHoursSaved": "Horario silencioso salvo.",
+    "quietHoursInvalid": "Defina inicio e fim — nao podem ser iguais."
   },
   "connections": {
     "title": "Contas conectadas",

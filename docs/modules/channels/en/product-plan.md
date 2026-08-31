@@ -1,6 +1,6 @@
 # Channels Module — Roadmap (remaining work)
 
-> **Status:** phases **C1–C4** and most of **C5** are implemented. This file now tracks only what is
+> **Status:** phases **C1–C5** are implemented. This file now tracks only what is
 > **not yet built**. For what exists, see the module docs: [README](../README.md) ·
 > [Overview](overview.md) · [Architecture](architecture.md) · [Data Model](data-model.md) ·
 > [Outbound & Templates](outbound-and-templates.md) · [Inbound & Linking](inbound-and-linking.md) ·
@@ -17,20 +17,22 @@
 
 The boundary (Channels talks *to* the user), the principles (C1–C6), the internal Delivery/Ingress/
 Addressing seam, the two-path template model, fan-out, inbound triage and routing are all documented in
-the files linked above and are **built**. What remains is the phase-C5 operations tail.
+the files linked above and are **built**. Phase C5 is now complete too.
 
 ---
 
-## Phase C5 — Operations (remaining)
+## Phase C5 — Operations *(done)*
 
-The module is fully usable without this; it lands piecemeal.
-
-- **Quiet hours.** `chn005` gains `quiet_hours_start` / `quiet_hours_end` (in the user's zone) and a
-  `quiet_hours_behaviour` of `suppress | deliver_anyway` — `defer_to_end` is dropped, because holding a
-  delivery until morning is scheduling, and scheduling does not live here (C1). **Unblocked** — the
-  user's IANA time zone is now available in Identity preferences — but not yet built.
-- **Metrics.** Queue depth, dispatch latency, failure rate per channel, discarded updates. Waits on
-  OpenTelemetry wiring in the Host — a cross-cutting task, not a Channels-only one.
+- **Quiet hours — built.** A global daily "do not disturb" window (`chn007_user_notification_setting`),
+  `suppress | deliver_anyway` (`defer_to_end` dropped — holding until morning is scheduling, which does
+  not live here, C1). Evaluated in the user's own IANA zone (resolved from Identity preferences at
+  delivery time) and applied in `NotifyUserRequestedHandler` before fan-out. It landed as a **global
+  per-user** setting rather than columns on `chn005`, because a single "do not disturb" on a
+  per-category table would have meant a row per category. Security notifications bypass it.
+- **Metrics — built.** A `ChannelsMetrics` meter (`Pottmayer.Pandora.Modules.Channels`) exposes queue
+  depth, dispatch duration, dispatched-count by channel/outcome, and discarded inbound updates,
+  subscribed by a `Pottmayer.Pandora.*` `AddMeter` wildcard in the shared observability wiring and
+  exported over OTLP (the Host's OpenTelemetry pipeline, which landed since this was first planned).
 
 ## Maybe later *(not planned)*
 

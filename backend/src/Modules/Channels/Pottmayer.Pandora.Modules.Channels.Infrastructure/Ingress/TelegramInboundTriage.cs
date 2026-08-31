@@ -6,6 +6,7 @@ using Pottmayer.Pandora.Modules.Channels.Application.Commands.ConsumeTelegramLin
 using Pottmayer.Pandora.Modules.Channels.Contracts;
 using Pottmayer.Pandora.Modules.Channels.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Channels.Domain.Ports.Repositories;
+using Pottmayer.Pandora.Modules.Channels.Domain.Ports.Services;
 using Pottmayer.Pandora.Modules.Channels.Domain.ValueObjects;
 using Pottmayer.Tars.Communication.Telegram.Abstractions;
 using Pottmayer.Tars.Communication.Telegram.Abstractions.Models;
@@ -32,6 +33,7 @@ public sealed class TelegramInboundTriage(
     IIntegrationEventBus bus,
     ISender sender,
     ITelegramClient client,
+    IChannelsMetrics metrics,
     TimeProvider timeProvider,
     ILogger<TelegramInboundTriage> logger)
 {
@@ -51,6 +53,9 @@ public sealed class TelegramInboundTriage(
             return;
 
         var outcome = await RouteAsync(update, ct);
+
+        if (outcome.Classification == InboundClassification.Discarded)
+            metrics.RecordInboundDiscarded();
 
         // Record the update durably — this is what restores the long-polling offset after a restart.
         await factory.ExecuteAsync(ChannelsModule.DatabaseKey, async (context, token) =>

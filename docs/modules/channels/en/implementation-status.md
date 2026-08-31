@@ -7,7 +7,7 @@ in [product-plan.md](product-plan.md).
 
 ---
 
-## Implemented (phases C1–C4, plus most of C5)
+## Implemented (phases C1–C5)
 
 | Area | Notes |
 |---|---|
@@ -26,22 +26,23 @@ in [product-plan.md](product-plan.md).
 | **C5 — raw retention purge** | `InboundUpdateRetentionBackgroundService`; `Channels:RawRetention:{Enabled,RetentionDays}` (default on / 7 days). |
 | **C5 — delivery history** | `GET /channels/notifications` (filter + paging); `chn006.user_id`/`category` stamped at enqueue; history table in settings. |
 | **C5 — test send** | `POST /channels/{channel}/test` (delivered in C2). |
-| **Frontend** | Notifications settings section (channels, test, preferences, delivery history) in `client-web/src/modules/channels`. |
+| **C5 — quiet hours** | `chn007_user_notification_setting`; a global daily "do not disturb" window in the user's own IANA zone (resolved from Identity via `IUserPreferencesReader`); `suppress`/`deliver_anyway`; gated in `NotifyUserRequestedHandler` before fan-out; `GET`/`PUT /channels/notification-settings`; settings UI. Security notifications never reach this path. |
+| **C5 — metrics** | `ChannelsMetrics` meter (`Pottmayer.Pandora.Modules.Channels`): `dispatched{channel,outcome}`, `dispatch.duration{channel}`, `queue.depth` gauge, `inbound.updates.discarded`. Subscribed by a `Pottmayer.Pandora.*` `AddMeter` wildcard in the shared observability wiring, exported over OTLP. |
+| **Frontend** | Notifications settings section (channels, test, preferences, **quiet hours**, delivery history) in `client-web/src/modules/channels`. |
 
 ### Notable deviations from the original plan
 
-- **`chn005` has no quiet-hours columns.** Deferred — quiet hours need the user's IANA time zone,
-  which Identity does not carry yet. Only the ordered `channels[]` array is stored.
+- **Quiet hours are a global per-user setting (`chn007`), not columns on `chn005`.** The plan said
+  they would "join `chn005`", but that table is per-category and its rows only exist once a user
+  customises a category — a single "do not disturb" would have meant a row per category. `chn007` is
+  one row per user, so the window is global; per-category muting stays on `chn005`.
 - **`chn004` keeps a `uuid_generate_v7()` surrogate PK** with a unique index on
   `(provider, provider_update_id)`, rather than the composite PK the plan proposed.
-- The old `Notifications` tests project still exists under `tests/` as legacy.
 
 ## Not yet implemented (designed / planned)
 
 | Area | Status | Where |
 |---|---|---|
-| **Quiet hours** | Not built. The IANA time zone they need is now in Identity preferences, so unblocked. | C5 |
-| **Metrics** (queue depth, dispatch latency, failure rate per channel, discarded updates) | Waits on OpenTelemetry wiring in the Host. | C5 |
 | **Webhook driver** | Deferred; long polling covers ingress. The Tars client already supports `SetWebhook`. | "Maybe later" |
 | **Manual retry of a dead row** | Not planned while dead-letters are rare and inspectable. | "Maybe later" |
 | **Finances notification categories** | Finances events (`StatementClosed`, `ImportCompleted`, …) not published yet. | Follow-up in Finances |

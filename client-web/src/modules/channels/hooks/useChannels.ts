@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { channelsKeys } from './queryKeys'
-import type { ChannelId, DeliveryHistoryFilters } from '../models'
+import type { ChannelId, DeliveryHistoryFilters, NotificationSettings } from '../models'
 import * as channelsService from '../services/channels.service'
 
 export function useChannels() {
@@ -55,5 +55,20 @@ export function useSetPreference() {
     mutationFn: ({ category, channels }: { category: string; channels: ChannelId[] }) =>
       channelsService.setPreference(category, channels),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: channelsKeys.preferences() }),
+  })
+}
+
+export function useNotificationSettings() {
+  return useQuery({
+    queryKey: channelsKeys.settings(),
+    queryFn: () => channelsService.getNotificationSettings(),
+  })
+}
+
+export function useSetNotificationSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (settings: NotificationSettings) => channelsService.setNotificationSettings(settings),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: channelsKeys.settings() }),
   })
 }

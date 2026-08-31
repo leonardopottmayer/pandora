@@ -27,6 +27,22 @@ export interface NotificationPreference {
   channels: ChannelId[]
 }
 
+/** What happens to a notification that lands inside the quiet-hours window. */
+export type QuietHoursBehaviour = 'suppress' | 'deliver_anyway'
+
+export const QUIET_HOURS_BEHAVIOURS: QuietHoursBehaviour[] = ['suppress', 'deliver_anyway']
+
+/**
+ * Cross-category delivery settings. When quiet hours are off, the time/behaviour fields are null.
+ * Times are "HH:mm" wall-clock in the user's own time zone.
+ */
+export interface NotificationSettings {
+  quietHoursEnabled: boolean
+  quietHoursStart: string | null
+  quietHoursEnd: string | null
+  quietHoursBehaviour: QuietHoursBehaviour | null
+}
+
 export type NotificationStatus = 'Pending' | 'Sending' | 'Sent' | 'Failed' | 'Dead'
 
 /** All statuses, in lifecycle order — drives the history filter. */

@@ -7,7 +7,7 @@ adiante fica em [product-plan.md](product-plan.md).
 
 ---
 
-## Implementado (fases C1–C4, mais a maior parte da C5)
+## Implementado (fases C1–C5)
 
 | Área | Notas |
 |---|---|
@@ -26,22 +26,23 @@ adiante fica em [product-plan.md](product-plan.md).
 | **C5 — purga do bruto** | `InboundUpdateRetentionBackgroundService`; `Channels:RawRetention:{Enabled,RetentionDays}` (padrão ligado / 7 dias). |
 | **C5 — histórico de entrega** | `GET /channels/notifications` (filtro + paginação); `chn006.user_id`/`category` gravados no enfileiramento; tabela de histórico em configurações. |
 | **C5 — envio de teste** | `POST /channels/{channel}/test` (entregue na C2). |
-| **Frontend** | Seção de configurações de Notificações (canais, teste, preferências, histórico) em `client-web/src/modules/channels`. |
+| **C5 — quiet hours** | `chn007_user_notification_setting`; uma janela diária global de "não perturbe" no fuso IANA do próprio usuário (resolvido do Identity via `IUserPreferencesReader`); `suppress`/`deliver_anyway`; aplicado no `NotifyUserRequestedHandler` antes do fan-out; `GET`/`PUT /channels/notification-settings`; UI de configurações. Notificações de segurança nunca passam por esse caminho. |
+| **C5 — métricas** | Meter `ChannelsMetrics` (`Pottmayer.Pandora.Modules.Channels`): `dispatched{channel,outcome}`, `dispatch.duration{channel}`, gauge `queue.depth`, `inbound.updates.discarded`. Assinado por um wildcard `AddMeter` `Pottmayer.Pandora.*` na fiação de observabilidade compartilhada, exportado via OTLP. |
+| **Frontend** | Seção de configurações de Notificações (canais, teste, preferências, **quiet hours**, histórico) em `client-web/src/modules/channels`. |
 
 ### Desvios notáveis do plano original
 
-- **`chn005` não tem colunas de quiet hours.** Adiado — quiet hours precisam do fuso IANA do usuário,
-  que o Identity ainda não carrega. Só o array ordenado `channels[]` é guardado.
+- **Quiet hours são um ajuste global por usuário (`chn007`), não colunas na `chn005`.** O plano dizia
+  que "entrariam na `chn005`", mas essa tabela é por categoria e suas linhas só existem quando o
+  usuário customiza uma categoria — um único "não perturbe" teria virado uma linha por categoria.
+  `chn007` é uma linha por usuário, então a janela é global; o mute por categoria continua na `chn005`.
 - **`chn004` mantém uma PK surrogate `uuid_generate_v7()`** com índice único em
   `(provider, provider_update_id)`, em vez da PK composta que o plano propunha.
-- O antigo projeto de testes `Notifications` ainda existe sob `tests/` como legado.
 
 ## Ainda não implementado (desenhado / planejado)
 
 | Área | Status | Onde |
 |---|---|---|
-| **Quiet hours** | Não construído. O fuso IANA que precisam já está nas preferências do Identity, então desbloqueado. | C5 |
-| **Métricas** (profundidade de fila, latência de dispatch, taxa de falha por canal, updates descartados) | Depende da fiação de OpenTelemetry no Host. | C5 |
 | **Driver de webhook** | Adiado; long polling cobre o ingress. O cliente Tars já suporta `SetWebhook`. | "Talvez depois" |
 | **Retry manual de uma linha morta** | Não planejado enquanto dead-letters são raras e inspecionáveis. | "Talvez depois" |
 | **Categorias de notificação do Finances** | Eventos do Finances (`StatementClosed`, `ImportCompleted`, …) ainda não publicados. | Follow-up no Finances |

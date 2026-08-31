@@ -13,6 +13,14 @@ public sealed class NotificationRepository(IDataContextAccessor accessor)
     public Task<bool> ExistsByCorrelationAndChannelAsync(Guid correlationId, Channel channel, CancellationToken ct = default) =>
         Queryable().AnyAsync(n => n.CorrelationId == correlationId && n.Channel == channel, ct);
 
+    public async Task<long> CountPendingAsync(CancellationToken ct = default) =>
+        await Queryable()
+            .LongCountAsync(
+                n => n.Status == NotificationStatus.Pending
+                     || n.Status == NotificationStatus.Failed
+                     || n.Status == NotificationStatus.Sending,
+                ct);
+
     public async Task<IReadOnlyList<Notification>> GetDueAsync(DateTimeOffset now, int batchSize, CancellationToken ct = default)
     {
         var due = await Queryable()

@@ -74,18 +74,18 @@ namespaces (`Delivery` / `Ingress` / `Addressing`), not in separate `.csproj` fi
 
 ### In scope (implemented — see [Implementation Status](implementation-status.md))
 
-The `channels` schema (`chn001`–`chn006`); email + Telegram transports; per-channel file templates
+The `channels` schema (`chn001`–`chn007`); email + Telegram transports; per-channel file templates
 with startup validation; the durable queue with fan-out, dedup by `(correlation_id, channel)`, retry
-and dead-lettering; per-user/per-category preferences; the Telegram linking handshake; long-polling
-inbound with triage; interaction buttons routed to owners; inbound media reading; delivery history;
-and the daily raw-payload retention purge.
+and dead-lettering; per-user/per-category preferences; global quiet hours (`chn007`, in the user's
+zone, `suppress`/`deliver_anyway`); the Telegram linking handshake; long-polling inbound with triage;
+interaction buttons routed to owners; inbound media reading; delivery history; the daily raw-payload
+retention purge; and OpenTelemetry metrics (queue depth, dispatch latency, per-channel outcomes,
+discarded updates).
 
 ### Out of scope / future (see [product-plan.md](product-plan.md))
 
 | Feature | Status |
 |---|---|
-| **Quiet hours** | Not built — `chn005` holds only the channel list today. The user's IANA time zone they need is now available in Identity preferences, so they are unblocked, not blocked. |
-| **Metrics** (queue depth, dispatch latency, failure rate) | Planned; waits on OpenTelemetry wiring in the Host. |
 | **Webhook driver** | Deferred — long polling covers ingress everywhere; earns its place once the homelab has public HTTPS. |
 | **Manual retry of a dead row** | Not planned while dead-letters are rare and inspectable. |
 | **Finances notification categories** | Finances events not published yet; a small follow-up once it opts in. |

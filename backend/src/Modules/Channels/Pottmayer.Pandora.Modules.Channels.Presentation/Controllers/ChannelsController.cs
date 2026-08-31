@@ -5,9 +5,11 @@ using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Channels.Application.Commands.CreateChannelLink;
 using Pottmayer.Pandora.Modules.Channels.Application.Commands.SendTestNotification;
 using Pottmayer.Pandora.Modules.Channels.Application.Commands.SetNotificationPreference;
+using Pottmayer.Pandora.Modules.Channels.Application.Commands.SetNotificationSettings;
 using Pottmayer.Pandora.Modules.Channels.Application.Commands.UnlinkChannel;
 using Pottmayer.Pandora.Modules.Channels.Application.Queries.GetDeliveryHistory;
 using Pottmayer.Pandora.Modules.Channels.Application.Queries.GetNotificationPreferences;
+using Pottmayer.Pandora.Modules.Channels.Application.Queries.GetNotificationSettings;
 using Pottmayer.Pandora.Modules.Channels.Application.Queries.GetUserChannels;
 using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
@@ -110,8 +112,38 @@ public sealed class ChannelsController(
         return result.ToActionResult(errorMapper);
     }
 
+    /// <summary>The user's cross-category delivery settings (quiet hours), for the settings screen.</summary>
+    [HttpGet("notification-settings")]
+    public async Task<IActionResult> GetSettingsAsync(CancellationToken ct)
+    {
+        var query = new GetNotificationSettingsQuery(new GetNotificationSettingsInput(UserId));
+        var result = await sender.Send(query, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>
+    /// Sets the user's quiet hours. <c>quietHoursEnabled: false</c> clears the window; when true,
+    /// <c>quietHoursStart</c>/<c>quietHoursEnd</c> are "HH:mm" wall-clock in the user's own time zone
+    /// and <c>quietHoursBehaviour</c> is <c>suppress</c> or <c>deliver_anyway</c>.
+    /// </summary>
+    [HttpPut("notification-settings")]
+    public async Task<IActionResult> SetSettingsAsync([FromBody] SetSettingsRequest body, CancellationToken ct)
+    {
+        var command = new SetNotificationSettingsCommand(new SetNotificationSettingsInput(
+            UserId, body.QuietHoursEnabled, body.QuietHoursStart, body.QuietHoursEnd, body.QuietHoursBehaviour));
+        var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
     private Guid UserId => userContextAccessor.Context.User!.Id;
 
     /// <summary>Body for setting a category's channels.</summary>
     public sealed record SetPreferenceRequest(IReadOnlyList<string>? Channels);
+
+    /// <summary>Body for setting the user's quiet hours.</summary>
+    public sealed record SetSettingsRequest(
+        bool QuietHoursEnabled,
+        string? QuietHoursStart,
+        string? QuietHoursEnd,
+        string? QuietHoursBehaviour);
 }

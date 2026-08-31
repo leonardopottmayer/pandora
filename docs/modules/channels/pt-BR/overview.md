@@ -75,18 +75,18 @@ notificações (`chn003` tem FK para a linha da fila). A costura é real, mas in
 
 ### No escopo (implementado — ver [Status de implementação](implementation-status.md))
 
-O schema `channels` (`chn001`–`chn006`); transportes e-mail + Telegram; templates em arquivo por canal
+O schema `channels` (`chn001`–`chn007`); transportes e-mail + Telegram; templates em arquivo por canal
 com validação no startup; a fila durável com fan-out, dedup por `(correlation_id, channel)`, retry e
-dead-letter; preferências por usuário/categoria; o handshake de vínculo do Telegram; entrada por long
-polling com triagem; botões de interação roteados aos donos; leitura de mídia de entrada; histórico de
-entrega; e a purga diária do payload bruto.
+dead-letter; preferências por usuário/categoria; quiet hours global (`chn007`, no fuso do usuário,
+`suppress`/`deliver_anyway`); o handshake de vínculo do Telegram; entrada por long polling com
+triagem; botões de interação roteados aos donos; leitura de mídia de entrada; histórico de entrega; a
+purga diária do payload bruto; e métricas OpenTelemetry (profundidade de fila, latência de dispatch,
+desfechos por canal, updates descartados).
 
 ### Fora do escopo / futuro (ver [product-plan.md](product-plan.md))
 
 | Recurso | Status |
 |---|---|
-| **Horário de silêncio (quiet hours)** | Não construído — `chn005` guarda só a lista de canais hoje. O fuso IANA do usuário que precisam já está disponível nas preferências do Identity, então estão desbloqueadas, não bloqueadas. |
-| **Métricas** (profundidade de fila, latência de dispatch, taxa de falha) | Planejado; depende da fiação de OpenTelemetry no Host. |
 | **Driver de webhook** | Adiado — long polling cobre o ingress em todo lugar; ganha lugar quando o homelab tiver HTTPS público. |
 | **Retry manual de uma linha morta** | Não planejado enquanto dead-letters são raras e inspecionáveis. |
 | **Categorias de notificação do Finances** | Eventos do Finances ainda não publicados; um follow-up pequeno quando ele optar. |

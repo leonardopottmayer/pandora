@@ -11,31 +11,41 @@ import {
   Select,
   Space,
   Spin,
+  Switch,
   Table,
   Tag,
+  TimePicker,
   Tooltip,
   Typography,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import dayjs, { type Dayjs } from 'dayjs'
 import { SendOutlined } from '@ant-design/icons'
 import { toErrorMessage } from '@/lib/api/envelope'
 import {
   ALL_CHANNELS,
   NOTIFICATION_CATEGORIES,
   NOTIFICATION_STATUSES,
+  QUIET_HOURS_BEHAVIOURS,
   type ChannelId,
   type NotificationHistoryItem,
+  type NotificationSettings,
   type NotificationStatus,
+  type QuietHoursBehaviour,
 } from '../models'
 import {
   useChannels,
   useDeliveryHistory,
   useLinkChannel,
   useNotificationPreferences,
+  useNotificationSettings,
+  useSetNotificationSettings,
   useSetPreference,
   useTestChannel,
   useUnlinkChannel,
 } from '../hooks/useChannels'
+
+const TIME_FORMAT = 'HH:mm'
 
 function channelLabel(channel: ChannelId): string {
   return channel === 'email' ? 'E-mail' : 'Telegram'
@@ -54,6 +64,8 @@ export function NotificationsPage() {
   const { message } = App.useApp()
   const { data: channels, isLoading: channelsLoading } = useChannels()
   const { data: preferences, isLoading: prefsLoading } = useNotificationPreferences()
+
+  const { data: settings, isLoading: settingsLoading } = useNotificationSettings()
 
   const link = useLinkChannel()
   const unlink = useUnlinkChannel()
@@ -278,6 +290,14 @@ export function NotificationsPage() {
         )}
       </Card>
 
+      {settingsLoading || !settings ? (
+        <Card title={t('notifications.quietHoursTitle')} className="mt-4">
+          <Spin />
+        </Card>
+      ) : (
+        <QuietHoursCard settings={settings} />
+      )}
+
       <Card
         title={t('notifications.historyTitle')}
         className="mt-4"
@@ -314,5 +334,102 @@ export function NotificationsPage() {
         )}
       </Card>
     </div>
+  )
+}
+
+/**
+ * Quiet-hours editor. Rendered only once the settings have loaded, so it seeds its form state
+ * straight from props in the useState initializers — no effect, no sync.
+ */
+function QuietHoursCard({ settings }: { settings: NotificationSettings }) {
+  const { t } = useTranslation()
+  const { message } = App.useApp()
+  const setSettings = useSetNotificationSettings()
+
+  const [enabled, setEnabled] = useState(settings.quietHoursEnabled)
+  const [start, setStart] = useState<Dayjs | null>(
+    settings.quietHoursStart ? dayjs(settings.quietHoursStart, TIME_FORMAT) : null,
+  )
+  const [end, setEnd] = useState<Dayjs | null>(
+    settings.quietHoursEnd ? dayjs(settings.quietHoursEnd, TIME_FORMAT) : null,
+  )
+  const [behaviour, setBehaviour] = useState<QuietHoursBehaviour>(
+    settings.quietHoursBehaviour ?? 'suppress',
+  )
+
+  async function handleSave() {
+    if (enabled && (!start || !end || start.format(TIME_FORMAT) === end.format(TIME_FORMAT))) {
+      message.error(t('notifications.quietHoursInvalid'))
+      return
+    }
+    try {
+      await setSettings.mutateAsync({
+        quietHoursEnabled: enabled,
+        quietHoursStart: enabled ? start!.format(TIME_FORMAT) : null,
+        quietHoursEnd: enabled ? end!.format(TIME_FORMAT) : null,
+        quietHoursBehaviour: enabled ? behaviour : null,
+      })
+      message.success(t('notifications.quietHoursSaved'))
+    } catch (err) {
+      message.error(toErrorMessage(err, t('notifications.saveError')))
+    }
+  }
+
+  return (
+    <Card title={t('notifications.quietHoursTitle')} className="mt-4">
+      <Typography.Paragraph type="secondary">
+        {t('notifications.quietHoursDesc')}
+      </Typography.Paragraph>
+      <Space direction="vertical" size="middle" className="w-full">
+        <Space>
+          <Switch checked={enabled} onChange={setEnabled} />
+          <Typography.Text>{t('notifications.quietHoursEnable')}</Typography.Text>
+        </Space>
+
+        {enabled && (
+          <>
+            <Space wrap>
+              <div className="flex flex-col gap-1">
+                <Typography.Text type="secondary">{t('notifications.quietHoursFrom')}</Typography.Text>
+                <TimePicker
+                  format={TIME_FORMAT}
+                  minuteStep={15}
+                  value={start}
+                  onChange={setStart}
+                  allowClear={false}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <Typography.Text type="secondary">{t('notifications.quietHoursTo')}</Typography.Text>
+                <TimePicker
+                  format={TIME_FORMAT}
+                  minuteStep={15}
+                  value={end}
+                  onChange={setEnd}
+                  allowClear={false}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <Typography.Text type="secondary">{t('notifications.quietHoursBehaviour')}</Typography.Text>
+                <Select<QuietHoursBehaviour>
+                  style={{ width: 200 }}
+                  value={behaviour}
+                  onChange={setBehaviour}
+                  options={QUIET_HOURS_BEHAVIOURS.map((b) => ({
+                    label: t(`notifications.quietHoursBehaviourOption.${b}`),
+                    value: b,
+                  }))}
+                />
+              </div>
+            </Space>
+            <Typography.Text type="secondary">{t('notifications.quietHoursZoneHint')}</Typography.Text>
+          </>
+        )}
+
+        <Button type="primary" className="w-fit" onClick={handleSave} loading={setSettings.isPending}>
+          {t('notifications.quietHoursSave')}
+        </Button>
+      </Space>
+    </Card>
   )
 }

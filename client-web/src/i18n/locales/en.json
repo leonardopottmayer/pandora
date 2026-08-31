@@ -215,7 +215,21 @@
       "Sent": "Sent",
       "Failed": "Failed",
       "Dead": "Dead"
-    }
+    },
+    "quietHoursTitle": "Quiet hours",
+    "quietHoursDesc": "A daily do-not-disturb window. Notifications that land inside it are held back — except security alerts, which always go out.",
+    "quietHoursEnable": "Enable quiet hours",
+    "quietHoursFrom": "From",
+    "quietHoursTo": "To",
+    "quietHoursBehaviour": "During the window",
+    "quietHoursBehaviourOption": {
+      "suppress": "Suppress (don't send)",
+      "deliver_anyway": "Deliver anyway"
+    },
+    "quietHoursZoneHint": "Times are in your own time zone.",
+    "quietHoursSave": "Save quiet hours",
+    "quietHoursSaved": "Quiet hours saved.",
+    "quietHoursInvalid": "Set a start and end time — they cannot be the same."
   },
   "connections": {
     "title": "Connected accounts",

@@ -18,6 +18,7 @@ Migrations live in `migrations/migrations/channels/`.
 | chn004 | `inbound_update` | Inbound idempotency guard + trail |
 | chn005 | `notification_preference` | Delivery policy per category |
 | chn006 | `notification` | The durable outbound queue |
+| chn007 | `user_notification_setting` | Cross-category settings (quiet hours) |
 
 ---
 
@@ -101,9 +102,9 @@ notifications are mandatory.
 
 Constraint: `uq_chn005_user_category (user_id, category)`.
 
-> **Quiet hours are intentionally absent.** They need the user's IANA time zone — now available in
-> Identity preferences — so they are unblocked but not yet built; they join this table when
-> implemented. See [product-plan.md](product-plan.md).
+> **Quiet hours are not here.** They are a *global* per-user setting, so they live in their own
+> one-row-per-user table (`chn007`), not as columns on this per-category table. This table stays
+> purely about which channels a category goes out on.
 
 ## chn006_notification
 
@@ -131,3 +132,23 @@ Constraints/indexes: `uq_chn006_correlation_channel (correlation_id, channel)` (
 channel** — a fan-out shares one correlation id, so uniqueness includes the channel),
 `chk_chn006_status`, `ix_chn006_status_next_attempt_at` (dispatcher scan),
 `ix_chn006_user_created_at (user_id, created_at DESC)` (delivery-history read).
+
+## chn007_user_notification_setting
+
+A user's cross-category delivery settings. Today that is quiet hours: one daily "do not disturb"
+window, held **globally** rather than per category. The window is two wall-clock times with no date,
+evaluated against the user's local time — the IANA zone is resolved from Identity preferences at
+delivery time, so no zone is stored here. `identity.*` never consults this — security notifications
+are mandatory.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `user_id` | uuid NOT NULL | unique |
+| `quiet_hours_start` | time NULL | window start (local wall clock), inclusive |
+| `quiet_hours_end` | time NULL | window end (local wall clock), exclusive; may be earlier than start (wraps past midnight) |
+| `quiet_hours_behaviour` | varchar(20) NULL | `suppress` \| `deliver_anyway` |
+
+All three `quiet_hours_*` columns are null together when quiet hours are off. Constraint:
+`uq_chn007_user (user_id)`. Suppression is applied in `NotifyUserRequestedHandler` before fan-out;
+`deliver_anyway` keeps the window on record while still sending.

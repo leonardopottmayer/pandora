@@ -35,7 +35,7 @@ public sealed class TelegramInboundTriageTests
             .Register<IInboundUpdateRepository>(_updates)
             .Register<IUserChannelRepository>(_channels);
         return new TelegramInboundTriage(
-            new FakeUnitOfWorkFactory(ctx), _bus, new FakeSender(), _client, _time,
+            new FakeUnitOfWorkFactory(ctx), _bus, new FakeSender(), _client, new FakeChannelsMetrics(), _time,
             NullLogger<TelegramInboundTriage>.Instance);
     }
 
@@ -80,7 +80,7 @@ public sealed class TelegramInboundTriageTests
             .Register<IInboundUpdateRepository>(seen)
             .Register<IUserChannelRepository>(_channels);
         var triage = new TelegramInboundTriage(
-            new FakeUnitOfWorkFactory(ctx), _bus, new FakeSender(), _client, _time,
+            new FakeUnitOfWorkFactory(ctx), _bus, new FakeSender(), _client, new FakeChannelsMetrics(), _time,
             NullLogger<TelegramInboundTriage>.Instance);
 
         await triage.HandleAsync(TextUpdate(12, long.Parse(ChatId), "duplicada"), CancellationToken.None);

@@ -89,7 +89,7 @@ public sealed class InteractionLoopTests
             .Register<IUserChannelRepository>(new FakeUserChannelRepository(linked))
             .Register<IInteractionRepository>(interactionRepo);
         var triage = new TelegramInboundTriage(
-            new FakeUnitOfWorkFactory(ctx), bus, new FakeSender(), client, _time,
+            new FakeUnitOfWorkFactory(ctx), bus, new FakeSender(), client, new FakeChannelsMetrics(), _time,
             NullLogger<TelegramInboundTriage>.Instance);
         return (triage, bus, interactionRepo, client);
     }

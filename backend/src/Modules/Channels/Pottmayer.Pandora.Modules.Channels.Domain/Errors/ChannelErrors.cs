@@ -21,4 +21,10 @@ public static class ChannelErrors
 
     public static Error LinkTokenInvalid =>
         Error.Validation("Channels.LinkTokenInvalid", "This link is invalid or has expired. Start linking again from settings.");
+
+    public static Error InvalidQuietHoursBehaviour(string behaviour) =>
+        Error.Validation("Channels.InvalidQuietHoursBehaviour", $"Quiet-hours behaviour '{behaviour}' is not supported.");
+
+    public static Error InvalidQuietHoursWindow =>
+        Error.Validation("Channels.InvalidQuietHoursWindow", "Quiet hours must have a start and end time, and they cannot be equal.");
 }

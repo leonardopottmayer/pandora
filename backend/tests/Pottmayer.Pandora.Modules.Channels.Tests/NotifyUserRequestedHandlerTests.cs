@@ -23,18 +23,31 @@ public sealed class NotifyUserRequestedHandlerTests
         NotificationPreference.Create(User, Category, channels, new FixedTimeProvider(Now));
 
     private static (NotifyUserRequestedHandler Handler, FakeNotificationRepository Notifications) Build(
-        IEnumerable<UserChannel> channels, IEnumerable<NotificationPreference> preferences)
+        IEnumerable<UserChannel> channels,
+        IEnumerable<NotificationPreference> preferences,
+        UserNotificationSetting? setting = null,
+        string timeZone = "UTC")
     {
         var notifications = new FakeNotificationRepository();
         var ctx = new FakeDataContext()
             .Register<INotificationRepository>(notifications)
             .Register<IUserChannelRepository>(new FakeUserChannelRepository([.. channels]))
-            .Register<INotificationPreferenceRepository>(new FakeNotificationPreferenceRepository([.. preferences]));
+            .Register<INotificationPreferenceRepository>(new FakeNotificationPreferenceRepository([.. preferences]))
+            .Register<IUserNotificationSettingRepository>(
+                new FakeUserNotificationSettingRepository(setting is null ? [] : [setting]));
 
         var factory = new FakeUnitOfWorkFactory(ctx);
         var time = new FixedTimeProvider(Now);
         var enqueuer = new NotificationEnqueuer(factory, new FakeTemplateRenderer(), time);
-        return (new NotifyUserRequestedHandler(factory, enqueuer, time), notifications);
+        var preferencesReader = new FakeUserPreferencesReader(timeZone);
+        return (new NotifyUserRequestedHandler(factory, enqueuer, preferencesReader, time), notifications);
+    }
+
+    private static UserNotificationSetting QuietHours(TimeOnly start, TimeOnly end, QuietHoursBehaviour behaviour)
+    {
+        var setting = UserNotificationSetting.Create(User, new FixedTimeProvider(Now));
+        setting.SetQuietHours(start, end, behaviour);
+        return setting;
     }
 
     private static NotifyUserRequested Event(IReadOnlyList<string>? channels = null) =>
@@ -117,5 +130,76 @@ public sealed class NotifyUserRequestedHandlerTests
 
         var n = Assert.Single(notifications.Added);
         Assert.Equal(Channel.Telegram, n.Channel);
+    }
+
+    // Now is 12:00 UTC. Windows below are relative to that.
+
+    [Fact]
+    public async Task Quiet_hours_suppress_drops_the_whole_notification()
+    {
+        var (handler, notifications) = Build(
+            [Linked(Channel.Email, "alice@example.com"), Linked(Channel.Telegram, "123456789")],
+            [Preference(Channel.Email, Channel.Telegram)],
+            setting: QuietHours(new TimeOnly(8, 0), new TimeOnly(18, 0), QuietHoursBehaviour.Suppress));
+
+        await handler.HandleAsync(Event());
+
+        Assert.Empty(notifications.Added);
+    }
+
+    [Fact]
+    public async Task Deliver_anyway_ignores_the_quiet_window()
+    {
+        var (handler, notifications) = Build(
+            [Linked(Channel.Email, "alice@example.com")],
+            [Preference(Channel.Email)],
+            setting: QuietHours(new TimeOnly(8, 0), new TimeOnly(18, 0), QuietHoursBehaviour.DeliverAnyway));
+
+        await handler.HandleAsync(Event());
+
+        Assert.Single(notifications.Added);
+    }
+
+    [Fact]
+    public async Task Outside_the_quiet_window_the_notification_goes_out()
+    {
+        var (handler, notifications) = Build(
+            [Linked(Channel.Email, "alice@example.com")],
+            [Preference(Channel.Email)],
+            // Overnight 22:00–07:00; noon is outside it.
+            setting: QuietHours(new TimeOnly(22, 0), new TimeOnly(7, 0), QuietHoursBehaviour.Suppress));
+
+        await handler.HandleAsync(Event());
+
+        Assert.Single(notifications.Added);
+    }
+
+    [Fact]
+    public async Task An_overnight_window_suppresses_when_now_is_inside_it()
+    {
+        var (handler, notifications) = Build(
+            [Linked(Channel.Email, "alice@example.com")],
+            [Preference(Channel.Email)],
+            // Overnight 22:00–13:00; noon falls in the after-midnight tail.
+            setting: QuietHours(new TimeOnly(22, 0), new TimeOnly(13, 0), QuietHoursBehaviour.Suppress));
+
+        await handler.HandleAsync(Event());
+
+        Assert.Empty(notifications.Added);
+    }
+
+    [Fact]
+    public async Task The_window_is_evaluated_in_the_users_time_zone()
+    {
+        var (handler, notifications) = Build(
+            [Linked(Channel.Email, "alice@example.com")],
+            [Preference(Channel.Email)],
+            // 12:00 UTC is 09:00 in São Paulo (UTC-3): inside an 08:00–10:00 local window.
+            setting: QuietHours(new TimeOnly(8, 0), new TimeOnly(10, 0), QuietHoursBehaviour.Suppress),
+            timeZone: "America/Sao_Paulo");
+
+        await handler.HandleAsync(Event());
+
+        Assert.Empty(notifications.Added);
     }
 }

@@ -26,7 +26,7 @@ public sealed class DispatchPendingNotificationsCommandHandlerTests
             .Register<INotificationRepository>(repo)
             .Register<IUserChannelRepository>(links);
         var handler = new DispatchPendingNotificationsCommandHandler(
-            new FakeUnitOfWorkFactory(ctx), [transport], _bus, _time);
+            new FakeUnitOfWorkFactory(ctx), [transport], _bus, new FakeChannelsMetrics(), _time);
         return (handler, repo, links);
     }
 
@@ -81,7 +81,7 @@ public sealed class DispatchPendingNotificationsCommandHandlerTests
             .Register<INotificationRepository>(repo)
             .Register<IUserChannelRepository>(new FakeUserChannelRepository());
         var handler = new DispatchPendingNotificationsCommandHandler(
-            new FakeUnitOfWorkFactory(ctx), [email, telegram], _bus, _time);
+            new FakeUnitOfWorkFactory(ctx), [email, telegram], _bus, new FakeChannelsMetrics(), _time);
 
         var result = await handler.Handle(Command(), CancellationToken.None);
 
