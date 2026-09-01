@@ -16,6 +16,8 @@
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.2" />
     <!-- Consumes integration events published by Identity -->
     <ProjectReference Include="../../Identity/Pottmayer.Pandora.Modules.Identity.Contracts/Pottmayer.Pandora.Modules.Identity.Contracts.csproj" />
+    <!-- Consumes integration events published by Integrations (account revoked) -->
+    <ProjectReference Include="../../Integrations/Pottmayer.Pandora.Modules.Integrations.Contracts/Pottmayer.Pandora.Modules.Integrations.Contracts.csproj" />
     <!-- Reads the user's IANA time zone (quiet hours) via IUserPreferencesReader -->
     <ProjectReference Include="../../Identity/Pottmayer.Pandora.Modules.Identity.Abstractions/Pottmayer.Pandora.Modules.Identity.Abstractions.csproj" />
     <!-- Tars: Core -->

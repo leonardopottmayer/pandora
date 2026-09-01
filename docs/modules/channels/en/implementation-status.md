@@ -18,6 +18,7 @@ in [product-plan.md](product-plan.md).
 | **Durable queue** | `chn006` with `Pending→Sending→Sent`, backoff, `Dead`; `NotificationDispatcherBackgroundService`. |
 | **Fan-out & preferences** | `chn005`; `NotifyUserRequested`; enqueuer fan-out; dedup by `(correlation_id, channel)`; `group_id`. |
 | **Identity subscribers** | Activation, password reset/change, MFA enable/disable mapped to templates. |
+| **Integrations subscriber** | `ExternalAccountRevoked` → `integrations.account-revoked` "reconnect your account" notification, republished as `NotifyUserRequested` and fanned out to the user's channels. |
 | **Linking** | `chn002` handshake; `POST/DELETE /{channel}/link`; `ConsumeTelegramLink` on `/start <token>`. |
 | **Inbound** | `chn003`, `chn004`; `TelegramLongPollingService`; `TelegramInboundTriage`; idempotency by `(provider, provider_update_id)`; routing via `InboundInteractionReceived` / `InboundMessageReceived`. |
 | **Interactions** | Registered buttons routed to owners; single-use; first consumer Agenda (`task_done`, `snooze_1h`). |

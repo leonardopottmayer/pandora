@@ -1,0 +1,4 @@
+Reconecte sua conta {{provider}}
+O Pandora perdeu acesso à sua conta {{provider}} — o provedor rejeitou as credenciais, então tudo que dependia dela parou.
+
+Reconecte em Configurações → Integrações para retomar.

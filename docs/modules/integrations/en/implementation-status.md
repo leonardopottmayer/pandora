@@ -29,14 +29,15 @@ forward roadmap lives in [product-plan.md](product-plan.md).
 - **Refresh serialization** uses an **in-process gate**, not `pg_advisory_xact_lock` (single-process
   monolith).
 - **No `reconnect` endpoint** — re-running `connect` re-consents and widens scopes.
-- The contracts (`ExternalAccountRevoked`/`ExternalAccountDisconnected`) already exist, ahead of the
-  phase-I2 Channels wiring that consumes them.
+- The contracts (`ExternalAccountRevoked`/`ExternalAccountDisconnected`) already exist. Channels now
+  consumes `ExternalAccountRevoked` (`ExternalAccountRevokedHandler` → the `integrations.account-revoked`
+  template, fanned out to the user's channels) — the first half of I2. `ExternalAccountDisconnected`
+  has no notifier: a disconnect is the user's own action, so consumers just disable their bindings.
 
 ## Not yet implemented (designed / planned)
 
 | Area | Status | Phase |
 |---|---|---|
-| **Channels reaction to revocation** | Contracts published; no Channels subscriber or Telegram "reconnect needed" template yet. | I2 |
 | **`int003` integration event log** | Designed, table not created. | I2 |
 | **API-key management endpoints** | `GetApiKeyAsync` exists, but there is no endpoint to register/rotate/remove an API key, so no `api_key` account can be created yet. | I3 |
 | **`openai` / `gemini` providers** | Not in the catalog; no key form or reachability test. | I3 |

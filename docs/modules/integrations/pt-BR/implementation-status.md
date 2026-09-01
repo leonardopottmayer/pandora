@@ -29,14 +29,15 @@ roadmap adiante fica em [product-plan.md](product-plan.md).
 - **Serialização do refresh** usa um **gate in-process**, não `pg_advisory_xact_lock` (monólito de
   processo único).
 - **Sem endpoint `reconnect`** — rodar `connect` de novo refaz o consentimento e amplia escopos.
-- Os contratos (`ExternalAccountRevoked`/`ExternalAccountDisconnected`) já existem, à frente da fiação
-  da fase I2 no Channels que os consome.
+- Os contratos (`ExternalAccountRevoked`/`ExternalAccountDisconnected`) já existem. O Channels agora
+  consome `ExternalAccountRevoked` (`ExternalAccountRevokedHandler` → template `integrations.account-revoked`,
+  distribuído pelos canais do usuário) — a primeira metade da I2. `ExternalAccountDisconnected` não tem
+  notificador: desconectar é ação do próprio usuário, então os consumidores só desativam seus vínculos.
 
 ## Ainda não implementado (desenhado / planejado)
 
 | Área | Status | Fase |
 |---|---|---|
-| **Reação de Channels à revogação** | Contratos publicados; sem subscriber no Channels nem template "reconectar" no Telegram. | I2 |
 | **Log de eventos `int003`** | Desenhado, tabela não criada. | I2 |
 | **Endpoints de gestão de chave de API** | `GetApiKeyAsync` existe, mas não há endpoint para registrar/rotacionar/remover chave, então nenhuma conta `api_key` pode ser criada ainda. | I3 |
 | **Provedores `openai` / `gemini`** | Fora do catálogo; sem formulário de chave nem teste de alcance. | I3 |
