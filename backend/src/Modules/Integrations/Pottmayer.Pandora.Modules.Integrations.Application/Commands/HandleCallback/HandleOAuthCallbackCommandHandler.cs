@@ -4,6 +4,7 @@ using Pottmayer.Pandora.Modules.Integrations.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Integrations.Domain.Errors;
 using Pottmayer.Pandora.Modules.Integrations.Domain.Ports;
 using Pottmayer.Pandora.Modules.Integrations.Domain.Ports.Repositories;
+using Pottmayer.Pandora.Modules.Integrations.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
@@ -54,6 +55,7 @@ public sealed class HandleOAuthCallbackCommandHandler(
         await factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
         {
             var accounts = context.AcquireRepository<IExternalAccountRepository>();
+            var log = context.AcquireRepository<IIntegrationEventLogRepository>();
             var existing = await accounts.FindAsync(consumed.UserId, provider.Name, token);
 
             if (existing is null)
@@ -63,11 +65,15 @@ public sealed class HandleOAuthCallbackCommandHandler(
                     tokens.ProviderAccountId ?? consumed.UserId.ToString(),
                     tokens.DisplayName, scopes, accessEnc, tokens.ExpiresAt, refreshEnc, timeProvider);
                 await accounts.AddAsync(account, token);
+                await log.AddAsync(IntegrationEventLogEntry.Record(
+                    consumed.UserId, account.Id, provider.Name, IntegrationEventType.Connected, null, timeProvider), token);
             }
             else
             {
                 existing.ReconnectOAuth(tokens.DisplayName, scopes, accessEnc, tokens.ExpiresAt, refreshEnc, timeProvider);
                 await accounts.UpdateAsync(existing, token);
+                await log.AddAsync(IntegrationEventLogEntry.Record(
+                    consumed.UserId, existing.Id, provider.Name, IntegrationEventType.Reconnected, null, timeProvider), token);
             }
 
             return true;

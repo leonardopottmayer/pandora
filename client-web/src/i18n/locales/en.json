@@ -249,6 +249,18 @@
       "revoked": "Revoked",
       "expired": "Expired",
       "needsConsent": "Consent needed"
+    },
+    "activity": {
+      "title": "Recent activity",
+      "description": "A log of connects, refresh failures and revocations — the answer to why a sync stopped.",
+      "event": {
+        "connected": "Connected",
+        "reconnected": "Reconnected",
+        "refresh_failed": "Refresh failed",
+        "expired": "Expired",
+        "revoked": "Revoked",
+        "disconnected": "Disconnected"
+      }
     }
   },
   "security": {

@@ -19,15 +19,16 @@ resiliência, gestão de chaves de API e mais provedores.
 
 ---
 
-## Fase I2 — Resiliência *(próxima)*
+## Fase I2 — Resiliência ✅ *(pronta)*
 
-- **Reação de Channels à revogação.** Um subscriber de `ExternalAccountRevoked` (já publicado) que
-  manda uma mensagem no Telegram dizendo ao usuário para reconectar, mais o template. Idem para
-  `ExternalAccountDisconnected` onde um consumidor precise reagir.
-- **Log de eventos `int003`** — append-only de conexões/refreshes/falhas/revogações; a única forma de
-  responder "por que o sync parou três dias atrás". Expor a saúde da conexão em configurações.
-- **Pronto quando:** revogar o acesso na página da conta Google produz uma mensagem no Telegram dizendo
-  para reconectar, e o sync para de forma limpa em vez de tentar para sempre.
+As duas metades entregues. Ver [implementation-status.md](implementation-status.md).
+
+- **Reação de Channels à revogação.** O Channels assina `ExternalAccountRevoked` e envia a notificação
+  `integrations.account-revoked` de "reconectar", distribuída pelos canais do usuário.
+- **Log de eventos `int003`** — log append-only de ciclo de vida + falhas, cada linha escrita na mesma
+  transação da mudança que registra; exposto como a linha do tempo "Atividade recente" nas
+  configurações. Refreshes bem-sucedidos não são logados de propósito (`int001.last_refreshed_at`
+  cobre o último).
 
 ## Fase I3 — Chaves de API *(pré-requisito para a fase A5 do [Assistant](../../assistant/pt-BR/product-plan.md))*
 

@@ -14,6 +14,7 @@ Erros vêm de falhas tipadas `Result` mapeadas pelo error mapper HTTP compartilh
 |---|---|---|---|
 | GET | `/providers` | usuário | Catálogo de provedores: nome, descrição, escopos e se o usuário conectou cada um. |
 | GET | `/accounts` | usuário | Contas conectadas do usuário, com status, escopos e último erro. |
+| GET | `/events` | usuário | Log recente de eventos de conexão (conexão/falha-de-refresh/revogação/desconexão), mais novos primeiro. |
 | POST | `/{provider}/connect` | usuário | Inicia (ou refaz) uma conexão; devolve a URL de consentimento. |
 | GET | `/{provider}/callback` | **anônimo** | Alvo de redirect do provedor; consome `state`, guarda a conta, 302 de volta à SPA. |
 | DELETE | `/accounts/{id}` | usuário | Revoga no provedor e apaga a conexão localmente. |
@@ -27,6 +28,12 @@ Devolve o catálogo de configurações — cada provedor com seus metadados e um
 Devolve as contas conectadas (`ExternalAccountDto`): provider, display name, status, escopos,
 `last_error`, timestamps. Usado pela seção de configurações e pelo banner "reconectar" quando
 `status = revoked`.
+
+### GET `/events?limit=`
+
+Devolve o log recente de conexão do usuário (`IntegrationEventDto`): `eventType`, `provider`,
+`detail`, `occurredAt`. `limit` tem padrão 50 e é limitado a 1..100. Alimenta a lista "Atividade
+recente" nas configurações — a linha do tempo que responde por que um sync parou.
 
 ### POST `/{provider}/connect`
 

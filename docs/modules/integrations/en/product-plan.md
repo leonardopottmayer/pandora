@@ -19,15 +19,15 @@ management, and more providers.
 
 ---
 
-## Phase I2 — Resilience *(next)*
+## Phase I2 — Resilience ✅ *(done)*
 
-- **Channels reaction to revocation.** A subscriber to `ExternalAccountRevoked` (already published)
-  that sends a Telegram message telling the user to reconnect, plus the template. Same for
-  `ExternalAccountDisconnected` where a consumer needs to react.
-- **`int003` integration event log** — append-only connects/refreshes/failures/revocations; the only
-  way to answer "why did sync stop three days ago". Surface connection health in settings.
-- **Done when:** revoking access in the Google account page produces a Telegram message telling the
-  user to reconnect, and sync stops cleanly instead of retrying forever.
+Both halves shipped. See [implementation-status.md](implementation-status.md).
+
+- **Channels reaction to revocation.** Channels subscribes to `ExternalAccountRevoked` and sends the
+  `integrations.account-revoked` "reconnect" notification, fanned out to the user's channels.
+- **`int003` integration event log** — append-only lifecycle + failure log, each row written in the
+  same transaction as the change it records; surfaced as a "Recent activity" timeline in settings.
+  Successful refreshes are intentionally not logged (`int001.last_refreshed_at` covers the last one).
 
 ## Phase I3 — API keys *(prerequisite for [Assistant](../../assistant/en/product-plan.md) phase A5)*
 

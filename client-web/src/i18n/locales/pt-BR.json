@@ -249,6 +249,18 @@
       "revoked": "Revogado",
       "expired": "Expirado",
       "needsConsent": "Consentimento necessario"
+    },
+    "activity": {
+      "title": "Atividade recente",
+      "description": "Um registro de conexões, falhas de renovação e revogações — a resposta para por que uma sincronização parou.",
+      "event": {
+        "connected": "Conectado",
+        "reconnected": "Reconectado",
+        "refresh_failed": "Falha na renovação",
+        "expired": "Expirado",
+        "revoked": "Revogado",
+        "disconnected": "Desconectado"
+      }
     }
   },
   "security": {

@@ -15,7 +15,7 @@ Migrations live in `migrations/migrations/integrations/`.
 |---|---|---|
 | int001 | `external_account` | One connected third-party account + its encrypted credentials |
 | int002 | `oauth_state` | One in-flight authorization request (CSRF state + PKCE verifier) |
-| int003 | *(reserved)* | Integration event log — **not yet implemented** (phase I2) |
+| int003 | `integration_event_log` | Append-only history of a connection's health (connects, refresh failures, revocations, disconnects) |
 
 ---
 
@@ -66,7 +66,25 @@ issued: single use, short lived. The PKCE verifier is encrypted for the duration
 
 Constraints: `pk_int002`, `uq_int002_state (state)` — a callback resolves to exactly one request.
 
-## int003_integration_event_log *(reserved — not implemented)*
+## int003_integration_event_log
 
-Planned for phase I2: an append-only record of connects, refreshes, failures and revocations — the
-way to answer "why did sync stop three days ago". See [product-plan.md](product-plan.md).
+An append-only record of a connection's health. It answers "why did sync stop three days ago": the
+failure kinds carry the reason, the lifecycle kinds carry the change. Rows are written and read, never
+mutated.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | `uuid_generate_v7()` |
+| `user_id` | uuid NOT NULL | scopes the read; kept even after the account is deleted |
+| `external_account_id` | uuid NULL | the `int001` row this concerns — **no FK**, so the log survives a disconnect that deletes the account |
+| `provider` | varchar(40) NOT NULL | |
+| `event_type` | varchar(30) NOT NULL | `connected \| reconnected \| refresh_failed \| expired \| revoked \| disconnected` |
+| `detail` | text NULL | the failure reason on a failure kind, else null |
+| `occurred_at` | timestamptz NOT NULL | |
+
+Constraints: `pk_int003`, `chk_int003_event_type`, index `ix_int003_user_occurred (user_id, occurred_at DESC)`.
+
+Rows are appended **inside the same transaction** as the state change they record (the transactional
+outbox pattern): a revoke and its log entry commit together, so the timeline can never disagree with
+`int001`. **Successful refreshes are deliberately not logged** — they happen hourly and
+`int001.last_refreshed_at` already records the last one; logging them would bury the signal.

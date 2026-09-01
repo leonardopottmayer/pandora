@@ -9,6 +9,7 @@ using Pottmayer.Pandora.Modules.Integrations.Domain.Ports;
 using Pottmayer.Pandora.Modules.Integrations.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Integrations.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
+using Pottmayer.Tars.Data.Abstractions.DataContext;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 using Pottmayer.Tars.Messaging.Abstractions;
 using Pottmayer.Tars.Security.DataProtection.Abstractions;
@@ -87,7 +88,19 @@ public sealed class ExternalCredentialProvider(
 
         if (account.RefreshTokenEnc is null)
         {
-            await PersistAsync(account.Id, a => a.MarkExpired(), ct);
+            await factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
+            {
+                var repo = context.AcquireRepository<IExternalAccountRepository>();
+                var fresh = await repo.GetByIdAsync(account.Id, token);
+                if (fresh is null)
+                    return false;
+
+                fresh.MarkExpired();
+                await repo.UpdateAsync(fresh, token);
+                await AppendLogAsync(context, account, IntegrationEventType.Expired, null, token);
+                return true;
+            }, cancellationToken: ct);
+
             return Result<ExternalAccessToken>.Failure(IntegrationErrors.NoRefreshToken);
         }
 
@@ -114,6 +127,7 @@ public sealed class ExternalCredentialProvider(
 
                 fresh.MarkRevoked(ex.Message);
                 await repo.UpdateAsync(fresh, token);
+                await AppendLogAsync(context, account, IntegrationEventType.Revoked, ex.Message, token);
                 await bus.PublishAsync(
                     new ExternalAccountRevoked(
                         Guid.CreateVersion7(), timeProvider.GetUtcNow(), userId, account.Id, provider),
@@ -123,8 +137,15 @@ public sealed class ExternalCredentialProvider(
 
             return Result<ExternalAccessToken>.Failure(IntegrationErrors.AccountRevoked);
         }
-        catch (OAuthException)
+        catch (OAuthException ex)
         {
+            // Transient: the credential is still usable, so only log the blip for the health timeline.
+            await factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
+            {
+                await AppendLogAsync(context, account, IntegrationEventType.RefreshFailed, ex.Message, token);
+                return true;
+            }, cancellationToken: ct);
+
             return Result<ExternalAccessToken>.Failure(IntegrationErrors.RefreshFailed);
         }
 
@@ -157,18 +178,12 @@ public sealed class ExternalCredentialProvider(
             return await repo.FindAsync(userId, provider, token);
         }, cancellationToken: ct);
 
-    private Task PersistAsync(Guid accountId, Action<ExternalAccount> mutate, CancellationToken ct) =>
-        factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
-        {
-            var repo = context.AcquireRepository<IExternalAccountRepository>();
-            var account = await repo.GetByIdAsync(accountId, token);
-            if (account is null)
-                return false;
-
-            mutate(account);
-            await repo.UpdateAsync(account, token);
-            return true;
-        }, cancellationToken: ct);
+    private Task AppendLogAsync(
+        IDataContext context, ExternalAccount account, IntegrationEventType eventType, string? detail, CancellationToken ct) =>
+        context.AcquireRepository<IIntegrationEventLogRepository>().AddAsync(
+            IntegrationEventLogEntry.Record(
+                account.UserId, account.Id, account.Provider, eventType, detail, timeProvider),
+            ct);
 
     private ExternalAccessToken ToToken(ExternalAccount account) =>
         new(protector.Unprotect(account.AccessTokenEnc!),

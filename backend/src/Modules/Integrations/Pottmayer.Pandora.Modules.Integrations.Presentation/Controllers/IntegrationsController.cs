@@ -7,6 +7,7 @@ using Pottmayer.Pandora.Modules.Integrations.Application.Commands.DisconnectAcco
 using Pottmayer.Pandora.Modules.Integrations.Application.Commands.HandleCallback;
 using Pottmayer.Pandora.Modules.Integrations.Application.Commands.StartConnection;
 using Pottmayer.Pandora.Modules.Integrations.Application.Queries.GetAccounts;
+using Pottmayer.Pandora.Modules.Integrations.Application.Queries.GetEvents;
 using Pottmayer.Pandora.Modules.Integrations.Application.Queries.GetProviders;
 using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
@@ -40,6 +41,15 @@ public sealed class IntegrationsController(
     public async Task<IActionResult> GetAccountsAsync(CancellationToken ct)
     {
         var result = await sender.Send(new GetAccountsQuery(new GetAccountsInput(UserId)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>The recent connection event log (connect/refresh-failure/revoke/disconnect), newest first.</summary>
+    [Authorize]
+    [HttpGet("events")]
+    public async Task<IActionResult> GetEventsAsync([FromQuery] int limit = 50, CancellationToken ct = default)
+    {
+        var result = await sender.Send(new GetIntegrationEventsQuery(new GetIntegrationEventsInput(UserId, limit)), ct);
         return result.ToActionResult(errorMapper);
     }
 

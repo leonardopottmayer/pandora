@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/api/client'
-import type { ExternalAccount, ProviderCatalogItem } from '../models'
+import type { ExternalAccount, IntegrationEvent, ProviderCatalogItem } from '../models'
 
 const BASE = '/api/v1.0/integrations'
 
@@ -10,6 +10,11 @@ export async function listProviders(): Promise<ProviderCatalogItem[]> {
 
 export async function listAccounts(): Promise<ExternalAccount[]> {
   const { data } = await apiClient.get<ExternalAccount[]>(`${BASE}/accounts`)
+  return data
+}
+
+export async function listEvents(limit = 50): Promise<IntegrationEvent[]> {
+  const { data } = await apiClient.get<IntegrationEvent[]>(`${BASE}/events`, { params: { limit } })
   return data
 }
 

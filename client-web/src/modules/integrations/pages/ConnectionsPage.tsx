@@ -1,12 +1,32 @@
 import { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Alert, App, Button, Card, Divider, Popconfirm, Space, Spin, Tag, Typography } from 'antd'
+import { Alert, App, Button, Card, Divider, List, Popconfirm, Space, Spin, Tag, Typography } from 'antd'
 import { toErrorMessage } from '@/lib/api/envelope'
-import { providerLabel, type ExternalAccount, type IntegrationStatus } from '../models'
-import { useAccounts, useDisconnectAccount, useProviders, useStartConnection } from '../hooks/useIntegrations'
+import {
+  providerLabel,
+  type ExternalAccount,
+  type IntegrationEventType,
+  type IntegrationStatus,
+} from '../models'
+import {
+  useAccounts,
+  useDisconnectAccount,
+  useIntegrationEvents,
+  useProviders,
+  useStartConnection,
+} from '../hooks/useIntegrations'
 
 const REDIRECT_AFTER = '/settings/connections'
+
+const EVENT_TAG_COLOR: Record<IntegrationEventType, string> = {
+  connected: 'green',
+  reconnected: 'green',
+  refresh_failed: 'orange',
+  expired: 'orange',
+  revoked: 'red',
+  disconnected: 'default',
+}
 
 function statusTag(status: IntegrationStatus, t: (k: string) => string) {
   switch (status) {
@@ -28,6 +48,7 @@ export function ConnectionsPage() {
 
   const { data: providers, isLoading: providersLoading } = useProviders()
   const { data: accounts } = useAccounts()
+  const { data: events } = useIntegrationEvents()
 
   const startConnection = useStartConnection()
   const disconnect = useDisconnectAccount()
@@ -143,6 +164,38 @@ export function ConnectionsPage() {
           </Space>
         )}
       </Card>
+
+      {events && events.length > 0 && (
+        <Card title={t('connections.activity.title')} className="mt-4">
+          <Typography.Paragraph type="secondary">
+            {t('connections.activity.description')}
+          </Typography.Paragraph>
+          <List
+            size="small"
+            dataSource={events}
+            renderItem={(event) => (
+              <List.Item>
+                <Space direction="vertical" size={0} className="w-full">
+                  <Space wrap>
+                    <Tag color={EVENT_TAG_COLOR[event.eventType]}>
+                      {t(`connections.activity.event.${event.eventType}`)}
+                    </Tag>
+                    <Typography.Text strong>{providerLabel(event.provider)}</Typography.Text>
+                    <Typography.Text type="secondary">
+                      {new Date(event.occurredAt).toLocaleString()}
+                    </Typography.Text>
+                  </Space>
+                  {event.detail && (
+                    <Typography.Text type="secondary" className="text-xs">
+                      {event.detail}
+                    </Typography.Text>
+                  )}
+                </Space>
+              </List.Item>
+            )}
+          />
+        </Card>
+      )}
     </div>
   )
 }

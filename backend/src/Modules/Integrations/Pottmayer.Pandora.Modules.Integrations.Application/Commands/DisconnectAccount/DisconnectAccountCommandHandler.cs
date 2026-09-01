@@ -1,8 +1,10 @@
 using Pottmayer.Pandora.Modules.Integrations.Abstractions;
 using Pottmayer.Pandora.Modules.Integrations.Application.Oauth;
 using Pottmayer.Pandora.Modules.Integrations.Contracts;
+using Pottmayer.Pandora.Modules.Integrations.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Integrations.Domain.Errors;
 using Pottmayer.Pandora.Modules.Integrations.Domain.Ports.Repositories;
+using Pottmayer.Pandora.Modules.Integrations.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
@@ -58,9 +60,14 @@ public sealed class DisconnectAccountCommandHandler(
         await factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
         {
             var repo = context.AcquireRepository<IExternalAccountRepository>();
+            var log = context.AcquireRepository<IIntegrationEventLogRepository>();
             var fresh = await repo.GetByIdAsync(input.AccountId, token);
             if (fresh is not null)
                 await repo.RemoveAsync(fresh, token);
+
+            // The log outlives the account it refers to — a disconnect deletes int001 but keeps its history.
+            await log.AddAsync(IntegrationEventLogEntry.Record(
+                account.UserId, account.Id, account.Provider, IntegrationEventType.Disconnected, null, timeProvider), token);
 
             // Published inside the unit of work: the local deletion and its announcement commit
             // together (transactional outbox).

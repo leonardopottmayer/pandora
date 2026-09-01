@@ -14,6 +14,7 @@ token's user, **except the callback**, which is anonymous and authenticates by t
 |---|---|---|---|
 | GET | `/providers` | user | Provider catalog: name, description, scopes, and whether the user has connected each. |
 | GET | `/accounts` | user | The user's connected accounts, with status, scopes and last error. |
+| GET | `/events` | user | Recent connection event log (connect/refresh-failure/revoke/disconnect), newest first. |
 | POST | `/{provider}/connect` | user | Start (or re-run) a connection; returns the provider consent URL. |
 | GET | `/{provider}/callback` | **anonymous** | Provider redirect target; consumes `state`, stores the account, 302s back to the SPA. |
 | DELETE | `/accounts/{id}` | user | Revoke at the provider and delete the connection locally. |
@@ -27,6 +28,12 @@ Returns the settings catalog — each provider with its metadata and a `connecte
 Returns connected accounts (`ExternalAccountDto`): provider, display name, status, scopes,
 `last_error`, timestamps. Used by the settings section and the "reconnect needed" banner when
 `status = revoked`.
+
+### GET `/events?limit=`
+
+Returns the user's recent connection log (`IntegrationEventDto`): `eventType`, `provider`, `detail`,
+`occurredAt`. `limit` defaults to 50 and is clamped to 1..100. Backs the "Recent activity" list in
+settings — the timeline that answers why a sync stopped.
 
 ### POST `/{provider}/connect`
 

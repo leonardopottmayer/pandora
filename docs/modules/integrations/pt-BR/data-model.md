@@ -15,7 +15,7 @@ As migrations ficam em `migrations/migrations/integrations/`.
 |---|---|---|
 | int001 | `external_account` | Uma conta de terceiro conectada + suas credenciais encriptadas |
 | int002 | `oauth_state` | Uma requisição de autorização em andamento (state CSRF + verifier PKCE) |
-| int003 | *(reservada)* | Log de eventos de integração — **não implementada** (fase I2) |
+| int003 | `integration_event_log` | Histórico append-only da saúde de uma conexão (conexões, falhas de refresh, revogações, desconexões) |
 
 ---
 
@@ -67,7 +67,25 @@ emitiu: uso único, curta duração. O verifier PKCE fica encriptado durante o f
 Constraints: `pk_int002`, `uq_int002_state (state)` — um callback resolve para exatamente uma
 requisição.
 
-## int003_integration_event_log *(reservada — não implementada)*
+## int003_integration_event_log
 
-Planejada para a fase I2: um registro append-only de conexões, refreshes, falhas e revogações — a
-forma de responder "por que o sync parou três dias atrás". Ver [product-plan.md](product-plan.md).
+Um registro append-only da saúde de uma conexão. Responde "por que o sync parou três dias atrás": os
+tipos de falha carregam o motivo, os tipos de ciclo de vida carregam a mudança. As linhas são escritas
+e lidas, nunca alteradas.
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | `uuid_generate_v7()` |
+| `user_id` | uuid NOT NULL | escopa a leitura; mantido mesmo após a conta ser deletada |
+| `external_account_id` | uuid NULL | a linha `int001` que isto concerne — **sem FK**, então o log sobrevive a uma desconexão que deleta a conta |
+| `provider` | varchar(40) NOT NULL | |
+| `event_type` | varchar(30) NOT NULL | `connected \| reconnected \| refresh_failed \| expired \| revoked \| disconnected` |
+| `detail` | text NULL | o motivo da falha nos tipos de falha, senão null |
+| `occurred_at` | timestamptz NOT NULL | |
+
+Constraints: `pk_int003`, `chk_int003_event_type`, índice `ix_int003_user_occurred (user_id, occurred_at DESC)`.
+
+As linhas são inseridas **na mesma transação** da mudança de estado que registram (padrão outbox
+transacional): um revoke e seu log commitam juntos, então a linha do tempo nunca discorda do `int001`.
+**Refreshes bem-sucedidos não são logados de propósito** — acontecem de hora em hora e
+`int001.last_refreshed_at` já registra o último; logá-los enterraria o sinal.

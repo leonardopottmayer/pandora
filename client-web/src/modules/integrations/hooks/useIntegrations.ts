@@ -16,6 +16,13 @@ export function useAccounts() {
   })
 }
 
+export function useIntegrationEvents(limit = 50) {
+  return useQuery({
+    queryKey: integrationsKeys.events(limit),
+    queryFn: () => integrationsService.listEvents(limit),
+  })
+}
+
 export function useStartConnection() {
   return useMutation({
     mutationFn: ({ provider, redirectAfter }: { provider: string; redirectAfter: string }) =>
@@ -28,8 +35,8 @@ export function useDisconnectAccount() {
   return useMutation({
     mutationFn: (id: string) => integrationsService.disconnectAccount(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: integrationsKeys.accounts() })
-      queryClient.invalidateQueries({ queryKey: integrationsKeys.providers() })
+      // The prefix covers providers, accounts and the event log in one shot.
+      queryClient.invalidateQueries({ queryKey: integrationsKeys.all })
     },
   })
 }

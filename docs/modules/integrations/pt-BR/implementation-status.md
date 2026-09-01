@@ -21,8 +21,9 @@ roadmap adiante fica em [product-plan.md](product-plan.md).
 | **Portas** | `IExternalCredentialProvider`, `IExternalAccountReader`, `ExternalAccessToken`, `ExternalAccountSummary` em `Abstractions`. |
 | **Contratos** | `ExternalAccountRevoked`, `ExternalAccountDisconnected` publicados. |
 | **Encriptação** | Toda coluna de credencial via `ISecretProtector` do Tars (AES-GCM, chave fora do banco). |
-| **API** | `GET /providers`, `GET /accounts`, `POST /{provider}/connect`, `GET /{provider}/callback`, `DELETE /accounts/{id}`. |
-| **Frontend** | Seção de configurações de contas conectadas em `client-web/src/modules/integrations`. |
+| **Log de eventos (I2)** | `int003_integration_event_log` — append-only `connected`/`reconnected`/`refresh_failed`/`expired`/`revoked`/`disconnected`, cada linha escrita na mesma transação da mudança de estado que registra. `IIntegrationEventLogRepository`. |
+| **API** | `GET /providers`, `GET /accounts`, `GET /events`, `POST /{provider}/connect`, `GET /{provider}/callback`, `DELETE /accounts/{id}`. |
+| **Frontend** | Seção de configurações de contas conectadas + linha do tempo **Atividade recente** em `client-web/src/modules/integrations`. |
 
 ### Desvios notáveis do plano original
 
@@ -33,12 +34,16 @@ roadmap adiante fica em [product-plan.md](product-plan.md).
   consome `ExternalAccountRevoked` (`ExternalAccountRevokedHandler` → template `integrations.account-revoked`,
   distribuído pelos canais do usuário) — a primeira metade da I2. `ExternalAccountDisconnected` não tem
   notificador: desconectar é ação do próprio usuário, então os consumidores só desativam seus vínculos.
+- **Refreshes bem-sucedidos não são logados** no `int003`. O plano dizia "conexões/refreshes/…", mas um
+  refresh roda de hora em hora e `int001.last_refreshed_at` já registra o último sucesso — então o log
+  guarda os eventos de falha e ciclo de vida (o sinal do "por que o sync parou") e pula o ruído horário.
+
+Com as duas metades da **I2 prontas** (aviso de revogação + log de eventos), o que resta é a I3 (chaves de API).
 
 ## Ainda não implementado (desenhado / planejado)
 
 | Área | Status | Fase |
 |---|---|---|
-| **Log de eventos `int003`** | Desenhado, tabela não criada. | I2 |
 | **Endpoints de gestão de chave de API** | `GetApiKeyAsync` existe, mas não há endpoint para registrar/rotacionar/remover chave, então nenhuma conta `api_key` pode ser criada ainda. | I3 |
 | **Provedores `openai` / `gemini`** | Fora do catálogo; sem formulário de chave nem teste de alcance. | I3 |
 | **Mais provedores** (Microsoft, CalDAV) | Futuro, sob demanda. | I4 |

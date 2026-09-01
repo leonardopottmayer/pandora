@@ -21,6 +21,24 @@ export interface ExternalAccount {
   lastRefreshedAt: string | null
 }
 
+export type IntegrationEventType =
+  | 'connected'
+  | 'reconnected'
+  | 'refresh_failed'
+  | 'expired'
+  | 'revoked'
+  | 'disconnected'
+
+/** One entry of the connection event log — the "why did sync stop" timeline. */
+export interface IntegrationEvent {
+  id: string
+  externalAccountId: string | null
+  provider: string
+  eventType: IntegrationEventType
+  detail: string | null
+  occurredAt: string
+}
+
 /** Human label for a provider key. */
 export function providerLabel(provider: string): string {
   switch (provider) {

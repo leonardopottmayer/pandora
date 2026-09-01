@@ -66,6 +66,7 @@
     <Project Path="tests/Pottmayer.Pandora.Modules.Finances.Tests/Pottmayer.Pandora.Modules.Finances.Tests.csproj" Id="b0000006-0000-0000-0000-000000000004" />
     <Project Path="tests/Pottmayer.Pandora.Modules.Notes.Tests/Pottmayer.Pandora.Modules.Notes.Tests.csproj" Id="b0000006-0000-0000-0000-000000000005" />
     <Project Path="tests/Pottmayer.Pandora.Modules.Agenda.Tests/Pottmayer.Pandora.Modules.Agenda.Tests.csproj" Id="b0000006-0000-0000-0000-000000000006" />
+    <Project Path="tests/Pottmayer.Pandora.Modules.Integrations.Tests/Pottmayer.Pandora.Modules.Integrations.Tests.csproj" Id="b0000006-0000-0000-0000-000000000007" />
     <Project Path="tests/Pottmayer.Pandora.IntegrationTests/Pottmayer.Pandora.IntegrationTests.csproj" Id="b0000006-0000-0000-0000-000000000003" />
   </Folder>
 </Solution>
