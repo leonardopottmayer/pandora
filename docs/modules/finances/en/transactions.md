@@ -77,8 +77,8 @@ void ──restore (unvoid)──▶ posted
 - **Projected balance** = posted + `pending` entries (scheduled/future).
 - **Statement total** = Σ `StatementSign × amount` of the statement's transactions, cached in
   `fin007.total_amount` and recomputed transactionally on every change via `StatementAmountSync`.
-- Projected installments (`origin = projection`, `status = pending`) count toward a statement's
-  *projected* total only, never the posted total or a balance.
+- `EntryOrigin.Projection` is reserved for future projected installments (planned, not yet produced
+  by any command — see [Installments](installments.md)); no transaction carries it today.
 
 Balance is never stored (D1). A "balance correction" is an `adjustment` transaction, auditable like
 any other.

@@ -31,7 +31,7 @@ mensagens **uniformes** onde a existência da conta não pode vazar.
 
 | Método | Caminho | Auth | Propósito |
 |---|---|---|---|
-| GET | `/mfa/status` | usuário | O MFA está ligado / há um setup pendente. |
+| GET | `/mfa/status` | usuário | O MFA está ligado, mais a contagem de códigos de recuperação não usados. |
 | POST | `/mfa/setup` | usuário | Gera + guarda (encriptado) um segredo TOTP; devolve dados de provisionamento. |
 | POST | `/mfa/enable` | usuário | Confirma um código TOTP; liga o MFA; devolve códigos de recuperação uma vez; publica `MfaEnabled`. |
 | POST | `/mfa/disable` | usuário | Desliga o MFA (re-verificando um fator); publica `MfaDisabled`. |

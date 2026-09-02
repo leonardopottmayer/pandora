@@ -8,27 +8,31 @@
 
 Buying in installments (*parcelado*) is essential in Brazil. A single card purchase split into N
 installments is modeled as **one plan + N transactions**, one per consecutive statement. Each
-installment is a real, committed `expense` charge on its own statement — they are not projections
-(except for import-inferred future ones, see below).
+installment is a real, committed `expense` charge on its own statement.
+
+Only **manually created** plans exist today. The `InstallmentPlan` aggregate's own XML doc is explicit
+about this: *"In this phase only manual plans exist... import-inferred plans (estimated total,
+projected future installments) arrive in phase 10."* The schema and `Origin` value object already
+allow an `import` origin, and the OFX/CSV parsers already extract an installment marker from the
+description into `ImportRow` (see [Imports](imports.md#installment-marker-extraction-implemented)),
+but nothing yet turns that into an `InstallmentPlan` — approving such a suggestion just creates a
+single plain transaction. See [Implementation Status](implementation-status.md).
 
 ## Rules
 
 - **Minimum 2 installments** (`InstallmentCount >= 2`, `MinInstallments = 2`).
-- **Origin:**
-  - `manual` — created by the user. Installments **sum exactly** to `total_amount`
-    (`total_is_estimate = false`).
-  - `import` — inferred from a bank file where only the current installment's value is known
-    (`total_is_estimate = true`, `total_amount = value × count`). See [Imports](imports.md).
+- **Origin:** only `manual` is created today — by the user, via `InstallmentPlan.CreateManual`.
+  Installments **sum exactly** to `total_amount` (`total_is_estimate = false`). The `import` origin
+  value exists in the domain/schema for a future phase (inferred from a bank file where only the
+  current installment's value is known: `total_is_estimate = true`, `total_amount = value × count`)
+  but no code path creates it yet.
 - **Cent-rounding split** (`SplitAmount`): the total is divided into cents-rounded parts, with any
   rounding remainder placed on the **first** installment so the parts sum back exactly.
   Example: `1000.00` in 3× → `333.34 / 333.33 / 333.33`.
 - **`normalized_description`**: the description stripped of its installment marker (`3/12`, `03/12`,
-  `PARC 3/12`, `3 de 12`) and lower-cased/whitespace-collapsed. This is the **matching key** used to
-  reconcile imported installments to an existing plan (Imports phase). It is filled even on manual
-  plans, so future imports can match them.
+  `PARC 3/12`, `3 de 12`) and lower-cased/whitespace-collapsed. Written on every plan (manual today)
+  as the future matching key for reconciling imported installments — not consumed anywhere yet.
 - **`first_reference_month`** (`yyyy-MM`): the reference month of the first installment's statement.
-  For import-inferred plans created from installment N, it is inferred retroactively
-  (current statement month − (N−1) months).
 
 ## Creating an installment purchase
 
@@ -45,13 +49,13 @@ month and status, the **remaining amount** (sum of not-yet-paid, non-void instal
 count of **paid** installments (installments whose statement is `paid`). Void installments are
 excluded from both figures.
 
-## Projections (import-inferred future installments)
+## Projections (planned, not implemented)
 
-When an installment plan is inferred from an import, the **future** installments (N+1..count) are
-created as `pending` transactions with `origin = projection` on the following statements — so the
-user sees the commitment on upcoming statements. They count toward a statement's *projected* total,
-not its posted `total_amount` or any balance. Past installments (1..N−1) are **not** generated
-automatically. See [Imports → installment detection](imports.md#installment-detection--projection).
+The design calls for an import-inferred plan to generate its **future** installments (N+1..count) as
+transactions with `origin = projection` on the following statements, so the user sees the commitment
+ahead of time. The `EntryOrigin.Projection` value already exists in code for this, but nothing creates
+a transaction with it today — it is unused. See [Imports](imports.md) and
+[Implementation Status](implementation-status.md).
 
 ## Cancelling
 

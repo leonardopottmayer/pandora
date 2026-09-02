@@ -12,7 +12,7 @@ Erros vêm de falhas tipadas `Result` mapeadas pelo error mapper HTTP compartilh
 
 | Método | Caminho | Auth | Propósito |
 |---|---|---|---|
-| GET | `/providers` | usuário | Catálogo de provedores: nome, descrição, escopos e se o usuário conectou cada um. |
+| GET | `/providers` | usuário | Catálogo de provedores: nome, escopos padrão e se o usuário conectou cada um (com status). |
 | GET | `/accounts` | usuário | Contas conectadas do usuário, com status, escopos e último erro. |
 | GET | `/events` | usuário | Log recente de eventos de conexão (conexão/falha-de-refresh/revogação/desconexão), mais novos primeiro. |
 | POST | `/{provider}/connect` | usuário | Inicia (ou refaz) uma conexão; devolve a URL de consentimento. |
@@ -21,13 +21,15 @@ Erros vêm de falhas tipadas `Result` mapeadas pelo error mapper HTTP compartilh
 
 ### GET `/providers`
 
-Devolve o catálogo de configurações — cada provedor com seus metadados e um flag `connected`.
+Devolve o catálogo de configurações (`ProviderCatalogItemDto`): `provider`, `defaultScopes`,
+`connected` e `status` (status da conta conectada, ou `null` quando não conectado). Não há campo
+`description` — a SPA rotula um provedor a partir da sua chave (ver `providerLabel` no `client-web`).
 
 ### GET `/accounts`
 
-Devolve as contas conectadas (`ExternalAccountDto`): provider, display name, status, escopos,
-`last_error`, timestamps. Usado pela seção de configurações e pelo banner "reconectar" quando
-`status = revoked`.
+Devolve as contas conectadas (`ExternalAccountDto`): `id`, `provider`, `authKind`, `displayName`,
+`scopes`, `status`, `lastError`, `connectedAt`, `lastRefreshedAt`. Usado pela seção de configurações e
+pelo banner "reconectar" quando `status = revoked`.
 
 ### GET `/events?limit=`
 
@@ -41,8 +43,9 @@ recente" nas configurações — a linha do tempo que responde por que um sync p
 { "redirectAfter": "/agenda/settings", "scopes": ["...override opcional..."] }
 ```
 
-Devolve `{ "authorizationUrl": "https://accounts.google.com/o/oauth2/..." }`. A SPA manda o navegador
-para lá. Rodar de novo para um provedor já conectado refaz o consentimento (p.ex. para ampliar escopos).
+Devolve a URL de autorização como uma string JSON simples, ex. `"https://accounts.google.com/o/oauth2/..."`
+— não embrulhada em um objeto. A SPA manda o navegador para lá. Rodar de novo para um provedor já
+conectado refaz o consentimento (p.ex. para ampliar escopos).
 
 ### GET `/{provider}/callback?code=&state=`
 

@@ -15,7 +15,7 @@ adiante fica em [product-plan.md](product-plan.md).
 | **Lembretes** | `agd006` único-disparo + recorrente; ledger por ocorrência `agd006x`; reconhecer/soneca (série e por ocorrência); `ReminderSweepBackgroundService`. |
 | **Motor de recorrência** | `RecurrenceRule` parse + `EventExpander` expand, subconjunto RFC 5545, ciente de DST, ordinais no estilo `-1FR`; expande no `time_zone` do item. |
 | **Tarefas** | `agd004` listas + `agd005` tarefas; subtarefas de um nível; prioridade; vencimento com/sem hora; concluir/reabrir; recorrente materializada uma instância por vez carregando alertas. |
-| **Alertas** | `agd007` polimórfico + ledger de dispatch `agd008`; sujeito `Task` ligado; `TaskAlertSweepBackgroundService`. |
+| **Alertas** | `agd007` polimórfico + ledger de dispatch `agd008`; sujeitos `Task` e `Event` ligados; `TaskAlertSweepBackgroundService` + `EventAlertSweepBackgroundService`. |
 | **Calendário e eventos** | `agd001` calendários, `agd002` eventos (ocorrências calculadas), `agd003` overrides; escopos de edição esta / esta-e-futuras / todas; `EventAlertSweepBackgroundService`. |
 | **Hoje** | Leitura unificada `GET /agenda/today` (eventos + tarefas + lembretes). |
 | **Botões de entrada** | `InboundInteractionReceivedHandler` + `TaskInteractionHandler` para `task_done` / `snooze_*` do Channels. |
@@ -28,8 +28,8 @@ adiante fica em [product-plan.md](product-plan.md).
   `AlertSweepBackgroundService` — cada tipo de sujeito expande diferente.
 - **O ledger de dispatch de lembrete é `agd006x`** (escopo do lembrete), não o polimórfico `agd008`.
   Migra para `agd008` quando o Alert cobrir lembretes.
-- **`Alert.subject_type` admite `Task`/`Event`/`Reminder` mas só `Task` está ligado**; eventos usam o
-  sweep de alerta-evento diretamente, lembretes mantêm `agd006x`.
+- **`Alert.subject_type` admite `Task`/`Event`/`Reminder`; `Task` e `Event` estão ligados** (criar/
+  listar/sweep), **`Reminder` não está** — lembretes mantêm seu próprio ledger `agd006x`.
 - **`time_zone` é carregado por linha** (lembrete/tarefa/evento/calendário) para a recorrência expandir
   no fuso do próprio item. Quando o caller não o informa, a Agenda agora usa como padrão o
   `UserPreferences` do Identity (via porta `IUserPreferencesReader`), caindo em UTC só quando o usuário

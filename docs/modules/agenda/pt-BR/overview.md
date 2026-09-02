@@ -83,6 +83,4 @@ Lembretes, Tarefas, Calendário).
 | **Sync Google Calendar** (fase 5) | Não implementado — tabelas de sync (`agd009`–`agd012`), provedores, cursores, log de conflito ausentes. Depende de [Integrations](../../integrations/pt-BR/overview.md). |
 | **Sync Google Tasks** (fase 6) | Não implementado. |
 | **Catálogo de comandos do Assistant** (fase 7) | Não implementado — os comandos existem e são comandáveis, mas o registro de descriptors para o Assistant não está ligado. |
-| **Consumir o fuso padrão do Identity** | O `UserPreferences` do Identity já carrega `TimeZone`/`WeekStartsOn`/`DefaultAlertOffsetMinutes`. A Agenda ainda guarda um `time_zone` por item (recorrência expande no fuso do próprio item) e ainda não ligou a preferência do Identity como padrão de novos itens. |
-| **Polimento da UI semana/dia, tela de Configurações da Agenda** | Parcialmente adiado no frontend. |
 | **Além** | Links Nota↔evento, quick-add em linguagem natural, tempo de deslocamento, ICS/CalDAV, provedores Microsoft/Apple, vencimentos do Finances na visão do dia. |

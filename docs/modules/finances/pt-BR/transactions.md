@@ -76,8 +76,9 @@ void ──restore (unvoid)──▶ posted
 - **Saldo projetado** = postado + lançamentos `pending` (agendados/futuros).
 - **Total de fatura** = Σ `StatementSign × amount` das transações da fatura, cacheado em
   `fin007.total_amount` e recomputado transacionalmente a cada mudança via `StatementAmountSync`.
-- Parcelas projetadas (`origin = projection`, `status = pending`) contam só para o total *projetado*
-  de uma fatura, nunca para o total postado nem um saldo.
+- `EntryOrigin.Projection` é reservado para futuras parcelas projetadas (planejado, ainda não
+  produzido por nenhum comando — ver [Parcelamento](installments.md)); nenhuma transação carrega esse
+  valor hoje.
 
 Saldo nunca é armazenado (D1). Uma "correção de saldo" é um lançamento `adjustment`, auditável como
 qualquer outro.

@@ -9,10 +9,13 @@ Identity's multi-factor authentication is **TOTP** (authenticator-app codes), wi
 
 ## 1. Enrolment
 
-1. `GET /identity/mfa/status` — is MFA enabled, and (during setup) is there a pending credential?
+1. `GET /identity/mfa/status` — returns whether MFA is enabled and, if so, the count of unused
+   recovery codes (`MfaStatusDto`: `Enabled`, `RemainingRecoveryCodes`). It does not expose whether a
+   setup is pending.
 2. `POST /identity/mfa/setup` — generates a TOTP secret, stores it **encrypted** (`idt006.secret_cipher`,
    `confirmed_at` NULL), and returns the provisioning data (secret / otpauth URI) for the authenticator
-   app's QR code.
+   app's QR code. Fails if MFA is already enabled. Calling it again before confirming replaces the
+   previous unconfirmed credential with a fresh secret.
 3. `POST /identity/mfa/enable` — the user submits a current TOTP code; on success `confirmed_at` is set,
    `user.mfa_enabled = true`, a set of **recovery codes** is generated (stored **hashed**, `idt007`),
    and **`MfaEnabled`** is published (Channels emails a confirmation). The plaintext recovery codes are

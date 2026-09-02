@@ -12,7 +12,7 @@ foreign key — validated in the application and removed with the subject.
 
 | Field | Meaning |
 |---|---|
-| `subject_type` | `Task` \| `Event` \| `Reminder` — **only `Task` is wired today**; events use the event-alert sweep path, reminders keep the `agd006x` ledger. |
+| `subject_type` | `Task` \| `Event` \| `Reminder` — **`Task` and `Event` are wired**; reminders keep the `agd006x` ledger instead. |
 | `offset_minutes` | Signed, relative to the subject's anchor (a task's `due_at`, an event's occurrence start). `0` = at the instant, `-15` = fifteen minutes before. |
 | `channels` | NULL ⇒ resolve from the user's Channels preference for the category; else explicit (`email`, `telegram`). |
 | `is_enabled` | The sweep only scans enabled alerts. |

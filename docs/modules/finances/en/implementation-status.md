@@ -16,10 +16,10 @@ to tell the difference between "documented because it exists" and "documented as
 | **Accounts** | CRUD, types, immutable currency, archive/unarchive, opening balance (`fin001`). |
 | **Ledger** | Transactions, 11 kinds incl. `statement-writeoff`, signs, status machine, derived balance, transfers (`fin008`). |
 | **Cards & statements** | Card CRUD, statement lifecycle, resolver, pay, **settle (write-off)**, close, **reopen**, available limit (`fin006`, `fin007`). |
-| **Installments** | Manual plans, cent split, void single/plan; import-inferred plans + projections (`fin009`). |
+| **Installments** | Manual plans only, cent split, void single/plan (`fin009`). Import-inferred plans + projections are **not** implemented — see below. |
 | **Tags** | Tag CRUD + polymorphic links (`fin004`, `fin005`). |
 | **Recurrences & inbox** | Recurring templates + rule engine, staging inbox, approve/reject/link/transfer-from-pending, generation job (`fin010`, `fin011`). |
-| **Imports** | OFX **and** CSV, seeded bank layouts + auto-detection, three-level dedup/reconciliation, installment detection & projection, cutoff date, retry (`fin012`–`fin014`). |
+| **Imports** | OFX **and** CSV, seeded bank layouts + auto-detection, three-level dedup/reconciliation, installment-marker extraction into `parsed_payload`/`ImportRow` (number/count only — no plan matching), cutoff date, retry (`fin012`–`fin014`). |
 | **Reversibility** | Void, unvoid, reverse (all cases), delete guards on account/card. |
 | **Audit reads** | `/audit` timeline by entity or correlation id. |
 | **Frontend** | React module (`client-web/src/modules/finances`) covering accounts, cards, statements, transactions, transfers, categories, tags, recurring, inbox, imports, audit. |
@@ -43,6 +43,7 @@ The implementation evolved past the first design proposal. Notable additions:
 
 | Area | Status |
 |---|---|
+| **Import-inferred installment plans + projections** | `InstallmentPlan` only has an `Origin.Manual` factory (`CreateManual`); approving an import suggestion with a detected installment marker creates one plain transaction, not a plan. The `import`/`projection` origin values, and the matching fields on `ImportRow`/`PendingTransaction` (`matched_installment_plan_id`, etc.), exist in the schema/domain but are unused. The `InstallmentPlan` aggregate's own doc comment calls this "phase 10". |
 | **Categorization rules** (`fin015`) | Auto-categorize import suggestions ("description contains UBER → Transport"). Table and use cases not created. |
 | **Reports** | Cash-flow, by-category, balance-history, and the upcoming-agenda endpoints are not implemented — only the audit timeline exists. |
 | **Channels integration events** | The `Contracts` project is empty; `StatementClosed`/`StatementDueSoon`/`StatementOverdue`/`ImportCompleted`/`PendingTransactionsGenerated` are not published, and there are no Channels subscribers/templates yet. |

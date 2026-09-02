@@ -9,7 +9,7 @@
 Um chat id **nunca é aceito do cliente**. A única coisa que autoriza um é um handshake de uso único:
 
 ```
-1. SPA    → POST /channels/telegram/link          ← { deepLink, token }   (chn002 emitido)
+1. SPA    → POST /channels/telegram/link          ← { url, expiresAt }   (chn002 emitido)
 2. Usuário toca o deep link → o Telegram abre o bot com /start <token>
 3. O bot recebe o update; a triagem o classifica como Command
 4. ConsumeTelegramLink: valida e consome o token, faz upsert em chn001 (verificado),

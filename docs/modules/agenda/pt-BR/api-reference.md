@@ -67,7 +67,7 @@ Reconhecer/soneca por ocorrência para lembretes recorrentes são os comandos `A
 | POST | `/agenda/{subjectType}/{id}/alerts` | Adiciona um alerta (offset + canais). |
 | DELETE | `/agenda/alerts/{id}` | Remove um alerta. |
 
-`subjectType` é `tasks` hoje (o único sujeito ligado).
+`subjectType` é `task` ou `event` (sem diferenciar maiúsculas); `reminder` é rejeitado — lembretes mantêm seu próprio ledger `agd006x` em vez de `Alert`.
 
 ## Hoje — `/agenda/today`
 

@@ -54,13 +54,14 @@ Algum trabalho genuinamente não pode acontecer dentro da requisição que o dis
 que precisa responder rápido, ou uma tarefa que leva dezenas de segundos. A resposta é um **job no
 módulo dono do trabalho**, sobre a tabela desse módulo — não uma fila na frente de outro processo.
 
-O formato já está no código três vezes:
+O formato já está no código quatro vezes:
 
 | Módulo | Tabela | Job |
 |---|---|---|
 | Channels | `chn006_notification` | `NotificationDispatcherBackgroundService` drena o que venceu |
 | Finances | `fin011_pending_transaction` | varredura de recorrência gera o que venceu |
-| Agenda *(planejado)* | `agd00x_alert` | `AlertSweepBackgroundService` dispara o que venceu |
+| Agenda | `agd006_reminder` + `agd006x_reminder_dispatch` | `ReminderSweepBackgroundService` dispara o que venceu |
+| Agenda | `agd007_alert` + `agd008_alert_dispatch` | `TaskAlertSweepBackgroundService` e `EventAlertSweepBackgroundService` disparam o que venceu |
 
 O padrão em todos: quem chama grava uma linha durável na mesma transação da sua mudança de estado e
 retorna; um `PeriodicTimer` num `BackgroundService` pega a linha num escopo novo, faz o trabalho e
@@ -90,9 +91,11 @@ o §3.
 Onde existe idempotência natural, ela resolve e nenhuma tabela extra é necessária:
 
 - `chn006_notification` deduplica por `(correlation_id, channel)`.
-- `chn004_inbound_update` *(planejado)* tem `provider_update_id` como PK — reprocessar um update do
-  Telegram é inofensivo por construção.
-- `chn003_interaction` *(planejado)* tem `consumed_at` — um botão age uma vez só.
+- `chn004_inbound_update` tem índice único em `(provider, provider_update_id)` — reprocessar um
+  update do Telegram é inofensivo por construção.
+- `chn003_interaction` tem `consumed_at` — um botão age uma vez só.
+- `agd008_alert_dispatch` tem índice único em `(alert_id, occurrence_starts_at)` — revarrer a mesma
+  ocorrência não dispara em dobro.
 
 Todas são chave natural sobre o próprio trabalho, que é a forma a preferir. Uma tabela genérica de
 eventos processados é o plano B para quando não existe chave assim, e até aqui nenhum módulo precisou
@@ -103,8 +106,9 @@ de uma.
 ## 5. O que não passa pelo barramento
 
 **Agendamento.** "Me lembre às 14:00" não é evento a ser atrasado; é uma linha com hora de
-vencimento. O agendamento fica no job sobre tabela do módulo dono (o `AlertSweepBackgroundService` da
-Agenda), que publica **na hora em que dispara**. Lembrete é exatamente a coisa que muda de horário, e
+vencimento. O agendamento fica no job sobre tabela do módulo dono (o `ReminderSweepBackgroundService`,
+o `TaskAlertSweepBackgroundService` e o `EventAlertSweepBackgroundService` da Agenda), que publica
+**na hora em que dispara**. Lembrete é exatamente a coisa que muda de horário, e
 uma linha pode ser reagendada, cancelada ou corrigida quando o usuário muda de fuso. Isso é o
 princípio D3 da Agenda e o C1 do Channels, e os dois estão certos.
 

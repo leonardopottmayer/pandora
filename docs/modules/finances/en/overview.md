@@ -62,14 +62,16 @@ monolith. It lets a single user:
 ### In scope (implemented — see [Implementation Status](implementation-status.md))
 
 Accounts, cards & statements (with onboarding write-off/settle and reopen), the full transaction
-ledger, transfers, installments (manual & import-inferred with projections), recurrences + inbox,
-OFX & CSV imports with layout auto-detection, dedup/reconciliation, tags, system + user categories,
-reversibility (void/unvoid/reverse + delete guards), and the audit trail.
+ledger, transfers, manual installment plans, recurrences + inbox, OFX & CSV imports with layout
+auto-detection and dedup/reconciliation (including installment-marker extraction on import rows),
+tags, system + user categories, reversibility (void/unvoid/reverse + delete guards), and the audit
+trail.
 
 ### Out of scope / future
 
 | Feature | Status |
 |---|---|
+| **Import-inferred installment plans + projections** | Import rows already extract the installment marker (`installment_number`/`count`); matching/creating a plan on approval and generating projected future installments is not implemented. |
 | **Categorization rules** (auto-categorize imports, `fin015`) | Designed, not yet implemented. |
 | **Reports** (cash-flow, by-category, balance-history, upcoming agenda) | Not yet implemented (only the audit timeline exists). |
 | **Channels integration events** (statement closed/due/overdue, import completed) | Contracts project exists but is empty. |

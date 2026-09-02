@@ -38,11 +38,11 @@ A user has at least one list; at most one is the `default` (partial unique index
 
 ## 4. Alerts & overdue
 
-Alerts attach to a task through the polymorphic `Alert` (`subject_type = Task`) — the **only** subject
-type wired today. `offset_minutes` is signed relative to `due_at` (`0` at the instant, `-15` fifteen
-minutes before); `channels` NULL resolves from the user's Channels preference. `TaskAlertSweepBackgroundService`
-dispatches them, and the Telegram *Done* button completes the task. See
-[Alerts & Sweep](alerts-and-sweep.md).
+Alerts attach to a task through the polymorphic `Alert` (`subject_type = Task`) — one of the two wired
+subject types (`Event` is the other; `Reminder` keeps its own `agd006x` ledger instead). `offset_minutes`
+is signed relative to `due_at` (`0` at the instant, `-15` fifteen minutes before); `channels` NULL
+resolves from the user's Channels preference. `TaskAlertSweepBackgroundService` dispatches them, and the
+Telegram *Done* button completes the task. See [Alerts & Sweep](alerts-and-sweep.md).
 
 ## 5. Commands & endpoints
 

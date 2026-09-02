@@ -89,7 +89,7 @@ interação, então um segundo toque é "expirado".
 | **D1** | Um primitivo de alerta, varrido em background. | Implementado como **três** sweeps (lembrete, alerta-tarefa, alerta-evento) em vez de um, porque cada tipo de sujeito expande diferente. |
 | **D2** | Ocorrências calculadas, não armazenadas — exceto uma **tarefa recorrente**, materializada uma instância por vez. | Um evento é `linha + rrule` expandido na leitura; uma tarefa são duas linhas (fechada + próxima) para o histórico sobreviver e a fidelidade do Google Tasks valer. |
 | **D3** | Agendamento vive aqui; Channels só envia agora. | Um horário de vencimento é uma coluna; concluir/reagendar antes de disparar é um update local, nada a cancelar downstream. |
-| **D4** | Tempo absoluto + fuso IANA por item. | `time_zone` é carregado **na linha** (lembrete/tarefa/evento/calendário) porque a recorrência precisa expandir no fuso do *próprio item*. O `UserPreferences` do Identity agora carrega um padrão a nível de usuário; a Agenda ainda não o consome como padrão de novos itens. |
+| **D4** | Tempo absoluto + fuso IANA por item. | `time_zone` é carregado **na linha** (lembrete/tarefa/evento/calendário) porque a recorrência precisa expandir no fuso do *próprio item*. Quando uma requisição de criação o omite, o handler o define a partir do `UserPreferences` do Identity (via `IUserPreferencesReader`/`TimeZoneResolver`), caindo em UTC só quando o usuário não tem preferência. |
 | **—** | O ledger de dispatch de lembrete é `agd006x` (escopo do lembrete), não o polimórfico `agd008`. | Forma honesta até o Alert cobrir lembretes; migra para `agd008` depois. |
 
 ## 6. Regras transversais

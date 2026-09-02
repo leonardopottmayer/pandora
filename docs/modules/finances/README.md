@@ -28,11 +28,11 @@ the *technical rules* (aggregates, invariants, schema, endpoints).
 | 3 | [Data Model](en/data-model.md) | Full schema catalog (`fin001`–`fin016`): columns, constraints, indexes |
 | 4 | [Accounts](en/accounts.md) | Account types, currency, archiving |
 | 5 | [Cards & Statements](en/cards-and-statements.md) | Card config, statement lifecycle, resolver, payment, settle, write-off, reopen, available limit |
-| 6 | [Installments](en/installments.md) | Manual & import-inferred installment plans, cent rounding, projections |
+| 6 | [Installments](en/installments.md) | Manual installment plans, cent rounding (import-inferred plans + projections designed, not implemented) |
 | 7 | [Transactions (Ledger)](en/transactions.md) | Kinds & signs, status machine, balance, transfers, scheduled entries |
 | 8 | [Categories & Tags](en/categories-and-tags.md) | System vs. user categories, polymorphic tags |
 | 9 | [Recurrences & Inbox](en/recurrences-and-inbox.md) | Recurring templates, staging inbox, approve/reject/link/transfer |
-| 10 | [Imports](en/imports.md) | OFX/CSV pipeline, layouts, dedup/reconciliation, installment detection, cutoff, retry |
+| 10 | [Imports](en/imports.md) | OFX/CSV pipeline, layouts, dedup/reconciliation, installment marker extraction, cutoff, retry |
 | 11 | [Reversibility](en/reversibility.md) | Void, unvoid, reverse, and delete guards |
 | 12 | [Audit & Provenance](en/audit-and-provenance.md) | Structural provenance + append-only event log + event catalog |
 | 13 | [Jobs & Integration](en/jobs-and-integration.md) | Background jobs, idempotency, integration events (status) |

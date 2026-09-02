@@ -80,6 +80,4 @@ routed back from Channels; and the frontend (Today, Reminders, Tasks, Calendar).
 | **Google Calendar sync** (phase 5) | Not implemented — sync tables (`agd009`–`agd012`), providers, cursors, conflict log absent. Depends on [Integrations](../../integrations/en/overview.md). |
 | **Google Tasks sync** (phase 6) | Not implemented. |
 | **Assistant command catalog** (phase 7) | Not implemented — commands exist and are commandable, but the descriptor registration for Assistant is not wired. |
-| **Consuming the Identity time-zone default** | Identity's `UserPreferences` already carries `TimeZone`/`WeekStartsOn`/`DefaultAlertOffsetMinutes`. Agenda still stores a `time_zone` per item (recurrence expands in the item's own zone) and has not yet wired the Identity preference as the default for new items. |
-| **Week/day calendar UI polish, Agenda settings screen** | Partially deferred on the frontend. |
 | **Beyond** | Note ↔ event links, natural-language quick-add, travel time, ICS/CalDAV, Microsoft/Apple providers, Finances due dates in the day view. |

@@ -28,7 +28,7 @@ Start with the **Overview** for the boundary and vocabulary, then read the topic
 |---|---|---|
 | 1 | [Overview](en/overview.md) | What the module does, the Channels/Integrations boundary, principles, ubiquitous language, scope |
 | 2 | [Architecture](en/architecture.md) | Project layout, the Delivery/Ingress/Addressing seam, domain building blocks, decisions, the Tars Telegram block |
-| 3 | [Data Model](en/data-model.md) | Schema catalog (`chn001`–`chn006`): columns, constraints, indexes |
+| 3 | [Data Model](en/data-model.md) | Schema catalog (`chn001`–`chn007`): columns, constraints, indexes |
 | 4 | [Outbound & Templates](en/outbound-and-templates.md) | Enqueue, fan-out, per-channel rendering, template tree, buttons, the dispatcher & retry |
 | 5 | [Inbound & Linking](en/inbound-and-linking.md) | The Telegram handshake, long polling, triage, interactions, media, routing back to owners |
 | 6 | [API Reference](en/api-reference.md) | Every endpoint under `/api/v{n}/channels` |

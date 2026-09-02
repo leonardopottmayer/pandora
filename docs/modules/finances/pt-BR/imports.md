@@ -91,26 +91,34 @@ quando existe um FITID/identificador, senão um hash de conteúdo
 A janela de ±2 dias e a tolerância de valor são heurísticas atuais (calibração é um ponto em aberto
 conhecido).
 
-## Detecção de parcelas / projeção
+## Extração do marcador de parcela (implementado)
 
-Para um CSV/OFX de fatura de cartão que traz só a parcela corrente (ex.: `LOJA X 03/12`, R$ 100):
+Para um CSV/OFX de fatura de cartão que traz só a parcela corrente (ex.: `LOJA X 03/12`, R$ 100), o
+parser aplica os `installmentPatterns` do layout para extrair `installment_number = 3` e
+`installment_count = 12` no `parsed_payload` e no `ImportRow`/sugestão. Essa parte está implementada
+(`OFXParser`/`CsvParser`). O usuário vê esses valores na revisão.
 
-1. O parser aplica os `installmentPatterns` do layout para extrair `installment_number = 3` e
-   `installment_count = 12` no `parsed_payload` e na sugestão. O usuário pode corrigir ou zerar esses
-   campos na revisão (falso positivo — descrição que só *parece* uma fração).
-2. Na aprovação, um matcher de parcelas procura plano existente no cartão com a mesma
-   `normalized_description`, mesmo count, valor de parcela compatível e uma posição livre:
-   - **achou** → a transação aprovada vira a parcela N desse plano;
-   - **não achou** → cria plano com `origin = import`, `total_amount = valor × count`
-     (`total_is_estimate = true`) e `first_reference_month` inferido retroativamente
-     (mês da fatura atual − (N−1) meses); a transação aprovada é a parcela N.
-3. **Parcelas futuras** (N+1..count) são geradas como transações `pending` com `origin = projection`
-   nas faturas seguintes — para o usuário ver o comprometimento futuro. Contam para o total
-   *projetado* de uma fatura, não para o `total_amount` postado nem um saldo.
-4. **Parcelas passadas** (1..N−1) **não** são geradas automaticamente.
-5. A importação do mês seguinte de `LOJA X 04/12` concilia com a parcela projetada (mesmo plano,
-   posição 4) → sugestão de confirmação; aprovar posta a projeção com os valores reais. Nada duplica.
-   Ver [Parcelamento](installments.md).
+É até onde vai hoje: **aprovar** essa sugestão (`ApprovePendingTransactionCommand`) ignora
+`installment_number`/`installment_count`/`matched_installment_plan_id` e simplesmente cria uma
+transação simples — não existe matcher que a ligue a um `InstallmentPlan` existente, não existe
+criação de plano com `origin = import`, e não existe geração das parcelas futuras projetadas. O design
+para esse fluxo completo é:
+
+1. Na aprovação, um matcher de parcelas procuraria plano existente no cartão com a mesma
+   `normalized_description`, mesmo count, valor de parcela compatível e uma posição livre: achou → a
+   transação aprovada vira a parcela N desse plano; não achou → um novo plano com `origin = import`,
+   `total_amount = valor × count` (`total_is_estimate = true`) e `first_reference_month` inferido
+   retroativamente.
+2. As **parcelas futuras** (N+1..count) seriam geradas como transações com `origin = projection` nas
+   faturas seguintes.
+3. As **parcelas passadas** (1..N−1) **não** seriam geradas automaticamente.
+4. A importação do mês seguinte de `LOJA X 04/12` conciliaria com a parcela projetada em vez de
+   duplicá-la.
+
+Nada disso (passos 1-4) está implementado — ver [Parcelamento](installments.md) e
+[Status de Implementação](implementation-status.md). O valor `EntryOrigin.Projection` e os campos de
+`ImportRow`/`PendingTransaction` que dariam suporte a isso (`matched_installment_plan_id`, etc.) já
+existem no schema, sem uso.
 
 ## API
 

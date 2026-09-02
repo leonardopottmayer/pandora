@@ -31,7 +31,7 @@ and MFA management require a valid access token. Errors are mapped from typed `R
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| GET | `/mfa/status` | user | Is MFA enabled / is there a pending setup. |
+| GET | `/mfa/status` | user | Is MFA enabled, plus the count of unused recovery codes. |
 | POST | `/mfa/setup` | user | Generate + store (encrypted) a TOTP secret; return provisioning data. |
 | POST | `/mfa/enable` | user | Confirm a TOTP code; enable MFA; return recovery codes once; publish `MfaEnabled`. |
 | POST | `/mfa/disable` | user | Disable MFA (re-verifying a factor); publish `MfaDisabled`. |

@@ -10,7 +10,7 @@ A chat id is **never accepted from the client**. The only thing that authorizes 
 handshake:
 
 ```
-1. SPA    → POST /channels/telegram/link          ← { deepLink, token }   (chn002 issued)
+1. SPA    → POST /channels/telegram/link          ← { url, expiresAt }   (chn002 issued)
 2. User taps the deep link → Telegram opens the bot with /start <token>
 3. Bot receives the update; triage classifies it as a Command
 4. ConsumeTelegramLink: validate & consume the token, upsert chn001 (verified),

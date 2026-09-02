@@ -9,10 +9,13 @@ recuperação** de uso único como backup e um **challenge de step-up** no login
 
 ## 1. Enrolamento
 
-1. `GET /identity/mfa/status` — o MFA está ligado, e (durante o setup) há uma credencial pendente?
+1. `GET /identity/mfa/status` — devolve se o MFA está ligado e, se estiver, a contagem de códigos de
+   recuperação não usados (`MfaStatusDto`: `Enabled`, `RemainingRecoveryCodes`). Não expõe se há um
+   setup pendente.
 2. `POST /identity/mfa/setup` — gera um segredo TOTP, o guarda **encriptado** (`idt006.secret_cipher`,
    `confirmed_at` NULL), e devolve os dados de provisionamento (segredo / URI otpauth) para o QR code do
-   app autenticador.
+   app autenticador. Falha se o MFA já está ligado. Chamar de novo antes de confirmar substitui a
+   credencial pendente anterior por um segredo novo.
 3. `POST /identity/mfa/enable` — o usuário envia um código TOTP atual; no sucesso `confirmed_at` é
    definido, `user.mfa_enabled = true`, um conjunto de **códigos de recuperação** é gerado (guardado
    **hasheado**, `idt007`), e **`MfaEnabled`** é publicado (o Channels envia uma confirmação). Os

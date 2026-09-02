@@ -67,7 +67,7 @@ Per-occurrence acknowledge/snooze for recurring reminders are `AcknowledgeOccurr
 | POST | `/agenda/{subjectType}/{id}/alerts` | Add an alert (offset + channels). |
 | DELETE | `/agenda/alerts/{id}` | Remove an alert. |
 
-`subjectType` is `tasks` today (the only wired subject).
+`subjectType` is `task` or `event` (case-insensitive); `reminder` is rejected — reminders keep their own `agd006x` ledger instead of `Alert`.
 
 ## Today — `/agenda/today`
 

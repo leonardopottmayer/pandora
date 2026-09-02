@@ -48,9 +48,11 @@ rotacionar. O access token continua válido até expirar (JWT stateless), o que 
   envia por e-mail um link de reset de uso único apoiado em `idt005`). A resposta é **uniforme** e não
   revela se a conta existe.
 - **Reset** — `POST /identity/auth/password/reset` consome o token de reset, define um novo hash
-  Argon2id, e publica **`PasswordChanged`**.
+  Argon2id, **revoga todo refresh token do usuário** (todas as sessões são deslogadas, já que o reset
+  implica que as credenciais antigas foram comprometidas), e publica **`PasswordChanged`**.
 - **Troca** — `POST /identity/auth/password/change` (autenticado) verifica a senha atual, define o novo
-  hash, carimba `last_password_changed_at`, e publica **`PasswordChanged`**.
+  hash, carimba `last_password_changed_at`, **revoga todo refresh token do usuário** (outros
+  dispositivos precisam se autenticar de novo), e publica **`PasswordChanged`**.
 
 ## 6. Usuário atual
 

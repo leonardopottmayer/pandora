@@ -8,26 +8,31 @@
 
 Comprar parcelado é essencial no Brasil. Uma compra de cartão dividida em N parcelas é modelada como
 **um plano + N transações**, uma por fatura consecutiva. Cada parcela é uma cobrança `expense` real e
-efetivada na própria fatura — não são projeções (exceto as futuras inferidas de importação, ver abaixo).
+efetivada na própria fatura.
+
+Hoje só existem planos criados **manualmente**. O próprio comentário XML do agregado `InstallmentPlan`
+é explícito: *"In this phase only manual plans exist... import-inferred plans (estimated total,
+projected future installments) arrive in phase 10."* O schema e o value object `Origin` já permitem uma
+origem `import`, e os parsers OFX/CSV já extraem o marcador de parcela da descrição para o `ImportRow`
+(ver [Importação](imports.md#extração-do-marcador-de-parcela-implementado)), mas nada ainda transforma
+isso em um `InstallmentPlan` — aprovar essa sugestão hoje só cria uma transação simples. Ver
+[Status de Implementação](implementation-status.md).
 
 ## Regras
 
 - **Mínimo de 2 parcelas** (`InstallmentCount >= 2`, `MinInstallments = 2`).
-- **Origem:**
-  - `manual` — criada pelo usuário. As parcelas **somam exatamente** `total_amount`
-    (`total_is_estimate = false`).
-  - `import` — inferida de um arquivo bancário onde só o valor da parcela corrente é conhecido
-    (`total_is_estimate = true`, `total_amount = valor × count`). Ver [Importação](imports.md).
+- **Origem:** hoje só `manual` é criada — pelo usuário, via `InstallmentPlan.CreateManual`. As parcelas
+  **somam exatamente** `total_amount` (`total_is_estimate = false`). A origem `import` existe no
+  domínio/schema para uma fase futura (inferida de um arquivo bancário onde só o valor da parcela
+  corrente é conhecido: `total_is_estimate = true`, `total_amount = valor × count`), mas nenhum caminho
+  de código a cria ainda.
 - **Divisão com arredondamento de centavos** (`SplitAmount`): o total é dividido em partes arredondadas
   a centavos, com qualquer resto de arredondamento na **primeira** parcela, de modo que as partes
   somem exatamente. Exemplo: `1000.00` em 3× → `333.34 / 333.33 / 333.33`.
 - **`normalized_description`**: a descrição sem o marcador de parcela (`3/12`, `03/12`, `PARC 3/12`,
-  `3 de 12`), em minúsculas e com espaços colapsados. É a **chave de casamento** usada para conciliar
-  parcelas importadas com um plano existente (fase de importação). É preenchida até em planos manuais,
-  para importações futuras casarem com eles.
-- **`first_reference_month`** (`yyyy-MM`): o mês de referência da fatura da primeira parcela. Para
-  planos inferidos de importação criados a partir da parcela N, é inferido retroativamente
-  (mês da fatura atual − (N−1) meses).
+  `3 de 12`), em minúsculas e com espaços colapsados. É gravada em todo plano (manual, hoje) como
+  futura chave de casamento para conciliar parcelas importadas — ainda não é consumida em lugar nenhum.
+- **`first_reference_month`** (`yyyy-MM`): o mês de referência da fatura da primeira parcela.
 
 ## Criando uma compra parcelada
 
@@ -44,13 +49,13 @@ sua fatura, o **valor restante** (soma das parcelas não pagas e não canceladas
 parcelas **pagas** (parcelas cuja fatura está `paid`). Parcelas canceladas (void) ficam de fora de
 ambas as figuras.
 
-## Projeções (parcelas futuras inferidas de importação)
+## Projeções (planejado, não implementado)
 
-Quando um plano é inferido de uma importação, as parcelas **futuras** (N+1..count) são criadas como
-transações `pending` com `origin = projection` nas faturas seguintes — para o usuário ver o
-comprometimento das próximas faturas. Elas contam para o total *projetado* de uma fatura, não para o
-`total_amount` postado nem para nenhum saldo. Parcelas passadas (1..N−1) **não** são geradas
-automaticamente. Ver [Importação → detecção de parcelas](imports.md#detecção-de-parcelas--projeção).
+O design prevê que um plano inferido de importação gere suas parcelas **futuras** (N+1..count) como
+transações com `origin = projection` nas faturas seguintes, para o usuário ver o comprometimento com
+antecedência. O valor `EntryOrigin.Projection` já existe no código para isso, mas nada cria uma
+transação com ele hoje — está sem uso. Ver [Importação](imports.md) e
+[Status de Implementação](implementation-status.md).
 
 ## Cancelamento
 

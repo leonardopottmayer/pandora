@@ -16,10 +16,10 @@ Use para distinguir "documentado porque existe" de "documentado como plano".
 | **Contas** | CRUD, tipos, moeda imutável, arquivar/desarquivar, saldo inicial (`fin001`). |
 | **Ledger** | Lançamentos, 11 kinds incl. `statement-writeoff`, sinais, máquina de status, saldo derivado, transferências (`fin008`). |
 | **Cartões e faturas** | CRUD de cartão, ciclo da fatura, resolver, pagar, **quitar (write-off)**, fechar, **reabrir**, limite disponível (`fin006`, `fin007`). |
-| **Parcelamento** | Planos manuais, divisão de centavos, cancelar parcela/plano; planos inferidos de importação + projeções (`fin009`). |
+| **Parcelamento** | Só planos manuais, divisão de centavos, cancelar parcela/plano (`fin009`). Planos inferidos de importação + projeções **não** estão implementados — ver abaixo. |
 | **Tags** | CRUD de tags + vínculos polimórficos (`fin004`, `fin005`). |
 | **Recorrências e inbox** | Templates de recorrência + motor de regras, inbox de staging, aprovar/rejeitar/vincular/transferir-do-pendente, job de geração (`fin010`, `fin011`). |
-| **Importação** | OFX **e** CSV, seed de layouts de banco + auto-detecção, dedup/conciliação de três níveis, detecção de parcelas & projeção, data de corte, retry (`fin012`–`fin014`). |
+| **Importação** | OFX **e** CSV, seed de layouts de banco + auto-detecção, dedup/conciliação de três níveis, extração do marcador de parcela para `parsed_payload`/`ImportRow` (número/count apenas — sem casamento de plano), data de corte, retry (`fin012`–`fin014`). |
 | **Reversibilidade** | Cancelar, desfazer, estornar (todos os casos), proteções de exclusão em conta/cartão. |
 | **Leituras de auditoria** | Timeline `/audit` por entidade ou correlation id. |
 | **Frontend** | Módulo React (`client-web/src/modules/finances`) cobrindo contas, cartões, faturas, lançamentos, transferências, categorias, tags, recorrências, inbox, importações, auditoria. |
@@ -43,6 +43,7 @@ A implementação evoluiu além da primeira proposta de design. Adições notáv
 
 | Área | Status |
 |---|---|
+| **Planos de parcelamento inferidos de importação + projeções** | `InstallmentPlan` só tem a factory `Origin.Manual` (`CreateManual`); aprovar uma sugestão de importação com marcador de parcela detectado cria uma transação simples, não um plano. Os valores de origem `import`/`projection`, e os campos de casamento em `ImportRow`/`PendingTransaction` (`matched_installment_plan_id`, etc.), existem no schema/domínio mas não são usados. O próprio comentário do agregado `InstallmentPlan` chama isso de "phase 10". |
 | **Regras de categorização** (`fin015`) | Auto-categorizar sugestões de importação ("descrição contém UBER → Transporte"). Tabela e casos de uso não criados. |
 | **Relatórios** | Endpoints de fluxo de caixa, por categoria, histórico de saldo e agenda de vencimentos não implementados — só existe a timeline de auditoria. |
 | **Eventos de integração com Channels** | O projeto `Contracts` está vazio; `StatementClosed`/`StatementDueSoon`/`StatementOverdue`/`ImportCompleted`/`PendingTransactionsGenerated` não são publicados, e não há subscribers/templates no Channels. |

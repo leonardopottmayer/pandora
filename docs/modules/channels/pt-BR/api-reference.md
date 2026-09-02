@@ -29,8 +29,9 @@ lista de configurações.
 
 ### POST `/{channel}/link`
 
-Para o Telegram, devolve `{ deepLink, token }`: o link `https://t.me/<bot>?start=<token>` que o usuário
-toca. O chat id chega depois, do Telegram, carregando o token que este emitiu.
+Para o Telegram, devolve `{ url, expiresAt }`: `url` é o deep link `https://t.me/<bot>?start=<token>`
+que o usuário toca (o token em texto puro viaja só dentro dele, nunca como campo separado); `expiresAt`
+é quando o handshake expira. O chat id chega depois, do Telegram, carregando o token que este emitiu.
 
 ### DELETE `/{channel}/link`
 

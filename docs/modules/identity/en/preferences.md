@@ -17,9 +17,17 @@ other modules read.
 
 ## API
 
-- `GET /identity/preferences` — read (`GetPreferences`).
-- `PUT /identity/preferences` — upsert (`UpsertPreferences`). Validates the theme and language against
-  the supported sets and the time zone with `TimeZoneInfo.TryFindSystemTimeZoneById`.
+- `GET /identity/preferences` — read (`GetPreferences`). Fails with a not-found error if the user has
+  never saved preferences yet — the row is created lazily, not at sign-up.
+- `PUT /identity/preferences` — upsert (`UpsertPreferences`): creates the `idt003` row on the first
+  call, updates it afterwards. Requires all five fields in the request body (no partial updates).
+  Validates the theme and language against the supported sets, the week start against `DayOfWeek`
+  names, and the time zone with `TimeZoneInfo.TryFindSystemTimeZoneById`.
+
+Note: the column defaults in the `idt003` migration (`en`, `America/Sao_Paulo`, `sunday`, `-15`) only
+apply if a row were inserted without those columns — in practice the application always supplies every
+field on the first `PUT`, so a user who never opens the preferences screen has **no** `idt003` row at
+all, not one holding these defaults.
 
 ## Cross-module note
 

@@ -64,14 +64,16 @@ Pandora. Ele permite a um único usuário:
 ### No escopo (implementado — ver [Status de implementação](implementation-status.md))
 
 Contas, cartões e faturas (com quitação/write-off de onboarding e reabertura), o ledger completo,
-transferências, parcelamento (manual e inferido de importação com projeções), recorrências + inbox,
-importação OFX e CSV com auto-detecção de layout, dedup/conciliação, tags, categorias de sistema e do
-usuário, reversibilidade (cancelar/desfazer/estornar + proteções de exclusão) e a trilha de auditoria.
+transferências, planos de parcelamento manuais, recorrências + inbox, importação OFX e CSV com
+auto-detecção de layout e dedup/conciliação (incluindo extração do marcador de parcela nas linhas
+importadas), tags, categorias de sistema e do usuário, reversibilidade (cancelar/desfazer/estornar +
+proteções de exclusão) e a trilha de auditoria.
 
 ### Fora de escopo / futuro
 
 | Feature | Status |
 |---|---|
+| **Planos de parcelamento inferidos de importação + projeções** | As linhas de importação já extraem o marcador de parcela (`installment_number`/`count`); casar/criar um plano na aprovação e gerar as parcelas futuras projetadas não está implementado. |
 | **Regras de categorização** (auto-categorizar importações, `fin015`) | Projetado, ainda não implementado. |
 | **Relatórios** (fluxo de caixa, por categoria, histórico de saldo, agenda) | Ainda não implementado (só existe a timeline de auditoria). |
 | **Eventos de integração com Channels** (fatura fechada/a vencer/vencida, importação concluída) | Projeto Contracts existe mas está vazio. |

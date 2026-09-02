@@ -15,7 +15,7 @@ in [product-plan.md](product-plan.md).
 | **Reminders** | `agd006` single-shot + recurring; `agd006x` per-occurrence ledger; acknowledge/snooze (series and per-occurrence); `ReminderSweepBackgroundService`. |
 | **Recurrence engine** | `RecurrenceRule` parse + `EventExpander` expand, RFC 5545 subset, DST-aware, `-1FR`-style ordinals; expands in the item's `time_zone`. |
 | **Tasks** | `agd004` lists + `agd005` tasks; one-level subtasks; priority; due with/without time; complete/reopen; recurring materialized one instance at a time carrying alerts. |
-| **Alerts** | `agd007` polymorphic + `agd008` dispatch ledger; `Task` subject wired; `TaskAlertSweepBackgroundService`. |
+| **Alerts** | `agd007` polymorphic + `agd008` dispatch ledger; `Task` and `Event` subjects wired; `TaskAlertSweepBackgroundService` + `EventAlertSweepBackgroundService`. |
 | **Calendar & events** | `agd001` calendars, `agd002` events (computed occurrences), `agd003` overrides; this / this-and-future / all edit scopes; `EventAlertSweepBackgroundService`. |
 | **Today** | `GET /agenda/today` unified read (events + tasks + reminders). |
 | **Inbound buttons** | `InboundInteractionReceivedHandler` + `TaskInteractionHandler` for `task_done` / `snooze_*` from Channels. |
@@ -28,8 +28,8 @@ in [product-plan.md](product-plan.md).
   `AlertSweepBackgroundService` — each subject type expands differently.
 - **Reminder dispatch ledger is `agd006x`** (reminder-scoped), not the polymorphic `agd008`. Migrates
   to `agd008` when Alert covers reminders.
-- **`Alert.subject_type` admits `Task`/`Event`/`Reminder` but only `Task` is wired**; events use the
-  event-alert sweep directly, reminders keep `agd006x`.
+- **`Alert.subject_type` admits `Task`/`Event`/`Reminder`; `Task` and `Event` are wired** (create/list/
+  sweep), **`Reminder` is not** — reminders keep their own `agd006x` ledger.
 - **`time_zone` is carried per row** (reminder/task/event/calendar) so recurrence expands in the
   item's own zone. When the caller omits it, Agenda now defaults it from Identity's `UserPreferences`
   (via the `IUserPreferencesReader` port), falling back to UTC only when the user has no preference.

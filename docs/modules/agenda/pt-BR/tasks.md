@@ -38,11 +38,11 @@ Um usuário tem ao menos uma lista; no máximo uma é a `default` (índice únic
 
 ## 4. Alertas e atraso
 
-Alertas se ligam a uma tarefa pelo `Alert` polimórfico (`subject_type = Task`) — o **único** tipo de
-sujeito ligado hoje. `offset_minutes` tem sinal relativo a `due_at` (`0` no instante, `-15` quinze
-minutos antes); `channels` NULL resolve da preferência do usuário no Channels.
-`TaskAlertSweepBackgroundService` os despacha, e o botão *Concluído* do Telegram completa a tarefa. Ver
-[Alertas e Sweep](alerts-and-sweep.md).
+Alertas se ligam a uma tarefa pelo `Alert` polimórfico (`subject_type = Task`) — um dos dois tipos de
+sujeito ligados (`Event` é o outro; `Reminder` mantém seu próprio ledger `agd006x`). `offset_minutes`
+tem sinal relativo a `due_at` (`0` no instante, `-15` quinze minutos antes); `channels` NULL resolve da
+preferência do usuário no Channels. `TaskAlertSweepBackgroundService` os despacha, e o botão *Concluído*
+do Telegram completa a tarefa. Ver [Alertas e Sweep](alerts-and-sweep.md).
 
 ## 5. Comandos e endpoints
 

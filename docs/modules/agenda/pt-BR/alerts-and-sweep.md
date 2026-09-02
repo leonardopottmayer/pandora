@@ -12,7 +12,7 @@ no tempo T" é uma linha **`Alert`** (`agd007`), polimórfica sobre seu sujeito 
 
 | Campo | Significado |
 |---|---|
-| `subject_type` | `Task` \| `Event` \| `Reminder` — **só `Task` ligado hoje**; eventos usam o caminho do sweep de alerta-evento, lembretes mantêm o ledger `agd006x`. |
+| `subject_type` | `Task` \| `Event` \| `Reminder` — **`Task` e `Event` estão ligados**; lembretes mantêm o ledger `agd006x` em vez disso. |
 | `offset_minutes` | Com sinal, relativo à âncora do sujeito (o `due_at` de uma tarefa, o início da ocorrência de um evento). `0` = no instante, `-15` = quinze minutos antes. |
 | `channels` | NULL ⇒ resolve da preferência do usuário no Channels para a categoria; senão explícito (`email`, `telegram`). |
 | `is_enabled` | O sweep só varre alertas habilitados. |

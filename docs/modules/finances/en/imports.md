@@ -86,26 +86,34 @@ identifier exists, otherwise a content hash `dest:hash:<date>:<amount>:<normaliz
 
 The ±2-day window and amount tolerance are current heuristics (calibration is a known open point).
 
-## Installment detection & projection
+## Installment marker extraction (implemented)
 
-For a card statement CSV/OFX that carries only the current installment (e.g. `LOJA X 03/12`, R$ 100):
+For a card statement CSV/OFX that carries only the current installment (e.g. `LOJA X 03/12`, R$ 100),
+the parser applies the layout's `installmentPatterns` to extract `installment_number = 3` and
+`installment_count = 12` into `parsed_payload` and onto the `ImportRow`/suggestion. This part is
+implemented (`OFXParser`/`CsvParser`). The user can see these values on review.
 
-1. The parser applies the layout's `installmentPatterns` to extract `installment_number = 3` and
-   `installment_count = 12` into `parsed_payload` and the suggestion. The user can correct or zero
-   these on review (false positive — a description that merely *looks* like a fraction).
-2. On approval, an installment matcher looks for an existing plan on the card with the same
+That is as far as it goes today: **approving** such a suggestion (`ApprovePendingTransactionCommand`)
+ignores `installment_number`/`installment_count`/`matched_installment_plan_id` and just creates one
+plain transaction — there is no matcher that links it to an existing `InstallmentPlan`, no creation of
+an `origin = import` plan, and no generation of the projected future installments. The design for that
+full flow is:
+
+1. On approval, an installment matcher would look for an existing plan on the card with the same
    `normalized_description`, same count, a compatible per-installment value, and a free position:
-   - **found** → the approved transaction becomes installment N of that plan;
-   - **not found** → creates a plan with `origin = import`, `total_amount = value × count`
-     (`total_is_estimate = true`), and a retroactively inferred `first_reference_month`
-     (current statement month − (N−1) months); the approved transaction is installment N.
-3. **Future installments** (N+1..count) are generated as `pending` transactions with
-   `origin = projection` on the following statements — so the user sees the upcoming commitment.
-   They count toward a statement's *projected* total, not the posted `total_amount` or any balance.
-4. **Past installments** (1..N−1) are **not** generated automatically.
-5. Next month's import of `LOJA X 04/12` reconciles with the projected installment (same plan,
-   position 4) → a confirmation suggestion; approving posts the projection with the real values.
-   Nothing duplicates. See [Installments](installments.md).
+   found → the approved transaction becomes installment N of that plan; not found → a new plan with
+   `origin = import`, `total_amount = value × count` (`total_is_estimate = true`), and a retroactively
+   inferred `first_reference_month`.
+2. **Future installments** (N+1..count) would be generated as transactions with `origin = projection`
+   on the following statements.
+3. **Past installments** (1..N−1) would **not** be generated automatically.
+4. Next month's import of `LOJA X 04/12` would reconcile with the projected installment instead of
+   duplicating it.
+
+None of this (steps 1-4) is implemented — see [Installments](installments.md) and
+[Implementation Status](implementation-status.md). The `EntryOrigin.Projection` value and the
+`ImportRow`/`PendingTransaction` fields that would support it (`matched_installment_plan_id`, etc.)
+already exist in the schema, unused.
 
 ## API
 

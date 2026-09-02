@@ -171,9 +171,9 @@ The central table. Built up across several migrations; final shape:
 | Column | Type | Notes |
 |---|---|---|
 | `id` / `user_id` / `card_id → fin006` | uuid | |
-| `origin` | varchar(10) DEFAULT 'manual' | `manual\|import` |
+| `origin` | varchar(10) DEFAULT 'manual' | `manual\|import` — only `manual` is ever written today; `import` is schema-reserved (see [Installments](installments.md)) |
 | `total_amount` | numeric(20,8) | `> 0` |
-| `total_is_estimate` | boolean DEFAULT false | true for import-inferred plans |
+| `total_is_estimate` | boolean DEFAULT false | reserved for import-inferred plans (not yet produced) |
 | `installment_count` | smallint | `>= 2` |
 | `first_reference_month` | varchar(7) | `yyyy-MM` |
 | `description` | varchar(255) | |

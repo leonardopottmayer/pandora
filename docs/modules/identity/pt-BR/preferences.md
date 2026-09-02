@@ -17,9 +17,17 @@ de agendamento que outros módulos leem.
 
 ## API
 
-- `GET /identity/preferences` — leitura (`GetPreferences`).
-- `PUT /identity/preferences` — upsert (`UpsertPreferences`). Valida tema e idioma contra os conjuntos
-  suportados e o fuso com `TimeZoneInfo.TryFindSystemTimeZoneById`.
+- `GET /identity/preferences` — leitura (`GetPreferences`). Falha com erro de não encontrado se o
+  usuário nunca salvou preferências ainda — a linha é criada de forma preguiçosa (lazy), não no cadastro.
+- `PUT /identity/preferences` — upsert (`UpsertPreferences`): cria a linha `idt003` na primeira chamada,
+  atualiza depois. Exige os cinco campos no corpo da requisição (sem atualização parcial). Valida tema e
+  idioma contra os conjuntos suportados, o início da semana contra os nomes de `DayOfWeek`, e o fuso com
+  `TimeZoneInfo.TryFindSystemTimeZoneById`.
+
+Nota: os valores padrão de coluna na migration do `idt003` (`en`, `America/Sao_Paulo`, `sunday`, `-15`)
+só se aplicariam a uma linha inserida sem essas colunas — na prática a aplicação sempre informa todos os
+campos no primeiro `PUT`, então um usuário que nunca abriu a tela de preferências **não tem** nenhuma
+linha em `idt003`, e não uma linha com esses padrões.
 
 ## Nota entre módulos
 

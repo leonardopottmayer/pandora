@@ -6,7 +6,7 @@ PostgreSQL schema **`agenda`**. Conventions: PK `uuid DEFAULT uuid_generate_v7()
 everywhere (time stored absolute, D4), audit columns `created_by/created_at/updated_by/updated_at`,
 named constraints, enums as `VARCHAR` + `CHECK` stored **PascalCase** (to match
 `agd006_reminder.status`). Each item carries its own IANA `time_zone`, because recurrence expands in
-the item's own zone. (Identity's `UserPreferences` carries a user-level default zone, which Agenda does not yet consume as the per-item default.)
+the item's own zone. (When a create request omits it, Agenda defaults it from Identity's `UserPreferences` — a user-level default zone — falling back to UTC only when the user has no preference.)
 
 Migrations live in `migrations/migrations/agenda/`.
 
@@ -157,7 +157,7 @@ The polymorphic scheduling primitive: one row per wanted ping, keyed to a subjec
 |---|---|---|
 | `id` | uuid PK | |
 | `user_id` | uuid NOT NULL | |
-| `subject_type` | varchar(20) | `Task \| Event \| Reminder` (`chk_agd007_subject_type`) — **only `Task` is wired today** |
+| `subject_type` | varchar(20) | `Task \| Event \| Reminder` (`chk_agd007_subject_type`) — **`Task` and `Event` are wired**; `Reminder` keeps the `agd006x` ledger instead |
 | `subject_id` | uuid NOT NULL | |
 | `offset_minutes` | int NOT NULL | signed, relative to the subject anchor (`0` = at the instant, `-15` = 15 min before) |
 | `channels` | text[] NULL | NULL ⇒ resolve from the user's Channels preference; else explicit (`email`, `telegram`) |

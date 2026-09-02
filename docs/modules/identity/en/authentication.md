@@ -49,9 +49,11 @@ bounds.
   emails a single-use reset link backed by `idt005`). The response is **uniform** and does not reveal
   whether the account exists.
 - **Reset** — `POST /identity/auth/password/reset` consumes the reset token, sets a new Argon2id hash,
-  and publishes **`PasswordChanged`**.
+  **revokes every refresh token for the user** (all sessions are signed out, since the reset implies the
+  old credentials were compromised), and publishes **`PasswordChanged`**.
 - **Change** — `POST /identity/auth/password/change` (authenticated) verifies the current password,
-  sets the new hash, stamps `last_password_changed_at`, and publishes **`PasswordChanged`**.
+  sets the new hash, stamps `last_password_changed_at`, **revokes every refresh token for the user**
+  (other devices must re-authenticate), and publishes **`PasswordChanged`**.
 
 ## 6. Current user
 

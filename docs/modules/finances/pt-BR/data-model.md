@@ -171,9 +171,9 @@ A tabela central. Construída ao longo de várias migrations; forma final:
 | Coluna | Tipo | Notas |
 |---|---|---|
 | `id` / `user_id` / `card_id → fin006` | uuid | |
-| `origin` | varchar(10) DEFAULT 'manual' | `manual\|import` |
+| `origin` | varchar(10) DEFAULT 'manual' | `manual\|import` — hoje só `manual` é gravado; `import` está reservado no schema (ver [Parcelamento](installments.md)) |
 | `total_amount` | numeric(20,8) | `> 0` |
-| `total_is_estimate` | boolean DEFAULT false | true para planos inferidos de importação |
+| `total_is_estimate` | boolean DEFAULT false | reservado para planos inferidos de importação (ainda não produzido) |
 | `installment_count` | smallint | `>= 2` |
 | `first_reference_month` | varchar(7) | `yyyy-MM` |
 | `description` | varchar(255) | |

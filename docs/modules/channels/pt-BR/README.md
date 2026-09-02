@@ -27,7 +27,7 @@ Comece pela **Visão geral** para o limite e o vocabulário, depois leia o tópi
 |---|---|---|
 | 1 | [Visão geral](overview.md) | O que o módulo faz, o limite Channels/Integrations, princípios, linguagem ubíqua, escopo |
 | 2 | [Arquitetura](architecture.md) | Organização de projetos, a costura Delivery/Ingress/Addressing, blocos de domínio, decisões, o bloco Telegram do Tars |
-| 3 | [Modelo de dados](data-model.md) | Catálogo de schema (`chn001`–`chn006`): colunas, constraints, índices |
+| 3 | [Modelo de dados](data-model.md) | Catálogo de schema (`chn001`–`chn007`): colunas, constraints, índices |
 | 4 | [Saída e Templates](outbound-and-templates.md) | Enfileiramento, fan-out, renderização por canal, árvore de templates, botões, o dispatcher e retry |
 | 5 | [Entrada e Vínculo](inbound-and-linking.md) | O handshake do Telegram, long polling, triagem, interações, mídia, roteamento de volta aos donos |
 | 6 | [Referência de API](api-reference.md) | Todos os endpoints sob `/api/v{n}/channels` |

@@ -88,7 +88,7 @@ has already consumed the interaction, so a second tap is "expired".
 | **D1** | One alert primitive, swept in the background. | Implemented as **three** sweeps (reminder, task-alert, event-alert) rather than one, because each subject type expands differently. |
 | **D2** | Occurrences computed, not stored — except a **recurring task**, materialized one instance at a time. | An event is `row + rrule` expanded on read; a task is two rows (closed + next) so history survives and Google Tasks fidelity holds. |
 | **D3** | Scheduling lives here; Channels only sends now. | A due time is a column; completing/rescheduling before firing is a local update, nothing to cancel downstream. |
-| **D4** | Absolute time + per-item IANA zone. | `time_zone` is carried **on the row** (reminder/task/event/calendar) because recurrence must expand in the *item's own* zone. Identity's `UserPreferences` now carries a user-level default; Agenda does not yet consume it as the default for new items. |
+| **D4** | Absolute time + per-item IANA zone. | `time_zone` is carried **on the row** (reminder/task/event/calendar) because recurrence must expand in the *item's own* zone. When a create request omits it, the handler defaults it from Identity's `UserPreferences` (via `IUserPreferencesReader`/`TimeZoneResolver`), falling back to UTC only when the user has no preference. |
 | **—** | The reminder dispatch ledger is `agd006x` (reminder-scoped), not the polymorphic `agd008`. | Honest shape until Alert covered reminders; migrates to `agd008` later. |
 
 ## 6. Cross-cutting rules

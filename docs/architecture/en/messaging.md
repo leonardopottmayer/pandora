@@ -54,13 +54,14 @@ Some work genuinely cannot happen inside the request that triggered it: an HTTP 
 answer quickly, or a task that takes tens of seconds. The answer is a **job in the module that owns
 the work**, over that module's own table — not a queue in front of another process.
 
-The shape is already in the codebase three times over:
+The shape is already in the codebase four times over:
 
 | Module | Table | Job |
 |---|---|---|
 | Channels | `chn006_notification` | `NotificationDispatcherBackgroundService` drains what is due |
 | Finances | `fin011_pending_transaction` | recurrence sweep generates what came due |
-| Agenda *(planned)* | `agd00x_alert` | `AlertSweepBackgroundService` fires what is due |
+| Agenda | `agd006_reminder` + `agd006x_reminder_dispatch` | `ReminderSweepBackgroundService` fires what is due |
+| Agenda | `agd007_alert` + `agd008_alert_dispatch` | `TaskAlertSweepBackgroundService` and `EventAlertSweepBackgroundService` fire what is due |
 
 The pattern each time: the caller writes a durable row in the same transaction as its state change
 and returns; a `PeriodicTimer` in a `BackgroundService` picks the row up in a fresh scope, does the
@@ -89,9 +90,11 @@ everywhere in §3.
 Where natural idempotency exists, it does the work and no extra table is needed:
 
 - `chn006_notification` deduplicates by `(correlation_id, channel)`.
-- `chn004_inbound_update` *(planned)* has `provider_update_id` as its PK — reprocessing a Telegram
-  update is harmless by construction.
-- `chn003_interaction` *(planned)* has `consumed_at` — a button acts once.
+- `chn004_inbound_update` has a unique index on `(provider, provider_update_id)` — reprocessing a
+  Telegram update is harmless by construction.
+- `chn003_interaction` has `consumed_at` — a button acts once.
+- `agd008_alert_dispatch` has a unique index on `(alert_id, occurrence_starts_at)` — resweeping the
+  same occurrence does not double-fire.
 
 Every one of these is a natural key on the work itself, which is the form to prefer. A generic
 processed-events table is a fallback for when no such key exists, and so far none of the modules has
@@ -102,8 +105,9 @@ needed one.
 ## 5. What does not go through the bus
 
 **Scheduling.** "Remind me at 14:00" is not an event to be delayed; it is a row with a due time.
-Scheduling lives in the owning module's table-backed job (Agenda's `AlertSweepBackgroundService`),
-which publishes **at the moment it fires**. A reminder is exactly the thing whose time changes, and a
+Scheduling lives in the owning module's table-backed job (Agenda's `ReminderSweepBackgroundService`,
+`TaskAlertSweepBackgroundService` and `EventAlertSweepBackgroundService`), which publishes **at the
+moment it fires**. A reminder is exactly the thing whose time changes, and a
 row can be rescheduled, cancelled or corrected when the user changes timezone. This is Agenda's
 principle D3 and Channels' C1, and both are right.
 

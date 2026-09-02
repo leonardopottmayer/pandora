@@ -29,8 +29,9 @@ list.
 
 ### POST `/{channel}/link`
 
-For Telegram, returns `{ deepLink, token }`: the `https://t.me/<bot>?start=<token>` link the user taps.
-The chat id arrives later, from Telegram, carrying the token this issued.
+For Telegram, returns `{ url, expiresAt }`: `url` is the `https://t.me/<bot>?start=<token>` deep link
+the user taps (the plaintext token travels only inside it, never as a separate field); `expiresAt` is
+when the handshake expires. The chat id arrives later, from Telegram, carrying the token this issued.
 
 ### DELETE `/{channel}/link`
 

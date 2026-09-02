@@ -6,7 +6,7 @@ Schema PostgreSQL **`agenda`**. Convenções: PK `uuid DEFAULT uuid_generate_v7(
 lugar (tempo armazenado absoluto, D4), colunas de auditoria `created_by/created_at/updated_by/updated_at`,
 constraints nomeadas, enums como `VARCHAR` + `CHECK` armazenados **PascalCase** (para casar com
 `agd006_reminder.status`). Cada item carrega seu próprio `time_zone` IANA, porque a recorrência expande
-no fuso do próprio item. (O `UserPreferences` do Identity carrega um fuso padrão a nível de usuário, que a Agenda ainda não consome como padrão por item.)
+no fuso do próprio item. (Quando uma requisição de criação o omite, a Agenda o define a partir do `UserPreferences` do Identity — um fuso padrão a nível de usuário — caindo em UTC só quando o usuário não tem preferência.)
 
 As migrations ficam em `migrations/migrations/agenda/`.
 
@@ -159,7 +159,7 @@ O primitivo de agendamento polimórfico: uma linha por ping desejado, com chave 
 |---|---|---|
 | `id` | uuid PK | |
 | `user_id` | uuid NOT NULL | |
-| `subject_type` | varchar(20) | `Task \| Event \| Reminder` (`chk_agd007_subject_type`) — **só `Task` ligado hoje** |
+| `subject_type` | varchar(20) | `Task \| Event \| Reminder` (`chk_agd007_subject_type`) — **`Task` e `Event` estão ligados**; `Reminder` mantém o ledger `agd006x` em vez disso |
 | `subject_id` | uuid NOT NULL | |
 | `offset_minutes` | int NOT NULL | com sinal, relativo à âncora do sujeito (`0` = no instante, `-15` = 15 min antes) |
 | `channels` | text[] NULL | NULL ⇒ resolve da preferência do usuário no Channels; senão explícito (`email`, `telegram`) |
