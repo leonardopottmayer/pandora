@@ -1,6 +1,7 @@
 # Módulo Assistant — Plano de Produto
 
 > **Status:** Plano. Nada neste documento está implementado ainda.
+> 📋 Plano de execução local-first (etapas e passos): [local-first-plan.md](local-first-plan.md).
 > 🇺🇸 [English version](../en/product-plan.md)
 >
 > Planos relacionados: [Agenda](../../agenda/pt-BR/product-plan.md) ·
