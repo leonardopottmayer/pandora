@@ -8,17 +8,24 @@
 > Módulos afetados: [Channels](../../modules/channels/pt-BR/product-plan.md) ·
 > [Assistant](../../modules/assistant/pt-BR/product-plan.md) ·
 > [Agenda](../../modules/agenda/pt-BR/product-plan.md)
+> Ver também: [Como o Pandora está ligado ao Tars](tars-wiring.md) para as chamadas `AddTars*` concretas por trás de tudo abaixo.
 
 ---
 
 ## 1. Onde estamos
 
-O Tars já abstrai o transporte. `IIntegrationEventBus` tem uma implementação —
-`InProcessIntegrationEventBus`, que despacha síncrono num escopo de DI novo — e o roteamento é feito
-pelo `IntegrationEventName` lógico, não pelo tipo .NET.
+O Tars já abstrai o transporte. `IIntegrationEventBus` é implementado por `OutboxIntegrationEventBus`
+(`Pottmayer.Tars.Messaging.EntityFrameworkCore`): publicar grava uma linha na própria transação do
+produtor, e um relay por banco produtor drena para os handlers in-process num escopo de DI novo. O
+roteamento é feito pelo `IntegrationEventName` lógico, não pelo tipo .NET. Ver
+[tars/docs/messaging](../../../../tars/docs/messaging/overview.md) para o mecanismo em si e
+[tars/docs/messaging/outbox.md](../../../../tars/docs/messaging/outbox.md) para o outbox; a fiação
+específica do Pandora está em
+[`OutboxRegistration.cs`](../../../backend/src/Host/Pottmayer.Pandora.Host/OutboxRegistration.cs).
 
-Esse é o mecanismo inteiro. Um produtor publica um fato, e os handlers registrados para aquele nome
-rodam. Não há mais nada envolvido.
+Esse é o mecanismo inteiro. Um produtor publica um fato, a linha cai na tabela de outbox do banco
+dele, o relay desse banco pega a linha, e os handlers registrados para aquele nome rodam. Nada
+atravessa fronteira de rede.
 
 ---
 
@@ -73,9 +80,12 @@ Duas regras impedem isso de virar um broker particular por módulo:
 
 ## 4. Idempotência
 
-O despacho in-process é síncrono e entregue uma vez, então a deduplicação que o at-least-once de um
-broker obrigaria não é necessária para o barramento em si. Ela continua necessária onde um **job
-reprocessa**, que é em todo o §3.
+O relay do outbox entrega **at-least-once**: um crash entre o despacho e marcar a linha como
+processada reproduz o evento na próxima varredura. Handlers precisam ser idempotentes por `EventId`,
+igual seriam atrás de um broker — ver
+[a garantia at-least-once do relay](../../../../tars/docs/messaging/outbox.md#the-relay) para o
+mecanismo. A mesma disciplina de at-least-once é necessária onde um **job reprocessa**, que é em todo
+o §3.
 
 Onde existe idempotência natural, ela resolve e nenhuma tabela extra é necessária:
 
@@ -106,25 +116,38 @@ porta.
 
 ---
 
-## 6. O que foi descartado, e por quê
+## 6. O que foi descartado, e por quê — e o que voltou depois
 
-Três coisas estavam planejadas aqui e não estão mais:
+Três coisas estavam planejadas aqui e foram descartadas; uma delas voltou depois, em outra forma.
 
-**Um broker RabbitMQ** — dois topic exchanges, uma fila por consumidor lógico, uma DLX comum.
-Descartado porque os problemas que ele vinha resolver são resolvidos pelo §3 a uma fração do custo:
-ack rápido do webhook vira linha mais job, trabalho lento do Assistant vira linha mais job, e evento
+**Um broker RabbitMQ** — dois topic exchanges, uma fila por consumidor lógico, uma DLX comum. Segue
+descartado: os problemas que ele vinha resolver são resolvidos pelo §3 a uma fração do custo. Ack
+rápido do webhook vira linha mais job, trabalho lento do Assistant vira linha mais job, e evento
 perdido vira linha com contador de tentativas. O que o broker acrescenta além disso é infraestrutura
 para rodar e vigiar, que esse sistema não tem volume para justificar.
 
-**O padrão outbox** (`Messaging.Outbox`) — tabela em EF Core gravada na mesma transação da mudança de
-estado, mais um relay. Ele existia para resolver dual-write contra um broker. Sem broker não há
-segundo commit a perder: um handler in-process roda dentro do fluxo de quem chamou, e o trabalho que
-precisa sobreviver a um crash já é uma linha na tabela do próprio módulo.
+**O padrão outbox — voltou, sem broker.** O raciocínio original ("sem broker não há segundo commit a
+perder") estava errado: o próprio despacho não é livre de um segundo commit. Sem outbox, um produtor
+que commita sua mudança de estado e depois chama `IIntegrationEventBus.PublishAsync` in-process ainda
+pode falhar entre os dois passos — a mudança de estado sobrevive, o fato nunca é publicado, e nada
+registra que deveria ter sido. O outbox fecha exatamente essa brecha, com ou sem broker: o
+`Pottmayer.Tars.Messaging.EntityFrameworkCore` grava o evento como uma linha na *mesma transação* da
+mudança de estado, e um relay (`BackgroundService`) por banco produtor drena para os handlers locais.
+O Pandora adotou isso no tars 0.0.8 — ver
+[`OutboxRegistration.cs`](../../../backend/src/Host/Pottmayer.Pandora.Host/OutboxRegistration.cs),
+ligado a Identity, Channels, Agenda e Integrations. Mecanismo completo:
+[tars/docs/messaging/outbox.md](../../../../tars/docs/messaging/outbox.md). Isso **não** reintroduz um
+broker nem um segundo processo — o relay roda no mesmo deployable e entrega para os mesmos handlers
+in-process de antes; só o último passo do despacho mudou.
 
-**Extração como serviço** — Assistant primeiro, Channels depois. Descartado como objetivo. Os módulos
-mantêm as propriedades que a tornariam possível, porque essas propriedades valem por si: cada um é
-dono do próprio `DbContext`, não toca schema alheio, publica contratos POCO e conversa por portas.
-Isso é bom design modular, não preparação para uma separação.
+**Extração como serviço** — Assistant primeiro, Channels depois. Segue descartado como objetivo. Os
+módulos mantêm as propriedades que a tornariam possível, porque essas propriedades valem por si: cada
+um é dono do próprio `DbContext`, não toca schema alheio, publica contratos POCO e conversa por
+portas. Isso é bom design modular, não preparação para uma separação. Vale notar que o outbox acima é
+também o que os docs do próprio tars apontam como o que fica parado quando um módulo *é* extraído
+depois — ver a observação em `OutboxRegistration.cs`: a troca de transporte
+(`AddTarsMassTransitRabbitMq`) substitui só esse método de registro, e os contratos, produtores e
+consumidores são reaproveitados como estão.
 
 Nada disso é porta que trancou. Produtores e consumidores conhecem uma interface de barramento e um
 nome lógico de evento, então no dia em que aparecer um motivo real — carga sustentada, cadência de

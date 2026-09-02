@@ -8,17 +8,24 @@
 > Affected modules: [Channels](../../modules/channels/en/product-plan.md) ·
 > [Assistant](../../modules/assistant/en/product-plan.md) ·
 > [Agenda](../../modules/agenda/en/product-plan.md)
+> See also: [How Pandora is wired to Tars](tars-wiring.md) for the concrete `AddTars*` calls behind everything below.
 
 ---
 
 ## 1. Where we are
 
-Tars already abstracts the transport. `IIntegrationEventBus` has one implementation —
-`InProcessIntegrationEventBus`, dispatching synchronously in a fresh DI scope — and routing happens
-by the logical `IntegrationEventName`, not by the .NET type.
+Tars already abstracts the transport. `IIntegrationEventBus` is implemented by
+`OutboxIntegrationEventBus` (`Pottmayer.Tars.Messaging.EntityFrameworkCore`): publishing writes a row
+in the producer's own transaction, and a relay per producing database drains it to the in-process
+handlers in a fresh DI scope. Routing happens by the logical `IntegrationEventName`, not by the .NET
+type. See [tars/docs/messaging](../../../../tars/docs/messaging/overview.md) for the mechanism itself
+and [tars/docs/messaging/outbox.md](../../../../tars/docs/messaging/outbox.md) for the outbox; the
+wiring for Pandora specifically is in
+[`OutboxRegistration.cs`](../../../backend/src/Host/Pottmayer.Pandora.Host/OutboxRegistration.cs).
 
-That is the whole mechanism. A producer publishes a fact, and the handlers registered for that name
-run. Nothing else is involved.
+That is the whole mechanism. A producer publishes a fact, the row lands in its database's outbox
+table, the relay for that database picks it up, and the handlers registered for that name run.
+Nothing crosses a network boundary.
 
 ---
 
@@ -73,9 +80,11 @@ Two rules keep this from turning into a private broker per module:
 
 ## 4. Idempotency
 
-In-process dispatch is synchronous and delivered once, so the at-least-once dedup a broker forces is
-not needed for the bus itself. It is still needed wherever a **job retries**, which is everywhere in
-§3.
+The outbox relay delivers **at-least-once**: a crash between dispatch and marking the row processed
+replays it on the next poll. Handlers must be idempotent on `EventId`, same as they would be behind a
+broker — see [the relay's at-least-once guarantee](../../../../tars/docs/messaging/outbox.md#the-relay)
+for the mechanism. The same at-least-once discipline is needed wherever a **job retries**, which is
+everywhere in §3.
 
 Where natural idempotency exists, it does the work and no extra table is needed:
 
@@ -106,25 +115,38 @@ calls the port.
 
 ---
 
-## 6. Dropped, and why
+## 6. Dropped, and why — and what was later reinstated
 
-Three things were planned here and are no longer:
+Three things were planned here and dropped; one of them was later reinstated in a different form.
 
-**A RabbitMQ broker** — two topic exchanges, one queue per logical consumer, a shared DLX. Dropped
-because the problems it was brought in to solve are handled by §3 at a fraction of the cost: a fast
+**A RabbitMQ broker** — two topic exchanges, one queue per logical consumer, a shared DLX. Still
+dropped: the problems it was brought in to solve are handled by §3 at a fraction of the cost. A fast
 webhook ack becomes a row plus a job, slow Assistant work becomes a row plus a job, and a lost event
 becomes a row with an attempt count. What a broker adds beyond that is infrastructure to run and
 watch, which this system has no volume to justify.
 
-**The outbox pattern** (`Messaging.Outbox`) — an EF Core table written in the same transaction as
-the state change, plus a relay. It existed to solve dual-write against a broker. With no broker
-there is no second commit to lose: an in-process handler runs inside the caller's flow, and the work
-that must survive a crash is already a row in the module's own table.
+**The outbox pattern — reinstated, without a broker.** The original reasoning ("with no broker there
+is no second commit to lose") turned out to be wrong: dispatch itself is not free of a second commit.
+Without an outbox, a producer that commits its own state change and then calls
+`IIntegrationEventBus.PublishAsync` in-process can still crash between the two — the state change
+survives, the fact never gets published, and nothing records that it should have. The outbox closes
+exactly that gap, broker or not: `Pottmayer.Tars.Messaging.EntityFrameworkCore` writes the event as a
+row in the *same transaction* as the state change, and a `BackgroundService` relay per producing
+database drains it to the local handlers. Pandora adopted this in tars 0.0.8 — see
+[`OutboxRegistration.cs`](../../../backend/src/Host/Pottmayer.Pandora.Host/OutboxRegistration.cs),
+wired into Identity, Channels, Agenda and Integrations. Full mechanism:
+[tars/docs/messaging/outbox.md](../../../../tars/docs/messaging/outbox.md). This does **not**
+reintroduce a broker or a second process — the relay runs in the same deployable and hands off to the
+same in-process handlers as before; only the last-mile dispatch changed.
 
-**Extraction as a service** — Assistant first, then Channels. Dropped as a goal. The modules keep the
-properties that would have made it possible, because those properties are worth having on their own
-merits: each owns its `DbContext`, touches nobody else's schema, publishes POCO contracts, and talks
-through ports. That is good modular design, not staging for a split.
+**Extraction as a service** — Assistant first, then Channels. Still dropped as a goal. The modules
+keep the properties that would have made it possible, because those properties are worth having on
+their own merits: each owns its `DbContext`, touches nobody else's schema, publishes POCO contracts,
+and talks through ports. That is good modular design, not staging for a split. Notably, the outbox
+above is also what tars' own docs point to as the thing that stays put when a module *is* later
+extracted — see the remark in `OutboxRegistration.cs`: the transport swap
+(`AddTarsMassTransitRabbitMq`) replaces this one registration method, and the contracts, producers and
+consumers are reused as-is.
 
 None of this is a door that locked. Producers and consumers know a bus interface and a logical event
 name, so the day a real reason appears — sustained load, a genuinely separate deploy cadence, work

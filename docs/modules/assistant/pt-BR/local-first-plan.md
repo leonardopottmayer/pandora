@@ -3,7 +3,7 @@
 > **Status:** Plano de execução. Recorta o [product-plan](product-plan.md) para o caminho
 > **local-first** — só Ollama, self-hosted no homelab. Corta as fases A5 (OpenAI/Gemini) e A6
 > (Notes/Finances/proativo) do escopo imediato.
-> 🇺🇸 English mirror: pendente.
+> 🇺🇸 [English version](../en/local-first-plan.md)
 
 Este doc é a lista de trabalho. O *porquê* de cada decisão está no [product-plan](product-plan.md); a
 assincronia sem broker está em [mensageria §3](../../../architecture/pt-BR/messaging.md#3-assincronia-sem-broker).
