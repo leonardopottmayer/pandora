@@ -11,8 +11,8 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Integrations.Domain/Pottmayer.Pandora.Modules.Integrations.Domain.csproj" />
     <ProjectReference Include="../../../Shared/Pottmayer.Pandora.Shared.Persistence/Pottmayer.Pandora.Shared.Persistence.csproj" />
     <!-- Tars: Data -->
-    <PackageReference Include="Pottmayer.Tars.Data.Relational" Version="0.0.8" />
-    <PackageReference Include="Pottmayer.Tars.Messaging.EntityFrameworkCore" Version="0.0.8" />
+    <PackageReference Include="Pottmayer.Tars.Data.Relational" Version="0.0.9" />
+    <PackageReference Include="Pottmayer.Tars.Messaging.EntityFrameworkCore" Version="0.0.9" />
   </ItemGroup>
 
 </Project>

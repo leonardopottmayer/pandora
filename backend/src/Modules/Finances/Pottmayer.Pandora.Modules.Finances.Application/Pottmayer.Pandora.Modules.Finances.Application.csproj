@@ -15,11 +15,11 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Finances.Contracts/Pottmayer.Pandora.Modules.Finances.Contracts.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Finances.Domain/Pottmayer.Pandora.Modules.Finances.Domain.csproj" />
     <!-- Tars: Core -->
-    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.8" />
-    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.8" />
-    <PackageReference Include="Pottmayer.Tars.Core.Localization.Abstractions" Version="0.0.8" />
+    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.9" />
+    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.9" />
+    <PackageReference Include="Pottmayer.Tars.Core.Localization.Abstractions" Version="0.0.9" />
     <!-- Tars: Data -->
-    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.8" />
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.9" />
   </ItemGroup>
 
 </Project>

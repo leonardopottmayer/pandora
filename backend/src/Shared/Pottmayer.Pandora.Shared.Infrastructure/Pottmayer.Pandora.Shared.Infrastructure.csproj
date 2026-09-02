@@ -15,11 +15,11 @@
     <ProjectReference Include="../Pottmayer.Pandora.Shared.Domain/Pottmayer.Pandora.Shared.Domain.csproj" />
     <!-- Tars: Messaging -->
     <!-- Tars: UserContext -->
-    <PackageReference Include="Pottmayer.Tars.UserContext" Version="0.0.8" />
-    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.8" />
+    <PackageReference Include="Pottmayer.Tars.UserContext" Version="0.0.9" />
+    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.9" />
     <!-- Tars: Observability -->
-    <PackageReference Include="Pottmayer.Tars.Observability" Version="0.0.8" />
-    <PackageReference Include="Pottmayer.Tars.Observability.AspNetCore" Version="0.0.8" />
+    <PackageReference Include="Pottmayer.Tars.Observability" Version="0.0.9" />
+    <PackageReference Include="Pottmayer.Tars.Observability.AspNetCore" Version="0.0.9" />
   </ItemGroup>
 
 </Project>

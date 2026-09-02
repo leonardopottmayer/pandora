@@ -30,10 +30,10 @@
 
   <ItemGroup>
     <!-- Tars: Data (IUnitOfWorkFactory) -->
-    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.8" />
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.9" />
     <!-- Tars: outbox — drive the relay explicitly and dispatch events in tests -->
-    <PackageReference Include="Pottmayer.Tars.Messaging.EntityFrameworkCore" Version="0.0.8" />
-    <PackageReference Include="Pottmayer.Tars.Messaging.Broker" Version="0.0.8" />
+    <PackageReference Include="Pottmayer.Tars.Messaging.EntityFrameworkCore" Version="0.0.9" />
+    <PackageReference Include="Pottmayer.Tars.Messaging.Broker" Version="0.0.9" />
   </ItemGroup>
 
 </Project>
