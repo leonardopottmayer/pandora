@@ -22,6 +22,9 @@ public static class IntegrationErrors
     public static Error NotAnApiKey(string provider) =>
         Error.Validation("Integrations.NotAnApiKey", $"The connected '{provider}' account is not an API key.");
 
+    public static Error ApiKeyRequired =>
+        Error.Validation("Integrations.ApiKeyRequired", "An API key is required.");
+
     public static Error StateInvalid =>
         Error.Validation("Integrations.StateInvalid", "This authorization link is invalid or has expired. Start again from settings.");
 

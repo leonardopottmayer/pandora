@@ -244,6 +244,13 @@
     "connectError": "Nao foi possivel iniciar a conexao.",
     "disconnectError": "Nao foi possivel desconectar a conta.",
     "noneAvailable": "Nenhum provedor esta configurado neste servidor.",
+    "apiKey": {
+      "placeholder": "Cole sua API key",
+      "save": "Salvar key",
+      "saved": "API key salva.",
+      "saveError": "Nao foi possivel salvar a API key.",
+      "connectedHint": "Uma key esta salva. Cole uma nova para substituir."
+    },
     "status": {
       "connected": "Conectado",
       "revoked": "Revogado",

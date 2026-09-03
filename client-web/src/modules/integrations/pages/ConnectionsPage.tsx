@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Alert, App, Button, Card, Divider, List, Popconfirm, Space, Spin, Tag, Typography } from 'antd'
+import { Alert, App, Button, Card, Divider, Input, List, Popconfirm, Space, Spin, Tag, Typography } from 'antd'
 import { toErrorMessage } from '@/lib/api/envelope'
 import {
   providerLabel,
@@ -14,6 +14,7 @@ import {
   useDisconnectAccount,
   useIntegrationEvents,
   useProviders,
+  useSaveApiKey,
   useStartConnection,
 } from '../hooks/useIntegrations'
 
@@ -52,6 +53,9 @@ export function ConnectionsPage() {
 
   const startConnection = useStartConnection()
   const disconnect = useDisconnectAccount()
+  const saveApiKey = useSaveApiKey()
+
+  const [apiKeyDrafts, setApiKeyDrafts] = useState<Record<string, string>>({})
 
   // Surface the callback outcome, then drop the query param so a refresh does not repeat it.
   const outcome = searchParams.get('integration')
@@ -87,6 +91,18 @@ export function ConnectionsPage() {
     }
   }
 
+  async function handleSaveApiKey(provider: string) {
+    const apiKey = (apiKeyDrafts[provider] ?? '').trim()
+    if (!apiKey) return
+    try {
+      await saveApiKey.mutateAsync({ provider, apiKey })
+      setApiKeyDrafts((drafts) => ({ ...drafts, [provider]: '' }))
+      message.success(t('connections.apiKey.saved'))
+    } catch (err) {
+      message.error(toErrorMessage(err, t('connections.apiKey.saveError')))
+    }
+  }
+
   return (
     <div className="mx-auto max-w-2xl">
       <Card title={t('connections.title')}>
@@ -99,16 +115,55 @@ export function ConnectionsPage() {
             {(providers ?? []).map((provider, index) => {
               const account = accountByProvider.get(provider.provider)
               const revoked = account?.status === 'revoked'
+              const label = provider.displayName ?? providerLabel(provider.provider)
 
               return (
                 <div key={provider.provider} className="flex flex-col gap-2">
                   {index > 0 && <Divider className="my-0" />}
                   <Space>
-                    <Typography.Text strong>{providerLabel(provider.provider)}</Typography.Text>
+                    <Typography.Text strong>{label}</Typography.Text>
                     {account && statusTag(account.status, t)}
                   </Space>
 
-                  {account ? (
+                  {provider.authKind === 'api_key' ? (
+                    <>
+                      {account?.displayName && (
+                        <Typography.Text type="secondary">{account.displayName}</Typography.Text>
+                      )}
+                      {account && (
+                        <Typography.Text type="secondary" className="text-xs">
+                          {t('connections.apiKey.connectedHint')}
+                        </Typography.Text>
+                      )}
+                      <Space.Compact className="w-full">
+                        <Input.Password
+                          placeholder={t('connections.apiKey.placeholder')}
+                          value={apiKeyDrafts[provider.provider] ?? ''}
+                          onChange={(e) =>
+                            setApiKeyDrafts((drafts) => ({ ...drafts, [provider.provider]: e.target.value }))
+                          }
+                          onPressEnter={() => handleSaveApiKey(provider.provider)}
+                        />
+                        <Button
+                          type="primary"
+                          loading={saveApiKey.isPending}
+                          onClick={() => handleSaveApiKey(provider.provider)}
+                        >
+                          {t('connections.apiKey.save')}
+                        </Button>
+                      </Space.Compact>
+                      {account && (
+                        <Popconfirm
+                          title={t('connections.disconnectConfirm')}
+                          onConfirm={() => handleDisconnect(account.id)}
+                        >
+                          <Button danger className="w-fit">
+                            {t('connections.disconnect')}
+                          </Button>
+                        </Popconfirm>
+                      )}
+                    </>
+                  ) : account ? (
                     <>
                       {account.displayName && (
                         <Typography.Text type="secondary">{account.displayName}</Typography.Text>

@@ -30,6 +30,17 @@ export function useStartConnection() {
   })
 }
 
+export function useSaveApiKey() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ provider, apiKey }: { provider: string; apiKey: string }) =>
+      integrationsService.saveApiKey(provider, apiKey),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: integrationsKeys.all })
+    },
+  })
+}
+
 export function useDisconnectAccount() {
   const queryClient = useQueryClient()
   return useMutation({

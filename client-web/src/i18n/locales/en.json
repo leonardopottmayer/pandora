@@ -244,6 +244,13 @@
     "connectError": "Could not start the connection.",
     "disconnectError": "Could not disconnect the account.",
     "noneAvailable": "No provider is configured on this server.",
+    "apiKey": {
+      "placeholder": "Paste your API key",
+      "save": "Save key",
+      "saved": "API key saved.",
+      "saveError": "Could not save the API key.",
+      "connectedHint": "A key is saved. Paste a new one to replace it."
+    },
     "status": {
       "connected": "Connected",
       "revoked": "Revoked",

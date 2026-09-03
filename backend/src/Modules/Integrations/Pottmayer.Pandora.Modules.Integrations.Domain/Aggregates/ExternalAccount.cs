@@ -14,6 +14,13 @@ public sealed class ExternalAccount : AggregateRoot<Guid>, IAuditable
 {
     private const int MaxErrorLength = 1000;
 
+    /// <summary>
+    /// The <see cref="ProviderAccountId"/> stored for an api_key account. An API key has no external
+    /// account identity, so a fixed marker keeps the (user, provider, account) uniqueness at one key
+    /// per provider per user.
+    /// </summary>
+    public const string ApiKeyAccountId = "api_key";
+
     public Guid UserId { get; private set; }
     public string Provider { get; private set; } = null!;
     public AuthKind AuthKind { get; private set; } = null!;
@@ -73,6 +80,50 @@ public sealed class ExternalAccount : AggregateRoot<Guid>, IAuditable
             ConnectedAt = now,
             CreatedAt = now
         };
+    }
+
+    /// <summary>
+    /// Records a user-supplied API key (auth_kind = api_key): no expiry, no refresh, no authorization
+    /// flow. The key arrives already protected; <paramref name="displayName"/> is a non-secret hint
+    /// (e.g. the last four characters) so settings can show which key is stored.
+    /// </summary>
+    public static ExternalAccount ConnectApiKey(
+        Guid userId,
+        string provider,
+        string apiKeyEnc,
+        string? displayName,
+        TimeProvider timeProvider)
+    {
+        var now = timeProvider.GetUtcNow();
+        return new ExternalAccount
+        {
+            Id = Guid.CreateVersion7(),
+            UserId = userId,
+            Provider = provider,
+            AuthKind = AuthKind.ApiKey,
+            ProviderAccountId = ApiKeyAccountId,
+            DisplayName = displayName,
+            Scopes = string.Empty,
+            AccessTokenEnc = apiKeyEnc,
+            AccessTokenExpiresAt = null,
+            RefreshTokenEnc = null,
+            Status = AccountStatus.Connected,
+            ConnectedAt = now,
+            CreatedAt = now
+        };
+    }
+
+    /// <summary>
+    /// Replaces the stored API key (the user pasted a new one). Clears any previous error and marks the
+    /// account connected again.
+    /// </summary>
+    public void ReplaceApiKey(string apiKeyEnc, string? displayName, TimeProvider timeProvider)
+    {
+        AccessTokenEnc = apiKeyEnc;
+        DisplayName = displayName;
+        Status = AccountStatus.Connected;
+        LastError = null;
+        LastRefreshedAt = timeProvider.GetUtcNow();
     }
 
     /// <summary>

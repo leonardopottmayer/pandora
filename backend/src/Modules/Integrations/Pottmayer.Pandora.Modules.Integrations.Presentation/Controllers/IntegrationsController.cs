@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Pottmayer.Pandora.Modules.Integrations.Abstractions;
 using Pottmayer.Pandora.Modules.Integrations.Application.Commands.DisconnectAccount;
 using Pottmayer.Pandora.Modules.Integrations.Application.Commands.HandleCallback;
+using Pottmayer.Pandora.Modules.Integrations.Application.Commands.SaveApiKey;
 using Pottmayer.Pandora.Modules.Integrations.Application.Commands.StartConnection;
 using Pottmayer.Pandora.Modules.Integrations.Application.Queries.GetAccounts;
 using Pottmayer.Pandora.Modules.Integrations.Application.Queries.GetEvents;
@@ -90,6 +91,19 @@ public sealed class IntegrationsController(
             : Redirect(Home("error"));
     }
 
+    /// <summary>
+    /// Stores (or replaces) the user's API key for an <c>api_key</c> provider such as Gemini. The key is
+    /// protected before it is persisted; the response never echoes it back.
+    /// </summary>
+    [Authorize]
+    [HttpPut("{provider}/api-key")]
+    public async Task<IActionResult> SaveApiKeyAsync(string provider, [FromBody] SaveApiKeyRequest body, CancellationToken ct)
+    {
+        var command = new SaveApiKeyCommand(new SaveApiKeyInput(UserId, provider, body.ApiKey));
+        var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
     /// <summary>Revokes the connection at the provider and deletes it locally.</summary>
     [Authorize]
     [HttpDelete("accounts/{id:guid}")]
@@ -116,4 +130,7 @@ public sealed class IntegrationsController(
 
     /// <summary>Body for starting a connection.</summary>
     public sealed record ConnectRequest(string RedirectAfter, IReadOnlyList<string>? Scopes);
+
+    /// <summary>Body for saving an API key.</summary>
+    public sealed record SaveApiKeyRequest(string ApiKey);
 }

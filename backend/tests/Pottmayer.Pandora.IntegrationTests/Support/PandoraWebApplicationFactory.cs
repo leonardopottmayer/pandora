@@ -53,7 +53,7 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
         _respawner = await Respawner.CreateAsync(_connection, new RespawnerOptions
         {
             DbAdapter = DbAdapter.Postgres,
-            SchemasToInclude = ["identity", "channels", "finances", "notes", "agenda"],
+            SchemasToInclude = ["identity", "channels", "finances", "notes", "agenda", "integrations"],
             TablesToIgnore =
             [
                 new Respawn.Graph.Table("finances", "fin002_system_category"),
@@ -75,6 +75,7 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
                 ["Tars:Data:Connections:finances:ConnectionString"] = ConnectionString,
                 ["Tars:Data:Connections:notes:ConnectionString"] = ConnectionString,
                 ["Tars:Data:Connections:agenda:ConnectionString"] = ConnectionString,
+                ["Tars:Data:Connections:integrations:ConnectionString"] = ConnectionString,
                 // A bot username is all the linking flow needs; no token, because nothing calls Telegram here.
                 ["Pandora:Channels:Telegram:BotUsername"] = "pandora_test_bot",
                 // Fixed AES-256 key (Base64 of 32 bytes) so MFA secrets can be encrypted in tests.

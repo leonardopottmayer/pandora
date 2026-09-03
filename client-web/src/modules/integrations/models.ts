@@ -3,6 +3,10 @@ export type IntegrationStatus = 'connected' | 'expired' | 'revoked' | 'needs_con
 /** A provider the server can talk to, and whether the user has connected it. */
 export interface ProviderCatalogItem {
   provider: string
+  /** How to connect it: 'oauth' sends the browser to consent, 'api_key' shows a field to paste a key. */
+  authKind: string
+  /** Friendly name for api_key providers (e.g. "Google Gemini"); null for OAuth. */
+  displayName: string | null
   defaultScopes: string[]
   connected: boolean
   status: IntegrationStatus | null

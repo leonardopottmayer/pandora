@@ -27,3 +27,8 @@ export async function startConnection(provider: string, redirectAfter: string): 
 export async function disconnectAccount(id: string): Promise<void> {
   await apiClient.delete(`${BASE}/accounts/${id}`)
 }
+
+/** Stores (or replaces) the user's API key for an api_key provider such as Gemini. */
+export async function saveApiKey(provider: string, apiKey: string): Promise<void> {
+  await apiClient.put(`${BASE}/${provider}/api-key`, { apiKey })
+}
