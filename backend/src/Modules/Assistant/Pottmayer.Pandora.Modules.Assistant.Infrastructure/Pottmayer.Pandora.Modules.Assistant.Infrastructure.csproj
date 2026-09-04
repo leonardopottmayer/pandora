@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Assistant.Abstractions/Pottmayer.Pandora.Modules.Assistant.Abstractions.csproj" />
+    <!-- Tars: AI transport (Gemini provider + the keyed client factory the pipeline resolves per user). -->
+    <PackageReference Include="Pottmayer.Tars.Ai.Abstractions" Version="0.0.10" />
+    <PackageReference Include="Pottmayer.Tars.Ai.Chat.Abstractions" Version="0.0.10" />
+    <PackageReference Include="Pottmayer.Tars.Ai.Chat" Version="0.0.10" />
+    <PackageReference Include="Pottmayer.Tars.Ai.Chat.Gemini" Version="0.0.10" />
+    <!-- Hosting / options for provider registration. -->
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.2" />
+  </ItemGroup>
+
+</Project>

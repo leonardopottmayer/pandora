@@ -28,6 +28,10 @@ using Pottmayer.Pandora.Modules.Integrations.Application.DI;
 using Pottmayer.Pandora.Modules.Integrations.Infrastructure.DI;
 using Pottmayer.Pandora.Modules.Integrations.Persistence.DI;
 using Pottmayer.Pandora.Modules.Integrations.Presentation.DI;
+using Pottmayer.Pandora.Modules.Assistant.Application.DI;
+using Pottmayer.Pandora.Modules.Assistant.Infrastructure.DI;
+using Pottmayer.Pandora.Modules.Assistant.Persistence.DI;
+using Pottmayer.Pandora.Modules.Assistant.Presentation.DI;
 using Pottmayer.Pandora.Shared.Infrastructure.DI;
 using Pottmayer.Pandora.Shared.Persistence.DI;
 using Pottmayer.Tars.Core.Localization.DI;
@@ -67,6 +71,10 @@ builder.Services.AddIntegrationsPersistence();
 builder.AddIntegrationsInfrastructure();
 builder.Services.AddIntegrationsApplication();
 
+builder.Services.AddAssistantPersistence();
+builder.AddAssistantInfrastructure();
+builder.Services.AddAssistantApplication();
+
 // The monolith's messaging transport — the in-process transactional outbox, wired in one place.
 // Registered after the modules so every contract assembly and database key is known.
 builder.AddPandoraOutbox();
@@ -84,7 +92,8 @@ builder.Services.AddControllers()
                 .AddFinancesPresentationPart()
                 .AddNotesPresentationPart()
                 .AddAgendaPresentationPart()
-                .AddIntegrationsPresentationPart();
+                .AddIntegrationsPresentationPart()
+                .AddAssistantPresentationPart();
 
 // API Versioning
 builder.Services.AddApiVersioning(options =>

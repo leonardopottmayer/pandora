@@ -1,4 +1,43 @@
 {
+  "assistant": {
+    "settings": {
+      "title": "Assistant",
+      "intro": "Configure the assistant that turns natural language into Pandora commands.",
+      "privacyTitle": "Your text goes to Google",
+      "privacyDesc": "Gemini is hosted: every sentence you send the assistant is processed by Google. For now the assistant only creates items \u2014 it does not read your data back.",
+      "providerLabel": "Provider",
+      "providerDesc": "The language model that interprets your sentences.",
+      "noKeyTitle": "No API key configured",
+      "noKeyAction": "Add the Gemini key under Connections",
+      "keyHint": "Key saved: {{hint}}",
+      "modelLabel": "Model",
+      "modelDesc": "The provider's model. You can change it anytime; the reachability test confirms it.",
+      "confirmationLabel": "Confirmation",
+      "confirmationDesc": "How readily the assistant acts without asking first.",
+      "confirmStrict": "Cautious",
+      "confirmBalanced": "Balanced",
+      "confirmTrusting": "Trusting",
+      "localeLabel": "Language",
+      "localeDesc": "The language the assistant replies in. The default follows your account language.",
+      "localeAccount": "Account language",
+      "enabledLabel": "Assistant enabled",
+      "enabledDesc": "When off, the assistant ignores your messages.",
+      "save": "Save",
+      "saved": "Settings saved.",
+      "saveError": "Could not save the settings.",
+      "modelRequired": "Enter a model.",
+      "test": {
+        "button": "Test reachability",
+        "ok": "Replied in {{latency}} ms.",
+        "error": "Could not run the test.",
+        "kind": {
+          "no_key": "No API key configured for this provider.",
+          "rejected": "The provider rejected the call (invalid key or model).",
+          "unreachable": "Provider unreachable. Try again shortly."
+        }
+      }
+    }
+  },
   "common": {
     "appName": "Pandora",
     "save": "Save",
@@ -19,6 +58,7 @@
     "no": "No"
   },
   "nav": {
+    "assistant": "Assistant",
     "start": "Start",
     "home": "Home",
     "account": "Account",

@@ -8,6 +8,7 @@ import {
   SwapOutlined,
   CreditCardOutlined,
   AppstoreAddOutlined,
+  RobotOutlined,
   TagsOutlined,
   AuditOutlined,
   RetweetOutlined,
@@ -94,6 +95,7 @@ export const navigationModules: NavModule[] = [
       { key: 'settings', labelKey: 'nav.settings', path: '/settings', icon: <SettingOutlined /> },
       { key: 'notifications', labelKey: 'nav.notifications', path: '/settings/notifications', icon: <NotificationOutlined /> },
       { key: 'connections', labelKey: 'nav.connections', path: '/settings/connections', icon: <ApiOutlined /> },
+      { key: 'assistant', labelKey: 'nav.assistant', path: '/settings/assistant', icon: <RobotOutlined /> },
     ],
   },
 ]

@@ -1,6 +1,8 @@
 # Assistant Module — Product Plan
 
-> **Status:** Plan. Nothing in this document is implemented yet.
+> **Status:** Plan. The Assistant module backend does not exist yet; the `Tars.Ai` building block
+> (Gemini) and storing the key in Integrations **already exist** — see the execution plan.
+> 📋 Execution plan (steps): [execution-plan.md](execution-plan.md).
 > 🇧🇷 [Versão em português](../pt-BR/product-plan.md)
 >
 > Related plans: [Agenda](../../agenda/en/product-plan.md) ·
@@ -25,8 +27,10 @@ Two surfaces:
   already arrive, so the loop closes in one app.
 - **Web** — a command bar in the client, plus audio recording, sharing the same pipeline.
 
-Three interchangeable back-ends, chosen by the user: **Ollama** (self-hosted, private, the default
-target for the homelab), **OpenAI**, **Gemini**.
+Providers are interchangeable behind a port. The current target is **Gemini** (hosted); **OpenAI**
+lands as "one more provider" when it earns its place. The idea of a local model (**Ollama**) has been
+dropped — the cost/quality tradeoff isn't worth it. The provider is chosen by the user, with the key
+stored in Integrations.
 
 ### What it is not
 
@@ -61,8 +65,9 @@ the assistant can do something the API cannot, that is a bug.
 3. **Write actions are confirmed; the threshold is per command.** Creating a reminder from an
    unambiguous sentence executes. Deleting anything, or acting on a low-confidence match, asks first
    — with inline buttons in Telegram. *(A3)*
-4. **Providers are ports.** Ollama, OpenAI and Gemini differ in transport, not in what the module
-   asks of them. Switching provider is a settings change and a restart of nothing. *(A4)*
+4. **Providers are ports.** Gemini and OpenAI differ in transport, not in what the module asks of
+   them. Switching provider is a settings change and a restart of nothing. In Tars this is already
+   keyed DI: `IAiChatCompletionClientFactory.GetClient(provider)`. *(A4)*
 5. **Time is given, never guessed.** The model receives the user's current local time, zone and week
    start in its system prompt, and returns absolute ISO timestamps. "Tomorrow at 9" is resolved
    before it reaches a command. *(A5)*
@@ -100,11 +105,11 @@ channel, text?, mediaRef?, mediaMimeType?)` — already normalized by
 the `IInboundMediaReader` port. Swapping to WhatsApp, or coming in from the web, touches nothing
 here.
 
-**Inbound does not run the pipeline inline.** Transcribing and running tool-calling on a local model
-takes seconds to tens of seconds, which is too long to hold the caller — and a self-hosted Ollama
-should not receive concurrent work. So the subscriber does the cheap part only: it writes a row for
-the invocation and returns. A background job in this module picks the row up and runs the seven
-steps, **one at a time**, which is where the old broker plan's `prefetch=1` guarantee now lives.
+**Inbound does not run the pipeline inline.** Transcribing and calling the provider takes seconds to
+tens of seconds, too long to hold an HTTP caller — and a run that dies mid-way must not become a lost
+message. So the subscriber does the cheap part only: it writes a row for the invocation and returns. A
+background job in this module picks the row up and runs the seven steps, **one at a time**, which is
+where the old broker plan's `prefetch=1` guarantee now lives.
 
 That is the module-owned job pattern the rest of Pandora already uses — the same shape as Channels'
 dispatcher and Agenda's sweep. It also gets the durability for free: a run that dies mid-way is a row
@@ -148,10 +153,10 @@ Later: `create_note` and `search_notes` (Notes), `record_transaction` and `balan
 | Column | Notes |
 |---|---|
 | `user_id` | Unique. |
-| `chat_provider`, `chat_model` | e.g. `ollama` + `llama3.1:8b`, or `openai` + a hosted model. |
-| `transcription_provider`, `transcription_model` | May differ from chat — self-hosted Whisper with a hosted chat model is a sensible mix. |
-| `credential_ref` | Points at the `int001_external_account` row holding the API key. Null for Ollama. |
-| `endpoint` | Base URL for self-hosted providers. |
+| `chat_provider`, `chat_model` | e.g. `gemini` + a fast Gemini model. |
+| `transcription_provider`, `transcription_model` | Reserved (A4). May differ from chat. |
+| `credential_ref` | Points at the `int001_external_account` row (`auth_kind = api_key`) holding the key. Required for a hosted provider. |
+| `endpoint` | Base URL for self-hosted providers. Reserved/null while only Gemini exists. |
 | `is_enabled`, `locale_override` | |
 | `confirmation_level` | `strict` \| `balanced` \| `trusting` — shifts every command's policy one notch. |
 
@@ -201,10 +206,11 @@ Telegram voice notes are OGG/Opus, but the module need not know that. The flow:
 3. `ITranscriptionClient.TranscribeAsync(stream, mimeType, languageHint)` returns text.
 4. From there it is identical to a typed message.
 
-Provider options: self-hosted `whisper.cpp`/`faster-whisper` behind an HTTP endpoint (an
-`ITranscriptionClient` implementation, the homelab default), OpenAI's transcription endpoint, or
-Gemini's audio input. Audio bytes are transcribed and discarded by default; retention is a
-per-profile opt-in, because voice is the most sensitive thing this module touches.
+Provider option: since Gemini is already in place, the natural path is **Gemini's own audio input** —
+not a self-hosted Whisper (that was the local-arc decision). It may make a separate
+`ITranscriptionClient` unnecessary, or make it a thin capability over the same provider. Audio bytes
+are transcribed and discarded by default; retention is a per-profile opt-in, because voice is the most
+sensitive thing this module touches.
 
 The web surface records with `MediaRecorder`, uploads to
 `POST /assistant/interpret` as multipart, and takes the same path.
@@ -217,8 +223,8 @@ the rule that all timestamps must be returned absolute and ISO-8601. Few-shot ex
 descriptors' `Examples`, in the user's language — the module must work in Portuguese first, since
 that is how it will actually be spoken to.
 
-Conversation history is capped at the last N messages of the active conversation, so a small local
-model is not asked to reason over an unbounded transcript.
+Conversation history is capped at the last N messages of the active conversation, so we don't pay
+tokens reasoning over an unbounded transcript.
 
 ---
 
@@ -242,15 +248,21 @@ from the command result, not from the model's narration.
 
 ## 6. Tars building block: `Ai`
 
-| Project | Contents |
-|---|---|
-| `Pottmayer.Tars.Ai.Abstractions` | `IChatCompletionClient` (messages, tool definitions, tool calls, streaming, token usage), `ITranscriptionClient`, `IEmbeddingClient` (reserved), the shared message/tool model, `AiException` with a permanent/transient split. |
-| `Pottmayer.Tars.Ai.Ollama` | `/api/chat` with tool support; configurable endpoint and model; no credentials. |
-| `Pottmayer.Tars.Ai.OpenAi` | Chat Completions with tools, plus transcription. |
-| `Pottmayer.Tars.Ai.Gemini` | `generateContent` with function calling, plus audio input. |
+Namespaced **by capability**, not by provider — so transcription and embeddings land as
+`Ai.Transcription.*` / `Ai.Embedding.*` without reorganizing what already exists.
 
-Provider selection is per call, not per application: the clients are resolved from a keyed factory
-using the user's profile, because two users of the same instance may choose differently.
+| Project | Contents | State |
+|---|---|---|
+| `Pottmayer.Tars.Ai.Abstractions` | `AiException` with `IsPermanent` (permanent vs. transient), shared across all capabilities. | **Done** (uncommitted) |
+| `Pottmayer.Tars.Ai.Chat.Abstractions` | `IAiChatCompletionClient`, `IAiChatCompletionClientFactory`, and the models `ChatRequest`/`ChatCompletion`/`ChatMessage`/`ToolDefinition`/`ToolCall`/`TokenUsage`. Model and key (`ApiKey`) come **per call**. | **Done** (uncommitted) |
+| `Pottmayer.Tars.Ai.Chat` | `KeyedAiChatCompletionClientFactory` + `AddTarsAiClientFactory`. | **Done** (uncommitted) |
+| `Pottmayer.Tars.Ai.Chat.Gemini` | `GeminiAiChatCompletionClient` over `v1beta/models/{model}:generateContent`, key in the `x-goog-api-key` header; options `Tars:Ai:Chat:Gemini`. | **Done** (uncommitted, 17 tests green; missing 1st real call) |
+| `Pottmayer.Tars.Ai.Chat.OpenAi` | Chat Completions with tools. | Future |
+| `Pottmayer.Tars.Ai.Transcription.*` | Audio input (Gemini) / Whisper. | Future (A4) |
+
+Provider selection is per call, not per application: the clients are resolved via keyed DI
+(`GetClient(provider)`) using the user's profile, because two users of the same instance may choose
+differently.
 
 Tars gets the transport and the shape; Pandora keeps prompts, catalogs, policies and persistence.
 Documentation lands in the Tars repo under `docs/ai/`.
@@ -275,10 +287,11 @@ GET    /assistant/commands               → the live catalog (debugging, and th
 ## 8. Roadmap
 
 ### Phase A1 — Tars `Ai` + profile
-- `Ai.Abstractions` with chat + tools; Ollama implementation; provider/model settings per user with
-  a reachability probe.
-- `ast001`; settings UI.
-- **Done when:** a settings page can round-trip a prompt through a local Ollama and show the reply.
+- `Ai.Chat` with chat + tools + the Gemini provider: **already implemented** (uncommitted); missing
+  the 1st real call and the commit. See [execution-plan.md](execution-plan.md), Step 0.
+- Assistant module shell; `ast001`; register Gemini in the Host; settings UI + reachability test
+  (using the user's key in Integrations).
+- **Done when:** a settings page can round-trip a prompt through Gemini and show the reply.
 
 ### Phase A2 — Command pipeline (web, text)
 - Descriptor registration and discovery; system prompt; tool-call validation; execution through the
@@ -300,12 +313,12 @@ GET    /assistant/commands               → the live catalog (debugging, and th
   `MediaRecorder` upload; audio retention opt-in.
 - **Done when:** a voice note in Telegram creates a reminder, in Portuguese.
 
-### Phase A5 — Hosted providers and quality
-- OpenAI and Gemini implementations; per-user selection with keys stored encrypted.
-- Full Agenda catalog (`create_event`, `list_agenda`, `complete_task`, `snooze_reminder`).
-- An eval set of real utterances replayed across providers, so switching model is a measured
-  decision rather than a vibe.
-- **Done when:** the same eval set passes on Ollama and on a hosted model, with the numbers recorded.
+### Phase A5 — Quality and a second provider
+- Full Agenda catalog (`create_event`, `list_agenda`, `complete_task`, `snooze_reminder`) — and, with
+  the reads, the decision on personal data leaving the house (see §9.2).
+- OpenAI as a second provider (`Ai.Chat.OpenAi` + registration), if there's a real reason beyond Gemini.
+- An eval set of real utterances, so switching model is a measured decision rather than a vibe.
+- **Done when:** the eval set passes on the chosen model, with the numbers recorded.
 
 ### Phase A6 — Beyond Agenda *(future)*
 Notes (`create_note`, `search_notes`), Finances (`record_transaction`, `balance_summary`), proactive
@@ -320,12 +333,11 @@ retrieval over Notes for question answering.
    with `auth_kind = api_key`. One encrypted store. `ast001`'s `credential_ref` points there, and the
    key is obtained through `IExternalCredentialProvider` — the same synchronous port Agenda uses for
    the Google token. See [Integrations — OAuth & Credentials](../../integrations/en/oauth-and-credentials.md).
-2. **Whether the LLM ever sees personal data.** Reads like `list_agenda` mean event titles go to the
-   provider. With Ollama that is local and fine; with OpenAI/Gemini it leaves the house. Minimum: a
-   per-profile warning and a switch to restrict hosted providers to *write* commands only. Worth
-   settling before A5.
-3. **Streaming.** Not needed for command execution; useful if a conversational mode is ever added.
-   The abstraction reserves it, the implementation defers it.
-4. **Portuguese-first quality on small models.** Local 8B-class models are noticeably weaker at
-   Portuguese tool-calling. The eval set in A5 exists to find the smallest model that actually
-   works, rather than assuming one.
+2. **Personal data leaves the house.** Since the provider is hosted (Gemini), **every utterance leaves
+   the house**, and reads like `list_agenda` would send event titles to Google. Without Ollama this is
+   no longer "settle before A5" — it matters **now**. Minimum for the 1st release: a per-profile
+   warning, and starting with a *write-only* catalog (`create_reminder`); reads land with an explicit
+   decision. See the
+   [execution-plan](execution-plan.md#the-question-that-moved-up-personal-data-leaves-the-house).
+3. **Streaming.** Not needed for command execution; useful if a conversational mode is ever added. The
+   abstraction does not expose it today; deferred.

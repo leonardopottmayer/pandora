@@ -40,6 +40,11 @@
     <ProjectReference Include="../../Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Infrastructure/Pottmayer.Pandora.Modules.Integrations.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Persistence/Pottmayer.Pandora.Modules.Integrations.Persistence.csproj" />
     <ProjectReference Include="../../Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Presentation/Pottmayer.Pandora.Modules.Integrations.Presentation.csproj" />
+    <!-- Assistant module -->
+    <ProjectReference Include="../../Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Application/Pottmayer.Pandora.Modules.Assistant.Application.csproj" />
+    <ProjectReference Include="../../Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Infrastructure/Pottmayer.Pandora.Modules.Assistant.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Persistence/Pottmayer.Pandora.Modules.Assistant.Persistence.csproj" />
+    <ProjectReference Include="../../Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Presentation/Pottmayer.Pandora.Modules.Assistant.Presentation.csproj" />
     <!-- Tars: Core -->
     <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.9" />
     <!-- Tars: Web -->

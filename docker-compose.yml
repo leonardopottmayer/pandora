@@ -23,6 +23,9 @@ services:
       Tars__Data__Connections__channels__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       Tars__Data__Connections__finances__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       Tars__Data__Connections__notes__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Tars__Data__Connections__agenda__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Tars__Data__Connections__integrations__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Tars__Data__Connections__assistant__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       Tars__Security__Identity__Jwt__SigningKey: ${JWT_SIGNING_KEY}
       Pandora__Identity__Mfa__EncryptionKey: ${MFA_ENCRYPTION_KEY}
       # SMTP target. Staging -> mailhog (capture); prod -> a real provider.
