@@ -22,7 +22,7 @@ public static class InfrastructureDI
         builder.AddTarsDataProtectionOptions();
         builder.Services.AddTarsSecretProtector();
 
-        // api_key providers (Gemini, …): catalog entries only, no server-side secret, so always on.
+        // api-key providers (Gemini, …): catalog entries only, no server-side secret, so always on.
         builder.Services.AddIntegrationsApiKeyProviders();
 
         // Google OAuth provider (Tars.Data-style guard): registered only when a client id is present,

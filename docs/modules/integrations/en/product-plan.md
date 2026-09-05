@@ -31,7 +31,7 @@ Both halves shipped. See [implementation-status.md](implementation-status.md).
 
 ## Phase I3 — API keys *(prerequisite for [Assistant](../../assistant/en/product-plan.md) phase A5)*
 
-- Register / rotate / remove endpoints for `auth_kind = api_key` accounts (the read path,
+- Register / rotate / remove endpoints for `auth_kind = api-key` accounts (the read path,
   `GetApiKeyAsync`, already exists).
 - `openai` and `gemini` in the provider catalog, with **no authorization flow** — just a form with the
   key and a reachability test.

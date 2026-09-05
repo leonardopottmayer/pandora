@@ -48,7 +48,7 @@ public sealed class IntegrationEventLogEntryTests
     [Theory]
     [InlineData("connected")]
     [InlineData("reconnected")]
-    [InlineData("refresh_failed")]
+    [InlineData("refresh-failed")]
     [InlineData("expired")]
     [InlineData("revoked")]
     [InlineData("disconnected")]

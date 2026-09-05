@@ -56,7 +56,7 @@ Missing: transcription and embeddings have **no project yet** — they land in A
 |---|---|---|
 | **Provider** | Gemini (hosted) | Ollama dropped. Strong tool-calling in pt-BR without keeping a GPU/homelab. Transport already implemented in Tars. |
 | **Target model** | a fast Gemini (e.g. `gemini-2.5-flash`) | Low latency and good function-calling. Confirm in Step 0; it is `ChatRequest.Model`, swappable without a deploy. |
-| **API key** | `int001_external_account` (`auth_kind = api_key`, provider `gemini`) | One encrypted store. `ast001.credential_ref` points there; fetched per call and passed as `ChatRequest.ApiKey`. **Coupling with Integrations is the mechanism**, not a thing to avoid. |
+| **API key** | `int001_external_account` (`auth_kind = api-key`, provider `gemini`) | One encrypted store. `ast001.credential_ref` points there; fetched per call and passed as `ChatRequest.ApiKey`. **Coupling with Integrations is the mechanism**, not a thing to avoid. |
 | **First surface** | Web (command bar) | Runs the pipeline inline; the tool call is visible immediately, no async plumbing like Telegram's. |
 | **First command** | Agenda `create_reminder` | Smallest argument surface (title + timestamp); proves the end-to-end loop fast. |
 | **Out of scope now** | OpenAI, A6 (Notes/Finances/proactive) | OpenAI is "one more provider descriptor" when it earns its place; A6 is a descriptor+handler per command. |
@@ -164,11 +164,14 @@ confirmation.
 - Failure behavior per product-plan §5 (no tool matched / missing argument / validation rejected /
   provider unreachable / malformed JSON). `AiException.IsPermanent` decides whether a retry can help.
   **Never claim success that did not happen** — status comes from the command's actual result.
+- **Single-turn here, by design.** `messages` is `[system, user]` only; the pipeline persists the
+  conversation and its messages (`ast002`/`ast003`) but does not yet replay history into the prompt.
+  Feeding recent messages back — channel-agnostic, time-bounded — is [A3](#step-a3--telegram-input-text-sketch).
 
 ### A2.6 — Confirmation
 - The descriptor's `ConfirmationPolicy`, adjusted by the profile's `confirmation_level`.
   `create_reminder` is `WhenAmbiguous`: executes when unambiguous; otherwise records `ast004` as
-  `pending_confirmation` (expires in 10 min) and echoes the intent back.
+  `pending-confirmation` (expires in 10 min) and echoes the intent back.
 - `POST /assistant/invocations/{id}/confirm` and `/cancel`.
 
 ### A2.7 — Frontend
@@ -195,7 +198,18 @@ message.
 - Response via `NotifyUserRequested`; confirmation buttons carry `owner_module: "assistant"`, coming
   back through `inbound.interaction.assistant.#`.
 
-**Done when:** the same sentence typed in Telegram creates the same reminder, and *Confirm* works.
+**Multi-turn context (decided in A2, delivered here).** A2 builds the prompt as `[system, user]` — no
+history. From A3 on, the pipeline feeds the conversation's **recent messages** back in before the
+current sentence (`[system, …history…, user]`), so a follow-up ("actually, make it 11h", "yes", "and
+tomorrow too") is understood. This is **channel-agnostic**: the same conversation (`ast002` + `ast003`,
+already built in A2) serves both the web command bar and Telegram. The context window is **time-bounded**
+— only messages within `Conversation.IdleTimeout` (today 30 minutes of silence, the same span that lapses
+a conversation); past that a fresh thread starts and nothing prior is resent. That keeps token cost and
+how much text leaves for Google (the privacy question) in check. A cap of N messages (on top of the time
+cap) lands with it.
+
+**Done when:** the same sentence typed in Telegram creates the same reminder, *Confirm* works, and a
+follow-up within the window (web **or** Telegram) is interpreted using the prior messages' context.
 
 ---
 

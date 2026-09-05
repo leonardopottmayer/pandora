@@ -86,6 +86,15 @@ export const navigationModules: NavModule[] = [
     ],
   },
   {
+    key: 'assistant',
+    labelKey: 'nav.assistant',
+    icon: <RobotOutlined />,
+    screens: [
+      { key: 'assistant-bar', labelKey: 'nav.assistantBar', path: '/assistant', icon: <RobotOutlined /> },
+      { key: 'assistant-settings', labelKey: 'nav.assistantSettings', path: '/settings/assistant', icon: <SettingOutlined /> },
+    ],
+  },
+  {
     key: 'account',
     labelKey: 'nav.account',
     icon: <SafetyOutlined />,
@@ -95,7 +104,6 @@ export const navigationModules: NavModule[] = [
       { key: 'settings', labelKey: 'nav.settings', path: '/settings', icon: <SettingOutlined /> },
       { key: 'notifications', labelKey: 'nav.notifications', path: '/settings/notifications', icon: <NotificationOutlined /> },
       { key: 'connections', labelKey: 'nav.connections', path: '/settings/connections', icon: <ApiOutlined /> },
-      { key: 'assistant', labelKey: 'nav.assistant', path: '/settings/assistant', icon: <RobotOutlined /> },
     ],
   },
 ]

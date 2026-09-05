@@ -13,7 +13,7 @@ public sealed class QuietHoursBehaviour : IDomainValue<QuietHoursBehaviour>
     public static readonly QuietHoursBehaviour Suppress = new("suppress");
 
     /// <summary>Ignore the quiet window and deliver as usual. Lets a user keep a window that only mutes some sources later.</summary>
-    public static readonly QuietHoursBehaviour DeliverAnyway = new("deliver_anyway");
+    public static readonly QuietHoursBehaviour DeliverAnyway = new("deliver-anyway");
 
     public string Value { get; }
 
@@ -22,7 +22,7 @@ public sealed class QuietHoursBehaviour : IDomainValue<QuietHoursBehaviour>
     public static QuietHoursBehaviour FromValue(string value) => value switch
     {
         "suppress" => Suppress,
-        "deliver_anyway" => DeliverAnyway,
+        "deliver-anyway" => DeliverAnyway,
         _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown quiet-hours behaviour.")
     };
 
@@ -34,7 +34,7 @@ public sealed class QuietHoursBehaviour : IDomainValue<QuietHoursBehaviour>
             case "suppress":
                 behaviour = Suppress;
                 return true;
-            case "deliver_anyway":
+            case "deliver-anyway":
                 behaviour = DeliverAnyway;
                 return true;
             default:

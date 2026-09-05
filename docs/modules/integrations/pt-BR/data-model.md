@@ -29,21 +29,21 @@ encriptadas em repouso com uma chave que vive fora do banco.
 | `id` | uuid PK | |
 | `user_id` | uuid NOT NULL | dono |
 | `provider` | varchar(40) NOT NULL | `google` hoje; `microsoft`, `openai`, `gemini`, … depois |
-| `auth_kind` | varchar(20) NOT NULL | `oauth \| api_key` |
-| `provider_account_id` | varchar(255) NOT NULL | id de sujeito estável do provedor; para `api_key`, um rótulo escolhido pelo usuário |
+| `auth_kind` | varchar(20) NOT NULL | `oauth \| api-key` |
+| `provider_account_id` | varchar(255) NOT NULL | id de sujeito estável do provedor; para `api-key`, um rótulo escolhido pelo usuário |
 | `display_name` | varchar(255) NULL | e-mail/handle da conta, exibido em configurações |
 | `scopes` | text NOT NULL DEFAULT '' | escopos concedidos como guardados; usado para detectar re-consentimento |
-| `access_token_enc` | text NULL | encriptado; curta duração (também guarda a chave de API no caso `api_key`) |
+| `access_token_enc` | text NULL | encriptado; curta duração (também guarda a chave de API no caso `api-key`) |
 | `access_token_expires_at` | timestamptz NULL | |
 | `refresh_token_enc` | text NULL | encriptado; nulo quando o provedor não emite |
-| `status` | varchar(20) NOT NULL | `connected \| expired \| revoked \| needs_consent` |
+| `status` | varchar(20) NOT NULL | `connected \| expired \| revoked \| needs-consent` |
 | `connected_at` | timestamptz NOT NULL | |
 | `last_refreshed_at` | timestamptz NULL | |
 | `last_error` | text NULL | último erro de refresh/revogação, exposto em configurações |
 | `created_by/created_at/updated_by/updated_at` | | colunas de auditoria |
 
-Constraints: `pk_int001`, `chk_int001_auth_kind (oauth|api_key)`,
-`chk_int001_status (connected|expired|revoked|needs_consent)`,
+Constraints: `pk_int001`, `chk_int001_auth_kind (oauth|api-key)`,
+`chk_int001_status (connected|expired|revoked|needs-consent)`,
 `uq_int001_user_provider_account (user_id, provider, provider_account_id)` — uma conta por
 (usuário, provedor, conta), então duas contas Google já estão modeladas pelo `provider_account_id`
 discriminante.
@@ -79,7 +79,7 @@ e lidas, nunca alteradas.
 | `user_id` | uuid NOT NULL | escopa a leitura; mantido mesmo após a conta ser deletada |
 | `external_account_id` | uuid NULL | a linha `int001` que isto concerne — **sem FK**, então o log sobrevive a uma desconexão que deleta a conta |
 | `provider` | varchar(40) NOT NULL | |
-| `event_type` | varchar(30) NOT NULL | `connected \| reconnected \| refresh_failed \| expired \| revoked \| disconnected` |
+| `event_type` | varchar(30) NOT NULL | `connected \| reconnected \| refresh-failed \| expired \| revoked \| disconnected` |
 | `detail` | text NULL | o motivo da falha nos tipos de falha, senão null |
 | `occurred_at` | timestamptz NOT NULL | |
 

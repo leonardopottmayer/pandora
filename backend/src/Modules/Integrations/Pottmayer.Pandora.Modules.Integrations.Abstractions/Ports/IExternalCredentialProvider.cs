@@ -18,7 +18,7 @@ public interface IExternalCredentialProvider
         Guid userId, string provider, CancellationToken ct = default);
 
     /// <summary>
-    /// Returns a stored API key in plaintext. No expiry, no refresh — for <c>auth_kind = api_key</c>
+    /// Returns a stored API key in plaintext. No expiry, no refresh — for <c>auth_kind = api-key</c>
     /// providers such as OpenAI or Gemini.
     /// </summary>
     Task<Result<string>> GetApiKeyAsync(

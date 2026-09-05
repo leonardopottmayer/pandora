@@ -56,10 +56,10 @@ configuration — an environment variable in Docker, a mounted secret in the hom
 database**. That separation is the entire point: a database dump alone must not yield working
 credentials.
 
-## 4. API keys (`auth_kind = api_key`)
+## 4. API keys (`auth_kind = api-key`)
 
 For providers that authenticate with a static user-supplied key (OpenAI, Gemini), an account is stored
-with `auth_kind = api_key`, the key held encrypted in `access_token_enc`, and no refresh token.
+with `auth_kind = api-key`, the key held encrypted in `access_token_enc`, and no refresh token.
 `GetApiKeyAsync(userId, provider)` decrypts and returns it; it fails with `NotAnApiKey` if the account
 isn't an API-key account.
 

@@ -147,8 +147,8 @@ are mandatory.
 | `user_id` | uuid NOT NULL | unique |
 | `quiet_hours_start` | time NULL | window start (local wall clock), inclusive |
 | `quiet_hours_end` | time NULL | window end (local wall clock), exclusive; may be earlier than start (wraps past midnight) |
-| `quiet_hours_behaviour` | varchar(20) NULL | `suppress` \| `deliver_anyway` |
+| `quiet_hours_behaviour` | varchar(20) NULL | `suppress` \| `deliver-anyway` |
 
 All three `quiet_hours_*` columns are null together when quiet hours are off. Constraint:
 `uq_chn007_user (user_id)`. Suppression is applied in `NotifyUserRequestedHandler` before fan-out;
-`deliver_anyway` keeps the window on record while still sending.
+`deliver-anyway` keeps the window on record while still sending.

@@ -80,5 +80,5 @@ dates into the day view.
 3. **Whether Finances migrates to the RRULE engine.** Not a prerequisite; revisit only if a third
    consumer of recurrence appears.
 4. **Quiet hours placement.** In Channels (it owns delivery policy), reduced to `suppress` \|
-   `deliver_anyway`. If Agenda ever needs "urgent alerts pierce quiet hours", the flag rides on the
+   `deliver-anyway`. If Agenda ever needs "urgent alerts pierce quiet hours", the flag rides on the
    alert and Channels honours it.

@@ -1,11 +1,11 @@
-export type IntegrationStatus = 'connected' | 'expired' | 'revoked' | 'needs_consent'
+export type IntegrationStatus = 'connected' | 'expired' | 'revoked' | 'needs-consent'
 
 /** A provider the server can talk to, and whether the user has connected it. */
 export interface ProviderCatalogItem {
   provider: string
-  /** How to connect it: 'oauth' sends the browser to consent, 'api_key' shows a field to paste a key. */
+  /** How to connect it: 'oauth' sends the browser to consent, 'api-key' shows a field to paste a key. */
   authKind: string
-  /** Friendly name for api_key providers (e.g. "Google Gemini"); null for OAuth. */
+  /** Friendly name for api-key providers (e.g. "Google Gemini"); null for OAuth. */
   displayName: string | null
   defaultScopes: string[]
   connected: boolean
@@ -28,7 +28,7 @@ export interface ExternalAccount {
 export type IntegrationEventType =
   | 'connected'
   | 'reconnected'
-  | 'refresh_failed'
+  | 'refresh-failed'
   | 'expired'
   | 'revoked'
   | 'disconnected'

@@ -37,7 +37,7 @@ public sealed class TestProviderCommandHandler(
 
         var chatRequest = new ChatRequest(
             model,
-            [ChatMessage.User("Responda apenas: ok")],
+            [ChatMessage.User("Reply only: ok")],
             Temperature: 0,
             ApiKey: keyResult.Value);
 

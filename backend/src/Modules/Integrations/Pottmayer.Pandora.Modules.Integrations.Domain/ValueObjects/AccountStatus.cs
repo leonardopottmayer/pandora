@@ -15,7 +15,7 @@ public sealed class AccountStatus : IDomainValue<AccountStatus>
     public static readonly AccountStatus Revoked = new("revoked");
 
     /// <summary>Connected, but a newly requested feature needs scopes the user has not granted yet.</summary>
-    public static readonly AccountStatus NeedsConsent = new("needs_consent");
+    public static readonly AccountStatus NeedsConsent = new("needs-consent");
 
     public string Value { get; }
 
@@ -26,7 +26,7 @@ public sealed class AccountStatus : IDomainValue<AccountStatus>
         "connected" => Connected,
         "expired" => Expired,
         "revoked" => Revoked,
-        "needs_consent" => NeedsConsent,
+        "needs-consent" => NeedsConsent,
         _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown account status.")
     };
 

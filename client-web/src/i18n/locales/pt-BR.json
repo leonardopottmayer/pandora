@@ -3,38 +3,63 @@
     "settings": {
       "title": "Assistente",
       "intro": "Configure o assistente que transforma linguagem natural em comandos do Pandora.",
-      "privacyTitle": "Seus textos v\u00e3o para o Google",
-      "privacyDesc": "O Gemini \u00e9 hospedado: cada frase enviada ao assistente \u00e9 processada pelo Google. Por enquanto o assistente s\u00f3 cria itens \u2014 n\u00e3o l\u00ea seus dados de volta.",
+      "privacyTitle": "Seus textos vão para o Google",
+      "privacyDesc": "O Gemini é hospedado: cada frase enviada ao assistente é processada pelo Google. Por enquanto o assistente só cria itens — não lê seus dados de volta.",
       "providerLabel": "Provedor",
       "providerDesc": "O modelo de linguagem que interpreta suas frases.",
       "noKeyTitle": "Nenhuma API key configurada",
-      "noKeyAction": "Adicionar a key do Gemini em Conex\u00f5es",
+      "noKeyAction": "Adicionar a key do Gemini em Conexões",
       "keyHint": "Key salva: {{hint}}",
       "modelLabel": "Modelo",
-      "modelDesc": "O modelo do provedor. Voc\u00ea pode trocar quando quiser; o teste de alcance confirma.",
-      "confirmationLabel": "Confirma\u00e7\u00e3o",
+      "modelDesc": "O modelo do provedor. Você pode trocar quando quiser; o teste de alcance confirma.",
+      "confirmationLabel": "Confirmação",
       "confirmationDesc": "O quanto o assistente executa sem perguntar antes.",
       "confirmStrict": "Cauteloso",
       "confirmBalanced": "Equilibrado",
       "confirmTrusting": "Confiante",
       "localeLabel": "Idioma",
-      "localeDesc": "Idioma que o assistente usa ao responder. O padr\u00e3o segue o idioma da conta.",
+      "localeDesc": "Idioma que o assistente usa ao responder. O padrão segue o idioma da conta.",
       "localeAccount": "Idioma da conta",
       "enabledLabel": "Assistente ativado",
       "enabledDesc": "Quando desligado, o assistente ignora suas mensagens.",
       "save": "Salvar",
-      "saved": "Configura\u00e7\u00e3o salva.",
-      "saveError": "N\u00e3o foi poss\u00edvel salvar a configura\u00e7\u00e3o.",
+      "saved": "Configuração salva.",
+      "saveError": "Não foi possível salvar a configuração.",
       "modelRequired": "Informe um modelo.",
       "test": {
         "button": "Testar alcance",
         "ok": "Respondeu em {{latency}} ms.",
-        "error": "N\u00e3o foi poss\u00edvel executar o teste.",
+        "error": "Não foi possível executar o teste.",
         "kind": {
           "no_key": "Nenhuma API key configurada para este provedor.",
-          "rejected": "O provedor rejeitou a chamada (chave ou modelo inv\u00e1lido).",
-          "unreachable": "Provedor inacess\u00edvel. Tente de novo em instantes."
+          "rejected": "O provedor rejeitou a chamada (chave ou modelo inválido).",
+          "unreachable": "Provedor inacessível. Tente de novo em instantes."
         }
+      }
+    },
+    "bar": {
+      "title": "Assistente",
+      "intro": "Digite um pedido em linguagem natural. Ex.: \"me lembra de pagar o aluguel amanhã às 10h\".",
+      "placeholder": "O que você quer que eu faça?",
+      "send": "Enviar",
+      "notEnabled": "Ative o assistente nas configurações para usá-lo.",
+      "goToSettings": "Abrir configurações",
+      "confirm": "Confirmar",
+      "cancel": "Cancelar",
+      "error": "Não foi possível interpretar sua mensagem.",
+      "logTitle": "Histórico",
+      "logEmpty": "Nenhuma interpretação ainda.",
+      "latency": "{{ms}} ms",
+      "tokens": "{{prompt}}+{{completion}} tokens",
+      "status": {
+        "executed": "Executado",
+        "failed": "Falhou",
+        "clarification": "Pergunta",
+        "rejected": "Recusado",
+        "cancelled": "Cancelado",
+        "expired": "Expirado",
+        "provider-error": "Provedor indisponível",
+        "pending-confirmation": "Aguardando confirmação"
       }
     }
   },
@@ -87,7 +112,9 @@
     "agendaReminders": "Lembretes",
     "agendaTasks": "Tarefas",
     "agendaCalendar": "Calendário",
-    "agendaSettings": "Configurações"
+    "agendaSettings": "Configurações",
+    "assistantBar": "Comandos",
+    "assistantSettings": "Configurações"
   },
   "theme": {
     "toLight": "Tema claro",
@@ -264,7 +291,7 @@
     "quietHoursBehaviour": "Durante a janela",
     "quietHoursBehaviourOption": {
       "suppress": "Suprimir (nao enviar)",
-      "deliver_anyway": "Enviar mesmo assim"
+      "deliver-anyway": "Enviar mesmo assim"
     },
     "quietHoursZoneHint": "Os horarios sao no seu proprio fuso.",
     "quietHoursSave": "Salvar horario silencioso",
@@ -303,10 +330,10 @@
       "event": {
         "connected": "Conectado",
         "reconnected": "Reconectado",
-        "refresh_failed": "Falha na renovação",
         "expired": "Expirado",
         "revoked": "Revogado",
-        "disconnected": "Desconectado"
+        "disconnected": "Desconectado",
+        "refresh-failed": "Falha na renovação"
       }
     }
   },

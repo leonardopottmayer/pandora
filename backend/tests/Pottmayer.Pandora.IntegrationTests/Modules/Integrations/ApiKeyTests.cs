@@ -6,7 +6,7 @@ using Xunit;
 namespace Pottmayer.Pandora.IntegrationTests.Modules.Integrations;
 
 /// <summary>
-/// Covers the api_key write path (fase I3): storing a provider key, seeing it reflected in the provider
+/// Covers the api-key write path (fase I3): storing a provider key, seeing it reflected in the provider
 /// catalog and account list (masked, never in plaintext), replacing it, and the validation/auth guards.
 /// </summary>
 [Collection("Integration")]
@@ -45,13 +45,13 @@ public sealed class ApiKeyTests : IAsyncLifetime
         var save = await _client.PutAsJsonAsync(GeminiApiKeyUrl, new { apiKey = secret });
         Assert.Equal(HttpStatusCode.OK, save.StatusCode);
 
-        // Catalog reflects it as a connected api_key provider.
+        // Catalog reflects it as a connected api-key provider.
         var providersBody = await (await _client.GetAsync(ProvidersUrl)).Content.ReadAsStringAsync();
         Assert.DoesNotContain(secret, providersBody);
 
         var providers = await GetAsync<List<ProviderItem>>(ProvidersUrl);
         var gemini = Assert.Single(providers, p => p.Provider == "gemini");
-        Assert.Equal("api_key", gemini.AuthKind);
+        Assert.Equal("api-key", gemini.AuthKind);
         Assert.True(gemini.Connected);
         Assert.Equal("connected", gemini.Status);
 
@@ -61,7 +61,7 @@ public sealed class ApiKeyTests : IAsyncLifetime
 
         var accounts = await GetAsync<List<AccountItem>>(AccountsUrl);
         var account = Assert.Single(accounts, a => a.Provider == "gemini");
-        Assert.Equal("api_key", account.AuthKind);
+        Assert.Equal("api-key", account.AuthKind);
         Assert.Equal("connected", account.Status);
         Assert.EndsWith("ABCD", account.DisplayName);
         Assert.NotEqual(secret, account.DisplayName);

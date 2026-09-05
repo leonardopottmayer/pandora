@@ -15,11 +15,11 @@ public sealed class ExternalAccount : AggregateRoot<Guid>, IAuditable
     private const int MaxErrorLength = 1000;
 
     /// <summary>
-    /// The <see cref="ProviderAccountId"/> stored for an api_key account. An API key has no external
+    /// The <see cref="ProviderAccountId"/> stored for an api-key account. An API key has no external
     /// account identity, so a fixed marker keeps the (user, provider, account) uniqueness at one key
     /// per provider per user.
     /// </summary>
-    public const string ApiKeyAccountId = "api_key";
+    public const string ApiKeyAccountId = "api-key";
 
     public Guid UserId { get; private set; }
     public string Provider { get; private set; } = null!;
@@ -30,13 +30,13 @@ public sealed class ExternalAccount : AggregateRoot<Guid>, IAuditable
     /// <summary>Granted scopes as stored, so a new feature can detect it needs re-consent.</summary>
     public string Scopes { get; private set; } = string.Empty;
 
-    /// <summary>Protected access token (OAuth) or protected API key (api_key). Never plaintext.</summary>
+    /// <summary>Protected access token (OAuth) or protected API key (api-key). Never plaintext.</summary>
     public string? AccessTokenEnc { get; private set; }
 
-    /// <summary>Null for api_key, which has no expiry.</summary>
+    /// <summary>Null for api-key, which has no expiry.</summary>
     public DateTimeOffset? AccessTokenExpiresAt { get; private set; }
 
-    /// <summary>Protected refresh token. Null when the provider issues none, and always null for api_key.</summary>
+    /// <summary>Protected refresh token. Null when the provider issues none, and always null for api-key.</summary>
     public string? RefreshTokenEnc { get; private set; }
 
     public AccountStatus Status { get; private set; } = null!;
@@ -83,7 +83,7 @@ public sealed class ExternalAccount : AggregateRoot<Guid>, IAuditable
     }
 
     /// <summary>
-    /// Records a user-supplied API key (auth_kind = api_key): no expiry, no refresh, no authorization
+    /// Records a user-supplied API key (auth_kind = api-key): no expiry, no refresh, no authorization
     /// flow. The key arrives already protected; <paramref name="displayName"/> is a non-secret hint
     /// (e.g. the last four characters) so settings can show which key is stored.
     /// </summary>

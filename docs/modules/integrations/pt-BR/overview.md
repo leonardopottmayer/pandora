@@ -15,7 +15,7 @@ de terceiros. Ele cuida de:
 - **Refresh transparente**: quem pede um access token recebe um válido ou uma falha tipada; nunca vê
   nem implementa refresh.
 - **Revogação e desconexão**: revogar no provedor e apagar a conta local.
-- **Chaves de API fornecidas pelo usuário** (`auth_kind = api_key`) como alternativa ao OAuth, para
+- **Chaves de API fornecidas pelo usuário** (`auth_kind = api-key`) como alternativa ao OAuth, para
   provedores que autenticam com uma chave estática.
 
 É, de propósito, o menor módulo do Pandora e responde exatamente uma pergunta:
@@ -62,7 +62,7 @@ preocupações de backend. Unidade de UI não é unidade de módulo.
 |---|---|
 | **Conta externa** | Uma conta de terceiro conectada (`int001`). Guarda as credenciais encriptadas que o Pandora usa em nome do usuário. Identificada por `(user_id, provider, provider_account_id)`. |
 | **Provedor** | Um serviço de terceiro ao qual o Pandora se conecta: `google` hoje; `microsoft`, `openai`, `gemini` e outros depois. |
-| **Tipo de auth** | Como uma conta autentica: `oauth` (tokens renováveis) ou `api_key` (chave estática do usuário). |
+| **Tipo de auth** | Como uma conta autentica: `oauth` (tokens renováveis) ou `api-key` (chave estática do usuário). |
 | **OAuth state** | Uma requisição de autorização em andamento (`int002`). O `state` é o token CSRF de uso único; o `code_verifier` do PKCE é guardado encriptado durante o fluxo. |
 | **Access token** | Uma credencial OAuth de curta duração, devolvida aos consumidores como um `ExternalAccessToken` transitório (token + expiração + escopos). Nunca persistido pelo consumidor. |
 | **Refresh token** | Uma credencial OAuth de longa duração usada só dentro do módulo para emitir novos access tokens. Encriptada em repouso, nunca entregue. |
@@ -85,5 +85,5 @@ serializado; desconexão com revogação no provedor; as portas `IExternalCreden
 |---|---|
 | **Reação de Channels à revogação** (Telegram "reconectar") | Contratos publicados; ainda sem subscriber/template no Channels (fase I2). |
 | **Log de eventos `int003`** | Desenhado, não criado (fase I2). |
-| **Endpoints de gestão de chave de API** (registrar/rotacionar/remover) + catálogo `openai`/`gemini` | O caminho de leitura (`GetApiKeyAsync`) existe; ainda não há como criar uma conta `api_key` (fase I3). |
+| **Endpoints de gestão de chave de API** (registrar/rotacionar/remover) + catálogo `openai`/`gemini` | O caminho de leitura (`GetApiKeyAsync`) existe; ainda não há como criar uma conta `api-key` (fase I3). |
 | **Mais provedores** (Microsoft, CalDAV) | Futuro, sob demanda (fase I4). |

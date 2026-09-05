@@ -17,7 +17,7 @@ public sealed class IntegrationEventType : IDomainValue<IntegrationEventType>
     public static readonly IntegrationEventType Reconnected = new("reconnected");
 
     /// <summary>A refresh failed transiently; the credential is still usable and it will be retried.</summary>
-    public static readonly IntegrationEventType RefreshFailed = new("refresh_failed");
+    public static readonly IntegrationEventType RefreshFailed = new("refresh-failed");
 
     /// <summary>The access token lapsed and there was no refresh token to renew it.</summary>
     public static readonly IntegrationEventType Expired = new("expired");
@@ -36,7 +36,7 @@ public sealed class IntegrationEventType : IDomainValue<IntegrationEventType>
     {
         "connected" => Connected,
         "reconnected" => Reconnected,
-        "refresh_failed" => RefreshFailed,
+        "refresh-failed" => RefreshFailed,
         "expired" => Expired,
         "revoked" => Revoked,
         "disconnected" => Disconnected,

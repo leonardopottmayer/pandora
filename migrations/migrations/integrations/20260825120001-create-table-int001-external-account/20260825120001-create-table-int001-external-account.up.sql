@@ -28,11 +28,11 @@ ADD CONSTRAINT pk_int001 PRIMARY KEY (id);
 
 ALTER TABLE integrations.int001_external_account
 ADD CONSTRAINT chk_int001_auth_kind
-CHECK (auth_kind IN ('oauth', 'api_key'));
+CHECK (auth_kind IN ('oauth', 'api-key'));
 
 ALTER TABLE integrations.int001_external_account
 ADD CONSTRAINT chk_int001_status
-CHECK (status IN ('connected', 'expired', 'revoked', 'needs_consent'));
+CHECK (status IN ('connected', 'expired', 'revoked', 'needs-consent'));
 
 -- One account per (user, provider, account). Two Google accounts are already modelled by the
 -- discriminating provider_account_id.

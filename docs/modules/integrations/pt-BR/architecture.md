@@ -36,13 +36,13 @@ de uso).
 
 | Raiz de agregado | Responsabilidade / invariantes-chave |
 |---|---|
-| **ExternalAccount** | Uma conta conectada. Guarda credenciais encriptadas; transita entre `connected`/`expired`/`revoked`/`needs_consent`; `MarkRevoked` é a degradação terminal num refresh rejeitado. Única por `(user_id, provider, provider_account_id)`. |
+| **ExternalAccount** | Uma conta conectada. Guarda credenciais encriptadas; transita entre `connected`/`expired`/`revoked`/`needs-consent`; `MarkRevoked` é a degradação terminal num refresh rejeitado. Única por `(user_id, provider, provider_account_id)`. |
 | **OAuthState** | Uma requisição de autorização em andamento. Carrega o `state` CSRF e o verifier PKCE encriptado; uso único, com TTL; consumida exatamente uma vez pelo callback. |
 
 ### Objetos de valor (`Domain/ValueObjects`)
 
-- **`AccountStatus`** — `connected` \| `expired` \| `revoked` \| `needs_consent`.
-- **`AuthKind`** — `oauth` (tokens renováveis, Google) \| `api_key` (chave estática do usuário, OpenAI/Gemini).
+- **`AccountStatus`** — `connected` \| `expired` \| `revoked` \| `needs-consent`.
+- **`AuthKind`** — `oauth` (tokens renováveis, Google) \| `api-key` (chave estática do usuário, OpenAI/Gemini).
 
 ### Portas (`Domain/Ports`)
 
@@ -59,7 +59,7 @@ public interface IExternalCredentialProvider
 {
     // auth_kind = oauth — renova invisivelmente
     Task<Result<ExternalAccessToken>> GetAccessTokenAsync(Guid userId, string provider, CancellationToken ct = default);
-    // auth_kind = api_key — decripta e devolve; sem expiração, sem refresh
+    // auth_kind = api-key — decripta e devolve; sem expiração, sem refresh
     Task<Result<string>> GetApiKeyAsync(Guid userId, string provider, CancellationToken ct = default);
 }
 

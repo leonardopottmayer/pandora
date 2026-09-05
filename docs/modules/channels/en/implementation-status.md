@@ -27,7 +27,7 @@ in [product-plan.md](product-plan.md).
 | **C5 — raw retention purge** | `InboundUpdateRetentionBackgroundService`; `Channels:RawRetention:{Enabled,RetentionDays}` (default on / 7 days). |
 | **C5 — delivery history** | `GET /channels/notifications` (filter + paging); `chn006.user_id`/`category` stamped at enqueue; history table in settings. |
 | **C5 — test send** | `POST /channels/{channel}/test` (delivered in C2). |
-| **C5 — quiet hours** | `chn007_user_notification_setting`; a global daily "do not disturb" window in the user's own IANA zone (resolved from Identity via `IUserPreferencesReader`); `suppress`/`deliver_anyway`; gated in `NotifyUserRequestedHandler` before fan-out; `GET`/`PUT /channels/notification-settings`; settings UI. Security notifications never reach this path. |
+| **C5 — quiet hours** | `chn007_user_notification_setting`; a global daily "do not disturb" window in the user's own IANA zone (resolved from Identity via `IUserPreferencesReader`); `suppress`/`deliver-anyway`; gated in `NotifyUserRequestedHandler` before fan-out; `GET`/`PUT /channels/notification-settings`; settings UI. Security notifications never reach this path. |
 | **C5 — metrics** | `ChannelsMetrics` meter (`Pottmayer.Pandora.Modules.Channels`): `dispatched{channel,outcome}`, `dispatch.duration{channel}`, `queue.depth` gauge, `inbound.updates.discarded`. Subscribed by a `Pottmayer.Pandora.*` `AddMeter` wildcard in the shared observability wiring, exported over OTLP. |
 | **Frontend** | Notifications settings section (channels, test, preferences, **quiet hours**, delivery history) in `client-web/src/modules/channels`. |
 

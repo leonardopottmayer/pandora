@@ -56,10 +56,10 @@ por `ISecretProtector` (Tars `Security.DataProtection`, AES-GCM). A chave é lid
 variável de ambiente no Docker, um secret montado no homelab — **nunca do banco**. Essa separação é o
 ponto inteiro: um dump do banco sozinho não pode render credenciais funcionais.
 
-## 4. Chaves de API (`auth_kind = api_key`)
+## 4. Chaves de API (`auth_kind = api-key`)
 
 Para provedores que autenticam com uma chave estática do usuário (OpenAI, Gemini), uma conta é
-guardada com `auth_kind = api_key`, a chave em `access_token_enc` encriptada e sem refresh token.
+guardada com `auth_kind = api-key`, a chave em `access_token_enc` encriptada e sem refresh token.
 `GetApiKeyAsync(userId, provider)` decripta e devolve; falha com `NotAnApiKey` se a conta não for de
 chave de API.
 

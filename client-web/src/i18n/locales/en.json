@@ -4,7 +4,7 @@
       "title": "Assistant",
       "intro": "Configure the assistant that turns natural language into Pandora commands.",
       "privacyTitle": "Your text goes to Google",
-      "privacyDesc": "Gemini is hosted: every sentence you send the assistant is processed by Google. For now the assistant only creates items \u2014 it does not read your data back.",
+      "privacyDesc": "Gemini is hosted: every sentence you send the assistant is processed by Google. For now the assistant only creates items — it does not read your data back.",
       "providerLabel": "Provider",
       "providerDesc": "The language model that interprets your sentences.",
       "noKeyTitle": "No API key configured",
@@ -35,6 +35,31 @@
           "rejected": "The provider rejected the call (invalid key or model).",
           "unreachable": "Provider unreachable. Try again shortly."
         }
+      }
+    },
+    "bar": {
+      "title": "Assistant",
+      "intro": "Type a request in plain language. E.g. \"remind me to pay the rent tomorrow at 10am\".",
+      "placeholder": "What would you like me to do?",
+      "send": "Send",
+      "notEnabled": "Turn the assistant on in settings to use it.",
+      "goToSettings": "Open settings",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "error": "Could not interpret your message.",
+      "logTitle": "History",
+      "logEmpty": "No interpretations yet.",
+      "latency": "{{ms}} ms",
+      "tokens": "{{prompt}}+{{completion}} tokens",
+      "status": {
+        "executed": "Executed",
+        "failed": "Failed",
+        "clarification": "Question",
+        "rejected": "Rejected",
+        "cancelled": "Cancelled",
+        "expired": "Expired",
+        "provider-error": "Provider unavailable",
+        "pending-confirmation": "Awaiting confirmation"
       }
     }
   },
@@ -87,7 +112,9 @@
     "agendaReminders": "Reminders",
     "agendaTasks": "Tasks",
     "agendaCalendar": "Calendar",
-    "agendaSettings": "Settings"
+    "agendaSettings": "Settings",
+    "assistantBar": "Commands",
+    "assistantSettings": "Settings"
   },
   "theme": {
     "toLight": "Light theme",
@@ -264,7 +291,7 @@
     "quietHoursBehaviour": "During the window",
     "quietHoursBehaviourOption": {
       "suppress": "Suppress (don't send)",
-      "deliver_anyway": "Deliver anyway"
+      "deliver-anyway": "Deliver anyway"
     },
     "quietHoursZoneHint": "Times are in your own time zone.",
     "quietHoursSave": "Save quiet hours",
@@ -303,10 +330,10 @@
       "event": {
         "connected": "Connected",
         "reconnected": "Reconnected",
-        "refresh_failed": "Refresh failed",
         "expired": "Expired",
         "revoked": "Revoked",
-        "disconnected": "Disconnected"
+        "disconnected": "Disconnected",
+        "refresh-failed": "Refresh failed"
       }
     }
   },

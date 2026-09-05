@@ -155,7 +155,7 @@ Later: `create_note` and `search_notes` (Notes), `record_transaction` and `balan
 | `user_id` | Unique. |
 | `chat_provider`, `chat_model` | e.g. `gemini` + a fast Gemini model. |
 | `transcription_provider`, `transcription_model` | Reserved (A4). May differ from chat. |
-| `credential_ref` | Points at the `int001_external_account` row (`auth_kind = api_key`) holding the key. Required for a hosted provider. |
+| `credential_ref` | Points at the `int001_external_account` row (`auth_kind = api-key`) holding the key. Required for a hosted provider. |
 | `endpoint` | Base URL for self-hosted providers. Reserved/null while only Gemini exists. |
 | `is_enabled`, `locale_override` | |
 | `confirmation_level` | `strict` \| `balanced` \| `trusting` — shifts every command's policy one notch. |
@@ -173,7 +173,7 @@ to yesterday.
 |---|---|
 | `conversation_id`, `message_id` | |
 | `command_name`, `arguments` (jsonb) | Exactly what the model asked for. |
-| `status` | `pending_confirmation` \| `executed` \| `rejected` \| `failed` \| `expired` |
+| `status` | `pending-confirmation` \| `executed` \| `rejected` \| `failed` \| `expired` |
 | `result` (jsonb), `error` | |
 | `provider`, `model`, `latency_ms`, `tokens_in`, `tokens_out` | Cost and quality tracking. |
 
@@ -187,7 +187,7 @@ to yesterday.
 | `WhenAmbiguous` | Execute unless the model's confidence is low or a required argument was inferred rather than stated. Otherwise echo the parsed intent with **Confirm / Cancel** buttons. |
 | `Always` | Never execute without a button press. Deletions, bulk operations, anything financial. |
 
-A pending confirmation is an `ast004` row in `pending_confirmation`, expiring after 10 minutes. The
+A pending confirmation is an `ast004` row in `pending-confirmation`, expiring after 10 minutes. The
 buttons are declared on `NotifyUserRequested` with `owner_module: "assistant"`, so the click comes
 back on the key `inbound.interaction.assistant.confirm` (or `.cancel`) straight to this module's
 subscriber — the same mechanism Agenda uses, with no code shared between the two.
@@ -330,7 +330,7 @@ retrieval over Notes for question answering.
 ## 9. Open questions
 
 1. ~~**Where hosted API keys live.**~~ **Decided:** in Integrations, in `int001_external_account`
-   with `auth_kind = api_key`. One encrypted store. `ast001`'s `credential_ref` points there, and the
+   with `auth_kind = api-key`. One encrypted store. `ast001`'s `credential_ref` points there, and the
    key is obtained through `IExternalCredentialProvider` — the same synchronous port Agenda uses for
    the Google token. See [Integrations — OAuth & Credentials](../../integrations/en/oauth-and-credentials.md).
 2. **Personal data leaves the house.** Since the provider is hosted (Gemini), **every utterance leaves

@@ -13,6 +13,7 @@ import { SettingsPage } from '@/modules/identity/pages/SettingsPage'
 import { NotificationsPage } from '@/modules/channels/pages/NotificationsPage'
 import { ConnectionsPage } from '@/modules/integrations/pages/ConnectionsPage'
 import { AssistantSettingsPage } from '@/modules/assistant/pages/AssistantSettingsPage'
+import { AssistantPage } from '@/modules/assistant/pages/AssistantPage'
 import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { AccountsListPage } from '@/modules/finances/pages/accounts/AccountsListPage'
@@ -60,6 +61,7 @@ export const router = createBrowserRouter([
       { path: 'settings/notifications', element: <NotificationsPage /> },
       { path: 'settings/connections', element: <ConnectionsPage /> },
       { path: 'settings/assistant', element: <AssistantSettingsPage /> },
+      { path: 'assistant', element: <AssistantPage /> },
 
       // Finances (telas reais substituem o placeholder conforme cada area e implementada)
       { path: 'finances/accounts', element: <AccountsListPage /> },

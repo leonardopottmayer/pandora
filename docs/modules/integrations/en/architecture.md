@@ -35,13 +35,13 @@ injected for all time reads, and a **command/query** application layer (one fold
 
 | Aggregate root | Responsibility / key invariants |
 |---|---|
-| **ExternalAccount** | One connected account. Holds encrypted credentials; transitions between `connected`/`expired`/`revoked`/`needs_consent`; `MarkRevoked` is the terminal degradation on a rejected refresh. Unique per `(user_id, provider, provider_account_id)`. |
+| **ExternalAccount** | One connected account. Holds encrypted credentials; transitions between `connected`/`expired`/`revoked`/`needs-consent`; `MarkRevoked` is the terminal degradation on a rejected refresh. Unique per `(user_id, provider, provider_account_id)`. |
 | **OAuthState** | One in-flight authorization request. Carries the CSRF `state` and the encrypted PKCE verifier; single-use, TTL-bounded; consumed exactly once by the callback. |
 
 ### Value objects (`Domain/ValueObjects`)
 
-- **`AccountStatus`** — `connected` \| `expired` \| `revoked` \| `needs_consent`.
-- **`AuthKind`** — `oauth` (refreshable tokens, Google) \| `api_key` (static user key, OpenAI/Gemini).
+- **`AccountStatus`** — `connected` \| `expired` \| `revoked` \| `needs-consent`.
+- **`AuthKind`** — `oauth` (refreshable tokens, Google) \| `api-key` (static user key, OpenAI/Gemini).
 
 ### Ports (`Domain/Ports`)
 
@@ -58,7 +58,7 @@ public interface IExternalCredentialProvider
 {
     // auth_kind = oauth — refreshes invisibly
     Task<Result<ExternalAccessToken>> GetAccessTokenAsync(Guid userId, string provider, CancellationToken ct = default);
-    // auth_kind = api_key — decrypts and returns; no expiry, no refresh
+    // auth_kind = api-key — decrypts and returns; no expiry, no refresh
     Task<Result<string>> GetApiKeyAsync(Guid userId, string provider, CancellationToken ct = default);
 }
 

@@ -147,8 +147,8 @@ consulta isso — notificações de segurança são obrigatórias.
 | `user_id` | uuid NOT NULL | único |
 | `quiet_hours_start` | time NULL | início da janela (relógio de parede local), inclusivo |
 | `quiet_hours_end` | time NULL | fim da janela (relógio de parede local), exclusivo; pode ser menor que o início (vira a meia-noite) |
-| `quiet_hours_behaviour` | varchar(20) NULL | `suppress` \| `deliver_anyway` |
+| `quiet_hours_behaviour` | varchar(20) NULL | `suppress` \| `deliver-anyway` |
 
 As três colunas `quiet_hours_*` ficam nulas juntas quando quiet hours estão desligadas. Constraint:
 `uq_chn007_user (user_id)`. A supressão é aplicada no `NotifyUserRequestedHandler` antes do fan-out;
-`deliver_anyway` mantém a janela registrada mas ainda envia.
+`deliver-anyway` mantém a janela registrada mas ainda envia.

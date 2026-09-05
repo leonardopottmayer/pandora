@@ -13,6 +13,8 @@
     <ProjectReference Include="../../Channels/Pottmayer.Pandora.Modules.Channels.Contracts/Pottmayer.Pandora.Modules.Channels.Contracts.csproj" />
     <!-- Reads the user's time-zone default (IUserPreferencesReader) to default new items' zone -->
     <ProjectReference Include="../../Identity/Pottmayer.Pandora.Modules.Identity.Abstractions/Pottmayer.Pandora.Modules.Identity.Abstractions.csproj" />
+    <!-- Contributes the create_reminder command to the assistant catalog -->
+    <ProjectReference Include="../../Assistant/Pottmayer.Pandora.Modules.Assistant.Abstractions/Pottmayer.Pandora.Modules.Assistant.Abstractions.csproj" />
     <!-- Tars: Messaging impl (DI handler scanning) -->
     <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.0.9" />
     <!-- Tars: Core -->

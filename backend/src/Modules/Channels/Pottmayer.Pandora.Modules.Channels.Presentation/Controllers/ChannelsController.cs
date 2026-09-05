@@ -124,7 +124,7 @@ public sealed class ChannelsController(
     /// <summary>
     /// Sets the user's quiet hours. <c>quietHoursEnabled: false</c> clears the window; when true,
     /// <c>quietHoursStart</c>/<c>quietHoursEnd</c> are "HH:mm" wall-clock in the user's own time zone
-    /// and <c>quietHoursBehaviour</c> is <c>suppress</c> or <c>deliver_anyway</c>.
+    /// and <c>quietHoursBehaviour</c> is <c>suppress</c> or <c>deliver-anyway</c>.
     /// </summary>
     [HttpPut("notification-settings")]
     public async Task<IActionResult> SetSettingsAsync([FromBody] SetSettingsRequest body, CancellationToken ct)

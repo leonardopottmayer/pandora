@@ -18,7 +18,7 @@ ADD CONSTRAINT pk_int003 PRIMARY KEY (id);
 
 ALTER TABLE integrations.int003_integration_event_log
 ADD CONSTRAINT chk_int003_event_type
-CHECK (event_type IN ('connected', 'reconnected', 'refresh_failed', 'expired', 'revoked', 'disconnected'));
+CHECK (event_type IN ('connected', 'reconnected', 'refresh-failed', 'expired', 'revoked', 'disconnected'));
 
 -- The read path: a user's timeline, newest first.
 CREATE INDEX ix_int003_user_occurred

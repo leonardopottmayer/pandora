@@ -78,7 +78,7 @@ notificações (`chn003` tem FK para a linha da fila). A costura é real, mas in
 O schema `channels` (`chn001`–`chn007`); transportes e-mail + Telegram; templates em arquivo por canal
 com validação no startup; a fila durável com fan-out, dedup por `(correlation_id, channel)`, retry e
 dead-letter; preferências por usuário/categoria; quiet hours global (`chn007`, no fuso do usuário,
-`suppress`/`deliver_anyway`); o handshake de vínculo do Telegram; entrada por long polling com
+`suppress`/`deliver-anyway`); o handshake de vínculo do Telegram; entrada por long polling com
 triagem; botões de interação roteados aos donos; leitura de mídia de entrada; histórico de entrega; a
 purga diária do payload bruto; e métricas OpenTelemetry (profundidade de fila, latência de dispatch,
 desfechos por canal, updates descartados).

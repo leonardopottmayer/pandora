@@ -77,7 +77,7 @@ comportamento são nulos:
 
 Define a janela global de quiet hours. Horários são `HH:mm` de relógio de parede **no fuso do próprio
 usuário**; o fim pode ser menor que o início (a janela vira a meia-noite). `quietHoursBehaviour` é
-`suppress` (descarta a entrega) ou `deliver_anyway` (mantém a janela registrada mas ainda envia). Com
+`suppress` (descarta a entrega) ou `deliver-anyway` (mantém a janela registrada mas ainda envia). Com
 `quietHoursEnabled: false` a janela é limpa e os outros campos são ignorados. Início e fim iguais são
 rejeitados. Quiet hours nunca se aplicam a notificações `identity.*` (segurança).
 

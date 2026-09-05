@@ -81,5 +81,5 @@ puxar vencimentos do Finances para a visão do dia.
 3. **Se o Finances migra para o motor RRULE.** Não é pré-requisito; reavaliar só se surgir um terceiro
    consumidor de recorrência.
 4. **Colocação de quiet hours.** No Channels (ele é dono da política de entrega), reduzida a `suppress` \|
-   `deliver_anyway`. Se a Agenda um dia precisar de "alertas urgentes furam quiet hours", o flag viaja no
+   `deliver-anyway`. Se a Agenda um dia precisar de "alertas urgentes furam quiet hours", o flag viaja no
    alerta e o Channels o honra.

@@ -23,7 +23,7 @@ const REDIRECT_AFTER = '/settings/connections'
 const EVENT_TAG_COLOR: Record<IntegrationEventType, string> = {
   connected: 'green',
   reconnected: 'green',
-  refresh_failed: 'orange',
+  'refresh-failed': 'orange',
   expired: 'orange',
   revoked: 'red',
   disconnected: 'default',
@@ -37,7 +37,7 @@ function statusTag(status: IntegrationStatus, t: (k: string) => string) {
       return <Tag color="red">{t('connections.status.revoked')}</Tag>
     case 'expired':
       return <Tag color="orange">{t('connections.status.expired')}</Tag>
-    case 'needs_consent':
+    case 'needs-consent':
       return <Tag color="gold">{t('connections.status.needsConsent')}</Tag>
   }
 }
@@ -125,7 +125,7 @@ export function ConnectionsPage() {
                     {account && statusTag(account.status, t)}
                   </Space>
 
-                  {provider.authKind === 'api_key' ? (
+                  {provider.authKind === 'api-key' ? (
                     <>
                       {account?.displayName && (
                         <Typography.Text type="secondary">{account.displayName}</Typography.Text>

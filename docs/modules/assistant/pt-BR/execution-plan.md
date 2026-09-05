@@ -56,7 +56,7 @@ Falta: transcrição e embeddings **não têm nem projeto** — entram na A4/fut
 |---|---|---|
 | **Provedor** | Gemini (hospedado) | Ollama abandonado. Tool-calling forte em PT-BR sem manter GPU/homelab. Transporte já implementado no Tars. |
 | **Modelo alvo** | um Gemini rápido (ex.: `gemini-2.5-flash`) | Latência baixa e bom function-calling. Confirmar na Etapa 0; é `ChatRequest.Model`, trocável sem deploy. |
-| **Chave da API** | `int001_external_account` (`auth_kind = api_key`, provider `gemini`) | Cofre cifrado único. `ast001.credential_ref` aponta pra lá; buscada por chamada e passada em `ChatRequest.ApiKey`. **Acoplamento com Integrations é o mecanismo**, não um a-evitar. |
+| **Chave da API** | `int001_external_account` (`auth_kind = api-key`, provider `gemini`) | Cofre cifrado único. `ast001.credential_ref` aponta pra lá; buscada por chamada e passada em `ChatRequest.ApiKey`. **Acoplamento com Integrations é o mecanismo**, não um a-evitar. |
 | **Primeira superfície** | Web (barra de comando) | Roda o pipeline inline; vê-se a tool call na hora, sem a plumbing assíncrona do Telegram. |
 | **Primeiro comando** | Agenda `create_reminder` | Menor superfície de argumentos (título + timestamp); prova o loop end-to-end rápido. |
 | **Fora do escopo agora** | OpenAI, A6 (Notes/Finances/proativo) | OpenAI é "mais um descritor de provider" quando fizer sentido; A6 é descritor+handler por comando. |
@@ -162,10 +162,13 @@ O coração do módulo. Frase em português → tool call validada → comando e
 - Comportamento em falha conforme §5 do product-plan (nenhuma tool casou / argumento faltando /
   validação rejeitou / provedor inacessível / JSON malformado). `AiException.IsPermanent` decide se
   vale retry. **Nunca alegar sucesso que não houve** — status vem do resultado do comando.
+- **Single-turn aqui, por design.** `messages` é só `[system, user]`; o pipeline persiste a conversa e
+  suas mensagens (`ast002`/`ast003`), mas ainda não realimenta o histórico no prompt. Reenviar as
+  mensagens recentes — agnóstico de canal, limitado por tempo — é a [A3](#etapa-a3--entrada-telegram-texto-esboço).
 
 ### A2.6 — Confirmação
 - `ConfirmationPolicy` do descritor, ajustada pelo `confirmation_level` do perfil. `create_reminder`
-  é `WhenAmbiguous`: executa se inequívoco; senão grava `ast004` em `pending_confirmation` (expira em
+  é `WhenAmbiguous`: executa se inequívoco; senão grava `ast004` em `pending-confirmation` (expira em
   10 min) e ecoa a intenção.
 - `POST /assistant/invocations/{id}/confirm` e `/cancel`.
 
@@ -192,7 +195,18 @@ não uma mensagem perdida.
 - Resposta via `NotifyUserRequested`; botões de confirmação com `owner_module: "assistant"`, voltando
   por `inbound.interaction.assistant.#`.
 
-**Pronto quando:** a mesma frase digitada no Telegram cria o mesmo lembrete, e *Confirmar* funciona.
+**Contexto multi-turno (decidido na A2, entregue aqui).** A A2 monta o prompt como `[system, user]` —
+sem histórico. A partir da A3 o pipeline passa a realimentar as **últimas mensagens da conversa** antes
+da frase atual (`[system, …histórico…, user]`), para que um follow-up ("na verdade, muda pra 11h",
+"sim", "e amanhã também") seja entendido. Isso é **agnóstico de canal**: a mesma conversa (`ast002` +
+`ast003`, já construídas na A2) serve tanto a barra web quanto o Telegram. A janela de contexto é
+**limitada por tempo** — só mensagens dentro do `Conversation.IdleTimeout` (hoje 30 min de silêncio, o
+mesmo que faz uma conversa lapsar); passado isso, começa um fio novo e nada do anterior é reenviado.
+Isso mantém sob controle o custo de tokens e o quanto de texto sai para o Google (a questão de
+privacidade). Um teto de N mensagens (além do teto de tempo) entra junto.
+
+**Pronto quando:** a mesma frase digitada no Telegram cria o mesmo lembrete, *Confirmar* funciona, e um
+follow-up dentro da janela (web **ou** Telegram) é interpretado usando o contexto das mensagens anteriores.
 
 ---
 

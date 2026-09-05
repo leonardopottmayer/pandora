@@ -12,7 +12,7 @@ public sealed class AuthKind : IDomainValue<AuthKind>
     public static readonly AuthKind OAuth = new("oauth");
 
     /// <summary>A user-supplied API key. No expiry, no refresh, no authorization flow (OpenAI, Gemini).</summary>
-    public static readonly AuthKind ApiKey = new("api_key");
+    public static readonly AuthKind ApiKey = new("api-key");
 
     public string Value { get; }
 
@@ -21,7 +21,7 @@ public sealed class AuthKind : IDomainValue<AuthKind>
     public static AuthKind FromValue(string value) => value switch
     {
         "oauth" => OAuth,
-        "api_key" => ApiKey,
+        "api-key" => ApiKey,
         _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown auth kind.")
     };
 

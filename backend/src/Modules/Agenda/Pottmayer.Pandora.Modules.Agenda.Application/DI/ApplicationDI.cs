@@ -1,4 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
+using Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
+using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.DI;
 using Pottmayer.Tars.Messaging.DI;
 
@@ -13,6 +15,9 @@ public static class ApplicationDI
 
         // Integration-event subscribers (dispatched by the in-process IIntegrationEventBus).
         services.AddIntegrationEventHandlersFromAssembly(typeof(ApplicationDI).Assembly);
+
+        // The Agenda's contribution to the assistant tool catalog.
+        services.AddScoped<IAssistantTool, CreateReminderTool>();
 
         return services;
     }

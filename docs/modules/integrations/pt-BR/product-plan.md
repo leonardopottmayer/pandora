@@ -32,7 +32,7 @@ As duas metades entregues. Ver [implementation-status.md](implementation-status.
 
 ## Fase I3 — Chaves de API *(pré-requisito para a fase A5 do [Assistant](../../assistant/pt-BR/product-plan.md))*
 
-- Endpoints de registrar / rotacionar / remover para contas `auth_kind = api_key` (o caminho de
+- Endpoints de registrar / rotacionar / remover para contas `auth_kind = api-key` (o caminho de
   leitura, `GetApiKeyAsync`, já existe).
 - `openai` e `gemini` no catálogo de provedores, com **nenhum fluxo de autorização** — só um formulário
   com a chave e um teste de alcance.

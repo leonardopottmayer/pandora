@@ -28,9 +28,9 @@ export interface NotificationPreference {
 }
 
 /** What happens to a notification that lands inside the quiet-hours window. */
-export type QuietHoursBehaviour = 'suppress' | 'deliver_anyway'
+export type QuietHoursBehaviour = 'suppress' | 'deliver-anyway'
 
-export const QUIET_HOURS_BEHAVIOURS: QuietHoursBehaviour[] = ['suppress', 'deliver_anyway']
+export const QUIET_HOURS_BEHAVIOURS: QuietHoursBehaviour[] = ['suppress', 'deliver-anyway']
 
 /**
  * Cross-category delivery settings. When quiet hours are off, the time/behaviour fields are null.

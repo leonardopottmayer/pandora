@@ -24,7 +24,7 @@ the files linked above and are **built**. Phase C5 is now complete too.
 ## Phase C5 — Operations *(done)*
 
 - **Quiet hours — built.** A global daily "do not disturb" window (`chn007_user_notification_setting`),
-  `suppress | deliver_anyway` (`defer_to_end` dropped — holding until morning is scheduling, which does
+  `suppress | deliver-anyway` (`defer_to_end` dropped — holding until morning is scheduling, which does
   not live here, C1). Evaluated in the user's own IANA zone (resolved from Identity preferences at
   delivery time) and applied in `NotifyUserRequestedHandler` before fan-out. It landed as a **global
   per-user** setting rather than columns on `chn005`, because a single "do not disturb" on a

@@ -11,7 +11,7 @@ using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 namespace Pottmayer.Pandora.Modules.Integrations.Application.Queries.GetProviders;
 
 /// <summary>
-/// The provider catalog for settings: every provider the server can talk to — OAuth and api_key alike —
+/// The provider catalog for settings: every provider the server can talk to — OAuth and api-key alike —
 /// and whether the user has connected it. Cross-references the registered providers with the user's
 /// accounts.
 /// </summary>

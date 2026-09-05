@@ -27,7 +27,7 @@ adiante fica em [product-plan.md](product-plan.md).
 | **C5 — purga do bruto** | `InboundUpdateRetentionBackgroundService`; `Channels:RawRetention:{Enabled,RetentionDays}` (padrão ligado / 7 dias). |
 | **C5 — histórico de entrega** | `GET /channels/notifications` (filtro + paginação); `chn006.user_id`/`category` gravados no enfileiramento; tabela de histórico em configurações. |
 | **C5 — envio de teste** | `POST /channels/{channel}/test` (entregue na C2). |
-| **C5 — quiet hours** | `chn007_user_notification_setting`; uma janela diária global de "não perturbe" no fuso IANA do próprio usuário (resolvido do Identity via `IUserPreferencesReader`); `suppress`/`deliver_anyway`; aplicado no `NotifyUserRequestedHandler` antes do fan-out; `GET`/`PUT /channels/notification-settings`; UI de configurações. Notificações de segurança nunca passam por esse caminho. |
+| **C5 — quiet hours** | `chn007_user_notification_setting`; uma janela diária global de "não perturbe" no fuso IANA do próprio usuário (resolvido do Identity via `IUserPreferencesReader`); `suppress`/`deliver-anyway`; aplicado no `NotifyUserRequestedHandler` antes do fan-out; `GET`/`PUT /channels/notification-settings`; UI de configurações. Notificações de segurança nunca passam por esse caminho. |
 | **C5 — métricas** | Meter `ChannelsMetrics` (`Pottmayer.Pandora.Modules.Channels`): `dispatched{channel,outcome}`, `dispatch.duration{channel}`, gauge `queue.depth`, `inbound.updates.discarded`. Assinado por um wildcard `AddMeter` `Pottmayer.Pandora.*` na fiação de observabilidade compartilhada, exportado via OTLP. |
 | **Frontend** | Seção de configurações de Notificações (canais, teste, preferências, **quiet hours**, histórico) em `client-web/src/modules/channels`. |
 

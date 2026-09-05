@@ -16,12 +16,12 @@ forward roadmap lives in [product-plan.md](product-plan.md).
 | **OAuth (Google)** | `GoogleOAuthProvider` (`BuildAuthorizationUrl`, `ExchangeCodeAsync`, `RefreshAsync`, `RevokeAsync`), resolved through `OAuthProviderRegistry`. |
 | **Authorization flow** | `StartConnection` → consent URL with PKCE; `HandleCallback` consumes single-use `state`, exchanges the code, upserts the encrypted account. |
 | **Transparent refresh** | `ExternalCredentialProvider.GetAccessTokenAsync` refreshes near expiry, serialized per account by an **in-process gate**; `MarkRevoked` + `ExternalAccountRevoked` on `invalid_grant`. |
-| **API-key read path** | `GetApiKeyAsync` decrypts and returns a stored `api_key` account's key. |
+| **API-key read path** | `GetApiKeyAsync` decrypts and returns a stored `api-key` account's key. |
 | **Disconnect** | `DisconnectAccount` revokes at the provider, deletes locally, publishes `ExternalAccountDisconnected`. |
 | **Ports** | `IExternalCredentialProvider`, `IExternalAccountReader`, `ExternalAccessToken`, `ExternalAccountSummary` in `Abstractions`. |
 | **Contracts** | `ExternalAccountRevoked`, `ExternalAccountDisconnected` published. |
 | **Encryption** | Every credential column via Tars `ISecretProtector` (AES-GCM, key outside the DB). |
-| **Event log (I2)** | `int003_integration_event_log` — append-only `connected`/`reconnected`/`refresh_failed`/`expired`/`revoked`/`disconnected`, each written in the same transaction as the state change it records. `IIntegrationEventLogRepository`. |
+| **Event log (I2)** | `int003_integration_event_log` — append-only `connected`/`reconnected`/`refresh-failed`/`expired`/`revoked`/`disconnected`, each written in the same transaction as the state change it records. `IIntegrationEventLogRepository`. |
 | **API** | `GET /providers`, `GET /accounts`, `GET /events`, `POST /{provider}/connect`, `GET /{provider}/callback`, `DELETE /accounts/{id}`. |
 | **Frontend** | Connected-accounts settings section + **Recent activity** timeline in `client-web/src/modules/integrations`. |
 
@@ -44,7 +44,7 @@ With both halves of **I2 done** (revocation notice + event log), the remaining w
 
 | Area | Status | Phase |
 |---|---|---|
-| **API-key management endpoints** | `GetApiKeyAsync` exists, but there is no endpoint to register/rotate/remove an API key, so no `api_key` account can be created yet. | I3 |
+| **API-key management endpoints** | `GetApiKeyAsync` exists, but there is no endpoint to register/rotate/remove an API key, so no `api-key` account can be created yet. | I3 |
 | **`openai` / `gemini` providers** | Not in the catalog; no key form or reachability test. | I3 |
 | **More providers** (Microsoft, CalDAV) | Future, demand-driven. | I4 |
 

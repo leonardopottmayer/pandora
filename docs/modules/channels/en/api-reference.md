@@ -76,7 +76,7 @@ Returns the user's `chn007` settings. When quiet hours are off the time/behaviou
 
 Sets the global quiet-hours window. Times are `HH:mm` wall-clock **in the user's own time zone**; the
 end may be earlier than the start (the window wraps past midnight). `quietHoursBehaviour` is
-`suppress` (drop the delivery) or `deliver_anyway` (keep the window on record but still send). With
+`suppress` (drop the delivery) or `deliver-anyway` (keep the window on record but still send). With
 `quietHoursEnabled: false` the window is cleared and the other fields are ignored. Equal start and end
 is rejected. Quiet hours never apply to `identity.*` (security) notifications.
 

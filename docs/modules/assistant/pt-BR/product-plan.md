@@ -152,7 +152,7 @@ Depois: `create_note` e `search_notes` (Notes), `record_transaction` e `balance_
 | `user_id` | Único. |
 | `chat_provider`, `chat_model` | ex.: `gemini` + um modelo Gemini rápido. |
 | `transcription_provider`, `transcription_model` | Reservado (A4). Pode diferir do chat. |
-| `credential_ref` | Aponta para a linha `int001_external_account` (`auth_kind = api_key`) com a chave. Obrigatório para provedor hospedado. |
+| `credential_ref` | Aponta para a linha `int001_external_account` (`auth_kind = api-key`) com a chave. Obrigatório para provedor hospedado. |
 | `endpoint` | Base URL para provedores self-hosted. Reservado/nulo enquanto só há Gemini. |
 | `is_enabled`, `locale_override` | |
 | `confirmation_level` | `strict` \| `balanced` \| `trusting` — desloca a política de todo comando um degrau. |
@@ -169,7 +169,7 @@ Depois: `create_note` e `search_notes` (Notes), `record_transaction` e `balance_
 |---|---|
 | `conversation_id`, `message_id` | |
 | `command_name`, `arguments` (jsonb) | Exatamente o que o modelo pediu. |
-| `status` | `pending_confirmation` \| `executed` \| `rejected` \| `failed` \| `expired` |
+| `status` | `pending-confirmation` \| `executed` \| `rejected` \| `failed` \| `expired` |
 | `result` (jsonb), `error` | |
 | `provider`, `model`, `latency_ms`, `tokens_in`, `tokens_out` | Acompanhamento de custo e qualidade. |
 
@@ -183,7 +183,7 @@ Depois: `create_note` e `search_notes` (Notes), `record_transaction` e `balance_
 | `WhenAmbiguous` | Executa a menos que a confiança do modelo seja baixa ou um argumento obrigatório tenha sido inferido em vez de dito. Senão, ecoa a intenção interpretada com botões **Confirmar / Cancelar**. |
 | `Always` | Nunca executa sem um toque de botão. Exclusões, operações em lote, qualquer coisa financeira. |
 
-Uma confirmação pendente é uma linha `ast004` em `pending_confirmation`, expirando em 10 minutos. Os
+Uma confirmação pendente é uma linha `ast004` em `pending-confirmation`, expirando em 10 minutos. Os
 botões são declarados no `NotifyUserRequested` com `owner_module: "assistant"`, então o clique volta
 pela chave `inbound.interaction.assistant.confirm` (ou `.cancel`) direto para o subscriber deste módulo —
 o mesmo mecanismo que a Agenda usa, sem nenhum código compartilhado entre os dois.
@@ -328,7 +328,7 @@ Notes para responder perguntas.
 ## 9. Questões em aberto
 
 1. ~~**Onde ficam as chaves de API hospedadas.**~~ **Decidido:** no Integrations, em
-   `int001_external_account` com `auth_kind = api_key`. Um cofre cifrado só. O `credential_ref` da
+   `int001_external_account` com `auth_kind = api-key`. Um cofre cifrado só. O `credential_ref` da
    `ast001` aponta para lá, e a chave é obtida por `IExternalCredentialProvider` — a mesma porta
    síncrona que a Agenda usa para o token do Google. Ver
    [Integrations — OAuth e Credenciais](../../integrations/pt-BR/oauth-and-credentials.md).

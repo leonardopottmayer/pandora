@@ -25,7 +25,7 @@ completa agora.
 ## Fase C5 — Operações *(feito)*
 
 - **Quiet hours — construído.** Uma janela diária global de "não perturbe"
-  (`chn007_user_notification_setting`), `suppress | deliver_anyway` (`defer_to_end` descartado —
+  (`chn007_user_notification_setting`), `suppress | deliver-anyway` (`defer_to_end` descartado —
   segurar até de manhã é agendamento, que não vive aqui, C1). Avaliada no fuso IANA do próprio usuário
   (resolvido das preferências do Identity no momento da entrega) e aplicada no
   `NotifyUserRequestedHandler` antes do fan-out. Chegou como ajuste **global por usuário** em vez de

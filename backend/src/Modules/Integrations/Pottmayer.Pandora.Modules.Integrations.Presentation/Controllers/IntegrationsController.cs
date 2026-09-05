@@ -92,7 +92,7 @@ public sealed class IntegrationsController(
     }
 
     /// <summary>
-    /// Stores (or replaces) the user's API key for an <c>api_key</c> provider such as Gemini. The key is
+    /// Stores (or replaces) the user's API key for an <c>api-key</c> provider such as Gemini. The key is
     /// protected before it is persisted; the response never echoes it back.
     /// </summary>
     [Authorize]

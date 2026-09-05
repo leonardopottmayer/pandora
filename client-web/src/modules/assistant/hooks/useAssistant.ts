@@ -33,3 +33,41 @@ export function useTestProvider() {
       assistantService.testProvider(provider, model),
   })
 }
+
+export function useInvocations(limit = 50) {
+  return useQuery({
+    queryKey: assistantKeys.invocations(),
+    queryFn: () => assistantService.listInvocations(limit),
+  })
+}
+
+export function useInterpret() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ text, conversationId }: { text: string; conversationId?: string }) =>
+      assistantService.interpret(text, conversationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: assistantKeys.invocations() })
+    },
+  })
+}
+
+export function useConfirmInvocation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => assistantService.confirmInvocation(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: assistantKeys.invocations() })
+    },
+  })
+}
+
+export function useCancelInvocation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => assistantService.cancelInvocation(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: assistantKeys.invocations() })
+    },
+  })
+}

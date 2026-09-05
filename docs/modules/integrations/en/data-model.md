@@ -29,21 +29,21 @@ encrypted at rest with a key that lives outside the database.
 | `id` | uuid PK | |
 | `user_id` | uuid NOT NULL | owner |
 | `provider` | varchar(40) NOT NULL | `google` today; `microsoft`, `openai`, `gemini`, … later |
-| `auth_kind` | varchar(20) NOT NULL | `oauth \| api_key` |
-| `provider_account_id` | varchar(255) NOT NULL | provider's stable subject id; for `api_key`, a user-chosen label |
+| `auth_kind` | varchar(20) NOT NULL | `oauth \| api-key` |
+| `provider_account_id` | varchar(255) NOT NULL | provider's stable subject id; for `api-key`, a user-chosen label |
 | `display_name` | varchar(255) NULL | the account's email/handle, shown in settings |
 | `scopes` | text NOT NULL DEFAULT '' | granted scopes as stored; used to detect a needed re-consent |
-| `access_token_enc` | text NULL | encrypted; short-lived (also holds the API key for `api_key`) |
+| `access_token_enc` | text NULL | encrypted; short-lived (also holds the API key for `api-key`) |
 | `access_token_expires_at` | timestamptz NULL | |
 | `refresh_token_enc` | text NULL | encrypted; null when the provider issues none |
-| `status` | varchar(20) NOT NULL | `connected \| expired \| revoked \| needs_consent` |
+| `status` | varchar(20) NOT NULL | `connected \| expired \| revoked \| needs-consent` |
 | `connected_at` | timestamptz NOT NULL | |
 | `last_refreshed_at` | timestamptz NULL | |
 | `last_error` | text NULL | last refresh/revocation error, surfaced in settings |
 | `created_by/created_at/updated_by/updated_at` | | audit columns |
 
-Constraints: `pk_int001`, `chk_int001_auth_kind (oauth|api_key)`,
-`chk_int001_status (connected|expired|revoked|needs_consent)`,
+Constraints: `pk_int001`, `chk_int001_auth_kind (oauth|api-key)`,
+`chk_int001_status (connected|expired|revoked|needs-consent)`,
 `uq_int001_user_provider_account (user_id, provider, provider_account_id)` — one account per
 (user, provider, account), so two Google accounts are already modelled by the discriminating
 `provider_account_id`.
@@ -78,7 +78,7 @@ mutated.
 | `user_id` | uuid NOT NULL | scopes the read; kept even after the account is deleted |
 | `external_account_id` | uuid NULL | the `int001` row this concerns — **no FK**, so the log survives a disconnect that deletes the account |
 | `provider` | varchar(40) NOT NULL | |
-| `event_type` | varchar(30) NOT NULL | `connected \| reconnected \| refresh_failed \| expired \| revoked \| disconnected` |
+| `event_type` | varchar(30) NOT NULL | `connected \| reconnected \| refresh-failed \| expired \| revoked \| disconnected` |
 | `detail` | text NULL | the failure reason on a failure kind, else null |
 | `occurred_at` | timestamptz NOT NULL | |
 

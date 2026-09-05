@@ -1,8 +1,12 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Pottmayer.Pandora.Modules.Assistant.Application.Commands.CancelInvocation;
+using Pottmayer.Pandora.Modules.Assistant.Application.Commands.ConfirmInvocation;
+using Pottmayer.Pandora.Modules.Assistant.Application.Commands.Interpret;
 using Pottmayer.Pandora.Modules.Assistant.Application.Commands.SaveProfile;
 using Pottmayer.Pandora.Modules.Assistant.Application.Commands.TestProvider;
+using Pottmayer.Pandora.Modules.Assistant.Application.Queries.GetInvocations;
 using Pottmayer.Pandora.Modules.Assistant.Application.Queries.GetProfile;
 using Pottmayer.Pandora.Modules.Assistant.Application.Queries.GetProviders;
 using Pottmayer.Pandora.Shared.Domain;
@@ -64,7 +68,51 @@ public sealed class AssistantController(
         return result.ToActionResult(errorMapper);
     }
 
+    /// <summary>
+    /// Interprets one sentence and, when it maps cleanly to a command, executes it inline. Returns the
+    /// interpreted intent (the exact tool call) and the outcome. Makes a real, billed provider call.
+    /// </summary>
+    [Authorize]
+    [HttpPost("interpret")]
+    public async Task<IActionResult> InterpretAsync([FromBody] InterpretRequest body, CancellationToken ct)
+    {
+        var result = await sender.Send(
+            new InterpretCommand(new InterpretInput(UserId, body.Text, body.ConversationId)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>Runs a tool call that was held for confirmation.</summary>
+    [Authorize]
+    [HttpPost("invocations/{id:guid}/confirm")]
+    public async Task<IActionResult> ConfirmInvocationAsync(Guid id, CancellationToken ct)
+    {
+        var result = await sender.Send(new ConfirmInvocationCommand(new ConfirmInvocationInput(UserId, id)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>Declines a tool call that was held for confirmation.</summary>
+    [Authorize]
+    [HttpPost("invocations/{id:guid}/cancel")]
+    public async Task<IActionResult> CancelInvocationAsync(Guid id, CancellationToken ct)
+    {
+        var result = await sender.Send(new CancelInvocationCommand(new CancelInvocationInput(UserId, id)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>The user's recent interpretations — the audit trail, showing the exact tool call produced.</summary>
+    [Authorize]
+    [HttpGet("invocations")]
+    public async Task<IActionResult> GetInvocationsAsync([FromQuery] int limit, CancellationToken ct)
+    {
+        var result = await sender.Send(
+            new GetInvocationsQuery(new GetInvocationsInput(UserId, limit <= 0 ? 50 : limit)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
     private Guid UserId => userContextAccessor.Context.User!.Id;
+
+    /// <summary>Body for the interpret endpoint.</summary>
+    public sealed record InterpretRequest(string Text, Guid? ConversationId);
 
     /// <summary>Body for saving the assistant profile.</summary>
     public sealed record SaveProfileRequest(

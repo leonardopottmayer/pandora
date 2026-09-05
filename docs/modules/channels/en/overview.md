@@ -77,7 +77,7 @@ namespaces (`Delivery` / `Ingress` / `Addressing`), not in separate `.csproj` fi
 The `channels` schema (`chn001`–`chn007`); email + Telegram transports; per-channel file templates
 with startup validation; the durable queue with fan-out, dedup by `(correlation_id, channel)`, retry
 and dead-lettering; per-user/per-category preferences; global quiet hours (`chn007`, in the user's
-zone, `suppress`/`deliver_anyway`); the Telegram linking handshake; long-polling inbound with triage;
+zone, `suppress`/`deliver-anyway`); the Telegram linking handshake; long-polling inbound with triage;
 interaction buttons routed to owners; inbound media reading; delivery history; the daily raw-payload
 retention purge; and OpenTelemetry metrics (queue depth, dispatch latency, per-channel outcomes,
 discarded updates).

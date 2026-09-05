@@ -44,7 +44,7 @@ public sealed class QuietHoursSettingsTests : IAsyncLifetime
         var userId = Guid.NewGuid();
 
         await SendAsync(new SetNotificationSettingsCommand(new SetNotificationSettingsInput(
-            userId, QuietHoursEnabled: true, "22:00", "07:00", "deliver_anyway")));
+            userId, QuietHoursEnabled: true, "22:00", "07:00", "deliver-anyway")));
         await SendAsync(new SetNotificationSettingsCommand(new SetNotificationSettingsInput(
             userId, QuietHoursEnabled: false, null, null, null)));
 
