@@ -37,7 +37,7 @@ services:
       Pandora__Channels__PasswordResetUrlTemplate: "${APP_BASE_URL:-http://localhost:${HTTP_PORT:-80}}/reset-password?token={token}"
       # Telegram bot token (from BotFather). Secret. BotUsername and LongPolling
       # are non-secret and live in appsettings.json.
-      Tars__Communication__Telegram__BotToken: ${TELEGRAM_BOT_TOKEN:-}
+      Tars__Communication__Telegram__Bots__notifications__BotToken: ${TELEGRAM_BOT_TOKEN:-}
 
   frontend:
     image: ${FRONTEND_IMAGE:-ghcr.io/leonardopottmayer/pandora-frontend:latest}

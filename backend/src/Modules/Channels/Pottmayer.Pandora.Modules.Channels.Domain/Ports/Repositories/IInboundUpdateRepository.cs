@@ -6,13 +6,13 @@ namespace Pottmayer.Pandora.Modules.Channels.Domain.Ports.Repositories;
 public interface IInboundUpdateRepository : IStandardRepository<InboundUpdate, Guid>
 {
     /// <summary>Whether this update was already recorded. The idempotency guard for a replayed poll.</summary>
-    Task<bool> ExistsAsync(string provider, long providerUpdateId, CancellationToken ct = default);
+    Task<bool> ExistsAsync(string provider, string bot, long providerUpdateId, CancellationToken ct = default);
 
     /// <summary>
-    /// The highest update id seen for a provider, or null when none. Restores the long-polling offset
-    /// after a restart, so a queued backlog is not re-delivered from the start.
+    /// The highest update id seen for a provider's bot, or null when none. Restores that bot's
+    /// long-polling offset after a restart, so a queued backlog is not re-delivered from the start.
     /// </summary>
-    Task<long?> GetLastUpdateIdAsync(string provider, CancellationToken ct = default);
+    Task<long?> GetLastUpdateIdAsync(string provider, string bot, CancellationToken ct = default);
 
     /// <summary>
     /// Clears the raw payload (to null) of updates received before <paramref name="receivedBefore"/>

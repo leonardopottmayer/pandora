@@ -11,6 +11,14 @@ namespace Pottmayer.Pandora.Modules.Channels.Domain.Aggregates;
 public sealed class InboundUpdate : AggregateRoot<Guid>
 {
     public string Provider { get; private set; } = null!;
+
+    /// <summary>
+    /// The specific inbound endpoint within the provider — for Telegram, the bot name. The provider's
+    /// update id is unique per bot, not per provider, so the idempotency guard and the long-polling
+    /// offset are keyed by (provider, bot).
+    /// </summary>
+    public string Bot { get; private set; } = null!;
+
     public long ProviderUpdateId { get; private set; }
 
     /// <summary>
@@ -28,6 +36,7 @@ public sealed class InboundUpdate : AggregateRoot<Guid>
 
     public static InboundUpdate Record(
         string provider,
+        string bot,
         long providerUpdateId,
         string raw,
         Guid? userId,
@@ -37,6 +46,7 @@ public sealed class InboundUpdate : AggregateRoot<Guid>
         {
             Id = Guid.CreateVersion7(),
             Provider = provider,
+            Bot = bot,
             ProviderUpdateId = providerUpdateId,
             Raw = raw,
             UserId = userId,

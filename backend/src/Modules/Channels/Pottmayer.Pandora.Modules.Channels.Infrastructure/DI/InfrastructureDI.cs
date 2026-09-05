@@ -47,21 +47,29 @@ public static class InfrastructureDI
         // here and nothing else.
         builder.Services.AddScoped<IChannelTransport, EmailChannelTransport>();
 
-        // Telegram transport (Tars.Communication.Telegram): registered only when a bot token is
-        // present. Without it the channel stays dark instead of half-configured — a telegram send
-        // would then find no transport and dead-letter, which is the honest outcome.
-        if (!string.IsNullOrWhiteSpace(builder.Configuration[$"{TelegramOptions.SectionName}:BotToken"]))
+        // Telegram client stack (Tars.Communication.Telegram): always registered. The factory and its
+        // sender are inert until a bot is actually resolved by name, so they cost nothing when Telegram is
+        // unconfigured — and they keep the always-scanned assistant-reply subscriber constructible.
+        builder.AddTarsTelegramOptions();
+        builder.Services.AddTarsTelegramHttpClient();
+        builder.Services.AddTarsTelegramClientFactory();
+
+        // Direct sender (plain message via a named bot) — backs the assistant reply path.
+        builder.Services.AddScoped<ITelegramSender, TelegramSender>();
+
+        // The active machinery — outbound transport and inbound ingress — is registered only when the
+        // notifications bot's token is present. Without it the channel stays dark instead of half-configured:
+        // a telegram send finds no transport and dead-letters, which is the honest outcome.
+        if (!string.IsNullOrWhiteSpace(
+                builder.Configuration[$"{TelegramOptions.SectionName}:Bots:{TelegramBots.Notifications}:BotToken"]))
         {
-            builder.AddTarsTelegramOptions();
-            builder.Services.AddTarsTelegramClient();
             builder.Services.AddScoped<IChannelTransport, TelegramChannelTransport>();
 
             // Inbound Telegram: the media reader and the triage the long-polling driver feeds.
             builder.Services.AddScoped<IInboundMediaReader, TelegramInboundMediaReader>();
             builder.Services.AddScoped<TelegramInboundTriage>();
 
-            // The long-poll driver only actually pulls when LongPolling is on (checked inside), but it
-            // needs a client to exist, which is why it lives under the bot-token guard.
+            // The long-poll driver only actually pulls the bots in InboundBots (checked inside).
             builder.Services.AddHostedService<TelegramLongPollingService>();
         }
 

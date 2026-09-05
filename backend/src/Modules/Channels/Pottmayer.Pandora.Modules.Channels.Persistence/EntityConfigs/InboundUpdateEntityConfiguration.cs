@@ -23,6 +23,11 @@ internal sealed class InboundUpdateEntityConfiguration : IEntityTypeConfiguratio
                .HasMaxLength(20)
                .IsRequired();
 
+        builder.Property(u => u.Bot)
+               .HasColumnName("bot")
+               .HasMaxLength(50)
+               .IsRequired();
+
         builder.Property(u => u.ProviderUpdateId)
                .HasColumnName("provider_update_id")
                .IsRequired();
@@ -48,8 +53,8 @@ internal sealed class InboundUpdateEntityConfiguration : IEntityTypeConfiguratio
         builder.Property(u => u.ProcessedAt)
                .HasColumnName("processed_at");
 
-        builder.HasIndex(u => new { u.Provider, u.ProviderUpdateId })
-               .HasDatabaseName("uq_chn004_provider_update")
+        builder.HasIndex(u => new { u.Provider, u.Bot, u.ProviderUpdateId })
+               .HasDatabaseName("uq_chn004_provider_bot_update")
                .IsUnique();
     }
 }

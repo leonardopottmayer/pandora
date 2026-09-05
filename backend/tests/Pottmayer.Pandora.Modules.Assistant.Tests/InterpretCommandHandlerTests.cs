@@ -1,3 +1,4 @@
+using Pottmayer.Pandora.Modules.Assistant.Abstractions;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Pandora.Modules.Assistant.Application.Commands.Interpret;
 using Pottmayer.Pandora.Modules.Assistant.Domain.Aggregates;
@@ -5,6 +6,7 @@ using Pottmayer.Pandora.Modules.Assistant.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Assistant.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Assistant.Tests.Fakes;
 using Pottmayer.Tars.Ai.Abstractions;
+using Pottmayer.Tars.Ai.Chat.Abstractions.Models;
 using Xunit;
 
 namespace Pottmayer.Pandora.Modules.Assistant.Tests;
@@ -22,14 +24,23 @@ public sealed class InterpretCommandHandlerTests
         FakeExternalCredentialProvider credentials,
         AssistantProfile profile,
         params IAssistantTool[] tools)
+        => Build(client, credentials, profile, new FakeConversationRepository(), new FakeMessageRepository(), tools);
+
+    private static (InterpretCommandHandler Handler, FakeCommandInvocationRepository Invocations) Build(
+        FakeAiChatCompletionClient client,
+        FakeExternalCredentialProvider credentials,
+        AssistantProfile profile,
+        FakeConversationRepository conversations,
+        FakeMessageRepository messages,
+        IAssistantTool[] tools)
     {
         var invocations = new FakeCommandInvocationRepository();
         var context = new FakeDataContext();
         context.Register<IAssistantProfileRepository>(profile is not null
             ? new FakeAssistantProfileRepository(profile)
             : new FakeAssistantProfileRepository());
-        context.Register<IConversationRepository>(new FakeConversationRepository());
-        context.Register<IMessageRepository>(new FakeMessageRepository());
+        context.Register<IConversationRepository>(conversations);
+        context.Register<IMessageRepository>(messages);
         context.Register<ICommandInvocationRepository>(invocations);
 
         var handler = new InterpretCommandHandler(
@@ -38,6 +49,7 @@ public sealed class InterpretCommandHandlerTests
             new FakeAiChatCompletionClientFactory(client),
             FakeUserPreferencesReader.With("America/Sao_Paulo"),
             tools,
+            Microsoft.Extensions.Options.Options.Create(new AssistantOptions()),
             TimeProvider.System);
 
         return (handler, invocations);
@@ -45,6 +57,47 @@ public sealed class InterpretCommandHandlerTests
 
     private static InterpretCommand Sentence(string text = "me lembra de pagar o aluguel amanhã às 10")
         => new(new InterpretInput(User, text));
+
+    [Fact]
+    public async Task Resends_recent_conversation_history_as_context_for_a_follow_up()
+    {
+        var conversation = Conversation.Start(User, TimeProvider.System);
+        var messages = new FakeMessageRepository(
+            Message.Create(conversation.Id, MessageAuthor.User, "me lembra de pagar a conta", TimeProvider.System),
+            Message.Create(conversation.Id, MessageAuthor.Assistant, "Quando?", TimeProvider.System));
+        var client = FakeAiChatCompletionClient.Replies("ok");
+
+        var (handler, _) = Build(
+            client, FakeExternalCredentialProvider.WithKey("k"), EnabledProfile(),
+            new FakeConversationRepository(conversation), messages, []);
+
+        await handler.Handle(Sentence("amanhã às 10"), CancellationToken.None);
+
+        // [system, prior user, prior assistant, current user] — the follow-up carries its context.
+        var sent = client.LastRequest!.Messages;
+        Assert.Equal(4, sent.Count);
+        Assert.Equal(ChatRole.System, sent[0].Role);
+        Assert.Equal(ChatRole.User, sent[1].Role);
+        Assert.Equal("me lembra de pagar a conta", sent[1].Content);
+        Assert.Equal(ChatRole.Assistant, sent[2].Role);
+        Assert.Equal("Quando?", sent[2].Content);
+        Assert.Equal(ChatRole.User, sent[3].Role);
+        Assert.Equal("amanhã às 10", sent[3].Content);
+    }
+
+    [Fact]
+    public async Task A_new_conversation_sends_no_history()
+    {
+        var client = FakeAiChatCompletionClient.Replies("ok");
+        var (handler, _) = Build(client, FakeExternalCredentialProvider.WithKey("k"), EnabledProfile());
+
+        await handler.Handle(Sentence("primeira mensagem"), CancellationToken.None);
+
+        // Just [system, user] — nothing to recall on a fresh thread.
+        Assert.Equal(2, client.LastRequest!.Messages.Count);
+        Assert.Equal(ChatRole.System, client.LastRequest.Messages[0].Role);
+        Assert.Equal(ChatRole.User, client.LastRequest.Messages[1].Role);
+    }
 
     [Fact]
     public async Task Fails_when_the_assistant_is_not_enabled()

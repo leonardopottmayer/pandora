@@ -1,4 +1,5 @@
 using Pottmayer.Pandora.Modules.Agenda.Abstractions;
+using Pottmayer.Pandora.Modules.Assistant.Abstractions;
 using Pottmayer.Pandora.Modules.Channels.Abstractions;
 using Pottmayer.Pandora.Modules.Channels.Contracts;
 using Pottmayer.Pandora.Modules.Identity.Abstractions;
@@ -49,6 +50,7 @@ internal static class OutboxRegistration
         services.AddTarsOutboxRelay(ChannelsModule.DatabaseKey);
         services.AddTarsOutboxRelay(AgendaModule.DatabaseKey);
         services.AddTarsOutboxRelay(IntegrationsModule.DatabaseKey);
+        services.AddTarsOutboxRelay(AssistantModule.DatabaseKey);
 
         return builder;
     }

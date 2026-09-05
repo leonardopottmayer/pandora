@@ -9,12 +9,27 @@ namespace Pottmayer.Pandora.Modules.Assistant.Tests.Fakes;
 /// <summary>In-memory <see cref="IMessageRepository"/>. Only AddAsync is exercised.</summary>
 internal sealed class FakeMessageRepository : IMessageRepository
 {
+    private readonly List<Message> _items;
+
+    public FakeMessageRepository(params Message[] seed) => _items = [.. seed];
+
     public List<Message> Added { get; } = [];
 
     public Task<Message> AddAsync(Message entity, CancellationToken ct = default)
     {
+        _items.Add(entity);
         Added.Add(entity);
         return Task.FromResult(entity);
+    }
+
+    public Task<IReadOnlyList<Message>> GetRecentByConversationAsync(Guid conversationId, int limit, CancellationToken ct = default)
+    {
+        IReadOnlyList<Message> recent = _items
+            .Where(m => m.ConversationId == conversationId)
+            .OrderBy(m => m.CreatedAt).ThenBy(m => m.Id)
+            .TakeLast(limit)
+            .ToList();
+        return Task.FromResult(recent);
     }
 
     // --- Unused IStandardRepository surface ---

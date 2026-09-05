@@ -15,11 +15,11 @@ internal sealed class FakeInboundUpdateRepository : IInboundUpdateRepository
 
     public List<InboundUpdate> Added { get; } = [];
 
-    public Task<bool> ExistsAsync(string provider, long providerUpdateId, CancellationToken ct = default)
-        => Task.FromResult(_items.Any(u => u.Provider == provider && u.ProviderUpdateId == providerUpdateId));
+    public Task<bool> ExistsAsync(string provider, string bot, long providerUpdateId, CancellationToken ct = default)
+        => Task.FromResult(_items.Any(u => u.Provider == provider && u.Bot == bot && u.ProviderUpdateId == providerUpdateId));
 
-    public Task<long?> GetLastUpdateIdAsync(string provider, CancellationToken ct = default)
-        => Task.FromResult(_items.Where(u => u.Provider == provider)
+    public Task<long?> GetLastUpdateIdAsync(string provider, string bot, CancellationToken ct = default)
+        => Task.FromResult(_items.Where(u => u.Provider == provider && u.Bot == bot)
             .Select(u => (long?)u.ProviderUpdateId).Max());
 
     public Task<int> PurgeRawOlderThanAsync(DateTimeOffset receivedBefore, CancellationToken ct = default)

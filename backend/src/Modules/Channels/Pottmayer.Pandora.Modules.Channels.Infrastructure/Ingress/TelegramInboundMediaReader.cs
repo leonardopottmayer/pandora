@@ -8,8 +8,10 @@ namespace Pottmayer.Pandora.Modules.Channels.Infrastructure.Ingress;
 /// Opens inbound media by downloading it from Telegram. The media ref is the Bot API <c>file_id</c>.
 /// The only channel it serves is Telegram; another channel would be another implementation.
 /// </summary>
-public sealed class TelegramInboundMediaReader(ITelegramClient client) : IInboundMediaReader
+public sealed class TelegramInboundMediaReader(ITelegramClientFactory telegram) : IInboundMediaReader
 {
+    private readonly ITelegramClient client = telegram.GetClient(TelegramBots.Notifications);
+
     public async Task<Stream> OpenAsync(string channel, string mediaRef, CancellationToken ct = default)
     {
         if (!string.Equals(channel, Channel.Telegram.Value, StringComparison.OrdinalIgnoreCase))

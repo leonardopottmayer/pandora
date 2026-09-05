@@ -20,9 +20,11 @@ namespace Pottmayer.Pandora.Modules.Channels.Infrastructure.Transports;
 /// buttons) arrives with the fan-out and interaction work, once something produces
 /// <see cref="Notification.RenderedPayload"/>.
 /// </remarks>
-public sealed class TelegramChannelTransport(ITelegramClient client) : IChannelTransport
+public sealed class TelegramChannelTransport(ITelegramClientFactory telegram) : IChannelTransport
 {
     private const string ProviderName = "telegram";
+
+    private readonly ITelegramClient client = telegram.GetClient(TelegramBots.Notifications);
 
     public Channel Channel => Channel.Telegram;
 

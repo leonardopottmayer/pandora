@@ -11,6 +11,7 @@ using Pottmayer.Pandora.Modules.Integrations.Abstractions.Ports;
 using Pottmayer.Tars.Ai.Abstractions;
 using Pottmayer.Tars.Ai.Chat.Abstractions;
 using Pottmayer.Tars.Ai.Chat.Abstractions.Models;
+using Microsoft.Extensions.Options;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
@@ -30,6 +31,7 @@ public sealed class InterpretCommandHandler(
     IAiChatCompletionClientFactory clientFactory,
     IUserPreferencesReader preferences,
     IEnumerable<IAssistantTool> tools,
+    IOptions<AssistantOptions> options,
     TimeProvider timeProvider)
     : CommandHandlerBase<InterpretCommand, InterpretResultDto>
 {
@@ -74,9 +76,22 @@ public sealed class InterpretCommandHandler(
         var systemPrompt = AssistantSystemPrompt.Build(
             localNow, timeZone.Id, prefs?.WeekStartsOn ?? DayOfWeek.Monday, locale, descriptors);
 
+        // Multi-turn: re-send the active conversation's recent turns so a follow-up ("sim", "muda pra
+        // 11h") is understood. The active-conversation window bounds it in time; the limit bounds tokens.
+        var history = await LoadHistoryAsync(conversation, isNewConversation, ct);
+
+        var messages = new List<ChatMessage>(history.Count + 2) { ChatMessage.System(systemPrompt) };
+        foreach (var past in history)
+        {
+            messages.Add(past.Author == MessageAuthor.Assistant
+                ? new ChatMessage(ChatRole.Assistant, past.Content)
+                : ChatMessage.User(past.Content));
+        }
+        messages.Add(ChatMessage.User(text));
+
         var chatRequest = new ChatRequest(
             profile.ChatModel,
-            [ChatMessage.System(systemPrompt), ChatMessage.User(text)],
+            messages,
             Tools: toolDefinitions,
             Temperature: 0,
             ApiKey: keyResult.Value);
@@ -155,6 +170,23 @@ public sealed class InterpretCommandHandler(
             result: commandOutcome.Success ? commandOutcome.Message : null,
             error: commandOutcome.Success ? null : commandOutcome.Message,
             profile, latency, usage.PromptTokens, usage.CompletionTokens, expiresAt: null), ct);
+    }
+
+    /// <summary>
+    /// The recent turns of the active conversation, oldest-first, to prepend as context. Empty for a new
+    /// conversation (nothing to recall) or when the limit is off.
+    /// </summary>
+    private async Task<IReadOnlyList<Message>> LoadHistoryAsync(
+        Conversation conversation, bool isNewConversation, CancellationToken ct)
+    {
+        var limit = options.Value.HistoryMessageLimit;
+        if (isNewConversation || limit <= 0)
+            return [];
+
+        return await factory.ExecuteAsync(AssistantModule.DatabaseKey, async (context, token) =>
+            await context.AcquireRepository<IMessageRepository>()
+                .GetRecentByConversationAsync(conversation.Id, limit, token),
+            cancellationToken: ct);
     }
 
     private async Task<(Conversation Conversation, bool IsNew)> ResolveConversationAsync(

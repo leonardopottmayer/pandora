@@ -26,7 +26,7 @@ public sealed class TelegramChannelTransportTests
     public async Task Sends_the_body_to_the_chat_id_and_returns_the_message_id()
     {
         var client = new FakeTelegramClient { MessageId = 4242 };
-        var transport = new TelegramChannelTransport(client);
+        var transport = new TelegramChannelTransport(new FakeTelegramClientFactory(client));
 
         var result = await transport.SendAsync(Queued());
 
@@ -41,7 +41,7 @@ public sealed class TelegramChannelTransportTests
     [Fact]
     public async Task Serves_the_telegram_channel()
     {
-        Assert.Equal(Channel.Telegram, new TelegramChannelTransport(new FakeTelegramClient()).Channel);
+        Assert.Equal(Channel.Telegram, new TelegramChannelTransport(new FakeTelegramClientFactory(new FakeTelegramClient())).Channel);
         await Task.CompletedTask;
     }
 
@@ -54,7 +54,7 @@ public sealed class TelegramChannelTransportTests
         {
             Throw = new TelegramException("sendMessage", "bot was blocked by the user", isPermanent: true, errorCode: 403),
         };
-        var transport = new TelegramChannelTransport(client);
+        var transport = new TelegramChannelTransport(new FakeTelegramClientFactory(client));
 
         await Assert.ThrowsAsync<PermanentDeliveryException>(() => transport.SendAsync(Queued()));
     }
@@ -67,7 +67,7 @@ public sealed class TelegramChannelTransportTests
         {
             Throw = new TelegramException("sendMessage", "Too Many Requests", isPermanent: false, errorCode: 429),
         };
-        var transport = new TelegramChannelTransport(client);
+        var transport = new TelegramChannelTransport(new FakeTelegramClientFactory(client));
 
         await Assert.ThrowsAsync<TelegramException>(() => transport.SendAsync(Queued()));
     }

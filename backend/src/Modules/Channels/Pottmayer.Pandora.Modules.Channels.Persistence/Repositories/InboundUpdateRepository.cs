@@ -9,12 +9,12 @@ namespace Pottmayer.Pandora.Modules.Channels.Persistence.Repositories;
 public sealed class InboundUpdateRepository(IDataContextAccessor accessor)
     : StandardRepository<InboundUpdate, Guid>(accessor), IInboundUpdateRepository
 {
-    public Task<bool> ExistsAsync(string provider, long providerUpdateId, CancellationToken ct = default) =>
-        Queryable().AnyAsync(u => u.Provider == provider && u.ProviderUpdateId == providerUpdateId, ct);
+    public Task<bool> ExistsAsync(string provider, string bot, long providerUpdateId, CancellationToken ct = default) =>
+        Queryable().AnyAsync(u => u.Provider == provider && u.Bot == bot && u.ProviderUpdateId == providerUpdateId, ct);
 
-    public async Task<long?> GetLastUpdateIdAsync(string provider, CancellationToken ct = default) =>
+    public async Task<long?> GetLastUpdateIdAsync(string provider, string bot, CancellationToken ct = default) =>
         await Queryable()
-            .Where(u => u.Provider == provider)
+            .Where(u => u.Provider == provider && u.Bot == bot)
             .OrderByDescending(u => u.ProviderUpdateId)
             .Select(u => (long?)u.ProviderUpdateId)
             .FirstOrDefaultAsync(ct);

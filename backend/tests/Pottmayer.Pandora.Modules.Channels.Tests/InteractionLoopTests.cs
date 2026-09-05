@@ -89,7 +89,7 @@ public sealed class InteractionLoopTests
             .Register<IUserChannelRepository>(new FakeUserChannelRepository(linked))
             .Register<IInteractionRepository>(interactionRepo);
         var triage = new TelegramInboundTriage(
-            new FakeUnitOfWorkFactory(ctx), bus, new FakeSender(), client, new FakeChannelsMetrics(), _time,
+            new FakeUnitOfWorkFactory(ctx), bus, new FakeSender(), new FakeTelegramClientFactory(client), new FakeChannelsMetrics(), _time,
             NullLogger<TelegramInboundTriage>.Instance);
         return (triage, bus, interactionRepo, client);
     }
@@ -107,7 +107,7 @@ public sealed class InteractionLoopTests
             userId, "agenda", "task_done", "{\"reminderId\":\"r1\"}", Guid.NewGuid(), Now.AddHours(1), _time);
         var (triage, bus, interactions, client) = BuildTriage(userId, interaction);
 
-        await triage.HandleAsync(Callback(20, interaction.Id.ToString()), CancellationToken.None);
+        await triage.HandleAsync("notifications", Callback(20, interaction.Id.ToString()), CancellationToken.None);
 
         var evt = Assert.IsType<InboundInteractionReceived>(Assert.Single(bus.Published));
         Assert.Equal(userId, evt.UserId);
@@ -127,7 +127,7 @@ public sealed class InteractionLoopTests
             userId, "agenda", "task_done", null, Guid.NewGuid(), Now.AddHours(-1), _time);
         var (triage, bus, interactions, client) = BuildTriage(userId, expired);
 
-        await triage.HandleAsync(Callback(21, expired.Id.ToString()), CancellationToken.None);
+        await triage.HandleAsync("notifications", Callback(21, expired.Id.ToString()), CancellationToken.None);
 
         Assert.Empty(bus.Published);
         Assert.Empty(interactions.Updated);
@@ -143,7 +143,7 @@ public sealed class InteractionLoopTests
         // The chat belongs to `owner`, but the interaction belongs to someone else.
         var (triage, bus, interactions, _) = BuildTriage(owner, otherUsersButton);
 
-        await triage.HandleAsync(Callback(22, otherUsersButton.Id.ToString()), CancellationToken.None);
+        await triage.HandleAsync("notifications", Callback(22, otherUsersButton.Id.ToString()), CancellationToken.None);
 
         Assert.Empty(bus.Published);
         Assert.Empty(interactions.Updated);

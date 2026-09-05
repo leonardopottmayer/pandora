@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -14,7 +14,7 @@
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
     <!-- Tars: Core (mediator ISender for the sweep command) -->
-    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.9" />
+    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.12" />
   </ItemGroup>
 
 </Project>

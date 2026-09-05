@@ -58,10 +58,17 @@ public sealed class TelegramChannelOptions
 
     /// <summary>
     /// Whether to pull inbound updates by long polling. Off by default: it needs a bot token and, being
-    /// a singleton consumer, must not run in a second replica against the same bot. The webhook is the
-    /// eventual alternative and needs public HTTPS, which the homelab does not expose.
+    /// a singleton consumer per bot, must not run in a second replica against the same bot. The webhook is
+    /// the eventual alternative and needs public HTTPS, which the homelab does not expose.
     /// </summary>
     public bool LongPolling { get; set; }
+
+    /// <summary>
+    /// The bots to long-poll for inbound, by name (matching <c>Tars:Communication:Telegram:Bots</c> keys) —
+    /// e.g. <c>["notifications", "assistant"]</c>. Each runs its own poll loop with its own offset. Empty
+    /// while <see cref="LongPolling"/> is on polls nothing.
+    /// </summary>
+    public string[] InboundBots { get; set; } = [];
 
     /// <summary>How long each <c>getUpdates</c> call hangs waiting for an update, in seconds.</summary>
     public int PollTimeoutSeconds { get; set; } = 30;

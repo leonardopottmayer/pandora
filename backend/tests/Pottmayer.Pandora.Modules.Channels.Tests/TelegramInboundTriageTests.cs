@@ -35,7 +35,7 @@ public sealed class TelegramInboundTriageTests
             .Register<IInboundUpdateRepository>(_updates)
             .Register<IUserChannelRepository>(_channels);
         return new TelegramInboundTriage(
-            new FakeUnitOfWorkFactory(ctx), _bus, new FakeSender(), _client, new FakeChannelsMetrics(), _time,
+            new FakeUnitOfWorkFactory(ctx), _bus, new FakeSender(), new FakeTelegramClientFactory(_client), new FakeChannelsMetrics(), _time,
             NullLogger<TelegramInboundTriage>.Instance);
     }
 
@@ -46,24 +46,38 @@ public sealed class TelegramInboundTriageTests
     [Fact]
     public async Task A_message_from_a_linked_user_becomes_an_inbound_message_event()
     {
-        await Triage().HandleAsync(TextUpdate(10, long.Parse(ChatId), "pagar a conta amanhã"), CancellationToken.None);
+        await Triage().HandleAsync("assistant", TextUpdate(10, long.Parse(ChatId), "pagar a conta amanhã"), CancellationToken.None);
 
         var evt = Assert.Single(_bus.Published);
         var message = Assert.IsType<InboundMessageReceived>(evt);
         Assert.Equal(_userId, message.UserId);
         Assert.Equal("telegram", message.Channel);
+        Assert.Equal("assistant", message.Bot);
         Assert.Equal("pagar a conta amanhã", message.Text);
         Assert.Null(message.MediaRef);
 
         var recorded = Assert.Single(_updates.Added);
         Assert.Equal(InboundClassification.Message, recorded.Classification);
+        Assert.Equal("assistant", recorded.Bot);
         Assert.Equal(_userId, recorded.UserId);
+    }
+
+    [Fact]
+    public async Task The_same_update_id_on_a_different_bot_is_not_deduplicated()
+    {
+        // update_id is unique per bot, so idempotency is keyed by (provider, bot): the notifications bot
+        // having seen id 30 must not suppress the assistant bot's own id 30.
+        await Triage().HandleAsync("notifications", TextUpdate(30, long.Parse(ChatId), "primeira"), CancellationToken.None);
+        await Triage().HandleAsync("assistant", TextUpdate(30, long.Parse(ChatId), "segunda"), CancellationToken.None);
+
+        Assert.Equal(2, _bus.Published.Count);
+        Assert.Equal(2, _updates.Added.Count);
     }
 
     [Fact]
     public async Task A_message_from_an_unknown_chat_is_discarded_with_a_reply()
     {
-        await Triage().HandleAsync(TextUpdate(11, 999_999, "olá"), CancellationToken.None);
+        await Triage().HandleAsync("notifications", TextUpdate(11, 999_999, "olá"), CancellationToken.None);
 
         Assert.Empty(_bus.Published);
         var reply = Assert.Single(_client.Sent);
@@ -75,15 +89,15 @@ public sealed class TelegramInboundTriageTests
     public async Task An_already_seen_update_is_a_no_op()
     {
         var seen = new FakeInboundUpdateRepository(
-            InboundUpdate.Record("telegram", 12, "{}", _userId, InboundClassification.Message, _time));
+            InboundUpdate.Record("telegram", "notifications", 12, "{}", _userId, InboundClassification.Message, _time));
         var ctx = new FakeDataContext()
             .Register<IInboundUpdateRepository>(seen)
             .Register<IUserChannelRepository>(_channels);
         var triage = new TelegramInboundTriage(
-            new FakeUnitOfWorkFactory(ctx), _bus, new FakeSender(), _client, new FakeChannelsMetrics(), _time,
+            new FakeUnitOfWorkFactory(ctx), _bus, new FakeSender(), new FakeTelegramClientFactory(_client), new FakeChannelsMetrics(), _time,
             NullLogger<TelegramInboundTriage>.Instance);
 
-        await triage.HandleAsync(TextUpdate(12, long.Parse(ChatId), "duplicada"), CancellationToken.None);
+        await triage.HandleAsync("notifications", TextUpdate(12, long.Parse(ChatId), "duplicada"), CancellationToken.None);
 
         Assert.Empty(_bus.Published);
         Assert.Empty(_client.Sent);
@@ -96,7 +110,7 @@ public sealed class TelegramInboundTriageTests
         var update = new TelegramUpdate(13, CallbackQuery: new TelegramCallbackQuery(
             "cb-1", new TelegramSender(long.Parse(ChatId)), Data: "anything"));
 
-        await Triage().HandleAsync(update, CancellationToken.None);
+        await Triage().HandleAsync("notifications", update, CancellationToken.None);
 
         Assert.Equal("cb-1", Assert.Single(_client.AnsweredCallbacks));
         Assert.Empty(_bus.Published);

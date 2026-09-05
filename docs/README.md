@@ -23,6 +23,7 @@ organized by module plus a few cross-cutting concerns.
 - **A cross-cutting decision** that no single module owns:
   - [Messaging architecture](architecture/en/messaging.md) — the in-process outbox, why there is no broker, idempotency, what does *not* go through the bus.
   - [How Pandora is wired to Tars](architecture/en/tars-wiring.md) — every `AddTars*`/`UseTars*` call the backend makes, by family and by file.
+  - [Telegram flow — notification and assistant](architecture/en/telegram-assistant-flow.md) — the two end-to-end paths (outbound notification, and inbound message → AI → reply), handler by handler.
 
 - **Deployment**, not module behavior:
   - [Deployment](deployment/deployment.md)

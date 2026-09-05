@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -46,18 +46,18 @@
     <ProjectReference Include="../../Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Persistence/Pottmayer.Pandora.Modules.Assistant.Persistence.csproj" />
     <ProjectReference Include="../../Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Presentation/Pottmayer.Pandora.Modules.Assistant.Presentation.csproj" />
     <!-- Tars: Core -->
-    <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.9" />
+    <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.12" />
     <!-- Tars: Web -->
-    <PackageReference Include="Pottmayer.Tars.Web.Http" Version="0.0.9" />
-    <PackageReference Include="Pottmayer.Tars.Web.Http.AspNetCore" Version="0.0.9" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http" Version="0.0.12" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http.AspNetCore" Version="0.0.12" />
     <!-- Tars: UserContext -->
-    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.9" />
-    <!-- Tars: Observability — DI wiring lives in Shared.Infrastructure; the host only needs the
+    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.12" />
+    <!-- Tars: Observability â€” DI wiring lives in Shared.Infrastructure; the host only needs the
          correlation-id middleware. -->
-    <PackageReference Include="Pottmayer.Tars.Observability.AspNetCore" Version="0.0.9" />
-    <!-- Tars: in-process transactional outbox — the monolith's messaging transport, wired in the host. -->
-    <PackageReference Include="Pottmayer.Tars.Messaging.EntityFrameworkCore" Version="0.0.9" />
-    <PackageReference Include="Pottmayer.Tars.Messaging.Broker" Version="0.0.9" />
+    <PackageReference Include="Pottmayer.Tars.Observability.AspNetCore" Version="0.0.12" />
+    <!-- Tars: in-process transactional outbox â€” the monolith's messaging transport, wired in the host. -->
+    <PackageReference Include="Pottmayer.Tars.Messaging.EntityFrameworkCore" Version="0.0.12" />
+    <PackageReference Include="Pottmayer.Tars.Messaging.Broker" Version="0.0.12" />
   </ItemGroup>
 
   <ItemGroup>

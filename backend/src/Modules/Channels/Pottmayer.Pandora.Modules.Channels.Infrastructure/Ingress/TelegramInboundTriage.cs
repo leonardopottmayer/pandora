@@ -32,7 +32,7 @@ public sealed class TelegramInboundTriage(
     IUnitOfWorkFactory factory,
     IIntegrationEventBus bus,
     ISender sender,
-    ITelegramClient client,
+    ITelegramClientFactory telegram,
     IChannelsMetrics metrics,
     TimeProvider timeProvider,
     ILogger<TelegramInboundTriage> logger)
@@ -43,16 +43,18 @@ public sealed class TelegramInboundTriage(
 
     private sealed record CallbackResolution(Guid? UserId, Interaction? Consumed);
 
-    public async Task HandleAsync(TelegramUpdate update, CancellationToken ct)
+    public async Task HandleAsync(string bot, TelegramUpdate update, CancellationToken ct)
     {
-        // Idempotency: a replayed poll must not act on the same update twice.
+        // Idempotency: a replayed poll must not act on the same update twice. The update id is unique per
+        // bot, so the guard is keyed by bot.
         var alreadySeen = await factory.ExecuteAsync(ChannelsModule.DatabaseKey, (context, token) =>
-            context.AcquireRepository<IInboundUpdateRepository>().ExistsAsync(Provider, update.UpdateId, token),
+            context.AcquireRepository<IInboundUpdateRepository>().ExistsAsync(Provider, bot, update.UpdateId, token),
             cancellationToken: ct);
         if (alreadySeen)
             return;
 
-        var outcome = await RouteAsync(update, ct);
+        var client = telegram.GetClient(bot);
+        var outcome = await RouteAsync(bot, client, update, ct);
 
         if (outcome.Classification == InboundClassification.Discarded)
             metrics.RecordInboundDiscarded();
@@ -62,7 +64,7 @@ public sealed class TelegramInboundTriage(
         {
             var updates = context.AcquireRepository<IInboundUpdateRepository>();
             var record = InboundUpdate.Record(
-                Provider, update.UpdateId, JsonSerializer.Serialize(update),
+                Provider, bot, update.UpdateId, JsonSerializer.Serialize(update),
                 outcome.UserId, outcome.Classification, timeProvider);
             record.MarkProcessed(timeProvider);
             await updates.AddAsync(record, token);
@@ -74,10 +76,10 @@ public sealed class TelegramInboundTriage(
         }, cancellationToken: ct);
     }
 
-    private async Task<Outcome> RouteAsync(TelegramUpdate update, CancellationToken ct)
+    private async Task<Outcome> RouteAsync(string bot, ITelegramClient client, TelegramUpdate update, CancellationToken ct)
     {
         if (update.CallbackQuery is { } callback)
-            return await HandleCallbackAsync(callback, ct);
+            return await HandleCallbackAsync(client, callback, ct);
 
         if (update.Message is not { } message)
             return new Outcome(InboundClassification.Discarded, UserId: null, Event: null);
@@ -85,24 +87,24 @@ public sealed class TelegramInboundTriage(
         var chatId = ChatId(message.Chat);
 
         if (TelegramCommand.TryParse(message.Text, out var command, out var argument))
-            return await HandleCommandAsync(chatId, message, command, argument, ct);
+            return await HandleCommandAsync(client, chatId, message, command, argument, ct);
 
         var userId = await ResolveUserAsync(chatId, ct);
         if (userId is null)
         {
-            await ReplyAsync(chatId, "I don't know this chat yet. Connect Telegram from Pandora settings to get started.", ct);
+            await ReplyAsync(client, chatId, "I don't know this chat yet. Connect Telegram from Pandora settings to get started.", ct);
             return new Outcome(InboundClassification.Discarded, UserId: null, Event: null);
         }
 
         var media = message.Media;
         var evt = new InboundMessageReceived(
-            Guid.CreateVersion7(), timeProvider.GetUtcNow(), userId.Value, Provider,
+            Guid.CreateVersion7(), timeProvider.GetUtcNow(), userId.Value, Provider, bot,
             message.Text, media?.FileId, media?.MimeType);
         return new Outcome(InboundClassification.Message, userId, evt);
     }
 
     private async Task<Outcome> HandleCommandAsync(
-        string chatId, TelegramIncomingMessage message, string command, string? argument, CancellationToken ct)
+        ITelegramClient client, string chatId, TelegramIncomingMessage message, string command, string? argument, CancellationToken ct)
     {
         if (command == "start" && !string.IsNullOrWhiteSpace(argument))
         {
@@ -111,7 +113,7 @@ public sealed class TelegramInboundTriage(
                     chatId, argument!, message.From?.Username, message.From?.FirstName)),
                 ct);
 
-            await ReplyAsync(chatId, result.IsSuccess
+            await ReplyAsync(client, chatId, result.IsSuccess
                 ? "You're connected. Pandora will reach you here."
                 : "That link is invalid or has expired. Start again from Pandora settings.", ct);
 
@@ -119,12 +121,12 @@ public sealed class TelegramInboundTriage(
         }
 
         // Every other command is answered locally and never becomes an event.
-        await ReplyAsync(chatId,
+        await ReplyAsync(client, chatId,
             "I forward your Pandora notifications and take your notes. Connect from Pandora settings if you haven't.", ct);
         return new Outcome(InboundClassification.Command, await ResolveUserAsync(chatId, ct), Event: null);
     }
 
-    private async Task<Outcome> HandleCallbackAsync(TelegramCallbackQuery callback, CancellationToken ct)
+    private async Task<Outcome> HandleCallbackAsync(ITelegramClient client, TelegramCallbackQuery callback, CancellationToken ct)
     {
         var chatId = callback.Chat is { } chat ? ChatId(chat) : null;
 
@@ -174,7 +176,7 @@ public sealed class TelegramInboundTriage(
         return link?.UserId;
     }
 
-    private async Task ReplyAsync(string chatId, string text, CancellationToken ct) =>
+    private async Task ReplyAsync(ITelegramClient client, string chatId, string text, CancellationToken ct) =>
         await TryAsync(client.SendMessageAsync(new TelegramMessage(chatId, text), ct));
 
     // Best-effort outbound: a failed reply must not poison the update, which still gets recorded.
