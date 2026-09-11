@@ -29,6 +29,9 @@ organized by module plus a few cross-cutting concerns.
   - [Deployment](deployment/deployment.md)
   - [Homelab deploy](deployment/homelab-deploy.md)
 
+- **[Known issues](known-issues.md)** — understood-but-unfixed cross-cutting problems (time zones,
+  mandatory-configuration gate), with root causes, affected places, and options for a fix.
+
 ## Documentation conventions
 
 Every implemented module follows the same shape — see [Finances](modules/finances/README.md) or
