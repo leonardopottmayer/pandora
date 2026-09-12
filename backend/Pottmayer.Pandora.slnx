@@ -66,6 +66,15 @@
     <Project Path="src/Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Persistence/Pottmayer.Pandora.Modules.Assistant.Persistence.csproj" />
     <Project Path="src/Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Presentation/Pottmayer.Pandora.Modules.Assistant.Presentation.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Communications/">
+    <Project Path="src/Modules/Communications/Pottmayer.Pandora.Modules.Communications.Abstractions/Pottmayer.Pandora.Modules.Communications.Abstractions.csproj" />
+    <Project Path="src/Modules/Communications/Pottmayer.Pandora.Modules.Communications.Contracts/Pottmayer.Pandora.Modules.Communications.Contracts.csproj" />
+    <Project Path="src/Modules/Communications/Pottmayer.Pandora.Modules.Communications.Domain/Pottmayer.Pandora.Modules.Communications.Domain.csproj" />
+    <Project Path="src/Modules/Communications/Pottmayer.Pandora.Modules.Communications.Application/Pottmayer.Pandora.Modules.Communications.Application.csproj" />
+    <Project Path="src/Modules/Communications/Pottmayer.Pandora.Modules.Communications.Infrastructure/Pottmayer.Pandora.Modules.Communications.Infrastructure.csproj" />
+    <Project Path="src/Modules/Communications/Pottmayer.Pandora.Modules.Communications.Persistence/Pottmayer.Pandora.Modules.Communications.Persistence.csproj" />
+    <Project Path="src/Modules/Communications/Pottmayer.Pandora.Modules.Communications.Presentation/Pottmayer.Pandora.Modules.Communications.Presentation.csproj" />
+  </Folder>
   <Folder Name="/src/Host/">
     <Project Path="src/Host/Pottmayer.Pandora.Host/Pottmayer.Pandora.Host.csproj" Id="b0000004-0000-0000-0000-000000000001" />
   </Folder>

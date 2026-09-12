@@ -45,6 +45,11 @@
     <ProjectReference Include="../../Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Infrastructure/Pottmayer.Pandora.Modules.Assistant.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Persistence/Pottmayer.Pandora.Modules.Assistant.Persistence.csproj" />
     <ProjectReference Include="../../Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Presentation/Pottmayer.Pandora.Modules.Assistant.Presentation.csproj" />
+    <!-- Communications module -->
+    <ProjectReference Include="../../Modules/Communications/Pottmayer.Pandora.Modules.Communications.Application/Pottmayer.Pandora.Modules.Communications.Application.csproj" />
+    <ProjectReference Include="../../Modules/Communications/Pottmayer.Pandora.Modules.Communications.Infrastructure/Pottmayer.Pandora.Modules.Communications.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Communications/Pottmayer.Pandora.Modules.Communications.Persistence/Pottmayer.Pandora.Modules.Communications.Persistence.csproj" />
+    <ProjectReference Include="../../Modules/Communications/Pottmayer.Pandora.Modules.Communications.Presentation/Pottmayer.Pandora.Modules.Communications.Presentation.csproj" />
     <!-- Tars: Core -->
     <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.12" />
     <!-- Tars: Web -->

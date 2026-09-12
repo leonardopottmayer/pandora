@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pottmayer.Pandora.Modules.Communications.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Communications.Abstractions/Pottmayer.Pandora.Modules.Communications.Abstractions.csproj" />
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Communications.Application/Pottmayer.Pandora.Modules.Communications.Application.csproj" />
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Communications.Domain/Pottmayer.Pandora.Modules.Communications.Domain.csproj" />
+    <!-- Hosting / options / logging for providers and background jobs added in later phases -->
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.2" />
+  </ItemGroup>
+
+</Project>

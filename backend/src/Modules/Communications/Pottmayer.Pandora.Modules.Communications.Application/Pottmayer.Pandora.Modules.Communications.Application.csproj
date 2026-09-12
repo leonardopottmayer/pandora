@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pottmayer.Pandora.Modules.Communications.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Communications.Abstractions/Pottmayer.Pandora.Modules.Communications.Abstractions.csproj" />
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Communications.Contracts/Pottmayer.Pandora.Modules.Communications.Contracts.csproj" />
+    <ProjectReference Include="../Pottmayer.Pandora.Modules.Communications.Domain/Pottmayer.Pandora.Modules.Communications.Domain.csproj" />
+    <!-- Tars: Core -->
+    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.12" />
+    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.12" />
+    <!-- Tars: Data -->
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.12" />
+  </ItemGroup>
+
+</Project>
