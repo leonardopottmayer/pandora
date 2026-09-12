@@ -58,10 +58,14 @@ export const router = createBrowserRouter([
       { path: 'account/security', element: <SecurityPage /> },
       { path: 'account/password', element: <ChangePasswordPage /> },
       { path: 'settings', element: <SettingsPage /> },
-      { path: 'settings/notifications', element: <NotificationsPage /> },
-      { path: 'settings/connections', element: <ConnectionsPage /> },
       { path: 'settings/assistant', element: <AssistantSettingsPage /> },
       { path: 'assistant', element: <AssistantPage /> },
+
+      // Integrations
+      { path: 'integrations/connections', element: <ConnectionsPage /> },
+
+      // Channels
+      { path: 'channels/notifications', element: <NotificationsPage /> },
 
       // Finances (telas reais substituem o placeholder conforme cada area e implementada)
       { path: 'finances/accounts', element: <AccountsListPage /> },

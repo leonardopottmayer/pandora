@@ -4,9 +4,7 @@ import {
   Alert,
   App,
   Button,
-  Card,
   Checkbox,
-  Divider,
   Popconfirm,
   Select,
   Space,
@@ -17,10 +15,14 @@ import {
   TimePicker,
   Tooltip,
   Typography,
+  theme,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs, { type Dayjs } from 'dayjs'
 import { SendOutlined } from '@ant-design/icons'
+import { PageHeading } from '@/components/settings/PageHeading'
+import { SettingsSection } from '@/components/settings/SettingsSection'
+import { SettingRow } from '@/components/settings/SettingRow'
 import { toErrorMessage } from '@/lib/api/envelope'
 import {
   ALL_CHANNELS,
@@ -62,6 +64,7 @@ const STATUS_COLOR: Record<NotificationStatus, string> = {
 export function NotificationsPage() {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { token } = theme.useToken()
   const { data: channels, isLoading: channelsLoading } = useChannels()
   const { data: preferences, isLoading: prefsLoading } = useNotificationPreferences()
 
@@ -126,21 +129,26 @@ export function NotificationsPage() {
     {
       title: t('notifications.colWhen'),
       dataIndex: 'createdAt',
+      width: 160,
       render: (value: string) => new Date(value).toLocaleString(),
     },
     {
       title: t('notifications.colCategory'),
       dataIndex: 'category',
+      width: 130,
+      ellipsis: true,
       render: (_: string | null, row) => row.category ?? row.templateKey,
     },
     {
       title: t('notifications.colChannel'),
       dataIndex: 'channel',
+      width: 100,
       render: (channel: ChannelId) => <Tag>{channelLabel(channel)}</Tag>,
     },
     {
       title: t('notifications.colStatus'),
       dataIndex: 'status',
+      width: 110,
       render: (status: NotificationStatus) => (
         <Tag color={STATUS_COLOR[status]}>{t(`notifications.status.${status}`)}</Tag>
       ),
@@ -148,11 +156,13 @@ export function NotificationsPage() {
     {
       title: t('notifications.colAttempts'),
       dataIndex: 'attemptCount',
+      width: 90,
       align: 'center',
     },
     {
       title: t('notifications.colError'),
       dataIndex: 'lastError',
+      width: 200,
       ellipsis: true,
       render: (error: string | null) =>
         error ? (
@@ -165,174 +175,216 @@ export function NotificationsPage() {
     },
   ]
 
+  const cardStyle = {
+    border: `1px solid ${token.colorBorderSecondary}`,
+    background: token.colorBgContainer,
+  }
+
+  async function toggleChannel(category: string, channel: ChannelId, checked: boolean) {
+    const current = channelsFor(category)
+    const next = checked ? [...current, channel] : current.filter((c) => c !== channel)
+    await handlePreferenceChange(category, next)
+  }
+
   return (
-    <div className="mx-auto max-w-2xl">
-      <Card title={t('notifications.channelsTitle')}>
-        {channelsLoading ? (
-          <Spin />
-        ) : (
-          <Space direction="vertical" size="large" className="w-full">
-            {/* Telegram */}
-            <div className="flex flex-col gap-2">
-              <Space>
-                <Typography.Text strong>Telegram</Typography.Text>
-                {telegram?.isVerified && telegram.isEnabled && (
-                  <Tag color="green">{t('notifications.connected')}</Tag>
-                )}
-                {telegram && !telegram.isEnabled && (
-                  <Tag color="red">{t('notifications.disabled')}</Tag>
-                )}
-              </Space>
+    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+      <PageHeading title={t('notifications.pageTitle')} description={t('notifications.pageSubtitle')} />
 
-              {telegram?.isVerified ? (
-                <>
-                  <Typography.Text type="secondary">{telegram.address}</Typography.Text>
-                  {!telegram.isEnabled && telegram.disabledReason && (
-                    <Alert
-                      type="warning"
-                      showIcon
-                      message={t('notifications.disabledReason', { reason: telegram.disabledReason })}
-                    />
-                  )}
-                  <Space>
-                    <Button
-                      icon={<SendOutlined />}
-                      onClick={() => handleTest('telegram')}
-                      loading={test.isPending}
-                    >
-                      {t('notifications.sendTest')}
-                    </Button>
-                    <Popconfirm
-                      title={t('notifications.disconnectConfirm')}
-                      onConfirm={() => handleUnlink('telegram')}
-                    >
-                      <Button danger>{t('notifications.disconnect')}</Button>
-                    </Popconfirm>
-                  </Space>
-                </>
-              ) : (
-                <>
-                  <Typography.Text type="secondary">
-                    {t('notifications.telegramDesc')}
-                  </Typography.Text>
-                  <Button
-                    type="primary"
-                    className="w-fit"
-                    onClick={handleConnectTelegram}
-                    loading={link.isPending}
-                  >
-                    {t('notifications.connectTelegram')}
-                  </Button>
-                  {telegramLinkUrl && (
-                    <Alert
-                      type="info"
-                      showIcon
-                      message={t('notifications.linkReady')}
-                      description={
-                        <Space direction="vertical">
-                          <span>{t('notifications.linkInstructions')}</span>
-                          <Button type="primary" href={telegramLinkUrl} target="_blank">
-                            {t('notifications.openTelegram')}
-                          </Button>
-                        </Space>
-                      }
-                    />
-                  )}
-                </>
-              )}
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(320px,380px)_1fr]">
+        {/* LEFT: channels + quiet hours */}
+        <div className="flex flex-col gap-6">
+          <section className="flex flex-col gap-2.5">
+            <div className="px-0.5">
+              <Typography.Text strong type="secondary" className="text-xs uppercase tracking-wider">
+                {t('notifications.channelsTitle')}
+              </Typography.Text>
             </div>
 
-            <Divider className="my-0" />
-
-            {/* E-mail */}
-            <div className="flex flex-col gap-2">
-              <Typography.Text strong>E-mail</Typography.Text>
-              {email ? (
-                <>
-                  <Typography.Text type="secondary">{email.address}</Typography.Text>
-                  <Button
-                    className="w-fit"
-                    icon={<SendOutlined />}
-                    onClick={() => handleTest('email')}
-                    loading={test.isPending}
-                  >
-                    {t('notifications.sendTest')}
-                  </Button>
-                </>
-              ) : (
-                <Typography.Text type="secondary">{t('notifications.emailFromAccount')}</Typography.Text>
-              )}
-            </div>
-          </Space>
-        )}
-      </Card>
-
-      <Card title={t('notifications.preferencesTitle')} className="mt-4">
-        <Typography.Paragraph type="secondary">
-          {t('notifications.preferencesDesc')}
-        </Typography.Paragraph>
-        {prefsLoading ? (
-          <Spin />
-        ) : (
-          <Space direction="vertical" size="middle" className="w-full">
-            {NOTIFICATION_CATEGORIES.map((category) => (
-              <div key={category} className="flex flex-col gap-1">
-                <Typography.Text strong>{t(`notifications.category.${category}`)}</Typography.Text>
-                <Checkbox.Group
-                  value={channelsFor(category)}
-                  onChange={(v) => handlePreferenceChange(category, v as ChannelId[])}
-                  options={ALL_CHANNELS.map((c) => ({ label: channelLabel(c), value: c }))}
-                />
+            {channelsLoading ? (
+              <div className="rounded-xl p-6" style={cardStyle}>
+                <Spin />
               </div>
-            ))}
-            <Typography.Text type="secondary">{t('notifications.mutedHint')}</Typography.Text>
-          </Space>
-        )}
-      </Card>
+            ) : (
+              <>
+                {/* Telegram */}
+                <div className="flex flex-col gap-2 rounded-xl p-4" style={cardStyle}>
+                  <Space>
+                    <Typography.Text strong>Telegram</Typography.Text>
+                    {telegram?.isVerified && telegram.isEnabled && (
+                      <Tag color="green">{t('notifications.connected')}</Tag>
+                    )}
+                    {telegram && !telegram.isEnabled && (
+                      <Tag color="red">{t('notifications.disabled')}</Tag>
+                    )}
+                  </Space>
 
-      {settingsLoading || !settings ? (
-        <Card title={t('notifications.quietHoursTitle')} className="mt-4">
-          <Spin />
-        </Card>
-      ) : (
-        <QuietHoursCard settings={settings} />
-      )}
+                  {telegram?.isVerified ? (
+                    <>
+                      <Typography.Text type="secondary">{telegram.address}</Typography.Text>
+                      {!telegram.isEnabled && telegram.disabledReason && (
+                        <Alert
+                          type="warning"
+                          showIcon
+                          message={t('notifications.disabledReason', { reason: telegram.disabledReason })}
+                        />
+                      )}
+                      <Space>
+                        <Button
+                          icon={<SendOutlined />}
+                          onClick={() => handleTest('telegram')}
+                          loading={test.isPending}
+                        >
+                          {t('notifications.sendTest')}
+                        </Button>
+                        <Popconfirm
+                          title={t('notifications.disconnectConfirm')}
+                          onConfirm={() => handleUnlink('telegram')}
+                        >
+                          <Button danger>{t('notifications.disconnect')}</Button>
+                        </Popconfirm>
+                      </Space>
+                    </>
+                  ) : (
+                    <>
+                      <Typography.Text type="secondary">{t('notifications.telegramDesc')}</Typography.Text>
+                      <Button
+                        type="primary"
+                        className="w-fit"
+                        onClick={handleConnectTelegram}
+                        loading={link.isPending}
+                      >
+                        {t('notifications.connectTelegram')}
+                      </Button>
+                      {telegramLinkUrl && (
+                        <Alert
+                          type="info"
+                          showIcon
+                          message={t('notifications.linkReady')}
+                          description={
+                            <Space direction="vertical">
+                              <span>{t('notifications.linkInstructions')}</span>
+                              <Button type="primary" href={telegramLinkUrl} target="_blank">
+                                {t('notifications.openTelegram')}
+                              </Button>
+                            </Space>
+                          }
+                        />
+                      )}
+                    </>
+                  )}
+                </div>
 
-      <Card
-        title={t('notifications.historyTitle')}
-        className="mt-4"
-        extra={
-          <Select<NotificationStatus>
-            allowClear
-            style={{ width: 160 }}
-            placeholder={t('notifications.filterStatus')}
-            value={historyStatus}
-            onChange={(value) => setHistoryStatus(value)}
-            options={NOTIFICATION_STATUSES.map((s) => ({
-              label: t(`notifications.status.${s}`),
-              value: s,
-            }))}
-          />
-        }
-      >
-        <Typography.Paragraph type="secondary">
-          {t('notifications.historyDesc')}
-        </Typography.Paragraph>
-        {historyError ? (
-          <Alert type="error" showIcon message={t('notifications.historyError')} />
-        ) : (
-          <Table<NotificationHistoryItem>
-            rowKey="id"
-            size="small"
-            loading={historyLoading}
-            columns={historyColumns}
-            dataSource={history ?? []}
-            locale={{ emptyText: t('notifications.historyEmpty') }}
-            pagination={{ pageSize: 10, hideOnSinglePage: true }}
-            scroll={{ x: true }}
-          />
-        )}
-      </Card>
+                {/* E-mail */}
+                <div className="flex flex-col gap-2 rounded-xl p-4" style={cardStyle}>
+                  <Typography.Text strong>E-mail</Typography.Text>
+                  {email ? (
+                    <>
+                      <Typography.Text type="secondary">{email.address}</Typography.Text>
+                      <Button
+                        className="w-fit"
+                        icon={<SendOutlined />}
+                        onClick={() => handleTest('email')}
+                        loading={test.isPending}
+                      >
+                        {t('notifications.sendTest')}
+                      </Button>
+                    </>
+                  ) : (
+                    <Typography.Text type="secondary">{t('notifications.emailFromAccount')}</Typography.Text>
+                  )}
+                </div>
+              </>
+            )}
+          </section>
+
+          {settingsLoading || !settings ? (
+            <SettingsSection title={t('notifications.quietHoursTitle')} bodyClassName="p-6">
+              <Spin />
+            </SettingsSection>
+          ) : (
+            <QuietHoursCard settings={settings} />
+          )}
+        </div>
+
+        {/* RIGHT: what goes where + delivery history */}
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <SettingsSection title={t('notifications.preferencesTitle')}>
+              {prefsLoading ? (
+                <div className="p-6">
+                  <Spin />
+                </div>
+              ) : (
+                <Table<{ key: string; category: string }>
+                  rowKey="key"
+                  size="small"
+                  pagination={false}
+                  dataSource={NOTIFICATION_CATEGORIES.map((c) => ({ key: c, category: c }))}
+                  columns={[
+                    {
+                      title: t('notifications.colCategory'),
+                      dataIndex: 'category',
+                      render: (category: string) => (
+                        <Typography.Text strong>{t(`notifications.category.${category}`)}</Typography.Text>
+                      ),
+                    },
+                    ...ALL_CHANNELS.map((ch) => ({
+                      title: channelLabel(ch),
+                      key: ch,
+                      align: 'center' as const,
+                      width: 120,
+                      render: (_: unknown, row: { category: string }) => (
+                        <Checkbox
+                          checked={channelsFor(row.category).includes(ch)}
+                          onChange={(e) => toggleChannel(row.category, ch, e.target.checked)}
+                        />
+                      ),
+                    })),
+                  ]}
+                />
+              )}
+            </SettingsSection>
+            <Typography.Text type="secondary" className="px-0.5 text-xs">
+              {t('notifications.mutedHint')}
+            </Typography.Text>
+          </div>
+
+          <SettingsSection
+            title={t('notifications.historyTitle')}
+            extra={
+              <Select<NotificationStatus>
+                allowClear
+                style={{ width: 160 }}
+                placeholder={t('notifications.filterStatus')}
+                value={historyStatus}
+                onChange={(value) => setHistoryStatus(value)}
+                options={NOTIFICATION_STATUSES.map((s) => ({
+                  label: t(`notifications.status.${s}`),
+                  value: s,
+                }))}
+              />
+            }
+          >
+            {historyError ? (
+              <div className="p-4">
+                <Alert type="error" showIcon message={t('notifications.historyError')} />
+              </div>
+            ) : (
+              <Table<NotificationHistoryItem>
+                rowKey="id"
+                size="small"
+                tableLayout="fixed"
+                loading={historyLoading}
+                columns={historyColumns}
+                dataSource={history ?? []}
+                locale={{ emptyText: t('notifications.historyEmpty') }}
+                pagination={{ pageSize: 10, hideOnSinglePage: true }}
+                scroll={{ x: 790 }}
+              />
+            )}
+          </SettingsSection>
+        </div>
+      </div>
     </div>
   )
 }
@@ -376,41 +428,45 @@ function QuietHoursCard({ settings }: { settings: NotificationSettings }) {
   }
 
   return (
-    <Card title={t('notifications.quietHoursTitle')} className="mt-4">
-      <Typography.Paragraph type="secondary">
-        {t('notifications.quietHoursDesc')}
-      </Typography.Paragraph>
-      <Space direction="vertical" size="middle" className="w-full">
-        <Space>
-          <Switch checked={enabled} onChange={setEnabled} />
-          <Typography.Text>{t('notifications.quietHoursEnable')}</Typography.Text>
-        </Space>
+    <div className="flex flex-col gap-3">
+      <SettingsSection title={t('notifications.quietHoursTitle')}>
+        <SettingRow
+          label={t('notifications.quietHoursEnable')}
+          description={t('notifications.quietHoursDesc')}
+          align="start"
+          control={<Switch checked={enabled} onChange={setEnabled} />}
+        />
 
         {enabled && (
           <>
-            <Space wrap>
-              <div className="flex flex-col gap-1">
-                <Typography.Text type="secondary">{t('notifications.quietHoursFrom')}</Typography.Text>
-                <TimePicker
-                  format={TIME_FORMAT}
-                  minuteStep={15}
-                  value={start}
-                  onChange={setStart}
-                  allowClear={false}
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <Typography.Text type="secondary">{t('notifications.quietHoursTo')}</Typography.Text>
-                <TimePicker
-                  format={TIME_FORMAT}
-                  minuteStep={15}
-                  value={end}
-                  onChange={setEnd}
-                  allowClear={false}
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <Typography.Text type="secondary">{t('notifications.quietHoursBehaviour')}</Typography.Text>
+            <SettingRow
+              vertical
+              label={t('notifications.quietHoursInterval')}
+              control={
+                <Space wrap>
+                  <TimePicker
+                    format={TIME_FORMAT}
+                    minuteStep={15}
+                    value={start}
+                    onChange={setStart}
+                    allowClear={false}
+                    placeholder={t('notifications.quietHoursFrom')}
+                  />
+                  <span className="opacity-60">→</span>
+                  <TimePicker
+                    format={TIME_FORMAT}
+                    minuteStep={15}
+                    value={end}
+                    onChange={setEnd}
+                    allowClear={false}
+                    placeholder={t('notifications.quietHoursTo')}
+                  />
+                </Space>
+              }
+            />
+            <SettingRow
+              label={t('notifications.quietHoursBehaviour')}
+              control={
                 <Select<QuietHoursBehaviour>
                   style={{ width: 200 }}
                   value={behaviour}
@@ -420,16 +476,23 @@ function QuietHoursCard({ settings }: { settings: NotificationSettings }) {
                     value: b,
                   }))}
                 />
-              </div>
-            </Space>
-            <Typography.Text type="secondary">{t('notifications.quietHoursZoneHint')}</Typography.Text>
+              }
+            />
           </>
         )}
+      </SettingsSection>
 
-        <Button type="primary" className="w-fit" onClick={handleSave} loading={setSettings.isPending}>
+      {enabled && (
+        <Typography.Text type="secondary" className="px-0.5 text-xs">
+          {t('notifications.quietHoursZoneHint')}
+        </Typography.Text>
+      )}
+
+      <div>
+        <Button type="primary" onClick={handleSave} loading={setSettings.isPending}>
           {t('notifications.quietHoursSave')}
         </Button>
-      </Space>
-    </Card>
+      </div>
+    </div>
   )
 }

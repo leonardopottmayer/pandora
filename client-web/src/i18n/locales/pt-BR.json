@@ -3,6 +3,10 @@
     "settings": {
       "title": "Assistente",
       "intro": "Configure o assistente que transforma linguagem natural em comandos do Pandora.",
+      "groupModel": "Modelo",
+      "groupBehavior": "Comportamento",
+      "testLabel": "Testar conexão",
+      "testDesc": "Faz uma chamada de ida e volta para conferir a chave e o modelo.",
       "privacyTitle": "Seus textos vão para o Google",
       "privacyDesc": "O Gemini é hospedado: cada frase enviada ao assistente é processada pelo Google. Por enquanto o assistente só cria itens — não lê seus dados de volta.",
       "providerLabel": "Provedor",
@@ -49,6 +53,15 @@
       "error": "Não foi possível interpretar sua mensagem.",
       "logTitle": "Histórico",
       "logEmpty": "Nenhuma interpretação ainda.",
+      "consoleTitle": "Console",
+      "resultTitle": "Resultado",
+      "resultEmpty": "Envie um comando e a resposta do assistente aparece aqui.",
+      "colWhen": "Quando",
+      "colRequest": "Pedido",
+      "colStatus": "Status",
+      "colAction": "Ação",
+      "colResult": "Resultado",
+      "colModel": "Modelo",
       "latency": "{{ms}} ms",
       "tokens": "{{prompt}}+{{completion}} tokens",
       "status": {
@@ -92,6 +105,8 @@
     "settings": "Preferencias",
     "notifications": "Notificacoes",
     "connections": "Conexoes",
+    "integrations": "Integracoes",
+    "channels": "Canais",
     "changePassword": "Trocar senha",
     "signOut": "Sair",
     "finances": "Financas",
@@ -216,6 +231,10 @@
   },
   "settings": {
     "title": "Preferencias",
+    "subtitle": "Preferencias que valem para todo o Pandora: aparencia, idioma e o fuso/semana usados pelos modulos.",
+    "groupAppearance": "Aparencia",
+    "groupRegion": "Regiao e tempo",
+    "sharedHint": "Fuso, inicio da semana e alerta padrao sao compartilhados com a Agenda.",
     "themeLabel": "Tema",
     "themeDesc": "Escolha entre claro, escuro ou seguir o sistema. A preferencia e salva na sua conta.",
     "themeLight": "Claro",
@@ -237,6 +256,8 @@
     "alertOffsetDays": "{{count}} dia antes"
   },
   "notifications": {
+    "pageTitle": "Notificacoes",
+    "pageSubtitle": "Onde voce recebe, o que sai em cada canal e quando silenciar.",
     "channelsTitle": "Canais",
     "connected": "Conectado",
     "disabled": "Desabilitado",
@@ -286,6 +307,7 @@
     "quietHoursTitle": "Horario silencioso",
     "quietHoursDesc": "Uma janela diaria de nao perturbe. Notificacoes que caem nela sao retidas — exceto alertas de seguranca, que sempre saem.",
     "quietHoursEnable": "Ativar horario silencioso",
+    "quietHoursInterval": "Intervalo",
     "quietHoursFrom": "De",
     "quietHoursTo": "Ate",
     "quietHoursBehaviour": "Durante a janela",
@@ -301,6 +323,7 @@
   "connections": {
     "title": "Contas conectadas",
     "description": "Conecte contas de terceiros que o Pandora usa em seu nome, como o Google para sincronizar a agenda.",
+    "providersTitle": "Provedores",
     "providerDesc": "Ainda nao conectado.",
     "connect": "Conectar {{provider}}",
     "reconnect": "Reconectar",
@@ -327,6 +350,10 @@
     "activity": {
       "title": "Atividade recente",
       "description": "Um registro de conexões, falhas de renovação e revogações — a resposta para por que uma sincronização parou.",
+      "colEvent": "Evento",
+      "colProvider": "Provedor",
+      "colWhen": "Quando",
+      "colDetail": "Detalhe",
       "event": {
         "connected": "Conectado",
         "reconnected": "Reconectado",
@@ -872,7 +899,11 @@
       "intro": "Padrões para novos itens da agenda. São preferências da sua conta, compartilhadas com o resto do Pandora.",
       "defaultCalendarLabel": "Calendário padrão",
       "defaultCalendarDesc": "Novos eventos caem neste calendário, a menos que você escolha outro.",
-      "noCalendars": "Nenhum calendário ainda"
+      "noCalendars": "Nenhum calendário ainda",
+      "groupAgenda": "Agenda",
+      "groupInherited": "Herdado de Preferências",
+      "inheritedDesc": "Definido em Preferências.",
+      "editInGeneral": "Editar em Preferências"
     },
     "today": {
       "empty": "Nada agendado para hoje.",

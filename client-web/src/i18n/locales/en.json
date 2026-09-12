@@ -3,6 +3,10 @@
     "settings": {
       "title": "Assistant",
       "intro": "Configure the assistant that turns natural language into Pandora commands.",
+      "groupModel": "Model",
+      "groupBehavior": "Behavior",
+      "testLabel": "Test reachability",
+      "testDesc": "Runs a round-trip call to confirm the key and model.",
       "privacyTitle": "Your text goes to Google",
       "privacyDesc": "Gemini is hosted: every sentence you send the assistant is processed by Google. For now the assistant only creates items — it does not read your data back.",
       "providerLabel": "Provider",
@@ -49,6 +53,15 @@
       "error": "Could not interpret your message.",
       "logTitle": "History",
       "logEmpty": "No interpretations yet.",
+      "consoleTitle": "Console",
+      "resultTitle": "Result",
+      "resultEmpty": "Send a request and the assistant's reply shows up here.",
+      "colWhen": "When",
+      "colRequest": "Request",
+      "colStatus": "Status",
+      "colAction": "Action",
+      "colResult": "Result",
+      "colModel": "Model",
       "latency": "{{ms}} ms",
       "tokens": "{{prompt}}+{{completion}} tokens",
       "status": {
@@ -92,6 +105,8 @@
     "settings": "Preferences",
     "notifications": "Notifications",
     "connections": "Connections",
+    "integrations": "Integrations",
+    "channels": "Channels",
     "changePassword": "Change password",
     "signOut": "Sign out",
     "finances": "Finances",
@@ -216,6 +231,10 @@
   },
   "settings": {
     "title": "Preferences",
+    "subtitle": "Preferences that apply across Pandora: appearance, language and the time zone/week used by the modules.",
+    "groupAppearance": "Appearance",
+    "groupRegion": "Region & time",
+    "sharedHint": "Time zone, week start and default alert are shared with the Agenda.",
     "themeLabel": "Theme",
     "themeDesc": "Choose light, dark or follow the system. The preference is saved to your account.",
     "themeLight": "Light",
@@ -237,6 +256,8 @@
     "alertOffsetDays": "{{count}} day before"
   },
   "notifications": {
+    "pageTitle": "Notifications",
+    "pageSubtitle": "Where you get notified, what goes out on each channel, and when to stay quiet.",
     "channelsTitle": "Channels",
     "connected": "Connected",
     "disabled": "Disabled",
@@ -286,6 +307,7 @@
     "quietHoursTitle": "Quiet hours",
     "quietHoursDesc": "A daily do-not-disturb window. Notifications that land inside it are held back — except security alerts, which always go out.",
     "quietHoursEnable": "Enable quiet hours",
+    "quietHoursInterval": "Interval",
     "quietHoursFrom": "From",
     "quietHoursTo": "To",
     "quietHoursBehaviour": "During the window",
@@ -301,6 +323,7 @@
   "connections": {
     "title": "Connected accounts",
     "description": "Connect third-party accounts Pandora uses on your behalf, such as Google to sync your agenda.",
+    "providersTitle": "Providers",
     "providerDesc": "Not connected yet.",
     "connect": "Connect {{provider}}",
     "reconnect": "Reconnect",
@@ -327,6 +350,10 @@
     "activity": {
       "title": "Recent activity",
       "description": "A log of connects, refresh failures and revocations — the answer to why a sync stopped.",
+      "colEvent": "Event",
+      "colProvider": "Provider",
+      "colWhen": "When",
+      "colDetail": "Detail",
       "event": {
         "connected": "Connected",
         "reconnected": "Reconnected",
@@ -872,7 +899,11 @@
       "intro": "Defaults for new agenda items. These are your account preferences, shared with the rest of Pandora.",
       "defaultCalendarLabel": "Default calendar",
       "defaultCalendarDesc": "New events land on this calendar unless you pick another.",
-      "noCalendars": "No calendars yet"
+      "noCalendars": "No calendars yet",
+      "groupAgenda": "Agenda",
+      "groupInherited": "Inherited from Preferences",
+      "inheritedDesc": "Set in Preferences.",
+      "editInGeneral": "Edit in Preferences"
     },
     "today": {
       "empty": "Nothing scheduled for today.",

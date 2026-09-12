@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Alert, App, Button, Card, Divider, Input, List, Popconfirm, Space, Spin, Tag, Typography } from 'antd'
+import { Alert, App, Button, Input, Popconfirm, Space, Spin, Table, Tag, Typography, theme } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
+import { PageHeading } from '@/components/settings/PageHeading'
+import { SettingsSection } from '@/components/settings/SettingsSection'
 import { toErrorMessage } from '@/lib/api/envelope'
 import {
   providerLabel,
   type ExternalAccount,
+  type IntegrationEvent,
   type IntegrationEventType,
   type IntegrationStatus,
 } from '../models'
@@ -18,7 +22,7 @@ import {
   useStartConnection,
 } from '../hooks/useIntegrations'
 
-const REDIRECT_AFTER = '/settings/connections'
+const REDIRECT_AFTER = '/integrations/connections'
 
 const EVENT_TAG_COLOR: Record<IntegrationEventType, string> = {
   connected: 'green',
@@ -45,6 +49,7 @@ function statusTag(status: IntegrationStatus, t: (k: string) => string) {
 export function ConnectionsPage() {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { token } = theme.useToken()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const { data: providers, isLoading: providersLoading } = useProviders()
@@ -103,153 +108,172 @@ export function ConnectionsPage() {
     }
   }
 
+  const cardStyle = {
+    border: `1px solid ${token.colorBorderSecondary}`,
+    background: token.colorBgContainer,
+  }
+
+  const activityColumns: ColumnsType<IntegrationEvent> = [
+    {
+      title: t('connections.activity.colEvent'),
+      dataIndex: 'eventType',
+      render: (type: IntegrationEventType) => (
+        <Tag color={EVENT_TAG_COLOR[type]}>{t(`connections.activity.event.${type}`)}</Tag>
+      ),
+    },
+    {
+      title: t('connections.activity.colProvider'),
+      dataIndex: 'provider',
+      render: (provider: string) => providerLabel(provider),
+    },
+    {
+      title: t('connections.activity.colWhen'),
+      dataIndex: 'occurredAt',
+      render: (value: string) => new Date(value).toLocaleString(),
+    },
+    {
+      title: t('connections.activity.colDetail'),
+      dataIndex: 'detail',
+      ellipsis: true,
+      render: (detail: string | null) =>
+        detail ? detail : <Typography.Text type="secondary">—</Typography.Text>,
+    },
+  ]
+
   return (
-    <div className="mx-auto max-w-2xl">
-      <Card title={t('connections.title')}>
-        <Typography.Paragraph type="secondary">{t('connections.description')}</Typography.Paragraph>
+    <div className="mx-auto flex max-w-5xl flex-col gap-6">
+      <PageHeading title={t('connections.title')} description={t('connections.description')} />
 
-        {providersLoading ? (
-          <Spin />
-        ) : (
-          <Space direction="vertical" size="large" className="w-full">
-            {(providers ?? []).map((provider, index) => {
-              const account = accountByProvider.get(provider.provider)
-              const revoked = account?.status === 'revoked'
-              const label = provider.displayName ?? providerLabel(provider.provider)
+      <section className="flex flex-col gap-2.5">
+          <div className="px-0.5">
+            <Typography.Text strong type="secondary" className="text-xs uppercase tracking-wider">
+              {t('connections.providersTitle')}
+            </Typography.Text>
+          </div>
 
-              return (
-                <div key={provider.provider} className="flex flex-col gap-2">
-                  {index > 0 && <Divider className="my-0" />}
-                  <Space>
-                    <Typography.Text strong>{label}</Typography.Text>
-                    {account && statusTag(account.status, t)}
-                  </Space>
+          {providersLoading ? (
+            <div className="rounded-xl p-6" style={cardStyle}>
+              <Spin />
+            </div>
+          ) : (providers ?? []).length === 0 ? (
+            <div className="rounded-xl p-4" style={cardStyle}>
+              <Typography.Text type="secondary">{t('connections.noneAvailable')}</Typography.Text>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {(providers ?? []).map((provider) => {
+                const account = accountByProvider.get(provider.provider)
+                const revoked = account?.status === 'revoked'
+                const label = provider.displayName ?? providerLabel(provider.provider)
 
-                  {provider.authKind === 'api-key' ? (
-                    <>
-                      {account?.displayName && (
-                        <Typography.Text type="secondary">{account.displayName}</Typography.Text>
-                      )}
-                      {account && (
-                        <Typography.Text type="secondary" className="text-xs">
-                          {t('connections.apiKey.connectedHint')}
-                        </Typography.Text>
-                      )}
-                      <Space.Compact className="w-full">
-                        <Input.Password
-                          placeholder={t('connections.apiKey.placeholder')}
-                          value={apiKeyDrafts[provider.provider] ?? ''}
-                          onChange={(e) =>
-                            setApiKeyDrafts((drafts) => ({ ...drafts, [provider.provider]: e.target.value }))
-                          }
-                          onPressEnter={() => handleSaveApiKey(provider.provider)}
-                        />
-                        <Button
-                          type="primary"
-                          loading={saveApiKey.isPending}
-                          onClick={() => handleSaveApiKey(provider.provider)}
-                        >
-                          {t('connections.apiKey.save')}
-                        </Button>
-                      </Space.Compact>
-                      {account && (
-                        <Popconfirm
-                          title={t('connections.disconnectConfirm')}
-                          onConfirm={() => handleDisconnect(account.id)}
-                        >
-                          <Button danger className="w-fit">
-                            {t('connections.disconnect')}
-                          </Button>
-                        </Popconfirm>
-                      )}
-                    </>
-                  ) : account ? (
-                    <>
-                      {account.displayName && (
-                        <Typography.Text type="secondary">{account.displayName}</Typography.Text>
-                      )}
-                      {revoked && (
-                        <Alert
-                          type="warning"
-                          showIcon
-                          message={t('connections.reconnectNeeded')}
-                          description={account.lastError ?? undefined}
-                        />
-                      )}
-                      <Space>
-                        {revoked && (
+                return (
+                  <div key={provider.provider} className="flex flex-col gap-3 rounded-xl p-4" style={cardStyle}>
+                    <div className="flex items-center justify-between gap-2">
+                      <Typography.Text strong>{label}</Typography.Text>
+                      {account && statusTag(account.status, t)}
+                    </div>
+
+                    {provider.authKind === 'api-key' ? (
+                      <>
+                        {account?.displayName && (
+                          <Typography.Text type="secondary">{account.displayName}</Typography.Text>
+                        )}
+                        {account && (
+                          <Typography.Text type="secondary" className="text-xs">
+                            {t('connections.apiKey.connectedHint')}
+                          </Typography.Text>
+                        )}
+                        <Space.Compact className="w-full">
+                          <Input.Password
+                            placeholder={t('connections.apiKey.placeholder')}
+                            value={apiKeyDrafts[provider.provider] ?? ''}
+                            onChange={(e) =>
+                              setApiKeyDrafts((drafts) => ({ ...drafts, [provider.provider]: e.target.value }))
+                            }
+                            onPressEnter={() => handleSaveApiKey(provider.provider)}
+                          />
                           <Button
                             type="primary"
-                            onClick={() => handleConnect(provider.provider)}
-                            loading={startConnection.isPending}
+                            loading={saveApiKey.isPending}
+                            onClick={() => handleSaveApiKey(provider.provider)}
                           >
-                            {t('connections.reconnect')}
+                            {t('connections.apiKey.save')}
                           </Button>
+                        </Space.Compact>
+                        {account && (
+                          <Popconfirm
+                            title={t('connections.disconnectConfirm')}
+                            onConfirm={() => handleDisconnect(account.id)}
+                          >
+                            <Button danger className="w-fit">
+                              {t('connections.disconnect')}
+                            </Button>
+                          </Popconfirm>
                         )}
-                        <Popconfirm
-                          title={t('connections.disconnectConfirm')}
-                          onConfirm={() => handleDisconnect(account.id)}
+                      </>
+                    ) : account ? (
+                      <>
+                        {account.displayName && (
+                          <Typography.Text type="secondary">{account.displayName}</Typography.Text>
+                        )}
+                        {revoked && (
+                          <Alert
+                            type="warning"
+                            showIcon
+                            message={t('connections.reconnectNeeded')}
+                            description={account.lastError ?? undefined}
+                          />
+                        )}
+                        <Space>
+                          {revoked && (
+                            <Button
+                              type="primary"
+                              onClick={() => handleConnect(provider.provider)}
+                              loading={startConnection.isPending}
+                            >
+                              {t('connections.reconnect')}
+                            </Button>
+                          )}
+                          <Popconfirm
+                            title={t('connections.disconnectConfirm')}
+                            onConfirm={() => handleDisconnect(account.id)}
+                          >
+                            <Button danger>{t('connections.disconnect')}</Button>
+                          </Popconfirm>
+                        </Space>
+                      </>
+                    ) : (
+                      <>
+                        <Typography.Text type="secondary">{t('connections.providerDesc')}</Typography.Text>
+                        <Button
+                          type="primary"
+                          className="w-fit"
+                          onClick={() => handleConnect(provider.provider)}
+                          loading={startConnection.isPending}
                         >
-                          <Button danger>{t('connections.disconnect')}</Button>
-                        </Popconfirm>
-                      </Space>
-                    </>
-                  ) : (
-                    <>
-                      <Typography.Text type="secondary">
-                        {t('connections.providerDesc')}
-                      </Typography.Text>
-                      <Button
-                        type="primary"
-                        className="w-fit"
-                        onClick={() => handleConnect(provider.provider)}
-                        loading={startConnection.isPending}
-                      >
-                        {t('connections.connect', { provider: providerLabel(provider.provider) })}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              )
-            })}
+                          {t('connections.connect', { provider: providerLabel(provider.provider) })}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+      </section>
 
-            {(providers ?? []).length === 0 && (
-              <Typography.Text type="secondary">{t('connections.noneAvailable')}</Typography.Text>
-            )}
-          </Space>
-        )}
-      </Card>
-
+      {/* Recent activity */}
       {events && events.length > 0 && (
-        <Card title={t('connections.activity.title')} className="mt-4">
-          <Typography.Paragraph type="secondary">
-            {t('connections.activity.description')}
-          </Typography.Paragraph>
-          <List
+        <SettingsSection title={t('connections.activity.title')}>
+          <Table<IntegrationEvent>
+            rowKey="id"
             size="small"
+            columns={activityColumns}
             dataSource={events}
-            renderItem={(event) => (
-              <List.Item>
-                <Space direction="vertical" size={0} className="w-full">
-                  <Space wrap>
-                    <Tag color={EVENT_TAG_COLOR[event.eventType]}>
-                      {t(`connections.activity.event.${event.eventType}`)}
-                    </Tag>
-                    <Typography.Text strong>{providerLabel(event.provider)}</Typography.Text>
-                    <Typography.Text type="secondary">
-                      {new Date(event.occurredAt).toLocaleString()}
-                    </Typography.Text>
-                  </Space>
-                  {event.detail && (
-                    <Typography.Text type="secondary" className="text-xs">
-                      {event.detail}
-                    </Typography.Text>
-                  )}
-                </Space>
-              </List.Item>
-            )}
+            pagination={{ pageSize: 10, hideOnSinglePage: true }}
+            scroll={{ x: true }}
           />
-        </Card>
+        </SettingsSection>
       )}
     </div>
   )

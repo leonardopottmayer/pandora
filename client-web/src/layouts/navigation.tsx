@@ -95,6 +95,22 @@ export const navigationModules: NavModule[] = [
     ],
   },
   {
+    key: 'integrations',
+    labelKey: 'nav.integrations',
+    icon: <ApiOutlined />,
+    screens: [
+      { key: 'connections', labelKey: 'nav.connections', path: '/integrations/connections', icon: <ApiOutlined /> },
+    ],
+  },
+  {
+    key: 'channels',
+    labelKey: 'nav.channels',
+    icon: <NotificationOutlined />,
+    screens: [
+      { key: 'notifications', labelKey: 'nav.notifications', path: '/channels/notifications', icon: <NotificationOutlined /> },
+    ],
+  },
+  {
     key: 'account',
     labelKey: 'nav.account',
     icon: <SafetyOutlined />,
@@ -102,8 +118,6 @@ export const navigationModules: NavModule[] = [
       { key: 'profile', labelKey: 'nav.profile', path: '/account', icon: <HomeOutlined /> },
       { key: 'security', labelKey: 'nav.security', path: '/account/security', icon: <SafetyOutlined /> },
       { key: 'settings', labelKey: 'nav.settings', path: '/settings', icon: <SettingOutlined /> },
-      { key: 'notifications', labelKey: 'nav.notifications', path: '/settings/notifications', icon: <NotificationOutlined /> },
-      { key: 'connections', labelKey: 'nav.connections', path: '/settings/connections', icon: <ApiOutlined /> },
     ],
   },
 ]

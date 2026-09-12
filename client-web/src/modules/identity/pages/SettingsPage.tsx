@@ -1,6 +1,9 @@
-import { Card, Divider, Segmented, Select, Typography } from 'antd'
+import { Segmented, Select, Typography } from 'antd'
 import { BulbOutlined, BulbFilled, DesktopOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
+import { PageHeading } from '@/components/settings/PageHeading'
+import { SettingsSection } from '@/components/settings/SettingsSection'
+import { SettingRow } from '@/components/settings/SettingRow'
 import { usePreferences } from '../context/preferences-context'
 import type { AppLanguage, AppTheme, WeekStartsOn } from '../models'
 
@@ -39,82 +42,86 @@ export function SettingsPage() {
   ]
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <Card title={t('settings.title')}>
-        <div className="flex flex-col gap-2">
-          <Typography.Text strong>{t('settings.themeLabel')}</Typography.Text>
-          <Typography.Text type="secondary">{t('settings.themeDesc')}</Typography.Text>
-          <Segmented<AppTheme>
-            className="mt-2 w-fit"
-            value={theme}
-            onChange={setTheme}
-            options={[
-              { label: t('settings.themeLight'), value: 'light', icon: <BulbOutlined /> },
-              { label: t('settings.themeDark'), value: 'dark', icon: <BulbFilled /> },
-              { label: t('settings.themeSystem'), value: 'system', icon: <DesktopOutlined /> },
-            ]}
-          />
-        </div>
+    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+      <PageHeading title={t('settings.title')} description={t('settings.subtitle')} />
 
-        <Divider />
+      <SettingsSection title={t('settings.groupAppearance')}>
+        <SettingRow
+          label={t('settings.themeLabel')}
+          description={t('settings.themeDesc')}
+          control={
+            <Segmented<AppTheme>
+              value={theme}
+              onChange={setTheme}
+              options={[
+                { label: t('settings.themeLight'), value: 'light', icon: <BulbOutlined /> },
+                { label: t('settings.themeDark'), value: 'dark', icon: <BulbFilled /> },
+                { label: t('settings.themeSystem'), value: 'system', icon: <DesktopOutlined /> },
+              ]}
+            />
+          }
+        />
+        <SettingRow
+          label={t('settings.languageLabel')}
+          description={t('settings.languageDesc')}
+          control={
+            <Segmented<AppLanguage>
+              value={language}
+              onChange={setLanguage}
+              options={[
+                { label: 'Portugues', value: 'pt-BR' },
+                { label: 'English', value: 'en' },
+              ]}
+            />
+          }
+        />
+      </SettingsSection>
 
-        <div className="flex flex-col gap-2">
-          <Typography.Text strong>{t('settings.languageLabel')}</Typography.Text>
-          <Typography.Text type="secondary">{t('settings.languageDesc')}</Typography.Text>
-          <Segmented<AppLanguage>
-            className="mt-2 w-fit"
-            value={language}
-            onChange={setLanguage}
-            options={[
-              { label: 'Portugues', value: 'pt-BR' },
-              { label: 'English', value: 'en' },
-            ]}
-          />
-        </div>
+      <SettingsSection title={t('settings.groupRegion')}>
+        <SettingRow
+          label={t('settings.timeZoneLabel')}
+          description={t('settings.timeZoneDesc')}
+          control={
+            <Select
+              className="w-full min-w-56 sm:w-64"
+              showSearch
+              value={timeZone}
+              onChange={setTimeZone}
+              options={timeZoneOptions(timeZone)}
+            />
+          }
+        />
+        <SettingRow
+          label={t('settings.weekStartsOnLabel')}
+          description={t('settings.weekStartsOnDesc')}
+          control={
+            <Segmented<WeekStartsOn>
+              value={weekStartsOn}
+              onChange={setWeekStartsOn}
+              options={[
+                { label: t('settings.weekSunday'), value: 'sunday' },
+                { label: t('settings.weekMonday'), value: 'monday' },
+              ]}
+            />
+          }
+        />
+        <SettingRow
+          label={t('settings.alertOffsetLabel')}
+          description={t('settings.alertOffsetDesc')}
+          control={
+            <Select
+              className="w-full min-w-56 sm:w-64"
+              value={defaultAlertOffsetMinutes}
+              onChange={setDefaultAlertOffsetMinutes}
+              options={offsetOptions}
+            />
+          }
+        />
+      </SettingsSection>
 
-        <Divider />
-
-        <div className="flex flex-col gap-2">
-          <Typography.Text strong>{t('settings.timeZoneLabel')}</Typography.Text>
-          <Typography.Text type="secondary">{t('settings.timeZoneDesc')}</Typography.Text>
-          <Select
-            className="mt-2 w-full max-w-xs"
-            showSearch
-            value={timeZone}
-            onChange={setTimeZone}
-            options={timeZoneOptions(timeZone)}
-          />
-        </div>
-
-        <Divider />
-
-        <div className="flex flex-col gap-2">
-          <Typography.Text strong>{t('settings.weekStartsOnLabel')}</Typography.Text>
-          <Typography.Text type="secondary">{t('settings.weekStartsOnDesc')}</Typography.Text>
-          <Segmented<WeekStartsOn>
-            className="mt-2 w-fit"
-            value={weekStartsOn}
-            onChange={setWeekStartsOn}
-            options={[
-              { label: t('settings.weekSunday'), value: 'sunday' },
-              { label: t('settings.weekMonday'), value: 'monday' },
-            ]}
-          />
-        </div>
-
-        <Divider />
-
-        <div className="flex flex-col gap-2">
-          <Typography.Text strong>{t('settings.alertOffsetLabel')}</Typography.Text>
-          <Typography.Text type="secondary">{t('settings.alertOffsetDesc')}</Typography.Text>
-          <Select
-            className="mt-2 w-full max-w-xs"
-            value={defaultAlertOffsetMinutes}
-            onChange={setDefaultAlertOffsetMinutes}
-            options={offsetOptions}
-          />
-        </div>
-      </Card>
+      <Typography.Text type="secondary" className="text-xs">
+        {t('settings.sharedHint')}
+      </Typography.Text>
     </div>
   )
 }
