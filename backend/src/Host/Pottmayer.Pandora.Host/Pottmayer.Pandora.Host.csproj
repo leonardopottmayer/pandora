@@ -51,18 +51,18 @@
     <ProjectReference Include="../../Modules/Communications/Pottmayer.Pandora.Modules.Communications.Persistence/Pottmayer.Pandora.Modules.Communications.Persistence.csproj" />
     <ProjectReference Include="../../Modules/Communications/Pottmayer.Pandora.Modules.Communications.Presentation/Pottmayer.Pandora.Modules.Communications.Presentation.csproj" />
     <!-- Tars: Core -->
-    <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.12" />
+    <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.13" />
     <!-- Tars: Web -->
-    <PackageReference Include="Pottmayer.Tars.Web.Http" Version="0.0.12" />
-    <PackageReference Include="Pottmayer.Tars.Web.Http.AspNetCore" Version="0.0.12" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http" Version="0.0.13" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http.AspNetCore" Version="0.0.13" />
     <!-- Tars: UserContext -->
-    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.12" />
+    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.13" />
     <!-- Tars: Observability â€” DI wiring lives in Shared.Infrastructure; the host only needs the
          correlation-id middleware. -->
-    <PackageReference Include="Pottmayer.Tars.Observability.AspNetCore" Version="0.0.12" />
+    <PackageReference Include="Pottmayer.Tars.Observability.AspNetCore" Version="0.0.13" />
     <!-- Tars: in-process transactional outbox â€” the monolith's messaging transport, wired in the host. -->
-    <PackageReference Include="Pottmayer.Tars.Messaging.EntityFrameworkCore" Version="0.0.12" />
-    <PackageReference Include="Pottmayer.Tars.Messaging.Broker" Version="0.0.12" />
+    <PackageReference Include="Pottmayer.Tars.Messaging.EntityFrameworkCore" Version="0.0.13" />
+    <PackageReference Include="Pottmayer.Tars.Messaging.Broker" Version="0.0.13" />
   </ItemGroup>
 
   <ItemGroup>
