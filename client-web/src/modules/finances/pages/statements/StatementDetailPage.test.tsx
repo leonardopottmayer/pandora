@@ -56,7 +56,7 @@ function renderPage() {
 function auxHandlers() {
   return [
     http.get(`${FINANCES_BASE}/cards/c1`, () =>
-      HttpResponse.json({ success: true, data: { id: 'c1', name: 'Nubank', brand: null, lastFour: null, creditLimit: null, closingDay: 5, dueDay: 12, currency: 'BRL', defaultPaymentAccountId: null, archivedAt: null } }),
+      HttpResponse.json({ success: true, data: { id: 'c1', name: 'Nubank', brand: null, lastFour: null, creditLimit: null, closingDay: 5, dueDay: 12, currency: 'BRL', accountId: 'a1', archivedAt: null } }),
     ),
     http.get(`${FINANCES_BASE}/categories/system`, () => HttpResponse.json({ success: true, data: [] })),
     http.get(`${FINANCES_BASE}/categories`, () => HttpResponse.json({ success: true, data: [] })),

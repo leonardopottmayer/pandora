@@ -25,6 +25,10 @@ public sealed class UpdateAccountCommandHandler(IUnitOfWorkFactory factory, Time
         if (!AccountType.IsSupported(input.Type))
             return Fail(AccountErrors.InvalidType(input.Type));
 
+        if (!string.IsNullOrWhiteSpace(input.BankCode) && !Bank.IsSupported(input.BankCode))
+            return Fail(AccountErrors.InvalidBank(input.BankCode));
+
+        var bankCode = Bank.Canonicalize(input.BankCode);
         var type = AccountType.FromValue(input.Type);
 
         var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
@@ -51,11 +55,12 @@ public sealed class UpdateAccountCommandHandler(IUnitOfWorkFactory factory, Time
                 description = new { old = account.Description, @new = input.Description },
                 color = new { old = account.Color, @new = input.Color },
                 icon = new { old = account.Icon, @new = input.Icon },
-                displayOrder = new { old = account.DisplayOrder, @new = input.DisplayOrder }
+                displayOrder = new { old = account.DisplayOrder, @new = input.DisplayOrder },
+                bankCode = new { old = account.BankCode, @new = bankCode }
             };
 
             account.Update(input.Name, type, input.Institution, input.Description,
-                input.Color, input.Icon, input.DisplayOrder);
+                input.Color, input.Icon, input.DisplayOrder, bankCode);
             await repo.UpdateAsync(account, token);
 
             await ctx.RecordAsync(

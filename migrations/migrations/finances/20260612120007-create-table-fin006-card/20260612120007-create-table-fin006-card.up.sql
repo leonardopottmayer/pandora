@@ -10,7 +10,7 @@ CREATE TABLE finances.fin006_card (
 	closing_day INT NOT NULL,
 	due_day INT NOT NULL,
 	currency VARCHAR(10) NOT NULL,
-	default_payment_account_id uuid NULL,
+	account_id uuid NOT NULL,
 	archived_at TIMESTAMPTZ NULL,
 	created_by UUID NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
@@ -33,9 +33,13 @@ ADD CONSTRAINT ck_fin006_due_day CHECK (due_day BETWEEN 1 AND 28);
 ALTER TABLE finances.fin006_card
 ADD CONSTRAINT ck_fin006_credit_limit CHECK (credit_limit IS NULL OR credit_limit >= 0);
 
+-- Every card belongs to an account; the account's bank routes card-bill imports.
 ALTER TABLE finances.fin006_card
-ADD CONSTRAINT fk_fin006_default_payment_account_id FOREIGN KEY (default_payment_account_id)
+ADD CONSTRAINT fk_fin006_account_id FOREIGN KEY (account_id)
 	REFERENCES finances.fin001_account (id);
 
 CREATE INDEX ix_fin006_user_archived_at
 ON finances.fin006_card (user_id, archived_at);
+
+CREATE INDEX ix_fin006_account_id
+ON finances.fin006_card (account_id);

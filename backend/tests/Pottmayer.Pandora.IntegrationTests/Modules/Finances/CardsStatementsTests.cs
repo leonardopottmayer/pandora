@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Pottmayer.Pandora.IntegrationTests.Support;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.RunStatementLifecycle;
@@ -252,7 +254,30 @@ public sealed class CardsStatementsTests : IAsyncLifetime
 
     private async Task<Guid> CreateCardAsync(object body)
     {
-        var response = await _client.PostAsJsonAsync(Cards, body);
+        var json = (JsonObject)JsonSerializer.SerializeToNode(body, body.GetType())!;
+
+        // A card must belong to an account. Older tests pass either no account or the legacy
+        // defaultPaymentAccountId; normalize both to a required accountId, creating one on demand.
+        if (json.TryGetPropertyValue("defaultPaymentAccountId", out var legacy))
+        {
+            json.Remove("defaultPaymentAccountId");
+            if (legacy is not null)
+                json["accountId"] = legacy.DeepClone();
+        }
+
+        if (json["accountId"] is null)
+        {
+            var accountId = await CreateAccountAsync(new
+            {
+                name = $"Card account {Guid.NewGuid():N}",
+                type = "checking",
+                currency = json["currency"]?.GetValue<string>() ?? "BRL",
+                displayOrder = 0
+            });
+            json["accountId"] = JsonValue.Create(accountId);
+        }
+
+        var response = await _client.PostAsJsonAsync(Cards, json);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<SingleEnvelope<CardNode>>())!.Data.Id;
     }

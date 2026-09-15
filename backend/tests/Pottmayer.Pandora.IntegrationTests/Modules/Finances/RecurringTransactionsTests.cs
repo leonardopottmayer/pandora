@@ -529,12 +529,24 @@ public sealed class RecurringTransactionsTests : IAsyncLifetime
 
     private async Task<Guid> CreateCardAsync()
     {
+        // A card must belong to an account; use a unique name to avoid colliding with other accounts.
+        var accountResponse = await _client.PostAsJsonAsync(Accounts, new
+        {
+            name = $"Card account {Guid.NewGuid():N}",
+            type = "checking",
+            currency = "BRL",
+            displayOrder = 0,
+        });
+        Assert.Equal(HttpStatusCode.OK, accountResponse.StatusCode);
+        var accountId = (await accountResponse.Content.ReadFromJsonAsync<SingleEnvelope<IdNode>>())!.Data.Id;
+
         var response = await _client.PostAsJsonAsync(Cards, new
         {
             name = "Nubank",
             closingDay = 28,
             dueDay = 5,
-            currency = "BRL"
+            currency = "BRL",
+            accountId
         });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<SingleEnvelope<IdNode>>())!.Data.Id;

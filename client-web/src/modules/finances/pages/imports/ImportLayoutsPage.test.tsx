@@ -13,6 +13,7 @@ const layout: ImportLayoutDto = {
   layoutCode: 'NUBANK_OFX',
   name: 'Nubank OFX',
   bankName: 'Nubank',
+  bankCode: '260',
   fileFormat: 'ofx',
   accountType: 'card',
   isSystemLayout: true,

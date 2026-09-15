@@ -20,6 +20,7 @@ public static class InfrastructureDI
         builder.Services.AddHostedService<ImportParsingBackgroundService>();
 
         builder.Services.AddSingleton<ILayoutDetector, LayoutDetector>();
+        builder.Services.AddSingleton<IImportLayoutResolver, ImportLayoutResolver>();
         builder.Services.AddSingleton<IImportParser, OFXParser>();
         builder.Services.AddSingleton<IImportParser, CsvParser>();
         builder.Services.AddSingleton<IDuplicateDetector, DuplicateDetector>();

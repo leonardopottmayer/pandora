@@ -16,6 +16,9 @@ public static class AccountErrors
     public static Error InvalidCurrency(string currency) =>
         Error.Validation("Accounts.InvalidCurrency", $"Currency '{currency}' is not a valid code.");
 
+    public static Error InvalidBank(string bankCode) =>
+        Error.Validation("Accounts.InvalidBank", $"Bank code '{bankCode}' is not supported.");
+
     public static Error NameAlreadyExists =>
         Error.Conflict("Accounts.NameAlreadyExists", "An account with this name already exists.");
 

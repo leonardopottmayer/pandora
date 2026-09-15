@@ -17,6 +17,16 @@ internal static class ImportLayoutFactory
     /// <summary>A bare layout carrying only its code — for detector tests that match by <c>LayoutCode</c>.</summary>
     public static ImportLayout WithCode(string layoutCode, string fileFormat = "ofx") => Build(fileFormat, "{}", layoutCode);
 
+    /// <summary>A layout carrying the routing key (bank, format, account/card) — for resolver tests.</summary>
+    public static ImportLayout Routing(string? bankCode, string fileFormat, string accountType, string layoutCode)
+    {
+        var layout = Build(fileFormat, "{}", layoutCode);
+        if (bankCode is not null)
+            Set(layout, nameof(ImportLayout.BankCode), bankCode);
+        Set(layout, nameof(ImportLayout.AccountType), ImportLayoutAccountType.FromValue(accountType));
+        return layout;
+    }
+
     private static ImportLayout Build(string fileFormat, string config, string layoutCode)
     {
         var layout = (ImportLayout)RuntimeHelpers.GetUninitializedObject(typeof(ImportLayout));

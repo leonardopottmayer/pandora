@@ -17,6 +17,7 @@ public sealed class Account : AggregateRoot<Guid>, IAuditable
     public AccountType Type { get; private set; } = AccountType.Other;
     public CurrencyCode Currency { get; private set; } = null!;
     public string? Institution { get; private set; }
+    public string? BankCode { get; private set; }
     public string? Description { get; private set; }
     public string? Color { get; private set; }
     public string? Icon { get; private set; }
@@ -43,7 +44,8 @@ public sealed class Account : AggregateRoot<Guid>, IAuditable
         string? color,
         string? icon,
         int displayOrder,
-        TimeProvider timeProvider) =>
+        TimeProvider timeProvider,
+        string? bankCode = null) =>
         new()
         {
             Id = Guid.CreateVersion7(),
@@ -52,6 +54,7 @@ public sealed class Account : AggregateRoot<Guid>, IAuditable
             Type = type,
             Currency = currency,
             Institution = institution,
+            BankCode = bankCode,
             Description = description,
             Color = color,
             Icon = icon,
@@ -64,13 +67,14 @@ public sealed class Account : AggregateRoot<Guid>, IAuditable
     /// at creation. Returns <c>false</c> if the account is archived (no business mutation allowed).
     /// </summary>
     public bool Update(string name, AccountType type, string? institution, string? description,
-        string? color, string? icon, int displayOrder)
+        string? color, string? icon, int displayOrder, string? bankCode = null)
     {
         if (IsArchived) return false;
 
         Name = name.Trim();
         Type = type;
         Institution = institution;
+        BankCode = bankCode;
         Description = description;
         Color = color;
         Icon = icon;

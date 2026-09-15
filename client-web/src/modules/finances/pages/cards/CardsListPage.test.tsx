@@ -17,7 +17,7 @@ const card: CardDto = {
   closingDay: 5,
   dueDay: 12,
   currency: 'BRL',
-  defaultPaymentAccountId: null,
+  accountId: 'a1',
   archivedAt: null,
 }
 

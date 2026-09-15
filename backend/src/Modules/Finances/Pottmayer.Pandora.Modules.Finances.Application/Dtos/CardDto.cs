@@ -11,7 +11,7 @@ public sealed record CardDto(
     int ClosingDay,
     int DueDay,
     string Currency,
-    Guid? DefaultPaymentAccountId,
+    Guid AccountId,
     DateTimeOffset? ArchivedAt)
 {
     public static CardDto From(Card card) =>
@@ -24,6 +24,6 @@ public sealed record CardDto(
             card.ClosingDay,
             card.DueDay,
             card.Currency.Value,
-            card.DefaultPaymentAccountId,
+            card.AccountId,
             card.ArchivedAt);
 }

@@ -31,6 +31,7 @@ internal sealed class AccountEntityConfiguration : IEntityTypeConfiguration<Acco
                .IsRequired();
 
         builder.Property(a => a.Institution).HasColumnName("institution").HasMaxLength(100);
+        builder.Property(a => a.BankCode).HasColumnName("bank_code").HasMaxLength(10);
         builder.Property(a => a.Description).HasColumnName("description").HasMaxLength(255);
         builder.Property(a => a.Color).HasColumnName("color").HasMaxLength(20);
         builder.Property(a => a.Icon).HasColumnName("icon").HasMaxLength(50);

@@ -19,8 +19,10 @@ upload → ImportFile(received) → [job ImportParsingService] → parse linhas 
       → gera sugestões (PendingTransaction) → usuário revisa no inbox → completed
 ```
 
-- **Upload** (`POST /imports`, multipart): o destino é uma **conta XOR um cartão**, um layout opcional
-  (auto-detectado se omitido) e uma **data de corte** (cutoff) opcional. Cria um `ImportFile` em
+- **Upload** (`POST /imports`, multipart): o destino é uma **conta XOR um cartão** e uma **data de
+  corte** (cutoff) opcional. O layout é **roteado pelo banco do destino + formato do arquivo +
+  conta/cartão** (ver [Roteamento por banco](#roteamento-por-banco-do-destino)); só cai no
+  auto-detect por conteúdo quando o destino não tem banco. Cria um `ImportFile` em
   `received`, guardando os bytes brutos (`file_content`) e um `correlation_id` que amarra a auditoria
   da importação inteira. `file_hash` (sha256) é guardado de forma **informativa** — a UI pode avisar
   sobre upload duplicado, mas reimportar o mesmo arquivo é permitido de propósito (para reconstruir
@@ -45,21 +47,38 @@ upload → ImportFile(received) → [job ImportParsingService] → parse linhas 
 
 Um **layout** é um perfil de parsing guardado como `config` JSONB, para os parsers ficarem genéricos e
 os quirks por banco viverem em dados. Layouts de sistema têm `user_id NULL` e um `layout_code` único
-global. O `ILayoutDetector` auto-escolhe um layout para o arquivo enviado quando nenhum é informado.
+global. Cada layout carrega um **`bank_code`** (COMPE) além do `bank_name`, usado no roteamento.
 
 Layouts de sistema seed (bancos brasileiros):
 
-| Código do layout | Banco | Formato | Destino |
-|---|---|---|---|
-| `viacredi-ofx` | Viacredi | OFX | conta |
-| `viacredi-account-csv` | Viacredi | CSV | conta |
-| `nubank-card-ofx` | Nubank | OFX | cartão |
-| `nubank-account-ofx` | Nubank | OFX | conta |
-| `nubank-card-csv` | Nubank | CSV | cartão |
-| `nubank-account-csv` | Nubank | CSV | conta |
-| `inter-ofx` | Banco Inter | OFX | conta |
-| `itau-account-ofx` | Itaú | OFX | conta |
-| `itau-card-csv` | Itaú | CSV | cartão |
+| Código do layout | Banco | COMPE | Formato | Destino |
+|---|---|---|---|---|
+| `viacredi-ofx` | Viacredi | 085 | OFX | conta |
+| `viacredi-account-csv` | Viacredi | 085 | CSV | conta |
+| `nubank-card-ofx` | Nubank | 260 | OFX | cartão |
+| `nubank-account-ofx` | Nubank | 260 | OFX | conta |
+| `nubank-card-csv` | Nubank | 260 | CSV | cartão |
+| `nubank-account-csv` | Nubank | 260 | CSV | conta |
+| `inter-ofx` | Banco Inter | 077 | OFX | conta |
+| `itau-account-ofx` | Itaú | 341 | OFX | conta |
+| `itau-card-csv` | Itaú | 341 | CSV | cartão |
+
+### Roteamento por banco do destino
+
+A conta guarda o COMPE do seu banco em `fin001.bank_code` — um valor do registro `Bank` (dominio; 077
+Inter, 085 Viacredi, 260 Nubank, 341 Itaú). O cartão não tem banco próprio: ele pertence a uma conta
+(`fin006.account_id`) e herda o `bank_code` dela. No upload, o `IImportLayoutResolver` escolhe o layout
+pela **chave `(bank_code, file_format, account_type)`**: detecta o formato (ofx/csv) pela
+extensão/conteúdo, deriva account/card do destino (para cartão, o banco vem da conta a que ele
+pertence), e busca o layout de sistema com essa combinação (índice único `uq_fin012_system_bank_route`).
+
+- **Achou** → usa esse layout (determinístico, sem sniffing).
+- **Não achou** (destino sem banco, ou combinação sem layout) → **fallback** para o `ILayoutDetector`
+  (auto-detect por conteúdo, comportamento anterior).
+
+Isso substitui a escolha por sniffing como caminho principal; o detector vira rede de segurança. A
+matriz do que cada banco suporta é derivada dos layouts (`GET /import-layouts`, campos `bankCode`,
+`fileFormat`, `accountType`), consumida pelo front para oferecer o banco no cadastro de conta/cartão.
 
 **Config OFX** captura quirks: `descriptionField` (NAME/MEMO), `amountIsAlwaysAbsolute`,
 `invertAmount`, `treatPaymentAsDebit` e uma lista `quirks` (`multiple-banktranlist`, `comma-decimal`,

@@ -94,11 +94,11 @@ auto-referenciando `fin003`. Único `uq_fin003_user_name_parent (user_id, name, 
 | `closing_day` | int NOT NULL | **1..28** |
 | `due_day` | int NOT NULL | **1..28** |
 | `currency` | varchar(10) NOT NULL | imutável |
-| `default_payment_account_id` | uuid NULL → fin001 | |
+| `account_id` | uuid NOT NULL → fin001 | conta a que o cartão pertence; o banco dela roteia imports |
 | `archived_at` | timestamptz NULL | |
 
 Constraints: `uq_fin006_user_name`, `ck_fin006_closing_day/due_day (BETWEEN 1 AND 28)`,
-`ck_fin006_credit_limit`, `fk_fin006_default_payment_account_id`. Índice `(user_id, archived_at)`.
+`ck_fin006_credit_limit`, `fk_fin006_account_id`. Índices `(user_id, archived_at)`, `(account_id)`.
 
 > A faixa 1..28 evita ambiguidade com o tamanho do mês (nenhum cartão fecha no dia 30 de fevereiro).
 

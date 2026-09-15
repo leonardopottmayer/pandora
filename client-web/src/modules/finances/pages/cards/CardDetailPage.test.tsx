@@ -10,7 +10,7 @@ import { CardDetailPage } from './CardDetailPage'
 
 const card = {
   id: 'c1', name: 'Nubank', brand: 'Mastercard', lastFour: '1234', creditLimit: 5000,
-  closingDay: 5, dueDay: 12, currency: 'BRL', defaultPaymentAccountId: null, archivedAt: null,
+  closingDay: 5, dueDay: 12, currency: 'BRL', accountId: 'a1', archivedAt: null,
 }
 
 const statement = {

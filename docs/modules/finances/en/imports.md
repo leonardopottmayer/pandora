@@ -19,8 +19,10 @@ upload → ImportFile(received) → [ImportParsingService job] → parse rows �
       → generate suggestions (PendingTransaction) → user reviews in inbox → completed
 ```
 
-- **Upload** (`POST /imports`, multipart): destination is an **account XOR a card**, an optional
-  layout (auto-detected if omitted), and an optional **cutoff date**. Creates an `ImportFile` in
+- **Upload** (`POST /imports`, multipart): destination is an **account XOR a card** and an optional
+  **cutoff date**. The layout is **routed by the destination's bank + file format + account/card**
+  (see [Routing by the destination's bank](#routing-by-the-destinations-bank)); it only falls back to
+  content auto-detection when the destination has no bank set. Creates an `ImportFile` in
   `received`, storing the raw bytes (`file_content`) and a `correlation_id` that ties the whole
   import's audit together. `file_hash` (sha256) is stored **informationally** — the UI can warn about
   a duplicate upload, but re-importing the same file is allowed on purpose (to rebuild suggestions).
@@ -42,22 +44,40 @@ upload → ImportFile(received) → [ImportParsingService job] → parse rows �
 ## Layouts (`fin012`)
 
 A **layout** is a parsing profile stored as `config` JSONB, so parsers stay generic and per-bank
-quirks live in data. System layouts have `user_id NULL` and a globally unique `layout_code`. The
-`ILayoutDetector` auto-picks a layout for an uploaded file when none is supplied.
+quirks live in data. System layouts have `user_id NULL` and a globally unique `layout_code`. Each
+layout carries a **`bank_code`** (COMPE) alongside `bank_name`, used for routing.
 
 Seeded system layouts (Brazilian banks):
 
-| Layout code | Bank | Format | Target |
-|---|---|---|---|
-| `viacredi-ofx` | Viacredi | OFX | account |
-| `viacredi-account-csv` | Viacredi | CSV | account |
-| `nubank-card-ofx` | Nubank | OFX | card |
-| `nubank-account-ofx` | Nubank | OFX | account |
-| `nubank-card-csv` | Nubank | CSV | card |
-| `nubank-account-csv` | Nubank | CSV | account |
-| `inter-ofx` | Banco Inter | OFX | account |
-| `itau-account-ofx` | Itaú | OFX | account |
-| `itau-card-csv` | Itaú | CSV | card |
+| Layout code | Bank | COMPE | Format | Target |
+|---|---|---|---|---|
+| `viacredi-ofx` | Viacredi | 085 | OFX | account |
+| `viacredi-account-csv` | Viacredi | 085 | CSV | account |
+| `nubank-card-ofx` | Nubank | 260 | OFX | card |
+| `nubank-account-ofx` | Nubank | 260 | OFX | account |
+| `nubank-card-csv` | Nubank | 260 | CSV | card |
+| `nubank-account-csv` | Nubank | 260 | CSV | account |
+| `inter-ofx` | Banco Inter | 077 | OFX | account |
+| `itau-account-ofx` | Itaú | 341 | OFX | account |
+| `itau-card-csv` | Itaú | 341 | CSV | card |
+
+### Routing by the destination's bank
+
+An account stores its bank's COMPE code in `fin001.bank_code` — a value from the `Bank` registry
+(domain; 077 Inter, 085 Viacredi, 260 Nubank, 341 Itaú). A card has no bank of its own: it belongs to
+an account (`fin006.account_id`) and inherits that account's `bank_code`. On upload, the
+`IImportLayoutResolver` picks the layout by the **`(bank_code, file_format, account_type)` key**: it
+detects the format (ofx/csv) from the extension/content, derives account/card from the destination
+(for a card, the bank comes from the account it belongs to), and looks up the system layout with that
+combination (unique index `uq_fin012_system_bank_route`).
+
+- **Match** → use that layout (deterministic, no sniffing).
+- **No match** (destination has no bank, or no layout for that combination) → **fall back** to the
+  `ILayoutDetector` (content auto-detection, the previous behavior).
+
+This replaces content sniffing as the primary path; the detector becomes a safety net. The matrix of
+what each bank supports is derived from the layouts (`GET /import-layouts`, fields `bankCode`,
+`fileFormat`, `accountType`), consumed by the frontend to offer the bank on account/card forms.
 
 **OFX config** captures quirks: `descriptionField` (NAME/MEMO), `amountIsAlwaysAbsolute`,
 `invertAmount`, `treatPaymentAsDebit`, and a `quirks` list (`multiple-banktranlist`, `comma-decimal`,

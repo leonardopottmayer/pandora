@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { App, AutoComplete, Form, Input, InputNumber, Modal, Select } from 'antd'
 import { toErrorMessage } from '@/lib/api/envelope'
-import { ACCOUNT_TYPES, type AccountDto } from '../../models'
+import { ACCOUNT_TYPES, SUPPORTED_BANKS, type AccountDto } from '../../models'
 import { ACCOUNT_TYPE_META, COMMON_CURRENCIES } from '../../lib/enums'
 import { useCreateAccount, useUpdateAccount } from '../../hooks/useAccounts'
 
@@ -18,6 +18,7 @@ interface AccountFormValues {
   type: AccountDto['type']
   currency: string
   institution?: string
+  bankCode?: string
   description?: string
   color?: string
   icon?: string
@@ -43,6 +44,7 @@ export function AccountFormModal({ open, account, onClose }: AccountFormModalPro
         type: account.type,
         currency: account.currency,
         institution: account.institution ?? undefined,
+        bankCode: account.bankCode ?? undefined,
         description: account.description ?? undefined,
         color: account.color ?? undefined,
         icon: account.icon ?? undefined,
@@ -63,6 +65,7 @@ export function AccountFormModal({ open, account, onClose }: AccountFormModalPro
             name: values.name,
             type: values.type,
             institution: values.institution ?? null,
+            bankCode: values.bankCode ?? null,
             description: values.description ?? null,
             color: values.color ?? null,
             icon: values.icon ?? null,
@@ -76,6 +79,7 @@ export function AccountFormModal({ open, account, onClose }: AccountFormModalPro
           type: values.type,
           currency: values.currency,
           institution: values.institution ?? null,
+          bankCode: values.bankCode ?? null,
           description: values.description ?? null,
           color: values.color ?? null,
           icon: values.icon ?? null,
@@ -147,6 +151,20 @@ export function AccountFormModal({ open, account, onClose }: AccountFormModalPro
 
         <Form.Item name="institution" label={t('finances.accounts.institution')}>
           <Input maxLength={120} />
+        </Form.Item>
+
+        <Form.Item
+          name="bankCode"
+          label={t('finances.accounts.bank')}
+          tooltip={t('finances.accounts.bankTooltip')}
+        >
+          <Select
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder={t('finances.accounts.bankPlaceholder')}
+            options={SUPPORTED_BANKS.map((b) => ({ value: b.code, label: `${b.name} (${b.code})` }))}
+          />
         </Form.Item>
 
         <Form.Item name="description" label={t('finances.accounts.description')}>

@@ -94,11 +94,11 @@ Same shape as fin002 but scoped to `user_id`, no `code`/`is_other`/`notes`, self
 | `closing_day` | int NOT NULL | **1..28** |
 | `due_day` | int NOT NULL | **1..28** |
 | `currency` | varchar(10) NOT NULL | immutable |
-| `default_payment_account_id` | uuid NULL → fin001 | |
+| `account_id` | uuid NOT NULL → fin001 | the account the card belongs to; its bank routes imports |
 | `archived_at` | timestamptz NULL | |
 
 Constraints: `uq_fin006_user_name`, `ck_fin006_closing_day/due_day (BETWEEN 1 AND 28)`,
-`ck_fin006_credit_limit`, `fk_fin006_default_payment_account_id`. Index `(user_id, archived_at)`.
+`ck_fin006_credit_limit`, `fk_fin006_account_id`. Indexes `(user_id, archived_at)`, `(account_id)`.
 
 > The 1..28 range avoids month-length ambiguity (no card closes on the 30th of February).
 

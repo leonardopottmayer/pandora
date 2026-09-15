@@ -28,6 +28,10 @@ public sealed class CreateAccountCommandHandler(IUnitOfWorkFactory factory, Time
         if (!CurrencyCode.TryCreate(input.Currency, out var currency))
             return Fail(AccountErrors.InvalidCurrency(input.Currency));
 
+        if (!string.IsNullOrWhiteSpace(input.BankCode) && !Bank.IsSupported(input.BankCode))
+            return Fail(AccountErrors.InvalidBank(input.BankCode));
+
+        var bankCode = Bank.Canonicalize(input.BankCode);
         var type = AccountType.FromValue(input.Type);
 
         var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
@@ -40,7 +44,7 @@ public sealed class CreateAccountCommandHandler(IUnitOfWorkFactory factory, Time
 
             var account = Account.Create(
                 input.UserId, input.Name, type, currency!, input.Institution, input.Description,
-                input.Color, input.Icon, input.DisplayOrder, timeProvider);
+                input.Color, input.Icon, input.DisplayOrder, timeProvider, bankCode);
             await repo.AddAsync(account, token);
 
             await ctx.RecordAsync(

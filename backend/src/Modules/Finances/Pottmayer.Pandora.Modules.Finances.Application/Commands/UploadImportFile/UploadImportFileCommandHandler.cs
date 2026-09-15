@@ -13,7 +13,7 @@ namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.UploadImportFi
 
 public sealed class UploadImportFileCommandHandler(
     IUnitOfWorkFactory factory,
-    ILayoutDetector layoutDetector,
+    IImportLayoutResolver layoutResolver,
     TimeProvider timeProvider)
     : CommandHandlerBase<UploadImportFileCommand, ImportFileDto>
 {
@@ -35,13 +35,33 @@ public sealed class UploadImportFileCommandHandler(
 
         var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
-            // The layout is inferred from the file's own content/headers rather than chosen by the
-            // user — they only pick the destination (account or card).
             var layoutRepo = ctx.AcquireRepository<IImportLayoutRepository>();
             var systemLayouts = await layoutRepo.GetSystemLayoutsAsync(token);
 
-            var detectResult = await layoutDetector.DetectAsync(
-                input.FileContent, input.FileName, systemLayouts, token);
+            // The layout is routed by the destination's bank + file format + account/card type. Only
+            // when the destination has no bank (or no matching layout) does it fall back to sniffing
+            // the file content. The bank comes from the account the user picked — or, for a card
+            // import, from the account the card belongs to.
+            string? bankCode = null;
+            var accountRepo = ctx.AcquireRepository<IAccountRepository>();
+            if (input.AccountId is not null)
+            {
+                var account = await accountRepo.FindByIdForUserAsync(input.AccountId.Value, input.UserId, token);
+                bankCode = account?.BankCode;
+            }
+            else if (input.CardId is not null)
+            {
+                var card = await ctx.AcquireRepository<ICardRepository>()
+                    .FindByIdForUserAsync(input.CardId.Value, input.UserId, token);
+                if (card is not null)
+                {
+                    var account = await accountRepo.FindByIdForUserAsync(card.AccountId, input.UserId, token);
+                    bankCode = account?.BankCode;
+                }
+            }
+
+            var detectResult = await layoutResolver.ResolveAsync(
+                input.FileContent, input.FileName, bankCode, input.CardId is not null, systemLayouts, token);
 
             if (detectResult.IsFailure)
                 return Result<ImportFile>.Failure([ImportErrors.LayoutNotDetected]);

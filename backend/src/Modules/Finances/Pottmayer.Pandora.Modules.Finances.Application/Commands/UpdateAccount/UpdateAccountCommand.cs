@@ -12,7 +12,8 @@ public sealed record UpdateAccountInput(
     string? Description,
     string? Color,
     string? Icon,
-    int DisplayOrder);
+    int DisplayOrder,
+    string? BankCode = null);
 
 /// <summary>Edits an account's mutable fields. Currency is intentionally absent: it is fixed at creation.</summary>
 public sealed class UpdateAccountCommand(UpdateAccountInput input)

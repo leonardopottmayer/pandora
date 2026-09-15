@@ -13,9 +13,9 @@
     <PackageReference Include="Pottmayer.Tars.Ai.Chat.Abstractions" Version="0.0.13" />
     <PackageReference Include="Pottmayer.Tars.Ai.Chat" Version="0.0.13" />
     <PackageReference Include="Pottmayer.Tars.Ai.Chat.Gemini" Version="0.0.13" />
-    <!-- Hosting / options for provider registration. -->
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.2" />
+    <!-- Hosting / options for provider registration. Kept >= what Tars.Ai.Chat.Gemini requires. -->
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.11" />
   </ItemGroup>
 
 </Project>

@@ -8,4 +8,4 @@ public sealed record CreateCardRequest(
     int ClosingDay,
     int DueDay,
     string Currency,
-    Guid? DefaultPaymentAccountId);
+    Guid AccountId);

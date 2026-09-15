@@ -7,4 +7,4 @@ public sealed record UpdateCardRequest(
     decimal? CreditLimit,
     int ClosingDay,
     int DueDay,
-    Guid? DefaultPaymentAccountId);
+    Guid AccountId);

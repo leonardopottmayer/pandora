@@ -13,7 +13,8 @@ public sealed record CreateAccountInput(
     string? Color,
     string? Icon,
     int DisplayOrder,
-    decimal? OpeningBalance);
+    decimal? OpeningBalance,
+    string? BankCode = null);
 
 /// <summary>
 /// Opens a new account for the user. An optional positive opening balance is recorded as the

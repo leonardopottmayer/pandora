@@ -19,6 +19,9 @@ armazenado** — é o somatório com sinal dos lançamentos postados (decisão d
   letras maiúsculas), normalizado para maiúsculas. **Fixa na criação** — não há mutator, então nunca
   muda. Racional: mudar a moeda de uma conta invalidaria a moeda de cada lançamento e o saldo derivado.
 - **Nome** é único por usuário (`uq_fin001_user_name`).
+- **Banco** (`bank_code`, opcional): código COMPE do banco da conta (registro `Bank`; 077/085/260/341).
+  Usado para rotear a importação de extratos ao layout certo — ver
+  [Importação](imports.md#roteamento-por-banco-do-destino).
 - **Tipo é editável**, mas **moeda não** (ambos ausentes do caminho de update no design; no aggregate
   atual, `Update` reaceita `type` mas não `currency`).
 - **Arquivamento** (`archived_at`): aposentadoria soft. Uma conta arquivada:

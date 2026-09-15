@@ -15,8 +15,10 @@ Cartão de débito **não** é modelado — um débito é lançamento direto na 
 
 ## Cartão
 
-- **Config:** nome (único por usuário), bandeira, últimos quatro dígitos, `credit_limit` (`>= 0`,
-  opcional), `closing_day`, `due_day`, moeda, `default_payment_account_id`.
+- **Config:** nome (único por usuário), bandeira, últimos quatro dígitos, `account_id` (conta a que o
+  cartão pertence, **obrigatória**; o `bank_code` dela roteia a importação de faturas ao layout certo
+  — ver [Importação](imports.md#roteamento-por-banco-do-destino)), `credit_limit` (`>= 0`, opcional),
+  `closing_day`, `due_day`, moeda.
 - **`closing_day` / `due_day` ∈ 1..28** — imposto por CHECK para evitar ambiguidade com o tamanho do mês.
 - **Moeda fixa** na criação (imutável, como as contas).
 - **Arquivamento** funciona como nas contas: cartão arquivado some, rejeita mutações de negócio,

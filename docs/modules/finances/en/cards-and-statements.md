@@ -15,8 +15,10 @@ Debit cards are **not** modeled — a debit is a direct account entry.
 
 ## Card
 
-- **Config:** name (unique per user), brand, last four digits, `credit_limit` (`>= 0`, optional),
-  `closing_day`, `due_day`, currency, `default_payment_account_id`.
+- **Config:** name (unique per user), brand, last four digits, `account_id` (the account the card
+  belongs to, **required**; its `bank_code` routes card-bill imports to the right layout — see
+  [Imports](imports.md#routing-by-the-destinations-bank)), `credit_limit` (`>= 0`, optional),
+  `closing_day`, `due_day`, currency.
 - **`closing_day` / `due_day` ∈ 1..28** — enforced by CHECK to avoid month-length ambiguity.
 - **Currency is fixed** at creation (immutable, like accounts).
 - **Archiving** works like accounts: archived card is hidden, rejects business mutations, keeps

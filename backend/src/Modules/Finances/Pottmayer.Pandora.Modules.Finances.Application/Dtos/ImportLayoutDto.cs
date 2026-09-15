@@ -10,7 +10,8 @@ public sealed record ImportLayoutDto(
     string FileFormat,
     string AccountType,
     bool IsSystemLayout,
-    DateTimeOffset CreatedAt)
+    DateTimeOffset CreatedAt,
+    string? BankCode = null)
 {
     public static ImportLayoutDto From(ImportLayout l) => new(
         l.Id,
@@ -20,5 +21,6 @@ public sealed record ImportLayoutDto(
         l.FileFormat.Value,
         l.AccountType.Value,
         l.IsSystemLayout,
-        l.CreatedAt);
+        l.CreatedAt,
+        l.BankCode);
 }

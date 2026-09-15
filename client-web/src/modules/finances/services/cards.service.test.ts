@@ -26,7 +26,7 @@ const card: CardDto = {
   closingDay: 5,
   dueDay: 12,
   currency: 'BRL',
-  defaultPaymentAccountId: null,
+  accountId: 'a1',
   archivedAt: null,
 }
 
@@ -52,9 +52,10 @@ describe('cards.service', () => {
       closingDay: 5,
       dueDay: 12,
       currency: 'BRL',
+      accountId: 'a1',
     })
     expect(created.id).toBe('k1')
-    expect(body).toMatchObject({ name: 'Nubank', closingDay: 5, dueDay: 12 })
+    expect(body).toMatchObject({ name: 'Nubank', closingDay: 5, dueDay: 12, accountId: 'a1' })
   })
 
   it('reads statements and available limit', async () => {

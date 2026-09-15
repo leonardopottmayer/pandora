@@ -12,7 +12,7 @@ public sealed record CreateCardInput(
     int ClosingDay,
     int DueDay,
     string Currency,
-    Guid? DefaultPaymentAccountId);
+    Guid AccountId);
 
-/// <summary>Registers a new credit card for the user, optionally linked to a default payment account.</summary>
+/// <summary>Registers a new credit card for the user, owned by one of the user's accounts.</summary>
 public sealed class CreateCardCommand(CreateCardInput input) : CommandBase<CreateCardInput, CardDto>(input);

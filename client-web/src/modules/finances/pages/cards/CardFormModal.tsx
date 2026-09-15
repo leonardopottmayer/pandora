@@ -21,7 +21,7 @@ interface CardFormValues {
   closingDay: number
   dueDay: number
   currency: string
-  defaultPaymentAccountId?: string
+  accountId: string
 }
 
 export function CardFormModal({ open, card, onClose }: CardFormModalProps) {
@@ -45,7 +45,7 @@ export function CardFormModal({ open, card, onClose }: CardFormModalProps) {
         closingDay: card.closingDay,
         dueDay: card.dueDay,
         currency: card.currency,
-        defaultPaymentAccountId: card.defaultPaymentAccountId ?? undefined,
+        accountId: card.accountId,
       })
     } else {
       form.resetFields()
@@ -65,7 +65,7 @@ export function CardFormModal({ open, card, onClose }: CardFormModalProps) {
             creditLimit: values.creditLimit ?? null,
             closingDay: values.closingDay,
             dueDay: values.dueDay,
-            defaultPaymentAccountId: values.defaultPaymentAccountId ?? null,
+            accountId: values.accountId,
           },
         })
         message.success(t('finances.cards.updated'))
@@ -78,7 +78,7 @@ export function CardFormModal({ open, card, onClose }: CardFormModalProps) {
           closingDay: values.closingDay,
           dueDay: values.dueDay,
           currency: values.currency,
-          defaultPaymentAccountId: values.defaultPaymentAccountId ?? null,
+          accountId: values.accountId,
         })
         message.success(t('finances.cards.created'))
       }
@@ -110,6 +110,15 @@ export function CardFormModal({ open, card, onClose }: CardFormModalProps) {
 
         <Form.Item name="brand" label={t('finances.cards.brand')}>
           <Input maxLength={60} />
+        </Form.Item>
+
+        <Form.Item
+          name="accountId"
+          label={t('finances.cards.account')}
+          tooltip={t('finances.cards.accountTooltip')}
+          rules={[{ required: true, message: t('finances.cards.accountRequired') }]}
+        >
+          <AccountSelect />
         </Form.Item>
 
         <Form.Item
@@ -148,10 +157,6 @@ export function CardFormModal({ open, card, onClose }: CardFormModalProps) {
           tooltip={isEdit ? t('finances.accounts.currencyLocked') : undefined}
         >
           <AutoComplete disabled={isEdit} options={COMMON_CURRENCIES.map((c) => ({ value: c }))} />
-        </Form.Item>
-
-        <Form.Item name="defaultPaymentAccountId" label={t('finances.cards.defaultPaymentAccount')}>
-          <AccountSelect />
         </Form.Item>
       </Form>
     </Modal>

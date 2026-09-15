@@ -15,6 +15,7 @@ const account: AccountDto = {
   type: 'checking',
   currency: 'BRL',
   institution: 'Banco X',
+  bankCode: null,
   description: null,
   color: null,
   icon: null,

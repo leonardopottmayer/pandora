@@ -19,6 +19,7 @@ internal sealed class ImportLayoutEntityConfiguration : IEntityTypeConfiguration
         builder.Property(l => l.LayoutCode).HasColumnName("layout_code").HasMaxLength(60).IsRequired();
         builder.Property(l => l.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
         builder.Property(l => l.BankName).HasColumnName("bank_name").HasMaxLength(60);
+        builder.Property(l => l.BankCode).HasColumnName("bank_code").HasMaxLength(10);
         builder.Property(l => l.FileFormat)
             .HasColumnName("file_format")
             .HasConversion(f => f.Value, v => LayoutFileFormat.FromValue(v))

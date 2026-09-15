@@ -18,7 +18,7 @@ const card: CardDto = {
   closingDay: 5,
   dueDay: 12,
   currency: 'BRL',
-  defaultPaymentAccountId: null,
+  accountId: 'a1',
   archivedAt: null,
 }
 
@@ -26,9 +26,11 @@ beforeAll(async () => {
   await i18n.changeLanguage('en')
 })
 
-// AccountSelect inside the modal loads the account list.
+// AccountSelect inside the modal loads the account list; a card must belong to one.
 function accountsHandler() {
-  return http.get(`${FINANCES_BASE}/accounts`, () => HttpResponse.json({ success: true, data: [] }))
+  return http.get(`${FINANCES_BASE}/accounts`, () =>
+    HttpResponse.json({ success: true, data: [{ id: 'a1', name: 'Conta', currency: 'BRL' }] }),
+  )
 }
 
 describe('CardFormModal', () => {
@@ -46,10 +48,13 @@ describe('CardFormModal', () => {
     renderWithProviders(<CardFormModal open onClose={onClose} />)
 
     await user.type(screen.getAllByRole('textbox')[0], 'Nubank')
+    // The account is required: pick it from the AccountSelect (first combobox in the form).
+    await user.click(screen.getAllByRole('combobox')[0])
+    await user.click(await screen.findByText('Conta (BRL)'))
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => expect(onClose).toHaveBeenCalled())
-    expect(body).toMatchObject({ name: 'Nubank', currency: 'BRL', closingDay: 1, dueDay: 10 })
+    expect(body).toMatchObject({ name: 'Nubank', currency: 'BRL', closingDay: 1, dueDay: 10, accountId: 'a1' })
   })
 
   it('validates that the name is required', async () => {

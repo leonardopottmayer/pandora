@@ -81,12 +81,31 @@ export type TaggableEntityType = (typeof TAGGABLE_ENTITY_TYPES)[number]
 // Response DTOs
 // ---------------------------------------------------------------------------
 
+export interface BankOption {
+  code: string
+  name: string
+}
+
+/** Supported banks (Brazilian COMPE codes). Mirrors the backend Bank registry. */
+export const SUPPORTED_BANKS: BankOption[] = [
+  { code: '077', name: 'Banco Inter' },
+  { code: '085', name: 'Viacredi' },
+  { code: '260', name: 'Nubank' },
+  { code: '341', name: 'Itaú' },
+]
+
+export function bankName(code: string | null | undefined): string | null {
+  if (!code) return null
+  return SUPPORTED_BANKS.find((b) => b.code === code)?.name ?? code
+}
+
 export interface AccountDto {
   id: string
   name: string
   type: AccountType
   currency: string
   institution: string | null
+  bankCode: string | null
   description: string | null
   color: string | null
   icon: string | null
@@ -141,7 +160,7 @@ export interface CardDto {
   closingDay: number
   dueDay: number
   currency: string
-  defaultPaymentAccountId: string | null
+  accountId: string
   archivedAt: string | null
 }
 
@@ -314,6 +333,7 @@ export interface CreateAccountRequest {
   type: AccountType
   currency: string
   institution?: string | null
+  bankCode?: string | null
   description?: string | null
   color?: string | null
   icon?: string | null
@@ -325,6 +345,7 @@ export interface UpdateAccountRequest {
   name: string
   type: AccountType
   institution?: string | null
+  bankCode?: string | null
   description?: string | null
   color?: string | null
   icon?: string | null
@@ -339,7 +360,7 @@ export interface CreateCardRequest {
   closingDay: number
   dueDay: number
   currency: string
-  defaultPaymentAccountId?: string | null
+  accountId: string
 }
 
 export interface UpdateCardRequest {
@@ -349,7 +370,7 @@ export interface UpdateCardRequest {
   creditLimit?: number | null
   closingDay: number
   dueDay: number
-  defaultPaymentAccountId?: string | null
+  accountId: string
 }
 
 export interface CreateTransactionRequest {
@@ -542,6 +563,7 @@ export interface ImportLayoutDto {
   layoutCode: string
   name: string
   bankName: string | null
+  bankCode: string | null
   fileFormat: string
   accountType: string
   isSystemLayout: boolean

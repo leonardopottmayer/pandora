@@ -12,7 +12,7 @@ public sealed record UpdateCardInput(
     decimal? CreditLimit,
     int ClosingDay,
     int DueDay,
-    Guid? DefaultPaymentAccountId);
+    Guid AccountId);
 
 /// <summary>Edits a card's mutable fields. Currency is intentionally absent: it is fixed at creation.</summary>
 public sealed class UpdateCardCommand(UpdateCardInput input) : CommandBase<UpdateCardInput, CardDto>(input);

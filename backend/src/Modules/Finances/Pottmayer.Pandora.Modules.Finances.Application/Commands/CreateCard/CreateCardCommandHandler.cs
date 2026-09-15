@@ -30,14 +30,11 @@ public sealed class CreateCardCommandHandler(IUnitOfWorkFactory factory, TimePro
             if (await repo.ExistsWithNameAsync(input.UserId, input.Name, null, token))
                 return Result<Card>.Failure([CardErrors.NameAlreadyExists]);
 
-            // The default payment account, if given, must belong to the same user.
-            if (input.DefaultPaymentAccountId is not null)
-            {
-                var account = await ctx.AcquireRepository<IAccountRepository>()
-                    .FindByIdForUserAsync(input.DefaultPaymentAccountId.Value, input.UserId, token);
-                if (account is null)
-                    return Result<Card>.Failure([CardErrors.DefaultPaymentAccountNotFound]);
-            }
+            // Every card belongs to one of the user's accounts (its bank routes card-bill imports).
+            var account = await ctx.AcquireRepository<IAccountRepository>()
+                .FindByIdForUserAsync(input.AccountId, input.UserId, token);
+            if (account is null)
+                return Result<Card>.Failure([CardErrors.AccountNotFound]);
 
             var card = Card.Create(
                 input.UserId,
@@ -48,7 +45,7 @@ public sealed class CreateCardCommandHandler(IUnitOfWorkFactory factory, TimePro
                 input.ClosingDay,
                 input.DueDay,
                 currency,
-                input.DefaultPaymentAccountId,
+                input.AccountId,
                 timeProvider);
 
             await repo.AddAsync(card, token);

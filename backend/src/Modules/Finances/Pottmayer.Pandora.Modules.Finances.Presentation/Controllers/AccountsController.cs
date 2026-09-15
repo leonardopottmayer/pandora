@@ -53,7 +53,8 @@ public sealed class AccountsController(
     {
         var command = new CreateAccountCommand(new CreateAccountInput(
             UserId, request.Name, request.Type, request.Currency, request.Institution,
-            request.Description, request.Color, request.Icon, request.DisplayOrder, request.OpeningBalance));
+            request.Description, request.Color, request.Icon, request.DisplayOrder, request.OpeningBalance,
+            request.BankCode));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
@@ -63,7 +64,7 @@ public sealed class AccountsController(
     {
         var command = new UpdateAccountCommand(new UpdateAccountInput(
             UserId, id, request.Name, request.Type, request.Institution,
-            request.Description, request.Color, request.Icon, request.DisplayOrder));
+            request.Description, request.Color, request.Icon, request.DisplayOrder, request.BankCode));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
