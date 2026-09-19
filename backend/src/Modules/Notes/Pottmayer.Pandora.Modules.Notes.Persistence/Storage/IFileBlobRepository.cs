@@ -1,4 +1,4 @@
-using Pottmayer.Tars.Data.Relational.Abstractions.Repositories;
+﻿using Pottmayer.Tars.Data.Abstractions.Repositories;
 
 namespace Pottmayer.Pandora.Modules.Notes.Persistence.Storage;
 

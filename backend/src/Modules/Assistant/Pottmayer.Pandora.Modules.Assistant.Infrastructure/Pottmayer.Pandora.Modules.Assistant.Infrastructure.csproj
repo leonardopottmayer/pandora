@@ -9,10 +9,10 @@
   <ItemGroup>
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Assistant.Abstractions/Pottmayer.Pandora.Modules.Assistant.Abstractions.csproj" />
     <!-- Tars: AI transport (Gemini provider + the keyed client factory the pipeline resolves per user). -->
-    <PackageReference Include="Pottmayer.Tars.Ai.Abstractions" Version="0.0.13" />
-    <PackageReference Include="Pottmayer.Tars.Ai.Chat.Abstractions" Version="0.0.13" />
-    <PackageReference Include="Pottmayer.Tars.Ai.Chat" Version="0.0.13" />
-    <PackageReference Include="Pottmayer.Tars.Ai.Chat.Gemini" Version="0.0.13" />
+    <PackageReference Include="Pottmayer.Tars.Ai.Abstractions" Version="0.0.15" />
+    <PackageReference Include="Pottmayer.Tars.Ai.Chat.Abstractions" Version="0.0.15" />
+    <PackageReference Include="Pottmayer.Tars.Ai.Chat" Version="0.0.15" />
+    <PackageReference Include="Pottmayer.Tars.Ai.Chat.Gemini" Version="0.0.15" />
     <!-- Hosting / options for provider registration. Kept >= what Tars.Ai.Chat.Gemini requires. -->
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.11" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.11" />

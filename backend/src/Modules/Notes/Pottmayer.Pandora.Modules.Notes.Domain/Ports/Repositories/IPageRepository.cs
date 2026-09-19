@@ -1,6 +1,6 @@
-using Pottmayer.Pandora.Modules.Notes.Domain.Aggregates;
+﻿using Pottmayer.Pandora.Modules.Notes.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Notes.Domain.ValueObjects;
-using Pottmayer.Tars.Data.Relational.Abstractions.Repositories;
+using Pottmayer.Tars.Data.Abstractions.Repositories;
 
 namespace Pottmayer.Pandora.Modules.Notes.Domain.Ports.Repositories;
 
@@ -18,7 +18,7 @@ public interface IPageRepository : IStandardRepository<Page, Guid>
 
     /// <summary>
     /// Maps every non-deleted page id to its parent id for the user (roots map to <c>null</c>). Feeds the
-    /// cycle check on reparent — archived pages are included, since they still occupy the tree.
+    /// cycle check on reparent â€” archived pages are included, since they still occupy the tree.
     /// </summary>
     Task<IReadOnlyDictionary<Guid, Guid?>> GetParentMapForUserAsync(Guid userId, CancellationToken ct = default);
 
@@ -28,7 +28,7 @@ public interface IPageRepository : IStandardRepository<Page, Guid>
     /// <summary>
     /// Candidate wikilink targets: the user's non-deleted pages whose title (case-insensitive) is in
     /// <paramref name="lowerTitles"/> or whose slug is in <paramref name="slugs"/>. Archived pages
-    /// count — archiving hides a page from the sidebar, it does not unlink it.
+    /// count â€” archiving hides a page from the sidebar, it does not unlink it.
     /// </summary>
     Task<IReadOnlyList<Page>> FindByTitlesOrSlugsAsync(
         Guid userId,
@@ -43,7 +43,7 @@ public interface IPageRepository : IStandardRepository<Page, Guid>
     /// <summary>
     /// The user's non-deleted pages whose title or body match <paramref name="tsQuery"/> (built by
     /// <see cref="PageSearch.ToTsQuery"/>), ordered by title and capped at <paramref name="limit"/>.
-    /// Archived pages count — they are hidden from the sidebar, not from search.
+    /// Archived pages count â€” they are hidden from the sidebar, not from search.
     /// </summary>
     Task<IReadOnlyList<Page>> SearchAsync(
         Guid userId, string tsQuery, int limit, CancellationToken ct = default);

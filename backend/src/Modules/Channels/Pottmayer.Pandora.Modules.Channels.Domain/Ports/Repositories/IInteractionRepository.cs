@@ -1,5 +1,5 @@
-using Pottmayer.Pandora.Modules.Channels.Domain.Aggregates;
-using Pottmayer.Tars.Data.Relational.Abstractions.Repositories;
+﻿using Pottmayer.Pandora.Modules.Channels.Domain.Aggregates;
+using Pottmayer.Tars.Data.Abstractions.Repositories;
 
 namespace Pottmayer.Pandora.Modules.Channels.Domain.Ports.Repositories;
 

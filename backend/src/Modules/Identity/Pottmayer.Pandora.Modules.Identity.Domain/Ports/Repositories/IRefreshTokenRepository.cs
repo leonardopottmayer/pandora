@@ -1,5 +1,5 @@
 ﻿using Pottmayer.Pandora.Modules.Identity.Domain.Entities;
-using Pottmayer.Tars.Data.Relational.Abstractions.Repositories;
+using Pottmayer.Tars.Data.Abstractions.Repositories;
 using Pottmayer.Tars.Security.Identity.Abstractions.Results;
 using Pottmayer.Tars.Security.Identity.Abstractions.Stores;
 

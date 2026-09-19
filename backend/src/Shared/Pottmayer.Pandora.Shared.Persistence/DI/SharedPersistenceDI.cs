@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Pottmayer.Pandora.Shared.Persistence.Interceptors;
+using Pottmayer.Tars.Data.DI;
 using Pottmayer.Tars.Data.Relational.DI;
 
 namespace Pottmayer.Pandora.Shared.Persistence.DI;
@@ -14,7 +15,7 @@ public static class SharedPersistenceDI
         services.AddTarsDataContextAccessor();
         services.AddTarsRelationalConfigurationConnectionResolver();
         services.AddTarsDataContextFactory();
-        services.AddTarsRelationalUnitOfWorkFactory();
+        services.AddTarsUnitOfWorkFactory();
 
         services.TryAddScoped<AuditingSaveChangesInterceptor>();
 

@@ -17,15 +17,15 @@
     <!-- Cross-module contracts: inbound message the Assistant interprets + the reply it asks Channels to send. -->
     <ProjectReference Include="../../Channels/Pottmayer.Pandora.Modules.Channels.Contracts/Pottmayer.Pandora.Modules.Channels.Contracts.csproj" />
     <!-- Tars: Messaging (integration-event subscribe + publish) -->
-    <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.0.13" />
+    <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.0.15" />
     <!-- Tars: AI transport -->
-    <PackageReference Include="Pottmayer.Tars.Ai.Abstractions" Version="0.0.13" />
-    <PackageReference Include="Pottmayer.Tars.Ai.Chat.Abstractions" Version="0.0.13" />
+    <PackageReference Include="Pottmayer.Tars.Ai.Abstractions" Version="0.0.15" />
+    <PackageReference Include="Pottmayer.Tars.Ai.Chat.Abstractions" Version="0.0.15" />
     <!-- Tars: Core -->
-    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.13" />
-    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.13" />
+    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.15" />
+    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.15" />
     <!-- Tars: Data -->
-    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.13" />
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.15" />
   </ItemGroup>
 
 </Project>

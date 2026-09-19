@@ -1,5 +1,5 @@
-using Pottmayer.Pandora.Modules.Notes.Domain.Aggregates;
-using Pottmayer.Tars.Data.Relational.Abstractions.Repositories;
+﻿using Pottmayer.Pandora.Modules.Notes.Domain.Aggregates;
+using Pottmayer.Tars.Data.Abstractions.Repositories;
 
 namespace Pottmayer.Pandora.Modules.Notes.Domain.Ports.Repositories;
 
@@ -9,14 +9,14 @@ namespace Pottmayer.Pandora.Modules.Notes.Domain.Ports.Repositories;
 /// </summary>
 public interface IPageLinkRepository : IStandardRepository<PageLink, Guid>
 {
-    /// <summary>Edges leaving this page — the set a save rewrites.</summary>
+    /// <summary>Edges leaving this page â€” the set a save rewrites.</summary>
     Task<IReadOnlyList<PageLink>> GetBySourceAsync(Guid sourcePageId, CancellationToken ct = default);
 
-    /// <summary>Edges pointing at this page — the backlinks ("linked mentions") panel.</summary>
+    /// <summary>Edges pointing at this page â€” the backlinks ("linked mentions") panel.</summary>
     Task<IReadOnlyList<PageLink>> GetByTargetAsync(Guid targetPageId, CancellationToken ct = default);
 
     /// <summary>
-    /// Every edge leaving any of these pages — the whole graph of one user in a single read, given the
+    /// Every edge leaving any of these pages â€” the whole graph of one user in a single read, given the
     /// user's page ids. Feeds the graph view, which needs the edges before it can pick a neighborhood.
     /// </summary>
     Task<IReadOnlyList<PageLink>> GetBySourcesAsync(

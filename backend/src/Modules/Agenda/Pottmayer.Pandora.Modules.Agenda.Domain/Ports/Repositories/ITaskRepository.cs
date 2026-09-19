@@ -1,6 +1,6 @@
-using Pottmayer.Pandora.Modules.Agenda.Domain.Aggregates;
+﻿using Pottmayer.Pandora.Modules.Agenda.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Agenda.Domain.ValueObjects;
-using Pottmayer.Tars.Data.Relational.Abstractions.Repositories;
+using Pottmayer.Tars.Data.Abstractions.Repositories;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Domain.Ports.Repositories;
 
@@ -16,7 +16,7 @@ public interface ITaskRepository : IStandardRepository<TaskItem, Guid>
         Guid userId, Guid? listId, TaskItemStatus? status, CancellationToken ct = default);
 
     /// <summary>
-    /// Live, due-dated tasks by id, across users — the sweep resolves the subjects of the task alerts it
+    /// Live, due-dated tasks by id, across users â€” the sweep resolves the subjects of the task alerts it
     /// is firing. A task that is done, cancelled, deleted or has no due date is simply absent.
     /// </summary>
     Task<IReadOnlyList<TaskItem>> GetLiveDueByIdsAsync(

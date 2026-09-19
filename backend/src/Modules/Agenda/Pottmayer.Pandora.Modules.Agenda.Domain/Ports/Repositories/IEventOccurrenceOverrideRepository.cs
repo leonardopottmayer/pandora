@@ -1,5 +1,5 @@
-using Pottmayer.Pandora.Modules.Agenda.Domain.Aggregates;
-using Pottmayer.Tars.Data.Relational.Abstractions.Repositories;
+﻿using Pottmayer.Pandora.Modules.Agenda.Domain.Aggregates;
+using Pottmayer.Tars.Data.Abstractions.Repositories;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Domain.Ports.Repositories;
 
@@ -8,7 +8,7 @@ public interface IEventOccurrenceOverrideRepository : IStandardRepository<EventO
     /// <summary>Every override of one event.</summary>
     Task<IReadOnlyList<EventOccurrenceOverride>> GetByEventAsync(Guid eventId, CancellationToken ct = default);
 
-    /// <summary>Every override for a set of events — the range query loads them in one shot.</summary>
+    /// <summary>Every override for a set of events â€” the range query loads them in one shot.</summary>
     Task<IReadOnlyList<EventOccurrenceOverride>> GetByEventsAsync(
         IReadOnlyCollection<Guid> eventIds, CancellationToken ct = default);
 

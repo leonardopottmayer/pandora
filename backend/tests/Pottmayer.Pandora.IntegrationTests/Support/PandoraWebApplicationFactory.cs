@@ -116,7 +116,8 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
             var processor = new OutboxRelayProcessor(
                 Services.GetRequiredService<IServiceScopeFactory>(),
                 Services.GetRequiredService<IIntegrationEventTypeRegistry>(),
-                Services.GetRequiredService<IIntegrationEventDispatcher>(),
+                Services.GetService<IOutboxRelayDelivery>()
+                    ?? new LocalHandlerOutboxDelivery(Services.GetRequiredService<IIntegrationEventDispatcher>()),
                 Services.GetRequiredService<IIntegrationEventSerializer>(),
                 Services.GetRequiredService<TimeProvider>(),
                 NullLogger.Instance,

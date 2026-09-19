@@ -11,9 +11,9 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Assistant.Domain/Pottmayer.Pandora.Modules.Assistant.Domain.csproj" />
     <ProjectReference Include="../../../Shared/Pottmayer.Pandora.Shared.Persistence/Pottmayer.Pandora.Shared.Persistence.csproj" />
     <!-- Tars: Data -->
-    <PackageReference Include="Pottmayer.Tars.Data.Relational" Version="0.0.13" />
+    <PackageReference Include="Pottmayer.Tars.Data.Relational" Version="0.0.15" />
     <!-- Tars: transactional outbox table mapped into this module's DbContext -->
-    <PackageReference Include="Pottmayer.Tars.Messaging.EntityFrameworkCore" Version="0.0.13" />
+    <PackageReference Include="Pottmayer.Tars.Messaging.EntityFrameworkCore" Version="0.0.15" />
   </ItemGroup>
 
 </Project>

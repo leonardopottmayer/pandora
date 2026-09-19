@@ -1,6 +1,6 @@
-using Pottmayer.Pandora.Modules.Identity.Domain.Aggregates;
+﻿using Pottmayer.Pandora.Modules.Identity.Domain.Aggregates;
 using Pottmayer.Pandora.Shared.Domain.ValueObjects;
-using Pottmayer.Tars.Data.Relational.Abstractions.Repositories;
+using Pottmayer.Tars.Data.Abstractions.Repositories;
 
 namespace Pottmayer.Pandora.Modules.Identity.Domain.Ports.Repositories;
 

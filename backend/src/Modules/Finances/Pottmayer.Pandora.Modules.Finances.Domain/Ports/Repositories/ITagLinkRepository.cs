@@ -1,6 +1,6 @@
-using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
+﻿using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
-using Pottmayer.Tars.Data.Relational.Abstractions.Repositories;
+using Pottmayer.Tars.Data.Abstractions.Repositories;
 
 namespace Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 
@@ -17,7 +17,7 @@ public interface ITagLinkRepository : IStandardRepository<TagLink, Guid>
 
     /// <summary>
     /// Distinct ids of entities of the given type that carry <em>any</em> of the supplied tags (OR
-    /// semantics) — the set used to filter listings by tag.
+    /// semantics) â€” the set used to filter listings by tag.
     /// </summary>
     Task<IReadOnlyList<Guid>> GetEntityIdsByTagsAsync(
         TaggableEntityType entityType, IReadOnlyCollection<Guid> tagIds, CancellationToken ct = default);

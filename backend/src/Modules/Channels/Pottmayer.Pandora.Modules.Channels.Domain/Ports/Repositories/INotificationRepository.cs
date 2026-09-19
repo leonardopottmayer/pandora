@@ -1,6 +1,6 @@
-using Pottmayer.Pandora.Modules.Channels.Domain.Aggregates;
+﻿using Pottmayer.Pandora.Modules.Channels.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Channels.Domain.ValueObjects;
-using Pottmayer.Tars.Data.Relational.Abstractions.Repositories;
+using Pottmayer.Tars.Data.Abstractions.Repositories;
 
 namespace Pottmayer.Pandora.Modules.Channels.Domain.Ports.Repositories;
 
@@ -17,7 +17,7 @@ public interface INotificationRepository : IStandardRepository<Notification, Gui
     Task<IReadOnlyList<Notification>> GetDueAsync(DateTimeOffset now, int batchSize, CancellationToken ct = default);
 
     /// <summary>
-    /// How many notifications are still in flight — not in a terminal state (Pending, Failed awaiting
+    /// How many notifications are still in flight â€” not in a terminal state (Pending, Failed awaiting
     /// retry, or Sending). Backs the queue-depth metric.
     /// </summary>
     Task<long> CountPendingAsync(CancellationToken ct = default);
