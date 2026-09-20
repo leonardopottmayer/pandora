@@ -71,6 +71,11 @@ public sealed class Reminder : AggregateRoot<Guid>, IAuditable
         if (string.IsNullOrWhiteSpace(title))
             throw new ArgumentException("A reminder needs a title.", nameof(title));
 
+        // Storage is UTC: normalize the instant so an offset input (e.g. the assistant emitting
+        // 2026-09-20T22:00:00-03:00) is persisted as a UTC instant, matching Event/Task and the
+        // timestamptz column. The wall-clock anchor for recurrence is TimeZone, not this offset.
+        remindAt = remindAt.ToUniversalTime();
+
         var zone = string.IsNullOrWhiteSpace(timeZone) ? "UTC" : timeZone;
 
         string? storedRrule = null;
@@ -133,7 +138,7 @@ public sealed class Reminder : AggregateRoot<Guid>, IAuditable
         if (Status is ReminderStatus.Acknowledged or ReminderStatus.Cancelled)
             return;
 
-        SnoozedUntil = until;
+        SnoozedUntil = until.ToUniversalTime();
         Status = ReminderStatus.Snoozed;
     }
 

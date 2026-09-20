@@ -77,7 +77,7 @@ public sealed class ReminderDispatch : AggregateRoot<Guid>, IAuditable
         if (AcknowledgedAt is not null)
             return;
 
-        SnoozedUntil = until;
+        SnoozedUntil = until.ToUniversalTime();
     }
 
     /// <summary>Whether this occurrence is waiting to be re-fired by a snooze that has now passed.</summary>

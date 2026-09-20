@@ -39,8 +39,8 @@ public sealed class NotifyUserRequestedHandlerTests
         var factory = new FakeUnitOfWorkFactory(ctx);
         var time = new FixedTimeProvider(Now);
         var enqueuer = new NotificationEnqueuer(factory, new FakeTemplateRenderer(), time);
-        var preferencesReader = new FakeUserPreferencesReader(timeZone);
-        return (new NotifyUserRequestedHandler(factory, enqueuer, preferencesReader, time), notifications);
+        var timeZones = new FakeEffectiveTimeZoneResolver(timeZone);
+        return (new NotifyUserRequestedHandler(factory, enqueuer, timeZones, time), notifications);
     }
 
     private static UserNotificationSetting QuietHours(TimeOnly start, TimeOnly end, QuietHoursBehaviour behaviour)

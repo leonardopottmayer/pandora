@@ -8,8 +8,9 @@ rediscovered.
 
 ## KI-001 — Time zones: user input, storage, display, and "today"
 
-**Status:** open. A prototype fix was explored and reverted (see [History](#history)); the analysis
-below is the durable record.
+**Status:** fixed (2026-09-20) via solution options 1 and 2 below; the analysis is kept as the durable
+record of why. Symptoms A, C and D are addressed at the source; B is fixed on the Agenda screens. See
+[History](#history) for what shipped and the one spot left out on purpose.
 
 ### The intended model (this is correct — the bugs are deviations from it)
 
@@ -133,5 +134,36 @@ A **required-configuration gate** on the web home, evaluated right after registr
 - The time-zone analysis in KI-001 came out of a debugging session where an assistant-created reminder
   ("22h") displayed and was scheduled 3h early. During that session a prototype was built and then
   reverted: a configurable `Pandora:DefaultTimeZone` fallback, seeding the preference from the browser
-  on first login, and account-zone formatting on the Agenda screens. The reverted code is the reference
-  implementation for solution options 1 and 2 above if/when this is picked up for real.
+  on first login, and account-zone formatting on the Agenda screens.
+- 2026-09-20 — KI-001 fixed for real:
+  - **Source of the chain (kills A and C).** Identity now owns an `IEffectiveTimeZoneResolver`
+    (`requested → stored preference → Pandora:DefaultTimeZone → UTC`), backed by the new
+    `Pandora:DefaultTimeZone` setting (seeded to `America/Sao_Paulo`). Agenda's `TimeZoneResolver` and
+    the assistant's interpret pipeline resolve through it instead of falling straight to UTC, so a user
+    who only ever used Telegram — no preferences row — still resolves to a real clock. Recurrence (C)
+    then expands in the correct stored zone with no separate change.
+  - **Seed (solution 2, the per-user capture).** `PreferencesProvider` now persists the
+    browser-detected zone on first authenticated load when the backend has no preferences row
+    (`Users.PreferencesNotFound`), so the account gets the user's real zone, not just the default.
+  - **Display (B).** Agenda's `datetime.ts` formatters take the account zone (dayjs `utc`+`timezone`)
+    and every Agenda caller passes it from `usePreferences()`, so the grid matches the fire time on any
+    device. *Left out on purpose:* the Finances audit page's `formatDateTime` still renders instants in
+    the device zone — low-stakes and outside the Agenda scope this addressed.
+  - **"Today" (D).** Agenda `GetToday`/`GetTasks` and the per-user Finances command handlers now take
+    "today" in the user's zone (`ResolveTodayAsync` / `DayBoundary`); the two global Finances jobs, which
+    span every user, anchor on the default zone via `ResolveDefault()`.
+  - **Quiet hours (found in the follow-up audit).** Channels' `NotifyUserRequestedHandler` compared the
+    quiet-hours window against a local time whose zone fell back to UTC when the user had no preference
+    — same UTC-fallback class as A, so a Telegram-only user's "do not disturb" slid by their offset. It
+    now resolves through `IEffectiveTimeZoneResolver`.
+  - **UTC normalization on write (regression from the fix).** Once the assistant resolved to a real
+    zone it emitted offset timestamps (e.g. `22:00-03:00`); `Reminder.Create`/`Snooze` stored them
+    verbatim and Npgsql rejects a non-zero offset on `timestamptz`. They now `ToUniversalTime()` before
+    storing, matching `Event`/`TaskItem`. Storage stays UTC; the wall-clock anchor is the stored zone.
+  - Covered by `EffectiveTimeZoneResolverTests` and `ReminderTests` plus the existing module suites (all green).
+- The follow-up audit swept every module for the same class. Confirmed *correct as-is* (UTC is right
+  there): the Agenda dispatch sweeps and all record timestamps (they stamp `GetUtcNow()` instants and
+  expand recurrence in each aggregate's stored zone), the Channels retention and Identity refresh-token
+  purge jobs (pure "older than X" elapsed time), and Integrations token/connection expiries. The one
+  display spot still in device zone is the Finances audit page's `formatDateTime` (low-stakes, deferred).
+- KI-002 (mandatory-configuration gate) remains unbuilt; it is a separate, optional hardening.

@@ -1,9 +1,11 @@
 using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 using Pottmayer.Pandora.Modules.Agenda.Application.Dtos;
+using Pottmayer.Pandora.Modules.Agenda.Application.Preferences;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Recurrence;
 using Pottmayer.Pandora.Modules.Agenda.Domain.ValueObjects;
+using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
 using Pottmayer.Tars.Core.Cqrs.Queries;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
@@ -13,17 +15,20 @@ namespace Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetToday;
 /// <summary>
 /// One read that merges the three time sources for the day: expanded event occurrences, tasks due, and
 /// reminders firing (single-shot and recurring occurrences). Ordered by start time. The day window is
-/// computed in UTC (per-user zone is deferred, matching the task due buckets).
+/// anchored in the user's own zone, so "today" is their calendar day rather than the UTC day.
 /// </summary>
-public sealed class GetTodayQueryHandler(IUnitOfWorkFactory factory, TimeProvider timeProvider)
+public sealed class GetTodayQueryHandler(
+    IUnitOfWorkFactory factory, IEffectiveTimeZoneResolver timeZones, TimeProvider timeProvider)
     : QueryHandlerBase<GetTodayQuery, IReadOnlyList<TodayItemDto>>
 {
     protected override async Task<Result<IReadOnlyList<TodayItemDto>>> HandleAsync(
         GetTodayQuery request, CancellationToken cancellationToken)
     {
         var now = timeProvider.GetUtcNow();
-        var dayStart = new DateTimeOffset(now.UtcDateTime.Date, TimeSpan.Zero);
-        var dayEnd = dayStart.AddDays(1);
+        var zone = await timeZones.ResolveAsync(request.Input.UserId, ct: cancellationToken);
+        var today = DayBoundary.LocalToday(zone, now);
+        var dayStart = DayBoundary.StartOfDay(zone, today);
+        var dayEnd = DayBoundary.StartOfDay(zone, today.AddDays(1));
         var expandTo = dayEnd.AddTicks(-1); // inclusive upper bound for the expanders
 
         var items = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, ct) =>

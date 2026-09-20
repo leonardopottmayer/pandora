@@ -14,6 +14,8 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Finances.Abstractions/Pottmayer.Pandora.Modules.Finances.Abstractions.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Finances.Contracts/Pottmayer.Pandora.Modules.Finances.Contracts.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Finances.Domain/Pottmayer.Pandora.Modules.Finances.Domain.csproj" />
+    <!-- Identity owns time-zone resolution: "today" must be the user's calendar day, not the UTC day. -->
+    <ProjectReference Include="../../Identity/Pottmayer.Pandora.Modules.Identity.Abstractions/Pottmayer.Pandora.Modules.Identity.Abstractions.csproj" />
     <!-- Tars: Core -->
     <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.15" />
     <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.15" />

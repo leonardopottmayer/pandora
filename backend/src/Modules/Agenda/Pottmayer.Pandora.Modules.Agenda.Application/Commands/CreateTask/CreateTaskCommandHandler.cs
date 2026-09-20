@@ -13,7 +13,7 @@ using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateTask;
 
 public sealed class CreateTaskCommandHandler(
-    IUnitOfWorkFactory factory, IUserPreferencesReader preferences, TimeProvider timeProvider)
+    IUnitOfWorkFactory factory, IEffectiveTimeZoneResolver timeZones, TimeProvider timeProvider)
     : CommandHandlerBase<CreateTaskCommand, TaskDto>
 {
     protected override async Task<Result<TaskDto>> HandleAsync(CreateTaskCommand request, CancellationToken ct)
@@ -26,7 +26,7 @@ public sealed class CreateTaskCommandHandler(
         // Only a top-level task carries a zone (a subtask inherits its parent's); resolve it before
         // the unit of work so the preference read is not nested inside the Agenda transaction.
         var timeZone = input.ParentTaskId is null
-            ? await TimeZoneResolver.ResolveAsync(preferences, input.UserId, input.TimeZone, ct)
+            ? await TimeZoneResolver.ResolveAsync(timeZones, input.UserId, input.TimeZone, ct)
             : "UTC";
 
         // Build the task inside the unit of work: a subtask needs its parent, a top-level task its list.

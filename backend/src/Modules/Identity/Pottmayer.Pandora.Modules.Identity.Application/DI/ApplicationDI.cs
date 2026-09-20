@@ -17,6 +17,13 @@ public static class ApplicationDI
         // The port other modules consume to read a user's scheduling defaults.
         services.AddScoped<IUserPreferencesReader, UserPreferencesReader>();
 
+        // The effective-zone resolver other modules consume so a missing preference resolves to the
+        // configured default instead of UTC.
+        services.AddScoped<IEffectiveTimeZoneResolver, EffectiveTimeZoneResolver>();
+
+        services.AddOptions<TimeZoneOptions>()
+                .BindConfiguration(TimeZoneOptions.SectionName);
+
         services.AddOptions<AccountActivationOptions>()
                 .BindConfiguration(AccountActivationOptions.SectionName);
 

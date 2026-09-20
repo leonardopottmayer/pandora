@@ -28,7 +28,7 @@ namespace Pottmayer.Pandora.Modules.Channels.Application.Subscribers;
 public sealed class NotifyUserRequestedHandler(
     IUnitOfWorkFactory factory,
     NotificationEnqueuer enqueuer,
-    IUserPreferencesReader preferences,
+    IEffectiveTimeZoneResolver timeZones,
     TimeProvider timeProvider)
     : IIntegrationEventHandler<NotifyUserRequested>
 {
@@ -107,8 +107,10 @@ public sealed class NotifyUserRequestedHandler(
         }, cancellationToken: ct);
 
     /// <summary>
-    /// Whether the user's quiet hours are set to suppress right now. Resolves the user's IANA zone
-    /// from Identity (UTC when unknown) so the wall-clock window is compared against their local time.
+    /// Whether the user's quiet hours are set to suppress right now. Resolves the user's effective zone
+    /// (their preference, else the configured account default, else UTC) so the wall-clock window is
+    /// compared against their local time — a user with no preferences row (e.g. Telegram-only) is no
+    /// longer judged against UTC, which would slide the window by their offset.
     /// </summary>
     private async Task<bool> IsSuppressedByQuietHoursAsync(
         Guid userId, UserNotificationSetting? setting, CancellationToken ct)
@@ -116,29 +118,9 @@ public sealed class NotifyUserRequestedHandler(
         if (setting is null || !setting.QuietHoursEnabled)
             return false;
 
-        var prefs = await preferences.GetAsync(userId, ct);
-        var zone = ResolveZone(prefs?.TimeZone);
+        var zone = await timeZones.ResolveAsync(userId, ct: ct);
         var localNow = TimeZoneInfo.ConvertTime(timeProvider.GetUtcNow(), zone);
         return setting.ShouldSuppress(TimeOnly.FromTimeSpan(localNow.TimeOfDay));
-    }
-
-    private static TimeZoneInfo ResolveZone(string? ianaId)
-    {
-        if (string.IsNullOrWhiteSpace(ianaId))
-            return TimeZoneInfo.Utc;
-
-        try
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById(ianaId);
-        }
-        catch (TimeZoneNotFoundException)
-        {
-            return TimeZoneInfo.Utc;
-        }
-        catch (InvalidTimeZoneException)
-        {
-            return TimeZoneInfo.Utc;
-        }
     }
 
     private static IReadOnlyList<Channel> ParseChannels(IReadOnlyList<string> values)

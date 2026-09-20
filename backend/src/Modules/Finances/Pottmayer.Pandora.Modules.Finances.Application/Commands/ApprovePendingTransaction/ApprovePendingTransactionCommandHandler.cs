@@ -7,6 +7,7 @@ using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
+using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
@@ -16,6 +17,7 @@ namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.ApprovePending
 public sealed class ApprovePendingTransactionCommandHandler(
     IUnitOfWorkFactory factory,
     IStatementResolver resolver,
+    IEffectiveTimeZoneResolver timeZones,
     TimeProvider timeProvider)
     : CommandHandlerBase<ApprovePendingTransactionCommand, TransactionDto>
 {
@@ -24,6 +26,7 @@ public sealed class ApprovePendingTransactionCommandHandler(
     {
         var input = request.Input;
         var now = timeProvider.GetUtcNow();
+        var today = await timeZones.ResolveTodayAsync(input.UserId, now, ct);
 
         var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
@@ -97,7 +100,7 @@ public sealed class ApprovePendingTransactionCommandHandler(
                 statement.SyncAmounts(
                     statement.TotalAmount + pending.Amount.Value * kind.StatementSign,
                     statement.PaidAmount,
-                    DateOnly.FromDateTime(now.UtcDateTime),
+                    today,
                     timeProvider);
                 await statementRepo.UpdateAsync(statement, token);
             }

@@ -7,6 +7,7 @@ using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
+using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.DataContext;
@@ -22,6 +23,7 @@ namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.ReverseTransac
 public sealed class ReverseTransactionCommandHandler(
     IUnitOfWorkFactory factory,
     IStatementResolver statementResolver,
+    IEffectiveTimeZoneResolver timeZones,
     TimeProvider timeProvider)
     : CommandHandlerBase<ReverseTransactionCommand, TransactionDto>
 {
@@ -30,7 +32,7 @@ public sealed class ReverseTransactionCommandHandler(
     {
         var input = request.Input;
         var now = timeProvider.GetUtcNow();
-        var today = DateOnly.FromDateTime(now.UtcDateTime);
+        var today = await timeZones.ResolveTodayAsync(input.UserId, now, ct);
 
         var loadResult = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {

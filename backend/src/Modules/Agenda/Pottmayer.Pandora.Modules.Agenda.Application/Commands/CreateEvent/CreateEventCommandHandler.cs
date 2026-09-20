@@ -14,7 +14,7 @@ using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateEvent;
 
 public sealed class CreateEventCommandHandler(
-    IUnitOfWorkFactory factory, IUserPreferencesReader preferences, TimeProvider timeProvider)
+    IUnitOfWorkFactory factory, IEffectiveTimeZoneResolver timeZones, TimeProvider timeProvider)
     : CommandHandlerBase<CreateEventCommand, EventDto>
 {
     protected override async Task<Result<EventDto>> HandleAsync(CreateEventCommand request, CancellationToken ct)
@@ -25,7 +25,7 @@ public sealed class CreateEventCommandHandler(
             return Fail(EventErrors.TitleRequired);
 
         var status = ParseStatus(input.Status);
-        var timeZone = await TimeZoneResolver.ResolveAsync(preferences, input.UserId, input.TimeZone, ct);
+        var timeZone = await TimeZoneResolver.ResolveAsync(timeZones, input.UserId, input.TimeZone, ct);
 
         var result = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, token) =>
         {

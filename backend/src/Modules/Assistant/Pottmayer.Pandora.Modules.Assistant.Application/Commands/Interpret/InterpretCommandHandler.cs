@@ -30,6 +30,7 @@ public sealed class InterpretCommandHandler(
     IExternalCredentialProvider credentials,
     IAiChatCompletionClientFactory clientFactory,
     IUserPreferencesReader preferences,
+    IEffectiveTimeZoneResolver timeZones,
     IEnumerable<IAssistantTool> tools,
     IOptions<AssistantOptions> options,
     TimeProvider timeProvider)
@@ -61,9 +62,11 @@ public sealed class InterpretCommandHandler(
         var now = timeProvider.GetUtcNow();
         var (conversation, isNewConversation) = await ResolveConversationAsync(userId, input.ConversationId, now, ct);
 
-        // Reference clock for resolving relative dates, from Identity (falls back to UTC/Monday).
+        // Reference clock for resolving relative dates. The zone goes through the effective resolver so
+        // a user with no preferences row (e.g. one who only ever used Telegram) gets the configured
+        // account default instead of UTC — the difference between "22h" meaning 22:00-03:00 and 22:00Z.
         var prefs = await preferences.GetAsync(userId, ct);
-        var timeZone = ResolveTimeZone(prefs?.TimeZone);
+        var timeZone = await timeZones.ResolveAsync(userId, ct: ct);
         var localNow = TimeZoneInfo.ConvertTime(now, timeZone);
         var locale = string.IsNullOrWhiteSpace(profile.LocaleOverride) ? "pt-BR" : profile.LocaleOverride!;
 
@@ -263,20 +266,6 @@ public sealed class InterpretCommandHandler(
             };
 
         return policy; // Balanced: as declared.
-    }
-
-    private static TimeZoneInfo ResolveTimeZone(string? iana)
-    {
-        if (string.IsNullOrWhiteSpace(iana))
-            return TimeZoneInfo.Utc;
-        try
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById(iana);
-        }
-        catch (TimeZoneNotFoundException)
-        {
-            return TimeZoneInfo.Utc;
-        }
     }
 
     private static InvocationOutcome Outcome(

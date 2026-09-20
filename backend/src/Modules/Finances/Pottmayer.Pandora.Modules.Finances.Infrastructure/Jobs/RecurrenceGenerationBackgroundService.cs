@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.RunRecurrenceGeneration;
+using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Infrastructure.Jobs;
@@ -74,7 +75,10 @@ public sealed class RecurrenceGenerationBackgroundService : BackgroundService
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        var today = DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime);
+        // A global daily pass has no single user, so it anchors "today" on the configured account
+        // default zone rather than UTC (the doc's sanctioned fallback for jobs that span every user).
+        var zone = scope.ServiceProvider.GetRequiredService<IEffectiveTimeZoneResolver>().ResolveDefault();
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(_timeProvider.GetUtcNow(), zone).DateTime);
         var result = await sender.Send(new RunRecurrenceGenerationCommand(new RunRecurrenceGenerationInput(today)), ct);
 
         if (result.IsFailure)

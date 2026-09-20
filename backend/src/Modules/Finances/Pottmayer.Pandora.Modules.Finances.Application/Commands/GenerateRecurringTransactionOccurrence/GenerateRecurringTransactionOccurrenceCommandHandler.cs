@@ -8,6 +8,7 @@ using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
+using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
@@ -17,6 +18,7 @@ namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.GenerateRecurr
 public sealed class GenerateRecurringTransactionOccurrenceCommandHandler(
     IUnitOfWorkFactory factory,
     IStatementResolver resolver,
+    IEffectiveTimeZoneResolver timeZones,
     TimeProvider timeProvider)
     : CommandHandlerBase<GenerateRecurringTransactionOccurrenceCommand, GeneratedOccurrenceDto>
 {
@@ -32,6 +34,7 @@ public sealed class GenerateRecurringTransactionOccurrenceCommandHandler(
             return Fail(RecurringTransactionErrors.InvalidDestination);
 
         var now = timeProvider.GetUtcNow();
+        var today = await timeZones.ResolveTodayAsync(input.UserId, now, ct);
 
         var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
@@ -145,7 +148,7 @@ public sealed class GenerateRecurringTransactionOccurrenceCommandHandler(
                     cardStatement.SyncAmounts(
                         cardStatement.TotalAmount + amount.Value * kind.StatementSign,
                         cardStatement.PaidAmount,
-                        DateOnly.FromDateTime(now.UtcDateTime),
+                        today,
                         timeProvider);
                     // A freshly-created statement is already tracked as Added; calling UpdateAsync on it
                     // would flip its state to Modified and emit an UPDATE instead of the INSERT, leaving

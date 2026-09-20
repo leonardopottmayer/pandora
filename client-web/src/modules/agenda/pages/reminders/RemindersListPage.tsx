@@ -4,6 +4,7 @@ import { App, Button, Card, Flex, Popconfirm, Space, Table, Typography } from 'a
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined } from '@ant-design/icons'
 import { toErrorMessage } from '@/lib/api/envelope'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import type { ReminderDto } from '../../models'
 import { REMINDER_STATUS_META } from '../../lib/enums'
 import { formatDateTime } from '../../lib/datetime'
@@ -15,6 +16,7 @@ import { ReminderFormModal } from './ReminderFormModal'
 export function RemindersListPage() {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { timeZone } = usePreferences()
   const { data, isLoading } = useReminders()
   const acknowledge = useAcknowledgeReminder()
   const deleteMutation = useDeleteReminder()
@@ -44,7 +46,7 @@ export function RemindersListPage() {
     {
       title: t('agenda.reminders.remindAt'),
       dataIndex: 'remindAt',
-      render: (value: string) => formatDateTime(value),
+      render: (value: string) => formatDateTime(value, timeZone),
     },
     {
       title: t('agenda.reminders.status'),

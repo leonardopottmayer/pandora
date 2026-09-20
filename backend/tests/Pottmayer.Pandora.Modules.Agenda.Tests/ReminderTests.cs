@@ -25,6 +25,27 @@ public sealed class ReminderTests
         => Assert.Throws<ArgumentException>(() => Reminder.Create(Guid.NewGuid(), "  ", null, Now, "UTC", Time));
 
     [Fact]
+    public void Create_stores_the_instant_in_utc_even_when_given_an_offset()
+    {
+        // The assistant emits an absolute timestamp with offset (e.g. 22:00-03:00). It must persist as
+        // the same instant in UTC — Npgsql's timestamptz rejects a non-zero offset.
+        var withOffset = new DateTimeOffset(2026, 9, 20, 22, 0, 0, TimeSpan.FromHours(-3));
+        var reminder = At(withOffset);
+
+        Assert.Equal(TimeSpan.Zero, reminder.RemindAt.Offset);
+        Assert.Equal(withOffset.ToUniversalTime(), reminder.RemindAt);
+    }
+
+    [Fact]
+    public void Snooze_stores_the_instant_in_utc_even_when_given_an_offset()
+    {
+        var reminder = At(Now.AddHours(1));
+        reminder.Snooze(new DateTimeOffset(2026, 9, 20, 23, 0, 0, TimeSpan.FromHours(-3)));
+
+        Assert.Equal(TimeSpan.Zero, reminder.SnoozedUntil!.Value.Offset);
+    }
+
+    [Fact]
     public void Is_due_when_scheduled_and_past()
     {
         Assert.True(At(Now.AddMinutes(-1)).IsDue(Now));

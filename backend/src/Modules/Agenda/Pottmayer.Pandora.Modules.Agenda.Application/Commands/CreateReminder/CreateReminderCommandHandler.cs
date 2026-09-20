@@ -13,7 +13,7 @@ using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateReminder;
 
 public sealed class CreateReminderCommandHandler(
-    IUnitOfWorkFactory factory, IUserPreferencesReader preferences, TimeProvider timeProvider)
+    IUnitOfWorkFactory factory, IEffectiveTimeZoneResolver timeZones, TimeProvider timeProvider)
     : CommandHandlerBase<CreateReminderCommand, ReminderDto>
 {
     protected override async Task<Result<ReminderDto>> HandleAsync(CreateReminderCommand request, CancellationToken ct)
@@ -23,7 +23,7 @@ public sealed class CreateReminderCommandHandler(
         if (string.IsNullOrWhiteSpace(input.Title))
             return Fail(ReminderErrors.TitleRequired);
 
-        var timeZone = await TimeZoneResolver.ResolveAsync(preferences, input.UserId, input.TimeZone, ct);
+        var timeZone = await TimeZoneResolver.ResolveAsync(timeZones, input.UserId, input.TimeZone, ct);
 
         Reminder created;
         try

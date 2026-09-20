@@ -5,20 +5,22 @@ using Pottmayer.Pandora.Modules.Finances.Application.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
+using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.CloseStatement;
 
-public sealed class CloseStatementCommandHandler(IUnitOfWorkFactory factory, TimeProvider timeProvider)
+public sealed class CloseStatementCommandHandler(
+    IUnitOfWorkFactory factory, IEffectiveTimeZoneResolver timeZones, TimeProvider timeProvider)
     : CommandHandlerBase<CloseStatementCommand, CardStatementDto>
 {
     protected override async Task<Result<CardStatementDto>> HandleAsync(CloseStatementCommand request, CancellationToken ct)
     {
         var input = request.Input;
         var now = timeProvider.GetUtcNow();
-        var today = DateOnly.FromDateTime(now.UtcDateTime);
+        var today = await timeZones.ResolveTodayAsync(request.Input.UserId, now, ct);
 
         var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {

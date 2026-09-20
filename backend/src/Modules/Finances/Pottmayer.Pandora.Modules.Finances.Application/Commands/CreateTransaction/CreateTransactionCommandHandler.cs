@@ -7,6 +7,7 @@ using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
+using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.DataContext;
@@ -17,6 +18,7 @@ namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateTransact
 public sealed class CreateTransactionCommandHandler(
     IUnitOfWorkFactory factory,
     IStatementResolver statementResolver,
+    IEffectiveTimeZoneResolver timeZones,
     TimeProvider timeProvider)
     : CommandHandlerBase<CreateTransactionCommand, TransactionDto>
 {
@@ -25,7 +27,7 @@ public sealed class CreateTransactionCommandHandler(
     {
         var input = request.Input;
         var now = timeProvider.GetUtcNow();
-        var today = DateOnly.FromDateTime(now.UtcDateTime);
+        var today = await timeZones.ResolveTodayAsync(input.UserId, now, ct);
 
         if (string.IsNullOrWhiteSpace(input.Description))
             return Fail(TransactionErrors.InvalidDescription);

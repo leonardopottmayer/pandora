@@ -3,6 +3,7 @@ import { Flex, Tag, Typography, theme } from 'antd'
 import dayjs, { type Dayjs } from 'dayjs'
 import type { EventOccurrenceDto } from '../../models'
 import { formatTime } from '../../lib/datetime'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 
 const HOUR_HEIGHT = 44
 const GUTTER_WIDTH = 56
@@ -70,6 +71,7 @@ function packDay(day: Dayjs, timed: EventOccurrenceDto[]): Positioned[] {
 
 export function WeekDayGrid({ days, occurrences, colorOf, onSelectOccurrence, onCreateAt }: WeekDayGridProps) {
   const { token } = theme.useToken()
+  const { timeZone } = usePreferences()
   const today = dayjs()
   const nowMinutes = today.hour() * 60 + today.minute()
 
@@ -217,7 +219,7 @@ export function WeekDayGrid({ days, occurrences, colorOf, onSelectOccurrence, on
                       {p.occ.title}
                     </div>
                     <div style={{ opacity: 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {formatTime(p.occ.startsAt)}
+                      {formatTime(p.occ.startsAt, timeZone)}
                     </div>
                   </button>
                 ))}

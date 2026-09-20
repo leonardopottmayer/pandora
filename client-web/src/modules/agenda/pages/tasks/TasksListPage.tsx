@@ -17,6 +17,7 @@ import { toErrorMessage } from '@/lib/api/envelope'
 import { TASK_DUE_BUCKETS, type TaskDto, type TaskDueBucket } from '../../models'
 import { TASK_PRIORITY_META } from '../../lib/enums'
 import { formatDate, formatDateTime } from '../../lib/datetime'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { EnumTag } from '../../components/EnumTag'
 import {
   useCompleteTask,
@@ -49,6 +50,7 @@ function bucketOf(task: TaskDto): TaskDueBucket {
 export function TasksListPage() {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { timeZone } = usePreferences()
   const [selectedListId, setSelectedListId] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<TaskDto | null>(null)
@@ -137,7 +139,7 @@ export function TasksListPage() {
           {task.priority !== 'None' && <EnumTag meta={TASK_PRIORITY_META[task.priority]} />}
           {task.dueAt && (
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {task.dueHasTime ? formatDateTime(task.dueAt) : formatDate(task.dueAt)}
+              {task.dueHasTime ? formatDateTime(task.dueAt, timeZone) : formatDate(task.dueAt, timeZone)}
             </Typography.Text>
           )}
           <Space size={4}>

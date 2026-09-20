@@ -14,7 +14,7 @@ using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateCalendar;
 
 public sealed class CreateCalendarCommandHandler(
-    IUnitOfWorkFactory factory, IUserPreferencesReader preferences, TimeProvider timeProvider)
+    IUnitOfWorkFactory factory, IEffectiveTimeZoneResolver timeZones, TimeProvider timeProvider)
     : CommandHandlerBase<CreateCalendarCommand, CalendarDto>
 {
     protected override async Task<Result<CalendarDto>> HandleAsync(CreateCalendarCommand request, CancellationToken ct)
@@ -24,7 +24,7 @@ public sealed class CreateCalendarCommandHandler(
         if (string.IsNullOrWhiteSpace(input.Name))
             return Fail(CalendarErrors.NameRequired);
 
-        var timeZone = await TimeZoneResolver.ResolveAsync(preferences, input.UserId, input.TimeZone, ct);
+        var timeZone = await TimeZoneResolver.ResolveAsync(timeZones, input.UserId, input.TimeZone, ct);
 
         Calendar created;
         try

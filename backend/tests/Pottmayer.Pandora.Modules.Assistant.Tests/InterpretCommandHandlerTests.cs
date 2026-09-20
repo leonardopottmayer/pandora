@@ -48,6 +48,7 @@ public sealed class InterpretCommandHandlerTests
             credentials,
             new FakeAiChatCompletionClientFactory(client),
             FakeUserPreferencesReader.With("America/Sao_Paulo"),
+            FakeEffectiveTimeZoneResolver.With("America/Sao_Paulo"),
             tools,
             Microsoft.Extensions.Options.Options.Create(new AssistantOptions()),
             TimeProvider.System);

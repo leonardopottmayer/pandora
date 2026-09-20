@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { ApiResponseError } from '@/lib/api/envelope'
 import * as preferencesService from '../services/preferences.service'
 import type { AppLanguage, AppTheme, UserPreferences, WeekStartsOn } from '../models'
 import { useAuth } from './auth-context'
@@ -71,8 +72,18 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
           latest.current.defaultAlertOffsetMinutes = prefs.defaultAlertOffsetMinutes
         }
       })
-      .catch(() => {
-        /* keeps the current values on error */
+      .catch((err) => {
+        if (cancelled) return
+        // No preferences row yet: seed the account with the browser-detected zone (and the current
+        // local defaults) so a real time zone is persisted on first authenticated load, instead of the
+        // backend forever falling back to its default. Only on this specific case — a transient error
+        // must not overwrite the account with defaults.
+        if (err instanceof ApiResponseError && err.code === 'Users.PreferencesNotFound') {
+          preferencesService.upsertPreferences({ ...latest.current }).catch(() => {
+            /* best-effort seed; the next login retries */
+          })
+        }
+        /* otherwise keeps the current values on error */
       })
     return () => {
       cancelled = true

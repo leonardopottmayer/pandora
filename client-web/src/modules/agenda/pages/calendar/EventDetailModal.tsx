@@ -18,6 +18,7 @@ import {
 } from 'antd'
 import dayjs, { type Dayjs } from 'dayjs'
 import { toErrorMessage } from '@/lib/api/envelope'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import type { CalendarDto, EventOccurrenceDto, EventScope } from '../../models'
 import { formatDateTime } from '../../lib/datetime'
 import { AlertsEditor } from '../../components/AlertsEditor'
@@ -43,6 +44,7 @@ interface EditValues {
 export function EventDetailModal({ open, occurrence, calendars, onClose }: EventDetailModalProps) {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { timeZone } = usePreferences()
   const [form] = Form.useForm<EditValues>()
   const [editing, setEditing] = useState(false)
   const [scope, setScope] = useState<EventScope>('this')
@@ -154,10 +156,10 @@ export function EventDetailModal({ open, occurrence, calendars, onClose }: Event
             </Descriptions.Item>
             <Descriptions.Item label={t('agenda.events.calendar')}>{calendarName}</Descriptions.Item>
             <Descriptions.Item label={t('agenda.events.startsAt')}>
-              {formatDateTime(occurrence.startsAt)}
+              {formatDateTime(occurrence.startsAt, timeZone)}
             </Descriptions.Item>
             <Descriptions.Item label={t('agenda.events.endsAt')}>
-              {formatDateTime(occurrence.endsAt)}
+              {formatDateTime(occurrence.endsAt, timeZone)}
             </Descriptions.Item>
             {occurrence.location && (
               <Descriptions.Item label={t('agenda.events.location')}>

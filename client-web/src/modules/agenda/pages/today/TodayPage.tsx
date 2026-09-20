@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { App, Button, Card, Empty, List, Space, Typography } from 'antd'
 import { CheckOutlined } from '@ant-design/icons'
 import { toErrorMessage } from '@/lib/api/envelope'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import type { TodayItemDto } from '../../models'
 import { TODAY_KIND_META } from '../../lib/enums'
 import { formatTime } from '../../lib/datetime'
@@ -15,6 +16,7 @@ import { useAcknowledgeReminder } from '../../hooks/useReminders'
 export function TodayPage() {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { timeZone } = usePreferences()
   const { data, isLoading } = useToday()
   const completeTask = useCompleteTask()
   const acknowledge = useAcknowledgeReminder()
@@ -80,7 +82,7 @@ export function TodayPage() {
               avatar={
                 <Space direction="vertical" size={0} align="center">
                   <Typography.Text strong>
-                    {item.isAllDay ? t('agenda.today.allDay') : formatTime(item.at)}
+                    {item.isAllDay ? t('agenda.today.allDay') : formatTime(item.at, timeZone)}
                   </Typography.Text>
                   <EnumTag meta={TODAY_KIND_META[item.kind]} />
                 </Space>
