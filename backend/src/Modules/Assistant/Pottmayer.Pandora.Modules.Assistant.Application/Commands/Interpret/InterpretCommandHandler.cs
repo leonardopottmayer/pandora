@@ -38,12 +38,20 @@ public sealed class InterpretCommandHandler(
 {
     private static readonly TimeSpan ConfirmationWindow = TimeSpan.FromMinutes(10);
 
+    /// <summary>Recorded as the utterance when a voice note could not be turned into text.</summary>
+    private const string VoiceNotePlaceholder = "[voice note]";
+
+    private static string TranscriptionPrompt(string locale) =>
+        $"Transcribe this voice note verbatim, in the language it was spoken (most likely {locale}). " +
+        "Reply with the transcription only: no quotes, no commentary. " +
+        "If there is no intelligible speech, reply with nothing.";
+
     protected override async Task<Result<InterpretResultDto>> HandleAsync(InterpretCommand request, CancellationToken ct)
     {
         var input = request.Input;
         var userId = input.UserId;
         var text = input.Text?.Trim();
-        if (string.IsNullOrEmpty(text))
+        if (string.IsNullOrEmpty(text) && input.Audio is null)
             return Fail(AssistantErrors.EmptyText);
 
         var profile = await factory.ExecuteAsync(AssistantModule.DatabaseKey, async (context, token) =>
@@ -70,6 +78,48 @@ public sealed class InterpretCommandHandler(
         var localNow = TimeZoneInfo.ConvertTime(now, timeZone);
         var locale = string.IsNullOrWhiteSpace(profile.LocaleOverride) ? "pt-BR" : profile.LocaleOverride!;
 
+        var client = clientFactory.GetClient(profile.ChatProvider);
+        var start = timeProvider.GetTimestamp();
+
+        // A voice note is transcribed by its own call first, so what was heard is logged as the
+        // utterance and echoed back, and the rest of the pipeline stays identical to typed text. The
+        // audio bytes are not retained. Its tokens and latency are folded into the invocation.
+        string? transcript = null;
+        var transcriptionTokens = new TokenUsage(0, 0);
+        if (input.Audio is { } audio)
+        {
+            try
+            {
+                var transcription = await client.CompleteAsync(new ChatRequest(
+                    profile.ChatModel,
+                    [ChatMessage.User(TranscriptionPrompt(locale), audio)],
+                    Temperature: 0,
+                    ApiKey: keyResult.Value), ct);
+                transcript = transcription.Message.Content?.Trim();
+                transcriptionTokens = transcription.Usage;
+            }
+            catch (AiException ex)
+            {
+                return await RecordAsync(null, Outcome(
+                    conversation, isNewConversation, now, userId, VoiceNotePlaceholder, InvocationStatus.ProviderError,
+                    commandName: null, argumentsJson: null, result: null, error: ex.Message,
+                    profile, (long)timeProvider.GetElapsedTime(start).TotalMilliseconds,
+                    promptTokens: 0, completionTokens: 0, expiresAt: null), ct);
+            }
+
+            if (string.IsNullOrEmpty(transcript))
+                return await RecordAsync(null, Outcome(
+                    conversation, isNewConversation, now, userId, VoiceNotePlaceholder, InvocationStatus.Clarification,
+                    commandName: null, argumentsJson: null, result: "I couldn't make out the voice note. Could you try again?",
+                    error: null, profile, (long)timeProvider.GetElapsedTime(start).TotalMilliseconds,
+                    transcriptionTokens.PromptTokens, transcriptionTokens.CompletionTokens, expiresAt: null), ct);
+
+            text = transcript;
+        }
+
+        // Non-empty from here on: either typed text or a transcript (checked above).
+        var utterance = text!;
+
         var toolsByName = tools.ToDictionary(t => t.Descriptor.Name, StringComparer.Ordinal);
         var descriptors = toolsByName.Values.Select(t => t.Descriptor).ToList();
         var toolDefinitions = descriptors
@@ -90,7 +140,7 @@ public sealed class InterpretCommandHandler(
                 ? new ChatMessage(ChatRole.Assistant, past.Content)
                 : ChatMessage.User(past.Content));
         }
-        messages.Add(ChatMessage.User(text));
+        messages.Add(ChatMessage.User(utterance));
 
         var chatRequest = new ChatRequest(
             profile.ChatModel,
@@ -99,10 +149,7 @@ public sealed class InterpretCommandHandler(
             Temperature: 0,
             ApiKey: keyResult.Value);
 
-        var client = clientFactory.GetClient(profile.ChatProvider);
-
         ChatCompletion completion;
-        var start = timeProvider.GetTimestamp();
         try
         {
             completion = await client.CompleteAsync(chatRequest, ct);
@@ -110,14 +157,16 @@ public sealed class InterpretCommandHandler(
         catch (AiException ex)
         {
             var latencyMs = (long)timeProvider.GetElapsedTime(start).TotalMilliseconds;
-            return await RecordAsync(Outcome(
-                conversation, isNewConversation, now, userId, text, InvocationStatus.ProviderError,
+            return await RecordAsync(transcript, Outcome(
+                conversation, isNewConversation, now, userId, utterance, InvocationStatus.ProviderError,
                 commandName: null, argumentsJson: null, result: null, error: ex.Message,
                 profile, latencyMs, promptTokens: 0, completionTokens: 0, expiresAt: null), ct);
         }
 
         var latency = (long)timeProvider.GetElapsedTime(start).TotalMilliseconds;
-        var usage = completion.Usage;
+        var usage = new TokenUsage(
+            completion.Usage.PromptTokens + transcriptionTokens.PromptTokens,
+            completion.Usage.CompletionTokens + transcriptionTokens.CompletionTokens);
 
         // The model replied in prose — it is asking a question or declining. Nothing runs.
         var toolCall = completion.ToolCalls.Count > 0 ? completion.ToolCalls[0] : null;
@@ -126,8 +175,8 @@ public sealed class InterpretCommandHandler(
             var message = string.IsNullOrWhiteSpace(completion.Message.Content)
                 ? "I didn't understand. Could you rephrase?"
                 : completion.Message.Content!;
-            return await RecordAsync(Outcome(
-                conversation, isNewConversation, now, userId, text, InvocationStatus.Clarification,
+            return await RecordAsync(transcript, Outcome(
+                conversation, isNewConversation, now, userId, utterance, InvocationStatus.Clarification,
                 commandName: null, argumentsJson: null, result: message, error: null,
                 profile, latency, usage.PromptTokens, usage.CompletionTokens, expiresAt: null), ct);
         }
@@ -136,8 +185,8 @@ public sealed class InterpretCommandHandler(
 
         // The model named a tool the catalog does not have.
         if (!toolsByName.TryGetValue(toolCall.Name, out var tool))
-            return await RecordAsync(Outcome(
-                conversation, isNewConversation, now, userId, text, InvocationStatus.Rejected,
+            return await RecordAsync(transcript, Outcome(
+                conversation, isNewConversation, now, userId, utterance, InvocationStatus.Rejected,
                 toolCall.Name, argumentsJson, result: null, error: $"Unknown command '{toolCall.Name}'.",
                 profile, latency, usage.PromptTokens, usage.CompletionTokens, expiresAt: null), ct);
 
@@ -146,8 +195,8 @@ public sealed class InterpretCommandHandler(
         if (RequiresConfirmation(tool.Descriptor.Confirmation, profile.ConfirmationLevel))
         {
             var intent = $"Confirm {toolCall.Name}? Arguments: {argumentsJson}";
-            return await RecordAsync(Outcome(
-                conversation, isNewConversation, now, userId, text, InvocationStatus.PendingConfirmation,
+            return await RecordAsync(transcript, Outcome(
+                conversation, isNewConversation, now, userId, utterance, InvocationStatus.PendingConfirmation,
                 toolCall.Name, argumentsJson, result: intent, error: null,
                 profile, latency, usage.PromptTokens, usage.CompletionTokens, expiresAt: now + ConfirmationWindow), ct);
         }
@@ -160,15 +209,15 @@ public sealed class InterpretCommandHandler(
         catch (Exception ex) when (ex is FormatException or ArgumentException or InvalidOperationException)
         {
             // Malformed or missing arguments that slipped past the schema — a write-time rejection.
-            return await RecordAsync(Outcome(
-                conversation, isNewConversation, now, userId, text, InvocationStatus.Rejected,
+            return await RecordAsync(transcript, Outcome(
+                conversation, isNewConversation, now, userId, utterance, InvocationStatus.Rejected,
                 toolCall.Name, argumentsJson, result: null, error: ex.Message,
                 profile, latency, usage.PromptTokens, usage.CompletionTokens, expiresAt: null), ct);
         }
 
         var status = commandOutcome.Success ? InvocationStatus.Executed : InvocationStatus.Failed;
-        return await RecordAsync(Outcome(
-            conversation, isNewConversation, now, userId, text, status,
+        return await RecordAsync(transcript, Outcome(
+            conversation, isNewConversation, now, userId, utterance, status,
             toolCall.Name, argumentsJson,
             result: commandOutcome.Success ? commandOutcome.Message : null,
             error: commandOutcome.Success ? null : commandOutcome.Message,
@@ -209,7 +258,7 @@ public sealed class InterpretCommandHandler(
         return (Conversation.Start(userId, timeProvider), true);
     }
 
-    private async Task<Result<InterpretResultDto>> RecordAsync(InvocationOutcome outcome, CancellationToken ct)
+    private async Task<Result<InterpretResultDto>> RecordAsync(string? transcript, InvocationOutcome outcome, CancellationToken ct)
     {
         var assistantContent = outcome.Result ?? outcome.Error ?? string.Empty;
 
@@ -242,7 +291,7 @@ public sealed class InterpretCommandHandler(
 
         return Ok(new InterpretResultDto(
             invocation.Id, outcome.Conversation.Id, outcome.Status.Value,
-            outcome.CommandName, outcome.ArgumentsJson, assistantContent));
+            outcome.CommandName, outcome.ArgumentsJson, assistantContent, transcript));
     }
 
     /// <summary>True when the command must be confirmed before running, once the level shifts its policy.</summary>

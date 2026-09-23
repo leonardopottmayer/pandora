@@ -264,4 +264,48 @@ public sealed class InterpretCommandHandlerTests
         Assert.Equal(InvocationStatus.ProviderError, invocation.Status);
         Assert.Equal("endpoint down", invocation.Error);
     }
+
+    private static InterpretCommand VoiceNote() =>
+        new(new InterpretInput(User, Text: null, Audio: new ChatAttachment(new byte[] { 1, 2, 3 }, "audio/ogg")));
+
+    [Fact]
+    public async Task A_voice_note_is_transcribed_then_interpreted_as_the_transcript()
+    {
+        var toolCall = new ToolCall("create_reminder", System.Text.Json.JsonDocument.Parse(
+            """{ "title": "Pagar o aluguel", "remindAt": "2026-09-05T10:00:00-03:00" }""").RootElement.Clone());
+        var client = FakeAiChatCompletionClient.Script(
+            new ChatMessage(ChatRole.Assistant, " me lembra de pagar o aluguel amanhã às 10 "),
+            new ChatMessage(ChatRole.Assistant, null, [toolCall]));
+        var command = FakeAssistantTool.Succeeds("create_reminder");
+        var (handler, invocations) = Build(client, FakeExternalCredentialProvider.WithKey("k"), EnabledProfile(), command);
+
+        var result = await handler.Handle(VoiceNote(), CancellationToken.None);
+
+        Assert.Equal(2, client.Calls);
+        var transcription = Assert.Single(client.Requests[0].Messages);
+        Assert.Equal("audio/ogg", Assert.Single(transcription.Attachments!).MimeType);
+        Assert.Null(client.Requests[0].Tools);
+        Assert.Equal("me lembra de pagar o aluguel amanhã às 10", client.Requests[1].Messages[^1].Content);
+
+        Assert.Equal(InvocationStatus.Executed.Value, result.Value!.Status);
+        Assert.Equal("me lembra de pagar o aluguel amanhã às 10", result.Value.Transcript);
+        var invocation = Assert.Single(invocations.Added);
+        Assert.Equal("me lembra de pagar o aluguel amanhã às 10", invocation.Utterance);
+        Assert.Equal(4, invocation.PromptTokens); // transcription + interpretation
+    }
+
+    [Fact]
+    public async Task An_unintelligible_voice_note_asks_again_and_runs_nothing()
+    {
+        var client = FakeAiChatCompletionClient.Replies("   ");
+        var command = FakeAssistantTool.Succeeds("create_reminder");
+        var (handler, invocations) = Build(client, FakeExternalCredentialProvider.WithKey("k"), EnabledProfile(), command);
+
+        var result = await handler.Handle(VoiceNote(), CancellationToken.None);
+
+        Assert.Equal(1, client.Calls);
+        Assert.Equal(InvocationStatus.Clarification.Value, result.Value!.Status);
+        Assert.Null(result.Value.Transcript);
+        Assert.Equal("[voice note]", Assert.Single(invocations.Added).Utterance);
+    }
 }

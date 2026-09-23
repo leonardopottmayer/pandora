@@ -198,22 +198,27 @@ sense.
 
 ### 4.4 Voice
 
-Telegram voice notes are OGG/Opus, but the module need not know that. The flow:
+**Built (Telegram).** Telegram voice notes are OGG/Opus, but the module need not know that. The flow:
 
 1. Channels publishes `InboundMessageReceived` with `mediaRef` and `mediaMimeType`.
-2. Assistant opens the stream through `IInboundMediaReader.OpenAsync(channel, mediaRef)` — the only
-   port it calls in Channels.
-3. `ITranscriptionClient.TranscribeAsync(stream, mimeType, languageHint)` returns text.
-4. From there it is identical to a typed message.
+2. The subscriber, seeing no text and an `audio/*` MIME type, reads the bytes through
+   `IInboundMediaReader.OpenAsync(channel, bot, mediaRef)` — the only port it calls in Channels. The
+   `bot` matters: a Telegram `file_id` is only downloadable by the bot that received it. Notes over
+   5 MB are refused with a reply.
+3. The interpret pipeline makes a **transcription call** to the same chat provider: the audio travels
+   as a `ChatAttachment` on the user turn (Tars `Ai.Chat`, mapped to Gemini `inlineData`), no tools,
+   temperature 0. No separate `ITranscriptionClient` was needed.
+4. The transcript becomes the utterance and runs the normal text pipeline. Tokens and latency of both
+   calls are summed on the invocation; an empty transcript records a clarification under the
+   utterance `[voice note]`.
+5. The reply echoes what was heard (`🎤 "…"`) above the outcome.
 
-Provider option: since Gemini is already in place, the natural path is **Gemini's own audio input** —
-not a self-hosted Whisper (that was the local-arc decision). It may make a separate
-`ITranscriptionClient` unnecessary, or make it a thin capability over the same provider. Audio bytes
-are transcribed and discarded by default; retention is a per-profile opt-in, because voice is the most
-sensitive thing this module touches.
+Audio bytes are discarded after transcription. Retention stays a future per-profile opt-in, because
+voice is the most sensitive thing this module touches.
 
-The web surface records with `MediaRecorder`, uploads to
-`POST /assistant/interpret` as multipart, and takes the same path.
+The web surface (not built yet) records with `MediaRecorder`, uploads to
+`POST /assistant/interpret` as multipart, and takes the same path — `InterpretInput.Audio` already
+accepts it.
 
 ### 4.5 Prompting
 
@@ -308,9 +313,10 @@ GET    /assistant/commands               → the live catalog (debugging, and th
   `inbound.interaction.assistant.#`.
 - **Done when:** the same sentence typed into Telegram does the same thing, and *Confirm* works.
 
-### Phase A4 — Voice
-- `ITranscriptionClient`; self-hosted Whisper adapter; media read through `IInboundMediaReader`; web
-  `MediaRecorder` upload; audio retention opt-in.
+### Phase A4 — Voice *(Telegram done 2026-09-22)*
+- ✅ Telegram voice notes: media read through `IInboundMediaReader`, transcription via Gemini audio
+  input (`ChatAttachment`, Tars 0.0.16), transcript echoed in the reply. See §4.4.
+- Pending: web `MediaRecorder` upload; audio retention opt-in.
 - **Done when:** a voice note in Telegram creates a reminder, in Portuguese.
 
 ### Phase A5 — Quality and a second provider

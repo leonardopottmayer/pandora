@@ -57,6 +57,10 @@ public static class InfrastructureDI
         // Direct sender (plain message via a named bot) — backs the assistant reply path.
         builder.Services.AddScoped<ITelegramSender, TelegramSender>();
 
+        // Inbound media reader — backs the assistant's voice notes. Resolves the bot per call, so it is
+        // inert (and the always-scanned inbound subscriber stays constructible) when Telegram is off.
+        builder.Services.AddScoped<IInboundMediaReader, TelegramInboundMediaReader>();
+
         // The active machinery — outbound transport and inbound ingress — is registered only when the
         // notifications bot's token is present. Without it the channel stays dark instead of half-configured:
         // a telegram send finds no transport and dead-letters, which is the honest outcome.
@@ -65,8 +69,7 @@ public static class InfrastructureDI
         {
             builder.Services.AddScoped<IChannelTransport, TelegramChannelTransport>();
 
-            // Inbound Telegram: the media reader and the triage the long-polling driver feeds.
-            builder.Services.AddScoped<IInboundMediaReader, TelegramInboundMediaReader>();
+            // Inbound Telegram: the triage the long-polling driver feeds.
             builder.Services.AddScoped<TelegramInboundTriage>();
 
             // The long-poll driver only actually pulls the bots in InboundBots (checked inside).

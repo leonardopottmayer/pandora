@@ -6,6 +6,8 @@ namespace Pottmayer.Pandora.Modules.Assistant.Application.Dtos;
 /// tool call the model made (null when it produced none); <see cref="Message"/> is the user-facing reply.
 /// When <see cref="Status"/> is <c>pending-confirmation</c>, <see cref="InvocationId"/> is what the caller
 /// posts to confirm/cancel. <see cref="ConversationId"/> lets the caller continue the same thread.
+/// <see cref="Transcript"/> is what the assistant heard when the input was a voice note (null for text),
+/// so the caller can echo it back.
 /// </summary>
 public sealed record InterpretResultDto(
     Guid InvocationId,
@@ -13,4 +15,5 @@ public sealed record InterpretResultDto(
     string Status,
     string? CommandName,
     string? Arguments,
-    string Message);
+    string Message,
+    string? Transcript = null);

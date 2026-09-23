@@ -194,22 +194,26 @@ executar.
 
 ### 4.4 Voz
 
-Áudios do Telegram são OGG/Opus, mas o módulo não precisa saber disso. O fluxo:
+**Construído (Telegram).** Áudios do Telegram são OGG/Opus, mas o módulo não precisa saber disso. O fluxo:
 
 1. O Channels publica `InboundMessageReceived` com `mediaRef` e `mediaMimeType`.
-2. O Assistant abre o stream por `IInboundMediaReader.OpenAsync(channel, mediaRef)` — a única porta
-   que ele chama no Channels.
-3. `ITranscriptionClient.TranscribeAsync(stream, mimeType, languageHint)` devolve texto.
-4. Daí em diante é idêntico a uma mensagem digitada.
+2. O subscriber, vendo que não há texto e o MIME é `audio/*`, lê os bytes por
+   `IInboundMediaReader.OpenAsync(channel, bot, mediaRef)` — a única porta que ele chama no Channels. O
+   `bot` importa: um `file_id` do Telegram só pode ser baixado pelo bot que o recebeu. Áudios acima de
+   5 MB são recusados com uma resposta.
+3. O pipeline de interpretação faz uma **chamada de transcrição** ao mesmo provedor de chat: o áudio vai
+   como `ChatAttachment` no turno do usuário (Tars `Ai.Chat`, mapeado para `inlineData` do Gemini), sem
+   tools, temperatura 0. Não foi preciso um `ITranscriptionClient` separado.
+4. A transcrição vira o enunciado e segue o pipeline de texto normal. Tokens e latência das duas
+   chamadas somam na invocação; transcrição vazia registra um pedido de esclarecimento com o enunciado
+   `[voice note]`.
+5. A resposta ecoa o que foi ouvido (`🎤 "…"`) acima do resultado.
 
-Opção de provedor: como o Gemini já está no lugar, o caminho natural é a **entrada de áudio do próprio
-Gemini** — não um Whisper self-hosted (aquela era decisão do arco local). Pode dispensar um
-`ITranscriptionClient` separado, ou implementá-lo como capacidade fina sobre o mesmo provedor. Os bytes
-de áudio são transcritos e descartados por padrão; retenção é opt-in por perfil, porque voz é a coisa
-mais sensível que este módulo toca.
+Os bytes de áudio são descartados depois da transcrição. Retenção continua como opt-in futuro por
+perfil, porque voz é a coisa mais sensível que este módulo toca.
 
-A superfície web grava com `MediaRecorder`, faz upload para `POST /assistant/interpret` como multipart, e
-segue o mesmo caminho.
+A superfície web (ainda não construída) grava com `MediaRecorder`, faz upload para
+`POST /assistant/interpret` como multipart, e segue o mesmo caminho — o `InterpretInput.Audio` já aceita.
 
 ### 4.5 Prompting
 
@@ -305,9 +309,10 @@ GET    /assistant/commands               → o catálogo vivo (debug e painel de
   `inbound.interaction.assistant.#`.
 - **Pronto quando:** a mesma frase digitada no Telegram faz a mesma coisa, e *Confirmar* funciona.
 
-### Fase A4 — Voz
-- `ITranscriptionClient`; adaptador de Whisper self-hosted; leitura de mídia por
-  `IInboundMediaReader`; upload por `MediaRecorder` na web; opt-in de retenção de áudio.
+### Fase A4 — Voz *(Telegram feito em 2026-09-22)*
+- ✅ Áudio no Telegram: mídia lida por `IInboundMediaReader`, transcrição pela entrada de áudio do
+  Gemini (`ChatAttachment`, Tars 0.0.16), transcrição ecoada na resposta. Ver §4.4.
+- Pendente: upload por `MediaRecorder` na web; opt-in de retenção de áudio.
 - **Pronto quando:** um áudio no Telegram cria um lembrete, em português.
 
 ### Fase A5 — Qualidade e segundo provedor

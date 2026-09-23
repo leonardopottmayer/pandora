@@ -7,6 +7,10 @@ namespace Pottmayer.Pandora.Modules.Channels.Abstractions;
 /// </summary>
 public interface IInboundMediaReader
 {
-    /// <summary>Opens the media stream. The caller owns and disposes it.</summary>
-    Task<Stream> OpenAsync(string channel, string mediaRef, CancellationToken ct = default);
+    /// <summary>
+    /// Opens the media stream. <paramref name="bot"/> is the inbound route the message arrived on (the
+    /// event's <c>Bot</c>) — a Telegram <c>file_id</c> is only valid for the bot that received it. The
+    /// caller owns and disposes the stream.
+    /// </summary>
+    Task<Stream> OpenAsync(string channel, string bot, string mediaRef, CancellationToken ct = default);
 }
