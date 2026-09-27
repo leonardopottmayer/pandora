@@ -2,6 +2,7 @@ using System.Text.Json;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Pandora.Modules.Assistant.Application.Dtos;
+using Pottmayer.Pandora.Modules.Assistant.Application.Interpret;
 using Pottmayer.Pandora.Modules.Assistant.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Assistant.Domain.Errors;
 using Pottmayer.Pandora.Modules.Assistant.Domain.Ports.Repositories;
@@ -20,10 +21,11 @@ namespace Pottmayer.Pandora.Modules.Assistant.Application.Commands.ConfirmInvoca
 public sealed class ConfirmInvocationCommandHandler(
     IUnitOfWorkFactory factory,
     IEnumerable<IAssistantTool> tools,
+    AssistantToolContextResolver contexts,
     TimeProvider timeProvider)
-    : CommandHandlerBase<ConfirmInvocationCommand, InterpretResultDto>
+    : CommandHandlerBase<ConfirmInvocationCommand, InvocationResultDto>
 {
-    protected override async Task<Result<InterpretResultDto>> HandleAsync(ConfirmInvocationCommand request, CancellationToken ct)
+    protected override async Task<Result<InvocationResultDto>> HandleAsync(ConfirmInvocationCommand request, CancellationToken ct)
     {
         var input = request.Input;
         var now = timeProvider.GetUtcNow();
@@ -48,10 +50,12 @@ public sealed class ConfirmInvocationCommandHandler(
             return Fail(AssistantErrors.ConfirmationExpired);
         }
 
+        var toolContext = await contexts.ResolveAsync(input.UserId, ct);
         var tool = tools.FirstOrDefault(t => t.Descriptor.Name == invocation.CommandName);
         if (tool is null)
         {
-            invocation.MarkFailed($"Unknown command '{invocation.CommandName}'.");
+            invocation.MarkFailed(toolContext.Text(
+                $"Não conheço o comando '{invocation.CommandName}'.", $"Unknown command '{invocation.CommandName}'."));
             await PersistAsync(invocation, ct);
             return Ok(ToDto(invocation));
         }
@@ -59,7 +63,7 @@ public sealed class ConfirmInvocationCommandHandler(
         try
         {
             using var document = JsonDocument.Parse(invocation.ArgumentsJson ?? "{}");
-            var outcome = await tool.ExecuteAsync(input.UserId, document.RootElement, ct);
+            var outcome = await tool.ExecuteAsync(toolContext, document.RootElement, ct);
             if (outcome.Success)
                 invocation.MarkExecuted(outcome.Message);
             else
@@ -82,7 +86,7 @@ public sealed class ConfirmInvocationCommandHandler(
             return true;
         }, cancellationToken: ct);
 
-    private static InterpretResultDto ToDto(CommandInvocation invocation) =>
-        new(invocation.Id, invocation.ConversationId, invocation.Status.Value,
+    private static InvocationResultDto ToDto(CommandInvocation invocation) =>
+        new(invocation.Id, invocation.Status.Value,
             invocation.CommandName, invocation.ArgumentsJson, invocation.Result ?? invocation.Error ?? string.Empty);
 }

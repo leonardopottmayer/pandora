@@ -7,4 +7,4 @@ public sealed record CancelInvocationInput(Guid UserId, Guid InvocationId);
 
 /// <summary>Declines a tool call that was held for confirmation, leaving it cancelled and unrun.</summary>
 public sealed class CancelInvocationCommand(CancelInvocationInput input)
-    : CommandBase<CancelInvocationInput, InterpretResultDto>(input);
+    : CommandBase<CancelInvocationInput, InvocationResultDto>(input);

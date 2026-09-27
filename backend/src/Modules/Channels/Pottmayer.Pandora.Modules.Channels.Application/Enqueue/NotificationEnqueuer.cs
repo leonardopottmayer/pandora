@@ -25,7 +25,6 @@ public sealed class NotificationEnqueuer(
 {
     // How long a rendered inline button stays actionable. A button from yesterday is expired, not
     // a fresh command.
-    private static readonly TimeSpan InteractionLifetime = TimeSpan.FromHours(24);
 
     public async Task EnqueueAsync(
         Channel channel,
@@ -79,7 +78,7 @@ public sealed class NotificationEnqueuer(
         CancellationToken ct)
     {
         var interactions = context.AcquireRepository<IInteractionRepository>();
-        var expiresAt = timeProvider.GetUtcNow() + InteractionLifetime;
+        var expiresAt = timeProvider.GetUtcNow() + Interaction.Lifetime;
 
         var rendered = new List<TelegramRenderedButton>(buttons.Count);
         foreach (var button in buttons)

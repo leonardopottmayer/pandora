@@ -136,9 +136,9 @@ public sealed class InterpretCommandHandlerTests
         var result = await handler.Handle(Sentence(), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(InvocationStatus.Clarification.Value, result.Value!.Status);
+        Assert.Equal(InvocationStatus.Clarification.Value, result.Value!.Invocations[0].Status);
         Assert.Equal("Para quando é o lembrete?", result.Value.Message);
-        Assert.Null(result.Value.CommandName);
+        Assert.Null(result.Value.Invocations[0].CommandName);
         Assert.Equal(0, command.Calls);
         var invocation = Assert.Single(invocations.Added);
         Assert.Equal(InvocationStatus.Clarification, invocation.Status);
@@ -156,8 +156,8 @@ public sealed class InterpretCommandHandlerTests
         var result = await handler.Handle(Sentence(), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(InvocationStatus.Executed.Value, result.Value!.Status);
-        Assert.Equal("create_reminder", result.Value.CommandName);
+        Assert.Equal(InvocationStatus.Executed.Value, result.Value!.Invocations[0].Status);
+        Assert.Equal("create_reminder", result.Value.Invocations[0].CommandName);
         Assert.Equal("Lembrete criado.", result.Value.Message);
         Assert.Equal(1, command.Calls);
         Assert.Equal("Aluguel", command.LastArguments!.Value.GetProperty("title").GetString());
@@ -198,7 +198,7 @@ public sealed class InterpretCommandHandlerTests
 
         var result = await handler.Handle(Sentence(), CancellationToken.None);
 
-        Assert.Equal(InvocationStatus.PendingConfirmation.Value, result.Value!.Status);
+        Assert.Equal(InvocationStatus.PendingConfirmation.Value, result.Value!.Invocations[0].Status);
         Assert.Equal(0, command.Calls); // held, not executed
         var invocation = Assert.Single(invocations.Added);
         Assert.Equal(InvocationStatus.PendingConfirmation, invocation.Status);
@@ -214,7 +214,7 @@ public sealed class InterpretCommandHandlerTests
 
         var result = await handler.Handle(Sentence(), CancellationToken.None);
 
-        Assert.Equal(InvocationStatus.Rejected.Value, result.Value!.Status);
+        Assert.Equal(InvocationStatus.Rejected.Value, result.Value!.Invocations[0].Status);
         Assert.Equal(0, command.Calls);
         Assert.Equal(InvocationStatus.Rejected, Assert.Single(invocations.Added).Status);
     }
@@ -228,7 +228,7 @@ public sealed class InterpretCommandHandlerTests
 
         var result = await handler.Handle(Sentence(), CancellationToken.None);
 
-        Assert.Equal(InvocationStatus.Rejected.Value, result.Value!.Status);
+        Assert.Equal(InvocationStatus.Rejected.Value, result.Value!.Invocations[0].Status);
         var invocation = Assert.Single(invocations.Added);
         Assert.Equal(InvocationStatus.Rejected, invocation.Status);
         Assert.Equal("title obrigatório", invocation.Error);
@@ -244,7 +244,7 @@ public sealed class InterpretCommandHandlerTests
 
         var result = await handler.Handle(Sentence(), CancellationToken.None);
 
-        Assert.Equal(InvocationStatus.Failed.Value, result.Value!.Status);
+        Assert.Equal(InvocationStatus.Failed.Value, result.Value!.Invocations[0].Status);
         Assert.Equal("O título é obrigatório.", result.Value.Message);
         Assert.Equal(InvocationStatus.Failed, Assert.Single(invocations.Added).Status);
     }
@@ -259,7 +259,7 @@ public sealed class InterpretCommandHandlerTests
         var result = await handler.Handle(Sentence(), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(InvocationStatus.ProviderError.Value, result.Value!.Status);
+        Assert.Equal(InvocationStatus.ProviderError.Value, result.Value!.Invocations[0].Status);
         var invocation = Assert.Single(invocations.Added);
         Assert.Equal(InvocationStatus.ProviderError, invocation.Status);
         Assert.Equal("endpoint down", invocation.Error);
@@ -287,7 +287,7 @@ public sealed class InterpretCommandHandlerTests
         Assert.Null(client.Requests[0].Tools);
         Assert.Equal("me lembra de pagar o aluguel amanhã às 10", client.Requests[1].Messages[^1].Content);
 
-        Assert.Equal(InvocationStatus.Executed.Value, result.Value!.Status);
+        Assert.Equal(InvocationStatus.Executed.Value, result.Value!.Invocations[0].Status);
         Assert.Equal("me lembra de pagar o aluguel amanhã às 10", result.Value.Transcript);
         var invocation = Assert.Single(invocations.Added);
         Assert.Equal("me lembra de pagar o aluguel amanhã às 10", invocation.Utterance);
@@ -304,8 +304,85 @@ public sealed class InterpretCommandHandlerTests
         var result = await handler.Handle(VoiceNote(), CancellationToken.None);
 
         Assert.Equal(1, client.Calls);
-        Assert.Equal(InvocationStatus.Clarification.Value, result.Value!.Status);
+        Assert.Equal(InvocationStatus.Clarification.Value, result.Value!.Invocations[0].Status);
         Assert.Null(result.Value.Transcript);
+        Assert.Equal("[voice note]", Assert.Single(invocations.Added).Utterance);
+    }
+
+    private static ToolCall Call(string name, string argumentsJson = "{}") =>
+        new(name, System.Text.Json.JsonDocument.Parse(argumentsJson).RootElement.Clone());
+
+    [Fact]
+    public async Task Every_tool_call_in_the_reply_runs_and_is_recorded_on_its_own()
+    {
+        var client = FakeAiChatCompletionClient.Script(
+            new ChatMessage(ChatRole.Assistant, null, [Call("create_reminder"), Call("create_task")]));
+        var reminder = FakeAssistantTool.Succeeds("create_reminder", "Lembrete criado.");
+        var task = FakeAssistantTool.Succeeds("create_task", "Tarefa criada.");
+        var (handler, invocations) = Build(client, FakeExternalCredentialProvider.WithKey("k"), EnabledProfile(), reminder, task);
+
+        var result = await handler.Handle(Sentence("lembra X e cria a tarefa Y"), CancellationToken.None);
+
+        Assert.Equal((1, 1), (reminder.Calls, task.Calls));
+        Assert.Equal("1. Lembrete criado.\n2. Tarefa criada.", result.Value!.Message);
+        Assert.Equal(["create_reminder", "create_task"], result.Value.Invocations.Select(i => i.CommandName));
+        Assert.Equal(2, invocations.Added.Count);
+        Assert.Equal(2, invocations.Added[0].PromptTokens); // the one provider call is costed once
+        Assert.Equal(0, invocations.Added[1].PromptTokens);
+    }
+
+    [Fact]
+    public async Task A_held_call_asks_with_the_tools_own_description()
+    {
+        var client = FakeAiChatCompletionClient.RepliesWithToolCall("create_reminder", "{}");
+        var command = FakeAssistantTool.Succeeds("create_reminder");
+        var (handler, _) = Build(client, FakeExternalCredentialProvider.WithKey("k"),
+            EnabledProfile(level: ConfirmationLevel.Strict), command);
+
+        var result = await handler.Handle(Sentence(), CancellationToken.None);
+
+        Assert.Equal("Run create_reminder?", result.Value!.Message);
+        Assert.Equal(0, command.Calls);
+    }
+
+    [Fact]
+    public async Task Tools_run_with_the_users_locale_and_zone()
+    {
+        var client = FakeAiChatCompletionClient.RepliesWithToolCall("create_reminder", "{}");
+        var command = FakeAssistantTool.Succeeds("create_reminder");
+        var (handler, _) = Build(client, FakeExternalCredentialProvider.WithKey("k"), EnabledProfile(), command);
+
+        await handler.Handle(Sentence(), CancellationToken.None);
+
+        Assert.Equal(User, command.LastContext!.UserId);
+        Assert.Equal("pt-BR", command.LastContext.Locale);
+        Assert.Equal("America/Sao_Paulo", command.LastContext.TimeZone.Id);
+    }
+
+    [Fact]
+    public async Task The_pipelines_own_replies_follow_the_locale_override()
+    {
+        var client = FakeAiChatCompletionClient.Replies("   ");
+        var profile = AssistantProfile.Create(User, "gemini", "m", true, "en-US", ConfirmationLevel.Balanced, TimeProvider.System);
+        var (handler, _) = Build(client, FakeExternalCredentialProvider.WithKey("k"), profile);
+
+        var result = await handler.Handle(Sentence(), CancellationToken.None);
+
+        Assert.Equal("I didn't understand. Could you rephrase?", result.Value!.Message);
+    }
+
+    [Fact]
+    public async Task An_oversized_voice_note_is_refused_without_calling_the_provider()
+    {
+        var client = FakeAiChatCompletionClient.Replies("never");
+        var (handler, invocations) = Build(client, FakeExternalCredentialProvider.WithKey("k"), EnabledProfile());
+
+        var result = await handler.Handle(new InterpretCommand(new InterpretInput(User, null,
+            Audio: new ChatAttachment(new byte[InterpretCommandHandler.MaxAudioBytes + 1], "audio/ogg"))), CancellationToken.None);
+
+        Assert.Equal(0, client.Calls);
+        Assert.Equal(InvocationStatus.Clarification.Value, result.Value!.Invocations[0].Status);
+        Assert.Equal("Esse áudio é longo demais. Mande um de até alguns minutos.", result.Value.Message);
         Assert.Equal("[voice note]", Assert.Single(invocations.Added).Utterance);
     }
 }

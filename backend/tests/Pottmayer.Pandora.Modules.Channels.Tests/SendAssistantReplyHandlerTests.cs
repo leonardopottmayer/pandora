@@ -15,11 +15,15 @@ public sealed class SendAssistantReplyHandlerTests
     private static readonly DateTimeOffset Now = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
     private readonly FixedTimeProvider _time = new(Now);
 
-    private static SendAssistantReplyHandler Handler(FakeTelegramSender sender, params UserChannel[] channels)
+    private readonly FakeInteractionRepository _interactions = new();
+
+    private SendAssistantReplyHandler Handler(FakeTelegramSender sender, params UserChannel[] channels)
     {
-        var ctx = new FakeDataContext().Register<IUserChannelRepository>(new FakeUserChannelRepository(channels));
+        var ctx = new FakeDataContext()
+            .Register<IUserChannelRepository>(new FakeUserChannelRepository(channels))
+            .Register<IInteractionRepository>(_interactions);
         return new SendAssistantReplyHandler(
-            new FakeUnitOfWorkFactory(ctx), sender, NullLogger<SendAssistantReplyHandler>.Instance);
+            new FakeUnitOfWorkFactory(ctx), sender, _time, NullLogger<SendAssistantReplyHandler>.Instance);
     }
 
     private UserChannel Linked(Guid userId, string chatId) => UserChannel.LinkVerified(
@@ -65,5 +69,30 @@ public sealed class SendAssistantReplyHandlerTests
             .HandleAsync(new SendAssistantReply(Guid.NewGuid(), Now, userId, "assistant", "oi"));
 
         Assert.Empty(sender.Sent);
+    }
+
+    [Fact]
+    public async Task Buttons_are_registered_as_interactions_and_sent_with_their_ids()
+    {
+        var userId = Guid.NewGuid();
+        var sender = new FakeTelegramSender();
+        var invocationId = Guid.NewGuid().ToString();
+
+        await Handler(sender, Linked(userId, "123")).HandleAsync(new SendAssistantReply(
+            Guid.NewGuid(), Now, userId, "assistant", "Criar o lembrete?",
+            [
+                new NotificationButton("assistant", "confirm", "✅ Confirmar", invocationId),
+                new NotificationButton("assistant", "cancel", "❌ Cancelar", invocationId),
+            ]));
+
+        Assert.Equal(2, _interactions.Added.Count);
+        var confirm = _interactions.Added[0];
+        Assert.Equal((userId, "assistant", "confirm", invocationId), (confirm.UserId, confirm.OwnerModule, confirm.Action, confirm.Payload));
+        Assert.Null(confirm.NotificationId);
+        Assert.Equal(Now + Interaction.Lifetime, confirm.ExpiresAt);
+
+        var buttons = Assert.Single(sender.Sent).Buttons!;
+        Assert.Equal(["✅ Confirmar", "❌ Cancelar"], buttons.Select(b => b.Label));
+        Assert.Equal(_interactions.Added.Select(i => i.Id.ToString()), buttons.Select(b => b.InteractionId));
     }
 }

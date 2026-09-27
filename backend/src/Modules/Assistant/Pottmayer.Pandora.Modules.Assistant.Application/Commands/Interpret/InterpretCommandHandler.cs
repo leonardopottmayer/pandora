@@ -19,11 +19,12 @@ using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 namespace Pottmayer.Pandora.Modules.Assistant.Application.Commands.Interpret;
 
 /// <summary>
-/// The web text pipeline: a sentence → a validated tool call → an executed (or held-for-confirmation)
-/// command → a recorded outcome. It loads the user's profile, fetches their key from Integrations, sends
-/// the sentence plus the command catalog to the provider, and acts on whatever the model returned. Every
-/// path records exactly one invocation into the current conversation — and the reply reflects the
-/// command's real result, never a success that did not happen.
+/// The interpret pipeline: a sentence (typed, or transcribed from a voice note) → validated tool calls →
+/// executed (or held-for-confirmation) commands → recorded outcomes. It loads the user's profile, fetches
+/// their key from Integrations, sends the sentence plus the command catalog to the provider, and acts on
+/// every tool call the model returned. Every path records at least one invocation into the current
+/// conversation — one per tool call — and the reply reflects each command's real result, in the user's
+/// locale, never a success that did not happen.
 /// </summary>
 public sealed class InterpretCommandHandler(
     IUnitOfWorkFactory factory,
@@ -37,6 +38,9 @@ public sealed class InterpretCommandHandler(
     : CommandHandlerBase<InterpretCommand, InterpretResultDto>
 {
     private static readonly TimeSpan ConfirmationWindow = TimeSpan.FromMinutes(10);
+
+    /// <summary>The largest voice note the pipeline transcribes: several minutes of Opus voice.</summary>
+    public const int MaxAudioBytes = 5 * 1024 * 1024;
 
     /// <summary>Recorded as the utterance when a voice note could not be turned into text.</summary>
     private const string VoiceNotePlaceholder = "[voice note]";
@@ -76,10 +80,12 @@ public sealed class InterpretCommandHandler(
         var prefs = await preferences.GetAsync(userId, ct);
         var timeZone = await timeZones.ResolveAsync(userId, ct: ct);
         var localNow = TimeZoneInfo.ConvertTime(now, timeZone);
-        var locale = string.IsNullOrWhiteSpace(profile.LocaleOverride) ? "pt-BR" : profile.LocaleOverride!;
+        var toolContext = AssistantToolContextResolver.For(userId, profile, timeZone);
+        var turn = new Turn(conversation, isNewConversation, now, userId, profile);
 
         var client = clientFactory.GetClient(profile.ChatProvider);
         var start = timeProvider.GetTimestamp();
+        long Elapsed() => (long)timeProvider.GetElapsedTime(start).TotalMilliseconds;
 
         // A voice note is transcribed by its own call first, so what was heard is logged as the
         // utterance and echoed back, and the rest of the pipeline stays identical to typed text. The
@@ -88,11 +94,17 @@ public sealed class InterpretCommandHandler(
         var transcriptionTokens = new TokenUsage(0, 0);
         if (input.Audio is { } audio)
         {
+            if (audio.Data.Length > MaxAudioBytes)
+                return await RecordAsync(turn, VoiceNotePlaceholder, [new Step(InvocationStatus.Clarification, Result: toolContext.Text(
+                    "Esse áudio é longo demais. Mande um de até alguns minutos.",
+                    "That voice note is too long. Keep it to a few minutes."))],
+                    latencyMs: 0, new TokenUsage(0, 0), transcript: null, ct);
+
             try
             {
                 var transcription = await client.CompleteAsync(new ChatRequest(
                     profile.ChatModel,
-                    [ChatMessage.User(TranscriptionPrompt(locale), audio)],
+                    [ChatMessage.User(TranscriptionPrompt(toolContext.Locale), audio)],
                     Temperature: 0,
                     ApiKey: keyResult.Value), ct);
                 transcript = transcription.Message.Content?.Trim();
@@ -100,19 +112,15 @@ public sealed class InterpretCommandHandler(
             }
             catch (AiException ex)
             {
-                return await RecordAsync(null, Outcome(
-                    conversation, isNewConversation, now, userId, VoiceNotePlaceholder, InvocationStatus.ProviderError,
-                    commandName: null, argumentsJson: null, result: null, error: ex.Message,
-                    profile, (long)timeProvider.GetElapsedTime(start).TotalMilliseconds,
-                    promptTokens: 0, completionTokens: 0, expiresAt: null), ct);
+                return await RecordAsync(turn, VoiceNotePlaceholder, [new Step(InvocationStatus.ProviderError, Error: ex.Message)],
+                    Elapsed(), new TokenUsage(0, 0), transcript: null, ct);
             }
 
             if (string.IsNullOrEmpty(transcript))
-                return await RecordAsync(null, Outcome(
-                    conversation, isNewConversation, now, userId, VoiceNotePlaceholder, InvocationStatus.Clarification,
-                    commandName: null, argumentsJson: null, result: "I couldn't make out the voice note. Could you try again?",
-                    error: null, profile, (long)timeProvider.GetElapsedTime(start).TotalMilliseconds,
-                    transcriptionTokens.PromptTokens, transcriptionTokens.CompletionTokens, expiresAt: null), ct);
+                return await RecordAsync(turn, VoiceNotePlaceholder, [new Step(InvocationStatus.Clarification, Result: toolContext.Text(
+                    "Não consegui entender o áudio. Pode tentar de novo?",
+                    "I couldn't make out the voice note. Could you try again?"))],
+                    Elapsed(), transcriptionTokens, transcript: null, ct);
 
             text = transcript;
         }
@@ -127,7 +135,7 @@ public sealed class InterpretCommandHandler(
             .ToList();
 
         var systemPrompt = AssistantSystemPrompt.Build(
-            localNow, timeZone.Id, prefs?.WeekStartsOn ?? DayOfWeek.Monday, locale, descriptors);
+            localNow, timeZone.Id, prefs?.WeekStartsOn ?? DayOfWeek.Monday, toolContext.Locale, descriptors);
 
         // Multi-turn: re-send the active conversation's recent turns so a follow-up ("sim", "muda pra
         // 11h") is understood. The active-conversation window bounds it in time; the limit bounds tokens.
@@ -156,72 +164,70 @@ public sealed class InterpretCommandHandler(
         }
         catch (AiException ex)
         {
-            var latencyMs = (long)timeProvider.GetElapsedTime(start).TotalMilliseconds;
-            return await RecordAsync(transcript, Outcome(
-                conversation, isNewConversation, now, userId, utterance, InvocationStatus.ProviderError,
-                commandName: null, argumentsJson: null, result: null, error: ex.Message,
-                profile, latencyMs, promptTokens: 0, completionTokens: 0, expiresAt: null), ct);
+            return await RecordAsync(turn, utterance, [new Step(InvocationStatus.ProviderError, Error: ex.Message)],
+                Elapsed(), new TokenUsage(0, 0), transcript, ct);
         }
 
-        var latency = (long)timeProvider.GetElapsedTime(start).TotalMilliseconds;
+        var latency = Elapsed();
         var usage = new TokenUsage(
             completion.Usage.PromptTokens + transcriptionTokens.PromptTokens,
             completion.Usage.CompletionTokens + transcriptionTokens.CompletionTokens);
 
         // The model replied in prose — it is asking a question or declining. Nothing runs.
-        var toolCall = completion.ToolCalls.Count > 0 ? completion.ToolCalls[0] : null;
-        if (toolCall is null)
+        if (completion.ToolCalls.Count == 0)
         {
             var message = string.IsNullOrWhiteSpace(completion.Message.Content)
-                ? "I didn't understand. Could you rephrase?"
+                ? toolContext.Text("Não entendi. Pode reformular?", "I didn't understand. Could you rephrase?")
                 : completion.Message.Content!;
-            return await RecordAsync(transcript, Outcome(
-                conversation, isNewConversation, now, userId, utterance, InvocationStatus.Clarification,
-                commandName: null, argumentsJson: null, result: message, error: null,
-                profile, latency, usage.PromptTokens, usage.CompletionTokens, expiresAt: null), ct);
+            return await RecordAsync(turn, utterance, [new Step(InvocationStatus.Clarification, Result: message)],
+                latency, usage, transcript, ct);
         }
 
+        // One sentence can ask for several things ("lembra X e cria Y"): every tool call runs (or is held)
+        // on its own, in order, and gets its own invocation.
+        var steps = new List<Step>(completion.ToolCalls.Count);
+        foreach (var toolCall in completion.ToolCalls)
+            steps.Add(await RunAsync(toolCall, toolsByName, profile.ConfirmationLevel, toolContext, now, ct));
+
+        return await RecordAsync(turn, utterance, steps, latency, usage, transcript, ct);
+    }
+
+    /// <summary>
+    /// Settles one tool call: rejected when the catalog lacks the tool or the arguments cannot be read,
+    /// held (with a readable question) when the command's shifted policy asks for confirmation, otherwise
+    /// executed and recorded with the command's real outcome.
+    /// </summary>
+    private static async Task<Step> RunAsync(
+        ToolCall toolCall,
+        IReadOnlyDictionary<string, IAssistantTool> toolsByName,
+        ConfirmationLevel level,
+        AssistantToolContext context,
+        DateTimeOffset now,
+        CancellationToken ct)
+    {
         var argumentsJson = toolCall.Arguments.GetRawText();
 
         // The model named a tool the catalog does not have.
         if (!toolsByName.TryGetValue(toolCall.Name, out var tool))
-            return await RecordAsync(transcript, Outcome(
-                conversation, isNewConversation, now, userId, utterance, InvocationStatus.Rejected,
-                toolCall.Name, argumentsJson, result: null, error: $"Unknown command '{toolCall.Name}'.",
-                profile, latency, usage.PromptTokens, usage.CompletionTokens, expiresAt: null), ct);
+            return new Step(InvocationStatus.Rejected, toolCall.Name, argumentsJson, Error: context.Text(
+                $"Não conheço o comando '{toolCall.Name}'.", $"Unknown command '{toolCall.Name}'."));
 
-        // The command's policy, shifted by the user's confirmation level, may hold the tool call for
-        // confirmation instead of running it now.
-        if (RequiresConfirmation(tool.Descriptor.Confirmation, profile.ConfirmationLevel))
-        {
-            var intent = $"Confirm {toolCall.Name}? Arguments: {argumentsJson}";
-            return await RecordAsync(transcript, Outcome(
-                conversation, isNewConversation, now, userId, utterance, InvocationStatus.PendingConfirmation,
-                toolCall.Name, argumentsJson, result: intent, error: null,
-                profile, latency, usage.PromptTokens, usage.CompletionTokens, expiresAt: now + ConfirmationWindow), ct);
-        }
-
-        AssistantCommandOutcome commandOutcome;
         try
         {
-            commandOutcome = await tool.ExecuteAsync(userId, toolCall.Arguments, ct);
+            if (RequiresConfirmation(tool.Descriptor.Confirmation, level))
+                return new Step(InvocationStatus.PendingConfirmation, toolCall.Name, argumentsJson,
+                    Result: tool.Describe(context, toolCall.Arguments), ExpiresAt: now + ConfirmationWindow);
+
+            var outcome = await tool.ExecuteAsync(context, toolCall.Arguments, ct);
+            return outcome.Success
+                ? new Step(InvocationStatus.Executed, toolCall.Name, argumentsJson, Result: outcome.Message)
+                : new Step(InvocationStatus.Failed, toolCall.Name, argumentsJson, Error: outcome.Message);
         }
         catch (Exception ex) when (ex is FormatException or ArgumentException or InvalidOperationException)
         {
             // Malformed or missing arguments that slipped past the schema — a write-time rejection.
-            return await RecordAsync(transcript, Outcome(
-                conversation, isNewConversation, now, userId, utterance, InvocationStatus.Rejected,
-                toolCall.Name, argumentsJson, result: null, error: ex.Message,
-                profile, latency, usage.PromptTokens, usage.CompletionTokens, expiresAt: null), ct);
+            return new Step(InvocationStatus.Rejected, toolCall.Name, argumentsJson, Error: ex.Message);
         }
-
-        var status = commandOutcome.Success ? InvocationStatus.Executed : InvocationStatus.Failed;
-        return await RecordAsync(transcript, Outcome(
-            conversation, isNewConversation, now, userId, utterance, status,
-            toolCall.Name, argumentsJson,
-            result: commandOutcome.Success ? commandOutcome.Message : null,
-            error: commandOutcome.Success ? null : commandOutcome.Message,
-            profile, latency, usage.PromptTokens, usage.CompletionTokens, expiresAt: null), ct);
     }
 
     /// <summary>
@@ -258,40 +264,56 @@ public sealed class InterpretCommandHandler(
         return (Conversation.Start(userId, timeProvider), true);
     }
 
-    private async Task<Result<InterpretResultDto>> RecordAsync(string? transcript, InvocationOutcome outcome, CancellationToken ct)
+    /// <summary>
+    /// Persists the turn: the conversation touch, the user's utterance, the assistant's combined reply and
+    /// one invocation per step, in one unit of work. The provider cost (latency, tokens) is one call, so it
+    /// is recorded on the first invocation only. With several steps the reply numbers them, so a caller
+    /// can match each confirmation to its line.
+    /// </summary>
+    private async Task<Result<InterpretResultDto>> RecordAsync(
+        Turn turn, string utterance, IReadOnlyList<Step> steps, long latencyMs, TokenUsage usage,
+        string? transcript, CancellationToken ct)
     {
-        var assistantContent = outcome.Result ?? outcome.Error ?? string.Empty;
+        var reply = steps.Count == 1
+            ? steps[0].Reply
+            : string.Join("\n", steps.Select((step, i) => $"{i + 1}. {step.Reply}"));
 
-        var invocation = CommandInvocation.Create(
-            outcome.UserId, outcome.Conversation.Id, outcome.Utterance, outcome.CommandName, outcome.ArgumentsJson,
-            outcome.Status, outcome.Result, outcome.Error,
-            outcome.Provider, outcome.Model, outcome.LatencyMs, outcome.PromptTokens, outcome.CompletionTokens,
-            outcome.ExpiresAt, timeProvider);
+        var invocations = steps.Select((step, i) => CommandInvocation.Create(
+            turn.UserId, turn.Conversation.Id, utterance, step.CommandName, step.ArgumentsJson,
+            step.Status, step.Result, step.Error,
+            turn.Profile.ChatProvider, turn.Profile.ChatModel,
+            i == 0 ? latencyMs : 0, i == 0 ? usage.PromptTokens : 0, i == 0 ? usage.CompletionTokens : 0,
+            step.ExpiresAt, timeProvider)).ToList();
 
         await factory.ExecuteAsync(AssistantModule.DatabaseKey, async (context, token) =>
         {
             var conversations = context.AcquireRepository<IConversationRepository>();
             var messages = context.AcquireRepository<IMessageRepository>();
-            var invocations = context.AcquireRepository<ICommandInvocationRepository>();
+            var repository = context.AcquireRepository<ICommandInvocationRepository>();
 
-            outcome.Conversation.Touch(outcome.Now);
-            if (outcome.IsNewConversation)
-                await conversations.AddAsync(outcome.Conversation, token);
+            turn.Conversation.Touch(turn.Now);
+            if (turn.IsNewConversation)
+                await conversations.AddAsync(turn.Conversation, token);
             else
-                await conversations.UpdateAsync(outcome.Conversation, token);
+                await conversations.UpdateAsync(turn.Conversation, token);
 
             await messages.AddAsync(
-                Message.Create(outcome.Conversation.Id, MessageAuthor.User, outcome.Utterance, timeProvider), token);
+                Message.Create(turn.Conversation.Id, MessageAuthor.User, utterance, timeProvider), token);
             await messages.AddAsync(
-                Message.Create(outcome.Conversation.Id, MessageAuthor.Assistant, assistantContent, timeProvider), token);
+                Message.Create(turn.Conversation.Id, MessageAuthor.Assistant, reply, timeProvider), token);
 
-            await invocations.AddAsync(invocation, token);
+            foreach (var invocation in invocations)
+                await repository.AddAsync(invocation, token);
             return true;
         }, cancellationToken: ct);
 
         return Ok(new InterpretResultDto(
-            invocation.Id, outcome.Conversation.Id, outcome.Status.Value,
-            outcome.CommandName, outcome.ArgumentsJson, assistantContent, transcript));
+            turn.Conversation.Id,
+            reply,
+            invocations.Select((invocation, i) => new InvocationResultDto(
+                invocation.Id, invocation.Status.Value, invocation.CommandName, invocation.ArgumentsJson,
+                steps[i].Reply)).ToList(),
+            transcript));
     }
 
     /// <summary>True when the command must be confirmed before running, once the level shifts its policy.</summary>
@@ -317,30 +339,19 @@ public sealed class InterpretCommandHandler(
         return policy; // Balanced: as declared.
     }
 
-    private static InvocationOutcome Outcome(
-        Conversation conversation, bool isNewConversation, DateTimeOffset now,
-        Guid userId, string utterance, InvocationStatus status,
-        string? commandName, string? argumentsJson, string? result, string? error,
-        AssistantProfile profile, long latencyMs, int promptTokens, int completionTokens,
-        DateTimeOffset? expiresAt) =>
-        new(conversation, isNewConversation, now, userId, utterance, status, commandName, argumentsJson,
-            result, error, profile.ChatProvider, profile.ChatModel, latencyMs, promptTokens, completionTokens, expiresAt);
+    /// <summary>What every invocation of one interpretation shares.</summary>
+    private sealed record Turn(
+        Conversation Conversation, bool IsNewConversation, DateTimeOffset Now, Guid UserId, AssistantProfile Profile);
 
-    private sealed record InvocationOutcome(
-        Conversation Conversation,
-        bool IsNewConversation,
-        DateTimeOffset Now,
-        Guid UserId,
-        string Utterance,
+    /// <summary>How one tool call (or the lack of one) ended, before it is persisted.</summary>
+    private sealed record Step(
         InvocationStatus Status,
-        string? CommandName,
-        string? ArgumentsJson,
-        string? Result,
-        string? Error,
-        string Provider,
-        string Model,
-        long LatencyMs,
-        int PromptTokens,
-        int CompletionTokens,
-        DateTimeOffset? ExpiresAt);
+        string? CommandName = null,
+        string? ArgumentsJson = null,
+        string? Result = null,
+        string? Error = null,
+        DateTimeOffset? ExpiresAt = null)
+    {
+        public string Reply => Result ?? Error ?? string.Empty;
+    }
 }

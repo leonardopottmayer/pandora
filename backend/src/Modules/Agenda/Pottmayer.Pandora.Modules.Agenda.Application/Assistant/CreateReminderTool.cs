@@ -38,7 +38,34 @@ public sealed class CreateReminderTool(ISender sender) : IAssistantTool
                 """{ "title": "Pay the rent", "remindAt": "2026-09-05T10:00:00-03:00" }"""),
         ]);
 
-    public async Task<AssistantCommandOutcome> ExecuteAsync(Guid userId, JsonElement arguments, CancellationToken ct = default)
+    public string Describe(AssistantToolContext context, JsonElement arguments)
+    {
+        var (title, remindAt) = Parse(arguments);
+        var when = context.FormatDateTime(remindAt);
+        return context.Text(
+            $"Criar o lembrete \"{title}\" para {when}?",
+            $"Create the reminder \"{title}\" for {when}?");
+    }
+
+    public async Task<AssistantCommandOutcome> ExecuteAsync(AssistantToolContext context, JsonElement arguments, CancellationToken ct = default)
+    {
+        var (title, remindAt) = Parse(arguments);
+
+        var command = new CreateReminderCommand(new CreateReminderInput(
+            context.UserId, title, Notes: null, remindAt, TimeZone: null));
+        var result = await sender.Send(command, ct);
+
+        if (!result.IsSuccess)
+            return AssistantCommandOutcome.Failed(string.Join("; ", result.Errors.Select(e => e.Message)));
+
+        var dto = result.Value!;
+        var when = context.FormatDateTime(dto.RemindAt);
+        return AssistantCommandOutcome.Ok(context.Text(
+            $"Lembrete \"{dto.Title}\" criado para {when}.",
+            $"Reminder \"{dto.Title}\" created for {when}."));
+    }
+
+    private static (string Title, DateTimeOffset RemindAt) Parse(JsonElement arguments)
     {
         if (!arguments.TryGetProperty("title", out var titleElement) || titleElement.ValueKind != JsonValueKind.String)
             throw new ArgumentException("The 'title' argument is required.");
@@ -46,34 +73,8 @@ public sealed class CreateReminderTool(ISender sender) : IAssistantTool
         if (!arguments.TryGetProperty("remindAt", out var remindAtElement) || remindAtElement.ValueKind != JsonValueKind.String)
             throw new ArgumentException("The 'remindAt' argument is required.");
 
-        var title = titleElement.GetString()!;
         var remindAt = DateTimeOffset.Parse(
             remindAtElement.GetString()!, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
-
-        var command = new CreateReminderCommand(new CreateReminderInput(
-            userId, title, Notes: null, remindAt, TimeZone: null));
-        var result = await sender.Send(command, ct);
-
-        if (!result.IsSuccess)
-            return AssistantCommandOutcome.Failed(string.Join("; ", result.Errors.Select(e => e.Message)));
-
-        var dto = result.Value!;
-        return AssistantCommandOutcome.Ok($"Reminder \"{dto.Title}\" created for {FormatLocal(dto.RemindAt, dto.TimeZone)}.");
-    }
-
-    private static string FormatLocal(DateTimeOffset instant, string ianaTimeZone)
-    {
-        var culture = CultureInfo.GetCultureInfo("en-US");
-        try
-        {
-            var tz = TimeZoneInfo.FindSystemTimeZoneById(ianaTimeZone);
-            instant = TimeZoneInfo.ConvertTime(instant, tz);
-        }
-        catch (TimeZoneNotFoundException)
-        {
-            // Fall back to the instant as given.
-        }
-
-        return instant.ToString("MMM d, yyyy 'at' HH:mm", culture);
+        return (titleElement.GetString()!, remindAt);
     }
 }

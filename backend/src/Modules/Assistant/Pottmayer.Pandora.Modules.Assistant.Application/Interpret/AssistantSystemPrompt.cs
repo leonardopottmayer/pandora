@@ -13,7 +13,7 @@ namespace Pottmayer.Pandora.Modules.Assistant.Application.Interpret;
 internal static class AssistantSystemPrompt
 {
     /// <summary>Bumped when the wording changes, so the audit trail can tie an interpretation to a prompt.</summary>
-    public const int Version = 2;
+    public const int Version = 3;
 
     // Weekday names in the prompt are rendered in English, regardless of the user's locale.
     private static readonly CultureInfo PromptCulture = CultureInfo.GetCultureInfo("en-US");
@@ -47,7 +47,7 @@ internal static class AssistantSystemPrompt
         sb.AppendLine("- Never invent information the user did not give. If an essential detail is missing or the");
         sb.AppendLine("  sentence is ambiguous, reply in prose with ONE short question instead of calling the tool.");
         sb.AppendLine("- If the sentence matches no command, reply in prose with a brief explanation.");
-        sb.AppendLine("- Reply in English.");
+        sb.AppendLine($"- When you reply in prose, write in the user's language ({locale}).");
 
         if (commands.Count > 0)
         {

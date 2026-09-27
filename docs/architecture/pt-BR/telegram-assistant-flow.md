@@ -17,7 +17,8 @@ O Pandora fala com o usuário por **dois bots** de Telegram, resolvidos por nome
 `ITelegramClientFactory` (config em `Tars:Communication:Telegram:Bots`):
 
 - **`notifications`** — saída de notificações + linking (`/start`) + callbacks de botão.
-- **`assistant`** — a conversa em linguagem natural (recebe e responde).
+- **`assistant`** — a conversa em linguagem natural (recebe e responde, incluindo os callbacks dos
+  próprios botões Confirmar / Cancelar).
 
 O `chat_id` do Telegram é **o mesmo em todos os bots** (é o id do usuário), então uma conta linkada
 por qualquer bot é endereçável pelos dois. Só o **Channels** fala a Bot API; os outros módulos falam
@@ -113,17 +114,24 @@ retry com backoff.
    → parseia args → ISender.Send(CreateReminderCommand) → CreateReminderCommandHandler (cria de fato)
    → devolve AssistantCommandOutcome(sucesso, mensagem)
 
-   ↩ InterpretCommandHandler grava 1 CommandInvocation + msgs (user/assistant) na conversa
-     e retorna InterpretResultDto(status, commandName, args, Message)
+   ↩ cada tool call da resposta roda em sequência; o InterpretCommandHandler grava 1 CommandInvocation
+     por chamada + msgs (user/assistant) na conversa e retorna
+     InterpretResultDto(Message, Invocations[status, commandName, args, message], Transcript)
 
 6. de volta no InboundMessageReceivedHandler:
-   → publica SendAssistantReply(userId, "assistant", Message)
+   → publica SendAssistantReply(userId, "assistant", Message, Buttons)
+     (Buttons = ✅ Confirmar / ❌ Cancelar por invocação pending-confirmation, payload = id da invocação)
    ⇢ outbox ⇢
 
 7. SendAssistantReplyHandler                           (Channels · subscriber)
    injeta: IUnitOfWorkFactory, ITelegramSender, ILogger
    → resolve chat_id: FindAsync(userId, Telegram).Address
-   → ITelegramSender.SendAsync("assistant", chatId, texto)
+   → registra cada botão como Interaction (chn003), igual aos de uma notificação
+   → ITelegramSender.SendAsync("assistant", chatId, texto, botões)
+
+   Toque num botão: o TelegramInboundTriage queima a Interaction e publica
+   InboundInteractionReceived(owner "assistant", action confirm|cancel, payload id da invocação)
+   → AssistantInteractionReceivedHandler → Confirm/CancelInvocationCommand → SendAssistantReply(resultado)
 
 8. TelegramSender → factory.GetClient("assistant") → TelegramBotClient (Tars) → HTTP sendMessage
 ```

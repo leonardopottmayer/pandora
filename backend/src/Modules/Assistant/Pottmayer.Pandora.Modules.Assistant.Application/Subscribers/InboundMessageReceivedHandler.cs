@@ -1,6 +1,9 @@
 using Microsoft.Extensions.Logging;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions;
 using Pottmayer.Pandora.Modules.Assistant.Application.Commands.Interpret;
+using Pottmayer.Pandora.Modules.Assistant.Application.Dtos;
+using Pottmayer.Pandora.Modules.Assistant.Application.Interpret;
+using Pottmayer.Pandora.Modules.Assistant.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Channels.Abstractions;
 using Pottmayer.Pandora.Modules.Channels.Contracts;
 using Pottmayer.Tars.Ai.Chat.Abstractions.Models;
@@ -22,20 +25,19 @@ namespace Pottmayer.Pandora.Modules.Assistant.Application.Subscribers;
 /// pipeline (no conversation id → the user's most recent non-expired thread), so a follow-up typed on
 /// Telegram continues one begun on the web, and vice versa. A voice note is downloaded through Channels'
 /// <see cref="IInboundMediaReader"/> and handed to the pipeline to transcribe; the reply echoes what was
-/// heard.
+/// heard. A call held for confirmation gets Confirm / Cancel buttons, answered by
+/// <see cref="AssistantInteractionReceivedHandler"/>.
 /// </remarks>
 public sealed class InboundMessageReceivedHandler(
     IUnitOfWorkFactory factory,
     ISender sender,
     IIntegrationEventBus bus,
     IInboundMediaReader media,
+    AssistantToolContextResolver contexts,
     TimeProvider timeProvider,
     ILogger<InboundMessageReceivedHandler> logger)
     : IIntegrationEventHandler<InboundMessageReceived>
 {
-    /// <summary>Several minutes of Opus voice; well under the provider's inline-request limit.</summary>
-    private const int MaxAudioBytes = 5 * 1024 * 1024;
-
     public async Task HandleAsync(InboundMessageReceived @event, CancellationToken cancellationToken = default)
     {
         if (!string.Equals(@event.Bot, AssistantModule.Name, StringComparison.OrdinalIgnoreCase))
@@ -49,11 +51,6 @@ public sealed class InboundMessageReceivedHandler(
                 return;
 
             audio = await ReadAudioAsync(@event, cancellationToken);
-            if (audio is null)
-            {
-                await ReplyAsync(@event.UserId, "That voice note is too long. Keep it to a few minutes.", cancellationToken);
-                return;
-            }
         }
 
         var result = await sender.Send(
@@ -73,11 +70,44 @@ public sealed class InboundMessageReceivedHandler(
         if (string.IsNullOrWhiteSpace(reply))
             return;
 
-        await ReplyAsync(@event.UserId, reply, cancellationToken);
+        await ReplyAsync(@event.UserId, reply, await ButtonsAsync(@event.UserId, result.Value.Invocations, cancellationToken), cancellationToken);
     }
 
-    /// <summary>Reads the voice note into memory, or null when it exceeds <see cref="MaxAudioBytes"/>.</summary>
-    private async Task<ChatAttachment?> ReadAudioAsync(InboundMessageReceived @event, CancellationToken ct)
+    /// <summary>
+    /// Confirm / Cancel for every held call, carrying its invocation id. Numbered when there are several,
+    /// matching the numbered lines of the reply.
+    /// </summary>
+    private async Task<IReadOnlyList<NotificationButton>?> ButtonsAsync(
+        Guid userId, IReadOnlyList<InvocationResultDto> invocations, CancellationToken ct)
+    {
+        var pending = invocations
+            .Select((invocation, i) => (invocation, number: i + 1))
+            .Where(x => x.invocation.Status == InvocationStatus.PendingConfirmation.Value)
+            .ToList();
+        if (pending.Count == 0)
+            return null;
+
+        var context = await contexts.ResolveAsync(userId, ct);
+        var confirm = context.Text("✅ Confirmar", "✅ Confirm");
+        var cancel = context.Text("❌ Cancelar", "❌ Cancel");
+        string Suffix(int number) => invocations.Count > 1 ? $" {number}" : string.Empty;
+
+        return pending
+            .SelectMany(x => new[]
+            {
+                new NotificationButton(AssistantModule.Name, AssistantInteractionReceivedHandler.ConfirmAction,
+                    confirm + Suffix(x.number), x.invocation.InvocationId.ToString()),
+                new NotificationButton(AssistantModule.Name, AssistantInteractionReceivedHandler.CancelAction,
+                    cancel + Suffix(x.number), x.invocation.InvocationId.ToString()),
+            })
+            .ToList();
+    }
+
+    /// <summary>
+    /// Reads the voice note into memory, stopping one byte past the pipeline's limit so an oversized note
+    /// is refused there (with a reply in the user's language) without buffering all of it.
+    /// </summary>
+    private async Task<ChatAttachment> ReadAudioAsync(InboundMessageReceived @event, CancellationToken ct)
     {
         await using var stream = await media.OpenAsync(@event.Channel, @event.Bot, @event.MediaRef!, ct);
         using var buffer = new MemoryStream();
@@ -85,9 +115,9 @@ public sealed class InboundMessageReceivedHandler(
         int read;
         while ((read = await stream.ReadAsync(chunk, ct)) > 0)
         {
-            if (buffer.Length + read > MaxAudioBytes)
-                return null;
             buffer.Write(chunk, 0, read);
+            if (buffer.Length > InterpretCommandHandler.MaxAudioBytes)
+                break;
         }
 
         return new ChatAttachment(buffer.ToArray(), @event.MediaMimeType!);
@@ -97,11 +127,11 @@ public sealed class InboundMessageReceivedHandler(
     /// Asks Channels to deliver a reply on the assistant bot. Published in a unit of work so it rides the
     /// transactional outbox rather than being lost on a crash after the interpret committed.
     /// </summary>
-    private Task ReplyAsync(Guid userId, string text, CancellationToken ct) =>
+    private Task ReplyAsync(Guid userId, string text, IReadOnlyList<NotificationButton>? buttons, CancellationToken ct) =>
         factory.ExecuteAsync(AssistantModule.DatabaseKey, async (context, token) =>
         {
             await bus.PublishAsync(
-                new SendAssistantReply(Guid.CreateVersion7(), timeProvider.GetUtcNow(), userId, AssistantModule.Name, text),
+                new SendAssistantReply(Guid.CreateVersion7(), timeProvider.GetUtcNow(), userId, AssistantModule.Name, text, buttons),
                 token);
             return true;
         }, cancellationToken: ct);

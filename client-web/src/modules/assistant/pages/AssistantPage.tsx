@@ -182,12 +182,19 @@ export function AssistantPage() {
                 <Typography.Text type="secondary">{t('assistant.bar.resultEmpty')}</Typography.Text>
               </div>
             ) : (
-              thread.map((inv) => {
+              thread.map((inv, index) => {
                 const reply = inv.result ?? inv.error
+                // One sentence can produce several invocations (one per tool call): show the user's
+                // message once, above the first of them.
+                const prev = thread[index - 1]
+                const sameTurn =
+                  prev !== undefined &&
+                  prev.utterance === inv.utterance &&
+                  Math.abs(new Date(inv.createdAt).getTime() - new Date(prev.createdAt).getTime()) < 2000
                 return (
                   <div key={inv.id} className="flex flex-col gap-2">
                     {/* User message, right-aligned */}
-                    <div className="flex justify-end">
+                    <div className={sameTurn ? 'hidden' : 'flex justify-end'}>
                       <div
                         className="max-w-[80%] whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-sm"
                         style={{ background: token.colorPrimary, color: token.colorTextLightSolid }}

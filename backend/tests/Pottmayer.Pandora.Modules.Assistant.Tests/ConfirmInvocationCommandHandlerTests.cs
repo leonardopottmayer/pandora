@@ -1,3 +1,4 @@
+using Pottmayer.Pandora.Modules.Assistant.Application.Interpret;
 using Pottmayer.Pandora.Modules.Assistant.Application.Commands.CancelInvocation;
 using Pottmayer.Pandora.Modules.Assistant.Application.Commands.ConfirmInvocation;
 using Pottmayer.Pandora.Modules.Assistant.Domain.Aggregates;
@@ -29,8 +30,12 @@ public sealed class ConfirmInvocationCommandHandlerTests
         invocations.Added.Clear(); // seeding is not part of the assertion surface
         var context = new FakeDataContext();
         context.Register<ICommandInvocationRepository>(invocations);
+        context.Register<IAssistantProfileRepository>(new FakeAssistantProfileRepository());
         return (new FakeUnitOfWorkFactory(context), invocations);
     }
+
+    private static AssistantToolContextResolver Contexts(FakeUnitOfWorkFactory factory) =>
+        new(factory, FakeEffectiveTimeZoneResolver.With("America/Sao_Paulo"));
 
     [Fact]
     public async Task Confirming_runs_the_stored_tool_call_and_marks_it_executed()
@@ -39,7 +44,7 @@ public sealed class ConfirmInvocationCommandHandlerTests
         var pending = Pending(now);
         var (factory, invocations) = Context(pending);
         var command = FakeAssistantTool.Succeeds("create_reminder", "Lembrete criado.");
-        var handler = new ConfirmInvocationCommandHandler(factory, [command], new FixedTimeProvider(now));
+        var handler = new ConfirmInvocationCommandHandler(factory, [command], Contexts(factory), new FixedTimeProvider(now));
 
         var result = await handler.Handle(
             new ConfirmInvocationCommand(new ConfirmInvocationInput(User, pending.Id)), CancellationToken.None);
@@ -60,7 +65,7 @@ public sealed class ConfirmInvocationCommandHandlerTests
         var pending = Pending(createdAt); // expires 10 min after createdAt → already past
         var (factory, _) = Context(pending);
         var command = FakeAssistantTool.Succeeds("create_reminder");
-        var handler = new ConfirmInvocationCommandHandler(factory, [command], TimeProvider.System);
+        var handler = new ConfirmInvocationCommandHandler(factory, [command], Contexts(factory), TimeProvider.System);
 
         var result = await handler.Handle(
             new ConfirmInvocationCommand(new ConfirmInvocationInput(User, pending.Id)), CancellationToken.None);
@@ -77,7 +82,7 @@ public sealed class ConfirmInvocationCommandHandlerTests
         var pending = Pending(now);
         var (factory, _) = Context(pending);
         var handler = new ConfirmInvocationCommandHandler(
-            factory, [FakeAssistantTool.Succeeds("create_reminder")], new FixedTimeProvider(now));
+            factory, [FakeAssistantTool.Succeeds("create_reminder")], Contexts(factory), new FixedTimeProvider(now));
 
         var result = await handler.Handle(
             new ConfirmInvocationCommand(new ConfirmInvocationInput(Guid.NewGuid(), pending.Id)), CancellationToken.None);
@@ -91,7 +96,7 @@ public sealed class ConfirmInvocationCommandHandlerTests
         var now = DateTimeOffset.UtcNow;
         var pending = Pending(now);
         var (factory, invocations) = Context(pending);
-        var handler = new CancelInvocationCommandHandler(factory);
+        var handler = new CancelInvocationCommandHandler(factory, Contexts(factory));
 
         var result = await handler.Handle(
             new CancelInvocationCommand(new CancelInvocationInput(User, pending.Id)), CancellationToken.None);
@@ -110,7 +115,7 @@ public sealed class ConfirmInvocationCommandHandlerTests
             User, Guid.CreateVersion7(), "x", "create_reminder", "{}",
             InvocationStatus.Executed, "done", null, "gemini", "m", 1, 0, 0, null, new FixedTimeProvider(now));
         var (factory, _) = Context(executed);
-        var handler = new CancelInvocationCommandHandler(factory);
+        var handler = new CancelInvocationCommandHandler(factory, Contexts(factory));
 
         var result = await handler.Handle(
             new CancelInvocationCommand(new CancelInvocationInput(User, executed.Id)), CancellationToken.None);

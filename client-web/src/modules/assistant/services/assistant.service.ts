@@ -4,6 +4,7 @@ import type {
   AssistantProvider,
   InterpretResult,
   Invocation,
+  InvocationResult,
   ReachabilityResult,
 } from '../models'
 
@@ -42,14 +43,14 @@ export async function interpret(text: string, conversationId?: string): Promise<
 }
 
 /** Runs a tool call that was held for confirmation. */
-export async function confirmInvocation(id: string): Promise<InterpretResult> {
-  const { data } = await apiClient.post<InterpretResult>(`${BASE}/invocations/${id}/confirm`)
+export async function confirmInvocation(id: string): Promise<InvocationResult> {
+  const { data } = await apiClient.post<InvocationResult>(`${BASE}/invocations/${id}/confirm`)
   return data
 }
 
 /** Declines a tool call that was held for confirmation. */
-export async function cancelInvocation(id: string): Promise<InterpretResult> {
-  const { data } = await apiClient.post<InterpretResult>(`${BASE}/invocations/${id}/cancel`)
+export async function cancelInvocation(id: string): Promise<InvocationResult> {
+  const { data } = await apiClient.post<InvocationResult>(`${BASE}/invocations/${id}/cancel`)
   return data
 }
 

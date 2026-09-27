@@ -10,6 +10,9 @@ namespace Pottmayer.Pandora.Modules.Channels.Domain.Aggregates;
 /// </summary>
 public sealed class Interaction : AggregateRoot<Guid>, IAuditable
 {
+    /// <summary>How long a button stays tappable. The owner still decides whether the action makes sense.</summary>
+    public static readonly TimeSpan Lifetime = TimeSpan.FromHours(24);
+
     public Guid UserId { get; private set; }
 
     /// <summary>The module that declared the button; the routing key is built from it. Opaque here.</summary>

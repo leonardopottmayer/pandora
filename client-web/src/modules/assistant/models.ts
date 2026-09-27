@@ -29,15 +29,24 @@ export type InvocationStatus =
   | 'cancelled'
   | 'expired'
 
-/** What one /interpret (or confirm/cancel) call produced. */
-export interface InterpretResult {
+/** One recorded invocation: a tool call (or the lack of one) and how it ended. Also what confirm/cancel return. */
+export interface InvocationResult {
   invocationId: string
-  conversationId: string
   status: InvocationStatus
   commandName: string | null
   /** The exact tool-call arguments as raw JSON, or null when the model produced none. */
   arguments: string | null
   message: string
+}
+
+/** What one /interpret call produced: one invocation per tool call (a sentence can ask for several). */
+export interface InterpretResult {
+  conversationId: string
+  /** The whole reply; numbered per invocation when there are several. */
+  message: string
+  invocations: InvocationResult[]
+  /** What the assistant heard when the input was a voice note; null for text. */
+  transcript: string | null
 }
 
 /** One row of the assistant's audit trail. */

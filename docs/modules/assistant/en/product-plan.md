@@ -92,7 +92,7 @@ the assistant can do something the API cannot, that is a bug.
                                                    │  3. chat + tools │  IChatCompletionClient
                                                    │  4. validate     │  JSON schema + module validator
                                                    │  5. confirm?     │  policy per command
-                                                   │  6. execute      │  IAssistantCommandHandler
+                                                   │  6. execute      │  IAssistantTool (each call)
                                                    │  7. reply        │  NotifyUserRequested
                                                    └──────────────────┘
                                                             │
@@ -128,11 +128,15 @@ public sealed record AssistantCommandDescriptor(
     ConfirmationPolicy Confirmation, // Never | WhenAmbiguous | Always
     IReadOnlyList<string> Examples);
 
-public interface IAssistantCommandHandler
+public interface IAssistantTool
 {
-    string Name { get; }
-    Task<AssistantCommandResult> ExecuteAsync(Guid userId, JsonElement args, CancellationToken ct);
+    AssistantCommandDescriptor Descriptor { get; }
+    Task<AssistantCommandOutcome> ExecuteAsync(AssistantToolContext context, JsonElement args, CancellationToken ct);
+    string Describe(AssistantToolContext context, JsonElement args); // the confirmation question
 }
+
+// Who the tool runs for and how to speak to them: every sentence in Locale, every instant in TimeZone.
+public sealed record AssistantToolContext(Guid UserId, string Locale, TimeZoneInfo TimeZone);
 ```
 
 Assistant collects every registered descriptor at startup and renders it as the provider's tool
@@ -187,10 +191,21 @@ to yesterday.
 | `WhenAmbiguous` | Execute unless the model's confidence is low or a required argument was inferred rather than stated. Otherwise echo the parsed intent with **Confirm / Cancel** buttons. |
 | `Always` | Never execute without a button press. Deletions, bulk operations, anything financial. |
 
-A pending confirmation is an `ast004` row in `pending-confirmation`, expiring after 10 minutes. The
-buttons are declared on `NotifyUserRequested` with `owner_module: "assistant"`, so the click comes
-back on the key `inbound.interaction.assistant.confirm` (or `.cancel`) straight to this module's
-subscriber — the same mechanism Agenda uses, with no code shared between the two.
+A pending confirmation is an `ast004` row in `pending-confirmation`, expiring after 10 minutes. Its
+reply is the tool's own `Describe` ("Criar o lembrete \"Pagar o aluguel\" para 05/09/2026 às 10:00?"),
+never raw JSON. On Telegram the buttons ride the reply itself — `SendAssistantReply.Buttons`, with
+`owner_module: "assistant"` and the invocation id as payload — and Channels registers them in
+`chn003_interaction` exactly like a notification's. The tap comes back as `InboundInteractionReceived`
+to `AssistantInteractionReceivedHandler`, which runs the same confirm/cancel commands the web uses and
+replies with the outcome — the same mechanism Agenda uses, with no code shared between the two.
+
+**Several calls per sentence.** The model may return more than one tool call ("lembra X e cria Y").
+Each runs (or is held) on its own and gets its own `ast004` row; the reply numbers them, and the
+buttons are numbered to match. The provider cost is one call, recorded on the first row.
+
+**Language.** Replies — the tools' messages, the pipeline's own ("Não entendi…"), the model's prose,
+the button labels — follow the profile's locale (`locale_override`, default `pt-BR`), through
+`AssistantToolContext`.
 
 Button expiry and single use are guaranteed by `chn003_interaction`; the *invocation's* expiry
 (`ast004`) stays this module's business, because that is what decides whether executing still makes

@@ -15,9 +15,16 @@ public interface IAssistantTool
     AssistantCommandDescriptor Descriptor { get; }
 
     /// <summary>
-    /// Runs the tool for <paramref name="userId"/> with the model-produced <paramref name="arguments"/>
-    /// (already parsed from the tool call). Returns the outcome to record and echo back; it must reflect
-    /// the underlying use case's real result.
+    /// Runs the tool for <see cref="AssistantToolContext.UserId"/> with the model-produced
+    /// <paramref name="arguments"/> (already parsed from the tool call). Returns the outcome to record and
+    /// echo back, in the context's locale; it must reflect the underlying use case's real result.
     /// </summary>
-    Task<AssistantCommandOutcome> ExecuteAsync(Guid userId, JsonElement arguments, CancellationToken ct = default);
+    Task<AssistantCommandOutcome> ExecuteAsync(AssistantToolContext context, JsonElement arguments, CancellationToken ct = default);
+
+    /// <summary>
+    /// The question shown when this call is held for confirmation — what would happen, in the user's
+    /// words and zone (e.g. "Criar o lembrete \"Pagar o aluguel\" para 05/09/2026 às 10:00?"). Throws
+    /// <see cref="ArgumentException"/> (or <see cref="FormatException"/>) for arguments it cannot read.
+    /// </summary>
+    string Describe(AssistantToolContext context, JsonElement arguments);
 }

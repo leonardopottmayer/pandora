@@ -1,7 +1,9 @@
+using Pottmayer.Pandora.Modules.Channels.Domain.Rendering;
+
 namespace Pottmayer.Pandora.Modules.Channels.Domain.Ports.Services;
 
 /// <summary>
-/// Sends a plain-text message through a named Telegram bot to a chat — the direct, interactive counterpart
+/// Sends a text message through a named Telegram bot to a chat — the direct, interactive counterpart
 /// to the notification dispatcher, with no template, queue or retry. Implementations throw on a delivery
 /// failure; the caller decides whether that is worth surfacing.
 /// </summary>
@@ -11,5 +13,8 @@ namespace Pottmayer.Pandora.Modules.Channels.Domain.Ports.Services;
 /// </remarks>
 public interface ITelegramSender
 {
-    Task SendAsync(string bot, string chatId, string text, CancellationToken ct = default);
+    /// <summary>Sends <paramref name="text"/>, with one inline button per row when <paramref name="buttons"/> is non-empty.</summary>
+    Task SendAsync(
+        string bot, string chatId, string text,
+        IReadOnlyList<TelegramRenderedButton>? buttons = null, CancellationToken ct = default);
 }

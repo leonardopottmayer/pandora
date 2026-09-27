@@ -126,11 +126,15 @@ public sealed record AssistantCommandDescriptor(
     ConfirmationPolicy Confirmation, // Never | WhenAmbiguous | Always
     IReadOnlyList<string> Examples);
 
-public interface IAssistantCommandHandler
+public interface IAssistantTool
 {
-    string Name { get; }
-    Task<AssistantCommandResult> ExecuteAsync(Guid userId, JsonElement args, CancellationToken ct);
+    AssistantCommandDescriptor Descriptor { get; }
+    Task<AssistantCommandOutcome> ExecuteAsync(AssistantToolContext context, JsonElement args, CancellationToken ct);
+    string Describe(AssistantToolContext context, JsonElement args); // a pergunta de confirmação
 }
+
+// Para quem a tool roda e como falar com ele: toda frase no Locale, todo instante no TimeZone.
+public sealed record AssistantToolContext(Guid UserId, string Locale, TimeZoneInfo TimeZone);
 ```
 
 O Assistant coleta todo descritor registrado na inicialização e renderiza como as definições de tool do
@@ -183,10 +187,21 @@ Depois: `create_note` e `search_notes` (Notes), `record_transaction` e `balance_
 | `WhenAmbiguous` | Executa a menos que a confiança do modelo seja baixa ou um argumento obrigatório tenha sido inferido em vez de dito. Senão, ecoa a intenção interpretada com botões **Confirmar / Cancelar**. |
 | `Always` | Nunca executa sem um toque de botão. Exclusões, operações em lote, qualquer coisa financeira. |
 
-Uma confirmação pendente é uma linha `ast004` em `pending-confirmation`, expirando em 10 minutos. Os
-botões são declarados no `NotifyUserRequested` com `owner_module: "assistant"`, então o clique volta
-pela chave `inbound.interaction.assistant.confirm` (ou `.cancel`) direto para o subscriber deste módulo —
-o mesmo mecanismo que a Agenda usa, sem nenhum código compartilhado entre os dois.
+Uma confirmação pendente é uma linha `ast004` em `pending-confirmation`, expirando em 10 minutos. A
+resposta é o `Describe` da própria tool ("Criar o lembrete \"Pagar o aluguel\" para 05/09/2026 às 10:00?"),
+nunca JSON cru. No Telegram os botões vão na própria resposta — `SendAssistantReply.Buttons`, com
+`owner_module: "assistant"` e o id da invocação como payload — e o Channels os registra no
+`chn003_interaction` exatamente como os de uma notificação. O toque volta como `InboundInteractionReceived`
+para o `AssistantInteractionReceivedHandler`, que roda os mesmos comandos de confirmar/cancelar da web e
+responde com o resultado — o mesmo mecanismo que a Agenda usa, sem nenhum código compartilhado entre os dois.
+
+**Várias chamadas por frase.** O modelo pode devolver mais de uma tool call ("lembra X e cria Y"). Cada
+uma roda (ou fica pendente) sozinha e ganha sua linha `ast004`; a resposta as numera, e os botões são
+numerados para casar. O custo do provedor é uma chamada, registrado na primeira linha.
+
+**Idioma.** As respostas — mensagens das tools, as do próprio pipeline ("Não entendi…"), a prosa do
+modelo, os rótulos dos botões — seguem o locale do perfil (`locale_override`, padrão `pt-BR`), via
+`AssistantToolContext`.
 
 A expiração e o uso único do botão são garantidos pelo `chn003_interaction`; a expiração da
 *invocação* (`ast004`) continua sendo deste módulo, porque é ela que decide se ainda faz sentido

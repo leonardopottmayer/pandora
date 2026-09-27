@@ -31,10 +31,14 @@ internal sealed class FakeAssistantTool : IAssistantTool
 
     public AssistantCommandDescriptor Descriptor { get; }
     public JsonElement? LastArguments { get; private set; }
+    public AssistantToolContext? LastContext { get; private set; }
     public int Calls { get; private set; }
 
-    public Task<AssistantCommandOutcome> ExecuteAsync(Guid userId, JsonElement arguments, CancellationToken ct = default)
+    public string Describe(AssistantToolContext context, JsonElement arguments) => $"Run {Descriptor.Name}?";
+
+    public Task<AssistantCommandOutcome> ExecuteAsync(AssistantToolContext context, JsonElement arguments, CancellationToken ct = default)
     {
+        LastContext = context;
         LastArguments = arguments.Clone(); // detach from a caller's JsonDocument lifetime
         Calls++;
         return Task.FromResult(_behavior(arguments));
