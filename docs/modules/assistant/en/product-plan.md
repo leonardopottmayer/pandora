@@ -335,8 +335,11 @@ GET    /assistant/commands               → the live catalog (debugging, and th
 - **Done when:** a voice note in Telegram creates a reminder, in Portuguese.
 
 ### Phase A5 — Quality and a second provider
-- Full Agenda catalog (`create_event`, `list_agenda`, `complete_task`, `snooze_reminder`) — and, with
-  the reads, the decision on personal data leaving the house (see §9.2).
+- ✅ Agenda writes (2026-09-27): `create_task`, `create_event`, `complete_task`, `snooze_reminder`. The
+  last two take the user's words and find the item locally by title (accent/case-insensitive, word
+  prefixes), so no title leaves the house; several matches → the reply lists them and asks which.
+  A recurring reminder is snoozed only from its notification button.
+- Pending: `list_agenda` — and, with the reads, the decision on personal data leaving the house (see §9.2).
 - OpenAI as a second provider (`Ai.Chat.OpenAi` + registration), if there's a real reason beyond Gemini.
 - An eval set of real utterances, so switching model is a measured decision rather than a vibe.
 - **Done when:** the eval set passes on the chosen model, with the numbers recorded.

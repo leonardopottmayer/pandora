@@ -18,6 +18,10 @@ public static class ApplicationDI
 
         // The Agenda's contribution to the assistant tool catalog.
         services.AddScoped<IAssistantTool, CreateReminderTool>();
+        services.AddScoped<IAssistantTool, CreateTaskTool>();
+        services.AddScoped<IAssistantTool, CreateEventTool>();
+        services.AddScoped<IAssistantTool, CompleteTaskTool>();
+        services.AddScoped<IAssistantTool, SnoozeReminderTool>();
 
         return services;
     }

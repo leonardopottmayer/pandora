@@ -331,8 +331,11 @@ GET    /assistant/commands               → o catálogo vivo (debug e painel de
 - **Pronto quando:** um áudio no Telegram cria um lembrete, em português.
 
 ### Fase A5 — Qualidade e segundo provedor
-- Catálogo completo da Agenda (`create_event`, `list_agenda`, `complete_task`, `snooze_reminder`) — e,
-  junto com as leituras, a decisão sobre dado pessoal saindo de casa (ver §9.2).
+- ✅ Escritas da Agenda (2026-09-27): `create_task`, `create_event`, `complete_task`, `snooze_reminder`.
+  As duas últimas recebem as palavras do usuário e acham o item localmente pelo título (sem acento/caixa,
+  prefixo de palavra), então nenhum título sai de casa; vários resultados → a resposta lista e pergunta
+  qual. Lembrete recorrente só se adia pelo botão da notificação.
+- Pendente: `list_agenda` — e, junto com as leituras, a decisão sobre dado pessoal saindo de casa (ver §9.2).
 - OpenAI como segundo provedor (`Ai.Chat.OpenAi` + registro), se houver motivo real além do Gemini.
 - Um conjunto de avaliação com enunciados reais, para que trocar de modelo seja uma decisão medida e
   não um chute.
