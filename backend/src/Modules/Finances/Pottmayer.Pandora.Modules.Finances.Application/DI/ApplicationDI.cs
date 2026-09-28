@@ -1,4 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
+using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
+using Pottmayer.Pandora.Modules.Finances.Application.Assistant;
 using Pottmayer.Pandora.Modules.Finances.Application.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Services;
 using Pottmayer.Tars.Core.Mediator.DI;
@@ -12,6 +14,9 @@ public static class ApplicationDI
         services.AddTarsMediator(opts =>
             opts.RegisterHandlersFromAssembly(typeof(ApplicationDI).Assembly));
         services.AddScoped<IStatementResolver, StatementResolver>();
+
+        // The Finances contribution to the assistant tool catalog.
+        services.AddScoped<IAssistantTool, RecordExpenseTool>();
 
         return services;
     }

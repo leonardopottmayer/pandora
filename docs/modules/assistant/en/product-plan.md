@@ -345,7 +345,11 @@ GET    /assistant/commands               → the live catalog (debugging, and th
 - **Done when:** the eval set passes on the chosen model, with the numbers recorded.
 
 ### Phase A6 — Beyond Agenda *(future)*
-Notes (`create_note`, `search_notes`), Finances (`record_transaction`, `balance_summary`), proactive
+- ✅ `record_expense` (2026-09-28): "gastei 45 no mercado no Nubank" → a `manual` pending transaction
+  in the Finances inbox (never posted directly). The card/account is found locally by the words the
+  user used; nothing named and a single account/card → that one; otherwise the reply asks which.
+
+Notes (`create_note`, `search_notes`), Finances (`balance_summary`), proactive
 digests ("here is your day" every morning at 07:00, generated rather than templated), and
 retrieval over Notes for question answering.
 

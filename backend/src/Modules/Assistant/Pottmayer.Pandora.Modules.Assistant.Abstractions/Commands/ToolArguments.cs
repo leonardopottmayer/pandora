@@ -1,12 +1,11 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
-using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 
-namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
+namespace Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 
 /// <summary>
-/// What the Agenda tools share: reading the model's arguments (throwing <see cref="ArgumentException"/>
+/// What the tools share: reading the model's arguments (throwing <see cref="ArgumentException"/>
 /// or <see cref="FormatException"/>, which the pipeline turns into a rejected call) and finding the item
 /// the user named by title — locally, so no title is ever sent to the model.
 /// </summary>

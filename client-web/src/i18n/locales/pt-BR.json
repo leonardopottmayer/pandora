@@ -553,7 +553,8 @@
       "source": "Origem",
       "sources": {
         "recurrence": "Recorrencia",
-        "import": "Importacao"
+        "import": "Importacao",
+        "manual": "Manual"
       },
       "approve": "Aprovar",
       "reject": "Rejeitar",

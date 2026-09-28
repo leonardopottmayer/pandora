@@ -4,7 +4,7 @@ using Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetReminders;
 using Pottmayer.Pandora.Modules.Agenda.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
-using static Pottmayer.Pandora.Modules.Agenda.Application.Assistant.ToolArguments;
+using static Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands.ToolArguments;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 

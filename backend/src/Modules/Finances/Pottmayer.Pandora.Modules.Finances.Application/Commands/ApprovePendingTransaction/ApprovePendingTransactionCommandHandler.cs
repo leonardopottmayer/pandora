@@ -102,13 +102,18 @@ public sealed class ApprovePendingTransactionCommandHandler(
                     statement.PaidAmount,
                     today,
                     timeProvider);
-                await statementRepo.UpdateAsync(statement, token);
+                // A freshly-created statement is already tracked as Added; UpdateAsync would flip it to
+                // Modified and emit an UPDATE instead of the INSERT, leaving the transaction's FK dangling.
+                if (!statementResult.Value.Created)
+                    await statementRepo.UpdateAsync(statement, token);
             }
 
             // Links the new transaction back to whatever produced the suggestion, so its provenance
             // is traceable from either the transaction or the original import/recurrence side.
             if (pending.IsImportSource)
                 tx.MarkAsImport(pending.Id);
+            else if (pending.IsManualSource)
+                tx.MarkAsManual(pending.Id);
             else
                 tx.MarkAsRecurrence(pending.RecurringTransactionId!.Value, pending.Id);
             await txRepo.AddAsync(tx, token);
@@ -116,7 +121,7 @@ public sealed class ApprovePendingTransactionCommandHandler(
             pending.Approve(tx.Id, input.UserId, timeProvider);
             await pendingRepo.UpdateAsync(pending, token);
 
-            var origin = pending.IsImportSource ? "import" : "recurrence";
+            var origin = pending.Source.Value;
             await ctx.RecordAsync(input.UserId, input.UserId, TransactionEvents.EntityType, tx.Id,
                 TransactionEvents.Created, now, new { origin }, ct: token);
             await ctx.RecordAsync(input.UserId, input.UserId, PendingTransactionEvents.EntityType, pending.Id,

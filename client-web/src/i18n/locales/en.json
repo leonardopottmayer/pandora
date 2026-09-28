@@ -553,7 +553,8 @@
       "source": "Source",
       "sources": {
         "recurrence": "Recurrence",
-        "import": "Import"
+        "import": "Import",
+        "manual": "Manual"
       },
       "approve": "Approve",
       "reject": "Reject",

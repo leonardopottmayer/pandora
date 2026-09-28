@@ -56,7 +56,9 @@ desfecho é terminal.
 
 - **`original_payload` é imutável** — um snapshot JSON da sugestão inicial, nunca alterado. O payload
   editável fica nas colunas normais; o diff entre os dois está sempre disponível.
-- Source é `recurrence` (⇒ `recurring_transaction_id`) ou `import` (⇒ `import_row_id`).
+- Source é `recurrence` (⇒ `recurring_transaction_id`), `import` (⇒ `import_row_id`) ou `manual`
+  (digitada pelo usuário via `record_expense` do assistente: uma despesa em exatamente uma conta ou
+  cartão, na moeda dele; aprovar cria uma transação de origem `manual` ligada a ela).
 - Status `pending → approved | rejected` é terminal (`Approve`/`Reject` retornam `false` se já
   decidido).
 

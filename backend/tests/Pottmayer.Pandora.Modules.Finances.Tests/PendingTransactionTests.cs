@@ -29,6 +29,32 @@ public sealed class PendingTransactionTests
             timeProvider: time);
 
     [Fact]
+    public void CreateManual_starts_pending_with_manual_source_and_one_target()
+    {
+        var pending = PendingTransaction.CreateManual(
+            Guid.NewGuid(), accountId: null, cardId: Guid.NewGuid(), "expense", 45.9m, "BRL", Today, " Mercado ",
+            "{}", new FixedTimeProvider(Now));
+
+        Assert.True(pending.IsPending);
+        Assert.True(pending.IsManualSource);
+        Assert.Equal("Mercado", pending.Description);
+        Assert.Null(pending.RecurringTransactionId);
+        Assert.Null(pending.ImportRowId);
+    }
+
+    [Fact]
+    public void CreateManual_needs_exactly_one_target_and_a_positive_amount()
+    {
+        var time = new FixedTimeProvider(Now);
+        Assert.Throws<ArgumentException>(() => PendingTransaction.CreateManual(
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "expense", 10m, "BRL", Today, "x", "{}", time));
+        Assert.Throws<ArgumentException>(() => PendingTransaction.CreateManual(
+            Guid.NewGuid(), null, null, "expense", 10m, "BRL", Today, "x", "{}", time));
+        Assert.Throws<ArgumentOutOfRangeException>(() => PendingTransaction.CreateManual(
+            Guid.NewGuid(), Guid.NewGuid(), null, "expense", 0m, "BRL", Today, "x", "{}", time));
+    }
+
+    [Fact]
     public void CreateFromRecurrence_starts_pending_with_recurrence_source()
     {
         var pending = NewFromRecurrence(new FixedTimeProvider(Now));

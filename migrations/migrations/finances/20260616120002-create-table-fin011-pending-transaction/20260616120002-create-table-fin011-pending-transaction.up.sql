@@ -47,7 +47,7 @@ ALTER TABLE finances.fin011_pending_transaction
 ADD CONSTRAINT pk_fin011 PRIMARY KEY (id);
 
 ALTER TABLE finances.fin011_pending_transaction
-ADD CONSTRAINT ck_fin011_source CHECK (source IN ('recurrence', 'import'));
+ADD CONSTRAINT ck_fin011_source CHECK (source IN ('recurrence', 'import', 'manual'));
 
 ALTER TABLE finances.fin011_pending_transaction
 ADD CONSTRAINT ck_fin011_import_source

@@ -55,7 +55,7 @@ export type RecurringStatus = (typeof RECURRING_STATUSES)[number]
 export const PENDING_STATUSES = ['pending', 'approved', 'rejected'] as const
 export type PendingStatus = (typeof PENDING_STATUSES)[number]
 
-export const PENDING_SOURCES = ['recurrence', 'import'] as const
+export const PENDING_SOURCES = ['recurrence', 'import', 'manual'] as const
 export type PendingSource = (typeof PENDING_SOURCES)[number]
 
 export const IMPORT_STATUSES = ['received', 'parsing', 'completed', 'failed', 'aborted'] as const
