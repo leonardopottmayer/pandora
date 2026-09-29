@@ -13,6 +13,7 @@ public static class ApplicationDI
             opts.RegisterHandlersFromAssembly(typeof(ApplicationDI).Assembly));
 
         services.AddScoped<IAssistantTool, CreateNoteTool>();
+        services.AddScoped<IAssistantTool, SearchNotesTool>();
 
         return services;
     }

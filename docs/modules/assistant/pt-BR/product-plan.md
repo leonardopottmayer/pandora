@@ -353,8 +353,10 @@ GET    /assistant/commands               → o catálogo vivo (debug e painel de
   usuário; nada citado e uma só conta/cartão → ela; senão a resposta pergunta qual.
 - ✅ `create_note` (2026-09-28): uma página nova na raiz do Notes com o texto do usuário em markdown
   (#tags e [[links]] funcionam como no editor).
+- ✅ `search_notes` (2026-09-29): busca de texto nas notas não arquivadas, até 5 resultados com o trecho,
+  direto para o usuário; o histórico guarda um resumo sem conteúdo (§9.2).
 
-Notes (`search_notes`), Finances (`balance_summary`), resumos
+Finances (`balance_summary`), resumos
 proativos ("este é o seu dia" toda manhã às 07:00 — não por ora: o `list_agenda` sob pedido cobre, e pela
 §9.2 seria templatizado, não gerado), e recuperação sobre as
 Notes para responder perguntas.

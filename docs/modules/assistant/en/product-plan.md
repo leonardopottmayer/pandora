@@ -355,8 +355,10 @@ GET    /assistant/commands               → the live catalog (debugging, and th
   user used; nothing named and a single account/card → that one; otherwise the reply asks which.
 - ✅ `create_note` (2026-09-28): a new top-level page in Notes with the user's text as markdown
   (#tags and [[links]] work as in the editor).
+- ✅ `search_notes` (2026-09-29): full-text search over the open notes, up to 5 hits with their
+  excerpt, straight to the user; the history keeps a content-free recap (§9.2).
 
-Notes (`search_notes`), Finances (`balance_summary`), proactive
+Finances (`balance_summary`), proactive
 digests ("here is your day" every morning at 07:00 — not for now: `list_agenda` on request covers it,
 and under §9.2 it would be templated, not generated), and
 retrieval over Notes for question answering.
