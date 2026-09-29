@@ -14,6 +14,8 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Notes.Abstractions/Pottmayer.Pandora.Modules.Notes.Abstractions.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Notes.Contracts/Pottmayer.Pandora.Modules.Notes.Contracts.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Notes.Domain/Pottmayer.Pandora.Modules.Notes.Domain.csproj" />
+    <!-- The Notes contribution to the assistant tool catalog (create_note). -->
+    <ProjectReference Include="../../Assistant/Pottmayer.Pandora.Modules.Assistant.Abstractions/Pottmayer.Pandora.Modules.Assistant.Abstractions.csproj" />
     <!-- Tars: Core -->
     <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.16" />
     <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.16" />

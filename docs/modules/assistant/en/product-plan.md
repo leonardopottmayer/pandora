@@ -348,8 +348,10 @@ GET    /assistant/commands               → the live catalog (debugging, and th
 - ✅ `record_expense` (2026-09-28): "gastei 45 no mercado no Nubank" → a `manual` pending transaction
   in the Finances inbox (never posted directly). The card/account is found locally by the words the
   user used; nothing named and a single account/card → that one; otherwise the reply asks which.
+- ✅ `create_note` (2026-09-28): a new top-level page in Notes with the user's text as markdown
+  (#tags and [[links]] work as in the editor).
 
-Notes (`create_note`, `search_notes`), Finances (`balance_summary`), proactive
+Notes (`search_notes`), Finances (`balance_summary`), proactive
 digests ("here is your day" every morning at 07:00, generated rather than templated), and
 retrieval over Notes for question answering.
 

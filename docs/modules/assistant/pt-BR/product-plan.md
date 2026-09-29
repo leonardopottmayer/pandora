@@ -345,8 +345,10 @@ GET    /assistant/commands               → o catálogo vivo (debug e painel de
 - ✅ `record_expense` (2026-09-28): "gastei 45 no mercado no Nubank" → transação pendente `manual` na
   caixa de entrada do Finances (nunca lançada direto). Cartão/conta achado localmente pelas palavras do
   usuário; nada citado e uma só conta/cartão → ela; senão a resposta pergunta qual.
+- ✅ `create_note` (2026-09-28): uma página nova na raiz do Notes com o texto do usuário em markdown
+  (#tags e [[links]] funcionam como no editor).
 
-Notes (`create_note`, `search_notes`), Finances (`balance_summary`), resumos
+Notes (`search_notes`), Finances (`balance_summary`), resumos
 proativos ("este é o seu dia" toda manhã às 07:00, gerado em vez de templatizado), e recuperação sobre as
 Notes para responder perguntas.
 
