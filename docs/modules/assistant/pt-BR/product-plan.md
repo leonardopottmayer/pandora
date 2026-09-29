@@ -227,8 +227,10 @@ executar.
 Os bytes de áudio são descartados depois da transcrição. Retenção continua como opt-in futuro por
 perfil, porque voz é a coisa mais sensível que este módulo toca.
 
-A superfície web (ainda não construída) grava com `MediaRecorder`, faz upload para
-`POST /assistant/interpret` como multipart, e segue o mesmo caminho — o `InterpretInput.Audio` já aceita.
+O console web grava com `MediaRecorder` (até 150 s), recodifica a gravação no navegador como WAV 16 kHz
+mono — navegadores gravam webm/ogg/mp4, e WAV é um formato que a entrada de áudio de todo provedor aceita
+— e sobe como multipart para `POST /assistant/interpret/audio`. Dali segue o mesmo caminho do áudio do
+Telegram (`InterpretInput.Audio`).
 
 ### 4.5 Prompting
 
@@ -327,7 +329,9 @@ GET    /assistant/commands               → o catálogo vivo (debug e painel de
 ### Fase A4 — Voz *(Telegram feito em 2026-09-22)*
 - ✅ Áudio no Telegram: mídia lida por `IInboundMediaReader`, transcrição pela entrada de áudio do
   Gemini (`ChatAttachment`, Tars 0.0.16), transcrição ecoada na resposta. Ver §4.4.
-- Pendente: upload por `MediaRecorder` na web; opt-in de retenção de áudio.
+- ✅ Web (2026-09-29): botão de gravar no console do assistente; `MediaRecorder` → WAV →
+  `POST /assistant/interpret/audio`. Ver §4.4.
+- Pendente: opt-in de retenção de áudio.
 - **Pronto quando:** um áudio no Telegram cria um lembrete, em português.
 
 ### Fase A5 — Qualidade e segundo provedor

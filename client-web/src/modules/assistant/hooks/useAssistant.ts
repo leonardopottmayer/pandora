@@ -52,6 +52,17 @@ export function useInterpret() {
   })
 }
 
+export function useInterpretAudio() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ audio, conversationId }: { audio: Blob; conversationId?: string }) =>
+      assistantService.interpretAudio(audio, conversationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: assistantKeys.invocations() })
+    },
+  })
+}
+
 export function useConfirmInvocation() {
   const queryClient = useQueryClient()
   return useMutation({

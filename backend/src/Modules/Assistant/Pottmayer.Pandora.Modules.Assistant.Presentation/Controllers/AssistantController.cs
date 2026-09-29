@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Assistant.Application.Commands.CancelInvocation;
 using Pottmayer.Pandora.Modules.Assistant.Application.Commands.ConfirmInvocation;
@@ -10,6 +11,7 @@ using Pottmayer.Pandora.Modules.Assistant.Application.Queries.GetInvocations;
 using Pottmayer.Pandora.Modules.Assistant.Application.Queries.GetProfile;
 using Pottmayer.Pandora.Modules.Assistant.Application.Queries.GetProviders;
 using Pottmayer.Pandora.Shared.Domain;
+using Pottmayer.Tars.Ai.Chat.Abstractions.Models;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using Pottmayer.Tars.UserContext.Abstractions.Context;
 using Pottmayer.Tars.Web.Http.Abstractions;
@@ -78,6 +80,26 @@ public sealed class AssistantController(
     {
         var result = await sender.Send(
             new InterpretCommand(new InterpretInput(UserId, body.Text, body.ConversationId)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>
+    /// Interprets a voice note recorded in the browser: transcribed first, then the same pipeline as
+    /// <see cref="InterpretAsync"/>. The reply carries the transcript. The audio is not retained.
+    /// </summary>
+    [Authorize]
+    [HttpPost("interpret/audio")]
+    [Consumes("multipart/form-data")]
+    // A little above the pipeline's own cap, so a slightly long note gets its readable refusal, not a 413.
+    [RequestSizeLimit(InterpretCommandHandler.MaxAudioBytes + 1024 * 1024)]
+    public async Task<IActionResult> InterpretAudioAsync(IFormFile audio, [FromForm] Guid? conversationId, CancellationToken ct)
+    {
+        await using var stream = audio.OpenReadStream();
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms, ct);
+
+        var result = await sender.Send(new InterpretCommand(new InterpretInput(
+            UserId, null, conversationId, new ChatAttachment(ms.ToArray(), audio.ContentType))), ct);
         return result.ToActionResult(errorMapper);
     }
 

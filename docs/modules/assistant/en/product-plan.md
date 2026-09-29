@@ -231,9 +231,10 @@ sense.
 Audio bytes are discarded after transcription. Retention stays a future per-profile opt-in, because
 voice is the most sensitive thing this module touches.
 
-The web surface (not built yet) records with `MediaRecorder`, uploads to
-`POST /assistant/interpret` as multipart, and takes the same path — `InterpretInput.Audio` already
-accepts it.
+The web console records with `MediaRecorder` (up to 150 s), re-encodes the recording in the browser
+as 16 kHz mono WAV — browsers record webm/ogg/mp4, and WAV is a format every provider's audio input
+accepts — and uploads it to `POST /assistant/interpret/audio` as multipart. From there it takes the
+same path as a Telegram voice note (`InterpretInput.Audio`).
 
 ### 4.5 Prompting
 
@@ -331,7 +332,9 @@ GET    /assistant/commands               → the live catalog (debugging, and th
 ### Phase A4 — Voice *(Telegram done 2026-09-22)*
 - ✅ Telegram voice notes: media read through `IInboundMediaReader`, transcription via Gemini audio
   input (`ChatAttachment`, Tars 0.0.16), transcript echoed in the reply. See §4.4.
-- Pending: web `MediaRecorder` upload; audio retention opt-in.
+- ✅ Web (2026-09-29): record button in the assistant console; `MediaRecorder` → WAV →
+  `POST /assistant/interpret/audio`. See §4.4.
+- Pending: audio retention opt-in.
 - **Done when:** a voice note in Telegram creates a reminder, in Portuguese.
 
 ### Phase A5 — Quality and a second provider

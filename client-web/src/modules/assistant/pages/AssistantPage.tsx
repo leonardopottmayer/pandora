@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Alert, App, Button, Input, Table, Tag, Typography, theme } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { RobotOutlined } from '@ant-design/icons'
+import { AudioOutlined, RobotOutlined, StopOutlined } from '@ant-design/icons'
 import { PageHeading } from '@/components/settings/PageHeading'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { toErrorMessage } from '@/lib/api/envelope'
@@ -13,8 +13,10 @@ import {
   useCancelInvocation,
   useConfirmInvocation,
   useInterpret,
+  useInterpretAudio,
   useInvocations,
 } from '../hooks/useAssistant'
+import { toWav, useVoiceRecorder, voiceSupported } from '../hooks/useVoiceRecorder'
 
 const STATUS_COLOR: Record<InvocationStatus, string> = {
   executed: 'green',
@@ -40,14 +42,20 @@ export function AssistantPage() {
   const { data: profile } = useAssistantProfile()
   const { data: invocations } = useInvocations()
   const interpret = useInterpret()
+  const interpretAudio = useInterpretAudio()
   const confirmInvocation = useConfirmInvocation()
   const cancelInvocation = useCancelInvocation()
+  const voice = useVoiceRecorder(handleVoiceNote)
 
   const [text, setText] = useState('')
   const [conversationId, setConversationId] = useState<string | undefined>(undefined)
 
   const disabled = profile ? !profile.isEnabled : false
-  const busy = interpret.isPending || confirmInvocation.isPending || cancelInvocation.isPending
+  const busy =
+    interpret.isPending ||
+    interpretAudio.isPending ||
+    confirmInvocation.isPending ||
+    cancelInvocation.isPending
 
   // The console shows the active conversation as a chat; the table below keeps the full log.
   // Default to the most recent conversation until the user starts a new exchange.
@@ -71,6 +79,24 @@ export function AssistantPage() {
       const result = await interpret.mutateAsync({ text: value, conversationId })
       setConversationId(result.conversationId)
       setText('')
+    } catch (err) {
+      message.error(toErrorMessage(err, t('assistant.bar.error')))
+    }
+  }
+
+  async function handleStartRecording() {
+    try {
+      await voice.start()
+    } catch {
+      message.error(t('assistant.bar.micDenied'))
+    }
+  }
+
+  // The chat shows what was heard: the pipeline records the transcript as the user's message.
+  async function handleVoiceNote(recording: Blob) {
+    try {
+      const result = await interpretAudio.mutateAsync({ audio: await toWav(recording), conversationId })
+      setConversationId(result.conversationId)
     } catch (err) {
       message.error(toErrorMessage(err, t('assistant.bar.error')))
     }
@@ -264,16 +290,28 @@ export function AssistantPage() {
               size="large"
               prefix={<RobotOutlined className="opacity-60" />}
               value={text}
-              disabled={disabled || busy}
-              placeholder={t('assistant.bar.placeholder')}
+              disabled={disabled || busy || voice.recording}
+              placeholder={t(voice.recording ? 'assistant.bar.recording' : 'assistant.bar.placeholder')}
               onChange={(e) => setText(e.target.value)}
               onPressEnter={handleSend}
             />
+            {voiceSupported && (
+              <Button
+                size="large"
+                danger={voice.recording}
+                icon={voice.recording ? <StopOutlined /> : <AudioOutlined />}
+                loading={interpretAudio.isPending}
+                disabled={disabled || (busy && !voice.recording)}
+                title={t(voice.recording ? 'assistant.bar.stopRecording' : 'assistant.bar.record')}
+                aria-label={t(voice.recording ? 'assistant.bar.stopRecording' : 'assistant.bar.record')}
+                onClick={voice.recording ? voice.stop : handleStartRecording}
+              />
+            )}
             <Button
               size="large"
               type="primary"
               loading={interpret.isPending}
-              disabled={disabled}
+              disabled={disabled || voice.recording}
               onClick={handleSend}
             >
               {t('assistant.bar.send')}

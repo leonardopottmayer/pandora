@@ -42,6 +42,18 @@ export async function interpret(text: string, conversationId?: string): Promise<
   return data
 }
 
+/** Interprets a voice note: transcribed first, then run like a typed sentence. */
+export async function interpretAudio(audio: Blob, conversationId?: string): Promise<InterpretResult> {
+  const formData = new FormData()
+  formData.append('audio', audio, 'voice.wav')
+  if (conversationId) formData.append('conversationId', conversationId)
+
+  const { data } = await apiClient.post<InterpretResult>(`${BASE}/interpret/audio`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data
+}
+
 /** Runs a tool call that was held for confirmation. */
 export async function confirmInvocation(id: string): Promise<InvocationResult> {
   const { data } = await apiClient.post<InvocationResult>(`${BASE}/invocations/${id}/confirm`)
