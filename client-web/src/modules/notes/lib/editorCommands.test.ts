@@ -90,7 +90,7 @@ describe('moveTableCell', () => {
 })
 
 const label = (command: SlashCommand) => `label:${command.id}`
-const source = slashSource(label)
+const source = slashSource(label, () => {})
 
 /** Runs the completion source with the cursor at the end of `doc`. */
 function complete(doc: string) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Alert, App, Button, Input, Segmented, Select, Spin, Switch } from 'antd'
@@ -6,7 +6,7 @@ import { PageHeading } from '@/components/settings/PageHeading'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { SettingRow } from '@/components/settings/SettingRow'
 import { toErrorMessage } from '@/lib/api/envelope'
-import type { ConfirmationLevel, ReachabilityResult } from '../models'
+import type { AssistantProfile, ConfirmationLevel, ReachabilityResult } from '../models'
 import {
   useAssistantProfile,
   useAssistantProviders,
@@ -30,15 +30,17 @@ export function AssistantSettingsPage() {
   const [confirmationLevel, setConfirmationLevel] = useState<ConfirmationLevel>('balanced')
   const [testResult, setTestResult] = useState<ReachabilityResult | null>(null)
 
-  // Seed the form once the saved profile (or its defaults) arrives.
-  useEffect(() => {
-    if (!profile) return
+  // Seed the form whenever the saved profile (or its defaults) arrives — adjusted during render
+  // rather than in an effect, so the form never paints with the stale values first.
+  const [seededFrom, setSeededFrom] = useState<AssistantProfile | undefined>(undefined)
+  if (profile && profile !== seededFrom) {
+    setSeededFrom(profile)
     setProvider(profile.provider)
     setModel(profile.model)
     setIsEnabled(profile.isEnabled)
     setLocaleOverride(profile.localeOverride)
     setConfirmationLevel(profile.confirmationLevel)
-  }, [profile])
+  }
 
   const selectedProvider = (providers ?? []).find((p) => p.provider === provider)
   const keyConfigured = selectedProvider?.keyConfigured ?? false

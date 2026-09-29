@@ -81,7 +81,7 @@ export function ConnectionsPage() {
   async function handleConnect(provider: string) {
     try {
       const url = await startConnection.mutateAsync({ provider, redirectAfter: REDIRECT_AFTER })
-      window.location.href = url
+      window.location.assign(url)
     } catch (err) {
       message.error(toErrorMessage(err, t('connections.connectError')))
     }
