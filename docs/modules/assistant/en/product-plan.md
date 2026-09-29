@@ -339,7 +339,9 @@ GET    /assistant/commands               → the live catalog (debugging, and th
   last two take the user's words and find the item locally by title (accent/case-insensitive, word
   prefixes), so no title leaves the house; several matches → the reply lists them and asks which.
   A recurring reminder is snoozed only from its notification button.
-- Pending: `list_agenda` — and, with the reads, the decision on personal data leaving the house (see §9.2).
+- ✅ `list_agenda` (2026-09-29): events, tasks due and reminders for a day or a span (up to 31 days),
+  on request. The list is formatted in-house and goes straight to the user; the model only picks the
+  tool and the days, and the conversation history keeps a content-free recap (see §9.2).
 - OpenAI as a second provider (`Ai.Chat.OpenAi` + registration), if there's a real reason beyond Gemini.
 - An eval set of real utterances, so switching model is a measured decision rather than a vibe.
 - **Done when:** the eval set passes on the chosen model, with the numbers recorded.
@@ -352,7 +354,8 @@ GET    /assistant/commands               → the live catalog (debugging, and th
   (#tags and [[links]] work as in the editor).
 
 Notes (`search_notes`), Finances (`balance_summary`), proactive
-digests ("here is your day" every morning at 07:00, generated rather than templated), and
+digests ("here is your day" every morning at 07:00 — not for now: `list_agenda` on request covers it,
+and under §9.2 it would be templated, not generated), and
 retrieval over Notes for question answering.
 
 ---
@@ -363,11 +366,12 @@ retrieval over Notes for question answering.
    with `auth_kind = api-key`. One encrypted store. `ast001`'s `credential_ref` points there, and the
    key is obtained through `IExternalCredentialProvider` — the same synchronous port Agenda uses for
    the Google token. See [Integrations — OAuth & Credentials](../../integrations/en/oauth-and-credentials.md).
-2. **Personal data leaves the house.** Since the provider is hosted (Gemini), **every utterance leaves
-   the house**, and reads like `list_agenda` would send event titles to Google. Without Ollama this is
-   no longer "settle before A5" — it matters **now**. Minimum for the 1st release: a per-profile
-   warning, and starting with a *write-only* catalog (`create_reminder`); reads land with an explicit
-   decision. See the
+2. ~~**Personal data leaves the house.**~~ **Decided (2026-09-29):** the utterance still goes to the
+   hosted model (Gemini), but the user's data does not. A read tool (`list_agenda`) fetches and formats
+   its answer in-house and replies to the user directly; the model only picks the tool and its
+   arguments. The history re-sent on the next turn keeps a content-free recap
+   (`AssistantCommandOutcome.Recap`) instead of the reply. The cost: read replies have a fixed format —
+   the model cannot comment on them. A generated digest would need its own decision. See the
    [execution-plan](execution-plan.md#the-question-that-moved-up-personal-data-leaves-the-house).
 3. **Streaming.** Not needed for command execution; useful if a conversational mode is ever added. The
    abstraction does not expose it today; deferred.

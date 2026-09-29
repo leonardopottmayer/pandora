@@ -220,7 +220,7 @@ public sealed class InterpretCommandHandler(
 
             var outcome = await tool.ExecuteAsync(context, toolCall.Arguments, ct);
             return outcome.Success
-                ? new Step(InvocationStatus.Executed, toolCall.Name, argumentsJson, Result: outcome.Message)
+                ? new Step(InvocationStatus.Executed, toolCall.Name, argumentsJson, Result: outcome.Message, Recap: outcome.Recap)
                 : new Step(InvocationStatus.Failed, toolCall.Name, argumentsJson, Error: outcome.Message);
         }
         catch (Exception ex) when (ex is FormatException or ArgumentException or InvalidOperationException)
@@ -274,9 +274,9 @@ public sealed class InterpretCommandHandler(
         Turn turn, string utterance, IReadOnlyList<Step> steps, long latencyMs, TokenUsage usage,
         string? transcript, CancellationToken ct)
     {
-        var reply = steps.Count == 1
-            ? steps[0].Reply
-            : string.Join("\n", steps.Select((step, i) => $"{i + 1}. {step.Reply}"));
+        var reply = Combine(steps, s => s.Reply);
+        // What the model sees of this reply on the next turn (see AssistantCommandOutcome.Recap).
+        var recap = Combine(steps, s => s.Recap ?? s.Reply);
 
         var invocations = steps.Select((step, i) => CommandInvocation.Create(
             turn.UserId, turn.Conversation.Id, utterance, step.CommandName, step.ArgumentsJson,
@@ -300,7 +300,7 @@ public sealed class InterpretCommandHandler(
             await messages.AddAsync(
                 Message.Create(turn.Conversation.Id, MessageAuthor.User, utterance, timeProvider), token);
             await messages.AddAsync(
-                Message.Create(turn.Conversation.Id, MessageAuthor.Assistant, reply, timeProvider), token);
+                Message.Create(turn.Conversation.Id, MessageAuthor.Assistant, recap, timeProvider), token);
 
             foreach (var invocation in invocations)
                 await repository.AddAsync(invocation, token);
@@ -315,6 +315,11 @@ public sealed class InterpretCommandHandler(
                 steps[i].Reply)).ToList(),
             transcript));
     }
+
+    private static string Combine(IReadOnlyList<Step> steps, Func<Step, string> text) =>
+        steps.Count == 1
+            ? text(steps[0])
+            : string.Join("\n", steps.Select((step, i) => $"{i + 1}. {text(step)}"));
 
     /// <summary>True when the command must be confirmed before running, once the level shifts its policy.</summary>
     private static bool RequiresConfirmation(ConfirmationPolicy policy, ConfirmationLevel level) =>
@@ -350,7 +355,8 @@ public sealed class InterpretCommandHandler(
         string? ArgumentsJson = null,
         string? Result = null,
         string? Error = null,
-        DateTimeOffset? ExpiresAt = null)
+        DateTimeOffset? ExpiresAt = null,
+        string? Recap = null)
     {
         public string Reply => Result ?? Error ?? string.Empty;
     }

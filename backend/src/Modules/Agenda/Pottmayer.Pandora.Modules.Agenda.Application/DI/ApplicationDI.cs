@@ -22,6 +22,7 @@ public static class ApplicationDI
         services.AddScoped<IAssistantTool, CreateEventTool>();
         services.AddScoped<IAssistantTool, CompleteTaskTool>();
         services.AddScoped<IAssistantTool, SnoozeReminderTool>();
+        services.AddScoped<IAssistantTool, ListAgendaTool>();
 
         return services;
     }

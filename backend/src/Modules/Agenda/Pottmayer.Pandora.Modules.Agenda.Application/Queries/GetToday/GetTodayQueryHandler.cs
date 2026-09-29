@@ -15,7 +15,8 @@ namespace Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetToday;
 /// <summary>
 /// One read that merges the three time sources for the day: expanded event occurrences, tasks due, and
 /// reminders firing (single-shot and recurring occurrences). Ordered by start time. The day window is
-/// anchored in the user's own zone, so "today" is their calendar day rather than the UTC day.
+/// anchored in the user's own zone, so "today" is their calendar day rather than the UTC day. A span of
+/// days (<see cref="GetTodayInput.From"/>..<see cref="GetTodayInput.To"/>) reads the same way.
 /// </summary>
 public sealed class GetTodayQueryHandler(
     IUnitOfWorkFactory factory, IEffectiveTimeZoneResolver timeZones, TimeProvider timeProvider)
@@ -26,9 +27,10 @@ public sealed class GetTodayQueryHandler(
     {
         var now = timeProvider.GetUtcNow();
         var zone = await timeZones.ResolveAsync(request.Input.UserId, ct: cancellationToken);
-        var today = DayBoundary.LocalToday(zone, now);
-        var dayStart = DayBoundary.StartOfDay(zone, today);
-        var dayEnd = DayBoundary.StartOfDay(zone, today.AddDays(1));
+        var firstDay = request.Input.From ?? DayBoundary.LocalToday(zone, now);
+        var lastDay = request.Input.To ?? firstDay;
+        var dayStart = DayBoundary.StartOfDay(zone, firstDay);
+        var dayEnd = DayBoundary.StartOfDay(zone, lastDay.AddDays(1));
         var expandTo = dayEnd.AddTicks(-1); // inclusive upper bound for the expanders
 
         var items = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, ct) =>

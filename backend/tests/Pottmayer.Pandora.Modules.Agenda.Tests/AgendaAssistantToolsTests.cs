@@ -5,6 +5,7 @@ using Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateEvent;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateTask;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.SnoozeReminder;
 using Pottmayer.Pandora.Modules.Agenda.Application.Dtos;
+using Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetToday;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using Pottmayer.Tars.Core.Mediator.Abstractions.Messaging;
@@ -130,5 +131,74 @@ public sealed class AgendaAssistantToolsTests
         Assert.Equal(calendar.Id, input.CalendarId);
         Assert.Equal(allDay, input.IsAllDay);
         Assert.Equal(TimeSpan.FromHours(hours), input.EndsAt - input.StartsAt);
+    }
+
+    // São Paulo is UTC-3.
+    private static TodayItemDto Item(string kind, string title, string at, string? endsAt = null, bool allDay = false, string status = "Scheduled") =>
+        new(kind, Guid.NewGuid(), title, null, DateTimeOffset.Parse(at), endsAt is null ? null : DateTimeOffset.Parse(endsAt),
+            allDay, null, status);
+
+    [Fact]
+    public async Task List_agenda_shows_the_open_items_of_a_day_and_keeps_them_out_of_the_recap()
+    {
+        var sender = new ScriptedSender(List(
+            Item("event", "Aniversário", "2026-09-05T00:00:00-03:00", allDay: true, status: "Confirmed"),
+            Item("event", "Dentista", "2026-09-05T09:00:00-03:00", "2026-09-05T10:00:00-03:00", status: "Confirmed"),
+            Item("reminder", "Pagar aluguel", "2026-09-05T10:00:00-03:00"),
+            Item("task", "Renovar passaporte", "2026-09-05T00:00:00-03:00", allDay: true, status: "Todo"),
+            Item("task", "Já feito", "2026-09-05T00:00:00-03:00", allDay: true, status: "Done"),
+            Item("event", "Cancelado", "2026-09-05T15:00:00-03:00", status: "Cancelled")));
+
+        var outcome = await new ListAgendaTool(sender).ExecuteAsync(Context, Args("""{ "from": "2026-09-05" }"""));
+
+        var input = Assert.IsType<GetTodayQuery>(Assert.Single(sender.Sent)).Input;
+        Assert.Equal(new DateOnly(2026, 9, 5), input.From);
+        Assert.Equal(new DateOnly(2026, 9, 5), input.To);
+        Assert.Equal(
+            """
+            Agenda de 05/09/2026:
+            • dia todo · Aniversário
+            • 09:00–10:00 Dentista
+            • 10:00 lembrete · Pagar aluguel
+            • tarefa · Renovar passaporte
+            """.ReplaceLineEndings("\n"),
+            outcome.Message);
+        Assert.DoesNotContain("Dentista", outcome.Recap);
+        Assert.Contains("4 item(s)", outcome.Recap);
+    }
+
+    [Fact]
+    public async Task List_agenda_groups_a_span_by_day()
+    {
+        var sender = new ScriptedSender(List(
+            Item("event", "Reunião", "2026-09-07T14:00:00-03:00", status: "Confirmed"),
+            Item("reminder", "Remédio", "2026-09-08T08:00:00-03:00")));
+
+        var outcome = await new ListAgendaTool(sender).ExecuteAsync(
+            Context, Args("""{ "from": "2026-09-07", "to": "2026-09-08" }"""));
+
+        Assert.Equal(
+            """
+            Agenda de 07/09/2026 a 08/09/2026:
+
+            seg., 07/09
+            • 14:00 Reunião
+
+            ter., 08/09
+            • 08:00 lembrete · Remédio
+            """.ReplaceLineEndings("\n"),
+            outcome.Message);
+    }
+
+    [Fact]
+    public async Task List_agenda_refuses_more_than_a_month()
+    {
+        var sender = new ScriptedSender(List<TodayItemDto>());
+
+        var outcome = await new ListAgendaTool(sender).ExecuteAsync(
+            Context, Args("""{ "from": "2026-09-01", "to": "2026-12-31" }"""));
+
+        Assert.False(outcome.Success);
+        Assert.Empty(sender.Sent);
     }
 }

@@ -23,6 +23,9 @@ internal sealed class FakeAssistantTool : IAssistantTool
     public static FakeAssistantTool Succeeds(string name, string message = "done") =>
         new(name, _ => AssistantCommandOutcome.Ok(message));
 
+    public static FakeAssistantTool Reads(string name, string message, string recap) =>
+        new(name, _ => AssistantCommandOutcome.Ok(message, recap));
+
     public static FakeAssistantTool Fails(string name, string message = "nope") =>
         new(name, _ => AssistantCommandOutcome.Failed(message));
 

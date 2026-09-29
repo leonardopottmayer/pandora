@@ -335,7 +335,9 @@ GET    /assistant/commands               → o catálogo vivo (debug e painel de
   As duas últimas recebem as palavras do usuário e acham o item localmente pelo título (sem acento/caixa,
   prefixo de palavra), então nenhum título sai de casa; vários resultados → a resposta lista e pergunta
   qual. Lembrete recorrente só se adia pelo botão da notificação.
-- Pendente: `list_agenda` — e, junto com as leituras, a decisão sobre dado pessoal saindo de casa (ver §9.2).
+- ✅ `list_agenda` (2026-09-29): eventos, tarefas com prazo e lembretes de um dia ou de um período (até
+  31 dias), sob pedido. A lista é formatada aqui e vai direto para o usuário; o modelo só escolhe a
+  ferramenta e os dias, e o histórico da conversa guarda um resumo sem conteúdo (ver §9.2).
 - OpenAI como segundo provedor (`Ai.Chat.OpenAi` + registro), se houver motivo real além do Gemini.
 - Um conjunto de avaliação com enunciados reais, para que trocar de modelo seja uma decisão medida e
   não um chute.
@@ -349,7 +351,8 @@ GET    /assistant/commands               → o catálogo vivo (debug e painel de
   (#tags e [[links]] funcionam como no editor).
 
 Notes (`search_notes`), Finances (`balance_summary`), resumos
-proativos ("este é o seu dia" toda manhã às 07:00, gerado em vez de templatizado), e recuperação sobre as
+proativos ("este é o seu dia" toda manhã às 07:00 — não por ora: o `list_agenda` sob pedido cobre, e pela
+§9.2 seria templatizado, não gerado), e recuperação sobre as
 Notes para responder perguntas.
 
 ---
@@ -361,10 +364,12 @@ Notes para responder perguntas.
    `ast001` aponta para lá, e a chave é obtida por `IExternalCredentialProvider` — a mesma porta
    síncrona que a Agenda usa para o token do Google. Ver
    [Integrations — OAuth e Credenciais](../../integrations/pt-BR/oauth-and-credentials.md).
-2. **Dado pessoal sai de casa.** Como o provedor é hospedado (Gemini), **todo enunciado sai de casa**, e
-   leituras como `list_agenda` mandariam títulos de eventos para o Google. Sem Ollama, isso não é mais
-   "resolver antes da A5" — vale **agora**. Mínimo para o 1º release: aviso por perfil, e começar com
-   catálogo só de *escrita* (`create_reminder`); leituras entram junto com uma decisão explícita. Ver o
+2. ~~**Dado pessoal sai de casa.**~~ **Decidido (2026-09-29):** o enunciado continua indo para o modelo
+   hospedado (Gemini), mas os dados do usuário não. Uma ferramenta de leitura (`list_agenda`) busca e
+   formata a resposta aqui dentro e responde direto ao usuário; o modelo só escolhe a ferramenta e os
+   argumentos. O histórico reenviado no turno seguinte guarda um resumo sem conteúdo
+   (`AssistantCommandOutcome.Recap`) no lugar da resposta. O custo: respostas de leitura têm formato
+   fixo — o modelo não comenta sobre elas. Um resumo gerado pediria decisão própria. Ver o
    [execution-plan](execution-plan.md#questão-que-subiu-de-prioridade-dado-pessoal-sai-de-casa).
 3. **Streaming.** Desnecessário para executar comandos; útil se um modo conversacional for adicionado. A
    abstração não expõe hoje; adiado.

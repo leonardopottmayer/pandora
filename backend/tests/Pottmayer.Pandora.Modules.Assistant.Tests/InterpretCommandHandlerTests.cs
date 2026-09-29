@@ -101,6 +101,22 @@ public sealed class InterpretCommandHandlerTests
     }
 
     [Fact]
+    public async Task A_read_reply_reaches_the_user_but_the_history_keeps_only_its_recap()
+    {
+        var client = FakeAiChatCompletionClient.RepliesWithToolCall("list_agenda", """{ "from": "2026-09-05" }""");
+        var messages = new FakeMessageRepository();
+        var (handler, _) = Build(
+            client, FakeExternalCredentialProvider.WithKey("k"), EnabledProfile(),
+            new FakeConversationRepository(), messages,
+            [FakeAssistantTool.Reads("list_agenda", "09:00 Dentista", "[list_agenda: 1 item]")]);
+
+        var result = await handler.Handle(Sentence("o que tenho amanhã?"), CancellationToken.None);
+
+        Assert.Equal("09:00 Dentista", result.Value!.Message);
+        Assert.Equal("[list_agenda: 1 item]", messages.Added.Single(m => m.Author == MessageAuthor.Assistant).Content);
+    }
+
+    [Fact]
     public async Task Fails_when_the_assistant_is_not_enabled()
     {
         var client = FakeAiChatCompletionClient.Replies("ok");
