@@ -63,6 +63,40 @@ public sealed class TelegramInboundTriageTests
     }
 
     [Fact]
+    public async Task A_photo_carries_its_caption_and_a_jpeg_mime_type_and_a_document_its_name_and_size()
+    {
+        var chat = new TelegramChat(long.Parse(ChatId), "private");
+        var photo = new TelegramUpdate(40, Message: new TelegramIncomingMessage(
+            1, chat, new TelegramSender(chat.Id), Now, Text: "comprovante", Media: new TelegramMedia(TelegramMediaKind.Photo, "photo-1")));
+        var pdf = new TelegramUpdate(41, Message: new TelegramIncomingMessage(
+            2, chat, new TelegramSender(chat.Id), Now,
+            Media: new TelegramMedia(TelegramMediaKind.Document, "doc-1", "application/pdf", FileSizeBytes: 1234, FileName: "boleto.pdf")));
+
+        await Triage().HandleAsync("assistant", photo, CancellationToken.None);
+        await Triage().HandleAsync("assistant", pdf, CancellationToken.None);
+
+        var events = _bus.Published.Cast<InboundMessageReceived>().ToList();
+        Assert.Equal(("comprovante", "photo-1", "image/jpeg"), (events[0].Text, events[0].MediaRef, events[0].MediaMimeType));
+        Assert.Equal(("doc-1", "application/pdf", "boleto.pdf", 1234L),
+            (events[1].MediaRef, events[1].MediaMimeType, events[1].MediaFileName, events[1].MediaSizeBytes));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("application/octet-stream")]
+    public async Task An_untyped_document_named_pdf_is_a_pdf(string? mimeType)
+    {
+        var chat = new TelegramChat(long.Parse(ChatId), "private");
+        var update = new TelegramUpdate(42, Message: new TelegramIncomingMessage(
+            1, chat, new TelegramSender(chat.Id), Now, Text: "comprovante",
+            Media: new TelegramMedia(TelegramMediaKind.Document, "doc-2", mimeType, FileName: "Comprovante.PDF")));
+
+        await Triage().HandleAsync("assistant", update, CancellationToken.None);
+
+        Assert.Equal("application/pdf", Assert.IsType<InboundMessageReceived>(Assert.Single(_bus.Published)).MediaMimeType);
+    }
+
+    [Fact]
     public async Task The_same_update_id_on_a_different_bot_is_not_deduplicated()
     {
         // update_id is unique per bot, so idempotency is keyed by (provider, bot): the notifications bot

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Pottmayer.Pandora.Modules.Finances.Abstractions;
-using Pottmayer.Pandora.Modules.Finances.Application.Auditing;
+using Pottmayer.Pandora.Modules.Finances.Application.Services;
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
@@ -26,7 +26,8 @@ public sealed class UploadAttachmentCommandHandler(
     {
         var input = request.Input;
 
-        if (input.TransactionId.HasValue == input.PendingTransactionId.HasValue)
+        var owners = Attachment.OwnerCount(input.TransactionId, input.PendingTransactionId, input.CardStatementId);
+        if (owners > 1)
             return Fail(AttachmentErrors.OwnerRequired);
         if (!AttachmentKind.IsSupported(input.Kind))
             return Fail(AttachmentErrors.InvalidKind(input.Kind));
@@ -37,13 +38,9 @@ public sealed class UploadAttachmentCommandHandler(
         if (!IsImageOrPdf(input.ContentType))
             return Fail(AttachmentErrors.UnsupportedType);
 
-        var ownerExists = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
-            input.TransactionId is { } txId
-                ? await ctx.AcquireRepository<ITransactionRepository>().FindByIdForUserAsync(txId, input.UserId, token) is not null
-                : await ctx.AcquireRepository<IPendingTransactionRepository>()
-                    .FindByIdForUserAsync(input.PendingTransactionId!.Value, input.UserId, token) is not null,
-            cancellationToken: ct);
-        if (!ownerExists)
+        if (owners == 1 && !await factory.ExecuteAsync(FinancesModule.DatabaseKey, (ctx, token) =>
+                AttachmentOwners.ExistsAsync(ctx, input.UserId, input.TransactionId, input.PendingTransactionId, input.CardStatementId, token),
+                cancellationToken: ct))
             return Fail(AttachmentErrors.OwnerNotFound);
 
         // Store the bytes first (like object storage: the blob write and its metadata row commit
@@ -53,15 +50,11 @@ public sealed class UploadAttachmentCommandHandler(
         var attachment = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var entity = Attachment.Create(
-                input.UserId, input.TransactionId, input.PendingTransactionId, AttachmentKind.FromValue(input.Kind),
-                input.FileName, input.ContentType, input.Content.Length, fileStorage.Backend, storageKey, timeProvider);
+                input.UserId, input.TransactionId, input.PendingTransactionId, input.CardStatementId,
+                AttachmentKind.FromValue(input.Kind), input.FileName, input.ContentType, input.Content.Length,
+                fileStorage.Backend, storageKey, input.Note, timeProvider);
             await ctx.AcquireRepository<IAttachmentRepository>().AddAsync(entity, token);
-
-            var (entityType, ownerId, eventType) = entity.TransactionId is { } txId
-                ? (TransactionEvents.EntityType, txId, TransactionEvents.AttachmentAdded)
-                : (PendingTransactionEvents.EntityType, entity.PendingTransactionId!.Value, PendingTransactionEvents.AttachmentAdded);
-            await ctx.RecordAsync(input.UserId, input.UserId, entityType, ownerId, eventType, entity.CreatedAt,
-                new { attachmentId = entity.Id, kind = entity.Kind.Value, fileName = entity.FileName }, ct: token);
+            await AttachmentOwners.RecordAsync(ctx, entity, added: true, entity.CreatedAt, token);
             return entity;
         }, cancellationToken: ct);
 

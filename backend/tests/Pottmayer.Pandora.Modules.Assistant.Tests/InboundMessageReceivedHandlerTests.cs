@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using Pottmayer.Pandora.Modules.Assistant.Abstractions.Files;
 using Pottmayer.Pandora.Modules.Assistant.Application.Commands.Interpret;
 using Pottmayer.Pandora.Modules.Assistant.Application.Dtos;
 using Pottmayer.Pandora.Modules.Assistant.Application.Interpret;
@@ -19,6 +20,7 @@ public sealed class InboundMessageReceivedHandlerTests
     private readonly FixedTimeProvider _time = new(Now);
 
     private readonly FakeMediaReader _media = new();
+    private readonly FakeFileQueue _queue = new();
 
     private (InboundMessageReceivedHandler Handler, FakeSender Sender, FakeIntegrationEventBus Bus) Build(
         Result<InterpretResultDto>? response = null)
@@ -29,7 +31,7 @@ public sealed class InboundMessageReceivedHandlerTests
         context.Register<IAssistantProfileRepository>(new FakeAssistantProfileRepository());
         var factory = new FakeUnitOfWorkFactory(context);
         var handler = new InboundMessageReceivedHandler(
-            factory, sender, bus, _media,
+            factory, sender, bus, _media, [_queue],
             new AssistantToolContextResolver(factory, FakeEffectiveTimeZoneResolver.With("America/Sao_Paulo")),
             _time, NullLogger<InboundMessageReceivedHandler>.Instance);
         return (handler, sender, bus);
@@ -43,6 +45,10 @@ public sealed class InboundMessageReceivedHandlerTests
 
     private static InboundMessageReceived Media(string mimeType) =>
         new(Guid.NewGuid(), Now, Guid.NewGuid(), "telegram", "assistant", Text: null, MediaRef: "file-1", MediaMimeType: mimeType);
+
+    private static InboundMessageReceived File(
+        string mimeType, string? caption, string? fileName = null, long? sizeBytes = null) =>
+        new(Guid.NewGuid(), Now, Guid.NewGuid(), "telegram", "assistant", caption, "file-1", mimeType, fileName, sizeBytes);
 
     private static InboundMessageReceived Inbound(string bot, string? text) =>
         new(Guid.NewGuid(), Now, Guid.NewGuid(), "telegram", bot, text, MediaRef: null, MediaMimeType: null);
@@ -177,15 +183,82 @@ public sealed class InboundMessageReceivedHandlerTests
     }
 
     [Fact]
-    public async Task Ignores_non_audio_media_without_text()
+    public async Task A_shared_file_goes_to_the_queue_its_caption_names_without_being_interpreted()
+    {
+        _media.Bytes = [7, 8, 9];
+        var (handler, sender, bus) = Build();
+
+        await handler.HandleAsync(File("application/pdf", "Comprovante luz setembro", "pix.pdf"));
+
+        Assert.Empty(sender.Sent);
+        var file = Assert.Single(_queue.Received);
+        Assert.Equal(("pix.pdf", "application/pdf", "Comprovante luz setembro"), (file.FileName, file.ContentType, file.Caption));
+        Assert.Equal(new byte[] { 7, 8, 9 }, file.Content);
+        var reply = Assert.IsType<SendAssistantReply>(Assert.Single(bus.Published));
+        Assert.Equal("📎 Na fila do Finances: pix.pdf. Atribua pelo app.", reply.Text);
+    }
+
+    [Fact]
+    public async Task Caption_keywords_match_without_accents_and_a_photo_gets_a_name()
+    {
+        var (handler, _, _) = Build();
+
+        await handler.HandleAsync(File("image/jpeg", "Finanças!"));
+
+        Assert.Equal("telegram-20260101-120000.jpg", Assert.Single(_queue.Received).FileName);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("olha isso")]
+    public async Task A_file_whose_caption_names_no_queue_is_not_downloaded_and_the_reply_asks_where(string? caption)
     {
         var (handler, sender, bus) = Build();
 
-        await handler.HandleAsync(Media("image/jpeg"));
+        await handler.HandleAsync(File("image/jpeg", caption));
 
         Assert.Null(_media.Opened);
         Assert.Empty(sender.Sent);
-        Assert.Empty(bus.Published);
+        Assert.Empty(_queue.Received);
+        var reply = Assert.IsType<SendAssistantReply>(Assert.Single(bus.Published));
+        Assert.Contains("“comprovante”, “boleto”, “financeiro”", reply.Text);
+    }
+
+    [Fact]
+    public async Task Only_images_and_pdfs_are_kept()
+    {
+        var (handler, _, bus) = Build();
+
+        await handler.HandleAsync(File("video/mp4", "financeiro"));
+
+        Assert.Null(_media.Opened);
+        Assert.Empty(_queue.Received);
+        Assert.Equal("📎 Só guardo imagens e PDFs.", Assert.IsType<SendAssistantReply>(Assert.Single(bus.Published)).Text);
+    }
+
+    [Fact]
+    public async Task A_file_larger_than_a_bot_may_download_is_refused_before_downloading()
+    {
+        var (handler, _, bus) = Build();
+
+        await handler.HandleAsync(File("application/pdf", "boleto", "big.pdf", SharedFile.MaxBytes + 1));
+
+        Assert.Null(_media.Opened);
+        Assert.Empty(_queue.Received);
+        Assert.StartsWith("📎 Arquivo grande demais", Assert.IsType<SendAssistantReply>(Assert.Single(bus.Published)).Text);
+    }
+
+    private sealed class FakeFileQueue : IAssistantFileQueue
+    {
+        public List<SharedFile> Received { get; } = [];
+        public string Name => "Finances";
+        public IReadOnlyList<string> Keywords { get; } = ["comprovante", "boleto", "financeiro", "financas"];
+
+        public Task<bool> EnqueueAsync(SharedFile file, CancellationToken ct = default)
+        {
+            Received.Add(file);
+            return Task.FromResult(true);
+        }
     }
 
     private sealed class FakeMediaReader : IInboundMediaReader

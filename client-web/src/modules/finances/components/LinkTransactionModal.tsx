@@ -15,6 +15,9 @@ interface LinkTransactionModalProps {
   /** Restricts the candidate list to a single account, when the suggestion targets one. */
   accountId?: string | null
   loading?: boolean
+  /** Defaults to the import wording ("Link to an existing transaction"). */
+  title?: string
+  okText?: string
   onClose: () => void
   onPick: (transactionId: string) => void
 }
@@ -25,6 +28,8 @@ export function LinkTransactionModal({
   defaultSearch,
   accountId,
   loading,
+  title,
+  okText,
   onClose,
   onPick,
 }: LinkTransactionModalProps) {
@@ -76,10 +81,10 @@ export function LinkTransactionModal({
   return (
     <Modal
       open={open}
-      title={t('finances.imports.linkTitle')}
+      title={title ?? t('finances.imports.linkTitle')}
       onCancel={onClose}
       onOk={() => selected && onPick(selected)}
-      okText={t('finances.imports.linkConfirm')}
+      okText={okText ?? t('finances.imports.linkConfirm')}
       okButtonProps={{ disabled: !selected, loading }}
       cancelText={t('common.cancel')}
       width={640}

@@ -104,8 +104,9 @@ recurso de outro usuário retorna **404** (não 403). Os controllers ficam em `P
 
 | Método | Rota | Propósito |
 |---|---|---|
-| GET | `/attachments?transactionId=` · `?pendingTransactionId=` | Anexos de um dono, mais antigos primeiro |
-| POST | `/attachments` | `multipart/form-data`: `file` (imagem ou PDF, ≤ 25 MB), `kind`, e `transactionId` **ou** `pendingTransactionId` |
+| GET | `/attachments?transactionId=` · `?pendingTransactionId=` · `?cardStatementId=` · `?queued=true` | Anexos de um dono, ou a fila, mais antigos primeiro |
+| POST | `/attachments` | `multipart/form-data`: `file` (imagem ou PDF, ≤ 25 MB), `kind`, e no máximo um de `transactionId` · `pendingTransactionId` · `cardStatementId` (nenhum põe na fila) |
+| POST | `/attachments/{id}/assign` | Atribui um anexo da fila: `{ transactionId }` · `{ pendingTransactionId }` · `{ cardStatementId }`; 409 se já tem dono |
 | GET | `/attachments/{id}` | Os bytes, inline, com o content type e o nome guardados |
 | DELETE | `/attachments/{id}` | Remove o anexo e os bytes |
 

@@ -237,6 +237,19 @@ as 16 kHz mono WAV — browsers record webm/ogg/mp4, and WAV is a format every p
 accepts — and uploads it to `POST /assistant/interpret/audio` as multipart. From there it takes the
 same path as a Telegram voice note (`InterpretInput.Audio`).
 
+### 4.4.1 Shared files
+
+**Built (Telegram, 2026-10-03).** Any other file on the assistant bot — an image or a PDF, e.g. a bank
+receipt shared from the bank's app — is **not interpreted** and never reaches the model. Its caption names
+a module queue: modules contribute an `IAssistantFileQueue` (Assistant.Abstractions) with keywords matched
+against the caption's words, lowercase and without accents. Finances is the only one today
+(`comprovante`, `boleto`, `financeiro`, `finanças`, `fatura`, `nota fiscal`…); the words also pick the
+attachment kind. The file lands unassigned in that module (`fin017` with no owner, the caption as its note)
+and the user files it from the app. A file with no recognizable caption is not downloaded and the reply
+asks where it goes; anything but an image/PDF, or over Telegram's 20 MB bot limit, is refused with a reply.
+Photos arrive without a MIME type or a name: Channels sets `image/jpeg`, and the file is named
+`telegram-<timestamp>.jpg`.
+
 ### 4.5 Prompting
 
 A single system prompt, versioned in source, carrying: the user's current local time and IANA zone,

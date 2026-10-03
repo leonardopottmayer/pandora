@@ -19,9 +19,13 @@ public static class AttachmentErrors
     public static Error InvalidKind(string kind) =>
         Error.Validation("Attachments.InvalidKind", $"Attachment kind '{kind}' is not supported.");
 
-    /// <summary>Neither or both of transaction and pending transaction were given.</summary>
+    /// <summary>More than one owner was given (or none, where one is needed).</summary>
     public static Error OwnerRequired =>
-        Error.Validation("Attachments.OwnerRequired", "Attach the file to either a transaction or a pending transaction.");
+        Error.Validation("Attachments.OwnerRequired", "Attach the file to one transaction, pending transaction or statement.");
+
+    /// <summary>Only a queued attachment (no owner yet) can be assigned.</summary>
+    public static Error AlreadyAssigned =>
+        Error.Conflict("Attachments.AlreadyAssigned", "The file is already attached to something.");
 
     /// <summary>The owner does not exist or is not the user's (404-on-foreign-resource rule).</summary>
     public static Error OwnerNotFound =>

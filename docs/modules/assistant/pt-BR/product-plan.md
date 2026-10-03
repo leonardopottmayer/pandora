@@ -234,6 +234,18 @@ mono — navegadores gravam webm/ogg/mp4, e WAV é um formato que a entrada de �
 — e sobe como multipart para `POST /assistant/interpret/audio`. Dali segue o mesmo caminho do áudio do
 Telegram (`InterpretInput.Audio`).
 
+### 4.4.1 Arquivos compartilhados
+
+**Pronto (Telegram, 2026-10-03).** Qualquer outro arquivo no bot do assistente — uma imagem ou um PDF, ex.:
+um comprovante compartilhado pelo app do banco — **não é interpretado** e nunca chega ao modelo. A legenda
+nomeia a fila de um módulo: os módulos contribuem um `IAssistantFileQueue` (Assistant.Abstractions) com
+palavras-chave comparadas às palavras da legenda, minúsculas e sem acento. Hoje só o Finances
+(`comprovante`, `boleto`, `financeiro`, `finanças`, `fatura`, `nota fiscal`…); as palavras também escolhem o
+tipo do anexo. O arquivo cai sem dono naquele módulo (`fin017` sem dono, a legenda como nota) e o usuário o
+atribui pelo app. Sem legenda reconhecível o arquivo nem é baixado e a resposta pergunta para onde vai; o que
+não for imagem/PDF, ou passar do limite de 20 MB do Telegram para bots, é recusado com resposta. Fotos chegam
+sem MIME type nem nome: o Channels põe `image/jpeg`, e o arquivo vira `telegram-<timestamp>.jpg`.
+
 ### 4.5 Prompting
 
 Um único system prompt, versionado no código, carregando: a hora local atual do usuário e o fuso IANA, o

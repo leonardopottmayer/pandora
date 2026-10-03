@@ -12,7 +12,7 @@ internal static class PendingAttachments
     public static async Task MoveToTransactionAsync(
         IAttachmentRepository attachments, Guid userId, Guid pendingTransactionId, Guid transactionId, CancellationToken ct)
     {
-        foreach (var attachment in await attachments.GetByOwnerAsync(userId, null, pendingTransactionId, ct))
+        foreach (var attachment in await attachments.GetByOwnerAsync(userId, null, pendingTransactionId, null, ct))
         {
             attachment.MoveToTransaction(transactionId);
             await attachments.UpdateAsync(attachment, ct);

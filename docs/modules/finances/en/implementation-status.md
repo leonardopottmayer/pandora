@@ -18,7 +18,7 @@ to tell the difference between "documented because it exists" and "documented as
 | **Cards & statements** | Card CRUD, statement lifecycle, resolver, pay, **settle (write-off)**, close, **reopen**, available limit (`fin006`, `fin007`). |
 | **Installments** | Manual plans only, cent split, void single/plan (`fin009`). Import-inferred plans + projections are **not** implemented — see below. |
 | **Tags** | Tag CRUD + polymorphic links (`fin004`, `fin005`). |
-| **Attachments** | Images/PDFs on a transaction or a suggestion, typed (boleto, receipt, invoice, other); a suggestion's files move to its transaction on approval (`fin017`, `fin018`). |
+| **Attachments** | Images/PDFs on a transaction, a suggestion or a statement, typed (boleto, receipt, invoice, other); a suggestion's files move to its transaction on approval. Files shared with the Telegram assistant bot (captioned "comprovante", "boleto", "financeiro"…) wait in a queue on the inbox until filed (`fin017`, `fin018`). |
 | **Recurrences & inbox** | Recurring templates + rule engine, staging inbox, approve/reject/link/transfer-from-pending, generation job (`fin010`, `fin011`). |
 | **Imports** | OFX **and** CSV, seeded bank layouts + auto-detection, three-level dedup/reconciliation, installment-marker extraction into `parsed_payload`/`ImportRow` (number/count only — no plan matching), cutoff date, retry (`fin012`–`fin014`). |
 | **Reversibility** | Void, unvoid, reverse (all cases), delete guards on account/card. |

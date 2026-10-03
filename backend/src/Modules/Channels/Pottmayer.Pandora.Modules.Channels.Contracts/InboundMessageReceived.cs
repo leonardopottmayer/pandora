@@ -1,4 +1,4 @@
-using Pottmayer.Tars.Messaging.Abstractions;
+﻿using Pottmayer.Tars.Messaging.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Channels.Contracts;
 
@@ -11,6 +11,8 @@ namespace Pottmayer.Pandora.Modules.Channels.Contracts;
 /// The inbound route the message arrived on — the bot name for Telegram (e.g. <c>notifications</c>,
 /// <c>assistant</c>). Lets a subscriber act only on its own route without learning the transport.
 /// </param>
+/// <param name="MediaFileName">The file's name when the sender's app gave one (documents do; photos do not).</param>
+/// <param name="MediaSizeBytes">The media's size when known, so a subscriber can refuse it before downloading.</param>
 public sealed record InboundMessageReceived(
     Guid EventId,
     DateTimeOffset OccurredAt,
@@ -19,4 +21,6 @@ public sealed record InboundMessageReceived(
     string Bot,
     string? Text,
     string? MediaRef,
-    string? MediaMimeType) : IIntegrationEvent;
+    string? MediaMimeType,
+    string? MediaFileName = null,
+    long? MediaSizeBytes = null) : IIntegrationEvent;

@@ -6,15 +6,32 @@ namespace Pottmayer.Pandora.Modules.Finances.Tests;
 
 public sealed class AttachmentTests
 {
-    private static Attachment Create(Guid? transactionId, Guid? pendingTransactionId) =>
-        Attachment.Create(Guid.NewGuid(), transactionId, pendingTransactionId, AttachmentKind.Bill,
-            "boleto.pdf", "application/pdf", 10, "Database", "key", TimeProvider.System);
+    private static Attachment Create(Guid? transactionId, Guid? pendingTransactionId, Guid? cardStatementId = null) =>
+        Attachment.Create(Guid.NewGuid(), transactionId, pendingTransactionId, cardStatementId, AttachmentKind.Bill,
+            "boleto.pdf", "application/pdf", 10, "Database", "key", note: null, TimeProvider.System);
 
     [Fact]
-    public void Belongs_to_exactly_one_owner()
+    public void Belongs_to_at_most_one_owner()
     {
-        Assert.Throws<ArgumentException>(() => Create(null, null));
         Assert.Throws<ArgumentException>(() => Create(Guid.NewGuid(), Guid.NewGuid()));
+        Assert.Throws<ArgumentException>(() => Create(null, Guid.NewGuid(), Guid.NewGuid()));
+        Assert.False(Create(null, null, Guid.NewGuid()).IsQueued);
+    }
+
+    [Fact]
+    public void With_no_owner_it_waits_in_the_queue_until_assigned_to_exactly_one()
+    {
+        var attachment = Create(null, null);
+        Assert.True(attachment.IsQueued);
+        Assert.Throws<ArgumentException>(() => attachment.AssignTo(null, null, null));
+        Assert.Throws<ArgumentException>(() => attachment.AssignTo(Guid.NewGuid(), null, Guid.NewGuid()));
+
+        var statement = Guid.NewGuid();
+        attachment.AssignTo(null, null, statement);
+
+        Assert.False(attachment.IsQueued);
+        Assert.Equal(statement, attachment.CardStatementId);
+        Assert.Throws<InvalidOperationException>(() => attachment.AssignTo(Guid.NewGuid(), null, null));
     }
 
     [Fact]

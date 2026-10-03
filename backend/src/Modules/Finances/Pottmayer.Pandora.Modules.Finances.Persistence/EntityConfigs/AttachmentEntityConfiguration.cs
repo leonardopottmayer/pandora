@@ -18,6 +18,7 @@ internal sealed class AttachmentEntityConfiguration : IEntityTypeConfiguration<A
         builder.Property(a => a.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(a => a.TransactionId).HasColumnName("transaction_id");
         builder.Property(a => a.PendingTransactionId).HasColumnName("pending_transaction_id");
+        builder.Property(a => a.CardStatementId).HasColumnName("card_statement_id");
         builder.Property(a => a.Kind)
                .HasColumnName("kind")
                .HasMaxLength(20)
@@ -28,9 +29,11 @@ internal sealed class AttachmentEntityConfiguration : IEntityTypeConfiguration<A
         builder.Property(a => a.SizeBytes).HasColumnName("size_bytes").IsRequired();
         builder.Property(a => a.StorageBackend).HasColumnName("storage_backend").HasMaxLength(50).IsRequired();
         builder.Property(a => a.StorageKey).HasColumnName("storage_key").HasMaxLength(1024).IsRequired();
+        builder.Property(a => a.Note).HasColumnName("note").HasMaxLength(500);
         builder.Property(a => a.CreatedAt).HasColumnName("created_at").IsRequired();
 
         builder.HasIndex(a => a.TransactionId).HasDatabaseName("ix_fin017_transaction_id");
         builder.HasIndex(a => a.PendingTransactionId).HasDatabaseName("ix_fin017_pending_transaction_id");
+        builder.HasIndex(a => a.CardStatementId).HasDatabaseName("ix_fin017_card_statement_id");
     }
 }

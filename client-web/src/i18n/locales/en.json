@@ -849,7 +849,14 @@
       "openError": "Could not open the file.",
       "deleteConfirm": "Remove this attachment?",
       "deleted": "Attachment removed.",
-      "deleteError": "Could not remove the attachment."
+      "deleteError": "Could not remove the attachment.",
+      "queueTitle": "Files to file",
+      "queueHint": "Files you shared with the Telegram bot. File one under a transaction here, or under a suggestion or a statement from its own 📎.",
+      "fromQueue": "From the queue ({{count}})",
+      "assign": "File it",
+      "assignTitle": "File \"{{name}}\" under a transaction",
+      "assigned": "File attached.",
+      "assignError": "Could not attach the file."
     }
   },
   "notes": {

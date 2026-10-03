@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
+using Pottmayer.Pandora.Modules.Assistant.Abstractions.Files;
 using Pottmayer.Pandora.Modules.Finances.Application.Assistant;
 using Pottmayer.Pandora.Modules.Finances.Application.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Services;
@@ -22,6 +23,7 @@ public static class ApplicationDI
         services.AddScoped<IAssistantTool, AccountBalancesTool>();
         services.AddScoped<IAssistantTool, ListCardsTool>();
         services.AddScoped<IAssistantTool, ListInboxTool>();
+        services.AddScoped<IAssistantFileQueue, FinancesFileQueue>();
 
         return services;
     }

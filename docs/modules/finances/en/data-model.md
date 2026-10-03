@@ -29,7 +29,7 @@ Migrations live in `migrations/migrations/finances/`.
 | fin014 | `import_row` | Parsed rows |
 | fin015 | *(reserved)* | Categorization rules — **not yet implemented** |
 | fin016 | `audit_event` | Append-only audit log |
-| fin017 | `attachment` | Files on a transaction or a suggestion (boleto, receipt, invoice) |
+| fin017 | `attachment` | Files on a transaction, a suggestion or a statement (boleto, receipt, invoice), or queued |
 | fin018 | `file_blob` | The bytes behind fin017 |
 
 ---
@@ -277,8 +277,11 @@ FKs to fin011/fin008 are **logical only** (no physical FK) to avoid cross-import
 
 ## fin017_attachment / fin018_file_blob — attachments
 
-A file (image or PDF, up to 25 MB) on **exactly one** of `transaction_id` (fin008) or
-`pending_transaction_id` (fin011) — `ck_fin017_one_owner`. `kind` ∈ `bill` · `receipt` · `invoice` · `other`.
+A file (image or PDF, up to 25 MB) on **at most one** of `transaction_id` (fin008),
+`pending_transaction_id` (fin011) or `card_statement_id` (fin007) — `ck_fin017_one_owner`. With none it is
+**queued**: a file shared with the assistant bot (`FinancesFileQueue`), waiting for the user to file it
+(`POST /attachments/{id}/assign`, once); `note` keeps the caption it came with, and the partial index
+`ix_fin017_queued` serves the queue. `kind` ∈ `bill` · `receipt` · `invoice` · `other`.
 `storage_backend` + `storage_key` say where the bytes are: today `Database`, a row id in `fin018_file_blob`
 (the module's own blob table, through the shared `IFileStorage` keyed `finances`); rows written before an
 S3 backend keep reading from the database with no migration.
@@ -286,7 +289,8 @@ S3 backend keep reading from the database with no migration.
 A month's boleto is attached to the suggestion its recurrence produced; **approving**, **linking** or
 **transferring** the suggestion moves its attachments to the transaction, where the receipt joins them.
 Rejecting keeps them on the rejected suggestion. Transactions are never hard-deleted (void keeps the
-files). Adding/removing records `transaction.attachment-added|removed` (or `pending.…`) on the owner.
+files). Adding/removing (and filing a queued file) records `transaction.attachment-added|removed` (or
+`pending.…`, `statement.…`) on the owner; a queued file has no owner and no trail.
 
 ## fin016_audit_event — append-only
 
@@ -324,4 +328,5 @@ erDiagram
     TRANSACTION ||--o{ TAG_LINK : "polymorphic"
     TRANSACTION ||--o{ ATTACHMENT : "files"
     PENDING_TRANSACTION ||--o{ ATTACHMENT : "files (move on approval)"
+    CARD_STATEMENT ||--o{ ATTACHMENT : "files"
 ```

@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Pottmayer.Pandora.IntegrationTests.Support;
+using Pottmayer.Pandora.Modules.Assistant.Abstractions.Files;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.RunRecurrenceGeneration;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using Xunit;
@@ -13,7 +14,8 @@ namespace Pottmayer.Pandora.IntegrationTests.Modules.Finances;
 /// <summary>
 /// Covers files attached to transactions: the round-trip on a transaction, the month's boleto on a
 /// recurrence's suggestion following it onto the approved transaction, the type/owner guards, another
-/// user's attachment staying out of reach, and the bytes landing in finances' own blob table.
+/// user's attachment staying out of reach, the bytes landing in finances' own blob table, and a file shared
+/// with the assistant bot waiting in the queue until it is filed.
 /// </summary>
 [Collection("Integration")]
 public sealed class AttachmentsTests : IAsyncLifetime
@@ -94,7 +96,7 @@ public sealed class AttachmentsTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Only_images_and_pdfs_with_a_known_kind_on_exactly_one_owner_are_accepted()
+    public async Task Only_images_and_pdfs_with_a_known_kind_on_at_most_one_owner_are_accepted()
     {
         await AuthAsync("fin-attach3");
         var account = await CreateAccountAsync();
@@ -105,7 +107,7 @@ public sealed class AttachmentsTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.UnprocessableEntity,
             (await UploadAsync(Png, "x.png", "image/png", "selfie", transactionId: tx)).status);
         Assert.Equal(HttpStatusCode.UnprocessableEntity,
-            (await UploadAsync(Png, "x.png", "image/png", "receipt")).status);
+            (await UploadAsync(Png, "x.png", "image/png", "receipt", transactionId: tx, pendingTransactionId: Guid.NewGuid())).status);
         Assert.Equal(HttpStatusCode.NotFound,
             (await UploadAsync(Png, "x.png", "image/png", "receipt", transactionId: Guid.NewGuid())).status);
     }
@@ -124,7 +126,47 @@ public sealed class AttachmentsTests : IAsyncLifetime
         Assert.Empty(await ListAsync($"transactionId={tx}"));
     }
 
+    [Fact]
+    public async Task A_file_shared_with_the_bot_waits_in_the_queue_until_it_is_filed_once()
+    {
+        await AuthAsync("fin-attach6");
+        var account = await CreateAccountAsync();
+        var tx = await CreateTransactionAsync(account);
+        var userId = await UserIdAsync("fin-attach6@example.com");
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var queue = scope.ServiceProvider.GetServices<IAssistantFileQueue>().Single();
+            Assert.True(await queue.EnqueueAsync(
+                new SharedFile(userId, "pix.pdf", "application/pdf", Pdf, "Comprovante luz setembro")));
+        }
+
+        var queued = Assert.Single(await ListAsync("queued=true"));
+        Assert.Equal(("receipt", "Comprovante luz setembro"), (queued.Kind, queued.Note));
+        Assert.Null(queued.TransactionId);
+
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await AssignAsync(queued.Id, new { cardStatementId = Guid.NewGuid() })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await AssignAsync(queued.Id, new { transactionId = tx })).StatusCode);
+
+        Assert.Empty(await ListAsync("queued=true"));
+        Assert.Equal(queued.Id, Assert.Single(await ListAsync($"transactionId={tx}")).Id);
+        Assert.Equal(HttpStatusCode.Conflict, (await AssignAsync(queued.Id, new { transactionId = tx })).StatusCode);
+    }
+
     // ── helpers ──
+
+    private Task<HttpResponseMessage> AssignAsync(Guid id, object owner) =>
+        _client.PostAsJsonAsync($"{Url}/{id}/assign", owner);
+
+    private async Task<Guid> UserIdAsync(string email)
+    {
+        await using var conn = new NpgsqlConnection(_factory.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new NpgsqlCommand("SELECT id FROM identity.idt001_user WHERE email = $1", conn);
+        cmd.Parameters.AddWithValue(email);
+        return (Guid)(await cmd.ExecuteScalarAsync())!;
+    }
 
     private Task AuthAsync(string username) =>
         IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, $"{username}@example.com", username);
@@ -209,5 +251,6 @@ public sealed class AttachmentsTests : IAsyncLifetime
     private sealed record IdNode(Guid Id);
     private sealed record TxNode(Guid Id, int AttachmentCount);
     private sealed record PendingNode(Guid Id, int AttachmentCount);
-    private sealed record AttachmentNode(Guid Id, Guid? TransactionId, Guid? PendingTransactionId, string Kind, string Url);
+    private sealed record AttachmentNode(
+        Guid Id, Guid? TransactionId, Guid? PendingTransactionId, string Kind, string? Note, string Url);
 }

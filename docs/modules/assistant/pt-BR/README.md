@@ -36,7 +36,7 @@ tópico que os outros módulos usam (ver ex. [Identity](../../identity/pt-BR/REA
 ## Fatos rápidos
 
 - **Backend:** módulo não iniciado. O product plan aponta para uma nova família `Pottmayer.Pandora.Modules.Assistant.*`. O transporte `Tars.Ai` (chat + Gemini) já está implementado (uncommitted).
-- **Superfícies:** Telegram (texto + notas de voz), barra de comando web.
+- **Superfícies:** Telegram (texto + notas de voz; arquivos com legenda vão para a fila de um módulo), barra de comando web.
 - **Provedor de LLM:** Gemini (hospedado), atrás de uma porta com keyed DI; OpenAI é adição futura. Ollama/local foi abandonado.
 - **Primeira fatia de execução:** Gemini via `Tars.Ai`, chave guardada por usuário no Integrations; primeira superfície é a barra de comando web, primeiro comando é o `create_reminder` da Agenda. Ver [execution-plan.md](execution-plan.md).
 - **Depende de:** [Mensageria](../../../architecture/pt-BR/messaging.md) (assincronia sem broker, §3), [Agenda](../../agenda/pt-BR/README.md), [Integrations](../../integrations/pt-BR/README.md) (a chave da API do Gemini: `ast001.credential_ref` → `int001_external_account`).

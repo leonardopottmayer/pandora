@@ -99,9 +99,22 @@ public sealed class TelegramInboundTriage(
         var media = message.Media;
         var evt = new InboundMessageReceived(
             Guid.CreateVersion7(), timeProvider.GetUtcNow(), userId.Value, Provider, bot,
-            message.Text, media?.FileId, media?.MimeType);
+            message.Text, media?.FileId, MimeTypeOf(media), media?.FileName, media?.FileSizeBytes);
         return new Outcome(InboundClassification.Message, userId, evt);
     }
+
+    /// <summary>
+    /// Telegram re-encodes every photo as JPEG and sends it without a MIME type. A document's MIME type is
+    /// optional too (some apps share a PDF untyped or as <c>application/octet-stream</c>), so a <c>.pdf</c>
+    /// name stands in for it.
+    /// </summary>
+    private static string? MimeTypeOf(TelegramMedia? media) => media switch
+    {
+        { Kind: TelegramMediaKind.Photo, MimeType: null } => "image/jpeg",
+        { MimeType: null or "application/octet-stream", FileName: { } name }
+            when name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) => "application/pdf",
+        _ => media?.MimeType
+    };
 
     private async Task<Outcome> HandleCommandAsync(
         ITelegramClient client, string chatId, TelegramIncomingMessage message, string command, string? argument, CancellationToken ct)

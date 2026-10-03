@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions;
+using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
+using Pottmayer.Pandora.Modules.Assistant.Abstractions.Files;
 using Pottmayer.Pandora.Modules.Assistant.Application.Commands.Interpret;
 using Pottmayer.Pandora.Modules.Assistant.Application.Dtos;
 using Pottmayer.Pandora.Modules.Assistant.Application.Interpret;
@@ -26,13 +28,16 @@ namespace Pottmayer.Pandora.Modules.Assistant.Application.Subscribers;
 /// Telegram continues one begun on the web, and vice versa. A voice note is downloaded through Channels'
 /// <see cref="IInboundMediaReader"/> and handed to the pipeline to transcribe; the reply echoes what was
 /// heard. A call held for confirmation gets Confirm / Cancel buttons, answered by
-/// <see cref="AssistantInteractionReceivedHandler"/>.
+/// <see cref="AssistantInteractionReceivedHandler"/>. Any other file (an image or a PDF — a receipt, a
+/// boleto) is not interpreted: its caption names the module queue it goes to (<see cref="IAssistantFileQueue"/>),
+/// and the user files it there from the app.
 /// </remarks>
 public sealed class InboundMessageReceivedHandler(
     IUnitOfWorkFactory factory,
     ISender sender,
     IIntegrationEventBus bus,
     IInboundMediaReader media,
+    IEnumerable<IAssistantFileQueue> fileQueues,
     AssistantToolContextResolver contexts,
     TimeProvider timeProvider,
     ILogger<InboundMessageReceivedHandler> logger)
@@ -43,14 +48,22 @@ public sealed class InboundMessageReceivedHandler(
         if (!string.Equals(@event.Bot, AssistantModule.Name, StringComparison.OrdinalIgnoreCase))
             return;
 
+        var isAudio = @event.MediaMimeType?.StartsWith("audio/", StringComparison.OrdinalIgnoreCase) == true;
+        if (@event.MediaRef is not null && !isAudio)
+        {
+            var context = await contexts.ResolveAsync(@event.UserId, cancellationToken);
+            await ReplyAsync(@event.UserId, await QueueFileAsync(@event, context, cancellationToken), null, cancellationToken);
+            return;
+        }
+
         ChatAttachment? audio = null;
         if (string.IsNullOrWhiteSpace(@event.Text))
         {
-            // Only voice/audio is understood without text; photos and documents are not handled yet.
-            if (@event.MediaRef is null || @event.MediaMimeType?.StartsWith("audio/", StringComparison.OrdinalIgnoreCase) != true)
+            if (@event.MediaRef is null)
                 return;
 
-            audio = await ReadAudioAsync(@event, cancellationToken);
+            audio = new ChatAttachment(
+                await ReadMediaAsync(@event, InterpretCommandHandler.MaxAudioBytes, cancellationToken), @event.MediaMimeType!);
         }
 
         var result = await sender.Send(
@@ -104,10 +117,55 @@ public sealed class InboundMessageReceivedHandler(
     }
 
     /// <summary>
-    /// Reads the voice note into memory, stopping one byte past the pipeline's limit so an oversized note
-    /// is refused there (with a reply in the user's language) without buffering all of it.
+    /// Parks a shared file in the queue its caption names and says where it went — or why it did not:
+    /// not an image or PDF, no queue named, or larger than a bot may download.
     /// </summary>
-    private async Task<ChatAttachment> ReadAudioAsync(InboundMessageReceived @event, CancellationToken ct)
+    private async Task<string> QueueFileAsync(InboundMessageReceived @event, AssistantToolContext context, CancellationToken ct)
+    {
+        var contentType = @event.MediaMimeType ?? "application/octet-stream";
+        if (!SharedFile.IsSupported(contentType))
+            return context.Text("📎 Só guardo imagens e PDFs.", "📎 I only keep images and PDFs.");
+
+        var caption = @event.Text?.Trim() ?? string.Empty;
+        var words = SharedFile.WordsOf(caption);
+        var queue = fileQueues.FirstOrDefault(q => q.Keywords.Any(words.Contains));
+        if (queue is null)
+        {
+            var examples = string.Join(", ", fileQueues.SelectMany(q => q.Keywords.Take(3)).Select(k => $"“{k}”"));
+            return context.Text(
+                $"📎 Para onde vai esse arquivo? Mande de novo com uma legenda dizendo — por exemplo: {examples}.",
+                $"📎 Where does this file go? Send it again with a caption saying so — e.g. {examples}.");
+        }
+
+        var tooLarge = context.Text(
+            "📎 Arquivo grande demais: o Telegram só entrega arquivos de até 20 MB a bots.",
+            "📎 That file is too large: Telegram only hands bots files up to 20 MB.");
+        if (@event.MediaSizeBytes > SharedFile.MaxBytes)
+            return tooLarge;
+
+        var content = await ReadMediaAsync(@event, SharedFile.MaxBytes, ct);
+        if (content.Length > SharedFile.MaxBytes)
+            return tooLarge;
+
+        var file = new SharedFile(@event.UserId, @event.MediaFileName ?? DefaultFileName(contentType), contentType, content, caption);
+        return await queue.EnqueueAsync(file, ct)
+            ? context.Text($"📎 Na fila do {queue.Name}: {file.FileName}. Atribua pelo app.",
+                $"📎 Queued in {queue.Name}: {file.FileName}. File it from the app.")
+            : context.Text("📎 Não consegui guardar o arquivo.", "📎 I couldn't keep that file.");
+    }
+
+    /// <summary>A photo comes without a name: <c>telegram-20261003-143000.jpg</c>.</summary>
+    private string DefaultFileName(string contentType)
+    {
+        var extension = contentType[(contentType.IndexOf('/') + 1)..] switch { "jpeg" => "jpg", var other => other };
+        return $"telegram-{timeProvider.GetUtcNow():yyyyMMdd-HHmmss}.{extension}";
+    }
+
+    /// <summary>
+    /// Reads the media into memory, stopping one byte past <paramref name="limit"/> so an oversized file is
+    /// refused (with a reply in the user's language) without buffering all of it.
+    /// </summary>
+    private async Task<byte[]> ReadMediaAsync(InboundMessageReceived @event, long limit, CancellationToken ct)
     {
         await using var stream = await media.OpenAsync(@event.Channel, @event.Bot, @event.MediaRef!, ct);
         using var buffer = new MemoryStream();
@@ -116,11 +174,11 @@ public sealed class InboundMessageReceivedHandler(
         while ((read = await stream.ReadAsync(chunk, ct)) > 0)
         {
             buffer.Write(chunk, 0, read);
-            if (buffer.Length > InterpretCommandHandler.MaxAudioBytes)
+            if (buffer.Length > limit)
                 break;
         }
 
-        return new ChatAttachment(buffer.ToArray(), @event.MediaMimeType!);
+        return buffer.ToArray();
     }
 
     /// <summary>

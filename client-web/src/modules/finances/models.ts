@@ -328,17 +328,27 @@ export interface PendingTransactionDto {
 
 export type AttachmentKind = 'bill' | 'receipt' | 'invoice' | 'other'
 
-/** Where a file is attached: a transaction or an inbox suggestion, never both. */
-export type AttachmentOwner = { transactionId: string } | { pendingTransactionId: string }
+/**
+ * Where a file is attached — one transaction, inbox suggestion or card statement — or the queue of files
+ * shared with the assistant bot, waiting to be filed under one of them.
+ */
+export type AttachmentOwner =
+  | { transactionId: string }
+  | { pendingTransactionId: string }
+  | { cardStatementId: string }
+  | { queued: true }
 
 export interface AttachmentDto {
   id: string
   transactionId: string | null
   pendingTransactionId: string | null
+  cardStatementId: string | null
   kind: AttachmentKind
   fileName: string
   contentType: string
   sizeBytes: number
+  /** What the user wrote with the file when they shared it with the bot. */
+  note: string | null
   /** Authenticated path of the bytes; fetch it through the API client (see `openAttachment`). */
   url: string
   createdAt: string

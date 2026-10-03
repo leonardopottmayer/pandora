@@ -9,9 +9,11 @@ import { kindDirection, transactionKindLabelKey } from '../../lib/enums'
 import { formatDate } from '../../lib/format'
 import { CurrencyAmount } from '../../components/CurrencyAmount'
 import { AttachmentsModal } from '../../components/AttachmentsModal'
+import { AttachmentsPanel } from '../../components/AttachmentsPanel'
 import { TransactionDetailModal } from '../../components/TransactionDetailModal'
 import { LinkTransactionModal } from '../../components/LinkTransactionModal'
 import { useAccountNames } from '../../hooks/useAccounts'
+import { useAttachments } from '../../hooks/useAttachments'
 import { useCardNames } from '../../hooks/useCards'
 import { useCategoryNames } from '../../hooks/useCategories'
 import {
@@ -39,6 +41,7 @@ export function InboxPage() {
   const [attachmentsFor, setAttachmentsFor] = useState<string | null>(null)
 
   const { data, isLoading } = usePendingTransactions({ take: 1000 })
+  const { data: queuedFiles } = useAttachments({ queued: true })
   const accountNames = useAccountNames()
   const cardNames = useCardNames()
   const categoryNames = useCategoryNames()
@@ -249,6 +252,12 @@ export function InboxPage() {
           )}
         </Space>
       </Flex>
+
+      {!!queuedFiles?.length && (
+        <Card type="inner" size="small" className="mb-4">
+          <AttachmentsPanel owner={{ queued: true }} />
+        </Card>
+      )}
 
       <Table
         rowKey="id"

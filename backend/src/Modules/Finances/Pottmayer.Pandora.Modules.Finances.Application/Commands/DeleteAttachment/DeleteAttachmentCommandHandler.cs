@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Pottmayer.Pandora.Modules.Finances.Abstractions;
-using Pottmayer.Pandora.Modules.Finances.Application.Auditing;
+using Pottmayer.Pandora.Modules.Finances.Application.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Shared.Domain.Storage;
@@ -29,12 +29,7 @@ public sealed class DeleteAttachmentCommandHandler(
                 return null;
 
             await repo.RemoveAsync(attachment, token);
-
-            var (entityType, ownerId, eventType) = attachment.TransactionId is { } txId
-                ? (TransactionEvents.EntityType, txId, TransactionEvents.AttachmentRemoved)
-                : (PendingTransactionEvents.EntityType, attachment.PendingTransactionId!.Value, PendingTransactionEvents.AttachmentRemoved);
-            await ctx.RecordAsync(input.UserId, input.UserId, entityType, ownerId, eventType, now,
-                new { attachmentId = attachment.Id, kind = attachment.Kind.Value, fileName = attachment.FileName }, ct: token);
+            await AttachmentOwners.RecordAsync(ctx, attachment, added: false, now, token);
             return attachment.StorageKey;
         }, cancellationToken: ct);
 

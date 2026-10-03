@@ -29,6 +29,20 @@ export function useUploadAttachment(owner: AttachmentOwner) {
   })
 }
 
+/** Files a queued attachment; refreshes the queue, every owner's list and the counts. */
+export function useAssignAttachment() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, owner }: { id: string; owner: AttachmentOwner }) =>
+      attachmentsService.assignAttachment(id, owner),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: financeKeys.attachments() })
+      queryClient.invalidateQueries({ queryKey: financeKeys.transactions() })
+      queryClient.invalidateQueries({ queryKey: financeKeys.pending() })
+    },
+  })
+}
+
 export function useDeleteAttachment(owner: AttachmentOwner) {
   const invalidate = useInvalidateAttachments(owner)
   return useMutation({

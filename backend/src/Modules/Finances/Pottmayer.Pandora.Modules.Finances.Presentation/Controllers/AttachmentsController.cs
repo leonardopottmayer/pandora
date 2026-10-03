@@ -3,6 +3,7 @@ using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Pottmayer.Pandora.Modules.Finances.Application.Commands.AssignAttachment;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.DeleteAttachment;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.UploadAttachment;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetAttachmentContent;
@@ -15,7 +16,10 @@ using Pottmayer.Tars.Web.Http.AspNetCore.Extensions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Presentation.Controllers;
 
-/// <summary>Files attached to a transaction or a pending transaction: boletos, receipts, invoices.</summary>
+/// <summary>
+/// Files attached to a transaction, a pending transaction or a card statement — boletos, receipts, invoices —
+/// and the queue of files shared with the assistant bot, waiting to be filed under one of them.
+/// </summary>
 [ApiController]
 [Authorize]
 [ApiVersion("1.0")]
@@ -27,17 +31,24 @@ public sealed class AttachmentsController(
 {
     private Guid UserId => userContextAccessor.Context.User!.Id;
 
-    /// <summary>The attachments of one transaction or one pending transaction (pass exactly one), oldest first.</summary>
+    /// <summary>
+    /// The attachments of one transaction, pending transaction or card statement — or the queue with
+    /// <c>queued=true</c> (pass exactly one) — oldest first.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> ListAsync(
-        [FromQuery] Guid? transactionId, [FromQuery] Guid? pendingTransactionId, CancellationToken ct)
+        [FromQuery] Guid? transactionId, [FromQuery] Guid? pendingTransactionId, [FromQuery] Guid? cardStatementId,
+        [FromQuery] bool queued, CancellationToken ct)
     {
-        var result = await sender.Send(
-            new GetAttachmentsQuery(new GetAttachmentsInput(UserId, transactionId, pendingTransactionId)), ct);
+        var result = await sender.Send(new GetAttachmentsQuery(
+            new GetAttachmentsInput(UserId, transactionId, pendingTransactionId, cardStatementId, queued)), ct);
         return result.ToActionResult(errorMapper);
     }
 
-    /// <summary>Attaches an image or PDF to a transaction or a pending transaction (exactly one).</summary>
+    /// <summary>
+    /// Attaches an image or PDF to a transaction, a pending transaction or a card statement (at most one; none
+    /// queues it).
+    /// </summary>
     [HttpPost]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadAsync(
@@ -45,6 +56,7 @@ public sealed class AttachmentsController(
         [FromForm] string kind,
         [FromForm] Guid? transactionId,
         [FromForm] Guid? pendingTransactionId,
+        [FromForm] Guid? cardStatementId,
         CancellationToken ct)
     {
         await using var stream = file.OpenReadStream();
@@ -56,8 +68,17 @@ public sealed class AttachmentsController(
             : file.ContentType;
 
         var result = await sender.Send(new UploadAttachmentCommand(new UploadAttachmentInput(
-            UserId, transactionId, pendingTransactionId, kind, file.FileName, contentType, ms.ToArray())), ct);
+            UserId, transactionId, pendingTransactionId, cardStatementId, kind, file.FileName, contentType, ms.ToArray())), ct);
 
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>Files a queued attachment under one transaction, pending transaction or card statement.</summary>
+    [HttpPost("{id:guid}/assign")]
+    public async Task<IActionResult> AssignAsync(Guid id, [FromBody] AssignAttachmentRequest request, CancellationToken ct)
+    {
+        var result = await sender.Send(new AssignAttachmentCommand(new AssignAttachmentInput(
+            UserId, id, request.TransactionId, request.PendingTransactionId, request.CardStatementId)), ct);
         return result.ToActionResult(errorMapper);
     }
 
@@ -87,4 +108,6 @@ public sealed class AttachmentsController(
         var result = await sender.Send(new DeleteAttachmentCommand(new DeleteAttachmentInput(UserId, id)), ct);
         return result.ToActionResult(errorMapper);
     }
+
+    public sealed record AssignAttachmentRequest(Guid? TransactionId, Guid? PendingTransactionId, Guid? CardStatementId);
 }

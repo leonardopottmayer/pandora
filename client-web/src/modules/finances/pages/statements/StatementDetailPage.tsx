@@ -22,6 +22,7 @@ import {
 import { formatDate, formatMoney, formatReferenceMonth } from '../../lib/format'
 import { CurrencyAmount } from '../../components/CurrencyAmount'
 import { EnumTag } from '../../components/EnumTag'
+import { AttachmentsPanel } from '../../components/AttachmentsPanel'
 import { useCard } from '../../hooks/useCards'
 import { useCategoryNames } from '../../hooks/useCategories'
 import { useCloseStatement, useReopenStatement, useSettleStatement, useStatement } from '../../hooks/useStatements'
@@ -355,6 +356,12 @@ export function StatementDetailPage() {
           pagination={{ pageSize: 20 }}
         />
       </Card>
+
+      {id && (
+        <Card>
+          <AttachmentsPanel owner={{ cardStatementId: id }} />
+        </Card>
+      )}
 
       <PayStatementModal
         open={payOpen}

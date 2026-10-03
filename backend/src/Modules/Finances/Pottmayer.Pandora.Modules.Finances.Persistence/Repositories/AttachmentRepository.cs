@@ -13,11 +13,13 @@ public sealed class AttachmentRepository(IDataContextAccessor accessor)
         => Queryable().FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId, ct);
 
     public async Task<IReadOnlyList<Attachment>> GetByOwnerAsync(
-        Guid userId, Guid? transactionId, Guid? pendingTransactionId, CancellationToken ct = default)
+        Guid userId, Guid? transactionId, Guid? pendingTransactionId, Guid? cardStatementId, CancellationToken ct = default)
+        // EF's null semantics make a null id match only a null column, so no ids at all reads the queue.
         => await Queryable()
             .Where(a => a.UserId == userId
-                        && (transactionId == null || a.TransactionId == transactionId)
-                        && (pendingTransactionId == null || a.PendingTransactionId == pendingTransactionId))
+                        && a.TransactionId == transactionId
+                        && a.PendingTransactionId == pendingTransactionId
+                        && a.CardStatementId == cardStatementId)
             .OrderBy(a => a.CreatedAt)
             .ToListAsync(ct);
 

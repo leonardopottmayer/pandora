@@ -105,8 +105,9 @@ user. A resource owned by another user returns **404** (not 403). Controllers li
 
 | Method | Route | Purpose |
 |---|---|---|
-| GET | `/attachments?transactionId=` · `?pendingTransactionId=` | One owner's attachments, oldest first |
-| POST | `/attachments` | `multipart/form-data`: `file` (image or PDF, ≤ 25 MB), `kind`, and `transactionId` **or** `pendingTransactionId` |
+| GET | `/attachments?transactionId=` · `?pendingTransactionId=` · `?cardStatementId=` · `?queued=true` | One owner's attachments, or the queue, oldest first |
+| POST | `/attachments` | `multipart/form-data`: `file` (image or PDF, ≤ 25 MB), `kind`, and at most one of `transactionId` · `pendingTransactionId` · `cardStatementId` (none queues it) |
+| POST | `/attachments/{id}/assign` | Files a queued attachment: `{ transactionId }` · `{ pendingTransactionId }` · `{ cardStatementId }`; 409 if it already has an owner |
 | GET | `/attachments/{id}` | The bytes, inline, with the stored content type and file name |
 | DELETE | `/attachments/{id}` | Remove the attachment and its bytes |
 

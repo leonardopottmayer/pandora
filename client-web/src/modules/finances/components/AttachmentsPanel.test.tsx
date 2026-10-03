@@ -13,12 +13,24 @@ const boleto: AttachmentDto = {
   id: 'a1',
   transactionId: null,
   pendingTransactionId: 'p1',
+  cardStatementId: null,
   kind: 'bill',
   fileName: 'boleto-junho.pdf',
   contentType: 'application/pdf',
   sizeBytes: 120_000,
+  note: null,
   url: '/api/v1/finances/attachments/a1',
   createdAt: '2026-10-03T12:00:00Z',
+}
+
+const queuedReceipt: AttachmentDto = {
+  ...boleto,
+  id: 'q1',
+  pendingTransactionId: null,
+  kind: 'receipt',
+  fileName: 'pix.pdf',
+  note: 'comprovante luz setembro',
+  url: '/api/v1/finances/attachments/q1',
 }
 
 beforeAll(async () => {
@@ -81,5 +93,41 @@ describe('AttachmentsPanel', () => {
     await waitFor(() => expect(screen.getAllByRole('button', { name: 'Delete' })).toHaveLength(2))
     await user.click(screen.getAllByRole('button', { name: 'Delete' })[1])
     await waitFor(() => expect(deleted).toBe(true))
+  })
+
+  it('takes a file from the queue of files shared with the bot', async () => {
+    let assigned: unknown = null
+    server.use(
+      http.get(`${FINANCES_BASE}/attachments`, ({ request }) =>
+        HttpResponse.json({
+          success: true,
+          data: new URL(request.url).searchParams.get('queued') === 'true' ? [queuedReceipt] : [],
+        }),
+      ),
+      http.post(`${FINANCES_BASE}/attachments/q1/assign`, async ({ request }) => {
+        assigned = await request.json()
+        return HttpResponse.json({ success: true, data: { ...queuedReceipt, cardStatementId: 's1' } })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<AttachmentsPanel owner={{ cardStatementId: 's1' }} />)
+
+    await user.hover(await screen.findByRole('button', { name: /From the queue \(1\)/ }))
+    await user.click(await screen.findByText('pix.pdf — comprovante luz setembro'))
+
+    await waitFor(() => expect(assigned).toEqual({ cardStatementId: 's1' }))
+  })
+
+  it('shows the queue with its notes and a way to file each file', async () => {
+    server.use(
+      http.get(`${FINANCES_BASE}/attachments`, () => HttpResponse.json({ success: true, data: [queuedReceipt] })),
+    )
+    renderWithProviders(<AttachmentsPanel owner={{ queued: true }} />)
+
+    expect(await screen.findByText('pix.pdf')).toBeInTheDocument()
+    expect(screen.getByText('Files to file')).toBeInTheDocument()
+    expect(screen.getByText('comprovante luz setembro')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /File it/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /From the queue/ })).not.toBeInTheDocument()
   })
 })

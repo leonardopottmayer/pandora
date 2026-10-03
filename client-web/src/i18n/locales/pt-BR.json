@@ -849,7 +849,14 @@
       "openError": "Não foi possível abrir o arquivo.",
       "deleteConfirm": "Remover este anexo?",
       "deleted": "Anexo removido.",
-      "deleteError": "Não foi possível remover o anexo."
+      "deleteError": "Não foi possível remover o anexo.",
+      "queueTitle": "Arquivos a atribuir",
+      "queueHint": "Arquivos que você mandou ao bot do Telegram. Atribua a um lançamento aqui, ou a uma pendência ou fatura pelo 📎 dela.",
+      "fromQueue": "Da fila ({{count}})",
+      "assign": "Atribuir",
+      "assignTitle": "Atribuir \"{{name}}\" a um lançamento",
+      "assigned": "Arquivo anexado.",
+      "assignError": "Não foi possível anexar o arquivo."
     }
   },
   "notes": {

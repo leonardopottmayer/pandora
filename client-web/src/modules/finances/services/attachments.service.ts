@@ -16,11 +16,18 @@ export async function uploadAttachment(
   const formData = new FormData()
   formData.append('file', file)
   formData.append('kind', kind)
-  for (const [key, value] of Object.entries(owner)) formData.append(key, value)
+  // `queued` is not a form field the API knows: no owner id is what queues the file.
+  for (const [key, value] of Object.entries(owner)) formData.append(key, String(value))
 
   const { data } = await apiClient.post<AttachmentDto>(BASE, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
+  return data
+}
+
+/** Files a queued attachment under one transaction, suggestion or statement. */
+export async function assignAttachment(id: string, owner: AttachmentOwner): Promise<AttachmentDto> {
+  const { data } = await apiClient.post<AttachmentDto>(`${BASE}/${id}/assign`, owner)
   return data
 }
 

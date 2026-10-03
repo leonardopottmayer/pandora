@@ -60,6 +60,8 @@ public static class StatementEvents
     public const string Paid = "statement.paid";
     public const string Overdue = "statement.overdue";
     public const string SettledWithoutCash = "statement.settled-without-cash";
+    public const string AttachmentAdded = "statement.attachment-added";
+    public const string AttachmentRemoved = "statement.attachment-removed";
 }
 
 public static class AccountEvents
