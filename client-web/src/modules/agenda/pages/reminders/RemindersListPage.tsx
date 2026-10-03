@@ -10,7 +10,12 @@ import { REMINDER_STATUS_META } from '../../lib/enums'
 import { formatDateTime } from '../../lib/datetime'
 import { EnumTag } from '../../components/EnumTag'
 import { SnoozeModal } from '../../components/SnoozeModal'
-import { useAcknowledgeReminder, useDeleteReminder, useReminders } from '../../hooks/useReminders'
+import {
+  useAcknowledgeReminder,
+  useDeleteReminder,
+  useReminders,
+  useRenameReminder,
+} from '../../hooks/useReminders'
 import { ReminderFormModal } from './ReminderFormModal'
 
 export function RemindersListPage() {
@@ -20,6 +25,7 @@ export function RemindersListPage() {
   const { data, isLoading } = useReminders()
   const acknowledge = useAcknowledgeReminder()
   const deleteMutation = useDeleteReminder()
+  const rename = useRenameReminder()
   const [modalOpen, setModalOpen] = useState(false)
   const [snoozeId, setSnoozeId] = useState<string | null>(null)
 
@@ -27,6 +33,17 @@ export function RemindersListPage() {
     try {
       await acknowledge.mutateAsync(reminder.id)
       message.success(t('agenda.reminders.acknowledged'))
+    } catch (err) {
+      message.error(toErrorMessage(err, t('agenda.reminders.saveError')))
+    }
+  }
+
+  async function handleRename(reminder: ReminderDto, value: string) {
+    const title = value.trim()
+    if (!title || title === reminder.title) return
+    try {
+      await rename.mutateAsync({ id: reminder.id, title })
+      message.success(t('agenda.reminders.renamed'))
     } catch (err) {
       message.error(toErrorMessage(err, t('agenda.reminders.saveError')))
     }
@@ -42,7 +59,21 @@ export function RemindersListPage() {
   }
 
   const columns: ColumnsType<ReminderDto> = [
-    { title: t('agenda.reminders.titleLabel'), dataIndex: 'title' },
+    {
+      title: t('agenda.reminders.titleLabel'),
+      dataIndex: 'title',
+      render: (title: string, reminder) => (
+        <Typography.Text
+          editable={{
+            onChange: (value) => handleRename(reminder, value),
+            tooltip: t('agenda.reminders.rename'),
+            maxLength: 200,
+          }}
+        >
+          {title}
+        </Typography.Text>
+      ),
+    },
     {
       title: t('agenda.reminders.remindAt'),
       dataIndex: 'remindAt',

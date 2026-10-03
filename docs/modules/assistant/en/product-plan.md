@@ -390,7 +390,7 @@ GET    /assistant/commands               → the live catalog (debugging, and th
     the user's zone); `update_event` (title, time, place; a new start keeps the length) and
     `delete_event`, both on one occurrence of a series unless the user says "and the following" or
     "all"; `update_task` (title, due date, priority), `reopen_task`, `delete_task`; `cancel_reminder`
-    and `rename_reminder` (2026-10-02, over a new `RenameReminderCommand` — not on the web yet).
+    and `rename_reminder` (2026-10-02, over a new `RenameReminderCommand`; on the web since 2026-10-03, the title edits in place in the Reminders list).
     `complete_task` takes a number too, and so does `reschedule_reminder` (2026-10-02, replacing `snooze_reminder`: it moves the remind time itself — a snooze only deferred the alert and every view kept the old time).
   - **Finances, read-only** — `list_transactions` (period, kind, account or card (asked for apart — a card is often named like its account), category with its
     sub-categories, text; latest or largest first; total of all matches), `summarize_transactions`
@@ -426,7 +426,10 @@ covers it, and under §9.2 it would be templated, not generated).
    hosted model (Gemini), but the user's data does not. A read tool (`list_agenda`) fetches and formats
    its answer in-house and replies to the user directly; the model only picks the tool and its
    arguments. The history re-sent on the next turn keeps a content-free recap
-   (`AssistantCommandOutcome.Recap`) instead of the reply. The cost: read replies have a fixed format —
+   (`AssistantCommandOutcome.Recap`) instead of the reply. Since 2026-10-03 that holds for every tool
+   reply, writes included: a write names the item it found ("Excluir a tarefa \"X\"?", an ambiguous
+   name's matches), so a tool without its own recap is kept as `[command: status; …]`; only the model's
+   own words (a clarification) are kept as said. The cost: read replies have a fixed format —
    the model cannot comment on them. A generated digest would need its own decision. See the
    [execution-plan](execution-plan.md#the-question-that-moved-up-personal-data-leaves-the-house).
 3. **Streaming.** Not needed for command execution; useful if a conversational mode is ever added. The

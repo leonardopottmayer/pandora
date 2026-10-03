@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.AcknowledgeReminder;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.CancelReminder;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateReminder;
+using Pottmayer.Pandora.Modules.Agenda.Application.Commands.RenameReminder;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.SnoozeReminder;
 using Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetReminders;
 using Pottmayer.Pandora.Shared.Domain;
@@ -43,6 +44,14 @@ public sealed class RemindersController(
         return result.ToActionResult(errorMapper);
     }
 
+    /// <summary>Renames a reminder; its time, recurrence and status are untouched.</summary>
+    [HttpPatch("{id:guid}")]
+    public async Task<IActionResult> RenameAsync(Guid id, [FromBody] RenameReminderRequest body, CancellationToken ct)
+    {
+        var result = await sender.Send(new RenameReminderCommand(new RenameReminderInput(UserId, id, body.Title)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
     /// <summary>Acknowledges a reminder.</summary>
     [HttpPost("{id:guid}/acknowledge")]
     public async Task<IActionResult> AcknowledgeAsync(Guid id, CancellationToken ct)
@@ -72,4 +81,5 @@ public sealed class RemindersController(
 
     public sealed record CreateReminderRequest(string Title, string? Notes, DateTimeOffset RemindAt, string? TimeZone, string? Rrule = null);
     public sealed record SnoozeReminderRequest(DateTimeOffset Until);
+    public sealed record RenameReminderRequest(string Title);
 }

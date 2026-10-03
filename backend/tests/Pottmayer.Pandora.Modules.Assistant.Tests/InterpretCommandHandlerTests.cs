@@ -214,8 +214,9 @@ public sealed class InterpretCommandHandlerTests
                 new(held.Id, "executed", "delete_task", "{}", "Tarefa \"x\" excluída.")),
         };
         var client = FakeAiChatCompletionClient.Replies("should not be asked");
+        var messages = new FakeMessageRepository();
         var (handler, _) = Build(client, FakeExternalCredentialProvider.WithKey("k"), EnabledProfile(),
-            new FakeConversationRepository(conversation), new FakeMessageRepository(), [], invocations, sender);
+            new FakeConversationRepository(conversation), messages, [], invocations, sender);
 
         var result = await handler.Handle(Sentence(reply), CancellationToken.None);
 
@@ -224,6 +225,43 @@ public sealed class InterpretCommandHandlerTests
         Assert.Equal(confirms ? typeof(Application.Commands.ConfirmInvocation.ConfirmInvocationCommand)
                               : typeof(Application.Commands.CancelInvocation.CancelInvocationCommand), sent.GetType());
         Assert.Equal("Tarefa \"x\" excluída.", result.Value!.Message);
+        Assert.Equal("[delete_task: executed; reply shown to the user, content withheld from you]",
+            messages.Added.Single(m => m.Author == MessageAuthor.Assistant).Content);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task A_tool_reply_naming_the_users_items_stays_out_of_the_history(bool succeeds)
+    {
+        // "Pagar luz" came from the database (a pinned number, an ambiguous match), not from the sentence.
+        var client = FakeAiChatCompletionClient.RepliesWithToolCall("complete_task", """{ "title": "pagar" }""");
+        var messages = new FakeMessageRepository();
+        var (handler, _) = Build(
+            client, FakeExternalCredentialProvider.WithKey("k"), EnabledProfile(),
+            new FakeConversationRepository(), messages,
+            [succeeds
+                ? FakeAssistantTool.Succeeds("complete_task", "Tarefa \"Pagar luz\" concluída.")
+                : FakeAssistantTool.Fails("complete_task", "\"pagar\" bate com mais de um item: \"Pagar luz\", \"Pagar água\".")]);
+
+        var result = await handler.Handle(Sentence("conclui pagar"), CancellationToken.None);
+
+        Assert.Contains("Pagar luz", result.Value!.Message);
+        Assert.Equal($"[complete_task: {(succeeds ? "executed" : "failed")}; reply shown to the user, content withheld from you]",
+            messages.Added.Single(m => m.Author == MessageAuthor.Assistant).Content);
+    }
+
+    [Fact]
+    public async Task A_clarification_is_kept_in_the_history_as_the_model_said_it()
+    {
+        var client = FakeAiChatCompletionClient.Replies("Para que horas?");
+        var messages = new FakeMessageRepository();
+        var (handler, _) = Build(
+            client, FakeExternalCredentialProvider.WithKey("k"), EnabledProfile(), new FakeConversationRepository(), messages, []);
+
+        await handler.Handle(Sentence("lembra de ligar pro João"), CancellationToken.None);
+
+        Assert.Equal("Para que horas?", messages.Added.Single(m => m.Author == MessageAuthor.Assistant).Content);
     }
 
     [Fact]

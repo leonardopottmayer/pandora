@@ -931,6 +931,8 @@
       "status": "Status",
       "acknowledge": "Acknowledge",
       "acknowledged": "Reminder acknowledged.",
+      "rename": "Rename",
+      "renamed": "Reminder renamed.",
       "snooze": "Snooze",
       "snoozeUntil": "Snooze until",
       "snoozed": "Reminder snoozed.",

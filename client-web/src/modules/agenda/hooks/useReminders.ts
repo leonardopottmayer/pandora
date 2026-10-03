@@ -27,6 +27,15 @@ export function useCreateReminder() {
   })
 }
 
+export function useRenameReminder() {
+  const invalidate = useInvalidateReminders()
+  return useMutation({
+    mutationFn: ({ id, title }: { id: string; title: string }) =>
+      remindersService.renameReminder(id, title),
+    onSuccess: invalidate,
+  })
+}
+
 export function useAcknowledgeReminder() {
   const invalidate = useInvalidateReminders()
   return useMutation({

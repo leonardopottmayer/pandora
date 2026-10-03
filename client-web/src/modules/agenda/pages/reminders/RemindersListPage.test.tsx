@@ -67,4 +67,27 @@ describe('RemindersListPage', () => {
     await user.click(screen.getByRole('button', { name: 'Acknowledge' }))
     await waitFor(() => expect(acked).toBe(true))
   })
+
+  it('renames a reminder in place', async () => {
+    let body: unknown
+    server.use(
+      http.get(`${AGENDA_BASE}/reminders`, () =>
+        HttpResponse.json({ success: true, data: [reminder] }),
+      ),
+      http.patch(`${AGENDA_BASE}/reminders/r1`, async ({ request }) => {
+        body = await request.json()
+        return HttpResponse.json({ success: true, data: true })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<RemindersListPage />)
+
+    await screen.findByText('Call the dentist')
+    await user.click(screen.getByRole('button', { name: 'Rename' }))
+    const input = screen.getByRole('textbox')
+    await user.clear(input)
+    await user.type(input, 'Call the vet')
+    await user.tab() // leaving the field saves, like Enter
+    await waitFor(() => expect(body).toEqual({ title: 'Call the vet' }))
+  })
 })

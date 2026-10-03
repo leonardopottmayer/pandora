@@ -390,7 +390,7 @@ GET    /assistant/commands               → o catálogo vivo (debug e painel de
     do usuário); `update_event` (título, horário, local; novo início mantém a duração) e `delete_event`,
     ambos numa ocorrência da série, a não ser que o usuário diga "e as seguintes" ou "todas";
     `update_task` (título, prazo, prioridade), `reopen_task`, `delete_task`; `cancel_reminder` e
-    `rename_reminder` (2026-10-02, sobre um `RenameReminderCommand` novo — ainda não na web).
+    `rename_reminder` (2026-10-02, sobre um `RenameReminderCommand` novo; na web desde 2026-10-03, o título se edita direto na lista de Lembretes).
     `complete_task` aceita número, assim como `reschedule_reminder` (2026-10-02, no lugar do `snooze_reminder`: muda o próprio horário — o snooze só adiava o alerta e toda tela seguia mostrando o horário antigo).
   - **Finances, só leitura** — `list_transactions` (período, tipo, conta ou cartão (pedidos separados — cartão costuma ter o nome da conta), categoria com as
     subcategorias, texto; mais recentes ou maiores primeiro; total de tudo que bateu),
@@ -428,7 +428,11 @@ cobre, e pela §9.2 seria templatizado, não gerado).
    hospedado (Gemini), mas os dados do usuário não. Uma ferramenta de leitura (`list_agenda`) busca e
    formata a resposta aqui dentro e responde direto ao usuário; o modelo só escolhe a ferramenta e os
    argumentos. O histórico reenviado no turno seguinte guarda um resumo sem conteúdo
-   (`AssistantCommandOutcome.Recap`) no lugar da resposta. O custo: respostas de leitura têm formato
+   (`AssistantCommandOutcome.Recap`) no lugar da resposta. Desde 2026-10-03 isso vale para toda resposta
+   de ferramenta, escritas incluídas: uma escrita nomeia o item que achou ("Excluir a tarefa \"X\"?", os
+   itens que um nome ambíguo bateu), então uma ferramenta sem resumo próprio fica como
+   `[comando: status; …]`; só as palavras do próprio modelo (um pedido de esclarecimento) ficam como ditas.
+   O custo: respostas de leitura têm formato
    fixo — o modelo não comenta sobre elas. Um resumo gerado pediria decisão própria. Ver o
    [execution-plan](execution-plan.md#questão-que-subiu-de-prioridade-dado-pessoal-sai-de-casa).
 3. **Streaming.** Desnecessário para executar comandos; útil se um modo conversacional for adicionado. A

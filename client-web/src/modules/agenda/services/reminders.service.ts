@@ -13,6 +13,10 @@ export async function createReminder(body: CreateReminderRequest): Promise<Remin
   return data
 }
 
+export async function renameReminder(id: string, title: string): Promise<void> {
+  await apiClient.patch(`${BASE}/${id}`, { title })
+}
+
 export async function acknowledgeReminder(id: string): Promise<ReminderDto> {
   const { data } = await apiClient.post<ReminderDto>(`${BASE}/${id}/acknowledge`)
   return data

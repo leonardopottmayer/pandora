@@ -931,6 +931,8 @@
       "status": "Status",
       "acknowledge": "Reconhecer",
       "acknowledged": "Lembrete reconhecido.",
+      "rename": "Renomear",
+      "renamed": "Lembrete renomeado.",
       "snooze": "Adiar",
       "snoozeUntil": "Adiar até",
       "snoozed": "Lembrete adiado.",

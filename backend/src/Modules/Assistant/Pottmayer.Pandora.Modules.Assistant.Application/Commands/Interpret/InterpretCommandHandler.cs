@@ -306,9 +306,11 @@ public sealed partial class InterpretCommandHandler(
                 settled.Add(result.Value!);
         }
 
-        var reply = settled.Count == 1
-            ? settled[0].Message
-            : string.Join("\n", settled.Select((s, i) => $"{i + 1}. {s.Message}"));
+        string Combined(Func<InvocationResultDto, string> text) => settled.Count == 1
+            ? text(settled[0])
+            : string.Join("\n", settled.Select((s, i) => $"{i + 1}. {text(s)}"));
+        var reply = Combined(s => s.Message);
+        var recap = Combined(s => HistoryLine(s.CommandName, s.Status, null, s.Message));
 
         await factory.ExecuteAsync(AssistantModule.DatabaseKey, async (context, token) =>
         {
@@ -316,7 +318,7 @@ public sealed partial class InterpretCommandHandler(
             await context.AcquireRepository<IConversationRepository>().UpdateAsync(turn.Conversation, token);
             var messages = context.AcquireRepository<IMessageRepository>();
             await messages.AddAsync(Message.Create(turn.Conversation.Id, MessageAuthor.User, utterance, timeProvider), token);
-            await messages.AddAsync(Message.Create(turn.Conversation.Id, MessageAuthor.Assistant, reply, timeProvider), token);
+            await messages.AddAsync(Message.Create(turn.Conversation.Id, MessageAuthor.Assistant, recap, timeProvider), token);
             return true;
         }, cancellationToken: ct);
 
@@ -368,11 +370,11 @@ public sealed partial class InterpretCommandHandler(
         string? transcript, CancellationToken ct)
     {
         var reply = Combine(steps, s => s.Reply);
-        // What the model sees of this reply on the next turn (see AssistantCommandOutcome.Recap): never a
-        // list's content, only how its numbers can be pointed at.
+        // What the model sees of this reply on the next turn: never a list's content, only how its numbers
+        // can be pointed at.
         var recap = Combine(steps, s => s.Listed is { Count: > 0 } listed
-            ? $"{s.Recap ?? s.Reply} {ListedRefs.Summary(listed)}"
-            : s.Recap ?? s.Reply);
+            ? $"{HistoryLine(s.CommandName, s.Status.Value, s.Recap, s.Reply)} {ListedRefs.Summary(listed)}"
+            : HistoryLine(s.CommandName, s.Status.Value, s.Recap, s.Reply));
 
         // ponytail: two lists in one turn — the numbers refer to the last one; merge them if that ever bites.
         if (steps.LastOrDefault(s => s.Listed is { Count: > 0 })?.Listed is { } shown)
@@ -415,6 +417,17 @@ public sealed partial class InterpretCommandHandler(
                 steps[i].Reply)).ToList(),
             transcript));
     }
+
+    /// <summary>
+    /// What the history keeps of one reply (see <see cref="AssistantCommandOutcome.Recap"/>). A tool's reply
+    /// carries the user's data — the item it found ("Excluir a tarefa \"X\"?", "Tarefa \"X\" concluída"),
+    /// the titles an ambiguous name matched — so it is kept as the tool's own content-free recap or, lacking
+    /// one, just the command and how it ended. Only the model's own words (a clarification) are kept as said.
+    /// </summary>
+    private static string HistoryLine(string? commandName, string status, string? recap, string reply) =>
+        commandName is null
+            ? reply
+            : recap ?? $"[{commandName}: {status}; reply shown to the user, content withheld from you]";
 
     private static string Combine(IReadOnlyList<Step> steps, Func<Step, string> text) =>
         steps.Count == 1
