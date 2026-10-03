@@ -120,6 +120,8 @@ public sealed class ApprovePendingTransactionCommandHandler(
 
             pending.Approve(tx.Id, input.UserId, timeProvider);
             await pendingRepo.UpdateAsync(pending, token);
+            await PendingAttachments.MoveToTransactionAsync(
+                ctx.AcquireRepository<IAttachmentRepository>(), input.UserId, pending.Id, tx.Id, token);
 
             var origin = pending.Source.Value;
             await ctx.RecordAsync(input.UserId, input.UserId, TransactionEvents.EntityType, tx.Id,

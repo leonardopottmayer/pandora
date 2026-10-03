@@ -1,4 +1,9 @@
-import type { ImportFileFilters, PendingTransactionFilters, TransactionFilters } from '../models'
+import type {
+  AttachmentOwner,
+  ImportFileFilters,
+  PendingTransactionFilters,
+  TransactionFilters,
+} from '../models'
 
 // Central query key factory for the finances module. Centralising prevents
 // mismatches between callers that query and those that invalidate in the TanStack Query cache.
@@ -53,6 +58,9 @@ export const financeKeys = {
   pending: () => [...financeKeys.all, 'pending'] as const,
   pendingList: (filters: PendingTransactionFilters = {}) =>
     [...financeKeys.pending(), 'list', filters] as const,
+
+  attachments: () => [...financeKeys.all, 'attachments'] as const,
+  attachmentList: (owner: AttachmentOwner) => [...financeKeys.attachments(), 'list', owner] as const,
 
   imports: () => [...financeKeys.all, 'imports'] as const,
   importList: (filters: ImportFileFilters = {}) =>

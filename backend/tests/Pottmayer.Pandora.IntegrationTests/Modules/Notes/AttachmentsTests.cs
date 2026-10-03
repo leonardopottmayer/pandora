@@ -9,7 +9,8 @@ namespace Pottmayer.Pandora.IntegrationTests.Modules.Notes;
 
 /// <summary>
 /// Covers attachment upload/download: authenticated round-trip for an image and a zip (with the right
-/// Content-Type), the empty-file guard, foreign/unknown lookups, and pinning an upload to a page.
+/// Content-Type), the empty-file guard, unknown and other users' attachments answering 404, and pinning
+/// an upload to a page.
 /// </summary>
 [Collection("Integration")]
 public sealed class AttachmentsTests : IAsyncLifetime
@@ -87,6 +88,18 @@ public sealed class AttachmentsTests : IAsyncLifetime
         await AuthAsync("attach4");
 
         var response = await _client.GetAsync($"{Url}/{Guid.NewGuid()}");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Another_users_attachment_returns_not_found()
+    {
+        await AuthAsync("attach-uploader");
+        var upload = await UploadAsync([0x89, 0x50, 0x4E, 0x47], "private.png", "image/png");
+        Assert.Equal(HttpStatusCode.OK, upload.status);
+
+        await AuthAsync("attach-stranger");
+        var response = await _client.GetAsync(upload.dto!.Url);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 

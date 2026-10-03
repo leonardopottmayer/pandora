@@ -4,6 +4,7 @@
 -- (storage_backend, storage_key); in the MVP that is always the notes.nte003_file_blob table.
 CREATE TABLE notes.nte002_attachment (
 	id uuid NOT NULL DEFAULT uuid_generate_v7(),
+	user_id uuid NOT NULL,
 	page_id uuid NULL,
 	file_name VARCHAR(255) NOT NULL,
 	content_type VARCHAR(255) NOT NULL,
@@ -15,6 +16,10 @@ CREATE TABLE notes.nte002_attachment (
 
 ALTER TABLE notes.nte002_attachment
 ADD CONSTRAINT pk_nte002 PRIMARY KEY (id);
+
+-- Downloads are scoped to the uploader: another user's id answers 404.
+CREATE INDEX ix_nte002_user_id
+ON notes.nte002_attachment (user_id);
 
 -- Loose reference (no FK): a page may be soft-deleted while its attachment lingers.
 CREATE INDEX ix_nte002_page_id

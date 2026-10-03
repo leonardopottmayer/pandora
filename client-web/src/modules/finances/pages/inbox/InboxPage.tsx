@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { App, Button, Card, Flex, Input, Modal, Popconfirm, Space, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { LinkOutlined, SwapOutlined } from '@ant-design/icons'
+import { LinkOutlined, PaperClipOutlined, SwapOutlined } from '@ant-design/icons'
 import { toErrorMessage } from '@/lib/api/envelope'
 import type { PendingTransactionDto } from '../../models'
 import { kindDirection, transactionKindLabelKey } from '../../lib/enums'
 import { formatDate } from '../../lib/format'
 import { CurrencyAmount } from '../../components/CurrencyAmount'
+import { AttachmentsModal } from '../../components/AttachmentsModal'
 import { TransactionDetailModal } from '../../components/TransactionDetailModal'
 import { LinkTransactionModal } from '../../components/LinkTransactionModal'
 import { useAccountNames } from '../../hooks/useAccounts'
@@ -35,6 +36,7 @@ export function InboxPage() {
   const [viewTxId, setViewTxId] = useState<string | null>(null)
   const [linking, setLinking] = useState<PendingTransactionDto | null>(null)
   const [transferOpen, setTransferOpen] = useState(false)
+  const [attachmentsFor, setAttachmentsFor] = useState<string | null>(null)
 
   const { data, isLoading } = usePendingTransactions({ take: 1000 })
   const accountNames = useAccountNames()
@@ -200,6 +202,14 @@ export function InboxPage() {
           <Button size="small" onClick={() => openEdit(p)}>
             {t('common.edit')}
           </Button>
+          <Button
+            size="small"
+            icon={<PaperClipOutlined />}
+            aria-label={t('finances.attachments.button')}
+            onClick={() => setAttachmentsFor(p.id)}
+          >
+            {p.attachmentCount > 0 ? p.attachmentCount : null}
+          </Button>
           {p.source === 'import' && (
             <Button size="small" icon={<LinkOutlined />} onClick={() => setLinking(p)}>
               {t('finances.imports.link')}
@@ -256,6 +266,10 @@ export function InboxPage() {
         onClose={() => setEditOpen(false)}
       />
 
+      <AttachmentsModal
+        owner={attachmentsFor ? { pendingTransactionId: attachmentsFor } : null}
+        onClose={() => setAttachmentsFor(null)}
+      />
       <TransactionDetailModal
         transactionId={viewTxId}
         open={!!viewTxId}

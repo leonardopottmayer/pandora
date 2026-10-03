@@ -11,8 +11,10 @@ public static class FileStorageBackends
 }
 
 /// <summary>
-/// Abstraction over binary blob storage. The MVP ships a single Postgres-backed implementation; the
-/// interface exists so an S3/MinIO backend can replace it later without touching callers. A save
+/// Abstraction over binary blob storage. The MVP ships a single Postgres-backed implementation, one
+/// instance per module over that module's own blob table, registered keyed by the module's database
+/// key (<c>AddPandoraDatabaseFileStorage</c>); the interface exists so an S3/MinIO backend can replace
+/// it later without touching callers. A save
 /// returns an opaque <c>storageKey</c> the caller persists (e.g. on an attachment record) and later
 /// passes back to read or delete the blob. Saving is deliberately decoupled from any surrounding
 /// transaction — mirroring object storage, where the write and its metadata row commit separately.

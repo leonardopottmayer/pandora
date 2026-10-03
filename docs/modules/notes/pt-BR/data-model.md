@@ -65,6 +65,7 @@ caderno mistura português e inglês e escolher uma língua pioraria a outra. Ve
 | Coluna | Tipo | Notas |
 |---|---|---|
 | `id` | uuid PK | também o id na URL de download |
+| `user_id` | uuid NOT NULL | quem enviou; download por qualquer outro usuário devolve 404 |
 | `page_id` | uuid NULL | **referência solta, sem FK** — a page pode ser soft-deletada e o anexo continuar ali |
 | `file_name` | varchar(255) NOT NULL | nome original, usado como nome do arquivo no download |
 | `content_type` | varchar(255) NOT NULL | MIME como enviado; vazio cai em `application/octet-stream` |
@@ -73,7 +74,7 @@ caderno mistura português e inglês e escolher uma língua pioraria a outra. Ve
 | `storage_key` | varchar(1024) NOT NULL | chave opaca dentro daquele backend — hoje o id da linha `nte003` |
 | `created_at` | timestamptz NOT NULL | write-once, então sem `updated_*` |
 
-Índice `ix_nte002_page_id`. O par `storage_backend` + `storage_key` é o que permite um backend S3
+Índices `ix_nte002_user_id`, `ix_nte002_page_id`. O par `storage_backend` + `storage_key` é o que permite um backend S3
 futuro entrar sem migration: a leitura continua auto-descritiva e as linhas antigas seguem
 funcionando.
 

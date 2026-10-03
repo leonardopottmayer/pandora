@@ -3,6 +3,7 @@ using Pottmayer.Pandora.Modules.Notes.Application.Dtos;
 using Pottmayer.Pandora.Modules.Notes.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Notes.Domain.Errors;
 using Pottmayer.Pandora.Modules.Notes.Domain.Ports.Repositories;
+using Microsoft.Extensions.DependencyInjection;
 using Pottmayer.Pandora.Shared.Domain.Storage;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
@@ -12,7 +13,7 @@ namespace Pottmayer.Pandora.Modules.Notes.Application.Commands.UploadAttachment;
 
 public sealed class UploadAttachmentCommandHandler(
     IUnitOfWorkFactory factory,
-    IFileStorage fileStorage,
+    [FromKeyedServices(NotesModule.DatabaseKey)] IFileStorage fileStorage,
     TimeProvider timeProvider)
     : CommandHandlerBase<UploadAttachmentCommand, AttachmentDto>
 {
@@ -48,7 +49,7 @@ public sealed class UploadAttachmentCommandHandler(
         {
             var repo = ctx.AcquireRepository<IAttachmentRepository>();
             var entity = Attachment.Create(
-                input.PageId, input.FileName, input.ContentType, input.Content.Length,
+                input.UserId, input.PageId, input.FileName, input.ContentType, input.Content.Length,
                 fileStorage.Backend, storageKey, timeProvider);
             await repo.AddAsync(entity, token);
             return entity;

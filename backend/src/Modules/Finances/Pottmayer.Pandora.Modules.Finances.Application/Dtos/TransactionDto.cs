@@ -33,7 +33,9 @@ public sealed record TransactionDto(
     string? DescriptionKey,
     IReadOnlyList<string>? DescriptionArgs,
     string? StatementReferenceMonth,
-    DateOnly? StatementDueDate)
+    DateOnly? StatementDueDate,
+    // Filled by the list query; zero elsewhere.
+    int AttachmentCount = 0)
 {
     /// <summary>Maps without localization — for command results, which only ever carry user text.</summary>
     public static TransactionDto From(Transaction t) => From(t, null, null);

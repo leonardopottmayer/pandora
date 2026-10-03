@@ -100,6 +100,17 @@ recurso de outro usuário retorna **404** (não 403). Os controllers ficam em `P
 | POST | `/pending-transactions/approve-batch` | Aprovar em lote |
 | POST | `/pending-transactions/transfer` | Montar transferência de duas sugestões |
 
+## Anexos — `/attachments`
+
+| Método | Rota | Propósito |
+|---|---|---|
+| GET | `/attachments?transactionId=` · `?pendingTransactionId=` | Anexos de um dono, mais antigos primeiro |
+| POST | `/attachments` | `multipart/form-data`: `file` (imagem ou PDF, ≤ 25 MB), `kind`, e `transactionId` **ou** `pendingTransactionId` |
+| GET | `/attachments/{id}` | Os bytes, inline, com o content type e o nome guardados |
+| DELETE | `/attachments/{id}` | Remove o anexo e os bytes |
+
+As listas de lançamentos e de transações pendentes trazem `attachmentCount`.
+
 ## Importação — `/imports`
 
 | Método | Rota | Propósito |

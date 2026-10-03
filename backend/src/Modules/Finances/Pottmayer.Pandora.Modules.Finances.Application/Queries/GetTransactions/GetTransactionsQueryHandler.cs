@@ -60,16 +60,20 @@ public sealed class GetTransactionsQueryHandler(IUnitOfWorkFactory factory, IMes
                     .ToDictionary(s => s.Id)
                 : [];
 
-            return Result<(IReadOnlyList<Transaction>, Dictionary<Guid, CardStatement>)>.Success((txList, stmtMap));
+            var attachmentCounts = await ctx.AcquireRepository<IAttachmentRepository>()
+                .CountByTransactionsAsync([.. txList.Select(t => t.Id)], token);
+
+            return Result<(IReadOnlyList<Transaction>, Dictionary<Guid, CardStatement>, IReadOnlyDictionary<Guid, int>)>
+                .Success((txList, stmtMap, attachmentCounts));
         }, cancellationToken: ct);
 
         if (queryResult.IsFailure) return Fail([.. queryResult.Errors]);
 
-        var (transactions, stmtsById) = queryResult.Value!;
+        var (transactions, stmtsById, attachmentsById) = queryResult.Value!;
         IEnumerable<TransactionDto> dtos = transactions.Select(t =>
         {
             var stmt = t.CardStatementId.HasValue && stmtsById.TryGetValue(t.CardStatementId.Value, out var s) ? s : null;
-            return TransactionDto.From(t, messages, stmt);
+            return TransactionDto.From(t, messages, stmt) with { AttachmentCount = attachmentsById.GetValueOrDefault(t.Id) };
         });
 
         if (!string.IsNullOrWhiteSpace(input.Text))

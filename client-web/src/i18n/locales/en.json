@@ -755,6 +755,12 @@
         "refund": "Refund",
         "cardStatementPayment": "Statement payment",
         "statementWriteoff": "Statement write-off"
+      },
+      "attachmentKind": {
+        "bill": "Bill",
+        "receipt": "Receipt",
+        "invoice": "Invoice",
+        "other": "Other"
       }
     },
     "imports": {
@@ -830,6 +836,20 @@
       "format": "Format",
       "accountType": "Type",
       "code": "Code"
+    },
+    "attachments": {
+      "title": "Attachments",
+      "upload": "Attach files",
+      "kind": "Attachment type",
+      "empty": "No attachments yet. Images and PDFs, up to 25 MB each.",
+      "button": "Attachments",
+      "uploaded": "\"{{name}}\" attached.",
+      "uploadError": "Could not attach the file.",
+      "tooLarge": "\"{{name}}\" is larger than 25 MB.",
+      "openError": "Could not open the file.",
+      "deleteConfirm": "Remove this attachment?",
+      "deleted": "Attachment removed.",
+      "deleteError": "Could not remove the attachment."
     }
   },
   "notes": {

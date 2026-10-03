@@ -48,7 +48,7 @@ public sealed class AttachmentsController(
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> DownloadAsync(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new GetAttachmentQuery(new GetAttachmentInput(id)), ct);
+        var result = await sender.Send(new GetAttachmentQuery(new GetAttachmentInput(UserId, id)), ct);
 
         if (result.IsFailure)
         {

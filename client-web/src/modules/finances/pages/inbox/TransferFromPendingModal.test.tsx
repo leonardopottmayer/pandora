@@ -32,6 +32,7 @@ function leg(overrides: Partial<PendingTransactionDto>): PendingTransactionDto {
     importRowId: null,
     dedupStatus: null,
     duplicateOfTransactionId: null,
+    attachmentCount: 0,
     createdAt: '2026-06-13T00:00:00Z',
     updatedAt: null,
     ...overrides,

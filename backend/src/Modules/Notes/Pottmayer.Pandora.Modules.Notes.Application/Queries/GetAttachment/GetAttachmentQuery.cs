@@ -3,8 +3,8 @@ using Pottmayer.Tars.Core.Cqrs.Queries;
 
 namespace Pottmayer.Pandora.Modules.Notes.Application.Queries.GetAttachment;
 
-public sealed record GetAttachmentInput(Guid AttachmentId);
+public sealed record GetAttachmentInput(Guid UserId, Guid AttachmentId);
 
-/// <summary>Loads an attachment's bytes for an authenticated download.</summary>
+/// <summary>Loads the bytes of one of the user's own attachments for an authenticated download.</summary>
 public sealed class GetAttachmentQuery(GetAttachmentInput input)
     : QueryBase<GetAttachmentInput, AttachmentContentDto>(input);

@@ -19,7 +19,11 @@ public sealed class GetPendingTransactionsQueryHandler(IUnitOfWorkFactory factor
         {
             var repo = ctx.AcquireRepository<IPendingTransactionRepository>();
             var items = await repo.QueryAsync(input.UserId, input.Filter, token);
-            IReadOnlyList<PendingTransactionDto> dtos = items.Select(PendingTransactionDto.From).ToList();
+            var attachmentCounts = await ctx.AcquireRepository<IAttachmentRepository>()
+                .CountByPendingTransactionsAsync([.. items.Select(p => p.Id)], token);
+            IReadOnlyList<PendingTransactionDto> dtos = items
+                .Select(p => PendingTransactionDto.From(p) with { AttachmentCount = attachmentCounts.GetValueOrDefault(p.Id) })
+                .ToList();
             return Result<IReadOnlyList<PendingTransactionDto>>.Success(dtos);
         }, cancellationToken: ct);
 

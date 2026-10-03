@@ -19,8 +19,12 @@ lugar nenhum, e uma page pode ser soft-deletada enquanto o anexo dela continua a
 
 ## 2. A abstração de storage
 
-`IFileStorage` (em `Persistence/Storage`) é o port: salvar, ler e deletar um blob. Existe exatamente
-uma implementação real — **`DatabaseFileStorage`**, sobre o `IFileBlobRepository`.
+`IFileStorage` (em `Shared.Domain/Storage`) é o port: salvar, ler e deletar um blob. Existe exatamente
+uma implementação real — **`DatabaseFileStorage`** (em `Shared.Persistence/Storage`), compartilhada por
+todo módulo que guarda arquivos: cada um registra a sua instância sobre a sua própria tabela de blobs,
+pela chave do seu banco (`AddPandoraDatabaseFileStorage(NotesModule.DatabaseKey)` +
+`MapFileBlobs(…, "nte003_file_blob", …)`), e a injeta com `[FromKeyedServices(NotesModule.DatabaseKey)]`.
+O Finances faz o mesmo sobre a `fin018`.
 
 A abstração não é a parte interessante; as **linhas auto-descritivas** são. Cada anexo grava *qual
 backend* tem os bytes dele e *a chave dentro dele*. Quando um backend S3/MinIO entrar, os uploads

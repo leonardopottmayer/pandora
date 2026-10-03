@@ -29,7 +29,9 @@ public sealed record PendingTransactionDto(
     string? DedupStatus,
     Guid? DuplicateOfTransactionId,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? UpdatedAt)
+    DateTimeOffset? UpdatedAt,
+    // Filled by the list query; zero elsewhere.
+    int AttachmentCount = 0)
 {
     public static PendingTransactionDto From(PendingTransaction p) => new(
         p.Id,

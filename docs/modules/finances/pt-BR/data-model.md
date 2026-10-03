@@ -29,6 +29,8 @@ Migrations em `migrations/migrations/finances/`.
 | fin014 | `import_row` | Linhas parseadas |
 | fin015 | *(reservado)* | Regras de categorização — **ainda não implementado** |
 | fin016 | `audit_event` | Log de auditoria append-only |
+| fin017 | `attachment` | Arquivos de um lançamento ou de uma sugestão (boleto, comprovante, nota fiscal) |
+| fin018 | `file_blob` | Os bytes por trás da fin017 |
 
 ---
 
@@ -273,6 +275,20 @@ sinal, `installmentPatterns`). Populado com layouts para Viacredi, Nubank, Banco
 FKs para fin011/fin008 são **lógicas** (sem FK física) para evitar acoplamento entre importações.
 Índices `(import_file_id)`, parcial `(dedup_key)`, `(external_id)`, `(pending_transaction_id)`.
 
+## fin017_attachment / fin018_file_blob — anexos
+
+Um arquivo (imagem ou PDF, até 25 MB) em **exatamente um** de `transaction_id` (fin008) ou
+`pending_transaction_id` (fin011) — `ck_fin017_one_owner`. `kind` ∈ `bill` (boleto) · `receipt`
+(comprovante) · `invoice` (nota fiscal) · `other`. `storage_backend` + `storage_key` dizem onde estão os
+bytes: hoje `Database`, um id de linha na `fin018_file_blob` (a tabela de blobs do próprio módulo, via o
+`IFileStorage` compartilhado com a chave `finances`); linhas gravadas antes de um backend S3 continuam
+lendo do banco, sem migration.
+
+O boleto do mês é anexado à sugestão que a recorrência gerou; **aprovar**, **vincular** ou **transferir**
+a sugestão leva os anexos para o lançamento, onde o comprovante se junta a eles. Rejeitar os mantém na
+sugestão rejeitada. Lançamentos nunca são excluídos de fato (cancelar mantém os arquivos). Adicionar/remover
+grava `transaction.attachment-added|removed` (ou `pending.…`) no dono.
+
 ## fin016_audit_event — append-only
 
 | Coluna | Tipo | Notas |
@@ -307,4 +323,6 @@ erDiagram
     IMPORT_FILE }o--o| IMPORT_LAYOUT : "parseada com"
     TAG ||--o{ TAG_LINK : ""
     TRANSACTION ||--o{ TAG_LINK : "polimórfico"
+    TRANSACTION ||--o{ ATTACHMENT : "arquivos"
+    PENDING_TRANSACTION ||--o{ ATTACHMENT : "arquivos (vão na aprovação)"
 ```

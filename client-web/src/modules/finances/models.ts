@@ -149,6 +149,7 @@ export interface TransactionDto {
   voidReason: string | null
   statementReferenceMonth: string | null
   statementDueDate: string | null
+  attachmentCount: number
 }
 
 export interface CardDto {
@@ -322,6 +323,25 @@ export interface PendingTransactionDto {
   duplicateOfTransactionId: string | null
   createdAt: string
   updatedAt: string | null
+  attachmentCount: number
+}
+
+export type AttachmentKind = 'bill' | 'receipt' | 'invoice' | 'other'
+
+/** Where a file is attached: a transaction or an inbox suggestion, never both. */
+export type AttachmentOwner = { transactionId: string } | { pendingTransactionId: string }
+
+export interface AttachmentDto {
+  id: string
+  transactionId: string | null
+  pendingTransactionId: string | null
+  kind: AttachmentKind
+  fileName: string
+  contentType: string
+  sizeBytes: number
+  /** Authenticated path of the bytes; fetch it through the API client (see `openAttachment`). */
+  url: string
+  createdAt: string
 }
 
 // ---------------------------------------------------------------------------

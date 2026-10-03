@@ -1,5 +1,6 @@
 import type {
   AccountType,
+  AttachmentKind,
   PendingStatus,
   RecurrenceFrequency,
   RecurringStatus,
@@ -50,6 +51,13 @@ export const RECURRING_STATUS_META: Record<RecurringStatus, EnumMeta> = {
   active: { labelKey: 'finances.enums.recurringStatus.active', color: 'green' },
   paused: { labelKey: 'finances.enums.recurringStatus.paused', color: 'gold' },
   finished: { labelKey: 'finances.enums.recurringStatus.finished', color: 'default' },
+}
+
+export const ATTACHMENT_KIND_META: Record<AttachmentKind, EnumMeta> = {
+  bill: { labelKey: 'finances.enums.attachmentKind.bill', color: 'orange' },
+  receipt: { labelKey: 'finances.enums.attachmentKind.receipt', color: 'green' },
+  invoice: { labelKey: 'finances.enums.attachmentKind.invoice', color: 'blue' },
+  other: { labelKey: 'finances.enums.attachmentKind.other' },
 }
 
 export const PENDING_STATUS_META: Record<PendingStatus, EnumMeta> = {

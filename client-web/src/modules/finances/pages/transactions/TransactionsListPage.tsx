@@ -5,7 +5,7 @@ import {
   Popconfirm, Row, Select, Space, Table, Typography,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { PlusOutlined, SwapOutlined } from '@ant-design/icons'
+import { PaperClipOutlined, PlusOutlined, SwapOutlined } from '@ant-design/icons'
 import { toErrorMessage } from '@/lib/api/envelope'
 import {
   TRANSACTION_KINDS,
@@ -24,6 +24,7 @@ import {
 import { formatDate, formatReferenceMonth } from '../../lib/format'
 import { CurrencyAmount } from '../../components/CurrencyAmount'
 import { EnumTag } from '../../components/EnumTag'
+import { TransactionDetailModal } from '../../components/TransactionDetailModal'
 import { useAccounts, useAccountNames } from '../../hooks/useAccounts'
 import { useCards, useCardNames } from '../../hooks/useCards'
 import { useCategoryNames, useSystemCategories, useUserCategories } from '../../hooks/useCategories'
@@ -65,6 +66,7 @@ export function TransactionsListPage() {
   const [clientFilters, setClientFilters] = useState<ClientFilters>({})
   const [formOpen, setFormOpen] = useState(false)
   const [transferOpen, setTransferOpen] = useState(false)
+  const [detailId, setDetailId] = useState<string | null>(null)
 
   const { data, isLoading } = useTransactions({ take: 1000 })
   const { data: accounts } = useAccounts()
@@ -263,6 +265,14 @@ export function TransactionsListPage() {
       align: 'right',
       render: (_, tx) => (
         <Space>
+          <Button
+            size="small"
+            icon={<PaperClipOutlined />}
+            aria-label={t('finances.attachments.button')}
+            onClick={() => setDetailId(tx.id)}
+          >
+            {tx.attachmentCount > 0 ? tx.attachmentCount : null}
+          </Button>
           {tx.status === 'pending' && (
             <Button size="small" onClick={() => handlePost(tx)}>
               {t('finances.transactions.post')}
@@ -430,6 +440,7 @@ export function TransactionsListPage() {
 
       <TransactionFormModal open={formOpen} onClose={() => setFormOpen(false)} />
       <TransferFormModal open={transferOpen} onClose={() => setTransferOpen(false)} />
+      <TransactionDetailModal transactionId={detailId} open={!!detailId} onClose={() => setDetailId(null)} />
     </Card>
   )
 }

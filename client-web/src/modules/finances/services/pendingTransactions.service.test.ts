@@ -38,6 +38,7 @@ const pending: PendingTransactionDto = {
   importRowId: null,
   dedupStatus: null,
   duplicateOfTransactionId: null,
+  attachmentCount: 0,
   createdAt: '2026-07-01T00:00:00Z',
   updatedAt: null,
 }

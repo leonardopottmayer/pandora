@@ -14,6 +14,7 @@ internal sealed class AttachmentEntityConfiguration : IEntityTypeConfiguration<A
         builder.HasKey(a => a.Id).HasName("pk_nte002");
 
         builder.Property(a => a.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(a => a.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(a => a.PageId).HasColumnName("page_id");
         builder.Property(a => a.FileName).HasColumnName("file_name").HasMaxLength(255).IsRequired();
         builder.Property(a => a.ContentType).HasColumnName("content_type").HasMaxLength(255).IsRequired();
@@ -25,5 +26,6 @@ internal sealed class AttachmentEntityConfiguration : IEntityTypeConfiguration<A
         // A page may be soft-deleted while its attachment lingers, so no FK constraint — PageId is a
         // loose reference used only to group an upload under the page it was pasted into.
         builder.HasIndex(a => a.PageId).HasDatabaseName("ix_nte002_page_id");
+        builder.HasIndex(a => a.UserId).HasDatabaseName("ix_nte002_user_id");
     }
 }

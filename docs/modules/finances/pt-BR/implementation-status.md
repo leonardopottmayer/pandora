@@ -18,6 +18,7 @@ Use para distinguir "documentado porque existe" de "documentado como plano".
 | **Cartões e faturas** | CRUD de cartão, ciclo da fatura, resolver, pagar, **quitar (write-off)**, fechar, **reabrir**, limite disponível (`fin006`, `fin007`). |
 | **Parcelamento** | Só planos manuais, divisão de centavos, cancelar parcela/plano (`fin009`). Planos inferidos de importação + projeções **não** estão implementados — ver abaixo. |
 | **Tags** | CRUD de tags + vínculos polimórficos (`fin004`, `fin005`). |
+| **Anexos** | Imagens/PDFs num lançamento ou numa sugestão, com tipo (boleto, comprovante, nota fiscal, outro); os arquivos da sugestão vão para o lançamento na aprovação (`fin017`, `fin018`). |
 | **Recorrências e inbox** | Templates de recorrência + motor de regras, inbox de staging, aprovar/rejeitar/vincular/transferir-do-pendente, job de geração (`fin010`, `fin011`). |
 | **Importação** | OFX **e** CSV, seed de layouts de banco + auto-detecção, dedup/conciliação de três níveis, extração do marcador de parcela para `parsed_payload`/`ImportRow` (número/count apenas — sem casamento de plano), data de corte, retry (`fin012`–`fin014`). |
 | **Reversibilidade** | Cancelar, desfazer, estornar (todos os casos), proteções de exclusão em conta/cartão. |

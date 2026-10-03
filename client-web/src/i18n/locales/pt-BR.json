@@ -755,6 +755,12 @@
         "refund": "Estorno",
         "cardStatementPayment": "Pagamento de fatura",
         "statementWriteoff": "Baixa de fatura"
+      },
+      "attachmentKind": {
+        "bill": "Boleto",
+        "receipt": "Comprovante",
+        "invoice": "Nota fiscal",
+        "other": "Outro"
       }
     },
     "imports": {
@@ -830,6 +836,20 @@
       "format": "Formato",
       "accountType": "Tipo",
       "code": "Codigo"
+    },
+    "attachments": {
+      "title": "Anexos",
+      "upload": "Anexar arquivos",
+      "kind": "Tipo do anexo",
+      "empty": "Nenhum anexo ainda. Imagens e PDFs, até 25 MB cada.",
+      "button": "Anexos",
+      "uploaded": "\"{{name}}\" anexado.",
+      "uploadError": "Não foi possível anexar o arquivo.",
+      "tooLarge": "\"{{name}}\" tem mais de 25 MB.",
+      "openError": "Não foi possível abrir o arquivo.",
+      "deleteConfirm": "Remover este anexo?",
+      "deleted": "Anexo removido.",
+      "deleteError": "Não foi possível remover o anexo."
     }
   },
   "notes": {

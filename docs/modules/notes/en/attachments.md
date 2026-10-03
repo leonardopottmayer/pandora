@@ -18,8 +18,11 @@ anywhere, and a page can be soft-deleted while its attachment lingers.
 
 ## 2. The storage abstraction
 
-`IFileStorage` (in `Persistence/Storage`) is the port: save, read, delete a blob. There is exactly
-one real implementation — **`DatabaseFileStorage`**, over `IFileBlobRepository`.
+`IFileStorage` (in `Shared.Domain/Storage`) is the port: save, read, delete a blob. There is exactly
+one real implementation — **`DatabaseFileStorage`** (in `Shared.Persistence/Storage`), shared by every
+module that stores files: each registers its own instance over its own blob table, keyed by its database
+key (`AddPandoraDatabaseFileStorage(NotesModule.DatabaseKey)` + `MapFileBlobs(…, "nte003_file_blob", …)`),
+and injects it with `[FromKeyedServices(NotesModule.DatabaseKey)]`. Finances does the same over `fin018`.
 
 The abstraction is not the interesting part; the **self-describing rows** are. Each attachment
 records *which backend* holds its bytes and *the key inside it*. When an S3/MinIO backend is added,

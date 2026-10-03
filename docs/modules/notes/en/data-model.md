@@ -65,6 +65,7 @@ See [Search](search.md).
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid PK | also the id in the download URL |
+| `user_id` | uuid NOT NULL | the uploader; a download by anyone else answers 404 |
 | `page_id` | uuid NULL | **loose reference, no FK** — a page may be soft-deleted while its attachment lingers |
 | `file_name` | varchar(255) NOT NULL | original name, used as the download filename |
 | `content_type` | varchar(255) NOT NULL | MIME as sent; empty falls back to `application/octet-stream` |
@@ -73,7 +74,7 @@ See [Search](search.md).
 | `storage_key` | varchar(1024) NOT NULL | opaque key within that backend — today the `nte003` row id |
 | `created_at` | timestamptz NOT NULL | write-once, so no `updated_*` |
 
-Index `ix_nte002_page_id`. The `storage_backend` + `storage_key` pair is what lets a future S3
+Indexes `ix_nte002_user_id`, `ix_nte002_page_id`. The `storage_backend` + `storage_key` pair is what lets a future S3
 backend land without a migration: reads stay self-describing and old rows keep working.
 
 ## nte003_file_blob

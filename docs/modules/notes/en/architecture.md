@@ -61,8 +61,9 @@ than one row, kept in the domain so it stays unit-testable:
 ### Ports (`Domain/Ports/Repositories`)
 
 `IPageRepository`, `IPageLinkRepository`, `ITagRepository`, `IPageTagRepository`,
-`IAttachmentRepository`. Storage has its own port pair in `Persistence/Storage`: `IFileStorage`
-(consumed by the application) with `DatabaseFileStorage` over `IFileBlobRepository`.
+`IAttachmentRepository`. Storage is the shared `IFileStorage` port (`Shared.Domain/Storage`), consumed by
+the application keyed by `NotesModule.DatabaseKey`; its `DatabaseFileStorage` lives in
+`Shared.Persistence/Storage` over the module's `nte003_file_blob` table (see [Attachments](attachments.md)).
 
 The module declares **no domain services and no jobs** — nothing here runs on a schedule.
 
@@ -93,8 +94,9 @@ The module declares **no domain services and no jobs** — nothing here runs on 
 
 ## 4. Cross-cutting rules
 
-- **Multi-tenant by user.** `nte001_page` and `nte005_tag` carry `user_id NOT NULL`; the derived
-  tables reach the owner through their page. Every endpoint is authenticated and scoped to the
+- **Multi-tenant by user.** `nte001_page`, `nte005_tag` and `nte002_attachment` carry
+  `user_id NOT NULL` (an attachment may have no page, so it cannot reach its owner through one); the
+  derived tables reach the owner through their page. Every endpoint is authenticated and scoped to the
   token's user; another user's resource returns **404** (not 403).
 - **`TimeProvider` everywhere.** No aggregate reads `DateTime.Now` directly, which is what makes the
   archive/delete timestamps testable.

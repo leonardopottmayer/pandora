@@ -1,8 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Pottmayer.Pandora.Modules.Notes.Abstractions;
-using Pottmayer.Pandora.Modules.Notes.Persistence.Storage;
-using Pottmayer.Pandora.Shared.Domain.Storage;
+using Pottmayer.Pandora.Shared.Persistence.DI;
 using Pottmayer.Pandora.Shared.Persistence.Interceptors;
 using Pottmayer.Tars.Data.DI;
 using Pottmayer.Tars.Data.Relational.DI;
@@ -21,8 +20,8 @@ public static class PersistenceDI
 
         services.AddTarsDataRepositoriesFromAssemblies(typeof(PersistenceDI));
 
-        // The MVP's only IFileStorage backend: attachment bytes in the notes.nte003_file_blob table.
-        services.AddScoped<IFileStorage, DatabaseFileStorage>();
+        // Attachment bytes in the notes.nte003_file_blob table, keyed by this module's database key.
+        services.AddPandoraDatabaseFileStorage(NotesModule.DatabaseKey);
 
         return services;
     }

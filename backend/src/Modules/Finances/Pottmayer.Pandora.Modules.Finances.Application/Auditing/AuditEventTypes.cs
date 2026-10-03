@@ -14,6 +14,8 @@ public static class TransactionEvents
     public const string Voided = "transaction.voided";
     public const string Restored = "transaction.restored";
     public const string Reversed = "transaction.reversed";
+    public const string AttachmentAdded = "transaction.attachment-added";
+    public const string AttachmentRemoved = "transaction.attachment-removed";
 }
 
 public static class PendingTransactionEvents
@@ -24,6 +26,8 @@ public static class PendingTransactionEvents
     public const string Rejected = "pending.rejected";
     public const string Linked = "pending.linked";
     public const string Edited = "pending.edited";
+    public const string AttachmentAdded = "pending.attachment-added";
+    public const string AttachmentRemoved = "pending.attachment-removed";
 }
 
 public static class RecurringTransactionEvents

@@ -11,6 +11,8 @@ namespace Pottmayer.Pandora.Modules.Notes.Domain.Aggregates;
 /// </summary>
 public sealed class Attachment : AggregateRoot<Guid>
 {
+    /// <summary>The uploader; only they can download it.</summary>
+    public Guid UserId { get; private set; }
     public Guid? PageId { get; private set; }
     public string FileName { get; private set; } = string.Empty;
     public string ContentType { get; private set; } = string.Empty;
@@ -31,6 +33,7 @@ public sealed class Attachment : AggregateRoot<Guid>
     /// <paramref name="storageBackend"/>.
     /// </summary>
     public static Attachment Create(
+        Guid userId,
         Guid? pageId,
         string fileName,
         string contentType,
@@ -41,6 +44,7 @@ public sealed class Attachment : AggregateRoot<Guid>
         new()
         {
             Id = Guid.CreateVersion7(),
+            UserId = userId,
             PageId = pageId,
             FileName = fileName,
             ContentType = contentType,

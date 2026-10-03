@@ -37,6 +37,7 @@ const tx: TransactionDto = {
   descriptionArgs: null,
   statementReferenceMonth: null,
   statementDueDate: null,
+  attachmentCount: 0,
 }
 
 beforeAll(async () => {

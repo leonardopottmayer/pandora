@@ -6,6 +6,7 @@ import { useCardNames } from '../hooks/useCards'
 import { useCategoryNames } from '../hooks/useCategories'
 import { kindDirection, transactionKindLabelKey, TRANSACTION_STATUS_META } from '../lib/enums'
 import { formatDate, formatReferenceMonth } from '../lib/format'
+import { AttachmentsPanel } from './AttachmentsPanel'
 import { CurrencyAmount } from './CurrencyAmount'
 
 interface TransactionDetailModalProps {
@@ -14,7 +15,10 @@ interface TransactionDetailModalProps {
   onClose: () => void
 }
 
-/** Read-only view of a single transaction, used to diagnose import duplicates without leaving the page. */
+/**
+ * View of a single transaction — to diagnose import duplicates without leaving the page, and to see
+ * and add its attachments (receipts, boletos).
+ */
 export function TransactionDetailModal({ transactionId, open, onClose }: TransactionDetailModalProps) {
   const { t } = useTranslation()
   const { data: tx, isLoading } = useTransaction(open ? transactionId : null)
@@ -75,6 +79,11 @@ export function TransactionDetailModal({ transactionId, open, onClose }: Transac
             <Descriptions.Item label={t('finances.transactions.notes')}>{tx.notes}</Descriptions.Item>
           )}
         </Descriptions>
+      )}
+      {open && transactionId && (
+        <div className="mt-4">
+          <AttachmentsPanel owner={{ transactionId }} />
+        </div>
       )}
     </Modal>
   )

@@ -62,8 +62,9 @@ em vez de uma linha, mantida no domínio para continuar testável:
 ### Ports (`Domain/Ports/Repositories`)
 
 `IPageRepository`, `IPageLinkRepository`, `ITagRepository`, `IPageTagRepository`,
-`IAttachmentRepository`. O storage tem o par de ports dele em `Persistence/Storage`: `IFileStorage`
-(consumido pela aplicação) com `DatabaseFileStorage` sobre `IFileBlobRepository`.
+`IAttachmentRepository`. O storage é o port compartilhado `IFileStorage` (`Shared.Domain/Storage`),
+consumido pela aplicação pela chave `NotesModule.DatabaseKey`; o `DatabaseFileStorage` dele fica em
+`Shared.Persistence/Storage`, sobre a tabela `nte003_file_blob` do módulo (ver [Anexos](attachments.md)).
 
 O módulo **não declara domain services nem jobs** — nada aqui roda em schedule.
 
@@ -94,7 +95,8 @@ O módulo **não declara domain services nem jobs** — nada aqui roda em schedu
 
 ## 4. Regras transversais
 
-- **Multi-tenant por usuário.** `nte001_page` e `nte005_tag` têm `user_id NOT NULL`; as tabelas
+- **Multi-tenant por usuário.** `nte001_page`, `nte005_tag` e `nte002_attachment` têm
+  `user_id NOT NULL` (um anexo pode não ter page, então não chega ao dono por ela); as tabelas
   derivadas chegam ao dono pela page delas. Todo endpoint é autenticado e escopado ao usuário do
   token; recurso de outro usuário devolve **404** (não 403).
 - **`TimeProvider` em todo lugar.** Nenhum aggregate lê `DateTime.Now` direto, o que é o que torna os

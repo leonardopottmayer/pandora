@@ -101,6 +101,17 @@ user. A resource owned by another user returns **404** (not 403). Controllers li
 | POST | `/pending-transactions/approve-batch` | Batch approve |
 | POST | `/pending-transactions/transfer` | Build a transfer from two suggestions |
 
+## Attachments — `/attachments`
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/attachments?transactionId=` · `?pendingTransactionId=` | One owner's attachments, oldest first |
+| POST | `/attachments` | `multipart/form-data`: `file` (image or PDF, ≤ 25 MB), `kind`, and `transactionId` **or** `pendingTransactionId` |
+| GET | `/attachments/{id}` | The bytes, inline, with the stored content type and file name |
+| DELETE | `/attachments/{id}` | Remove the attachment and its bytes |
+
+Lists of transactions and pending transactions carry `attachmentCount`.
+
 ## Imports — `/imports`
 
 | Method | Route | Purpose |

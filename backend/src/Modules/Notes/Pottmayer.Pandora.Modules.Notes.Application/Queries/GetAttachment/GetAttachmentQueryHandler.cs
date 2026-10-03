@@ -2,6 +2,7 @@ using Pottmayer.Pandora.Modules.Notes.Abstractions;
 using Pottmayer.Pandora.Modules.Notes.Application.Dtos;
 using Pottmayer.Pandora.Modules.Notes.Domain.Errors;
 using Pottmayer.Pandora.Modules.Notes.Domain.Ports.Repositories;
+using Microsoft.Extensions.DependencyInjection;
 using Pottmayer.Pandora.Shared.Domain.Storage;
 using Pottmayer.Tars.Core.Cqrs.Queries;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
@@ -9,7 +10,7 @@ using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 
 namespace Pottmayer.Pandora.Modules.Notes.Application.Queries.GetAttachment;
 
-public sealed class GetAttachmentQueryHandler(IUnitOfWorkFactory factory, IFileStorage fileStorage)
+public sealed class GetAttachmentQueryHandler(IUnitOfWorkFactory factory, [FromKeyedServices(NotesModule.DatabaseKey)] IFileStorage fileStorage)
     : QueryHandlerBase<GetAttachmentQuery, AttachmentContentDto>
 {
     protected override async Task<Result<AttachmentContentDto>> HandleAsync(
@@ -17,7 +18,7 @@ public sealed class GetAttachmentQueryHandler(IUnitOfWorkFactory factory, IFileS
     {
         var attachment = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
             await ctx.AcquireRepository<IAttachmentRepository>()
-                     .GetByIdAsync(request.Input.AttachmentId, token),
+                     .FindByIdForUserAsync(request.Input.AttachmentId, request.Input.UserId, token),
             cancellationToken: ct);
 
         if (attachment is null)
