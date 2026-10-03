@@ -2,7 +2,8 @@ namespace Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 
 /// <summary>
 /// How readily a command executes once the model has produced a tool call. The user's profile
-/// <c>ConfirmationLevel</c> shifts this one notch either way before the pipeline acts on it.
+/// <c>ConfirmationLevel</c> shifts this one notch either way before the pipeline acts on it — except
+/// <see cref="Required"/>, which no level relaxes.
 /// </summary>
 public enum ConfirmationPolicy
 {
@@ -14,4 +15,7 @@ public enum ConfirmationPolicy
 
     /// <summary>Always confirm before executing.</summary>
     Always,
+
+    /// <summary>Always confirm, whatever the user's level — for what cannot be undone, like a deletion.</summary>
+    Required,
 }

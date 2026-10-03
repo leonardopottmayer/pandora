@@ -21,8 +21,17 @@ public static class ApplicationDI
         services.AddScoped<IAssistantTool, CreateTaskTool>();
         services.AddScoped<IAssistantTool, CreateEventTool>();
         services.AddScoped<IAssistantTool, CompleteTaskTool>();
-        services.AddScoped<IAssistantTool, SnoozeReminderTool>();
+        services.AddScoped<IAssistantTool, RescheduleReminderTool>();
         services.AddScoped<IAssistantTool, ListAgendaTool>();
+        services.AddScoped<IAssistantTool, ListTasksTool>();
+        services.AddScoped<IAssistantTool, UpdateTaskTool>();
+        services.AddScoped<IAssistantTool, ReopenTaskTool>();
+        services.AddScoped<IAssistantTool, DeleteTaskTool>();
+        services.AddScoped<IAssistantTool, UpdateEventTool>();
+        services.AddScoped<IAssistantTool, DeleteEventTool>();
+        services.AddScoped<IAssistantTool, CancelReminderTool>();
+        services.AddScoped<IAssistantTool, RenameReminderTool>();
+        services.AddScoped<IAssistantTool, ListRemindersTool>();
 
         return services;
     }

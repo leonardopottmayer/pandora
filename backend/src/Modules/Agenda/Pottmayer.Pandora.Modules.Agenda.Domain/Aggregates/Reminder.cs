@@ -153,6 +153,32 @@ public sealed class Reminder : AggregateRoot<Guid>, IAuditable
         SnoozedUntil = null;
     }
 
+    /// <summary>
+    /// Moves a single-shot reminder to <paramref name="at"/> and re-arms it — unlike <see cref="Snooze"/>,
+    /// which defers an alert that already fired and leaves the remind time as it was. A no-op once terminal.
+    /// </summary>
+    public void Reschedule(DateTimeOffset at)
+    {
+        if (IsRecurring)
+            throw new InvalidOperationException("A recurring reminder is moved per occurrence, not rescheduled.");
+        if (Status is ReminderStatus.Acknowledged or ReminderStatus.Cancelled)
+            return;
+
+        RemindAt = at.ToUniversalTime();
+        SnoozedUntil = null;
+        Status = ReminderStatus.Scheduled;
+    }
+
+    /// <summary>Gives the reminder a new title; when and how it fires stay as they are.</summary>
+    public void Rename(string title)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ArgumentException("A reminder needs a title.", nameof(title));
+
+        title = title.Trim();
+        Title = title.Length <= MaxTitleLength ? title : title[..MaxTitleLength];
+    }
+
     /// <summary>Cancels the reminder before it is acted on.</summary>
     public void Cancel()
     {

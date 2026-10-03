@@ -74,19 +74,23 @@ public sealed class ListAgendaTool(ISender sender) : IAssistantTool
         var culture = Culture(context);
         var sb = new StringBuilder(context.Text($"Agenda de {span}:", $"Agenda for {span}:"));
 
-        // Grouped by the user's local day; an event that began before the span shows on its first day.
+        // Grouped by the user's local day; an event that began before the span shows on its first day. The
+        // lines are numbered across days, so the user can then point at one ("cancela o 2").
+        var listed = new List<ListedItem>(items.Count);
         foreach (var day in items.GroupBy(i => Max(LocalDay(context, i.At), from)).OrderBy(g => g.Key))
         {
             if (from != to)
                 sb.Append("\n\n").Append(day.Key.ToString(context.IsPortuguese ? "ddd, dd/MM" : "ddd, MMM d", culture));
             foreach (var item in day)
-                sb.Append('\n').Append("• ").Append(Line(context, item));
+            {
+                listed.Add(new ListedItem(item.Kind, item.Id, item.Title, item.Kind == "event" ? item.At : null));
+                sb.Append('\n').Append(listed.Count).Append(". ").Append(Line(context, item));
+            }
         }
 
-        return AssistantCommandOutcome.Ok(sb.ToString(), recap);
+        return AssistantCommandOutcome.Ok(sb.ToString(), recap, listed);
     }
 
-    // ponytail: Telegram caps a message at 4096 chars; a busy month could pass it. Split or trim if it happens.
     private static string Line(AssistantToolContext context, TodayItemDto item)
     {
         var at = Time(context, item.At);
@@ -101,9 +105,9 @@ public sealed class ListAgendaTool(ISender sender) : IAssistantTool
         };
     }
 
-    /// <summary>Cancelled items and finished tasks are not on the agenda anymore.</summary>
+    /// <summary>Cancelled items, finished tasks and acknowledged reminders are not on the agenda anymore.</summary>
     private static bool IsOpen(TodayItemDto item) =>
-        item.Status is not (nameof(EventStatus.Cancelled) or nameof(TaskItemStatus.Done));
+        item.Status is not (nameof(EventStatus.Cancelled) or nameof(TaskItemStatus.Done) or nameof(ReminderStatus.Acknowledged));
 
     private static (DateOnly From, DateOnly To) Parse(AssistantToolContext context, JsonElement arguments)
     {

@@ -16,6 +16,12 @@ public sealed class Conversation : AggregateRoot<Guid>
     public DateTimeOffset StartedAt { get; private set; }
     public DateTimeOffset LastActivityAt { get; private set; }
 
+    /// <summary>
+    /// The numbered lines (JSON) of the last list shown in this conversation, so a follow-up can point at
+    /// one by number ("cancela o 2"). Null until a list is shown; it lapses with the conversation.
+    /// </summary>
+    public string? LastListingJson { get; private set; }
+
     private Conversation() { }
 
     public static Conversation Start(Guid userId, TimeProvider timeProvider)
@@ -35,4 +41,7 @@ public sealed class Conversation : AggregateRoot<Guid>
 
     /// <summary>Records activity, keeping the conversation alive.</summary>
     public void Touch(DateTimeOffset now) => LastActivityAt = now;
+
+    /// <summary>Remembers the list just shown, replacing the previous one — numbers refer to the latest list.</summary>
+    public void ShowListing(string listingJson) => LastListingJson = listingJson;
 }

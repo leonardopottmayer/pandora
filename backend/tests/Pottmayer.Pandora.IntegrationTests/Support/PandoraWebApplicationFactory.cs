@@ -53,7 +53,7 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
         _respawner = await Respawner.CreateAsync(_connection, new RespawnerOptions
         {
             DbAdapter = DbAdapter.Postgres,
-            SchemasToInclude = ["identity", "channels", "finances", "notes", "agenda", "integrations"],
+            SchemasToInclude = ["identity", "channels", "finances", "notes", "agenda", "integrations", "assistant"],
             TablesToIgnore =
             [
                 new Respawn.Graph.Table("finances", "fin002_system_category"),
@@ -76,8 +76,13 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
                 ["Tars:Data:Connections:notes:ConnectionString"] = ConnectionString,
                 ["Tars:Data:Connections:agenda:ConnectionString"] = ConnectionString,
                 ["Tars:Data:Connections:integrations:ConnectionString"] = ConnectionString,
+                ["Tars:Data:Connections:assistant:ConnectionString"] = ConnectionString,
                 // A bot username is all the linking flow needs; no token, because nothing calls Telegram here.
                 ["Pandora:Channels:Telegram:BotUsername"] = "pandora_test_bot",
+                // Test users have no zone preference, so "today" falls back to this default. Pinned to UTC so it
+                // matches the tests' DateTime.UtcNow dates instead of the host's America/Sao_Paulo, which put the
+                // server a day behind between 21:00 and midnight there.
+                ["Pandora:DefaultTimeZone"] = "UTC",
                 // Fixed AES-256 key (Base64 of 32 bytes) so MFA secrets can be encrypted in tests.
                 ["Pandora:Identity:Mfa:EncryptionKey"] = "7Mzi45PyKOyGH1hWmXvnDKCVOY9qKeEB8P8NTuZe3T4="
             });

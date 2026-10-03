@@ -45,7 +45,8 @@ public sealed class SearchNotesToolTests
         var input = Assert.Single(sender.Searched);
         Assert.Equal(Context.UserId, input.UserId);
         Assert.Equal("wifi", input.Term);
-        Assert.Equal("Notas para \"wifi\":\n• Wifi da mãe — Senha: girassol2024\n• Roteador", outcome.Message);
+        Assert.Equal("Notas para \"wifi\":\n1. Wifi da mãe — Senha: girassol2024\n2. Roteador", outcome.Message);
+        Assert.Equal(["Wifi da mãe", "Roteador"], outcome.Listed!.Select(l => l.Label));
         Assert.DoesNotContain("girassol", outcome.Recap);
         Assert.Contains("2 note(s)", outcome.Recap);
     }
@@ -57,7 +58,7 @@ public sealed class SearchNotesToolTests
 
         var outcome = await new SearchNotesTool(sender).ExecuteAsync(Context, Args("""{ "query": "nota" }"""));
 
-        Assert.Equal(5, outcome.Message.Split('\n').Count(l => l.StartsWith('•')));
+        Assert.Equal(5, outcome.Listed!.Count);
         Assert.EndsWith("…e mais 2. A busca completa está no Notes.", outcome.Message);
     }
 

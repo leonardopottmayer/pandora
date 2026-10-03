@@ -3,7 +3,7 @@ using Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.CompleteTask;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateEvent;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateTask;
-using Pottmayer.Pandora.Modules.Agenda.Application.Commands.SnoozeReminder;
+using Pottmayer.Pandora.Modules.Agenda.Application.Commands.RescheduleReminder;
 using Pottmayer.Pandora.Modules.Agenda.Application.Dtos;
 using Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetToday;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
@@ -81,20 +81,20 @@ public sealed class AgendaAssistantToolsTests
     }
 
     [Fact]
-    public async Task Snooze_moves_a_one_off_reminder_and_refuses_a_recurring_one()
+    public async Task Reschedule_moves_a_one_off_reminder_and_refuses_a_recurring_one()
     {
         var dentist = Reminder("Dentista");
-        var until = "2026-09-05T13:00:00Z";
+        var at = "2026-09-05T13:00:00Z";
         var sender = new ScriptedSender(List(dentist, Reminder("Remédio", "FREQ=DAILY")), Result<bool>.Success(true));
-        var tool = new SnoozeReminderTool(sender);
+        var tool = new RescheduleReminderTool(sender);
 
-        var ok = await tool.ExecuteAsync(Context, Args($$"""{ "reminder": "dentista", "until": "{{until}}" }"""));
-        var refused = await tool.ExecuteAsync(Context, Args($$"""{ "reminder": "remedio", "until": "{{until}}" }"""));
+        var ok = await tool.ExecuteAsync(Context, Args($$"""{ "reminder": "dentista", "at": "{{at}}" }"""));
+        var refused = await tool.ExecuteAsync(Context, Args($$"""{ "reminder": "remedio", "at": "{{at}}" }"""));
 
-        Assert.Equal("Lembrete \"Dentista\" adiado para 05/09/2026 às 10:00.", ok.Message);
+        Assert.Equal("Lembrete \"Dentista\" remarcado para 05/09/2026 às 10:00.", ok.Message);
         Assert.False(refused.Success);
-        var snoozed = Assert.Single(sender.Sent.OfType<SnoozeReminderCommand>());
-        Assert.Equal(dentist.Id, snoozed.Input.ReminderId);
+        var moved = Assert.Single(sender.Sent.OfType<RescheduleReminderCommand>());
+        Assert.Equal((dentist.Id, DateTimeOffset.Parse(at)), (moved.Input.ReminderId, moved.Input.At));
     }
 
     [Fact]
@@ -157,14 +157,17 @@ public sealed class AgendaAssistantToolsTests
         Assert.Equal(
             """
             Agenda de 05/09/2026:
-            • dia todo · Aniversário
-            • 09:00–10:00 Dentista
-            • 10:00 lembrete · Pagar aluguel
-            • tarefa · Renovar passaporte
+            1. dia todo · Aniversário
+            2. 09:00–10:00 Dentista
+            3. 10:00 lembrete · Pagar aluguel
+            4. tarefa · Renovar passaporte
             """.ReplaceLineEndings("\n"),
             outcome.Message);
         Assert.DoesNotContain("Dentista", outcome.Recap);
         Assert.Contains("4 item(s)", outcome.Recap);
+        Assert.Equal(["event", "event", "reminder", "task"], outcome.Listed!.Select(l => l.Kind));
+        Assert.Equal(DateTimeOffset.Parse("2026-09-05T09:00:00-03:00"), outcome.Listed![1].At);
+        Assert.Null(outcome.Listed[2].At);
     }
 
     [Fact]
@@ -182,10 +185,10 @@ public sealed class AgendaAssistantToolsTests
             Agenda de 07/09/2026 a 08/09/2026:
 
             seg., 07/09
-            • 14:00 Reunião
+            1. 14:00 Reunião
 
             ter., 08/09
-            • 08:00 lembrete · Remédio
+            2. 08:00 lembrete · Remédio
             """.ReplaceLineEndings("\n"),
             outcome.Message);
     }

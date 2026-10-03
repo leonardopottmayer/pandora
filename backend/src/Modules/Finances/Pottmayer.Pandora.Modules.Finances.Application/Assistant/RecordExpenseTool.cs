@@ -20,7 +20,7 @@ public sealed class RecordExpenseTool(ISender sender, TimeProvider timeProvider)
 {
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "record_expense",
-        Description: "Records money the user spent, for review in their finances inbox. You cannot see their accounts or cards: pass the words they used to name one.",
+        Description: "Records money the user spent, for review in their finances inbox. You cannot see their accounts or cards: pass the words they used to name one. Not for paying a card statement or settling anything already in Finances — that is done in the app, and recording it here would count it twice; never offer it.",
         ParametersJsonSchema: """
         {
           "type": "object",
@@ -49,7 +49,7 @@ public sealed class RecordExpenseTool(ISender sender, TimeProvider timeProvider)
     {
         var e = Parse(context, arguments);
         var from = e.Card ?? e.Account;
-        var amount = e.Amount.ToString("N2", Culture(context));
+        var amount = e.Amount.ToString("N2", FinanceText.Culture(context));
         return from is null
             ? context.Text($"Registrar a despesa \"{e.Description}\" de {amount}?", $"Record the expense \"{e.Description}\" of {amount}?")
             : context.Text($"Registrar a despesa \"{e.Description}\" de {amount} ({from})?", $"Record the expense \"{e.Description}\" of {amount} ({from})?");
@@ -78,8 +78,8 @@ public sealed class RecordExpenseTool(ISender sender, TimeProvider timeProvider)
             return AssistantCommandOutcome.Failed(string.Join("; ", result.Errors.Select(x => x.Message)));
 
         var pending = result.Value!;
-        var money = FormatMoney(context, pending.Amount!.Value, pending.Currency);
-        var day = pending.OccurredOn.ToString(context.IsPortuguese ? "dd/MM/yyyy" : "MMM d, yyyy", Culture(context));
+        var money = FinanceText.Money(context, pending.Amount!.Value, pending.Currency);
+        var day = FinanceText.Day(context, pending.OccurredOn);
         return AssistantCommandOutcome.Ok(context.Text(
             $"Despesa \"{pending.Description}\" de {money} ({chosen.Name}, {day}) enviada para a caixa de entrada do Finances.",
             $"Expense \"{pending.Description}\" of {money} ({chosen.Name}, {day}) sent to your Finances inbox."));
@@ -136,12 +136,4 @@ public sealed class RecordExpenseTool(ISender sender, TimeProvider timeProvider)
         return element.ValueKind == JsonValueKind.String
             && decimal.TryParse(element.GetString()!.Replace(',', '.'), NumberStyles.Number, CultureInfo.InvariantCulture, out amount);
     }
-
-    private static CultureInfo Culture(AssistantToolContext context) =>
-        CultureInfo.GetCultureInfo(context.IsPortuguese ? "pt-BR" : "en-US");
-
-    private static string FormatMoney(AssistantToolContext context, decimal amount, string currency) =>
-        currency == "BRL"
-            ? $"R$ {amount.ToString("N2", Culture(context))}"
-            : $"{currency} {amount.ToString("N2", Culture(context))}";
 }

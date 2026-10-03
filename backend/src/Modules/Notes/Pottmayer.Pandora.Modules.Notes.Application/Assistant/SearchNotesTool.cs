@@ -9,8 +9,9 @@ namespace Pottmayer.Pandora.Modules.Notes.Application.Assistant;
 
 /// <summary>
 /// <c>search_notes</c>: full-text search over the user's open pages (<see cref="SearchPagesQuery"/>),
-/// each hit shown with its excerpt around the match. Like <c>list_agenda</c>, the list goes straight to
-/// the user and the conversation history keeps only a content-free recap, so no note reaches the model.
+/// each hit shown with its excerpt around the match. Like <c>list_agenda</c>, the numbered list goes
+/// straight to the user and the conversation history keeps only a content-free recap, so no note reaches
+/// the model; a follow-up can open or append to a hit by its number.
 /// </summary>
 public sealed class SearchNotesTool(ISender sender) : IAssistantTool
 {
@@ -19,7 +20,7 @@ public sealed class SearchNotesTool(ISender sender) : IAssistantTool
 
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "search_notes",
-        Description: "Searches the user's notes and shows them the matching ones with an excerpt. Use when they look for something they wrote down. The results go to the user directly; you will not see them.",
+        Description: "Searches the user's notes and shows them the matching ones, numbered, with an excerpt. Use when they look for something they wrote down. The results go to the user directly; you will not see them.",
         ParametersJsonSchema: """
         {
           "type": "object",
@@ -62,9 +63,11 @@ public sealed class SearchNotesTool(ISender sender) : IAssistantTool
                 $"Nenhuma nota encontrada para \"{query}\".", $"No notes found for \"{query}\"."), recap);
 
         var sb = new StringBuilder(context.Text($"Notas para \"{query}\":", $"Notes for \"{query}\":"));
+        var listed = new List<ListedItem>();
         foreach (var hit in hits.Take(MaxShown))
         {
-            sb.Append("\n• ").Append(hit.Title);
+            listed.Add(new ListedItem("note", hit.Id, hit.Title));
+            sb.Append('\n').Append(listed.Count).Append(". ").Append(hit.Title);
             if (hit.Excerpt.Length > 0)
                 sb.Append(" — ").Append(hit.Excerpt);
         }
@@ -73,7 +76,7 @@ public sealed class SearchNotesTool(ISender sender) : IAssistantTool
                 $"…e mais {hits.Count - MaxShown}. A busca completa está no Notes.",
                 $"…and {hits.Count - MaxShown} more. The full search is in Notes."));
 
-        return AssistantCommandOutcome.Ok(sb.ToString(), recap);
+        return AssistantCommandOutcome.Ok(sb.ToString(), recap, listed);
     }
 
     private static string Parse(JsonElement arguments) => RequiredString(arguments, "query");

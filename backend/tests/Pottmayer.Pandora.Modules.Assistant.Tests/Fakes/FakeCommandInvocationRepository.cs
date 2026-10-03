@@ -28,6 +28,12 @@ internal sealed class FakeCommandInvocationRepository : ICommandInvocationReposi
             .Take(limit)
             .ToList());
 
+    public Task<IReadOnlyList<CommandInvocation>> ListAwaitingConfirmationAsync(Guid conversationId, DateTimeOffset now, CancellationToken ct = default)
+        => Task.FromResult((IReadOnlyList<CommandInvocation>)_items
+            .Where(i => i.ConversationId == conversationId && i.IsAwaitingConfirmation(now))
+            .OrderBy(i => i.CreatedAt)
+            .ToList());
+
     public Task<CommandInvocation> GetByIdAsync(Guid key, CancellationToken ct = default)
         => Task.FromResult(_items.FirstOrDefault(i => i.Id == key));
 

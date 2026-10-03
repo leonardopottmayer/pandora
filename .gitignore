@@ -3,3 +3,6 @@
 .env.*
 !.env.example
 migrations/config.json
+
+# Personal seed data (password hash, encrypted keys) — never versioned
+migrations/seed/*.local.*

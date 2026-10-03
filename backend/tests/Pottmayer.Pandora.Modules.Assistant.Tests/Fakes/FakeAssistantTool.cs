@@ -12,11 +12,13 @@ internal sealed class FakeAssistantTool : IAssistantTool
 {
     private readonly Func<JsonElement, AssistantCommandOutcome> _behavior;
 
-    private FakeAssistantTool(string name, Func<JsonElement, AssistantCommandOutcome> behavior)
+    private FakeAssistantTool(
+        string name, Func<JsonElement, AssistantCommandOutcome> behavior,
+        ConfirmationPolicy policy = ConfirmationPolicy.WhenAmbiguous)
     {
         Descriptor = new AssistantCommandDescriptor(
             name, $"Fake tool {name}.", """{ "type": "object" }""",
-            ConfirmationPolicy.WhenAmbiguous, []);
+            policy, []);
         _behavior = behavior;
     }
 
@@ -25,6 +27,13 @@ internal sealed class FakeAssistantTool : IAssistantTool
 
     public static FakeAssistantTool Reads(string name, string message, string recap) =>
         new(name, _ => AssistantCommandOutcome.Ok(message, recap));
+
+    public static FakeAssistantTool Lists(string name, string message, string recap, params ListedItem[] listed) =>
+        new(name, _ => AssistantCommandOutcome.Ok(message, recap, listed));
+
+    /// <summary>A tool whose calls must always be confirmed, like a deletion.</summary>
+    public static FakeAssistantTool Required(string name) =>
+        new(name, _ => AssistantCommandOutcome.Ok("done"), ConfirmationPolicy.Required);
 
     public static FakeAssistantTool Fails(string name, string message = "nope") =>
         new(name, _ => AssistantCommandOutcome.Failed(message));

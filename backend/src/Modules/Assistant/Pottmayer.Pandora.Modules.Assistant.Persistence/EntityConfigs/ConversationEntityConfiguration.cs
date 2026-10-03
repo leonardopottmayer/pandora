@@ -17,6 +17,7 @@ internal sealed class ConversationEntityConfiguration : IEntityTypeConfiguration
         builder.Property(c => c.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(c => c.StartedAt).HasColumnName("started_at").IsRequired();
         builder.Property(c => c.LastActivityAt).HasColumnName("last_activity_at").IsRequired();
+        builder.Property(c => c.LastListingJson).HasColumnName("last_listing").HasColumnType("jsonb");
 
         builder.HasIndex(c => new { c.UserId, c.LastActivityAt })
                .HasDatabaseName("ix_ast002_user_activity");

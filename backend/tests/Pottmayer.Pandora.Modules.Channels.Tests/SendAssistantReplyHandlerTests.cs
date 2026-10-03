@@ -95,4 +95,29 @@ public sealed class SendAssistantReplyHandlerTests
         Assert.Equal(["✅ Confirmar", "❌ Cancelar"], buttons.Select(b => b.Label));
         Assert.Equal(_interactions.Added.Select(i => i.Id.ToString()), buttons.Select(b => b.InteractionId));
     }
+
+    [Fact]
+    public async Task A_reply_over_telegrams_limit_goes_out_in_pieces_cut_at_line_breaks_with_the_buttons_on_the_last()
+    {
+        var userId = Guid.NewGuid();
+        var sender = new FakeTelegramSender();
+        var line = new string('a', 1000);
+        var text = string.Join("\n", Enumerable.Repeat(line, 9)); // four lines fit in one message (4003 chars)
+
+        await Handler(sender, Linked(userId, "123")).HandleAsync(new SendAssistantReply(
+            Guid.NewGuid(), Now, userId, "assistant", text,
+            [new NotificationButton("assistant", "confirm", "✅ Confirmar", "x")]));
+
+        Assert.Equal([4003, 4003, 1000], sender.Sent.Select(s => s.Text.Length));
+        Assert.Equal([0, 0, 1], sender.Sent.Select(s => s.Buttons?.Count ?? 0));
+        Assert.Equal(text, string.Join("\n", sender.Sent.Select(s => s.Text)));
+    }
+
+    [Fact]
+    public void A_single_line_longer_than_the_limit_is_cut_where_it_must()
+    {
+        var parts = SendAssistantReplyHandler.Split(new string('a', 10), 4);
+
+        Assert.Equal(["aaaa", "aaaa", "aa"], parts);
+    }
 }

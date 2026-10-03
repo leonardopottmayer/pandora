@@ -20,6 +20,11 @@ public sealed class EventRepository(IDataContextAccessor accessor)
         Guid userId, IReadOnlyCollection<Guid>? calendarIds, DateTimeOffset from, DateTimeOffset to,
         CancellationToken ct = default)
     {
+        // Npgsql only binds a UTC DateTimeOffset to timestamptz; a window in the user's zone (the assistant's
+        // "on 2026-09-10") arrives with its local offset.
+        from = from.ToUniversalTime();
+        to = to.ToUniversalTime();
+
         var query = Queryable()
             .Where(e => e.UserId == userId && e.DeletedAt == null && e.StartsAt <= to)
             // A single event still runs into the window; a recurring one is open-ended or ends on/after it.

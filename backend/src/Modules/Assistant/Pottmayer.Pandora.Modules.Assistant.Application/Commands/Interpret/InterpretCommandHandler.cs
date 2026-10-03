@@ -1,5 +1,9 @@
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
+using Pottmayer.Pandora.Modules.Assistant.Application.Commands.CancelInvocation;
+using Pottmayer.Pandora.Modules.Assistant.Application.Commands.ConfirmInvocation;
 using Pottmayer.Pandora.Modules.Assistant.Application.Dtos;
 using Pottmayer.Pandora.Modules.Assistant.Application.Interpret;
 using Pottmayer.Pandora.Modules.Assistant.Domain.Aggregates;
@@ -13,6 +17,7 @@ using Pottmayer.Tars.Ai.Chat.Abstractions;
 using Pottmayer.Tars.Ai.Chat.Abstractions.Models;
 using Microsoft.Extensions.Options;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Core.Mediator.Abstractions;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 
@@ -26,7 +31,7 @@ namespace Pottmayer.Pandora.Modules.Assistant.Application.Commands.Interpret;
 /// conversation — one per tool call — and the reply reflects each command's real result, in the user's
 /// locale, never a success that did not happen.
 /// </summary>
-public sealed class InterpretCommandHandler(
+public sealed partial class InterpretCommandHandler(
     IUnitOfWorkFactory factory,
     IExternalCredentialProvider credentials,
     IAiChatCompletionClientFactory clientFactory,
@@ -34,6 +39,7 @@ public sealed class InterpretCommandHandler(
     IEffectiveTimeZoneResolver timeZones,
     IEnumerable<IAssistantTool> tools,
     IOptions<AssistantOptions> options,
+    ISender sender,
     TimeProvider timeProvider)
     : CommandHandlerBase<InterpretCommand, InterpretResultDto>
 {
@@ -128,6 +134,18 @@ public sealed class InterpretCommandHandler(
         // Non-empty from here on: either typed text or a transcript (checked above).
         var utterance = text!;
 
+        // A "sim" / "não" to a call held in this conversation is settled here: asked again, the model only
+        // repeats the call ("Excluir…?") instead of confirming it, and a "não" would leave it hanging.
+        if (!isNewConversation && ConfirmationReply.Parse(utterance) is { } yes)
+        {
+            var held = await factory.ExecuteAsync(AssistantModule.DatabaseKey, async (context, token) =>
+                await context.AcquireRepository<ICommandInvocationRepository>()
+                    .ListAwaitingConfirmationAsync(conversation.Id, now, token),
+                cancellationToken: ct);
+            if (held.Count > 0)
+                return await AnswerHeldAsync(turn, utterance, held, yes, transcript, ct);
+        }
+
         var toolsByName = tools.ToDictionary(t => t.Descriptor.Name, StringComparer.Ordinal);
         var descriptors = toolsByName.Values.Select(t => t.Descriptor).ToList();
         var toolDefinitions = descriptors
@@ -168,15 +186,34 @@ public sealed class InterpretCommandHandler(
                 Elapsed(), new TokenUsage(0, 0), transcript, ct);
         }
 
-        var latency = Elapsed();
         var usage = new TokenUsage(
             completion.Usage.PromptTokens + transcriptionTokens.PromptTokens,
             completion.Usage.CompletionTokens + transcriptionTokens.CompletionTokens);
 
+        // Now and then the model answers a follow-up by imitating a recap from the history ("[list_tasks: …]")
+        // instead of calling the tool. Ask once more without the history: the sentence alone is clear enough.
+        if (completion.ToolCalls.Count == 0 && history.Count > 0 && LooksLikeRecap(completion.Message.Content))
+        {
+            try
+            {
+                completion = await client.CompleteAsync(chatRequest with { Messages = [messages[0], messages[^1]] }, ct);
+            }
+            catch (AiException ex)
+            {
+                return await RecordAsync(turn, utterance, [new Step(InvocationStatus.ProviderError, Error: ex.Message)],
+                    Elapsed(), usage, transcript, ct);
+            }
+            usage = new TokenUsage(
+                usage.PromptTokens + completion.Usage.PromptTokens,
+                usage.CompletionTokens + completion.Usage.CompletionTokens);
+        }
+
+        var latency = Elapsed();
+
         // The model replied in prose — it is asking a question or declining. Nothing runs.
         if (completion.ToolCalls.Count == 0)
         {
-            var message = string.IsNullOrWhiteSpace(completion.Message.Content)
+            var message = string.IsNullOrWhiteSpace(completion.Message.Content) || LooksLikeRecap(completion.Message.Content)
                 ? toolContext.Text("Não entendi. Pode reformular?", "I didn't understand. Could you rephrase?")
                 : completion.Message.Content!;
             return await RecordAsync(turn, utterance, [new Step(InvocationStatus.Clarification, Result: message)],
@@ -185,9 +222,10 @@ public sealed class InterpretCommandHandler(
 
         // One sentence can ask for several things ("lembra X e cria Y"): every tool call runs (or is held)
         // on its own, in order, and gets its own invocation.
+        var listing = ReadListing(conversation.LastListingJson);
         var steps = new List<Step>(completion.ToolCalls.Count);
         foreach (var toolCall in completion.ToolCalls)
-            steps.Add(await RunAsync(toolCall, toolsByName, profile.ConfirmationLevel, toolContext, now, ct));
+            steps.Add(await RunAsync(toolCall, toolsByName, profile.ConfirmationLevel, toolContext, listing, now, ct));
 
         return await RecordAsync(turn, utterance, steps, latency, usage, transcript, ct);
     }
@@ -195,32 +233,53 @@ public sealed class InterpretCommandHandler(
     /// <summary>
     /// Settles one tool call: rejected when the catalog lacks the tool or the arguments cannot be read,
     /// held (with a readable question) when the command's shifted policy asks for confirmation, otherwise
-    /// executed and recorded with the command's real outcome.
+    /// executed and recorded with the command's real outcome. A <c>ref</c> to a listed item is pinned into
+    /// the arguments first (<see cref="ListedRefs.Pin"/>), so a held call keeps pointing at that item.
     /// </summary>
     private static async Task<Step> RunAsync(
         ToolCall toolCall,
         IReadOnlyDictionary<string, IAssistantTool> toolsByName,
         ConfirmationLevel level,
         AssistantToolContext context,
+        IReadOnlyList<ListedItem> listing,
         DateTimeOffset now,
         CancellationToken ct)
     {
-        var argumentsJson = toolCall.Arguments.GetRawText();
+        var arguments = ListedRefs.Pin(toolCall.Arguments, listing);
+        var argumentsJson = arguments.GetRawText();
 
         // The model named a tool the catalog does not have.
         if (!toolsByName.TryGetValue(toolCall.Name, out var tool))
             return new Step(InvocationStatus.Rejected, toolCall.Name, argumentsJson, Error: context.Text(
                 $"Não conheço o comando '{toolCall.Name}'.", $"Unknown command '{toolCall.Name}'."));
 
+        // A number that is not on the last list is refused now — not asked about ("Excluir \"#40\"?") first.
+        if (ListedRefs.Unpinned(arguments) is { } missing)
+            return new Step(InvocationStatus.Rejected, toolCall.Name, argumentsJson, Error: ListedRefs.NotListed(context, missing));
+
         try
         {
             if (RequiresConfirmation(tool.Descriptor.Confirmation, level))
-                return new Step(InvocationStatus.PendingConfirmation, toolCall.Name, argumentsJson,
-                    Result: tool.Describe(context, toolCall.Arguments), ExpiresAt: now + ConfirmationWindow);
+            {
+                // Find the item before asking about it: no "Excluir…?" for something that is not there, and
+                // the question — and the confirmed call — name the real item.
+                if (tool is IAssistantTargetedTool targeted)
+                {
+                    var (target, problem) = await targeted.FindTargetAsync(context, arguments, ct);
+                    if (target is null)
+                        return new Step(InvocationStatus.Failed, toolCall.Name, argumentsJson, Error: problem);
+                    arguments = ListedRefs.PinTarget(arguments, target);
+                    argumentsJson = arguments.GetRawText();
+                }
 
-            var outcome = await tool.ExecuteAsync(context, toolCall.Arguments, ct);
+                return new Step(InvocationStatus.PendingConfirmation, toolCall.Name, argumentsJson,
+                    Result: tool.Describe(context, arguments), ExpiresAt: now + ConfirmationWindow);
+            }
+
+            var outcome = await tool.ExecuteAsync(context, arguments, ct);
             return outcome.Success
-                ? new Step(InvocationStatus.Executed, toolCall.Name, argumentsJson, Result: outcome.Message, Recap: outcome.Recap)
+                ? new Step(InvocationStatus.Executed, toolCall.Name, argumentsJson, Result: outcome.Message,
+                    Recap: outcome.Recap, Listed: outcome.Listed)
                 : new Step(InvocationStatus.Failed, toolCall.Name, argumentsJson, Error: outcome.Message);
         }
         catch (Exception ex) when (ex is FormatException or ArgumentException or InvalidOperationException)
@@ -228,6 +287,40 @@ public sealed class InterpretCommandHandler(
             // Malformed or missing arguments that slipped past the schema — a write-time rejection.
             return new Step(InvocationStatus.Rejected, toolCall.Name, argumentsJson, Error: ex.Message);
         }
+    }
+
+    /// <summary>
+    /// Confirms (or cancels) every call held in the conversation, through the same commands the buttons use,
+    /// and records the exchange so the conversation reads on.
+    /// </summary>
+    private async Task<Result<InterpretResultDto>> AnswerHeldAsync(
+        Turn turn, string utterance, IReadOnlyList<CommandInvocation> held, bool yes, string? transcript, CancellationToken ct)
+    {
+        var settled = new List<InvocationResultDto>(held.Count);
+        foreach (var invocation in held)
+        {
+            var result = yes
+                ? await sender.Send(new ConfirmInvocationCommand(new ConfirmInvocationInput(turn.UserId, invocation.Id)), ct)
+                : await sender.Send(new CancelInvocationCommand(new CancelInvocationInput(turn.UserId, invocation.Id)), ct);
+            if (result.IsSuccess)
+                settled.Add(result.Value!);
+        }
+
+        var reply = settled.Count == 1
+            ? settled[0].Message
+            : string.Join("\n", settled.Select((s, i) => $"{i + 1}. {s.Message}"));
+
+        await factory.ExecuteAsync(AssistantModule.DatabaseKey, async (context, token) =>
+        {
+            turn.Conversation.Touch(turn.Now);
+            await context.AcquireRepository<IConversationRepository>().UpdateAsync(turn.Conversation, token);
+            var messages = context.AcquireRepository<IMessageRepository>();
+            await messages.AddAsync(Message.Create(turn.Conversation.Id, MessageAuthor.User, utterance, timeProvider), token);
+            await messages.AddAsync(Message.Create(turn.Conversation.Id, MessageAuthor.Assistant, reply, timeProvider), token);
+            return true;
+        }, cancellationToken: ct);
+
+        return Ok(new InterpretResultDto(turn.Conversation.Id, reply, settled, transcript));
     }
 
     /// <summary>
@@ -275,8 +368,15 @@ public sealed class InterpretCommandHandler(
         string? transcript, CancellationToken ct)
     {
         var reply = Combine(steps, s => s.Reply);
-        // What the model sees of this reply on the next turn (see AssistantCommandOutcome.Recap).
-        var recap = Combine(steps, s => s.Recap ?? s.Reply);
+        // What the model sees of this reply on the next turn (see AssistantCommandOutcome.Recap): never a
+        // list's content, only how its numbers can be pointed at.
+        var recap = Combine(steps, s => s.Listed is { Count: > 0 } listed
+            ? $"{s.Recap ?? s.Reply} {ListedRefs.Summary(listed)}"
+            : s.Recap ?? s.Reply);
+
+        // ponytail: two lists in one turn — the numbers refer to the last one; merge them if that ever bites.
+        if (steps.LastOrDefault(s => s.Listed is { Count: > 0 })?.Listed is { } shown)
+            turn.Conversation.ShowListing(JsonSerializer.Serialize(shown, JsonSerializerOptions.Web));
 
         var invocations = steps.Select((step, i) => CommandInvocation.Create(
             turn.UserId, turn.Conversation.Id, utterance, step.CommandName, step.ArgumentsJson,
@@ -321,9 +421,34 @@ public sealed class InterpretCommandHandler(
             ? text(steps[0])
             : string.Join("\n", steps.Select((step, i) => $"{i + 1}. {text(step)}"));
 
-    /// <summary>True when the command must be confirmed before running, once the level shifts its policy.</summary>
+    /// <summary>
+    /// True when the command must be confirmed before running, once the level shifts its policy.
+    /// <see cref="ConfirmationPolicy.Required"/> is not shifted: a deletion is always confirmed.
+    /// </summary>
     private static bool RequiresConfirmation(ConfirmationPolicy policy, ConfirmationLevel level) =>
-        Shift(policy, level) == ConfirmationPolicy.Always;
+        policy == ConfirmationPolicy.Required || Shift(policy, level) == ConfirmationPolicy.Always;
+
+    /// <summary>A recap line such as "[list_tasks: 3 task(s) shown…]" — what the history keeps, never a reply.</summary>
+    private static bool LooksLikeRecap(string? text) =>
+        text is not null && RecapPattern().IsMatch(text);
+
+    [GeneratedRegex(@"^\s*\[[a-z_]+:")]
+    private static partial Regex RecapPattern();
+
+    /// <summary>The conversation's last list, oldest line first; empty when none was shown (or it is unreadable).</summary>
+    private static IReadOnlyList<ListedItem> ReadListing(string? json)
+    {
+        if (string.IsNullOrEmpty(json))
+            return [];
+        try
+        {
+            return JsonSerializer.Deserialize<List<ListedItem>>(json, JsonSerializerOptions.Web) ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
 
     private static ConfirmationPolicy Shift(ConfirmationPolicy policy, ConfirmationLevel level)
     {
@@ -356,7 +481,8 @@ public sealed class InterpretCommandHandler(
         string? Result = null,
         string? Error = null,
         DateTimeOffset? ExpiresAt = null,
-        string? Recap = null)
+        string? Recap = null,
+        IReadOnlyList<ListedItem>? Listed = null)
     {
         public string Reply => Result ?? Error ?? string.Empty;
     }

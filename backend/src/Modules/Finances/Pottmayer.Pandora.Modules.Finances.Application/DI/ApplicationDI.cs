@@ -17,6 +17,11 @@ public static class ApplicationDI
 
         // The Finances contribution to the assistant tool catalog.
         services.AddScoped<IAssistantTool, RecordExpenseTool>();
+        services.AddScoped<IAssistantTool, ListTransactionsTool>();
+        services.AddScoped<IAssistantTool, SummarizeTransactionsTool>();
+        services.AddScoped<IAssistantTool, AccountBalancesTool>();
+        services.AddScoped<IAssistantTool, ListCardsTool>();
+        services.AddScoped<IAssistantTool, ListInboxTool>();
 
         return services;
     }

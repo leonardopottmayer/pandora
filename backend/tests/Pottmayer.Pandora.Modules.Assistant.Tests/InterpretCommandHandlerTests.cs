@@ -7,6 +7,7 @@ using Pottmayer.Pandora.Modules.Assistant.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Assistant.Tests.Fakes;
 using Pottmayer.Tars.Ai.Abstractions;
 using Pottmayer.Tars.Ai.Chat.Abstractions.Models;
+using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Xunit;
 
 namespace Pottmayer.Pandora.Modules.Assistant.Tests;
@@ -32,9 +33,11 @@ public sealed class InterpretCommandHandlerTests
         AssistantProfile profile,
         FakeConversationRepository conversations,
         FakeMessageRepository messages,
-        IAssistantTool[] tools)
+        IAssistantTool[] tools,
+        FakeCommandInvocationRepository? invocationRepository = null,
+        FakeSender? sender = null)
     {
-        var invocations = new FakeCommandInvocationRepository();
+        var invocations = invocationRepository ?? new FakeCommandInvocationRepository();
         var context = new FakeDataContext();
         context.Register<IAssistantProfileRepository>(profile is not null
             ? new FakeAssistantProfileRepository(profile)
@@ -51,6 +54,7 @@ public sealed class InterpretCommandHandlerTests
             FakeEffectiveTimeZoneResolver.With("America/Sao_Paulo"),
             tools,
             Microsoft.Extensions.Options.Options.Create(new AssistantOptions()),
+            sender ?? new FakeSender(),
             TimeProvider.System);
 
         return (handler, invocations);
@@ -114,6 +118,169 @@ public sealed class InterpretCommandHandlerTests
 
         Assert.Equal("09:00 Dentista", result.Value!.Message);
         Assert.Equal("[list_agenda: 1 item]", messages.Added.Single(m => m.Author == MessageAuthor.Assistant).Content);
+    }
+
+    [Fact]
+    public async Task A_numbered_list_is_kept_on_the_conversation_and_the_history_learns_only_its_kinds()
+    {
+        var client = FakeAiChatCompletionClient.RepliesWithToolCall("list_agenda", """{ "from": "2026-09-05" }""");
+        var conversations = new FakeConversationRepository();
+        var messages = new FakeMessageRepository();
+        var (handler, _) = Build(
+            client, FakeExternalCredentialProvider.WithKey("k"), EnabledProfile(), conversations, messages,
+            [FakeAssistantTool.Lists("list_agenda", "1. Dentista\n2. Pagar luz", "[list_agenda: 2 item(s)]",
+                new ListedItem("event", Guid.NewGuid(), "Dentista"), new ListedItem("task", Guid.NewGuid(), "Pagar luz"))]);
+
+        await handler.Handle(Sentence("o que tenho amanhã?"), CancellationToken.None);
+
+        var recap = messages.Added.Single(m => m.Author == MessageAuthor.Assistant).Content;
+        Assert.StartsWith("[list_agenda: 2 item(s)] [numbered for reference: 1=event, 2=task;", recap);
+        Assert.DoesNotContain("Dentista", recap);
+        Assert.Contains("Pagar luz", Assert.Single(conversations.Added).LastListingJson);
+    }
+
+    [Fact]
+    public async Task A_ref_is_pinned_to_the_listed_item_before_the_call_is_held_so_confirming_acts_on_it()
+    {
+        var conversation = Conversation.Start(User, TimeProvider.System);
+        var taskId = Guid.NewGuid();
+        conversation.ShowListing(System.Text.Json.JsonSerializer.Serialize(
+            new[] { new ListedItem("event", Guid.NewGuid(), "Dentista"), new ListedItem("task", taskId, "Pagar luz") },
+            System.Text.Json.JsonSerializerOptions.Web));
+        var client = FakeAiChatCompletionClient.RepliesWithToolCall("delete_task", """{ "ref": 2, "ref_id": "forged" }""");
+        var (handler, invocations) = Build(
+            client, FakeExternalCredentialProvider.WithKey("k"), EnabledProfile(),
+            new FakeConversationRepository(conversation), new FakeMessageRepository(),
+            [FakeAssistantTool.Required("delete_task")]);
+
+        await handler.Handle(Sentence("exclui o 2"), CancellationToken.None);
+
+        using var stored = System.Text.Json.JsonDocument.Parse(Assert.Single(invocations.Added).ArgumentsJson!);
+        var context = new AssistantToolContext(User, "pt-BR", TimeZoneInfo.Utc);
+        var pinned = ToolArguments.OptionalRef(context, stored.RootElement, "task");
+        Assert.Equal((taskId, "Pagar luz"), (pinned!.Id, pinned.Label));
+        Assert.Throws<ArgumentException>(() => ToolArguments.OptionalRef(context, stored.RootElement, "event"));
+    }
+
+    [Fact]
+    public async Task A_ref_outside_the_last_list_is_rejected_in_the_users_language()
+    {
+        var client = FakeAiChatCompletionClient.RepliesWithToolCall("complete_task", """{ "ref": 3 }""");
+        var tool = new RefReadingTool("complete_task");
+        var (handler, _) = Build(client, FakeExternalCredentialProvider.WithKey("k"), EnabledProfile(), tool);
+
+        var result = await handler.Handle(Sentence("conclui o 3"), CancellationToken.None);
+
+        Assert.Equal("Não há item 3 na última lista. Peça a lista de novo.", result.Value!.Message);
+        Assert.Equal(InvocationStatus.Rejected.Value, result.Value.Invocations[0].Status);
+    }
+
+    [Fact]
+    public async Task A_reply_imitating_a_recap_is_asked_again_without_the_history()
+    {
+        var conversation = Conversation.Start(User, TimeProvider.System);
+        var messages = new FakeMessageRepository(
+            Message.Create(conversation.Id, MessageAuthor.User, "minhas tarefas", TimeProvider.System),
+            Message.Create(conversation.Id, MessageAuthor.Assistant, "[list_tasks: 3 task(s) shown to the user]", TimeProvider.System));
+        var client = FakeAiChatCompletionClient.Script(
+            new ChatMessage(ChatRole.Assistant, "[list_tasks: 0 task(s) shown to the user; content withheld from you]"),
+            new ChatMessage(ChatRole.Assistant, null, [Call("list_tasks")]));
+        var tool = FakeAssistantTool.Succeeds("list_tasks", "1. Pagar luz");
+        var (handler, _) = Build(client, FakeExternalCredentialProvider.WithKey("k"), EnabledProfile(),
+            new FakeConversationRepository(conversation), messages, [tool]);
+
+        var result = await handler.Handle(Sentence("minhas tarefas"), CancellationToken.None);
+
+        Assert.Equal("1. Pagar luz", result.Value!.Message);
+        Assert.Equal([4, 2], client.Requests.Select(r => r.Messages.Count)); // the retry left the history out
+    }
+
+    [Theory]
+    [InlineData("sim", true)]
+    [InlineData("Pode, sim!", true)]
+    [InlineData("não, deixa", false)]
+    [InlineData("deixa pra lá", false)]
+    public async Task A_typed_yes_or_no_settles_the_held_call_without_asking_the_model(string reply, bool confirms)
+    {
+        var conversation = Conversation.Start(User, TimeProvider.System);
+        var invocations = new FakeCommandInvocationRepository();
+        var held = CommandInvocation.Create(User, conversation.Id, "exclui a tarefa x", "delete_task", "{}",
+            InvocationStatus.PendingConfirmation, "Excluir a tarefa \"x\"?", null, "gemini", "m", 0, 0, 0,
+            DateTimeOffset.UtcNow.AddMinutes(5), TimeProvider.System);
+        await invocations.AddAsync(held);
+        var sender = new FakeSender
+        {
+            Response = Result<Application.Dtos.InvocationResultDto>.Success(
+                new(held.Id, "executed", "delete_task", "{}", "Tarefa \"x\" excluída.")),
+        };
+        var client = FakeAiChatCompletionClient.Replies("should not be asked");
+        var (handler, _) = Build(client, FakeExternalCredentialProvider.WithKey("k"), EnabledProfile(),
+            new FakeConversationRepository(conversation), new FakeMessageRepository(), [], invocations, sender);
+
+        var result = await handler.Handle(Sentence(reply), CancellationToken.None);
+
+        Assert.Equal(0, client.Calls);
+        var sent = Assert.Single(sender.Sent);
+        Assert.Equal(confirms ? typeof(Application.Commands.ConfirmInvocation.ConfirmInvocationCommand)
+                              : typeof(Application.Commands.CancelInvocation.CancelInvocationCommand), sent.GetType());
+        Assert.Equal("Tarefa \"x\" excluída.", result.Value!.Message);
+    }
+
+    [Fact]
+    public async Task A_no_that_says_more_still_goes_to_the_model()
+    {
+        var conversation = Conversation.Start(User, TimeProvider.System);
+        var invocations = new FakeCommandInvocationRepository();
+        await invocations.AddAsync(CommandInvocation.Create(User, conversation.Id, "lembra x", "create_reminder", "{}",
+            InvocationStatus.PendingConfirmation, "?", null, "gemini", "m", 0, 0, 0,
+            DateTimeOffset.UtcNow.AddMinutes(5), TimeProvider.System));
+        var client = FakeAiChatCompletionClient.Replies("Para que horas?");
+        var (handler, _) = Build(client, FakeExternalCredentialProvider.WithKey("k"), EnabledProfile(),
+            new FakeConversationRepository(conversation), new FakeMessageRepository(), [], invocations);
+
+        await handler.Handle(Sentence("não, muda pra 11h"), CancellationToken.None);
+
+        Assert.Equal(1, client.Calls);
+    }
+
+    [Fact]
+    public async Task A_number_off_the_last_list_is_refused_before_any_confirmation_is_asked()
+    {
+        var client = FakeAiChatCompletionClient.RepliesWithToolCall("delete_task", """{ "ref": 40 }""");
+        var tool = FakeAssistantTool.Required("delete_task");
+        var (handler, _) = Build(client, FakeExternalCredentialProvider.WithKey("k"), EnabledProfile(), tool);
+
+        var result = await handler.Handle(Sentence("exclui a 40"), CancellationToken.None);
+
+        Assert.Equal(InvocationStatus.Rejected.Value, result.Value!.Invocations[0].Status);
+        Assert.Equal("Não há item 40 na última lista. Peça a lista de novo.", result.Value.Message);
+    }
+
+    [Fact]
+    public async Task A_required_confirmation_holds_the_call_even_for_a_trusting_profile()
+    {
+        var client = FakeAiChatCompletionClient.RepliesWithToolCall("delete_task", """{ "task": "luz" }""");
+        var tool = FakeAssistantTool.Required("delete_task");
+        var (handler, _) = Build(client, FakeExternalCredentialProvider.WithKey("k"),
+            EnabledProfile(level: ConfirmationLevel.Trusting), tool);
+
+        var result = await handler.Handle(Sentence("exclui a tarefa luz"), CancellationToken.None);
+
+        Assert.Equal(InvocationStatus.PendingConfirmation.Value, result.Value!.Invocations[0].Status);
+        Assert.Equal(0, tool.Calls);
+    }
+
+    /// <summary>A tool that resolves its target through <see cref="ToolArguments.OptionalRef"/>, like the real ones.</summary>
+    private sealed class RefReadingTool(string name) : IAssistantTool
+    {
+        public AssistantCommandDescriptor Descriptor { get; } =
+            new(name, "x", """{ "type": "object" }""", ConfirmationPolicy.Never, []);
+
+        public string Describe(AssistantToolContext context, System.Text.Json.JsonElement arguments) => "?";
+
+        public Task<AssistantCommandOutcome> ExecuteAsync(
+            AssistantToolContext context, System.Text.Json.JsonElement arguments, CancellationToken ct = default) =>
+            Task.FromResult(AssistantCommandOutcome.Ok(ToolArguments.OptionalRef(context, arguments, "task")!.Label));
     }
 
     [Fact]

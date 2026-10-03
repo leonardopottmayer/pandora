@@ -13,7 +13,7 @@ namespace Pottmayer.Pandora.Modules.Assistant.Application.Interpret;
 internal static class AssistantSystemPrompt
 {
     /// <summary>Bumped when the wording changes, so the audit trail can tie an interpretation to a prompt.</summary>
-    public const int Version = 3;
+    public const int Version = 6;
 
     // Weekday names in the prompt are rendered in English, regardless of the user's locale.
     private static readonly CultureInfo PromptCulture = CultureInfo.GetCultureInfo("en-US");
@@ -47,6 +47,14 @@ internal static class AssistantSystemPrompt
         sb.AppendLine("- Never invent information the user did not give. If an essential detail is missing or the");
         sb.AppendLine("  sentence is ambiguous, reply in prose with ONE short question instead of calling the tool.");
         sb.AppendLine("- If the sentence matches no command, reply in prose with a brief explanation.");
+        sb.AppendLine("- Lists you show go to the user directly; you never see their content. When the user points");
+        sb.AppendLine("  at a line of the last list by its number (\"cancela o 2\", \"delete 1 and 3\"), pass that number");
+        sb.AppendLine("  as \"ref\" instead of a name — one tool call per number. The user's verb picks the action;");
+        sb.AppendLine("  the kind the history gives that number only picks between tools for that action (delete_task");
+        sb.AppendLine("  or delete_event). Never swap the action to fit the kind: \"conclui o 1\" on an event is not a");
+        sb.AppendLine("  deletion — say that only tasks can be completed.");
+        sb.AppendLine("- Bracketed lines in the history (\"[list_tasks: …]\") only record a tool you called. Never write");
+        sb.AppendLine("  one yourself: to show the user something again, call the tool again.");
         sb.AppendLine($"- When you reply in prose, write in the user's language ({locale}).");
 
         if (commands.Count > 0)

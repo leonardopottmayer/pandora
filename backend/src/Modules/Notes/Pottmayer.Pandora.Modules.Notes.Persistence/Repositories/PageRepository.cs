@@ -79,12 +79,15 @@ public sealed class PageRepository(IDataContextAccessor accessor)
             return [];
 
         // Matches against the stored tsvector, so the GIN index does the work. The configuration
-        // ('simple') is the one the generated column was built with — they have to agree.
+        // ('simple') is the one the generated column was built with — they have to agree. Pages whose
+        // title matches come first: searching "ideias" means the "Ideias…" page before one that only
+        // mentions it.
         return await Queryable()
             .Where(p => p.UserId == userId && p.DeletedAt == null &&
                         EF.Property<NpgsqlTsVector>(p, PageColumns.SearchVector)
                           .Matches(EF.Functions.ToTsQuery("simple", tsQuery)))
-            .OrderBy(p => p.Title)
+            .OrderByDescending(p => EF.Functions.ToTsVector("simple", p.Title).Matches(EF.Functions.ToTsQuery("simple", tsQuery)))
+            .ThenBy(p => p.Title)
             .Take(limit)
             .ToListAsync(ct);
     }

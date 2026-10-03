@@ -11,13 +11,22 @@ namespace Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 /// content-free line, so the data reaches the user and never the hosted model. Null keeps
 /// <see cref="Message"/>.
 /// </para>
+/// <para>
+/// <see cref="Listed"/> are the numbered lines of a list the reply showed, in order; the conversation keeps
+/// them so the user can point at one by number in the next turns (see <see cref="ToolArguments.OptionalRef"/>).
+/// </para>
 /// </summary>
-public sealed record AssistantCommandOutcome(bool Success, string Message, string? Recap = null)
+public sealed record AssistantCommandOutcome(
+    bool Success, string Message, string? Recap = null, IReadOnlyList<ListedItem>? Listed = null)
 {
     public static AssistantCommandOutcome Ok(string message) => new(true, message);
 
     /// <summary>A success whose <paramref name="message"/> carries the user's data; the history keeps <paramref name="recap"/>.</summary>
     public static AssistantCommandOutcome Ok(string message, string recap) => new(true, message, recap);
+
+    /// <summary>Like <see cref="Ok(string, string)"/>, for a numbered list the user can then point into.</summary>
+    public static AssistantCommandOutcome Ok(string message, string recap, IReadOnlyList<ListedItem> listed) =>
+        new(true, message, recap, listed);
 
     public static AssistantCommandOutcome Failed(string message) => new(false, message);
 }

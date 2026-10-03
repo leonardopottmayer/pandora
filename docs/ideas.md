@@ -26,7 +26,7 @@ The plumbing (events, Channels, Assistant, the Finances inbox) exists; these con
 | **Boleto line → bill to pay** | The *linha digitável* encodes amount and due-date factor — a parser, no AI. Paste on Telegram/web → `PendingTransaction` in the inbox, shown on the Agenda day view. | Finances inbox, Channels C4 inbound | S | idea |
 | **Receipt photo → Finances inbox** | Photo via Telegram → Gemini (multimodal) extracts amount/date/merchant → `PendingTransaction`. The inbox is the confirmation step. | Channels C4, `Ai.Chat` Gemini, inbox | M | idea |
 | **Finances due dates in the Agenda day view** | Read-only; already listed under Agenda's "Beyond". No sync. | Agenda read GETs | S | idea |
-| **Read-only Assistant tools** | "How much did I spend on iFood in September?", "What do I have tomorrow?". No confirmation needed — simpler than the write tools. | Assistant command catalog | M | idea |
+| **Read-only Assistant tools** | "How much did I spend on iFood in September?", "What do I have tomorrow?". No confirmation needed — simpler than the write tools. Shipped with chat management of Agenda/Notes (Assistant product plan, A6). | Assistant command catalog | M | done |
 
 ## 2. Extending existing modules
 

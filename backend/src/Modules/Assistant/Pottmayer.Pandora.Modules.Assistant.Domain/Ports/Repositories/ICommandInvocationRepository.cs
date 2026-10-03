@@ -7,4 +7,7 @@ public interface ICommandInvocationRepository : IStandardRepository<CommandInvoc
 {
     /// <summary>The user's most recent invocations, newest first, for the audit trail.</summary>
     Task<IReadOnlyList<CommandInvocation>> ListRecentByUserAsync(Guid userId, int limit, CancellationToken ct = default);
+
+    /// <summary>The calls of a conversation still waiting for a Confirm / Cancel at <paramref name="now"/>, oldest first.</summary>
+    Task<IReadOnlyList<CommandInvocation>> ListAwaitingConfirmationAsync(Guid conversationId, DateTimeOffset now, CancellationToken ct = default);
 }

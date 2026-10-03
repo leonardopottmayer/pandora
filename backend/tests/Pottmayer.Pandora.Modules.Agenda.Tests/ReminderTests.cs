@@ -92,4 +92,39 @@ public sealed class ReminderTests
         Assert.Equal(ReminderStatus.Cancelled, reminder.Status);
         Assert.False(reminder.IsDue(Now));
     }
+
+    [Fact]
+    public void Reschedule_moves_the_remind_time_clears_the_snooze_and_rearms_a_notified_reminder()
+    {
+        var reminder = At(Now.AddHours(1));
+        reminder.MarkNotified();
+        reminder.Snooze(Now.AddHours(2));
+        var moved = new DateTimeOffset(2026, 1, 1, 7, 0, 0, TimeSpan.FromHours(-3)); // earlier than the snooze
+
+        reminder.Reschedule(moved);
+
+        Assert.Equal((moved.ToUniversalTime(), (DateTimeOffset?)null, ReminderStatus.Scheduled),
+            (reminder.RemindAt, reminder.SnoozedUntil, reminder.Status));
+        Assert.Equal(TimeSpan.Zero, reminder.RemindAt.Offset);
+    }
+
+    [Fact]
+    public void Reschedule_refuses_a_recurring_reminder()
+    {
+        var recurring = Reminder.Create(Guid.NewGuid(), "Pills", null, Now, "UTC", Time, "FREQ=DAILY");
+        Assert.Throws<InvalidOperationException>(() => recurring.Reschedule(Now.AddDays(1)));
+    }
+
+    [Fact]
+    public void Rename_changes_only_the_title_and_refuses_a_blank_one()
+    {
+        var reminder = At(Now.AddHours(1));
+        reminder.Snooze(Now.AddHours(2));
+
+        reminder.Rename("  Pay rent and condo fee ");
+
+        Assert.Equal("Pay rent and condo fee", reminder.Title);
+        Assert.Equal((ReminderStatus.Snoozed, Now.AddHours(2)), (reminder.Status, reminder.EffectiveRemindAt));
+        Assert.Throws<ArgumentException>(() => reminder.Rename(" "));
+    }
 }

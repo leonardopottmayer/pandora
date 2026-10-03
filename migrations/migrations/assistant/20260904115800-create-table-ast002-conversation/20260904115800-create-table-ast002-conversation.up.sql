@@ -7,7 +7,11 @@ CREATE TABLE assistant.ast002_conversation (
 	id uuid NOT NULL DEFAULT uuid_generate_v7(),
 	user_id uuid NOT NULL,
 	started_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
-	last_activity_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp
+	last_activity_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
+	-- The numbered lines of the last list the assistant showed (kind, id, label and, for an event
+	-- occurrence, its start), so a follow-up can point at one by number ("cancela o 2"). Replaced by
+	-- each new list; it lapses with the conversation.
+	last_listing jsonb NULL
 );
 
 ALTER TABLE assistant.ast002_conversation

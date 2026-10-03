@@ -24,6 +24,9 @@ public sealed class SendAssistantReplyHandler(
     ILogger<SendAssistantReplyHandler> logger)
     : IIntegrationEventHandler<SendAssistantReply>
 {
+    /// <summary>Telegram's cap on one message's text.</summary>
+    public const int MaxMessageLength = 4096;
+
     public async Task HandleAsync(SendAssistantReply @event, CancellationToken cancellationToken = default)
     {
         var (address, buttons) = await factory.ExecuteAsync(ChannelsModule.DatabaseKey, async (context, token) =>
@@ -59,7 +62,10 @@ public sealed class SendAssistantReplyHandler(
 
         try
         {
-            await sender.SendAsync(@event.Bot, address, @event.Text, buttons, cancellationToken);
+            // A long reply (a whole note, a busy month) goes out in several messages; the buttons ride on the last.
+            var parts = Split(@event.Text, MaxMessageLength);
+            for (var i = 0; i < parts.Count; i++)
+                await sender.SendAsync(@event.Bot, address, parts[i], i == parts.Count - 1 ? buttons : [], cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -67,5 +73,25 @@ public sealed class SendAssistantReplyHandler(
             // double-send once a transient error clears, and the user can simply ask again.
             logger.LogWarning(ex, "Failed to send assistant reply to user {UserId} via bot {Bot}.", @event.UserId, @event.Bot);
         }
+    }
+
+    /// <summary>
+    /// <paramref name="text"/> in pieces of at most <paramref name="max"/> characters, cut at the last line
+    /// break that fits (a single overlong line is cut where it must).
+    /// </summary>
+    public static IReadOnlyList<string> Split(string text, int max)
+    {
+        var parts = new List<string>();
+        var rest = text;
+        while (rest.Length > max)
+        {
+            var cut = rest.LastIndexOf('\n', max);
+            if (cut <= 0)
+                cut = max;
+            parts.Add(rest[..cut].TrimEnd());
+            rest = rest[cut..].TrimStart('\n');
+        }
+        parts.Add(rest);
+        return parts;
     }
 }

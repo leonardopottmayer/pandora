@@ -5,6 +5,7 @@ using Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateCalendar;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateEvent;
 using Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetAlerts;
 using Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetEvent;
+using Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetEvents;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Cqrs.Queries;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
@@ -45,6 +46,23 @@ public sealed class AgendaReadQueryTests : IAsyncLifetime
         Assert.Equal(ev.Id, result.Value.Id);
         Assert.Equal("FREQ=DAILY", result.Value.Rrule);
         Assert.Equal(calendarId, result.Value.CalendarId);
+    }
+
+    [Fact]
+    public async Task GetEvents_accepts_a_window_given_in_a_local_offset()
+    {
+        // The assistant asks for "that day" in the user's zone (-03:00); Npgsql binds only UTC.
+        var calendarId = (await SendAsync(new CreateCalendarCommand(
+            new CreateCalendarInput(_userId, "Work", null, true, "UTC")))).Value.Id;
+        await SendAsync(new CreateEventCommand(new CreateEventInput(
+            _userId, calendarId, "Dentist", null, null, null, Anchor, Anchor.AddHours(1),
+            false, "UTC", null, "Confirmed")));
+        var dayStart = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.FromHours(-3));
+
+        var result = await QueryAsync(new GetEventsQuery(new GetEventsInput(_userId, dayStart, dayStart.AddDays(1), null)));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Dentist", Assert.Single(result.Value).Title);
     }
 
     [Fact]

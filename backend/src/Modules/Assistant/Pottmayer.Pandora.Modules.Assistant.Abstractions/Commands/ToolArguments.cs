@@ -106,6 +106,73 @@ public static class ToolArguments
             $"\"{query}\" matches more than one item: {names}. Can you be more specific?"));
     }
 
+    /// <summary>
+    /// The item the pipeline pinned into the call (<see cref="ListedRefs"/>) — the listed one the user pointed
+    /// at by number, or the one found by name before a confirmation; null when nothing is pinned and the call
+    /// names its target by words. Throws <see cref="ArgumentException"/>, in the user's language, when the
+    /// number is not on the last list or stands for another kind of item.
+    /// </summary>
+    public static ListedItem? OptionalRef(AssistantToolContext context, JsonElement arguments, string kind)
+    {
+        var number = ListedRefs.Number(arguments);
+        var id = OptionalString(arguments, ListedRefs.Id);
+        if (id is null)
+            return number is { } n ? throw new ArgumentException(ListedRefs.NotListed(context, n)) : null;
+
+        var pinnedKind = OptionalString(arguments, ListedRefs.Kind);
+        var label = OptionalString(arguments, ListedRefs.Label) ?? string.Empty;
+        if (pinnedKind != kind)
+            throw new ArgumentException(context.Text(
+                $"O item {number} (\"{label}\") não é {KindPt(kind)}.",
+                $"Item {number} (\"{label}\") is not a {kind}."));
+
+        return new ListedItem(kind, Guid.Parse(id), label, OptionalInstant(arguments, ListedRefs.At));
+    }
+
+    /// <summary>
+    /// How the user named the target of a call, for its confirmation question: the pinned item's title when
+    /// there is one, otherwise their words in <paramref name="nameArgument"/>.
+    /// </summary>
+    public static string TargetName(JsonElement arguments, string nameArgument) =>
+        (ListedRefs.IsPinned(arguments) ? OptionalString(arguments, ListedRefs.Label) : null)
+        ?? OptionalString(arguments, nameArgument)
+        ?? (ListedRefs.Number(arguments) is { } n ? $"#{n}" : throw new ArgumentException(
+            $"Pass either '{ListedRefs.Ref}' or '{nameArgument}'."));
+
+    /// <summary>
+    /// The one item a call targets among <paramref name="items"/>: the listed one it pointed at by number
+    /// (<see cref="OptionalRef"/>), else the one its words in <paramref name="nameArgument"/> name
+    /// (<see cref="PickByTitle{T}"/>). Says why not, in the user's language, when there is no single match.
+    /// </summary>
+    public static (T? Match, string? Problem) PickTarget<T>(
+        AssistantToolContext context, JsonElement arguments, string kind, string nameArgument,
+        IEnumerable<T> items, Func<T, Guid> id, Func<T, string> title, string wherePt, string whereEn)
+        where T : class
+    {
+        if (OptionalRef(context, arguments, kind) is { } pinned)
+        {
+            var match = items.FirstOrDefault(i => id(i) == pinned.Id);
+            return match is not null
+                ? (match, null)
+                : (null, context.Text(
+                    $"\"{pinned.Label}\" não está mais entre {wherePt}.",
+                    $"\"{pinned.Label}\" is no longer among {whereEn}."));
+        }
+
+        var name = OptionalString(arguments, nameArgument)
+            ?? throw new ArgumentException($"Pass either '{ListedRefs.Ref}' or '{nameArgument}'.");
+        return PickByTitle(context, items, title, name, wherePt, whereEn);
+    }
+
+    private static string KindPt(string kind) => kind switch
+    {
+        "event" => "um evento",
+        "task" => "uma tarefa",
+        "reminder" => "um lembrete",
+        "note" => "uma nota",
+        _ => kind,
+    };
+
     private static string Normalize(string text)
     {
         var sb = new StringBuilder(text.Length);

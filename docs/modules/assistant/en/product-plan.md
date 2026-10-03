@@ -166,7 +166,7 @@ Later: `create_note` and `search_notes` (Notes), `record_transaction` and `balan
 
 **`ast002_conversation`** — `user_id`, `source` (`telegram` \| `web`), `started_at`, `last_message_at`,
 `is_active`. A conversation expires after 30 minutes of silence, so "cancel that" cannot reach back
-to yesterday.
+to yesterday. `last_listing` (jsonb) keeps the numbered lines of the last list shown — see §4.6.
 
 **`ast003_message`** — `conversation_id`, `role` (`user` \| `assistant` \| `tool`), `content`,
 `audio_ref` (nullable), `token_count`, `created_at`.
@@ -190,6 +190,7 @@ to yesterday.
 | `Never` | Execute and report. Read-only commands, and creation of trivially reversible items. |
 | `WhenAmbiguous` | Execute unless the model's confidence is low or a required argument was inferred rather than stated. Otherwise echo the parsed intent with **Confirm / Cancel** buttons. |
 | `Always` | Never execute without a button press. Deletions, bulk operations, anything financial. |
+| `Required` | Like `Always`, but no `confirmation_level` relaxes it — even `trusting` confirms. Deletions (`delete_event`, `delete_task`, `cancel_reminder`). |
 
 A pending confirmation is an `ast004` row in `pending-confirmation`, expiring after 10 minutes. Its
 reply is the tool's own `Describe` ("Criar o lembrete \"Pagar o aluguel\" para 05/09/2026 às 10:00?"),
@@ -246,6 +247,32 @@ that is how it will actually be spoken to.
 
 Conversation history is capped at the last N messages of the active conversation, so we don't pay
 tokens reasoning over an unbounded transcript.
+
+### 4.6 Lists and pointing by number
+
+A read tool that shows items the user may act on (`list_agenda`, `list_tasks`, `search_notes`) numbers
+its lines and returns them as `AssistantCommandOutcome.Listed` — kind (`event`, `task`, `reminder`,
+`note`), id, title and, for an event occurrence, its start. The pipeline stores them on the conversation
+(`ast002.last_listing`, replaced by each new list) and appends to the history recap only each number's
+kind (`[numbered for reference: 1=event, 2=task]`), never its title. So "cancela o 2" reaches the model as
+"call `delete_task` with `ref: 2`".
+
+Before a call runs or is held for confirmation, the pipeline **pins** the item behind `ref` into the
+arguments (`ListedRefs.Pin`: `ref_id`, `ref_kind`, `ref_label`, `ref_at`), dropping any such field the
+model sent. What is stored on `ast004` — and later confirmed — is that item, not whatever is number 2 by
+the time the user taps *Confirm*. Tools read it through `ToolArguments.OptionalRef`/`PickTarget`, which
+refuse a number missing from the last list or one that stands for another kind of item, and otherwise
+fall back to the item named by words. Finances lists are bullets, not numbers: nothing in Finances is
+changed from the chat.
+
+A call that acts on an existing item (an `IAssistantTargetedTool`) finds it **before** it is held for
+confirmation: nothing there (or several) is said at once instead of after *Confirm*, and the item found is
+pinned like a listed one, so the question names it as it really is ("Excluir a tarefa \"Organizar fotos
+de 2025\"?"). A typed "sim" / "pode" / "não, deixa" to a held call is settled by the pipeline itself,
+through the same confirm/cancel commands as the buttons — asked again, the model only repeated the call.
+
+Telegram caps a message at 4096 characters; Channels splits a longer reply at line breaks
+(`SendAssistantReplyHandler.Split`), with any buttons on the last piece.
 
 ---
 
@@ -357,11 +384,35 @@ GET    /assistant/commands               → the live catalog (debugging, and th
   (#tags and [[links]] work as in the editor).
 - ✅ `search_notes` (2026-09-29): full-text search over the open notes, up to 5 hits with their
   excerpt, straight to the user; the history keeps a content-free recap (§9.2).
+- ✅ Managing things from the chat (2026-10-01), all under §9.2 (data to the user, content-free recap)
+  and pointing by number (§4.6):
+  - **Agenda** — `list_tasks` (by list, overdue/today/week/undated, or finished; due dates bucketed in
+    the user's zone); `update_event` (title, time, place; a new start keeps the length) and
+    `delete_event`, both on one occurrence of a series unless the user says "and the following" or
+    "all"; `update_task` (title, due date, priority), `reopen_task`, `delete_task`; `cancel_reminder`
+    and `rename_reminder` (2026-10-02, over a new `RenameReminderCommand` — not on the web yet).
+    `complete_task` takes a number too, and so does `reschedule_reminder` (2026-10-02, replacing `snooze_reminder`: it moves the remind time itself — a snooze only deferred the alert and every view kept the old time).
+  - **Finances, read-only** — `list_transactions` (period, kind, account or card (asked for apart — a card is often named like its account), category with its
+    sub-categories, text; latest or largest first; total of all matches), `summarize_transactions`
+    (total, by category/account/month/description, against the period before — whole months compare
+    with whole months), `account_balances`, `list_cards` (unpaid closed statements, the current one,
+    limit left), `list_inbox`. Only posted entries count (not voided, not scheduled). Every number is computed in-house; the model picks the filter only.
+    Writes stay as they were — `record_expense` into the inbox; approving, paying and reversing are done
+    in the app.
+  - Later the same day, after a live run (below): `list_reminders` (pending ones, numbered);
+    `update_event` takes a bare `time` ("às 20h" keeps the event's day); `list_agenda` hides acknowledged
+    reminders.
+  - **Notes** — `read_note` (the whole note, to the user) and `append_to_note` (text added at the end
+    after a blank line). Editing the middle of a note would mean sending it to the model, so it is not
+    offered.
 
-Finances (`balance_summary`), proactive
-digests ("here is your day" every morning at 07:00 — not for now: `list_agenda` on request covers it,
-and under §9.2 it would be templated, not generated), and
-retrieval over Notes for question answering.
+- ✅ Live run (2026-10-02): `tests/.../Live/AssistantLiveTests` talks to the real Gemini the way Telegram does
+  (inbound event → pipeline → Channels, button taps as interactions), on a throwaway database loaded with
+  the personal seed, with Telegram captured instead of sent. Opt-in (`PANDORA_LIVE_GEMINI=1`, spends
+  tokens); writes a Markdown report (`PANDORA_LIVE_REPORT`). About 8k prompt tokens per call.
+
+Proactive digests ("here is your day" every morning at 07:00 — not for now: `list_agenda` on request
+covers it, and under §9.2 it would be templated, not generated).
 
 ---
 
