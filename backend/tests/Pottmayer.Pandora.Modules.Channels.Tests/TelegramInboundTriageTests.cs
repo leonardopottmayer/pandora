@@ -20,6 +20,7 @@ public sealed class TelegramInboundTriageTests
     private readonly FakeUserChannelRepository _channels;
     private readonly FakeIntegrationEventBus _bus = new();
     private readonly FakeTelegramClient _client = new();
+    private readonly TelegramAlbumCaptions _albums = new();
     private readonly Guid _userId = Guid.NewGuid();
 
     public TelegramInboundTriageTests()
@@ -35,7 +36,7 @@ public sealed class TelegramInboundTriageTests
             .Register<IInboundUpdateRepository>(_updates)
             .Register<IUserChannelRepository>(_channels);
         return new TelegramInboundTriage(
-            new FakeUnitOfWorkFactory(ctx), _bus, new FakeSender(), new FakeTelegramClientFactory(_client), new FakeChannelsMetrics(), _time,
+            new FakeUnitOfWorkFactory(ctx), _bus, new FakeSender(), new FakeTelegramClientFactory(_client), new FakeChannelsMetrics(), _albums, _time,
             NullLogger<TelegramInboundTriage>.Instance);
     }
 
@@ -97,6 +98,24 @@ public sealed class TelegramInboundTriageTests
     }
 
     [Fact]
+    public async Task The_files_of_an_album_take_its_caption_even_across_polls()
+    {
+        // Telegram captions only one file of an album; the rest arrive bare with the same media group id.
+        var chat = new TelegramChat(long.Parse(ChatId), "private");
+        TelegramUpdate Photo(long id, string? caption, string? group) => new(id, Message: new TelegramIncomingMessage(
+            id, chat, new TelegramSender(chat.Id), Now, Text: caption,
+            Media: new TelegramMedia(TelegramMediaKind.Photo, $"photo-{id}"), MediaGroupId: group));
+
+        await Triage().HandleAsync("assistant", Photo(50, "comprovante luz", "album-1"), CancellationToken.None);
+        await Triage().HandleAsync("assistant", Photo(51, null, "album-1"), CancellationToken.None);
+        await Triage().HandleAsync("assistant", Photo(52, null, "album-2"), CancellationToken.None);
+        await Triage().HandleAsync("assistant", Photo(53, null, null), CancellationToken.None);
+
+        Assert.Equal(["comprovante luz", "comprovante luz", null, null],
+            _bus.Published.Cast<InboundMessageReceived>().Select(m => m.Text));
+    }
+
+    [Fact]
     public async Task The_same_update_id_on_a_different_bot_is_not_deduplicated()
     {
         // update_id is unique per bot, so idempotency is keyed by (provider, bot): the notifications bot
@@ -128,7 +147,7 @@ public sealed class TelegramInboundTriageTests
             .Register<IInboundUpdateRepository>(seen)
             .Register<IUserChannelRepository>(_channels);
         var triage = new TelegramInboundTriage(
-            new FakeUnitOfWorkFactory(ctx), _bus, new FakeSender(), new FakeTelegramClientFactory(_client), new FakeChannelsMetrics(), _time,
+            new FakeUnitOfWorkFactory(ctx), _bus, new FakeSender(), new FakeTelegramClientFactory(_client), new FakeChannelsMetrics(), new TelegramAlbumCaptions(), _time,
             NullLogger<TelegramInboundTriage>.Instance);
 
         await triage.HandleAsync("notifications", TextUpdate(12, long.Parse(ChatId), "duplicada"), CancellationToken.None);

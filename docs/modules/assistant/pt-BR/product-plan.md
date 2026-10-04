@@ -244,7 +244,9 @@ palavras-chave comparadas às palavras da legenda, minúsculas e sem acento. Hoj
 tipo do anexo. O arquivo cai sem dono naquele módulo (`fin017` sem dono, a legenda como nota) e o usuário o
 atribui pelo app. Sem legenda reconhecível o arquivo nem é baixado e a resposta pergunta para onde vai; o que
 não for imagem/PDF, ou passar do limite de 20 MB do Telegram para bots, é recusado com resposta. Fotos chegam
-sem MIME type nem nome: o Channels põe `image/jpeg`, e o arquivo vira `telegram-<timestamp>.jpg`.
+sem MIME type nem nome: o Channels põe `image/jpeg`, e o arquivo vira `telegram-<timestamp>.jpg`. Num álbum o
+Telegram põe a legenda em um arquivo só; o Channels leva essa legenda aos outros arquivos do álbum (mesmo
+media group, em memória), e cada um cai na fila.
 
 ### 4.5 Prompting
 

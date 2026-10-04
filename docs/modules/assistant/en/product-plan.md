@@ -248,7 +248,8 @@ attachment kind. The file lands unassigned in that module (`fin017` with no owne
 and the user files it from the app. A file with no recognizable caption is not downloaded and the reply
 asks where it goes; anything but an image/PDF, or over Telegram's 20 MB bot limit, is refused with a reply.
 Photos arrive without a MIME type or a name: Channels sets `image/jpeg`, and the file is named
-`telegram-<timestamp>.jpg`.
+`telegram-<timestamp>.jpg`. In an album Telegram captions only one file; Channels carries that caption
+to the album's other files (same media group, in memory), so each one lands in the queue.
 
 ### 4.5 Prompting
 

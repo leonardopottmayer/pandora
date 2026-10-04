@@ -71,6 +71,8 @@ public static class InfrastructureDI
 
             // Inbound Telegram: the triage the long-polling driver feeds.
             builder.Services.AddScoped<TelegramInboundTriage>();
+            // Outlives the per-poll scope: an album can straddle two polls.
+            builder.Services.AddSingleton<TelegramAlbumCaptions>();
 
             // The long-poll driver only actually pulls the bots in InboundBots (checked inside).
             builder.Services.AddHostedService<TelegramLongPollingService>();

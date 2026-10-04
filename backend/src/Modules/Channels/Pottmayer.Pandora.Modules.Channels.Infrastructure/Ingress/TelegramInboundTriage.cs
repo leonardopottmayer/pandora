@@ -34,6 +34,7 @@ public sealed class TelegramInboundTriage(
     ISender sender,
     ITelegramClientFactory telegram,
     IChannelsMetrics metrics,
+    TelegramAlbumCaptions albums,
     TimeProvider timeProvider,
     ILogger<TelegramInboundTriage> logger)
 {
@@ -97,9 +98,10 @@ public sealed class TelegramInboundTriage(
         }
 
         var media = message.Media;
+        var text = albums.Apply(bot, chatId, message.MediaGroupId, message.Text);
         var evt = new InboundMessageReceived(
             Guid.CreateVersion7(), timeProvider.GetUtcNow(), userId.Value, Provider, bot,
-            message.Text, media?.FileId, MimeTypeOf(media), media?.FileName, media?.FileSizeBytes);
+            text, media?.FileId, MimeTypeOf(media), media?.FileName, media?.FileSizeBytes);
         return new Outcome(InboundClassification.Message, userId, evt);
     }
 

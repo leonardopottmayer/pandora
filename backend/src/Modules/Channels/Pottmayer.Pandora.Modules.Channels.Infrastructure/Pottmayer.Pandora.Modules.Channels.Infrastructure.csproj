@@ -26,8 +26,8 @@
     <PackageReference Include="Pottmayer.Tars.Communication.Email" Version="0.0.16" />
     <PackageReference Include="Pottmayer.Tars.Communication.Email.MailKit" Version="0.0.16" />
     <!-- Tars: Communication Telegram provider (Bot API over HttpClient) -->
-    <PackageReference Include="Pottmayer.Tars.Communication.Telegram.Abstractions" Version="0.0.16" />
-    <PackageReference Include="Pottmayer.Tars.Communication.Telegram" Version="0.0.16" />
+    <PackageReference Include="Pottmayer.Tars.Communication.Telegram.Abstractions" Version="0.0.17" />
+    <PackageReference Include="Pottmayer.Tars.Communication.Telegram" Version="0.0.17" />
     <!-- Hosting / options / logging for the dispatcher worker and provider config -->
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.2" />
