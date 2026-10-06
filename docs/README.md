@@ -32,9 +32,6 @@ organized by module plus a few cross-cutting concerns.
 - **[Known issues](known-issues.md)** — understood-but-unfixed cross-cutting problems (time zones,
   mandatory-configuration gate), with root causes, affected places, and options for a fix.
 
-- **[Ideas backlog](ideas.md)** — unscheduled feature/module ideas with effort and status; items move
-  into a module's `product-plan.md` when picked up.
-
 ## Documentation conventions
 
 Every implemented module follows the same shape — see [Finances](modules/finances/README.md) or
