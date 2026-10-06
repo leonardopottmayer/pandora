@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Pottmayer.Pandora.Desktop.Abstractions/Pottmayer.Pandora.Desktop.Abstractions.csproj" />
+    <Project Path="src/Pottmayer.Pandora.Desktop.Host/Pottmayer.Pandora.Desktop.Host.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pottmayer.Pandora.Desktop.Host.Tests/Pottmayer.Pandora.Desktop.Host.Tests.csproj" />
+  </Folder>
+</Solution>

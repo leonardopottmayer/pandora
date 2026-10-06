@@ -1,8 +1,8 @@
 # Pandora Desktop — Desktop Client
 
-> **Status:** Plan. Nothing is built yet. Phase D1 (the shell) is the next thing to be implemented;
-> the [Files](../../modules/files/README.md) module comes after it and is the first module to need
-> the desktop.
+> **Status:** Phase D1 (the shell) is implemented in [`client-desktop/`](../../../client-desktop/README.md);
+> D2 onwards is plan. The [Files](../../modules/files/README.md) module comes after D2 and is the first
+> module to need the desktop.
 > 🇧🇷 [Versão em português](../pt-BR/desktop-client.md)
 >
 > Cross-cutting document: the desktop is a client of every module and belongs to none of them.
@@ -252,7 +252,7 @@ and for Files their useful scope is "the phone's photos and videos", not arbitra
 
 ## 6. Roadmap
 
-### Phase D1 — The shell *(next)*
+### Phase D1 — The shell *(implemented)*
 
 - `client-desktop/` with `Desktop.Host` and `Desktop.Abstractions`; empty module list.
 - First-run server URL, remote load, external links to the default browser, offline page.

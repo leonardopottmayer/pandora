@@ -1,0 +1,74 @@
+name: Desktop release
+
+# Builds Pandora Desktop and publishes it to GitHub Releases with Velopack: the Setup.exe people
+# download, and the packages installed apps update themselves from (Updater.cs reads this repo's
+# releases). Run it by pushing a tag v<VERSION>, or by hand from the Actions tab.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  VPK_VERSION: 1.2.161 # keep in step with the Velopack package in Pottmayer.Pandora.Desktop.Host.csproj
+
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Read version
+        id: version
+        run: echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+
+      - name: Tag matches VERSION
+        if: github.ref_type == 'tag'
+        run: test "${{ github.ref_name }}" = "v${{ steps.version.outputs.version }}"
+
+      - name: Test
+        run: dotnet test client-desktop/Pottmayer.Pandora.Desktop.slnx
+
+      - name: Publish
+        run: >
+          dotnet publish client-desktop/src/Pottmayer.Pandora.Desktop.Host
+          -c Release -r win-x64 --self-contained -o client-desktop/publish
+
+      - name: Install vpk
+        run: dotnet tool install -g vpk --version "$VPK_VERSION"
+
+      # The previous release lets vpk build a delta package, so updates download only what changed.
+      - name: Download previous release
+        run: >
+          vpk download github --repoUrl "${{ github.server_url }}/${{ github.repository }}"
+          --token "${{ secrets.GITHUB_TOKEN }}" -o client-desktop/Releases
+          || echo "No previous release."
+
+      - name: Pack
+        run: >
+          vpk pack --packId PandoraDesktop --packVersion "${{ steps.version.outputs.version }}"
+          --packDir client-desktop/publish --mainExe PandoraDesktop.exe
+          --packTitle Pandora --packAuthors "Leonardo Pottmayer"
+          --icon client-desktop/src/Pottmayer.Pandora.Desktop.Host/Assets/pandora.ico
+          -o client-desktop/Releases
+
+      - name: Upload to GitHub Releases
+        run: >
+          vpk upload github --repoUrl "${{ github.server_url }}/${{ github.repository }}"
+          --token "${{ secrets.GITHUB_TOKEN }}" --publish
+          --releaseName "Pandora ${{ steps.version.outputs.version }}"
+          --tag "v${{ steps.version.outputs.version }}" --targetCommitish "${{ github.sha }}"
+          -o client-desktop/Releases

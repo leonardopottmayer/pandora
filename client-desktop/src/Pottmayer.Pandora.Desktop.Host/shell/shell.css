@@ -1,0 +1,98 @@
+:root {
+  --bg: #f6f5fb;
+  --card: #ffffff;
+  --text: #1d1b26;
+  --muted: #6b6880;
+  --border: #e4e1ef;
+  --accent: #863bff;
+  --accent-hover: #7426f0;
+  --danger: #d4380d;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121118;
+    --card: #1c1a24;
+    --text: #ecebf3;
+    --muted: #9b98ad;
+    --border: #2d2a39;
+    --danger: #ff7a45;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+}
+
+.card {
+  width: 100%;
+  max-width: 440px;
+  padding: 32px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.08);
+}
+
+.logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 20px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+h1 { margin: 0 0 6px; font-size: 22px; font-weight: 600; }
+p { margin: 0 0 20px; color: var(--muted); }
+
+label { display: block; margin-bottom: 6px; font-weight: 500; }
+
+input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+
+input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+
+.hint { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+.error { margin: 6px 0 0; font-size: 13px; color: var(--danger); }
+
+.actions { display: flex; gap: 8px; margin-top: 24px; }
+
+button {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary:hover { background: var(--accent-hover); }
+button:not(.primary):hover { border-color: var(--accent); }
+
+code { padding: 1px 6px; border-radius: 4px; background: var(--border); font-size: 13px; }

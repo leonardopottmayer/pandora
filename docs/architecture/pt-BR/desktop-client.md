@@ -1,7 +1,8 @@
 # Pandora Desktop — Cliente Desktop
 
-> **Status:** Plano. Nada foi construído. A fase D1 (o casco) é a próxima a ser implementada; o
-> módulo [Files](../../modules/files/pt-BR/README.md) vem depois e é o primeiro a precisar do desktop.
+> **Status:** A fase D1 (o casco) está implementada em [`client-desktop/`](../../../client-desktop/README.md);
+> da D2 em diante é plano. O módulo [Files](../../modules/files/pt-BR/README.md) vem depois da D2 e é o
+> primeiro a precisar do desktop.
 > 🇺🇸 [English version](../en/desktop-client.md)
 >
 > Documento transversal: o desktop é cliente de todos os módulos e não pertence a nenhum.
@@ -255,7 +256,7 @@ Cascos desktop para Linux/macOS vêm quando houver uma máquina dessas para rod�
 
 ## 6. Roadmap
 
-### Fase D1 — O casco *(próxima)*
+### Fase D1 — O casco *(implementada)*
 
 - `client-desktop/` com `Desktop.Host` e `Desktop.Abstractions`; lista de módulos vazia.
 - URL do servidor na primeira execução, carga remota, links externos no navegador padrão, página

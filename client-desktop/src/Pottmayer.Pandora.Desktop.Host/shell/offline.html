@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pandora</title>
+  <link rel="stylesheet" href="shell.css">
+</head>
+<body>
+  <div class="card">
+    <div class="logo">P</div>
+    <h1 data-t="title"></h1>
+    <p><span data-t="body"></span> <code id="url"></code></p>
+    <p data-t="hint"></p>
+    <div class="actions">
+      <button type="button" id="change" data-t="change"></button>
+      <button type="button" class="primary" id="retry" data-t="retry"></button>
+    </div>
+  </div>
+  <script>
+    const pt = navigator.language.toLowerCase().startsWith('pt');
+    const text = pt ? {
+      title: 'Não consegui falar com o Pandora',
+      body: 'O servidor não respondeu em',
+      hint: 'Confira se ele está ligado e se você está na mesma rede.',
+      change: 'Trocar servidor',
+      retry: 'Tentar de novo',
+    } : {
+      title: 'Could not reach Pandora',
+      body: 'The server did not answer at',
+      hint: 'Check that it is running and that you are on the same network.',
+      change: 'Change server',
+      retry: 'Retry',
+    };
+    document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = text[el.dataset.t]; });
+    document.getElementById('url').textContent = new URLSearchParams(location.search).get('url') ?? '';
+
+    const send = (type) => window.chrome.webview.postMessage({ type });
+    document.getElementById('retry').addEventListener('click', () => send('retry'));
+    document.getElementById('change').addEventListener('click', () => send('changeServer'));
+  </script>
+</body>
+</html>

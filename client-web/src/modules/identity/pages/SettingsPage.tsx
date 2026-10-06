@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { PageHeading } from '@/components/settings/PageHeading'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { SettingRow } from '@/components/settings/SettingRow'
+import { DesktopSettingsSection } from '@/components/settings/DesktopSettingsSection'
 import { usePreferences } from '../context/preferences-context'
 import type { AppLanguage, AppTheme, WeekStartsOn } from '../models'
 
@@ -118,6 +119,8 @@ export function SettingsPage() {
           }
         />
       </SettingsSection>
+
+      <DesktopSettingsSection />
 
       <Typography.Text type="secondary" className="text-xs">
         {t('settings.sharedHint')}
