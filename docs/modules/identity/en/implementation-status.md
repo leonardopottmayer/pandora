@@ -10,7 +10,7 @@ A snapshot of what is built in the codebase versus what is designed but not yet 
 
 | Area | Notes |
 |---|---|
-| **Module scaffold** | Seven layered projects; `identity` schema; `idt001`–`idt008`. |
+| **Module scaffold** | Seven layered projects; `identity` schema; `idt001`–`idt009`. |
 | **User + password** | `User` aggregate; Argon2id hashing (`Argon2PasswordHasher`); unique username/email. |
 | **Sign-up + activation** | `SignUp`; `AccountActivationRequested` → email; `activate` consumes `idt004`; `AccountActivated`. |
 | **Sign-in** | Argon2id verify; uniform failure; JWT access token + rotating refresh token (`idt002`), via Tars. |
@@ -18,8 +18,9 @@ A snapshot of what is built in the codebase versus what is designed but not yet 
 | **Password reset/change** | `forgot` (uniform) → `PasswordResetRequested`; `reset` consumes `idt005`; authenticated `change`; `PasswordChanged`. |
 | **MFA (TOTP)** | `setup`/`enable`/`disable`/`status`; secret encrypted (`idt006`, `ISecretProtector`); recovery codes hashed single-use (`idt007`); sign-in challenge (`idt008`); `MfaEnabled`/`MfaDisabled`. |
 | **Preferences** | `idt003` — theme, language, **time zone, week start, default alert offset**; `GET`/`PUT` with validation. |
+| **Devices** | `idt009`; pair/list/revoke + `devices/me`; keys hashed, `X-Api-Key` scheme (Tars) beside JWT; `DeviceAuthorization` + on-demand scope policies for other modules. See [Devices](devices.md). |
 | **Contracts** | Six security events consumed by Channels' subscribers. |
-| **Frontend** | `client-web/src/modules/identity` — sign-in, sign-up, MFA, preferences. |
+| **Frontend** | `client-web/src/modules/identity` — sign-in, sign-up, MFA, preferences, connected devices (pairs this computer inside Pandora Desktop). |
 
 ## Notable facts for other modules
 
@@ -34,6 +35,6 @@ A snapshot of what is built in the codebase versus what is designed but not yet 
 | Area | Status |
 |---|---|
 | **Social / OAuth login** (e.g. Google sign-in) | Not implemented. (Distinct from [Integrations](../../integrations/en/overview.md), which is Pandora calling Google *as* the user.) |
-| **Per-device session management UI** | Refresh tokens are stored + purged, but there is no session list / revoke-per-device screen. |
+| **Session management UI** | Refresh tokens are stored + purged, but there is no list of signed-in sessions to revoke one by one. (Paired *devices* do have one — see [Devices](devices.md).) |
 | **WebAuthn / passkeys** | Future — MFA is TOTP-only today. |
 | **Roles / permissions** | Not modelled — single-user personal system. |

@@ -1,11 +1,9 @@
 import { Button, Switch, Typography } from 'antd'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { useDesktop, type DesktopSettings, type PandoraDesktop } from '@/lib/desktop'
+import { desktopSettingsKey, useDesktop, type DesktopSettings, type PandoraDesktop } from '@/lib/desktop'
 import { SettingsSection } from './SettingsSection'
 import { SettingRow } from './SettingRow'
-
-const settingsKey = ['desktop', 'settings'] as const
 
 /** The app's own settings (start with Windows, server, version). Renders nothing outside Pandora Desktop. */
 export function DesktopSettingsSection() {
@@ -19,14 +17,14 @@ function DesktopSettingsRows({ desktop }: { desktop: PandoraDesktop }) {
   const queryClient = useQueryClient()
 
   const { data } = useQuery({
-    queryKey: settingsKey,
+    queryKey: desktopSettingsKey,
     queryFn: () => desktop.invoke<DesktopSettings>('desktop.getSettings'),
   })
 
   const autostart = useMutation({
     mutationFn: (enabled: boolean) => desktop.invoke<boolean>('desktop.setAutostart', { enabled }),
     onSuccess: (enabled) =>
-      queryClient.setQueryData<DesktopSettings>(settingsKey, (old) => (old ? { ...old, autostart: enabled } : old)),
+      queryClient.setQueryData<DesktopSettings>(desktopSettingsKey, (old) => (old ? { ...old, autostart: enabled } : old)),
   })
 
   return (

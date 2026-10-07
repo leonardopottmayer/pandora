@@ -9,6 +9,7 @@ import { ActivateAccountPage } from '@/modules/identity/pages/ActivateAccountPag
 import { ProfilePage } from '@/modules/identity/pages/ProfilePage'
 import { ChangePasswordPage } from '@/modules/identity/pages/ChangePasswordPage'
 import { SecurityPage } from '@/modules/identity/pages/SecurityPage'
+import { DevicesPage } from '@/modules/identity/pages/DevicesPage'
 import { SettingsPage } from '@/modules/identity/pages/SettingsPage'
 import { NotificationsPage } from '@/modules/channels/pages/NotificationsPage'
 import { ConnectionsPage } from '@/modules/integrations/pages/ConnectionsPage'
@@ -57,6 +58,7 @@ export const router = createBrowserRouter([
       { path: 'account', element: <ProfilePage /> },
       { path: 'account/security', element: <SecurityPage /> },
       { path: 'account/password', element: <ChangePasswordPage /> },
+      { path: 'account/devices', element: <DevicesPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'settings/assistant', element: <AssistantSettingsPage /> },
       { path: 'assistant', element: <AssistantPage /> },

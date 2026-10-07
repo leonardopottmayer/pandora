@@ -45,6 +45,17 @@ mensagens **uniformes** onde a existência da conta não pode vazar.
 | GET | `/preferences` | usuário | Lê as preferências do usuário. |
 | PUT | `/preferences` | usuário | Upsert de tema / idioma / fuso / início da semana / offset de alerta padrão. |
 
+## Dispositivos — `/identity/devices`
+
+Ver [Dispositivos](devices.md). `dispositivo` = o `X-Api-Key` de um dispositivo pareado; uma sessão nunca o satisfaz.
+
+| Método | Caminho | Auth | Propósito |
+|---|---|---|---|
+| GET | `/devices` | usuário | Os dispositivos ativos do usuário, mais novos primeiro. |
+| POST | `/devices` | usuário | Pareia um dispositivo `{ name, platform, form, scopes[] }` → `{ device, key }` (a chave, uma vez). |
+| DELETE | `/devices/{id}` | usuário | Revoga; a chave falha a partir da próxima requisição. 404 para dispositivo de outro usuário. |
+| GET | `/devices/me` | dispositivo | O próprio dispositivo que está chamando. |
+
 ---
 
 ## Contratos (eventos in-process)

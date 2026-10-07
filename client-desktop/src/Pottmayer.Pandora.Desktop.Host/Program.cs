@@ -34,13 +34,16 @@ internal static class Program
         var active = RegisterModules(builder.Services, settings.Current);
 
         builder.Services.AddSingleton(settings);
+        builder.Services.AddSingleton<DeviceCredentialStore>();
         builder.Services.AddSingleton(active);
         builder.Services.AddSingleton<ShellCommands>();
         builder.Services.AddSingleton<Bridge>();
         builder.Services.AddSingleton<IBridgeEvents>(sp => sp.GetRequiredService<Bridge>());
         AddShellBridgeMethods(builder.Services);
+        builder.Services.AddDeviceHttpClient();
         builder.Services.AddSingleton(sp => new MainForm(
             sp.GetRequiredService<DesktopSettingsStore>(),
+            sp.GetRequiredService<DeviceCredentialStore>(),
             sp.GetRequiredService<Bridge>(),
             sp.GetRequiredService<ShellCommands>(),
             startHidden: args.Contains(Autostart.HiddenArg)));
@@ -89,6 +92,28 @@ internal static class Program
                 version = AppInfo.Version,
                 serverUrl = sp.GetRequiredService<DesktopSettingsStore>().Current.ServerUrl,
                 autostart = Autostart.IsEnabled(),
+                machineName = Environment.MachineName,
+                platform = "windows",
+                form = "desktop",
+                deviceId = sp.GetRequiredService<DeviceCredentialStore>().Load()?.DeviceId,
+            }));
+
+        // Pairing: the web (signed in) registers the device and hands its key over, once.
+        services.AddSingleton<IBridgeHandler>(sp => new DelegateBridgeHandler(
+            "desktop.storeCredential", args =>
+            {
+                var deviceId = args?.GetProperty("deviceId").GetGuid() ?? throw new ArgumentException("deviceId is required.");
+                var key = args.Value.GetProperty("key").GetString();
+                if (string.IsNullOrWhiteSpace(key)) throw new ArgumentException("key is required.");
+                sp.GetRequiredService<DeviceCredentialStore>().Save(new DeviceCredential(deviceId, key));
+                return true;
+            }));
+
+        services.AddSingleton<IBridgeHandler>(sp => new DelegateBridgeHandler(
+            "desktop.forgetCredential", _ =>
+            {
+                sp.GetRequiredService<DeviceCredentialStore>().Forget();
+                return true;
             }));
 
         services.AddSingleton<IBridgeHandler>(new DelegateBridgeHandler(

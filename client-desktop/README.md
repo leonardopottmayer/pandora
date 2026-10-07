@@ -37,9 +37,38 @@ dotnet dnx -y vpk --version 1.2.161 pack --packId PandoraDesktop --packVersion 0
 `client-desktop/Releases/PandoraDesktop-win-Setup.exe` installs per user (no admin) into
 `%LOCALAPPDATA%\PandoraDesktop`.
 
+## Test an update locally (no tag, no GitHub)
+
+The app updates from the folder in `PANDORA_DESKTOP_UPDATES` instead of GitHub when that variable is
+set. Install `0.1.0` with the two commands above, then build a newer version into the same `Releases`
+folder (`-p:Version` overrides `/VERSION` for this build only):
+
+```bash
+dotnet publish client-desktop/src/Pottmayer.Pandora.Desktop.Host -c Release -r win-x64 --self-contained -p:Version=0.1.1 -o client-desktop/publish
+```
+
+```bash
+dotnet dnx -y vpk --version 1.2.161 pack --packId PandoraDesktop --packVersion 0.1.1 --packDir client-desktop/publish --mainExe PandoraDesktop.exe --packTitle Pandora --icon client-desktop/src/Pottmayer.Pandora.Desktop.Host/Assets/pandora.ico -o client-desktop/Releases
+```
+
+Quit the installed app from the tray, set the variable for your user, and open it from the Start
+menu (a new process picks up the variable). It downloads `0.1.1`; quit and open it again and
+Preferences → Pandora Desktop shows `0.1.1`.
+
+```powershell
+[Environment]::SetEnvironmentVariable('PANDORA_DESKTOP_UPDATES', "$PWD\client-desktop\Releases", 'User')
+```
+
+Remove the variable afterwards (`... , $null, 'User'`), and uninstall from Windows Settings → Apps.
+
 ## Release
 
 The [Desktop release](../.github/workflows/desktop-release.yml) workflow builds, tests, packs and
-publishes to GitHub Releases. Run it from the Actions tab, or push a tag `v<VERSION>` (it must match
-`/VERSION`). Installed apps check those releases at startup and every 6 hours, download a newer
-version in the background, and switch to it on the next start.
+uploads to GitHub Releases:
+
+- **Run it from the Actions tab** → a **draft** release. No tag is created and installed apps do not
+  see it — use it to test the pipeline and download the CI's `Setup.exe`, then delete the draft.
+- **Push a tag `v<VERSION>`** (it must match `/VERSION`) → a published release.
+
+Installed apps check the published releases at startup and every 6 hours, download a newer version
+in the background, and switch to it on the next start.

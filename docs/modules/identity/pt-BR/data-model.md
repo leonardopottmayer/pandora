@@ -20,6 +20,7 @@ As migrations ficam em `migrations/migrations/identity/`.
 | idt006 | `mfa_credential` | Segredo TOTP encriptado |
 | idt007 | `mfa_recovery_code` | Códigos de backup de uso único |
 | idt008 | `mfa_challenge` | Tokens de challenge de step-up no login |
+| idt009 | `device` | Dispositivos pareados e o hash das chaves |
 
 ---
 
@@ -106,3 +107,20 @@ Mesma forma — um token de uso único, hasheado, com expiração, ligado a um u
 | `token_hash` | varchar(64) NOT NULL | **único** |
 | `expires_at` | timestamptz NOT NULL | curta duração |
 | `consumed_at` | timestamptz NULL | uso único — trocado pelo access token |
+
+## idt009_device
+
+Um cliente pareado que chama a API com chave própria — ver [Dispositivos](devices.md).
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | |
+| `user_id` | uuid NOT NULL | FK → idt001 `ON DELETE CASCADE`; índice `ix_idt009_user_id` |
+| `name` | varchar(100) NOT NULL | ex. o nome do computador |
+| `platform` | varchar(20) NOT NULL | `chk_idt009_platform`: `windows` \| `linux` \| `macos` \| `android` \| `ios` |
+| `form` | varchar(20) NOT NULL | `chk_idt009_form`: `desktop` \| `headless` \| `mobile` |
+| `key_hash` | varchar(64) NOT NULL | SHA-256 da chave; **único** |
+| `scopes` | text[] NOT NULL | escopos concedidos (`files.agent`); padrão `{}` |
+| `created_at` | timestamptz NOT NULL | |
+| `last_seen_at` | timestamptz NULL | última requisição autenticada, atualizada no máximo a cada 5 min |
+| `revoked_at` | timestamptz NULL | preenchido ao revogar; a chave para de funcionar |

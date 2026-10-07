@@ -58,3 +58,20 @@ export interface UserPreferences {
   /** Signed minutes, relative to the item's anchor (e.g. -15 = fifteen minutes before). */
   defaultAlertOffsetMinutes: number
 }
+
+/** A paired device (Pandora Desktop, a headless agent, a phone) — calls the API with its own key. */
+export interface Device {
+  id: string
+  name: string
+  platform: 'windows' | 'linux' | 'macos' | 'android' | 'ios'
+  form: 'desktop' | 'headless' | 'mobile'
+  scopes: string[]
+  createdAt: string
+  lastSeenAt: string | null
+}
+
+/** The pairing response — the only time the key is ever returned. */
+export interface DeviceRegistration {
+  device: Device
+  key: string
+}

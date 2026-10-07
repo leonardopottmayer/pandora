@@ -1,7 +1,8 @@
 # Pandora Desktop — Cliente Desktop
 
-> **Status:** A fase D1 (o casco) está implementada em [`client-desktop/`](../../../client-desktop/README.md);
-> da D2 em diante é plano. O módulo [Files](../../modules/files/pt-BR/README.md) vem depois da D2 e é o
+> **Status:** As fases D1 (o casco, [`client-desktop/`](../../../client-desktop/README.md)) e D2
+> (credenciais de dispositivo, [Identity → Dispositivos](../../modules/identity/pt-BR/devices.md)) estão
+> implementadas; o resto é plano. O módulo [Files](../../modules/files/pt-BR/README.md) é o próximo e o
 > primeiro a precisar do desktop.
 > 🇺🇸 [English version](../en/desktop-client.md)
 >
@@ -182,11 +183,12 @@ usuário. Um módulo que precisa chamar a API em segundo plano usa uma credencia
   uma tabela nova (`idt0XX_device`) com `user_id`, nome do dispositivo, `platform` (`windows` |
   `linux` | `macos` | `android` | `ios`), `form` (`desktop` | `headless` | `mobile`), o **hash** da
   chave, os **escopos** concedidos (ex. `files.agent`), `last_seen_at`, `revoked_at`.
-- **Pareamento, de dentro do app, já logado:** a página do módulo oferece "Usar este PC como agente
-  de arquivos". O web chama `POST /identity/devices` com a sessão normal do usuário e o escopo de que
-  precisa; o backend devolve a chave **uma única vez**; a página a entrega à ponte
+- **Pareamento, de dentro do app, já logado:** **Conta → Dispositivos** oferece "Conectar este
+  computador" (genérico, não ligado a um módulo). O web chama `POST /identity/devices` com a sessão
+  normal do usuário; o backend devolve a chave **uma única vez**; a página a entrega à ponte
   (`desktop.storeCredential`), que a criptografa com **DPAPI** (usuário atual do Windows) em
-  `credentials.bin`. A chave só existe em texto puro nessa única resposta.
+  `credentials.bin`. A chave só existe em texto puro nessa única resposta. A D2 pareia sem escopos;
+  o primeiro módulo que precisar de um (Files, `files.agent`) define como o escopo é concedido.
 - **Uso:** o módulo a envia como `X-Api-Key`. O Tars já tem o esquema — `AddTarsIdentityApiKey` +
   `ApiKeyAuthenticationHandler`, que chama um `IApiKeyValidator` implementado pelo Pandora (busca pelo
   hash → principal com o id do usuário e as claims de escopo). O Pandora não usa esse esquema hoje.
@@ -269,7 +271,7 @@ Cascos desktop para Linux/macOS vêm quando houver uma máquina dessas para rod�
 - **Pronto quando:** você instala, entra, usa o Pandora exatamente como no navegador; fechar a janela
   mantém o app na bandeja; reiniciar o Windows o traz de volta; um release novo o atualiza sozinho.
 
-### Fase D2 — Credenciais de dispositivo *(pré-requisito da F1 do Files)*
+### Fase D2 — Credenciais de dispositivo *(implementada)*
 
 - Identity: `idt0XX_device`, `POST/GET/DELETE /identity/devices`, `IApiKeyValidator`, políticas de
   escopo; `AddTarsIdentityApiKey` registrado junto com o JWT sem mudar a política padrão.

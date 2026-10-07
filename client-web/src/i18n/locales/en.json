@@ -106,6 +106,7 @@
     "account": "Account",
     "profile": "Profile",
     "security": "Security",
+    "devices": "Devices",
     "settings": "Preferences",
     "notifications": "Notifications",
     "connections": "Connections",
@@ -372,6 +373,35 @@
         "disconnected": "Disconnected",
         "refresh-failed": "Refresh failed"
       }
+    }
+  },
+  "devices": {
+    "title": "Connected devices",
+    "subtitle": "Computers and apps that reach your Pandora with their own key instead of your session. Each key is limited to what the device needs and stops working the moment you revoke it.",
+    "groupThisComputer": "This computer",
+    "groupConnected": "Connected",
+    "empty": "No devices connected.",
+    "notPaired": "Not connected",
+    "notPairedDesc": "Connect this computer so desktop features can work in the background, even with the window closed.",
+    "pairedAs": "Connected as {{name}}",
+    "pairedDesc": "This computer has its own key, kept encrypted for your Windows user.",
+    "connect": "Connect this computer",
+    "connected": "Computer connected.",
+    "connectError": "Could not connect this computer.",
+    "disconnect": "Disconnect",
+    "thisComputer": "this computer",
+    "revoke": "Revoke",
+    "revokeConfirm": "Revoke {{name}}? Its key stops working right away.",
+    "revoked": "Device revoked.",
+    "revokeError": "Could not revoke the device.",
+    "lastSeen": "last seen {{when}}",
+    "neverSeen": "never seen",
+    "platform": {
+      "windows": "Windows",
+      "linux": "Linux",
+      "macos": "macOS",
+      "android": "Android",
+      "ios": "iOS"
     }
   },
   "security": {

@@ -1,8 +1,11 @@
 name: Desktop release
 
-# Builds Pandora Desktop and publishes it to GitHub Releases with Velopack: the Setup.exe people
+# Builds Pandora Desktop and uploads it to GitHub Releases with Velopack: the Setup.exe people
 # download, and the packages installed apps update themselves from (Updater.cs reads this repo's
-# releases). Run it by pushing a tag v<VERSION>, or by hand from the Actions tab.
+# releases).
+#   - push a tag v<VERSION>  → a published release, which installed apps update to;
+#   - run it from Actions    → a DRAFT release: no tag is created, apps do not see it, delete it after.
+#     Use it to test the pipeline and download the Setup.exe.
 on:
   push:
     tags: ['v*']
@@ -68,7 +71,7 @@ jobs:
       - name: Upload to GitHub Releases
         run: >
           vpk upload github --repoUrl "${{ github.server_url }}/${{ github.repository }}"
-          --token "${{ secrets.GITHUB_TOKEN }}" --publish
+          --token "${{ secrets.GITHUB_TOKEN }}" ${{ github.ref_type == 'tag' && '--publish' || '' }}
           --releaseName "Pandora ${{ steps.version.outputs.version }}"
           --tag "v${{ steps.version.outputs.version }}" --targetCommitish "${{ github.sha }}"
           -o client-desktop/Releases

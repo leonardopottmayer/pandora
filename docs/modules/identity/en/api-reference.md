@@ -45,6 +45,17 @@ and MFA management require a valid access token. Errors are mapped from typed `R
 | GET | `/preferences` | user | Read the user's preferences. |
 | PUT | `/preferences` | user | Upsert theme / language / time zone / week start / default alert offset. |
 
+## Devices — `/identity/devices`
+
+See [Devices](devices.md). `device` = the `X-Api-Key` of a paired device; a session never satisfies it.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/devices` | user | The user's active devices, newest first. |
+| POST | `/devices` | user | Pair a device `{ name, platform, form, scopes[] }` → `{ device, key }` (the key, once). |
+| DELETE | `/devices/{id}` | user | Revoke; the key fails from the next request. 404 for another user's device. |
+| GET | `/devices/me` | device | The calling device itself. |
+
 ---
 
 ## Contracts (in-process events)

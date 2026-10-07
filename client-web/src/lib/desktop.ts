@@ -27,9 +27,18 @@ export function useDesktop(): PandoraDesktop | null {
   return window.pandoraDesktop ?? null
 }
 
+/** Query key of `desktop.getSettings`, shared by every page that reads or changes the app's settings. */
+export const desktopSettingsKey = ['desktop', 'settings'] as const
+
 /** What `desktop.getSettings` returns. */
 export interface DesktopSettings {
   version: string
   serverUrl: string | null
   autostart: boolean
+  /** How this PC introduces itself when paired. */
+  machineName: string
+  platform: 'windows'
+  form: 'desktop'
+  /** The device this PC is paired as, or null when it is not paired. */
+  deviceId: string | null
 }

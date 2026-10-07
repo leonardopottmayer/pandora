@@ -20,6 +20,7 @@ Migrations live in `migrations/migrations/identity/`.
 | idt006 | `mfa_credential` | Encrypted TOTP secret |
 | idt007 | `mfa_recovery_code` | Single-use backup codes |
 | idt008 | `mfa_challenge` | Sign-in step-up challenge tokens |
+| idt009 | `device` | Paired devices and their key hashes |
 
 ---
 
@@ -106,3 +107,20 @@ Same shape — a single-use, hashed, expiring token tied to a user.
 | `token_hash` | varchar(64) NOT NULL | **unique** |
 | `expires_at` | timestamptz NOT NULL | short-lived |
 | `consumed_at` | timestamptz NULL | single use — exchanged for the access token |
+
+## idt009_device
+
+A paired client calling the API with its own key — see [Devices](devices.md).
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `user_id` | uuid NOT NULL | FK → idt001 `ON DELETE CASCADE`; index `ix_idt009_user_id` |
+| `name` | varchar(100) NOT NULL | e.g. the computer's name |
+| `platform` | varchar(20) NOT NULL | `chk_idt009_platform`: `windows` \| `linux` \| `macos` \| `android` \| `ios` |
+| `form` | varchar(20) NOT NULL | `chk_idt009_form`: `desktop` \| `headless` \| `mobile` |
+| `key_hash` | varchar(64) NOT NULL | SHA-256 of the key; **unique** |
+| `scopes` | text[] NOT NULL | granted scopes (`files.agent`); default `{}` |
+| `created_at` | timestamptz NOT NULL | |
+| `last_seen_at` | timestamptz NULL | last authenticated request, refreshed at most every 5 min |
+| `revoked_at` | timestamptz NULL | set on revoke; the key stops working |

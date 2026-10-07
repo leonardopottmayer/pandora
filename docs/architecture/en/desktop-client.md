@@ -1,8 +1,9 @@
 # Pandora Desktop — Desktop Client
 
-> **Status:** Phase D1 (the shell) is implemented in [`client-desktop/`](../../../client-desktop/README.md);
-> D2 onwards is plan. The [Files](../../modules/files/README.md) module comes after D2 and is the first
-> module to need the desktop.
+> **Status:** Phases D1 (the shell, [`client-desktop/`](../../../client-desktop/README.md)) and D2
+> (device credentials, [Identity → Devices](../../modules/identity/en/devices.md)) are implemented; the
+> rest is plan. The [Files](../../modules/files/README.md) module is next and is the first module to
+> need the desktop.
 > 🇧🇷 [Versão em português](../pt-BR/desktop-client.md)
 >
 > Cross-cutting document: the desktop is a client of every module and belongs to none of them.
@@ -177,11 +178,12 @@ module that needs to call the API from the background uses a device credential i
   a new table (`idt0XX_device`) with `user_id`, device name, `platform` (`windows` | `linux` |
   `macos` | `android` | `ios`), `form` (`desktop` | `headless` | `mobile`), the **hash** of the key,
   granted **scopes** (e.g. `files.agent`), `last_seen_at`, `revoked_at`.
-- **Pairing, from inside the app, already signed in:** the module's page offers "Use this PC as a
-  file agent". The web calls `POST /identity/devices` with the user's normal session and the scope it
-  needs; the backend returns the key **once**; the page hands it to the bridge
+- **Pairing, from inside the app, already signed in:** **Account → Devices** offers "Connect this
+  computer" (generic, not tied to a module). The web calls `POST /identity/devices` with the user's
+  normal session; the backend returns the key **once**; the page hands it to the bridge
   (`desktop.storeCredential`), which encrypts it with **DPAPI** (current Windows user) into
-  `credentials.bin`. The key exists in plaintext only in that one response.
+  `credentials.bin`. The key exists in plaintext only in that one response. D2 pairs with no scopes;
+  the first module that needs one (Files, `files.agent`) adds how its scope is granted.
 - **Use:** the module sends it as `X-Api-Key`. Tars already has the scheme —
   `AddTarsIdentityApiKey` + `ApiKeyAuthenticationHandler`, which calls an `IApiKeyValidator` that
   Pandora implements (hash lookup → principal with the user id and the scope claims). Pandora does not
@@ -264,7 +266,7 @@ and for Files their useful scope is "the phone's photos and videos", not arbitra
 - **Done when:** you install it, sign in, use Pandora exactly as in the browser; closing the window
   keeps it in the tray; restarting Windows brings it back; a new release updates it by itself.
 
-### Phase D2 — Device credentials *(prerequisite of Files F1)*
+### Phase D2 — Device credentials *(implemented)*
 
 - Identity: `idt0XX_device`, `POST/GET/DELETE /identity/devices`, `IApiKeyValidator`, scope policies;
   `AddTarsIdentityApiKey` registered alongside JWT without changing the default policy.

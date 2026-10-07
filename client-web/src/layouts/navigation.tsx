@@ -23,6 +23,7 @@ import {
   BellOutlined,
   NotificationOutlined,
   ApiOutlined,
+  LaptopOutlined,
 } from '@ant-design/icons'
 import type { ReactNode } from 'react'
 
@@ -117,6 +118,7 @@ export const navigationModules: NavModule[] = [
     screens: [
       { key: 'profile', labelKey: 'nav.profile', path: '/account', icon: <HomeOutlined /> },
       { key: 'security', labelKey: 'nav.security', path: '/account/security', icon: <SafetyOutlined /> },
+      { key: 'devices', labelKey: 'nav.devices', path: '/account/devices', icon: <LaptopOutlined /> },
       { key: 'settings', labelKey: 'nav.settings', path: '/settings', icon: <SettingOutlined /> },
     ],
   },

@@ -23,10 +23,11 @@ Start with the **Overview** for the vocabulary and scope, then read the topic yo
 |---|---|---|
 | 1 | [Overview](en/overview.md) | What the module does, principles, ubiquitous language, scope |
 | 2 | [Architecture](en/architecture.md) | Project layout, the User aggregate & entities, ports/services, decisions |
-| 3 | [Data Model](en/data-model.md) | Schema catalog (`idt001`–`idt008`): columns, constraints, indexes |
+| 3 | [Data Model](en/data-model.md) | Schema catalog (`idt001`–`idt009`): columns, constraints, indexes |
 | 4 | [Authentication](en/authentication.md) | Sign-up, activation, sign-in, JWT + refresh rotation, sign-out, password reset/change |
 | 5 | [MFA](en/mfa.md) | TOTP setup/enable/disable, recovery codes, the sign-in challenge |
 | 6 | [Preferences](en/preferences.md) | Theme, language, time zone, week start, default alert offset |
+| 6a | [Devices](en/devices.md) | Paired devices with their own scoped, revocable keys (`X-Api-Key`) |
 | 7 | [API Reference](en/api-reference.md) | Every endpoint under `/api/v{n}/identity` |
 | 8 | [Implementation Status](en/implementation-status.md) | What is built vs. planned |
 

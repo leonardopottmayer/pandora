@@ -22,10 +22,11 @@ Comece pela **Visão geral** para o vocabulário e o escopo, depois leia o tópi
 |---|---|---|
 | 1 | [Visão geral](overview.md) | O que o módulo faz, princípios, linguagem ubíqua, escopo |
 | 2 | [Arquitetura](architecture.md) | Organização de projetos, o agregado User e entidades, portas/serviços, decisões |
-| 3 | [Modelo de dados](data-model.md) | Catálogo de schema (`idt001`–`idt008`): colunas, constraints, índices |
+| 3 | [Modelo de dados](data-model.md) | Catálogo de schema (`idt001`–`idt009`): colunas, constraints, índices |
 | 4 | [Autenticação](authentication.md) | Cadastro, ativação, login, JWT + rotação de refresh, logout, reset/troca de senha |
 | 5 | [MFA](mfa.md) | Setup/enable/disable TOTP, códigos de recuperação, o challenge de login |
 | 6 | [Preferências](preferences.md) | Tema, idioma, fuso, início da semana, offset de alerta padrão |
+| 6a | [Dispositivos](devices.md) | Dispositivos pareados com chave própria, limitada e revogável (`X-Api-Key`) |
 | 7 | [Referência de API](api-reference.md) | Todos os endpoints sob `/api/v{n}/identity` |
 | 8 | [Status de implementação](implementation-status.md) | O que está pronto vs. planejado |
 

@@ -11,11 +11,18 @@ namespace Pottmayer.Pandora.Desktop.Host;
 internal static class Updater
 {
     private const string RepoUrl = "https://github.com/leonardopottmayer/pandora";
+
+    /// <summary>A local folder of packages (vpk's output) to update from instead of GitHub — for testing updates.</summary>
+    private const string LocalSourceVariable = "PANDORA_DESKTOP_UPDATES";
+
     private static readonly TimeSpan Interval = TimeSpan.FromHours(6);
 
     public static async Task RunAsync(CancellationToken cancellationToken)
     {
-        var manager = new UpdateManager(new GithubSource(RepoUrl, null, false));
+        var local = Environment.GetEnvironmentVariable(LocalSourceVariable);
+        var manager = string.IsNullOrWhiteSpace(local)
+            ? new UpdateManager(new GithubSource(RepoUrl, null, false))
+            : new UpdateManager(local);
         if (!manager.IsInstalled) return; // running from bin/ during development
 
         using var timer = new PeriodicTimer(Interval);

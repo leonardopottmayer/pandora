@@ -23,6 +23,7 @@ internal sealed class MainForm : Form
     ];
 
     private readonly DesktopSettingsStore _settings;
+    private readonly DeviceCredentialStore _credentials;
     private readonly Bridge _bridge;
     private readonly bool _startHidden;
     private readonly WebView2 _web = new() { Dock = DockStyle.Fill };
@@ -30,9 +31,11 @@ internal sealed class MainForm : Form
     private string? _bridgeScriptId;
     private bool _quitting;
 
-    public MainForm(DesktopSettingsStore settings, Bridge bridge, ShellCommands commands, bool startHidden)
+    public MainForm(
+        DesktopSettingsStore settings, DeviceCredentialStore credentials, Bridge bridge, ShellCommands commands, bool startHidden)
     {
         _settings = settings;
+        _credentials = credentials;
         _bridge = bridge;
         _startHidden = startHidden;
 
@@ -198,6 +201,9 @@ internal sealed class MainForm : Form
                     Core.Navigate(ShellUrls.ShellPage("setup.html", "?invalid=1&value=" + Uri.EscapeDataString(input ?? "")));
                     return;
                 }
+                // A device key belongs to the server that issued it.
+                if (_settings.Server is not { } previous || ShellUrls.Origin(previous) != ShellUrls.Origin(server))
+                    _credentials.Forget();
                 _settings.Current.ServerUrl = server.ToString();
                 _settings.Save();
                 await InstallBridgeScriptAsync();

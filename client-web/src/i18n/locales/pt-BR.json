@@ -106,6 +106,7 @@
     "account": "Conta",
     "profile": "Perfil",
     "security": "Seguranca",
+    "devices": "Dispositivos",
     "settings": "Preferencias",
     "notifications": "Notificacoes",
     "connections": "Conexoes",
@@ -372,6 +373,35 @@
         "disconnected": "Desconectado",
         "refresh-failed": "Falha na renovação"
       }
+    }
+  },
+  "devices": {
+    "title": "Dispositivos conectados",
+    "subtitle": "Computadores e apps que acessam o seu Pandora com chave propria, em vez da sua sessao. Cada chave e limitada ao que o dispositivo precisa e para de funcionar no momento em que voce a revoga.",
+    "groupThisComputer": "Este computador",
+    "groupConnected": "Conectados",
+    "empty": "Nenhum dispositivo conectado.",
+    "notPaired": "Nao conectado",
+    "notPairedDesc": "Conecte este computador para que os recursos do desktop funcionem em segundo plano, mesmo com a janela fechada.",
+    "pairedAs": "Conectado como {{name}}",
+    "pairedDesc": "Este computador tem chave propria, guardada criptografada para o seu usuario do Windows.",
+    "connect": "Conectar este computador",
+    "connected": "Computador conectado.",
+    "connectError": "Nao foi possivel conectar este computador.",
+    "disconnect": "Desconectar",
+    "thisComputer": "este computador",
+    "revoke": "Revogar",
+    "revokeConfirm": "Revogar {{name}}? A chave dele para de funcionar na hora.",
+    "revoked": "Dispositivo revogado.",
+    "revokeError": "Nao foi possivel revogar o dispositivo.",
+    "lastSeen": "visto por ultimo em {{when}}",
+    "neverSeen": "nunca visto",
+    "platform": {
+      "windows": "Windows",
+      "linux": "Linux",
+      "macos": "macOS",
+      "android": "Android",
+      "ios": "iOS"
     }
   },
   "security": {

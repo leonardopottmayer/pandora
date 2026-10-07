@@ -10,7 +10,7 @@ Um retrato do que está construído no código versus o que está desenhado mas 
 
 | Área | Notas |
 |---|---|
-| **Scaffold do módulo** | Sete projetos por camada; schema `identity`; `idt001`–`idt008`. |
+| **Scaffold do módulo** | Sete projetos por camada; schema `identity`; `idt001`–`idt009`. |
 | **Usuário + senha** | Agregado `User`; hash Argon2id (`Argon2PasswordHasher`); username/e-mail únicos. |
 | **Cadastro + ativação** | `SignUp`; `AccountActivationRequested` → e-mail; `activate` consome `idt004`; `AccountActivated`. |
 | **Login** | Verificação Argon2id; falha uniforme; JWT access token + refresh rotativo (`idt002`), via Tars. |
@@ -19,7 +19,8 @@ Um retrato do que está construído no código versus o que está desenhado mas 
 | **MFA (TOTP)** | `setup`/`enable`/`disable`/`status`; segredo encriptado (`idt006`, `ISecretProtector`); códigos de recuperação hasheados de uso único (`idt007`); challenge de login (`idt008`); `MfaEnabled`/`MfaDisabled`. |
 | **Preferências** | `idt003` — tema, idioma, **fuso, início da semana, offset de alerta padrão**; `GET`/`PUT` com validação. |
 | **Contratos** | Seis eventos de segurança consumidos pelos subscribers do Channels. |
-| **Frontend** | `client-web/src/modules/identity` — login, cadastro, MFA, preferências. |
+| **Dispositivos** | `idt009`; parear/listar/revogar + `devices/me`; chaves hasheadas, esquema `X-Api-Key` (Tars) ao lado do JWT; `DeviceAuthorization` + políticas de escopo sob demanda para outros módulos. Ver [Dispositivos](devices.md). |
+| **Frontend** | `client-web/src/modules/identity` — login, cadastro, MFA, preferências, dispositivos conectados (pareia este computador dentro do Pandora Desktop). |
 
 ## Fatos notáveis para outros módulos
 
@@ -35,6 +36,6 @@ Um retrato do que está construído no código versus o que está desenhado mas 
 | Área | Status |
 |---|---|
 | **Login social / OAuth** (ex. login com Google) | Não implementado. (Distinto de [Integrations](../../integrations/pt-BR/overview.md), que é o Pandora chamando o Google *como* o usuário.) |
-| **UI de gestão de sessões por dispositivo** | Refresh tokens são guardados + purgados, mas não há tela de lista de sessões / revogar por dispositivo. |
+| **UI de gestão de sessões** | Refresh tokens são guardados + purgados, mas não há lista de sessões logadas para revogar uma a uma. (Os *dispositivos* pareados têm — ver [Dispositivos](devices.md).) |
 | **WebAuthn / passkeys** | Futuro — o MFA é só TOTP hoje. |
 | **Papéis / permissões** | Não modelado — sistema pessoal de usuário único. |
