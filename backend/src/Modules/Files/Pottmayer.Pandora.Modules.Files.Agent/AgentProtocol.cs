@@ -22,7 +22,10 @@ public static class AgentValues
 /// <summary><c>GET /files/agent/config</c>: what this device scans. No roots while the account switch is off.</summary>
 public sealed record AgentConfig(bool Enabled, IReadOnlyList<RootConfig> Roots);
 
-/// <summary>One root, with the selection marks and the enabled filters in scope for it.</summary>
+/// <summary>
+/// One root, with the selection marks and the enabled filters in scope for it.
+/// <see cref="LastCompletedScanAt"/> lets the agent tell whether today's scheduled scan already ran.
+/// </summary>
 public sealed record RootConfig(
     Guid Id,
     string Name,
@@ -30,6 +33,7 @@ public sealed record RootConfig(
     bool CaseSensitive,
     bool IncludeHidden,
     TimeOnly? ScanTime,
+    DateTimeOffset? LastCompletedScanAt,
     IReadOnlyList<MarkConfig> Marks,
     IReadOnlyList<FilterConfig> Filters);
 

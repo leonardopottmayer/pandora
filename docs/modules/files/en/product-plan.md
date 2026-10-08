@@ -1,7 +1,7 @@
 # Files Module — Product Plan
 
-> **Status:** F1a (backend) implemented — catalog, scan protocol, selection and filters, review inbox.
-> F1b (the desktop agent) and F1c (the web) are next. Built on [Pandora Desktop](../../../architecture/en/desktop-client.md)
+> **Status:** F1a (backend) and F1b (the desktop agent) implemented — catalog, scan protocol, selection
+> and filters, review inbox, and the Windows agent that scans. F1c (the web) is next. Built on [Pandora Desktop](../../../architecture/en/desktop-client.md)
 > phases D1 (shell) and D2 (device credentials).
 > 🇧🇷 [Versão em português](../pt-BR/product-plan.md)
 >
@@ -250,6 +250,22 @@ Each root has its own schedule — daily at a chosen time (the default), or manu
 now"** from the page (`files.scanNow`), with progress pushed to the page (`files.scanProgress`).
 Real-time watching is out of F1: a daily scan matches how this collection changes.
 
+How the agent applies it (F1b):
+
+- A root's **first scan is always "Scan now"**: the schedule never starts a root that has not completed
+  a scan, so a whole disk is not cataloged before the user finishes its selection.
+- After that, a scan is due when the latest scheduled time has passed with no scan completed since —
+  a PC that was off at 03:00 scans when it comes back (the config carries `lastCompletedScanAt`).
+- One attempt per scheduled time: a scan the backend held or aborted waits for the next day (or
+  "Scan now"); only a failed attempt (server unreachable) retries, after an hour.
+- One scan at a time on the device; "Scan now" requests queue behind the current one.
+- The agent refreshes its configuration every 10 minutes, before every "Scan now", and when the page
+  asks (`files.status`).
+
+The agent's bridge: `files.status` (paired, account switch, this device's roots, the running scan),
+`files.scanNow {rootId}`, `files.pickFolder`, `files.listFolders {path}` (drives when empty) or
+`{rootId, path}` (inside a root, with catalog paths for selection marks), `files.reveal {rootId, path}`.
+
 ### 4.6 Browsing and search
 
 - **Browse:** `GET /files/roots/{id}/entries?parentPath=` — the children of one folder, paginated,
@@ -369,7 +385,7 @@ Prerequisites: [Desktop D1 and D2](../../../architecture/en/desktop-client.md#6-
 - *(Done — F1a.)* Backend: the module projects plus `Files.Agent`; `fil001`–`fil006`; `pg_trgm`; agent and user
   endpoints; the scan protocol with move detection, excluded entries and the safety brake; seeded
   default filters; filter preview; a job expiring scans with no batches.
-- Desktop (Windows): `Desktop.Files` — device switch, pairing (D2), config pull, walker with
+- *(Done — F1b.)* Desktop (Windows): `Desktop.Files` — device switch, pairing (D2), config pull, walker with
   selection pruning and filters, fingerprinter, per-root schedule + scan now with progress,
   `files.pickFolder` / `files.listFolders` / `files.reveal`.
 - Web: Files settings (account switch), devices and roots, the selection tree, filters with preview,

@@ -57,6 +57,7 @@ internal sealed class MainForm : Form
         _tray.DoubleClick += (_, _) => ShowWindow();
 
         commands.ChangeServerRequested += ShowSetup;
+        commands.RestartRequested += () => BeginInvoke(Quit);
         Load += async (_, _) => await InitializeAsync();
     }
 
@@ -93,12 +94,14 @@ internal sealed class MainForm : Form
         menu.Items.Add(ShellText.Open, null, (_, _) => ShowWindow());
         menu.Items.Add(ShellText.Settings, null, (_, _) => OpenWebSettings());
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(ShellText.Quit, null, (_, _) =>
-        {
-            _quitting = true;
-            Close();
-        });
+        menu.Items.Add(ShellText.Quit, null, (_, _) => Quit());
         return menu;
+    }
+
+    private void Quit()
+    {
+        _quitting = true;
+        Close();
     }
 
     private async Task InitializeAsync()

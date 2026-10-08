@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Pottmayer.Pandora.Desktop.Abstractions\Pottmayer.Pandora.Desktop.Abstractions.csproj" />
+    <ProjectReference Include="..\Pottmayer.Pandora.Desktop.Files\Pottmayer.Pandora.Desktop.Files.csproj" />
   </ItemGroup>
 
   <ItemGroup>

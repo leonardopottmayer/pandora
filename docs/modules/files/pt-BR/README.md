@@ -3,7 +3,7 @@
 > Um catálogo de tudo o que está nos discos do usuário, dentro do monolito modular Pandora.
 > 🇺🇸 [English version](../README.md).
 >
-> **Status: F1a (backend) implementada.** O agente desktop (F1b) e a web (F1c) vêm a seguir — ver
+> **Status: F1a (backend) e F1b (agente desktop) implementadas.** A web (F1c) vem a seguir — ver
 > [product-plan.md](product-plan.md).
 
 O módulo **Files** indexa as pastas que o usuário escolhe nos seus discos — filmes, fotos, material
@@ -35,8 +35,9 @@ Quando a F1 estiver construída, o módulo passa para a estrutura usual por tóp
 
 - **Backend:** `Pottmayer.Pandora.Modules.Files.*`, schema `files`, tabelas `fil001`–`fil006`; o
   protocolo e o motor de seleção/filtros ficam no `Files.Agent`, compartilhado com os agentes.
-- **Agente:** `Pottmayer.Pandora.Desktop.Files` (F1b), um módulo do Pandora Desktop, autenticado com a
-  chave do dispositivo; escaneia só as raízes que o usuário deu àquele dispositivo.
+- **Agente:** `Pottmayer.Pandora.Desktop.Files`, um módulo do Pandora Desktop, autenticado com a chave
+  do dispositivo; escaneia só as raízes que o usuário deu àquele dispositivo, na agenda delas ou no
+  "Escanear agora".
 - **Frontend:** `client-web/src/modules/files`; a configuração é editável de qualquer lugar, enquanto
   o seletor de pasta nativo e a árvore de pastas ao vivo só aparecem dentro do app desktop, no próprio
   dispositivo.

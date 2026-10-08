@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -10,6 +11,9 @@ internal static class Program
 {
     private const string InstanceName = @"Local\Pottmayer.Pandora.Desktop";
 
+    /// <summary>Passed to the new process when the app restarts itself: it waits for the old one to exit.</summary>
+    private const string RestartArg = "--restart";
+
     [STAThread]
     private static void Main(string[] args)
     {
@@ -21,6 +25,7 @@ internal static class Program
         // Single instance: a second launch only asks the first one to show its window.
         using var instance = new Mutex(initiallyOwned: true, InstanceName, out var isFirst);
         using var showSignal = new EventWaitHandle(false, EventResetMode.AutoReset, InstanceName + ".Show");
+        if (!isFirst && args.Contains(RestartArg)) isFirst = WaitForPreviousInstance(instance);
         if (!isFirst)
         {
             showSignal.Set();
@@ -39,6 +44,7 @@ internal static class Program
         builder.Services.AddSingleton<ShellCommands>();
         builder.Services.AddSingleton<Bridge>();
         builder.Services.AddSingleton<IBridgeEvents>(sp => sp.GetRequiredService<Bridge>());
+        builder.Services.AddSingleton<IDesktopShell, WindowsShell>();
         AddShellBridgeMethods(builder.Services);
         builder.Services.AddDeviceHttpClient();
         builder.Services.AddSingleton(sp => new MainForm(
@@ -65,6 +71,23 @@ internal static class Program
 
         stopping.Cancel();
         host.StopAsync().GetAwaiter().GetResult();
+
+        instance.ReleaseMutex();
+        if (host.Services.GetRequiredService<ShellCommands>().RestartPending)
+            Process.Start(Environment.ProcessPath!, RestartArg);
+    }
+
+    /// <summary>A restart starts the new process before the old one has fully exited; it waits its turn.</summary>
+    private static bool WaitForPreviousInstance(Mutex instance)
+    {
+        try
+        {
+            return instance.WaitOne(TimeSpan.FromSeconds(30));
+        }
+        catch (AbandonedMutexException)
+        {
+            return true; // the old process ended without releasing it: ours now
+        }
     }
 
     /// <summary>Registers only the modules switched on for this device; the rest do not exist at runtime.</summary>
@@ -124,6 +147,31 @@ internal static class Program
                     && e.ValueKind == JsonValueKind.True;
                 Autostart.Set(enabled);
                 return Autostart.IsEnabled();
+            }));
+
+        // The device switch of each module: whether this PC does that feature's native work.
+        services.AddSingleton<IBridgeHandler>(sp => new DelegateBridgeHandler(
+            "desktop.getModules", _ => DesktopModules.All.Select(m => new
+            {
+                name = m.Name,
+                enabled = sp.GetRequiredService<DesktopSettingsStore>().Current.Modules.GetValueOrDefault(m.Name),
+            })));
+
+        // A switched-off module has no services at all, so turning one on or off restarts the app.
+        services.AddSingleton<IBridgeHandler>(sp => new DelegateBridgeHandler(
+            "desktop.setModule", args =>
+            {
+                var name = args is { ValueKind: JsonValueKind.Object } a && a.TryGetProperty("name", out var n) ? n.GetString() : null;
+                if (DesktopModules.All.All(m => m.Name != name)) throw new ArgumentException($"Unknown module '{name}'.");
+                var enabled = args!.Value.TryGetProperty("enabled", out var e) && e.ValueKind == JsonValueKind.True;
+
+                var settings = sp.GetRequiredService<DesktopSettingsStore>();
+                if (settings.Current.Modules.GetValueOrDefault(name!) == enabled) return new { restarting = false };
+
+                settings.Current.Modules[name!] = enabled;
+                settings.Save();
+                sp.GetRequiredService<ShellCommands>().RequestRestart();
+                return new { restarting = true };
             }));
 
         services.AddSingleton<IBridgeHandler>(sp => new DelegateBridgeHandler(

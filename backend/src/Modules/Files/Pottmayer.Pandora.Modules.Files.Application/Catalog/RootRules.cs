@@ -14,7 +14,7 @@ internal static class RootRules
                                .ListEnabledForRootAsync(root.UserId, root.DeviceId, root.Id, ct);
 
         return new RootConfig(
-            root.Id, root.Name, root.LocalPath, root.CaseSensitive, root.IncludeHidden, root.ScanTime,
+            root.Id, root.Name, root.LocalPath, root.CaseSensitive, root.IncludeHidden, root.ScanTime, root.LastCompletedScanAt,
             [.. root.Marks.Select(m => new MarkConfig(m.Path, m.Mode.Value))],
             [.. filters.Select(ToConfig)]);
     }

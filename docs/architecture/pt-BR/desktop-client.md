@@ -2,8 +2,8 @@
 
 > **Status:** As fases D1 (o casco, [`client-desktop/`](../../../client-desktop/README.md)) e D2
 > (credenciais de dispositivo, [Identity → Dispositivos](../../modules/identity/pt-BR/devices.md)) estão
-> implementadas; o resto é plano. O módulo [Files](../../modules/files/pt-BR/README.md) é o próximo e o
-> primeiro a precisar do desktop.
+> implementadas; o resto é plano. O primeiro módulo desktop, o agente do
+> [Files](../../modules/files/pt-BR/README.md) (`Desktop.Files`, fase F1b), também está implementado.
 > 🇺🇸 [English version](../en/desktop-client.md)
 >
 > Documento transversal: o desktop é cliente de todos os módulos e não pertence a nenhum.
@@ -159,7 +159,11 @@ public interface IBridgeHandler
 - O casco roda um **generic host** (`Microsoft.Extensions.Hosting`). Na inicialização ele percorre a
   lista de módulos — uma lista simples na composition root, como o `Program.cs` do backend — e chama
   `Register` **só para os módulos ligados neste dispositivo**. Um módulo desligado não tem serviços,
-  handlers nem trabalho em segundo plano. Ligar ou desligar um módulo reinicia o host do app.
+  handlers nem trabalho em segundo plano. Ligar ou desligar um módulo (`desktop.getModules` /
+  `desktop.setModule`) salva o interruptor e reinicia o app: o processo antigo inicia o novo, que espera
+  a trava de instância única antes de assumir.
+- Os módulos não referenciam o sistema operacional. O que só o SO faz — o diálogo de pasta, mostrar um
+  arquivo no Explorer/Finder — o casco oferece pelo `IDesktopShell`, e cada casco o implementa.
 - Trabalho em segundo plano é um `IHostedService` comum. Continua rodando com a janela escondida.
 - `capabilities()` retorna os nomes dos módulos registrados.
 

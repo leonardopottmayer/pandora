@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The Files agent (product-plan F1). Plain net10.0: anything OS-specific goes through IDesktopShell. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pottmayer.Pandora.Desktop.Abstractions\Pottmayer.Pandora.Desktop.Abstractions.csproj" />
+    <!-- The protocol and the selection/filter engine, shared with the backend so a scan and the server never disagree. -->
+    <ProjectReference Include="..\..\..\backend\src\Modules\Files\Pottmayer.Pandora.Modules.Files.Agent\Pottmayer.Pandora.Modules.Files.Agent.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pottmayer.Pandora.Desktop.Files.Tests" />
+  </ItemGroup>
+
+</Project>

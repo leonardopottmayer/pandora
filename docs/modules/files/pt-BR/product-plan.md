@@ -1,7 +1,7 @@
 # Módulo Files — Plano de Produto
 
-> **Status:** F1a (backend) implementada — catálogo, protocolo de scan, seleção e filtros, caixa de
-> revisão. F1b (o agente desktop) e F1c (a web) vêm a seguir. Construído sobre as fases D1 (casco) e
+> **Status:** F1a (backend) e F1b (o agente desktop) implementadas — catálogo, protocolo de scan,
+> seleção e filtros, caixa de revisão, e o agente Windows que escaneia. A F1c (a web) vem a seguir. Construído sobre as fases D1 (casco) e
 > D2 (credenciais de dispositivo) do [Pandora Desktop](../../../architecture/pt-BR/desktop-client.md).
 > 🇺🇸 [English version](../en/product-plan.md)
 >
@@ -259,6 +259,25 @@ Cada raiz tem sua própria agenda — diária num horário escolhido (o padrão)
 (`files.scanProgress`). Monitoramento em tempo real fica fora da F1: um scan diário combina com o
 ritmo de mudança desse acervo.
 
+Como o agente aplica isso (F1b):
+
+- O **primeiro scan de uma raiz é sempre o "Escanear agora"**: a agenda nunca inicia uma raiz que ainda
+  não concluiu um scan, então um disco inteiro não é catalogado antes de o usuário terminar a seleção.
+- Depois disso, um scan está pendente quando o último horário agendado passou sem scan concluído desde
+  então — um PC que estava desligado às 03:00 escaneia quando volta (a config traz
+  `lastCompletedScanAt`).
+- Uma tentativa por horário agendado: um scan que o backend reteve ou abortou espera o dia seguinte (ou
+  o "Escanear agora"); só uma tentativa que falhou (servidor fora do ar) tenta de novo, depois de uma
+  hora.
+- Um scan por vez no dispositivo; pedidos de "Escanear agora" entram na fila atrás do atual.
+- O agente atualiza a configuração a cada 10 minutos, antes de todo "Escanear agora", e quando a página
+  pede (`files.status`).
+
+A ponte do agente: `files.status` (pareado, interruptor da conta, raízes deste dispositivo, o scan em
+andamento), `files.scanNow {rootId}`, `files.pickFolder`, `files.listFolders {path}` (discos quando
+vazio) ou `{rootId, path}` (dentro de uma raiz, com os caminhos do catálogo para as marcas de seleção),
+`files.reveal {rootId, path}`.
+
 ### 4.6 Navegação e busca
 
 - **Navegar:** `GET /files/roots/{id}/entries?parentPath=` — os filhos de uma pasta, paginados,
@@ -381,7 +400,7 @@ Pré-requisitos: [Desktop D1 e D2](../../../architecture/pt-BR/desktop-client.md
   agente e de usuário; o protocolo de scan com detecção de movimentação, entradas excluídas e o freio
   de segurança; filtros padrão semeados; pré-visualização de filtros; um job que expira scans sem
   lotes.
-- Desktop (Windows): `Desktop.Files` — interruptor do dispositivo, pareamento (D2), busca da
+- *(Feito — F1b.)* Desktop (Windows): `Desktop.Files` — interruptor do dispositivo, pareamento (D2), busca da
   configuração, varredor com poda pela seleção e filtros, fingerprinter, agenda por raiz + escanear
   agora com progresso, `files.pickFolder` / `files.listFolders` / `files.reveal`.
 - Web: configurações do Files (interruptor da conta), dispositivos e raízes, a árvore de seleção,

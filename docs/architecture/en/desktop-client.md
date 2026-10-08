@@ -2,8 +2,8 @@
 
 > **Status:** Phases D1 (the shell, [`client-desktop/`](../../../client-desktop/README.md)) and D2
 > (device credentials, [Identity → Devices](../../modules/identity/en/devices.md)) are implemented; the
-> rest is plan. The [Files](../../modules/files/README.md) module is next and is the first module to
-> need the desktop.
+> rest is plan. The first desktop module, the [Files](../../modules/files/README.md) agent
+> (`Desktop.Files`, phase F1b), is implemented too.
 > 🇧🇷 [Versão em português](../pt-BR/desktop-client.md)
 >
 > Cross-cutting document: the desktop is a client of every module and belongs to none of them.
@@ -154,7 +154,11 @@ public interface IBridgeHandler
 - The shell runs a **generic host** (`Microsoft.Extensions.Hosting`). On startup it walks the module
   list — a plain list in the composition root, like `Program.cs` in the backend — and calls
   `Register` **only for modules switched on for this device**. A switched-off module has no services,
-  no handlers and no background work. Turning a module on or off restarts the app's host.
+  no handlers and no background work. Turning a module on or off (`desktop.getModules` /
+  `desktop.setModule`) saves the switch and restarts the app: the old process starts the new one, which
+  waits for the single-instance lock before taking over.
+- Modules stay free of OS references. What only the OS can do — the folder dialog, showing a file in
+  Explorer/Finder — the shell offers through `IDesktopShell`, and each shell implements it.
 - Background work is an ordinary `IHostedService`. It keeps running with the window hidden.
 - `capabilities()` returns the names of the registered modules.
 

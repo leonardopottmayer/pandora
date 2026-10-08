@@ -19,7 +19,7 @@ organized by module plus a few cross-cutting concerns.
   | [Channels](modules/channels/README.md) | Implemented | Telegram/email delivery, quiet hours |
   | [Integrations](modules/integrations/README.md) | Implemented (I1+I2) | OAuth credentials, encrypted at rest |
   | [Assistant](modules/assistant/README.md) | **Plan only** | Natural-language commands over the other modules |
-  | [Files](modules/files/README.md) | In progress (F1a: backend) | Catalog of the user's disks, fed by the desktop agent |
+  | [Files](modules/files/README.md) | In progress (F1a backend, F1b desktop agent) | Catalog of the user's disks, fed by the desktop agent |
 
 - **A cross-cutting decision** that no single module owns:
   - [Messaging architecture](architecture/en/messaging.md) — the in-process outbox, why there is no broker, idempotency, what does *not* go through the bus.

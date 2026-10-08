@@ -3,7 +3,7 @@
 > A catalog of everything on the user's disks, inside the Pandora modular monolith.
 > **Language:** English is the primary documentation. 🇧🇷 [Versão em português](pt-BR/README.md).
 >
-> **Status: F1a (backend) implemented.** The desktop agent (F1b) and the web (F1c) are next — see
+> **Status: F1a (backend) and F1b (desktop agent) implemented.** The web (F1c) is next — see
 > [product-plan.md](en/product-plan.md).
 
 The **Files** module indexes the folders the user chooses on their disks — movies, photos, college
@@ -34,8 +34,8 @@ Once F1 is built, the module moves to the usual per-topic structure (`overview.m
 
 - **Backend:** `Pottmayer.Pandora.Modules.Files.*`, schema `files`, tables `fil001`–`fil006`; the
   protocol and the selection/filter engine live in `Files.Agent`, shared with the agents.
-- **Agent:** `Pottmayer.Pandora.Desktop.Files` (F1b), a module of Pandora Desktop, authenticated with
-  its device key; it scans only the roots the user gave that device.
+- **Agent:** `Pottmayer.Pandora.Desktop.Files`, a module of Pandora Desktop, authenticated with its
+  device key; it scans only the roots the user gave that device, on their schedule or on "Scan now".
 - **Frontend:** `client-web/src/modules/files`; configuration is editable from anywhere, while the
   native folder picker and the live folder tree only show inside the desktop app on the device itself.
 - **Customizable at every level:** any number of devices and roots, a folder selection tree per root,

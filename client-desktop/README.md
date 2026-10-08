@@ -5,9 +5,14 @@ window, and adds what a browser cannot do. Design: [docs/architecture/en/desktop
 
 | Project | What it is |
 |---|---|
-| `src/Pottmayer.Pandora.Desktop.Abstractions` | The module contract (`IDesktopModule`, `IBridgeHandler`, `IBridgeEvents`). Plain `net10.0`. |
+| `src/Pottmayer.Pandora.Desktop.Abstractions` | The module contract (`IDesktopModule`, `IBridgeHandler`, `IBridgeEvents`, `IDesktopShell`). Plain `net10.0`. |
+| `src/Pottmayer.Pandora.Desktop.Files` | The [Files](../docs/modules/files/README.md) agent: walks the roots, fingerprints, runs the scan protocol on schedule or on "Scan now". Plain `net10.0`; shares the protocol and the selection/filter engine with the backend (`Modules.Files.Agent`). |
 | `src/Pottmayer.Pandora.Desktop.Host` | The shell: WinForms + WebView2, tray, bridge, start with Windows, Velopack updates. The only Windows-specific project. |
+| `tests/Pottmayer.Pandora.Desktop.Files.Tests` | The walk over a real folder tree, the schedule, the scan protocol against a fake server. |
 | `tests/Pottmayer.Pandora.Desktop.Host.Tests` | Bridge routing, origin checks, server URL parsing. |
+
+Modules are off on every PC until switched on (`desktop.setModule`, from the web's settings); the
+switch restarts the app.
 
 Version comes from the repo's `/VERSION`, like the backend and the web.
 
