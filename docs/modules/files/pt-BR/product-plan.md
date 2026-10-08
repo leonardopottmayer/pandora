@@ -1,8 +1,8 @@
 # Módulo Files — Plano de Produto
 
-> **Status:** Plano. Nada foi construído. O Files começa depois das fases D1 (casco) e D2
-> (credenciais de dispositivo) do [Pandora Desktop](../../../architecture/pt-BR/desktop-client.md),
-> das quais depende.
+> **Status:** F1a (backend) implementada — catálogo, protocolo de scan, seleção e filtros, caixa de
+> revisão. F1b (o agente desktop) e F1c (a web) vêm a seguir. Construído sobre as fases D1 (casco) e
+> D2 (credenciais de dispositivo) do [Pandora Desktop](../../../architecture/pt-BR/desktop-client.md).
 > 🇺🇸 [English version](../en/product-plan.md)
 >
 > Relacionados: [Pandora Desktop](../../../architecture/pt-BR/desktop-client.md) ·
@@ -47,12 +47,12 @@ precisar navegar por 20 TB de pastas.
 
 | Coisa | Valor |
 |---|---|
-| Projetos do backend | `Pottmayer.Pandora.Modules.Files.{Abstractions,Application,Contracts,Domain,Infrastructure,Persistence,Presentation}` |
+| Projetos do backend | `Pottmayer.Pandora.Modules.Files.{Abstractions,Application,Domain,Infrastructure,Persistence,Presentation}` (um projeto `Contracts` vem com o primeiro evento de integração) |
 | Compartilhado com os agentes | `Pottmayer.Pandora.Modules.Files.Agent` — DTOs do protocolo + o motor de seleção/filtros (4.3), `net10.0`, sem dependências do servidor |
 | Schema PostgreSQL | `files` |
 | Prefixo de tabela | `filXXX_`, PK `uuid_generate_v7()` |
 | Base da API (usuário) | `/api/v{version}/files` — JWT, o escopo de usuário de sempre |
-| Base da API (agente) | `/api/v{version}/files/agent` — só chave de dispositivo com escopo `files.agent` |
+| Base da API (agente) | `/api/v{version}/files/agent` — só chave de dispositivo (qualquer dispositivo pareado; age sobre as próprias raízes) |
 | Frontend | `client-web/src/modules/files` |
 | Módulo desktop | `client-desktop/Pottmayer.Pandora.Desktop.Files` |
 | Migrations | `migrations/migrations/files/` |
@@ -204,7 +204,9 @@ de vetores de teste mantido junto com os docs.
 0. GET  /files/agent/config                → raízes, seleção e filtros deste dispositivo
 
 1. POST /files/agent/scans                {rootId}                       → {scanId}
-      409 se a raiz já tem um scan em andamento.
+      Um scan em andamento ou retido daquela raiz é abortado como "superseded": só este
+      dispositivo escaneia a raiz, então uma execução anterior está morta (agente que caiu) ou
+      velha (scan retido).
 
 2. POST /files/agent/scans/{id}/batches   {entries: [{path, kind, size, modifiedAt}]}   (≤ 1000)
       → {needsFingerprint: [path, ...]}
@@ -236,7 +238,11 @@ O agente só envia o que a seleção e os filtros deixam passar. No **complete**
    mostra; o usuário **confirma** (aplica) ou **descarta**. Exclusões causadas por mudança de
    configuração não contam para o freio — foi o usuário que pediu.
 
-No **abort**, ou se o agente parar de enviar lotes por mais que um timeout, o scan é descartado: nada
+Antes de tudo isso, `entriesSeen` precisa bater com as entradas distintas que o backend recebeu;
+senão um lote se perdeu e o scan é abortado (`entries-seen-mismatch`) em vez de marcar essas entradas
+como sumidas.
+
+No **abort**, ou se o agente parar de enviar lotes por 30 minutos, o scan é descartado: nada
 é marcado como sumido. As entradas criadas pelo scan ficam (são arquivos reais que foram vistos).
 
 Pastas são entradas com `kind = directory`. Não têm impressão digital; uma pasta movida aparece como
@@ -340,14 +346,13 @@ Fases posteriores adicionam metadados (`fil002.metadata jsonb`), tags e classifi
 | Método | Caminho | Quem | Para quê |
 |---|---|---|---|
 | GET / PUT | `/files/preferences` | usuário | o interruptor da conta |
-| GET | `/files/devices` | usuário | dispositivos com plataforma, última vez visto, raízes |
 | GET · POST | `/files/roots` | usuário | listar / adicionar uma raiz `{deviceId, name, localPath, ...}` |
 | PATCH · DELETE | `/files/roots/{id}` | usuário | configurações da raiz / remover (entradas → caixa) |
-| GET · PUT | `/files/roots/{id}/selection` | usuário | as marcas de seleção (substituídas como conjunto) |
+| PUT | `/files/roots/{id}/selection` | usuário | as marcas de seleção, substituídas como conjunto (vêm com cada raiz em `GET /files/roots`) |
 | GET · POST · PATCH · DELETE | `/files/filters` | usuário | filtros em qualquer escopo |
 | POST | `/files/filters/preview` | usuário | o que um filtro em rascunho casaria no catálogo |
 | GET | `/files/roots/{id}/entries?parentPath=` | usuário | navegar numa pasta |
-| GET | `/files/search` | usuário | busca (4.6) |
+| GET | `/files/search` | usuário | busca (4.6); `status` é `present` (padrão), `missing`, `excluded` ou `all` |
 | GET | `/files/entries/{id}` | usuário | uma entrada |
 | GET | `/files/scans?rootId=` | usuário | histórico de scans |
 | POST | `/files/scans/{id}/confirm` · `/discard` | usuário | resolver um scan retido |
@@ -356,8 +361,13 @@ Fases posteriores adicionam metadados (`fil002.metadata jsonb`), tags e classifi
 | GET | `/files/agent/config` | dispositivo | raízes, seleção e filtros deste dispositivo |
 | POST | `/files/agent/scans` · `/{id}/batches` · `/{id}/complete` · `/{id}/abort` | dispositivo | protocolo de scan (4.4) |
 
-Os endpoints de agente só aceitam o esquema de dispositivo com escopo `files.agent`, e só agem sobre
-raízes do próprio dispositivo da chave.
+Os endpoints de agente só aceitam chave de dispositivo (a policy `device` dos
+[dispositivos do Identity](../../identity/pt-BR/devices.md)), nunca uma sessão, e só agem sobre raízes
+do próprio dispositivo da chave. Nenhum escopo é necessário: um dispositivo não faz nada no Files até o
+usuário dar raízes a ele. Os dispositivos em si (plataforma, última vez visto) vêm do
+`GET /identity/devices` do Identity; a web junta com as raízes.
+
+Caminhos na API e no catálogo são relativos à raiz, na forma `/Filmes/a.mkv` (`/` é a própria raiz).
 
 ---
 
@@ -367,7 +377,7 @@ Pré-requisitos: [Desktop D1 e D2](../../../architecture/pt-BR/desktop-client.md
 
 ### Fase F1 — Catálogo *(o MVP)*
 
-- Backend: o scaffold de 7 projetos mais o `Files.Agent`; `fil001`–`fil006`; `pg_trgm`; endpoints de
+- *(Feito — F1a.)* Backend: os projetos do módulo mais o `Files.Agent`; `fil001`–`fil006`; `pg_trgm`; endpoints de
   agente e de usuário; o protocolo de scan com detecção de movimentação, entradas excluídas e o freio
   de segurança; filtros padrão semeados; pré-visualização de filtros; um job que expira scans sem
   lotes.

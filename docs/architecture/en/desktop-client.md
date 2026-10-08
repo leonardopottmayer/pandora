@@ -177,20 +177,21 @@ module that needs to call the API from the background uses a device credential i
 - **Owned by Identity**, because it is authentication and is shared by every future desktop module:
   a new table (`idt0XX_device`) with `user_id`, device name, `platform` (`windows` | `linux` |
   `macos` | `android` | `ios`), `form` (`desktop` | `headless` | `mobile`), the **hash** of the key,
-  granted **scopes** (e.g. `files.agent`), `last_seen_at`, `revoked_at`.
+  granted **scopes** (lower-case dotted names; none used yet), `last_seen_at`, `revoked_at`.
 - **Pairing, from inside the app, already signed in:** **Account → Devices** offers "Connect this
   computer" (generic, not tied to a module). The web calls `POST /identity/devices` with the user's
   normal session; the backend returns the key **once**; the page hands it to the bridge
   (`desktop.storeCredential`), which encrypts it with **DPAPI** (current Windows user) into
-  `credentials.bin`. The key exists in plaintext only in that one response. D2 pairs with no scopes;
-  the first module that needs one (Files, `files.agent`) adds how its scope is granted.
+  `credentials.bin`. The key exists in plaintext only in that one response. D2 pairs with no scopes,
+  and Files needs none: its agent endpoints take any paired device and act only on the roots the user
+  gave that device.
 - **Use:** the module sends it as `X-Api-Key`. Tars already has the scheme —
   `AddTarsIdentityApiKey` + `ApiKeyAuthenticationHandler`, which calls an `IApiKeyValidator` that
   Pandora implements (hash lookup → principal with the user id and the scope claims). Pandora does not
   use this scheme today.
 - **Reach:** the default authorization policy stays JWT-only. A device key is accepted **only** on
-  endpoints that opt in with the device scheme plus a scope policy (Files' `/files/agent/*` requires
-  `files.agent`). A stolen key cannot read Finances.
+  endpoints that opt in with the device scheme and the `device` policy (Files' `/files/agent/*`),
+  optionally narrowed to a scope. A stolen key cannot read Finances.
 - **Revocation:** a "Connected devices" list in the web settings (Identity). Revoking makes the next
   call 401, and the module shows itself as disconnected until paired again.
 - **Pairing without a screen** (headless host, 4.8): the host asks the backend for a short code,

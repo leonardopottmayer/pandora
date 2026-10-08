@@ -75,6 +75,15 @@
     <Project Path="src/Modules/Communications/Pottmayer.Pandora.Modules.Communications.Persistence/Pottmayer.Pandora.Modules.Communications.Persistence.csproj" />
     <Project Path="src/Modules/Communications/Pottmayer.Pandora.Modules.Communications.Presentation/Pottmayer.Pandora.Modules.Communications.Presentation.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Files/">
+    <Project Path="src/Modules/Files/Pottmayer.Pandora.Modules.Files.Abstractions/Pottmayer.Pandora.Modules.Files.Abstractions.csproj" />
+    <Project Path="src/Modules/Files/Pottmayer.Pandora.Modules.Files.Agent/Pottmayer.Pandora.Modules.Files.Agent.csproj" />
+    <Project Path="src/Modules/Files/Pottmayer.Pandora.Modules.Files.Domain/Pottmayer.Pandora.Modules.Files.Domain.csproj" />
+    <Project Path="src/Modules/Files/Pottmayer.Pandora.Modules.Files.Application/Pottmayer.Pandora.Modules.Files.Application.csproj" />
+    <Project Path="src/Modules/Files/Pottmayer.Pandora.Modules.Files.Infrastructure/Pottmayer.Pandora.Modules.Files.Infrastructure.csproj" />
+    <Project Path="src/Modules/Files/Pottmayer.Pandora.Modules.Files.Persistence/Pottmayer.Pandora.Modules.Files.Persistence.csproj" />
+    <Project Path="src/Modules/Files/Pottmayer.Pandora.Modules.Files.Presentation/Pottmayer.Pandora.Modules.Files.Presentation.csproj" />
+  </Folder>
   <Folder Name="/src/Host/">
     <Project Path="src/Host/Pottmayer.Pandora.Host/Pottmayer.Pandora.Host.csproj" Id="b0000004-0000-0000-0000-000000000001" />
   </Folder>
@@ -86,6 +95,7 @@
     <Project Path="tests/Pottmayer.Pandora.Modules.Agenda.Tests/Pottmayer.Pandora.Modules.Agenda.Tests.csproj" Id="b0000006-0000-0000-0000-000000000006" />
     <Project Path="tests/Pottmayer.Pandora.Modules.Integrations.Tests/Pottmayer.Pandora.Modules.Integrations.Tests.csproj" Id="b0000006-0000-0000-0000-000000000007" />
     <Project Path="tests/Pottmayer.Pandora.Modules.Assistant.Tests/Pottmayer.Pandora.Modules.Assistant.Tests.csproj" />
+    <Project Path="tests/Pottmayer.Pandora.Modules.Files.Tests/Pottmayer.Pandora.Modules.Files.Tests.csproj" />
     <Project Path="tests/Pottmayer.Pandora.IntegrationTests/Pottmayer.Pandora.IntegrationTests.csproj" Id="b0000006-0000-0000-0000-000000000003" />
   </Folder>
 </Solution>

@@ -87,7 +87,7 @@ public sealed class AssistantLiveFactory : WebApplicationFactory<Program>, IAsyn
 
         builder.ConfigureAppConfiguration((_, config) =>
             config.AddInMemoryCollection(
-                new[] { "identity", "channels", "finances", "notes", "agenda", "integrations", "assistant" }
+                new[] { "identity", "channels", "finances", "notes", "agenda", "integrations", "assistant", "files" }
                     .ToDictionary(key => $"Tars:Data:Connections:{key}:ConnectionString", _ => (string?)ConnectionString)));
 
         builder.ConfigureServices(services =>

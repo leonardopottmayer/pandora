@@ -3,8 +3,7 @@
 > Um catálogo de tudo o que está nos discos do usuário, dentro do monolito modular Pandora.
 > 🇺🇸 [English version](../README.md).
 >
-> **Status: plano.** Nada foi construído. O Files vem depois das fases D1 (casco) e D2 (credenciais
-> de dispositivo) do [Pandora Desktop](../../../architecture/pt-BR/desktop-client.md) — ver
+> **Status: F1a (backend) implementada.** O agente desktop (F1b) e a web (F1c) vêm a seguir — ver
 > [product-plan.md](product-plan.md).
 
 O módulo **Files** indexa as pastas que o usuário escolhe nos seus discos — filmes, fotos, material
@@ -18,8 +17,8 @@ bytes.
 
 ## Como esta documentação está organizada
 
-Como o [Assistant](../../assistant/pt-BR/README.md), o Files ainda não tem implementação, então não
-tem o conjunto completo de tópicos `en/` + `pt-BR/`. O que existe hoje:
+O Files está no meio da F1 (só o backend), então ainda não tem o conjunto completo de tópicos
+`en/` + `pt-BR/`. O que existe hoje:
 
 | Documento | Idioma | O que cobre |
 |---|---|---|
@@ -34,10 +33,10 @@ Quando a F1 estiver construída, o módulo passa para a estrutura usual por tóp
 
 ## Fatos rápidos
 
-- **Backend:** não iniciado. Alvo `Pottmayer.Pandora.Modules.Files.*`, schema `files`, tabelas
-  `filXXX_`.
-- **Agente:** `Pottmayer.Pandora.Desktop.Files`, um módulo do Pandora Desktop, autenticado com uma
-  chave de dispositivo com escopo `files.agent`.
+- **Backend:** `Pottmayer.Pandora.Modules.Files.*`, schema `files`, tabelas `fil001`–`fil006`; o
+  protocolo e o motor de seleção/filtros ficam no `Files.Agent`, compartilhado com os agentes.
+- **Agente:** `Pottmayer.Pandora.Desktop.Files` (F1b), um módulo do Pandora Desktop, autenticado com a
+  chave do dispositivo; escaneia só as raízes que o usuário deu àquele dispositivo.
 - **Frontend:** `client-web/src/modules/files`; a configuração é editável de qualquer lugar, enquanto
   o seletor de pasta nativo e a árvore de pastas ao vivo só aparecem dentro do app desktop, no próprio
   dispositivo.

@@ -182,19 +182,20 @@ usuário. Um módulo que precisa chamar a API em segundo plano usa uma credencia
 - **Pertence ao Identity**, porque é autenticação e é compartilhada por todo futuro módulo desktop:
   uma tabela nova (`idt0XX_device`) com `user_id`, nome do dispositivo, `platform` (`windows` |
   `linux` | `macos` | `android` | `ios`), `form` (`desktop` | `headless` | `mobile`), o **hash** da
-  chave, os **escopos** concedidos (ex. `files.agent`), `last_seen_at`, `revoked_at`.
+  chave, os **escopos** concedidos (nomes em minúsculas com pontos; nenhum em uso ainda), `last_seen_at`, `revoked_at`.
 - **Pareamento, de dentro do app, já logado:** **Conta → Dispositivos** oferece "Conectar este
   computador" (genérico, não ligado a um módulo). O web chama `POST /identity/devices` com a sessão
   normal do usuário; o backend devolve a chave **uma única vez**; a página a entrega à ponte
   (`desktop.storeCredential`), que a criptografa com **DPAPI** (usuário atual do Windows) em
-  `credentials.bin`. A chave só existe em texto puro nessa única resposta. A D2 pareia sem escopos;
-  o primeiro módulo que precisar de um (Files, `files.agent`) define como o escopo é concedido.
+  `credentials.bin`. A chave só existe em texto puro nessa única resposta. A D2 pareia sem escopos,
+  e o Files não precisa de nenhum: seus endpoints de agente aceitam qualquer dispositivo pareado e só
+  agem sobre as raízes que o usuário deu àquele dispositivo.
 - **Uso:** o módulo a envia como `X-Api-Key`. O Tars já tem o esquema — `AddTarsIdentityApiKey` +
   `ApiKeyAuthenticationHandler`, que chama um `IApiKeyValidator` implementado pelo Pandora (busca pelo
   hash → principal com o id do usuário e as claims de escopo). O Pandora não usa esse esquema hoje.
 - **Alcance:** a política de autorização padrão continua só-JWT. Uma chave de dispositivo é aceita
-  **apenas** nos endpoints que optam pelo esquema de dispositivo mais uma política de escopo (o
-  `/files/agent/*` do Files exige `files.agent`). Uma chave roubada não lê o Finances.
+  **apenas** nos endpoints que optam pelo esquema de dispositivo e pela política `device` (o `/files/agent/*`
+  do Files), opcionalmente restrita a um escopo. Uma chave roubada não lê o Finances.
 - **Revogação:** uma lista "Dispositivos conectados" nas configurações do web (Identity). Revogar faz
   a próxima chamada dar 401, e o módulo se mostra desconectado até ser pareado de novo.
 - **Pareamento sem tela** (host headless, 4.8): o host pede ao backend um código curto, o imprime com

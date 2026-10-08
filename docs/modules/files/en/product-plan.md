@@ -1,7 +1,8 @@
 # Files Module — Product Plan
 
-> **Status:** Plan. Nothing is built. Files starts after [Pandora Desktop](../../../architecture/en/desktop-client.md)
-> phases D1 (shell) and D2 (device credentials), which it depends on.
+> **Status:** F1a (backend) implemented — catalog, scan protocol, selection and filters, review inbox.
+> F1b (the desktop agent) and F1c (the web) are next. Built on [Pandora Desktop](../../../architecture/en/desktop-client.md)
+> phases D1 (shell) and D2 (device credentials).
 > 🇧🇷 [Versão em português](../pt-BR/product-plan.md)
 >
 > Related: [Pandora Desktop](../../../architecture/en/desktop-client.md) ·
@@ -45,12 +46,12 @@ browsing 20 TB of folders.
 
 | Thing | Value |
 |---|---|
-| Backend projects | `Pottmayer.Pandora.Modules.Files.{Abstractions,Application,Contracts,Domain,Infrastructure,Persistence,Presentation}` |
+| Backend projects | `Pottmayer.Pandora.Modules.Files.{Abstractions,Application,Domain,Infrastructure,Persistence,Presentation}` (a `Contracts` project comes with the first integration event) |
 | Shared with agents | `Pottmayer.Pandora.Modules.Files.Agent` — protocol DTOs + the selection/filter engine (4.3), `net10.0`, no server dependencies |
 | PostgreSQL schema | `files` |
 | Table prefix | `filXXX_`, PK `uuid_generate_v7()` |
 | API base (user) | `/api/v{version}/files` — JWT, the usual user scope |
-| API base (agent) | `/api/v{version}/files/agent` — device key with scope `files.agent` only |
+| API base (agent) | `/api/v{version}/files/agent` — device key only (any paired device; it acts on its own roots) |
 | Frontend | `client-web/src/modules/files` |
 | Desktop module | `client-desktop/Pottmayer.Pandora.Desktop.Files` |
 | Migrations | `migrations/migrations/files/` |
@@ -197,7 +198,8 @@ languages (a phone) implement the same rules against a set of test vectors kept 
 0. GET  /files/agent/config                → this device's roots, selection and filters
 
 1. POST /files/agent/scans                {rootId}                       → {scanId}
-      409 if that root already has a running scan.
+      A running or held scan of that root is aborted as "superseded": only this device scans the
+      root, so an earlier run is dead (a crashed agent) or stale (a held scan).
 
 2. POST /files/agent/scans/{id}/batches   {entries: [{path, kind, size, modifiedAt}]}   (≤ 1000)
       → {needsFingerprint: [path, ...]}
@@ -228,7 +230,11 @@ transaction:
    the user **confirms** (apply) or **discards** it. Exclusions caused by a config change do not count
    towards the brake — the user asked for them.
 
-On **abort**, or if the agent stops sending batches for longer than a timeout, the scan is discarded:
+Before any of that, `entriesSeen` must equal the distinct entries the backend received; otherwise a
+batch was lost and the scan is aborted (`entries-seen-mismatch`) instead of marking those entries
+missing.
+
+On **abort**, or if the agent stops sending batches for 30 minutes, the scan is discarded:
 nothing is marked missing. Entries created by the scan stay (they are real files that were seen).
 
 Folders are entries with `kind = directory`. They carry no fingerprint; a moved folder shows up as
@@ -328,14 +334,13 @@ Later phases add metadata (`fil002.metadata jsonb`), tags and classifications (`
 | Method | Path | Who | Purpose |
 |---|---|---|---|
 | GET / PUT | `/files/preferences` | user | the account switch |
-| GET | `/files/devices` | user | devices with their platform, last seen, roots |
 | GET · POST | `/files/roots` | user | list / add a root `{deviceId, name, localPath, ...}` |
 | PATCH · DELETE | `/files/roots/{id}` | user | root settings / remove (entries → inbox) |
-| GET · PUT | `/files/roots/{id}/selection` | user | the selection marks (replaced as a set) |
+| PUT | `/files/roots/{id}/selection` | user | the selection marks, replaced as a set (they come with each root in `GET /files/roots`) |
 | GET · POST · PATCH · DELETE | `/files/filters` | user | filters at any scope |
 | POST | `/files/filters/preview` | user | what a draft filter would match in the catalog |
 | GET | `/files/roots/{id}/entries?parentPath=` | user | browse one folder |
-| GET | `/files/search` | user | search (4.6) |
+| GET | `/files/search` | user | search (4.6); `status` is `present` (default), `missing`, `excluded` or `all` |
 | GET | `/files/entries/{id}` | user | one entry |
 | GET | `/files/scans?rootId=` | user | scan history |
 | POST | `/files/scans/{id}/confirm` · `/discard` | user | resolve a held scan |
@@ -344,8 +349,14 @@ Later phases add metadata (`fil002.metadata jsonb`), tags and classifications (`
 | GET | `/files/agent/config` | device | this device's roots, selection and filters |
 | POST | `/files/agent/scans` · `/{id}/batches` · `/{id}/complete` · `/{id}/abort` | device | scan protocol (4.4) |
 
-Agent endpoints only accept the device scheme with scope `files.agent`, and act on roots of the
-key's own device.
+Agent endpoints accept only a device key (the `device` policy of
+[Identity devices](../../identity/en/devices.md)), never a session, and act only on roots of the key's
+own device. No scope is needed: a device does nothing in Files until the user gives it roots. The
+devices themselves (platform, last seen) come from Identity's `GET /identity/devices`; the web joins
+them with the roots.
+
+Paths in the API and the catalog are relative to the root, in the form `/Movies/a.mkv` (`/` is the
+root itself).
 
 ---
 
@@ -355,7 +366,7 @@ Prerequisites: [Desktop D1 and D2](../../../architecture/en/desktop-client.md#6-
 
 ### Phase F1 — Catalog *(the MVP)*
 
-- Backend: the 7-project scaffold plus `Files.Agent`; `fil001`–`fil006`; `pg_trgm`; agent and user
+- *(Done — F1a.)* Backend: the module projects plus `Files.Agent`; `fil001`–`fil006`; `pg_trgm`; agent and user
   endpoints; the scan protocol with move detection, excluded entries and the safety brake; seeded
   default filters; filter preview; a job expiring scans with no batches.
 - Desktop (Windows): `Desktop.Files` — device switch, pairing (D2), config pull, walker with

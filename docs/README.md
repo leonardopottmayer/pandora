@@ -19,7 +19,7 @@ organized by module plus a few cross-cutting concerns.
   | [Channels](modules/channels/README.md) | Implemented | Telegram/email delivery, quiet hours |
   | [Integrations](modules/integrations/README.md) | Implemented (I1+I2) | OAuth credentials, encrypted at rest |
   | [Assistant](modules/assistant/README.md) | **Plan only** | Natural-language commands over the other modules |
-  | [Files](modules/files/README.md) | **Plan only** | Catalog of the user's disks, fed by the desktop agent |
+  | [Files](modules/files/README.md) | In progress (F1a: backend) | Catalog of the user's disks, fed by the desktop agent |
 
 - **A cross-cutting decision** that no single module owns:
   - [Messaging architecture](architecture/en/messaging.md) — the in-process outbox, why there is no broker, idempotency, what does *not* go through the bus.
@@ -45,7 +45,7 @@ Every implemented module follows the same shape — see [Finances](modules/finan
 - `modules/<name>/pt-BR/*.md` — a translation mirror of every `en/` file, same filenames, same section
   structure.
 
-**Assistant and Files are the exceptions**: they have no implementation yet, so they have no `overview.md`,
+**Assistant and Files are the exceptions**: they do not have the topic set yet — no `overview.md`,
 `architecture.md`, `data-model.md`, `api-reference.md` or `implementation-status.md` — only a product
 plan (en + pt-BR) — plus, for Assistant, a pt-BR-only local-first execution plan. See [Assistant's](modules/assistant/README.md) and
 [Files'](modules/files/README.md) READMEs for the specifics and the known gap (no English mirror yet for
