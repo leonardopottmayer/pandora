@@ -31,10 +31,16 @@ public sealed class FilesModule : IDesktopModule
 
         Add(services, "files.status", (sp, _, ct) => sp.GetRequiredService<FilesAgent>().RefreshAsync(ct));
 
-        Add(services, "files.scanNow", (sp, args, _) =>
+        // Checked against fresh configuration first, so the page hears why a scan cannot start.
+        Add(services, "files.scanNow", async (sp, args, ct) =>
         {
-            sp.GetRequiredService<FilesAgent>().RequestScan(Args.Guid(args, "rootId"));
-            return Task.FromResult(true);
+            var agent = sp.GetRequiredService<FilesAgent>();
+            var rootId = Args.Guid(args, "rootId");
+            var status = await agent.RefreshAsync(ct);
+            if (agent.FindRoot(rootId) is null)
+                throw new InvalidOperationException(status.LastError ?? "That root is not on this device.");
+            agent.RequestScan(rootId);
+            return true;
         });
 
         Add(services, "files.pickFolder", async (sp, _, ct) =>

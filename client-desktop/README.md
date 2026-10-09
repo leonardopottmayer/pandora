@@ -22,7 +22,9 @@ Version comes from the repo's `/VERSION`, like the backend and the web.
 dotnet run --project client-desktop/src/Pottmayer.Pandora.Desktop.Host
 ```
 
-First run asks for the server URL — the dev server works too (`localhost:5173`). Settings live in
+First run asks for the server URL — the dev server works too (`localhost:5173`): it proxies `/api` to
+the backend (`VITE_API_URL`), as nginx does in production, so desktop modules reach the API on the
+same origin. Settings live in
 `%LOCALAPPDATA%\Pandora\` (`settings.json`, and `WebView2\` with the browser profile and the session);
 delete the folder to start over. Updates are skipped when running from `bin/`.
 

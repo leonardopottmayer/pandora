@@ -124,6 +124,8 @@ function RootRow({ root, onEdit, onSelect }: { root: Root; onEdit: () => void; o
     mutationFn: () => agent!.invoke('files.scanNow', { rootId: root.id }),
     onSuccess: () => message.info(t('files.roots.scanQueued')),
     onError: (e) => message.error(toErrorMessage(e, t('files.roots.scanError'))),
+    // The agent's status carries what went wrong with it (shown above the roots).
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: filesKeys.agent() }),
   })
   const remove = useMutation({
     mutationFn: () => filesService.removeRoot(root.id),

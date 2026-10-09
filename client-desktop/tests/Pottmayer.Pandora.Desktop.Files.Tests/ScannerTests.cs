@@ -57,6 +57,16 @@ public sealed class ScannerTests : IDisposable
         Assert.Equal("agent-error", _server.AbortReason);
     }
 
+    [Fact]
+    public async Task A_page_instead_of_the_api_is_an_error_that_says_so()
+    {
+        _server.AnswerWithPage = true;
+
+        var error = await Assert.ThrowsAsync<FilesApiException>(() => new FilesApi(_server).GetConfigAsync(CancellationToken.None));
+
+        Assert.Contains("answered with a page", error.Message);
+    }
+
     /// <summary>Answers the agent endpoints like the backend: asks for the fingerprint of every file sent without one.</summary>
     private sealed class FakeServer : HttpMessageHandler, IHttpClientFactory
     {
@@ -68,10 +78,14 @@ public sealed class ScannerTests : IDisposable
         public string? AbortReason { get; private set; }
         public bool FailBatches { get; set; }
 
+        /// <summary>Behaves like a web server that does not proxy /api: the SPA's index for any GET.</summary>
+        public bool AnswerWithPage { get; set; }
+
         public HttpClient CreateClient(string name) => new(this, disposeHandler: false) { BaseAddress = new Uri("https://pandora.test/") };
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
+            if (AnswerWithPage) return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("<!doctype html>", null, "text/html") };
             var path = request.RequestUri!.AbsolutePath;
             if (path.EndsWith("/scans")) return Ok(new StartScanResponse(_scanId));
 

@@ -35,6 +35,8 @@ internal sealed class FilesApi(IHttpClientFactory http)
         using var response = await http.CreateClient(DesktopHttp.DeviceClient).SendAsync(request, ct);
         if (!response.IsSuccessStatusCode)
             throw new FilesApiException(response.StatusCode, await response.Content.ReadAsStringAsync(ct));
+        if (response.Content.Headers.ContentType?.MediaType != "application/json")
+            throw new FilesApiException(response.StatusCode, $"{request.RequestUri} answered with a page, not the API — is the server URL the API's origin?");
 
         var envelope = await response.Content.ReadFromJsonAsync<Envelope<T>>(Json, ct);
         return envelope is { Data: { } data } ? data : throw new FilesApiException(response.StatusCode, "Empty response.");
