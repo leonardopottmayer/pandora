@@ -24,6 +24,10 @@ import {
   NotificationOutlined,
   ApiOutlined,
   LaptopOutlined,
+  FolderOpenOutlined,
+  HddOutlined,
+  FilterOutlined,
+  CheckSquareFilled,
 } from '@ant-design/icons'
 import type { ReactNode } from 'react'
 
@@ -84,6 +88,18 @@ export const navigationModules: NavModule[] = [
     icon: <BookOutlined />,
     screens: [
       { key: 'notes-pages', labelKey: 'nav.notesPages', path: '/notes', icon: <FileTextOutlined /> },
+    ],
+  },
+  {
+    key: 'files',
+    labelKey: 'nav.files',
+    icon: <FolderOpenOutlined />,
+    screens: [
+      { key: 'files-catalog', labelKey: 'nav.filesCatalog', path: '/files', icon: <FolderOpenOutlined /> },
+      { key: 'files-roots', labelKey: 'nav.filesRoots', path: '/files/roots', icon: <HddOutlined /> },
+      { key: 'files-filters', labelKey: 'nav.filesFilters', path: '/files/filters', icon: <FilterOutlined /> },
+      { key: 'files-review', labelKey: 'nav.filesReview', path: '/files/review', icon: <CheckSquareFilled /> },
+      { key: 'files-settings', labelKey: 'nav.filesSettings', path: '/files/settings', icon: <SettingOutlined /> },
     ],
   },
   {

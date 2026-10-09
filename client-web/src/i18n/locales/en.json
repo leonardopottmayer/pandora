@@ -134,7 +134,13 @@
     "agendaCalendar": "Calendar",
     "agendaSettings": "Settings",
     "assistantBar": "Commands",
-    "assistantSettings": "Settings"
+    "assistantSettings": "Settings",
+    "files": "Files",
+    "filesCatalog": "Browse",
+    "filesRoots": "Devices and roots",
+    "filesFilters": "Filters",
+    "filesReview": "Review",
+    "filesSettings": "Settings"
   },
   "theme": {
     "toLight": "Light theme",
@@ -1193,6 +1199,208 @@
         "task": "Task",
         "reminder": "Reminder"
       }
+    }
+  },
+  "files": {
+    "gate": {
+      "title": "Files is off",
+      "desc": "Turn Files on to catalog your disks and find anything on them from any device.",
+      "action": "Open Files settings"
+    },
+    "tree": {
+      "empty": "No subfolders",
+      "expand": "Expand",
+      "collapse": "Collapse"
+    },
+    "status": {
+      "present": "Present",
+      "missing": "Missing",
+      "excluded": "Excluded",
+      "all": "Any status"
+    },
+    "category": {
+      "video": "Video",
+      "audio": "Audio",
+      "image": "Image",
+      "document": "Document",
+      "ebook": "E-book",
+      "archive": "Archive",
+      "code": "Code",
+      "other": "Other"
+    },
+    "settings": {
+      "title": "Files settings",
+      "intro": "Files catalogs what is on your disks — names, sizes, dates — so you can find it from anywhere. The files themselves never leave the device.",
+      "enabledLabel": "Use Files",
+      "enabledDesc": "Off hides Files everywhere and the devices stop scanning.",
+      "groupThisComputer": "This computer",
+      "deviceLabel": "Scan disks on this computer",
+      "deviceDesc": "Turn on in the computer that has the disks. The app restarts to apply it.",
+      "restarting": "Restarting Pandora Desktop…",
+      "saveError": "Could not save the setting.",
+      "notPaired": "This computer is not connected to your account, so it cannot scan.",
+      "pairAction": "Connect it in Devices"
+    },
+    "roots": {
+      "title": "Devices and roots",
+      "intro": "A root is a disk or folder a device catalogs. Choose its folders, schedule and options; each device scans only its own roots.",
+      "add": "Add root",
+      "addTitle": "Add root",
+      "editTitle": "Root settings",
+      "saved": "Root saved.",
+      "saveError": "Could not save the root.",
+      "noDevices": "No device is connected yet.",
+      "noDevicesAction": "Connect a computer in Devices",
+      "agentOff": "This computer does not scan disks.",
+      "agentOffAction": "Turn it on in Files settings",
+      "agentError": "The last contact with Pandora failed",
+      "empty": "No roots yet. Add the first disk or folder to catalog.",
+      "unknownDevice": "Disconnected device",
+      "deviceEmpty": "No roots on this computer yet.",
+      "device": "Device",
+      "localPath": "Disk or folder",
+      "localPathTyped": "The path as the device writes it (E:\\, /mnt/hd). It is checked on the first scan.",
+      "pick": "Choose…",
+      "name": "Name",
+      "schedule": "Schedule",
+      "scheduleDesc": "The first scan is always started with “Scan now”, after you choose the folders.",
+      "daily": "Daily",
+      "manual": "Manual",
+      "time": "Time",
+      "includeHidden": "Include hidden and system files",
+      "caseSensitive": "Upper and lower case in names",
+      "caseDefault": "Device default",
+      "caseNo": "Same letter (a = A)",
+      "caseYes": "Different (a ≠ A)",
+      "dailyAt": "daily at {{time}}",
+      "manualOnly": "manual only",
+      "entries": "{{count}} entries",
+      "lastScan": "last scan {{when}}",
+      "neverScanned": "never scanned",
+      "scanNow": "Scan now",
+      "scanQueued": "Scan queued.",
+      "scanError": "Could not start the scan.",
+      "selection": "Folders",
+      "remove": "Remove",
+      "removeConfirm": "Remove {{name}}?",
+      "removeDesc": "Scanning stops, and its entries go to the review inbox.",
+      "removeError": "Could not remove the root."
+    },
+    "scan": {
+      "progress": "Scanning: {{walked}} items walked, {{fingerprinted}} fingerprinted",
+      "counts": "Last scan {{when}}: {{seen}} seen, {{created}} new, {{changed}} changed, {{moved}} moved, {{missing}} missing, {{excluded}} excluded",
+      "held": "The last scan would mark {{missing}} of {{seen}} entries missing",
+      "heldDesc": "That is a lot — maybe a disk came up empty or under another letter. Apply it only if the files are really gone.",
+      "confirm": "Apply",
+      "discard": "Discard",
+      "resolveError": "Could not resolve the scan.",
+      "aborted": "The last scan was aborted: {{error}}",
+      "runningElsewhere": "Scanning since {{when}}",
+      "reason": {
+        "root-unavailable": "the disk or folder was not found on the device",
+        "superseded": "a newer scan replaced it",
+        "timed-out": "the device stopped responding",
+        "entries-seen-mismatch": "part of the scan was lost on the way",
+        "discarded": "discarded by you",
+        "cancelled": "the app was closed",
+        "agent-error": "the device hit an error"
+      }
+    },
+    "selection": {
+      "title": "Folders of {{name}}",
+      "introLive": "Check what this computer catalogs. Unchecking a folder leaves out everything inside it, unless you check a folder below it again.",
+      "introCatalog": "This tree shows the folders the catalog already knows. To mark a folder it has not seen, type its path below.",
+      "marks": "Marks",
+      "noMarks": "No marks: the whole root is cataloged.",
+      "include": "Include",
+      "exclude": "Exclude",
+      "addMark": "Add",
+      "nextScan": "Changes apply on the next scan.",
+      "saved": "Folders saved.",
+      "saveError": "Could not save the folders."
+    },
+    "filters": {
+      "title": "Filters",
+      "intro": "Name rules on top of the chosen folders. An exclude filter always wins; with an include filter in scope, only the files it matches are kept.",
+      "add": "Add filter",
+      "addTitle": "Add filter",
+      "editTitle": "Edit filter",
+      "saved": "Filter saved.",
+      "saveError": "Could not save the filter.",
+      "deleteError": "Could not delete the filter.",
+      "deleteConfirm": "Delete {{name}}?",
+      "builtin": "built-in",
+      "name": "Name",
+      "rule": "Rule",
+      "appliesTo": "Applies to",
+      "action": "Action",
+      "matcher": "Match by",
+      "pattern": "Pattern",
+      "patternHint": "Extensions separated by commas (mkv, mp4); a glob like *.part; or a regex.",
+      "scope": "Scope",
+      "scopeAccount": "All devices",
+      "scopeDevice": "Device: {{name}}",
+      "scopeRoot": "Root: {{name}}",
+      "scopePath": "Only below this folder",
+      "scopePathDesc": "A folder of the root, like /Movies. Empty is the whole root.",
+      "caseSensitive": "Upper and lower case",
+      "caseDefault": "The root's setting",
+      "enabled": "On",
+      "folderOnlyExcludes": "Folder filters only exclude, and skip the folder's contents entirely.",
+      "target": {
+        "file": "Files",
+        "folder": "Folders"
+      },
+      "actionName": {
+        "include": "Only keep",
+        "exclude": "Exclude"
+      },
+      "actionDesc": {
+        "include": "Only files that match an include filter are kept.",
+        "exclude": "What matches is left out."
+      },
+      "matcherName": {
+        "extension": "Extension",
+        "glob": "Glob",
+        "starts-with": "Starts with",
+        "ends-with": "Ends with",
+        "contains": "Contains",
+        "regex": "Regex"
+      },
+      "preview": "Preview",
+      "previewCount": "Matches {{count}} entries in the catalog now",
+      "previewError": "Could not preview the filter."
+    },
+    "catalog": {
+      "title": "Files",
+      "intro": "Browse a root folder by folder, or search every root by fragments of a name.",
+      "searchPlaceholder": "Search by name — e.g. breaking bad s02",
+      "allRoots": "All roots",
+      "anyCategory": "Any type",
+      "noRoots": "Nothing cataloged yet.",
+      "noRootsAction": "Add a root",
+      "empty": "Nothing here",
+      "name": "Name",
+      "location": "Where",
+      "size": "Size",
+      "modified": "Modified",
+      "reveal": "Show in Explorer",
+      "revealError": "Could not show the file.",
+      "copyPath": "Copy path",
+      "copied": "Copied",
+      "more": "Load more"
+    },
+    "review": {
+      "title": "Review",
+      "intro": "Entries the last scans did not find (missing) or that the folders and filters now leave out (excluded). Forget removes them from the catalog; Keep leaves them in it, out of this list.",
+      "empty": "Nothing to review.",
+      "keep": "Keep",
+      "forget": "Forget",
+      "forgetConfirm": "Forget {{count}} entries?",
+      "forgetDesc": "They leave the catalog. The files on disk are not touched.",
+      "keepDone": "Kept {{count}} entries.",
+      "forgetDone": "Forgot {{count}} entries.",
+      "error": "Could not apply the decision."
     }
   }
 }

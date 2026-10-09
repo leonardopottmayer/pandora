@@ -3,7 +3,8 @@
 > Um catálogo de tudo o que está nos discos do usuário, dentro do monolito modular Pandora.
 > 🇺🇸 [English version](../README.md).
 >
-> **Status: F1a (backend) e F1b (agente desktop) implementadas.** A web (F1c) vem a seguir — ver
+> **Status: F1 implementada** — backend (F1a), agente desktop (F1b) e web (F1c). A seguir, a
+> verificação de "pronto quando" da fase no homelab — ver
 > [product-plan.md](product-plan.md).
 
 O módulo **Files** indexa as pastas que o usuário escolhe nos seus discos — filmes, fotos, material
@@ -17,15 +18,15 @@ bytes.
 
 ## Como esta documentação está organizada
 
-O Files está no meio da F1 (só o backend), então ainda não tem o conjunto completo de tópicos
-`en/` + `pt-BR/`. O que existe hoje:
+O Files acabou de construir a F1 e ainda não foi validado no homelab, então ainda não tem o conjunto
+completo de tópicos `en/` + `pt-BR/`. O que existe hoje:
 
 | Documento | Idioma | O que cobre |
 |---|---|---|
 | [Plano de Produto](product-plan.md) / [en](../en/product-plan.md) | en + pt-BR | Escopo, princípios, protocolo de scan, rascunho do modelo de dados, API, fases F1–F5 |
 | [Pandora Desktop](../../../architecture/pt-BR/desktop-client.md) / [en](../../../architecture/en/desktop-client.md) | en + pt-BR | O app desktop onde o agente roda: casco, ponte, módulos de desktop, credenciais de dispositivo (transversal) |
 
-Quando a F1 estiver construída, o módulo passa para a estrutura usual por tópico (`overview.md`,
+Quando a F1 estiver validada, o módulo passa para a estrutura usual por tópico (`overview.md`,
 `architecture.md`, `data-model.md`, `scans.md`, `api-reference.md`, `implementation-status.md`), e o
 `product-plan.md` fica só com o que falta.
 

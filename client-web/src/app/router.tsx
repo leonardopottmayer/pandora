@@ -38,6 +38,11 @@ import { RemindersListPage } from '@/modules/agenda/pages/reminders/RemindersLis
 import { TasksListPage } from '@/modules/agenda/pages/tasks/TasksListPage'
 import { CalendarPage } from '@/modules/agenda/pages/calendar/CalendarPage'
 import { AgendaSettingsPage } from '@/modules/agenda/pages/settings/AgendaSettingsPage'
+import { CatalogPage } from '@/modules/files/pages/CatalogPage'
+import { RootsPage } from '@/modules/files/pages/RootsPage'
+import { FiltersPage } from '@/modules/files/pages/FiltersPage'
+import { ReviewPage } from '@/modules/files/pages/ReviewPage'
+import { FilesSettingsPage } from '@/modules/files/pages/FilesSettingsPage'
 
 export const router = createBrowserRouter([
   // Public (redirect if already authenticated)
@@ -97,6 +102,13 @@ export const router = createBrowserRouter([
       // Before the :id route, so "graph" is read as the view and not as a page id.
       { path: 'notes/graph', element: <NotesGraphPage /> },
       { path: 'notes/:id', element: <NotesPage /> },
+
+      // Files
+      { path: 'files', element: <CatalogPage /> },
+      { path: 'files/roots', element: <RootsPage /> },
+      { path: 'files/filters', element: <FiltersPage /> },
+      { path: 'files/review', element: <ReviewPage /> },
+      { path: 'files/settings', element: <FilesSettingsPage /> },
     ],
   },
 

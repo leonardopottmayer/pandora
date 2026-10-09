@@ -1,7 +1,7 @@
 # Files Module — Product Plan
 
-> **Status:** F1a (backend) and F1b (the desktop agent) implemented — catalog, scan protocol, selection
-> and filters, review inbox, and the Windows agent that scans. F1c (the web) is next. Built on [Pandora Desktop](../../../architecture/en/desktop-client.md)
+> **Status:** F1 implemented — the backend (F1a: catalog, scan protocol, selection and filters, review
+> inbox), the Windows agent that scans (F1b) and the web screens (F1c). The "done when" check below is next. Built on [Pandora Desktop](../../../architecture/en/desktop-client.md)
 > phases D1 (shell) and D2 (device credentials).
 > 🇧🇷 [Versão em português](../pt-BR/product-plan.md)
 >
@@ -388,8 +388,11 @@ Prerequisites: [Desktop D1 and D2](../../../architecture/en/desktop-client.md#6-
 - *(Done — F1b.)* Desktop (Windows): `Desktop.Files` — device switch, pairing (D2), config pull, walker with
   selection pruning and filters, fingerprinter, per-root schedule + scan now with progress,
   `files.pickFolder` / `files.listFolders` / `files.reveal`.
-- Web: Files settings (account switch), devices and roots, the selection tree, filters with preview,
-  folder browser, search, held-scan confirmation, review inbox as a tree.
+- *(Done — F1c.)* Web: Files settings (account switch), devices and roots, the selection tree, filters with preview,
+  folder browser, search, held-scan confirmation, review inbox as a tree. Screens under `/files`
+  (browse and search), `/files/roots`, `/files/filters`, `/files/review` and `/files/settings`; the
+  device switch, "Scan now", the folder picker, the live selection tree and *Show in Explorer* appear
+  only inside Pandora Desktop on the PC that has the root.
 - **Done when:** on the homelab you select disk 2 with only `C/Sub` inside `C`, add an `extension`
   include filter for videos, the scan catalogs exactly that; from the notebook's browser you find a
   file by a fragment of its name; you rename it on disk, rescan, and it is the same entry (same id).

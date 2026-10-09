@@ -3,8 +3,8 @@
 > A catalog of everything on the user's disks, inside the Pandora modular monolith.
 > **Language:** English is the primary documentation. 🇧🇷 [Versão em português](pt-BR/README.md).
 >
-> **Status: F1a (backend) and F1b (desktop agent) implemented.** The web (F1c) is next — see
-> [product-plan.md](en/product-plan.md).
+> **Status: F1 implemented** — backend (F1a), desktop agent (F1b) and web (F1c). The phase's "done
+> when" check on the homelab is next — see [product-plan.md](en/product-plan.md).
 
 The **Files** module indexes the folders the user chooses on their disks — movies, photos, college
 material, books, manuals — so they can browse and search what they have from any device, without the
@@ -16,15 +16,15 @@ stays the source of truth: the agent never writes to it, and the backend never h
 
 ## How this documentation is organized
 
-Files is mid-F1 (backend only), so it does not have the full `en/` + `pt-BR/` topic set yet. What
-exists today:
+Files has just finished building F1 and is not yet validated on the homelab, so it does not have the
+full `en/` + `pt-BR/` topic set yet. What exists today:
 
 | Document | Language | What it covers |
 |---|---|---|
 | [Product Plan](en/product-plan.md) / [pt-BR](pt-BR/product-plan.md) | en + pt-BR | Scope, principles, scan protocol, data model draft, API, phases F1–F5 |
 | [Pandora Desktop](../../architecture/en/desktop-client.md) / [pt-BR](../../architecture/pt-BR/desktop-client.md) | en + pt-BR | The desktop app the agent runs in: shell, bridge, desktop modules, device credentials (cross-cutting) |
 
-Once F1 is built, the module moves to the usual per-topic structure (`overview.md`,
+Once F1 is validated, the module moves to the usual per-topic structure (`overview.md`,
 `architecture.md`, `data-model.md`, `scans.md`, `api-reference.md`, `implementation-status.md`), and
 `product-plan.md` keeps only what remains.
 

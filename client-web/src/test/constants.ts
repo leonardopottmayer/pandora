@@ -9,3 +9,6 @@ export const NOTES_BASE = `${TEST_API_BASE}/api/v1/notes`
 
 /** Convenience prefix for agenda endpoints. */
 export const AGENDA_BASE = `${TEST_API_BASE}/api/v1.0/agenda`
+
+/** Convenience prefix for files endpoints. */
+export const FILES_BASE = `${TEST_API_BASE}/api/v1/files`

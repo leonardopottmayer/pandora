@@ -134,7 +134,13 @@
     "agendaCalendar": "Calendário",
     "agendaSettings": "Configurações",
     "assistantBar": "Comandos",
-    "assistantSettings": "Configurações"
+    "assistantSettings": "Configurações",
+    "files": "Arquivos",
+    "filesCatalog": "Navegar",
+    "filesRoots": "Dispositivos e raízes",
+    "filesFilters": "Filtros",
+    "filesReview": "Revisão",
+    "filesSettings": "Configurações"
   },
   "theme": {
     "toLight": "Tema claro",
@@ -1193,6 +1199,208 @@
         "task": "Tarefa",
         "reminder": "Lembrete"
       }
+    }
+  },
+  "files": {
+    "gate": {
+      "title": "O Files está desligado",
+      "desc": "Ligue o Files para catalogar seus discos e achar qualquer coisa neles de qualquer dispositivo.",
+      "action": "Abrir as configurações do Files"
+    },
+    "tree": {
+      "empty": "Sem subpastas",
+      "expand": "Expandir",
+      "collapse": "Recolher"
+    },
+    "status": {
+      "present": "Presente",
+      "missing": "Sumido",
+      "excluded": "Excluído",
+      "all": "Qualquer status"
+    },
+    "category": {
+      "video": "Vídeo",
+      "audio": "Áudio",
+      "image": "Imagem",
+      "document": "Documento",
+      "ebook": "E-book",
+      "archive": "Compactado",
+      "code": "Código",
+      "other": "Outro"
+    },
+    "settings": {
+      "title": "Configurações do Files",
+      "intro": "O Files cataloga o que está nos seus discos — nomes, tamanhos, datas — para você achar de qualquer lugar. Os arquivos em si nunca saem do dispositivo.",
+      "enabledLabel": "Usar o Files",
+      "enabledDesc": "Desligado esconde o Files em todo lugar, e os dispositivos param de escanear.",
+      "groupThisComputer": "Este computador",
+      "deviceLabel": "Escanear discos neste computador",
+      "deviceDesc": "Ligue no computador que tem os discos. O app reinicia para aplicar.",
+      "restarting": "Reiniciando o Pandora Desktop…",
+      "saveError": "Não foi possível salvar a configuração.",
+      "notPaired": "Este computador não está conectado à sua conta, então não consegue escanear.",
+      "pairAction": "Conecte-o em Dispositivos"
+    },
+    "roots": {
+      "title": "Dispositivos e raízes",
+      "intro": "Uma raiz é um disco ou pasta que um dispositivo cataloga. Escolha as pastas, a agenda e as opções; cada dispositivo escaneia só as próprias raízes.",
+      "add": "Adicionar raiz",
+      "addTitle": "Adicionar raiz",
+      "editTitle": "Configurações da raiz",
+      "saved": "Raiz salva.",
+      "saveError": "Não foi possível salvar a raiz.",
+      "noDevices": "Nenhum dispositivo conectado ainda.",
+      "noDevicesAction": "Conecte um computador em Dispositivos",
+      "agentOff": "Este computador não escaneia discos.",
+      "agentOffAction": "Ligue nas configurações do Files",
+      "agentError": "O último contato com o Pandora falhou",
+      "empty": "Nenhuma raiz ainda. Adicione o primeiro disco ou pasta para catalogar.",
+      "unknownDevice": "Dispositivo desconectado",
+      "deviceEmpty": "Nenhuma raiz neste computador ainda.",
+      "device": "Dispositivo",
+      "localPath": "Disco ou pasta",
+      "localPathTyped": "O caminho como o dispositivo escreve (E:\\, /mnt/hd). É conferido no primeiro scan.",
+      "pick": "Escolher…",
+      "name": "Nome",
+      "schedule": "Agenda",
+      "scheduleDesc": "O primeiro scan é sempre iniciado pelo “Escanear agora”, depois de você escolher as pastas.",
+      "daily": "Diário",
+      "manual": "Manual",
+      "time": "Horário",
+      "includeHidden": "Incluir arquivos ocultos e de sistema",
+      "caseSensitive": "Maiúsculas e minúsculas nos nomes",
+      "caseDefault": "Padrão do dispositivo",
+      "caseNo": "Mesma letra (a = A)",
+      "caseYes": "Diferentes (a ≠ A)",
+      "dailyAt": "diário às {{time}}",
+      "manualOnly": "só manual",
+      "entries": "{{count}} itens",
+      "lastScan": "último scan {{when}}",
+      "neverScanned": "nunca escaneada",
+      "scanNow": "Escanear agora",
+      "scanQueued": "Scan na fila.",
+      "scanError": "Não foi possível iniciar o scan.",
+      "selection": "Pastas",
+      "remove": "Remover",
+      "removeConfirm": "Remover {{name}}?",
+      "removeDesc": "O scan para, e os itens dela vão para a caixa de revisão.",
+      "removeError": "Não foi possível remover a raiz."
+    },
+    "scan": {
+      "progress": "Escaneando: {{walked}} itens percorridos, {{fingerprinted}} com fingerprint",
+      "counts": "Último scan {{when}}: {{seen}} vistos, {{created}} novos, {{changed}} alterados, {{moved}} movidos, {{missing}} sumidos, {{excluded}} excluídos",
+      "held": "O último scan marcaria {{missing}} de {{seen}} itens como sumidos",
+      "heldDesc": "É muita coisa — talvez um disco tenha subido vazio ou com outra letra. Aplique só se os arquivos sumiram mesmo.",
+      "confirm": "Aplicar",
+      "discard": "Descartar",
+      "resolveError": "Não foi possível resolver o scan.",
+      "aborted": "O último scan foi abortado: {{error}}",
+      "runningElsewhere": "Escaneando desde {{when}}",
+      "reason": {
+        "root-unavailable": "o disco ou pasta não foi encontrado no dispositivo",
+        "superseded": "um scan mais novo o substituiu",
+        "timed-out": "o dispositivo parou de responder",
+        "entries-seen-mismatch": "parte do scan se perdeu no caminho",
+        "discarded": "descartado por você",
+        "cancelled": "o app foi fechado",
+        "agent-error": "o dispositivo encontrou um erro"
+      }
+    },
+    "selection": {
+      "title": "Pastas de {{name}}",
+      "introLive": "Marque o que este computador cataloga. Desmarcar uma pasta deixa de fora tudo dentro dela, a menos que você marque de novo uma pasta abaixo.",
+      "introCatalog": "Esta árvore mostra as pastas que o catálogo já conhece. Para marcar uma pasta que ele ainda não viu, digite o caminho abaixo.",
+      "marks": "Marcas",
+      "noMarks": "Sem marcas: a raiz inteira é catalogada.",
+      "include": "Incluir",
+      "exclude": "Excluir",
+      "addMark": "Adicionar",
+      "nextScan": "As mudanças valem a partir do próximo scan.",
+      "saved": "Pastas salvas.",
+      "saveError": "Não foi possível salvar as pastas."
+    },
+    "filters": {
+      "title": "Filtros",
+      "intro": "Regras de nome por cima das pastas escolhidas. Um filtro de exclusão sempre vence; com um filtro de inclusão no escopo, só os arquivos que ele aceita ficam.",
+      "add": "Adicionar filtro",
+      "addTitle": "Adicionar filtro",
+      "editTitle": "Editar filtro",
+      "saved": "Filtro salvo.",
+      "saveError": "Não foi possível salvar o filtro.",
+      "deleteError": "Não foi possível excluir o filtro.",
+      "deleteConfirm": "Excluir {{name}}?",
+      "builtin": "padrão",
+      "name": "Nome",
+      "rule": "Regra",
+      "appliesTo": "Vale para",
+      "action": "Ação",
+      "matcher": "Comparar por",
+      "pattern": "Padrão",
+      "patternHint": "Extensões separadas por vírgula (mkv, mp4); um glob como *.part; ou uma regex.",
+      "scope": "Escopo",
+      "scopeAccount": "Todos os dispositivos",
+      "scopeDevice": "Dispositivo: {{name}}",
+      "scopeRoot": "Raiz: {{name}}",
+      "scopePath": "Só abaixo desta pasta",
+      "scopePathDesc": "Uma pasta da raiz, como /Filmes. Vazio é a raiz inteira.",
+      "caseSensitive": "Maiúsculas e minúsculas",
+      "caseDefault": "O da raiz",
+      "enabled": "Ligado",
+      "folderOnlyExcludes": "Filtros de pasta só excluem, e pulam todo o conteúdo da pasta.",
+      "target": {
+        "file": "Arquivos",
+        "folder": "Pastas"
+      },
+      "actionName": {
+        "include": "Só manter",
+        "exclude": "Excluir"
+      },
+      "actionDesc": {
+        "include": "Só ficam os arquivos que algum filtro de inclusão aceita.",
+        "exclude": "O que combinar fica de fora."
+      },
+      "matcherName": {
+        "extension": "Extensão",
+        "glob": "Glob",
+        "starts-with": "Começa com",
+        "ends-with": "Termina com",
+        "contains": "Contém",
+        "regex": "Regex"
+      },
+      "preview": "Pré-visualizar",
+      "previewCount": "Combina com {{count}} itens do catálogo agora",
+      "previewError": "Não foi possível pré-visualizar o filtro."
+    },
+    "catalog": {
+      "title": "Arquivos",
+      "intro": "Navegue por uma raiz pasta a pasta, ou busque em todas as raízes por pedaços do nome.",
+      "searchPlaceholder": "Buscar pelo nome — ex.: breaking bad s02",
+      "allRoots": "Todas as raízes",
+      "anyCategory": "Qualquer tipo",
+      "noRoots": "Nada catalogado ainda.",
+      "noRootsAction": "Adicionar uma raiz",
+      "empty": "Nada aqui",
+      "name": "Nome",
+      "location": "Onde",
+      "size": "Tamanho",
+      "modified": "Modificado",
+      "reveal": "Mostrar no Explorer",
+      "revealError": "Não foi possível mostrar o arquivo.",
+      "copyPath": "Copiar caminho",
+      "copied": "Copiado",
+      "more": "Carregar mais"
+    },
+    "review": {
+      "title": "Revisão",
+      "intro": "Itens que os últimos scans não encontraram (sumidos) ou que as pastas e filtros agora deixam de fora (excluídos). Esquecer tira do catálogo; Manter deixa no catálogo, fora desta lista.",
+      "empty": "Nada para revisar.",
+      "keep": "Manter",
+      "forget": "Esquecer",
+      "forgetConfirm": "Esquecer {{count}} itens?",
+      "forgetDesc": "Eles saem do catálogo. Os arquivos no disco não são tocados.",
+      "keepDone": "{{count}} itens mantidos.",
+      "forgetDone": "{{count}} itens esquecidos.",
+      "error": "Não foi possível aplicar a decisão."
     }
   }
 }

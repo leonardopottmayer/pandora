@@ -1,7 +1,8 @@
 # Módulo Files — Plano de Produto
 
-> **Status:** F1a (backend) e F1b (o agente desktop) implementadas — catálogo, protocolo de scan,
-> seleção e filtros, caixa de revisão, e o agente Windows que escaneia. A F1c (a web) vem a seguir. Construído sobre as fases D1 (casco) e
+> **Status:** F1 implementada — o backend (F1a: catálogo, protocolo de scan, seleção e filtros, caixa
+> de revisão), o agente Windows que escaneia (F1b) e as telas web (F1c). A seguir, a verificação de
+> "pronto quando" abaixo. Construído sobre as fases D1 (casco) e
 > D2 (credenciais de dispositivo) do [Pandora Desktop](../../../architecture/pt-BR/desktop-client.md).
 > 🇺🇸 [English version](../en/product-plan.md)
 >
@@ -403,9 +404,12 @@ Pré-requisitos: [Desktop D1 e D2](../../../architecture/pt-BR/desktop-client.md
 - *(Feito — F1b.)* Desktop (Windows): `Desktop.Files` — interruptor do dispositivo, pareamento (D2), busca da
   configuração, varredor com poda pela seleção e filtros, fingerprinter, agenda por raiz + escanear
   agora com progresso, `files.pickFolder` / `files.listFolders` / `files.reveal`.
-- Web: configurações do Files (interruptor da conta), dispositivos e raízes, a árvore de seleção,
+- *(Feito — F1c.)* Web: configurações do Files (interruptor da conta), dispositivos e raízes, a árvore de seleção,
   filtros com pré-visualização, navegador de pastas, busca, confirmação de scan retido, caixa de
-  revisão em árvore.
+  revisão em árvore. Telas em `/files` (navegar e buscar), `/files/roots`, `/files/filters`,
+  `/files/review` e `/files/settings`; o interruptor do dispositivo, o "Escanear agora", o seletor de
+  pasta, a árvore de seleção ao vivo e o *Mostrar no Explorer* só aparecem dentro do Pandora Desktop,
+  no PC que tem a raiz.
 - **Pronto quando:** no homelab você seleciona o disco 2 com só `C/Sub` dentro de `C`, adiciona um
   filtro `extension` de inclusão para vídeos, e o scan cataloga exatamente isso; do navegador do
   notebook você encontra um arquivo por um pedaço do nome; você o renomeia no disco, escaneia de novo,
