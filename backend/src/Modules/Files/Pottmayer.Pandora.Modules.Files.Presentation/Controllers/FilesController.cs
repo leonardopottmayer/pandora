@@ -116,9 +116,12 @@ public sealed class FilesController(
         [FromQuery] string? q, [FromQuery] Guid? deviceId, [FromQuery] Guid? rootId, [FromQuery] string? category,
         [FromQuery] long? minSize, [FromQuery] long? maxSize, [FromQuery] DateTimeOffset? modifiedFrom,
         [FromQuery] DateTimeOffset? modifiedTo, [FromQuery] string? status,
+        [FromQuery] DateOnly? takenFrom, [FromQuery] DateOnly? takenTo, [FromQuery] string? resolution,
+        [FromQuery] int? minDuration, [FromQuery] int? maxDuration,
         [FromQuery] int skip = 0, [FromQuery] int take = 50, CancellationToken ct = default) =>
         (await sender.Send(new SearchEntriesQuery(new SearchEntriesInput(
-            UserId, q, deviceId, rootId, category, minSize, maxSize, modifiedFrom, modifiedTo, status, skip, take)), ct))
+            UserId, q, deviceId, rootId, category, minSize, maxSize, modifiedFrom, modifiedTo, status,
+            takenFrom, takenTo, resolution, minDuration, maxDuration, skip, take)), ct))
         .ToActionResult(errorMapper);
 
     [HttpGet("entries/{id:guid}")]

@@ -4,6 +4,7 @@ using Pottmayer.Pandora.Modules.Files.Domain.Entities;
 using Pottmayer.Pandora.Modules.Files.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Files.Domain.ReadModels;
 using Pottmayer.Pandora.Modules.Files.Domain.ValueObjects;
+using Pottmayer.Pandora.Modules.Files.Persistence.EntityConfigs;
 using Pottmayer.Tars.Data.Abstractions.DataContext;
 using Pottmayer.Tars.Data.Relational.Repositories;
 
@@ -101,11 +102,11 @@ public sealed class EntryRepository(IDataContextAccessor accessor)
     {
         var query = Set.AsNoTracking().Where(e => e.UserId == search.UserId);
 
-        // Each term is a fragment of the name; the trigram index serves ILIKE '%…%'.
+        // Each term is a fragment of the name, title, artist or album; the trigram index serves ILIKE '%…%'.
         foreach (var term in search.Terms)
         {
             var pattern = $"%{EscapeLike(term)}%";
-            query = query.Where(e => EF.Functions.ILike(e.Name, pattern, @"\"));
+            query = query.Where(e => EF.Functions.ILike(EF.Property<string>(e, EntryEntityConfiguration.SearchText), pattern, @"\"));
         }
 
         if (search.RootIds is { } rootIds) query = query.Where(e => rootIds.Contains(e.RootId));
@@ -115,6 +116,15 @@ public sealed class EntryRepository(IDataContextAccessor accessor)
         if (search.ModifiedFrom is { } from) query = query.Where(e => e.ModifiedAt >= from);
         if (search.ModifiedTo is { } to) query = query.Where(e => e.ModifiedAt <= to);
         if (search.Status is { } status) query = query.Where(e => e.Status == status);
+
+        // ponytail: no index on the metadata — these scan the user's rows; add expression indexes if a
+        // search on them alone gets slow.
+        if (search.TakenFrom is { } takenFrom) query = query.Where(e => e.Metadata!.TakenAt >= takenFrom);
+        if (search.TakenBefore is { } takenBefore) query = query.Where(e => e.Metadata!.TakenAt < takenBefore);
+        if (search.MinShortSide is { } minSide) query = query.Where(e => Math.Min(e.Metadata!.Width!.Value, e.Metadata.Height!.Value) >= minSide);
+        if (search.MaxShortSide is { } maxSide) query = query.Where(e => Math.Min(e.Metadata!.Width!.Value, e.Metadata.Height!.Value) <= maxSide);
+        if (search.MinDuration is { } minDuration) query = query.Where(e => e.Metadata!.DurationSeconds >= minDuration);
+        if (search.MaxDuration is { } maxDuration) query = query.Where(e => e.Metadata!.DurationSeconds <= maxDuration);
 
         return await query.OrderBy(e => e.Name).ThenBy(e => e.Id).Skip(skip).Take(take).ToListAsync(ct);
     }

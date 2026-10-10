@@ -3,8 +3,8 @@
 > A catalog of everything on the user's disks, inside the Pandora modular monolith.
 > **Language:** English is the primary documentation. 🇧🇷 [Versão em português](pt-BR/README.md).
 >
-> **Status: F1 implemented** — backend (F1a), desktop agent (F1b) and web (F1c). The phase's "done
-> when" check on the homelab is next — see [product-plan.md](en/product-plan.md).
+> **Status: F1 and F2 implemented** — catalog (backend, desktop agent, web) and metadata. F1's "done
+> when" check on the homelab is still pending — see [product-plan.md](en/product-plan.md).
 
 The **Files** module indexes the folders the user chooses on their disks — movies, photos, college
 material, books, manuals — so they can browse and search what they have from any device, without the

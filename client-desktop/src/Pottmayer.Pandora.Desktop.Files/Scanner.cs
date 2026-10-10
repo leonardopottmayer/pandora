@@ -8,8 +8,8 @@ internal sealed record ScanProgress(
     Guid RootId, Guid? ScanId, string State, int Walked, int Fingerprinted, string? Error = null, ScanOutcome? Outcome = null);
 
 /// <summary>
-/// Runs one scan of one root: walks it, sends batches of up to 1000 entries, fingerprints the files the
-/// backend asks about, and completes. Any failure aborts the scan on the server, so nothing is marked
+/// Runs one scan of one root: walks it, sends batches of up to 1000 entries, fingerprints and reads the
+/// metadata of the files the backend asks about, and completes. Any failure aborts the scan on the server, so nothing is marked
 /// missing from a half walk.
 /// </summary>
 internal sealed class Scanner(FilesApi api)
@@ -49,23 +49,35 @@ internal sealed class Scanner(FilesApi api)
         }
     }
 
-    /// <summary>Sends a batch, then the fingerprints the backend asked for. Returns how many were computed.</summary>
+    /// <summary>
+    /// Sends a batch, then the fingerprints and metadata the backend asked for. Returns how many
+    /// fingerprints were computed.
+    /// </summary>
     private async Task<int> SendAsync(Guid scanId, List<WalkItem> batch, CancellationToken ct)
     {
         var result = await api.SendBatchAsync(scanId, [.. batch.Select(i => i.ToEntry(null))], ct);
-        if (result.NeedsFingerprint.Count == 0) return 0;
+        var needsFingerprint = result.NeedsFingerprint.ToHashSet(StringComparer.Ordinal);
+        var needsMetadata = result.NeedsMetadata.ToHashSet(StringComparer.Ordinal);
+        if (needsFingerprint.Count == 0 && needsMetadata.Count == 0) return 0;
 
         var byPath = batch.ToDictionary(i => i.Path, StringComparer.Ordinal);
         var answers = new List<ScannedEntry>();
-        foreach (var path in result.NeedsFingerprint)
+        var fingerprinted = 0;
+        foreach (var path in needsFingerprint.Union(needsMetadata))
         {
+            if (!byPath.TryGetValue(path, out var item)) continue;
+
             // A file that cannot be read now (locked, gone) is asked about again on the next scan.
-            if (byPath.TryGetValue(path, out var item) && await TryFingerprintAsync(item.FullPath, ct) is { } fingerprint)
-                answers.Add(item.ToEntry(fingerprint));
+            var fingerprint = needsFingerprint.Contains(path) ? await TryFingerprintAsync(item.FullPath, ct) : null;
+            var metadata = needsMetadata.Contains(path) ? MetadataReader.Read(item.FullPath) : null;
+            if (fingerprint is null && metadata is null) continue;
+
+            answers.Add(item.ToEntry(fingerprint, metadata));
+            if (fingerprint is not null) fingerprinted++;
         }
 
         if (answers.Count > 0) await api.SendBatchAsync(scanId, answers, ct);
-        return answers.Count;
+        return fingerprinted;
     }
 
     private static async Task<string?> TryFingerprintAsync(string fullPath, CancellationToken ct)

@@ -46,6 +46,7 @@ function entry(overrides: Partial<Entry>): Entry {
     category: 'video',
     sizeBytes: 1536,
     modifiedAt: null,
+    metadata: null,
     status: 'present',
     missingSince: null,
     keptAt: null,
@@ -204,6 +205,34 @@ describe('Files pages', () => {
     expect(query).toBe('breaking s02')
     expect(screen.getByText('Disk 2 /Series')).toBeInTheDocument()
     expect(screen.getByText('1.5 KB')).toBeInTheDocument()
+  })
+
+  it('narrows videos by resolution, and shows what each file says', async () => {
+    let params = new URLSearchParams()
+    filesApi([root()])
+    server.use(
+      http.get(`${FILES_BASE}/roots/r1/entries`, () => ok({ items: [], hasMore: false })),
+      http.get(`${FILES_BASE}/search`, ({ request }) => {
+        params = new URL(request.url).searchParams
+        return ok({
+          items: [entry({ metadata: { width: 3840, height: 2160, durationSeconds: 7200, latitude: -27.6, longitude: -48.5 } })],
+          hasMore: false,
+        })
+      }),
+    )
+    renderWithProviders(<CatalogPage />)
+
+    // Root, type and status; picking Video adds the resolution.
+    await waitFor(() => expect(screen.getAllByRole('combobox')).toHaveLength(3))
+    await userEvent.click(screen.getAllByRole('combobox')[1])
+    await userEvent.click(await screen.findByText('Video'))
+    await userEvent.click(screen.getAllByRole('combobox')[2])
+    await userEvent.click(await screen.findByText('4K (2160p and up)'))
+
+    expect(await screen.findByText(/3840×2160 · 2:00:00/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Map' })).toHaveAttribute('href', expect.stringContaining('mlat=-27.6&mlon=-48.5'))
+    await waitFor(() => expect(params.get('resolution')).toBe('4k'))
+    expect(params.get('category')).toBe('video')
   })
 
   it('reviews a whole folder at once', async () => {

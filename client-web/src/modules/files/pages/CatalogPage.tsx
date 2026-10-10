@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { App, Breadcrumb, Button, Empty, Input, Select, Spin, Table, Tag, Tooltip, Typography } from 'antd'
+import { App, Breadcrumb, Button, DatePicker, Empty, Input, InputNumber, Select, Space, Spin, Table, Tag, Tooltip, Typography } from 'antd'
 import { FileOutlined, FolderFilled, FolderOpenOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
@@ -8,14 +8,21 @@ import { PageHeading } from '@/components/settings/PageHeading'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { FilesGate } from '../components/FilesGate'
 import { filesKeys, useFilesAgent, useRoots } from '../hooks/useFiles'
-import { formatBytes, localPathOf } from '../lib/format'
+import { formatBytes, formatDuration, localPathOf } from '../lib/format'
 import * as filesService from '../services/files.service'
-import type { Entry, EntryStatus, FileCategory, Page, Root } from '../models'
+import type { Entry, EntryStatus, FileCategory, FileMetadata, Page, Resolution, Root, SearchCriteria } from '../models'
 
 const CATEGORIES: FileCategory[] = ['video', 'audio', 'image', 'document', 'ebook', 'archive', 'code', 'other']
 const STATUSES: (EntryStatus | 'all')[] = ['present', 'missing', 'excluded', 'all']
+const RESOLUTIONS: Resolution[] = ['sd', 'hd', 'full-hd', '4k']
 
-/** The catalog from any device: browse a root folder by folder, or search every root by name fragments. */
+/** The criteria a file's metadata answers; offered by category, and cleared when it changes. */
+type MetadataCriteria = Pick<SearchCriteria, 'takenFrom' | 'takenTo' | 'resolution' | 'minDuration' | 'maxDuration'>
+
+/**
+ * The catalog from any device: browse a root folder by folder, or search every root by fragments of a
+ * name, title or artist, narrowed by what the files' metadata says.
+ */
 export function CatalogPage() {
   return (
     <FilesGate>
@@ -30,6 +37,7 @@ function Catalog() {
   const [text, setText] = useState('')
   const [q, setQ] = useState('')
   const [category, setCategory] = useState<FileCategory | undefined>()
+  const [meta, setMeta] = useState<MetadataCriteria>({})
   const [status, setStatus] = useState<EntryStatus | 'all'>('present')
   const [rootId, setRootId] = useState<string | undefined>()
   const [path, setPath] = useState('/')
@@ -45,13 +53,15 @@ function Catalog() {
       </Empty>
     )
 
-  const searching = q.trim() !== '' || category !== undefined || status !== 'present'
+  const searching =
+    q.trim() !== '' || category !== undefined || status !== 'present' || Object.values(meta).some((v) => v !== undefined)
   const browsed = allRoots.find((r) => r.id === rootId) ?? allRoots[0]
 
   function openFolder(entry: Entry) {
     setText('')
     setQ('')
     setCategory(undefined)
+    setMeta({})
     setStatus('present')
     setRootId(entry.rootId)
     setPath(entry.relativePath)
@@ -86,9 +96,49 @@ function Catalog() {
           value={category}
           placeholder={t('files.catalog.anyCategory')}
           allowClear
-          onChange={setCategory}
+          onChange={(c) => {
+            setCategory(c)
+            setMeta({})
+          }}
           options={CATEGORIES.map((c) => ({ value: c, label: t(`files.category.${c}`) }))}
         />
+        {category === 'image' && (
+          <DatePicker.RangePicker
+            allowEmpty={[true, true]}
+            placeholder={[t('files.catalog.takenFrom'), t('files.catalog.takenTo')]}
+            onChange={(range) =>
+              setMeta({ takenFrom: range?.[0]?.format('YYYY-MM-DD'), takenTo: range?.[1]?.format('YYYY-MM-DD') })
+            }
+          />
+        )}
+        {category === 'video' && (
+          <Select
+            className="w-44"
+            value={meta.resolution}
+            placeholder={t('files.catalog.anyResolution')}
+            allowClear
+            onChange={(resolution) => setMeta((m) => ({ ...m, resolution }))}
+            options={RESOLUTIONS.map((r) => ({ value: r, label: t(`files.catalog.resolution.${r}`) }))}
+          />
+        )}
+        {(category === 'video' || category === 'audio') && (
+          <Space.Compact>
+            <InputNumber
+              className="w-32"
+              min={0}
+              placeholder={t('files.catalog.minMinutes')}
+              aria-label={t('files.catalog.minMinutes')}
+              onChange={(v) => setMeta((m) => ({ ...m, minDuration: v == null ? undefined : v * 60 }))}
+            />
+            <InputNumber
+              className="w-32"
+              min={0}
+              placeholder={t('files.catalog.maxMinutes')}
+              aria-label={t('files.catalog.maxMinutes')}
+              onChange={(v) => setMeta((m) => ({ ...m, maxDuration: v == null ? undefined : v * 60 }))}
+            />
+          </Space.Compact>
+        )}
         <Select
           className="w-40"
           value={status}
@@ -99,9 +149,9 @@ function Catalog() {
 
       {searching ? (
         <Entries
-          key={`search:${q}:${rootId}:${category}:${status}`}
-          queryKey={[...filesKeys.catalog(), 'search', q, rootId, category, status]}
-          load={(skip) => filesService.search({ q: q || undefined, rootId, category, status }, skip)}
+          key={`search:${q}:${rootId}:${category}:${status}:${JSON.stringify(meta)}`}
+          queryKey={[...filesKeys.catalog(), 'search', q, rootId, category, status, meta]}
+          load={(skip) => filesService.search({ q: q || undefined, rootId, category, status, ...meta }, skip)}
           roots={allRoots}
           showLocation
           onOpenFolder={openFolder}
@@ -186,10 +236,11 @@ function Entries({
                   {e.name}
                 </a>
               ) : (
-                <span>
+                <div>
                   <FileOutlined className="mr-2" />
                   {e.name}
-                </span>
+                  {e.metadata && <MetadataLine metadata={e.metadata} />}
+                </div>
               ),
           },
           ...(showLocation
@@ -244,5 +295,39 @@ function Entries({
         </div>
       )}
     </div>
+  )
+}
+
+/** What the bytes say about a file, in one line under its name, with a map link when it has a place. */
+function MetadataLine({ metadata: m }: { metadata: FileMetadata }) {
+  const { t } = useTranslation()
+  const facts = [
+    m.takenAt && new Date(m.takenAt).toLocaleString(),
+    m.camera,
+    m.width && m.height && `${m.width}×${m.height}`,
+    m.durationSeconds && formatDuration(m.durationSeconds),
+    [m.artist, m.title].filter(Boolean).join(' — '),
+    m.album,
+    m.pages && t('files.catalog.pages', { count: m.pages }),
+  ].filter(Boolean)
+  const located = m.latitude != null && m.longitude != null
+  if (facts.length === 0 && !located) return null
+
+  return (
+    <Typography.Text type="secondary" className="block text-xs">
+      {facts.join(' · ')}
+      {located && (
+        <>
+          {facts.length > 0 && ' · '}
+          <a
+            href={`https://www.openstreetmap.org/?mlat=${m.latitude}&mlon=${m.longitude}#map=16/${m.latitude}/${m.longitude}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {t('files.catalog.onMap')}
+          </a>
+        </>
+      )}
+    </Typography.Text>
   )
 }

@@ -1373,8 +1373,8 @@
     },
     "catalog": {
       "title": "Files",
-      "intro": "Browse a root folder by folder, or search every root by fragments of a name.",
-      "searchPlaceholder": "Search by name — e.g. breaking bad s02",
+      "intro": "Browse a root folder by folder, or search every root by fragments of a name, title or artist.",
+      "searchPlaceholder": "Search by name, title or artist — e.g. breaking bad s02",
       "allRoots": "All roots",
       "anyCategory": "Any type",
       "noRoots": "Nothing cataloged yet.",
@@ -1388,7 +1388,20 @@
       "revealError": "Could not show the file.",
       "copyPath": "Copy path",
       "copied": "Copied",
-      "more": "Load more"
+      "more": "Load more",
+      "takenFrom": "Taken from",
+      "takenTo": "to",
+      "anyResolution": "Any resolution",
+      "resolution": {
+        "sd": "SD (below 720p)",
+        "hd": "HD (720p)",
+        "full-hd": "Full HD (1080p)",
+        "4k": "4K (2160p and up)"
+      },
+      "minMinutes": "Min. minutes",
+      "maxMinutes": "Max. minutes",
+      "pages": "{{count}} pages",
+      "onMap": "Map"
     },
     "review": {
       "title": "Review",

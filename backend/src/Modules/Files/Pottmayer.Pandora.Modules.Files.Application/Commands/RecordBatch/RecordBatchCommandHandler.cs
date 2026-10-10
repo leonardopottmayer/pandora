@@ -13,7 +13,8 @@ namespace Pottmayer.Pandora.Modules.Files.Application.Commands.RecordBatch;
 
 /// <summary>
 /// Matches a batch against the catalog of the scan's root: an unchanged entry is only marked seen; a new
-/// or changed file is stored and, without a fingerprint, returned so the agent sends it again with one.
+/// or changed file is stored and, without a fingerprint or (when readable) metadata, returned so the agent
+/// sends it again with them.
 /// </summary>
 public sealed class RecordBatchCommandHandler(IUnitOfWorkFactory factory, TimeProvider timeProvider)
     : CommandHandlerBase<RecordBatchCommand, ScanBatchResult>
@@ -47,7 +48,7 @@ public sealed class RecordBatchCommandHandler(IUnitOfWorkFactory factory, TimePr
                 .ToDictionary(e => e.RelativePath, StringComparer.Ordinal);
 
             int seen = 0, created = 0, changed = 0;
-            var needsFingerprint = new List<string>();
+            List<string> needsFingerprint = [], needsMetadata = [];
             foreach (var (path, (item, kind)) in batch)
             {
                 var size = Math.Max(0, item.Size);
@@ -56,21 +57,22 @@ public sealed class RecordBatchCommandHandler(IUnitOfWorkFactory factory, TimePr
                 if (existing.TryGetValue(path, out var entry))
                 {
                     if (entry.LastSeenScanId != scan.Id) seen++;
-                    if (entry.See(scan.Id, size, item.ModifiedAt, item.Fingerprint)) changed++;
+                    if (entry.See(scan.Id, size, item.ModifiedAt, item.Fingerprint, item.Metadata)) changed++;
                 }
                 else
                 {
-                    entry = Entry.Create(root.UserId, root.Id, scan.Id, kind, path, size, item.ModifiedAt, item.Fingerprint, now);
+                    entry = Entry.Create(root.UserId, root.Id, scan.Id, kind, path, size, item.ModifiedAt, item.Fingerprint, item.Metadata, now);
                     await entries.AddAsync(entry, token);
                     seen++;
                     created++;
                 }
 
                 if (entry.NeedsFingerprint) needsFingerprint.Add(path);
+                if (entry.NeedsMetadata) needsMetadata.Add(path);
             }
 
             scan.RecordBatch(now, seen, created, changed);
-            return Result<ScanBatchResult>.Success(new ScanBatchResult(needsFingerprint));
+            return Result<ScanBatchResult>.Success(new ScanBatchResult(needsFingerprint, needsMetadata));
         }, cancellationToken: ct);
     }
 }

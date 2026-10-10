@@ -1,7 +1,8 @@
 # Files Module — Product Plan
 
 > **Status:** F1 implemented — the backend (F1a: catalog, scan protocol, selection and filters, review
-> inbox), the Windows agent that scans (F1b) and the web screens (F1c). The "done when" check below is next. Built on [Pandora Desktop](../../../architecture/en/desktop-client.md)
+> inbox), the Windows agent that scans (F1b) and the web screens (F1c). F2 (metadata) implemented too.
+> F1's "done when" check below is still pending. Built on [Pandora Desktop](../../../architecture/en/desktop-client.md)
 > phases D1 (shell) and D2 (device credentials).
 > 🇧🇷 [Versão em português](../pt-BR/product-plan.md)
 >
@@ -202,12 +203,13 @@ languages (a phone) implement the same rules against a set of test vectors kept 
       root, so an earlier run is dead (a crashed agent) or stale (a held scan).
 
 2. POST /files/agent/scans/{id}/batches   {entries: [{path, kind, size, modifiedAt}]}   (≤ 1000)
-      → {needsFingerprint: [path, ...]}
+      → {needsFingerprint: [path, ...], needsMetadata: [path, ...]}
       The backend matches each path against the catalog for that root:
         same size + modifiedAt  → seen, nothing to do
-        new or changed          → asks for a fingerprint
+        new or changed          → asks for a fingerprint (and metadata, see below)
+        no metadata yet         → asks for metadata, if the extension is readable (F2)
 
-3. POST /files/agent/scans/{id}/batches   {entries: [{path, ..., fingerprint}]}
+3. POST /files/agent/scans/{id}/batches   {entries: [{path, ..., fingerprint?, metadata?}]}
       The answers to step 2, as more batches.
 
 4. POST /files/agent/scans/{id}/complete  {entriesSeen}
@@ -244,6 +246,17 @@ new folders plus moved files, which is enough because folders carry no user meta
 file. With millions of files on spinning disks, that is many hours, once. Later scans only
 fingerprint what is new or changed.
 
+**Metadata (F2).** The agent reads what the bytes say for the extensions in
+`FileMetadata.IsReadable` (shared library): photos (EXIF — MetadataExtractor, HEIC and RAW included),
+video and audio (duration, resolution, title/artist/album — TagLib#, MKV and FLAC included) and PDFs
+(title, pages — PdfPig). Headers only. The backend asks for it like the fingerprint: for a file whose
+content is new or changed, and for any readable file that has none yet — so the catalog built before
+F2 fills in on its next scan. A file the reader cannot make sense of (damaged, encrypted) gets `{}`
+and is not asked again; one that cannot be opened now is asked again next scan. The backend cleans
+what it stores (text trimmed and capped at 500, control characters — tags often pad with NUL — and
+impossible values dropped). A move keeps the metadata with the entry. To read everything again after
+a reader learns a new field, set `metadata = NULL` for the affected extensions.
+
 ### 4.5 Scheduling
 
 Each root has its own schedule — daily at a chosen time (the default), or manual only — plus **"Scan
@@ -270,9 +283,14 @@ The agent's bridge: `files.status` (paired, account switch, this device's roots,
 
 - **Browse:** `GET /files/roots/{id}/entries?parentPath=` — the children of one folder, paginated,
   folders first.
-- **Search:** `GET /files/search?q=&deviceId=&rootId=&category=&minSize=&maxSize=&modifiedFrom=&modifiedTo=&status=`.
-  Name matching uses a **trigram index** (`pg_trgm`, new to Pandora) on `name`, because file names
-  are matched by fragments (`breaking bad s02`, `calculo_2`), not by words.
+- **Search:** `GET /files/search?q=&deviceId=&rootId=&category=&minSize=&maxSize=&modifiedFrom=&modifiedTo=&status=`
+  plus, from metadata (F2), `takenFrom=&takenTo=` (days, by the camera's clock), `resolution=`
+  (`sd` | `hd` | `full-hd` | `4k`, by the shorter side, so a video filmed upright counts as what it
+  was filmed in) and `minDuration=&maxDuration=` (seconds).
+  Text matching uses a **trigram index** (`pg_trgm`, new to Pandora) on `search_text` — a generated
+  column with the name plus the title, artist and album — because file names are matched by fragments
+  (`breaking bad s02`, `calculo_2`, `pink floyd money`), not by words. The metadata filters have no
+  index of their own yet: they scan the user's rows, which is fine until it is not.
 - **Category** is derived from the extension by the domain (`FileCategory.FromExtension`): `video`,
   `audio`, `image`, `document`, `ebook`, `archive`, `code`, `other`. Stored for filtering.
 - **Reveal:** on the device that owns the root, a result offers *Show in Explorer/Finder*
@@ -319,11 +337,13 @@ Enum values use hyphens; columns are snake_case. No FK leaves the `files` schema
 
 **`fil002_entry`** — `id`, `user_id`, `root_id` → fil001, `kind` (`file` | `directory`),
 `relative_path`, `parent_path`, `name`, `extension`, `category`, `size_bytes`, `modified_at`,
-`fingerprint` (null for folders and until computed), `status` (`present` | `missing` | `excluded`),
-`missing_since`, `kept_at` (the *Keep* decision — out of the inbox), `first_seen_at`,
-`last_seen_scan_id`.
+`fingerprint` (null for folders and until computed), `metadata` (jsonb, F2: `TakenAt`, `Camera`,
+`Latitude`, `Longitude`, `Width`, `Height`, `DurationSeconds`, `Title`, `Artist`, `Album`, `Pages`;
+null until read, `{}` when nothing was found), `search_text` (generated: name + title + artist +
+album), `status` (`present` | `missing` | `excluded`), `missing_since`, `kept_at` (the *Keep*
+decision — out of the inbox), `first_seen_at`, `last_seen_scan_id`.
 Unique `(root_id, relative_path)`; index `(root_id, parent_path)` for browsing; index
-`(user_id, fingerprint)` for move detection; GIN trigram on `name`.
+`(user_id, fingerprint)` for move detection; GIN trigram on `search_text`.
 
 **`fil003_scan`** — `id`, `root_id` → fil001, `status` (`running` | `completed` | `aborted` |
 `held`), `started_at`, `last_batch_at`, `finished_at`, counters (`seen`, `created`, `changed`,
@@ -341,7 +361,7 @@ Unique `(root_id, relative_path)`; index `(root_id, parent_path)` for browsing; 
 `case_sensitive` (null = the root's), `is_enabled`, `is_builtin`, `created_at/by`, `updated_at/by`.
 Scope is the most specific non-null of `scope_path` (needs `root_id`) → `root_id` → `device_id` → user.
 
-Later phases add metadata (`fil002.metadata jsonb`), tags and classifications (`fil007`+).
+Later phases add tags and classifications (`fil007`+).
 
 ---
 
@@ -404,11 +424,13 @@ agent (Linux server/NAS, Windows service), Linux/macOS desktop shells, and phone
 change for a new desktop platform — that is what F7 buys. Phones add a root `kind` (`media-library`)
 and their own agent; see the desktop doc for why they come last.
 
-### Phase F2 — Metadata
+### Phase F2 — Metadata *(implemented)*
 
-The agent extracts what the bytes say — EXIF (date, camera, location), PDF title and page count,
-video/audio duration and resolution — and sends it with the batch. Stored as `metadata jsonb`; search
-filters grow from it.
+The agent extracts what the bytes say — EXIF (date, camera, location, size), PDF title and page
+count, video/audio duration and resolution, music title/artist/album — when the backend asks for it
+(4.4). Stored as `fil002.metadata jsonb`. Search finds titles, artists and albums like names, and
+narrows by date taken (photos), resolution (video) and duration (video and audio) (4.6). The catalog
+shows it in a line under each file's name, with a map link for photos that carry a location.
 
 ### Phase F3 — Tags
 

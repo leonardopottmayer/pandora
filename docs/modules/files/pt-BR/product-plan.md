@@ -1,8 +1,8 @@
 # Módulo Files — Plano de Produto
 
 > **Status:** F1 implementada — o backend (F1a: catálogo, protocolo de scan, seleção e filtros, caixa
-> de revisão), o agente Windows que escaneia (F1b) e as telas web (F1c). A seguir, a verificação de
-> "pronto quando" abaixo. Construído sobre as fases D1 (casco) e
+> de revisão), o agente Windows que escaneia (F1b) e as telas web (F1c). A F2 (metadados) também está
+> implementada. A verificação de "pronto quando" da F1, abaixo, segue pendente. Construído sobre as fases D1 (casco) e
 > D2 (credenciais de dispositivo) do [Pandora Desktop](../../../architecture/pt-BR/desktop-client.md).
 > 🇺🇸 [English version](../en/product-plan.md)
 >
@@ -210,12 +210,13 @@ de vetores de teste mantido junto com os docs.
       velha (scan retido).
 
 2. POST /files/agent/scans/{id}/batches   {entries: [{path, kind, size, modifiedAt}]}   (≤ 1000)
-      → {needsFingerprint: [path, ...]}
+      → {needsFingerprint: [path, ...], needsMetadata: [path, ...]}
       O backend compara cada caminho com o catálogo daquela raiz:
         mesmo size + modifiedAt  → visto, nada a fazer
-        novo ou alterado         → pede a impressão digital
+        novo ou alterado         → pede a impressão digital (e os metadados, ver abaixo)
+        ainda sem metadados      → pede os metadados, se a extensão for legível (F2)
 
-3. POST /files/agent/scans/{id}/batches   {entries: [{path, ..., fingerprint}]}
+3. POST /files/agent/scans/{id}/batches   {entries: [{path, ..., fingerprint?, metadata?}]}
       As respostas do passo 2, como mais lotes.
 
 4. POST /files/agent/scans/{id}/complete  {entriesSeen}
@@ -253,6 +254,18 @@ pastas novas mais arquivos movidos, o que basta porque pastas não carregam meta
 128 KiB lidos por arquivo. Com milhões de arquivos em discos mecânicos, são muitas horas, uma vez. Os
 scans seguintes só calculam a impressão do que é novo ou mudou.
 
+**Metadados (F2).** O agente lê o que os bytes dizem para as extensões de `FileMetadata.IsReadable`
+(biblioteca compartilhada): fotos (EXIF — MetadataExtractor, inclusive HEIC e RAW), vídeo e áudio
+(duração, resolução, título/artista/álbum — TagLib#, inclusive MKV e FLAC) e PDFs (título, páginas —
+PdfPig). Só cabeçalhos. O backend pede como pede a impressão digital: para um arquivo cujo conteúdo é
+novo ou mudou, e para qualquer arquivo legível que ainda não tenha — então o catálogo montado antes da
+F2 se completa no próximo scan. Um arquivo que o leitor não entende (danificado, criptografado) recebe
+`{}` e não é pedido de novo; um que não abre agora é pedido de novo no próximo scan. O backend limpa o
+que guarda (texto aparado e limitado a 500, caracteres de controle — tags costumam vir com NUL de
+enchimento — e valores impossíveis descartados). Uma movimentação mantém os metadados na entrada. Para
+ler tudo de novo quando um leitor aprender um campo novo, basta `metadata = NULL` nas extensões
+afetadas.
+
 ### 4.5 Agendamento
 
 Cada raiz tem sua própria agenda — diária num horário escolhido (o padrão), ou só manual — mais o
@@ -283,9 +296,14 @@ vazio) ou `{rootId, path}` (dentro de uma raiz, com os caminhos do catálogo par
 
 - **Navegar:** `GET /files/roots/{id}/entries?parentPath=` — os filhos de uma pasta, paginados,
   pastas primeiro.
-- **Buscar:** `GET /files/search?q=&deviceId=&rootId=&category=&minSize=&maxSize=&modifiedFrom=&modifiedTo=&status=`.
-  A busca por nome usa um **índice de trigramas** (`pg_trgm`, novo no Pandora) em `name`, porque nomes
-  de arquivo são buscados por fragmentos (`breaking bad s02`, `calculo_2`), não por palavras.
+- **Buscar:** `GET /files/search?q=&deviceId=&rootId=&category=&minSize=&maxSize=&modifiedFrom=&modifiedTo=&status=`
+  mais, a partir dos metadados (F2), `takenFrom=&takenTo=` (dias, pelo relógio da câmera),
+  `resolution=` (`sd` | `hd` | `full-hd` | `4k`, pelo lado menor, então um vídeo filmado em pé conta
+  como o que foi filmado) e `minDuration=&maxDuration=` (segundos).
+  A busca por texto usa um **índice de trigramas** (`pg_trgm`, novo no Pandora) em `search_text` — uma
+  coluna gerada com o nome mais título, artista e álbum — porque nomes de arquivo são buscados por
+  fragmentos (`breaking bad s02`, `calculo_2`, `pink floyd money`), não por palavras. Os filtros de
+  metadados ainda não têm índice próprio: varrem as linhas do usuário, o que basta até não bastar.
 - **Categoria** é derivada da extensão pelo domínio (`FileCategory.FromExtension`): `video`, `audio`,
   `image`, `document`, `ebook`, `archive`, `code`, `other`. Armazenada para filtrar.
 - **Mostrar no explorador:** no dispositivo dono da raiz, um resultado oferece *Mostrar no
@@ -334,11 +352,13 @@ Valores de enum usam hífen; colunas em snake_case. Nenhuma FK sai do schema `fi
 
 **`fil002_entry`** — `id`, `user_id`, `root_id` → fil001, `kind` (`file` | `directory`),
 `relative_path`, `parent_path`, `name`, `extension`, `category`, `size_bytes`, `modified_at`,
-`fingerprint` (nulo para pastas e até ser calculado), `status` (`present` | `missing` | `excluded`),
-`missing_since`, `kept_at` (a decisão *Manter* — fora da caixa), `first_seen_at`,
-`last_seen_scan_id`.
+`fingerprint` (nulo para pastas e até ser calculado), `metadata` (jsonb, F2: `TakenAt`, `Camera`,
+`Latitude`, `Longitude`, `Width`, `Height`, `DurationSeconds`, `Title`, `Artist`, `Album`, `Pages`;
+nulo até ser lido, `{}` quando nada foi encontrado), `search_text` (gerada: nome + título + artista +
+álbum), `status` (`present` | `missing` | `excluded`), `missing_since`, `kept_at` (a decisão
+*Manter* — fora da caixa), `first_seen_at`, `last_seen_scan_id`.
 Único `(root_id, relative_path)`; índice `(root_id, parent_path)` para navegar; índice
-`(user_id, fingerprint)` para detectar movimentação; GIN de trigramas em `name`.
+`(user_id, fingerprint)` para detectar movimentação; GIN de trigramas em `search_text`.
 
 **`fil003_scan`** — `id`, `root_id` → fil001, `status` (`running` | `completed` | `aborted` |
 `held`), `started_at`, `last_batch_at`, `finished_at`, contadores (`seen`, `created`, `changed`,
@@ -357,7 +377,7 @@ Valores de enum usam hífen; colunas em snake_case. Nenhuma FK sai do schema `fi
 O escopo é o mais específico não nulo entre `scope_path` (exige `root_id`) → `root_id` → `device_id`
 → usuário.
 
-Fases posteriores adicionam metadados (`fil002.metadata jsonb`), tags e classificações (`fil007`+).
+Fases posteriores adicionam tags e classificações (`fil007`+).
 
 ---
 
@@ -423,11 +443,14 @@ módulo não muda para uma nova plataforma desktop — é isso que o F7 garante.
 `kind` de raiz (`media-library`) e um agente próprio; ver o doc do desktop para o porquê de virem por
 último.
 
-### Fase F2 — Metadados
+### Fase F2 — Metadados *(implementada)*
 
-O agente extrai o que os bytes dizem — EXIF (data, câmera, local), título e número de páginas do PDF,
-duração e resolução de vídeo/áudio — e envia junto com o lote. Guardado como `metadata jsonb`; os
-filtros de busca crescem a partir disso.
+O agente extrai o que os bytes dizem — EXIF (data, câmera, local, tamanho), título e número de páginas
+do PDF, duração e resolução de vídeo/áudio, título/artista/álbum de música — quando o backend pede
+(4.4). Guardado em `fil002.metadata jsonb`. A busca acha títulos, artistas e álbuns como acha nomes, e
+filtra por data em que a foto foi tirada, resolução (vídeo) e duração (vídeo e áudio) (4.6). O
+catálogo mostra os metadados numa linha embaixo do nome de cada arquivo, com link para o mapa nas fotos
+que têm local.
 
 ### Fase F3 — Tags
 

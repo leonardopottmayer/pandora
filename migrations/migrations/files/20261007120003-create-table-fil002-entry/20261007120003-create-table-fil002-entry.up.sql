@@ -2,7 +2,8 @@
 
 -- One file or folder under a root, by its path relative to the root ("/Movies/a.mkv", "/" is the root).
 -- Never deleted by a scan: missing and excluded entries wait in the review inbox (kept_at = the user
--- chose to keep it out of the inbox).
+-- chose to keep it out of the inbox). metadata is what the bytes say (F2: EXIF, duration, tags, PDF
+-- pages); NULL until the agent reads it, '{}' when it found nothing.
 CREATE TABLE files.fil002_entry (
 	id uuid NOT NULL DEFAULT uuid_generate_v7(),
 	user_id uuid NOT NULL,
@@ -16,6 +17,13 @@ CREATE TABLE files.fil002_entry (
 	size_bytes BIGINT NOT NULL DEFAULT 0,
 	modified_at TIMESTAMPTZ NULL,
 	fingerprint VARCHAR(64) NULL,
+	metadata JSONB NULL,
+	search_text TEXT GENERATED ALWAYS AS (
+		name
+		|| coalesce(' ' || (metadata ->> 'Title'), '')
+		|| coalesce(' ' || (metadata ->> 'Artist'), '')
+		|| coalesce(' ' || (metadata ->> 'Album'), '')
+	) STORED,
 	status VARCHAR(20) NOT NULL DEFAULT 'present',
 	missing_since TIMESTAMPTZ NULL,
 	kept_at TIMESTAMPTZ NULL,
@@ -56,7 +64,7 @@ WHERE fingerprint IS NOT NULL;
 CREATE INDEX ix_fil002_review ON files.fil002_entry (root_id, relative_path)
 WHERE status <> 'present' AND kept_at IS NULL;
 
--- Search by name fragment.
-CREATE INDEX ix_fil002_name_trgm ON files.fil002_entry USING gin (name gin_trgm_ops);
+-- Search by fragments of the name, title, artist or album.
+CREATE INDEX ix_fil002_search_text_trgm ON files.fil002_entry USING gin (search_text gin_trgm_ops);
 
 CREATE INDEX ix_fil002_user_id ON files.fil002_entry (user_id);

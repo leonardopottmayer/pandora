@@ -68,6 +68,24 @@ export interface FilterPreview {
   sample: { id: string; rootId: string; relativePath: string }[]
 }
 
+/**
+ * What a file's bytes say (F2). Every field is optional; `{}` means read, nothing found. `takenAt` is the
+ * camera's clock, without a time zone (`"2024-07-10T14:00:00"`).
+ */
+export interface FileMetadata {
+  takenAt?: string | null
+  camera?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  width?: number | null
+  height?: number | null
+  durationSeconds?: number | null
+  title?: string | null
+  artist?: string | null
+  album?: string | null
+  pages?: number | null
+}
+
 export type EntryStatus = 'present' | 'missing' | 'excluded'
 export type FileCategory = 'video' | 'audio' | 'image' | 'document' | 'ebook' | 'archive' | 'code' | 'other'
 
@@ -82,6 +100,8 @@ export interface Entry {
   category: FileCategory | null
   sizeBytes: number
   modifiedAt: string | null
+  /** Null until the agent reads the file, and for files it does not read. */
+  metadata: FileMetadata | null
   status: EntryStatus
   missingSince: string | null
   keptAt: string | null
@@ -94,11 +114,21 @@ export interface Page<T> {
   hasMore: boolean
 }
 
+/** By the shorter side, so a video filmed upright counts as what it was filmed in. */
+export type Resolution = 'sd' | 'hd' | 'full-hd' | '4k'
+
 export interface SearchCriteria {
   q?: string
   rootId?: string
   category?: FileCategory
   status?: EntryStatus | 'all'
+  /** Days (`YYYY-MM-DD`), both inclusive, by the camera's clock. */
+  takenFrom?: string
+  takenTo?: string
+  resolution?: Resolution
+  /** Seconds. */
+  minDuration?: number
+  maxDuration?: number
 }
 
 export type ScanStatus = 'running' | 'completed' | 'aborted' | 'held'

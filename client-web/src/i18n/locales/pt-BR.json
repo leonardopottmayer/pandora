@@ -1373,8 +1373,8 @@
     },
     "catalog": {
       "title": "Arquivos",
-      "intro": "Navegue por uma raiz pasta a pasta, ou busque em todas as raízes por pedaços do nome.",
-      "searchPlaceholder": "Buscar pelo nome — ex.: breaking bad s02",
+      "intro": "Navegue por uma raiz pasta a pasta, ou busque em todas as raízes por pedaços do nome, do título ou do artista.",
+      "searchPlaceholder": "Buscar por nome, título ou artista — ex.: breaking bad s02",
       "allRoots": "Todas as raízes",
       "anyCategory": "Qualquer tipo",
       "noRoots": "Nada catalogado ainda.",
@@ -1388,7 +1388,20 @@
       "revealError": "Não foi possível mostrar o arquivo.",
       "copyPath": "Copiar caminho",
       "copied": "Copiado",
-      "more": "Carregar mais"
+      "more": "Carregar mais",
+      "takenFrom": "Tirada de",
+      "takenTo": "até",
+      "anyResolution": "Qualquer resolução",
+      "resolution": {
+        "sd": "SD (abaixo de 720p)",
+        "hd": "HD (720p)",
+        "full-hd": "Full HD (1080p)",
+        "4k": "4K (2160p ou mais)"
+      },
+      "minMinutes": "Mín. minutos",
+      "maxMinutes": "Máx. minutos",
+      "pages": "{{count}} páginas",
+      "onMap": "Mapa"
     },
     "review": {
       "title": "Revisão",

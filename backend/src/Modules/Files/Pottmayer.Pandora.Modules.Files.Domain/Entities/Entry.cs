@@ -30,6 +30,12 @@ public sealed class Entry
     /// <summary>Null for folders, and for a file until the agent computes it.</summary>
     public string? Fingerprint { get; private set; }
 
+    /// <summary>
+    /// What the bytes say (F2). Null for folders, for files the agent does not read, and for a readable
+    /// file until the agent reads it; cleared when the content changes.
+    /// </summary>
+    public FileMetadata? Metadata { get; private set; }
+
     public EntryStatus Status { get; private set; } = EntryStatus.Present;
     public DateTimeOffset? MissingSince { get; private set; }
 
@@ -44,7 +50,7 @@ public sealed class Entry
     /// <summary>A path the catalog has not seen. Callers pass a valid, normalized path.</summary>
     public static Entry Create(
         Guid userId, Guid rootId, Guid scanId, EntryKind kind, string path,
-        long size, DateTimeOffset? modifiedAt, string? fingerprint, DateTimeOffset now)
+        long size, DateTimeOffset? modifiedAt, string? fingerprint, FileMetadata? metadata, DateTimeOffset now)
     {
         var entry = new Entry
         {
@@ -56,7 +62,7 @@ public sealed class Entry
             LastSeenScanId = scanId
         };
         entry.Place(rootId, path);
-        entry.SetContent(size, modifiedAt, fingerprint);
+        entry.SetContent(size, modifiedAt, fingerprint, metadata);
         return entry;
     }
 
@@ -64,11 +70,13 @@ public sealed class Entry
 
     public bool NeedsFingerprint => IsFile && Fingerprint is null;
 
+    public bool NeedsMetadata => IsFile && Metadata is null && FileMetadata.IsReadable(Extension);
+
     /// <summary>
-    /// Seen by a scan. A file whose size or date changed takes the new ones and loses its fingerprint
-    /// unless one comes with them, so the agent is asked again. Returns whether the content changed.
+    /// Seen by a scan. A file whose size or date changed takes the new ones and loses its fingerprint and
+    /// metadata unless they come with them, so the agent is asked again. Returns whether the content changed.
     /// </summary>
-    public bool See(Guid scanId, long size, DateTimeOffset? modifiedAt, string? fingerprint)
+    public bool See(Guid scanId, long size, DateTimeOffset? modifiedAt, string? fingerprint, FileMetadata? metadata = null)
     {
         LastSeenScanId = scanId;
         Status = EntryStatus.Present;
@@ -78,9 +86,15 @@ public sealed class Entry
         if (!IsFile) return false;
 
         var changed = SizeBytes != size || ModifiedAt != Truncate(modifiedAt);
-        if (changed) SetContent(size, modifiedAt, fingerprint);
-        else if (fingerprint is not null) Fingerprint = fingerprint;
-        return changed;
+        if (changed)
+        {
+            SetContent(size, modifiedAt, fingerprint, metadata);
+            return true;
+        }
+
+        if (fingerprint is not null) Fingerprint = fingerprint;
+        if (metadata is not null) Metadata = metadata.Normalize();
+        return false;
     }
 
     /// <summary>
@@ -93,6 +107,7 @@ public sealed class Entry
         SizeBytes = newer.SizeBytes;
         ModifiedAt = newer.ModifiedAt;
         Fingerprint = newer.Fingerprint;
+        Metadata = newer.Metadata ?? Metadata;
         LastSeenScanId = newer.LastSeenScanId;
         Status = EntryStatus.Present;
         MissingSince = null;
@@ -109,11 +124,12 @@ public sealed class Entry
         Category = IsFile ? FileCategory.FromExtension(Extension) : null;
     }
 
-    private void SetContent(long size, DateTimeOffset? modifiedAt, string? fingerprint)
+    private void SetContent(long size, DateTimeOffset? modifiedAt, string? fingerprint, FileMetadata? metadata)
     {
         SizeBytes = IsFile ? size : 0;
         ModifiedAt = IsFile ? Truncate(modifiedAt) : null;
         Fingerprint = IsFile ? fingerprint : null;
+        Metadata = IsFile ? metadata?.Normalize() : null;
     }
 
     /// <summary>

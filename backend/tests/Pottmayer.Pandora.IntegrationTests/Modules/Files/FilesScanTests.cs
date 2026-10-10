@@ -173,7 +173,46 @@ public sealed class FilesScanTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.UnprocessableEntity, invalid.StatusCode);
     }
 
+    [Fact]
+    public async Task Metadata_is_asked_for_once_and_narrows_the_search()
+    {
+        var deviceId = await SetUpAsync();
+        var root = await AddRootAsync(deviceId);
+        var disk = new Disk()
+            .Dir("/Trip").File("/Trip/IMG_1.jpg", "img", new FileMetadata(
+                TakenAt: new DateTime(2024, 7, 10, 14, 0, 0), Camera: "Canon EOS R6", Latitude: -27.6, Longitude: -48.5, Width: 6000, Height: 4000))
+            .Dir("/Movies").File("/Movies/a.mkv", "a", new FileMetadata(Width: 3840, Height: 2160, DurationSeconds: 7200))
+            .File("/Movies/phone.mp4", "p", new FileMetadata(Width: 1080, Height: 1920, DurationSeconds: 60))
+            .Dir("/Music").File("/Music/track01.mp3", "m", new FileMetadata(
+                DurationSeconds: 382, Title: "Money\0\0", Artist: "Pink Floyd", Album: "The Dark Side of the Moon"))
+            .File("/notes.txt", "n");
+
+        await ScanAsync(root.Id, disk);
+        Assert.Equal(["/Movies/a.mkv", "/Movies/phone.mp4", "/Music/track01.mp3", "/Trip/IMG_1.jpg"], _askedMetadata.Order(StringComparer.Ordinal));
+
+        // Tags are searched like the name, and stored without the NUL padding.
+        var track = Assert.Single(await SearchAsync("pink floyd money"));
+        Assert.Equal(("/Music/track01.mp3", "Money"), (track.RelativePath, track.Metadata?.Title));
+
+        Assert.Equal(["IMG_1.jpg"], await NamesAsync("takenFrom=2024-07-10&takenTo=2024-07-10"));
+        Assert.Empty(await NamesAsync("takenFrom=2024-07-11"));
+        Assert.Equal(["a.mkv"], await NamesAsync("category=video&resolution=4k"));
+        Assert.Equal(["phone.mp4"], await NamesAsync("category=video&resolution=full-hd")); // filmed upright, still 1080p
+        Assert.Equal(["a.mkv", "track01.mp3"], await NamesAsync("minDuration=300"));
+        Assert.Equal(["phone.mp4"], await NamesAsync("maxDuration=100"));
+
+        // Known files are not read again; a changed one is.
+        await ScanAsync(root.Id, disk);
+        Assert.Empty(_askedMetadata);
+        disk.Rewrite("/Movies/phone.mp4", "edited");
+        await ScanAsync(root.Id, disk);
+        Assert.Equal(["/Movies/phone.mp4"], _askedMetadata);
+    }
+
     // ── The agent, simulated ──
+
+    /// <summary>The files the last scan's batch was asked metadata for.</summary>
+    private IReadOnlyList<string> _askedMetadata = [];
 
     /// <summary>Pulls the config, walks the disk through the shared rules, and runs the scan protocol.</summary>
     private async Task<ScanData> ScanAsync(Guid rootId, Disk disk)
@@ -186,10 +225,14 @@ public sealed class FilesScanTests : IAsyncLifetime
         var scanId = (await AgentPostAsync<StartScanResponse>($"{Agent}/scans", new StartScanRequest(rootId))).ScanId;
 
         var first = await AgentPostAsync<ScanBatchResult>($"{Agent}/scans/{scanId}/batches",
-            new ScanBatch([.. walked.Select(i => i.ToEntry(withFingerprint: false))]));
-        if (first.NeedsFingerprint.Count > 0)
-            await AgentPostAsync<ScanBatchResult>($"{Agent}/scans/{scanId}/batches",
-                new ScanBatch([.. walked.Where(i => first.NeedsFingerprint.Contains(i.Path)).Select(i => i.ToEntry(withFingerprint: true))]));
+            new ScanBatch([.. walked.Select(i => i.ToEntry(withFingerprint: false, withMetadata: false))]));
+        var answers = walked
+            .Where(i => first.NeedsFingerprint.Contains(i.Path) || first.NeedsMetadata.Contains(i.Path))
+            .Select(i => i.ToEntry(first.NeedsFingerprint.Contains(i.Path), first.NeedsMetadata.Contains(i.Path)))
+            .ToList();
+        if (answers.Count > 0)
+            await AgentPostAsync<ScanBatchResult>($"{Agent}/scans/{scanId}/batches", new ScanBatch(answers));
+        _askedMetadata = first.NeedsMetadata;
 
         return await AgentPostAsync<ScanData>($"{Agent}/scans/{scanId}/complete", new CompleteScanRequest(walked.Count));
     }
@@ -200,7 +243,7 @@ public sealed class FilesScanTests : IAsyncLifetime
         public List<DiskItem> Items { get; } = [];
 
         public Disk Dir(string path) { Items.Add(new DiskItem(path, AgentValues.Directory, "")); return this; }
-        public Disk File(string path, string content) { Items.Add(new DiskItem(path, AgentValues.File, content)); return this; }
+        public Disk File(string path, string content, FileMetadata? metadata = null) { Items.Add(new DiskItem(path, AgentValues.File, content, metadata)); return this; }
         public void Remove(string path) => Items.RemoveAll(i => i.Path == path);
 
         public void Rename(string from, string to)
@@ -209,14 +252,21 @@ public sealed class FilesScanTests : IAsyncLifetime
             Items[Items.IndexOf(item)] = item with { Path = to };
         }
 
-        public sealed record DiskItem(string Path, string Kind, string Content)
+        public void Rewrite(string path, string content)
         {
-            public ScannedEntry ToEntry(bool withFingerprint)
+            var item = Items.Single(i => i.Path == path);
+            Items[Items.IndexOf(item)] = item with { Content = content };
+        }
+
+        /// <summary>A file's <see cref="Metadata"/> is what the agent would read from it (empty when unset).</summary>
+        public sealed record DiskItem(string Path, string Kind, string Content, FileMetadata? Metadata = null)
+        {
+            public ScannedEntry ToEntry(bool withFingerprint, bool withMetadata)
             {
                 if (Kind == AgentValues.Directory) return new ScannedEntry(Path, Kind, 0, null, null);
                 var bytes = System.Text.Encoding.UTF8.GetBytes(Content);
                 var fingerprint = withFingerprint ? Fingerprint.ComputeAsync(new MemoryStream(bytes)).GetAwaiter().GetResult() : null;
-                return new ScannedEntry(Path, Kind, bytes.Length, Modified, fingerprint);
+                return new ScannedEntry(Path, Kind, bytes.Length, Modified, fingerprint, withMetadata ? Metadata ?? new FileMetadata() : null);
             }
         }
     }
@@ -241,6 +291,9 @@ public sealed class FilesScanTests : IAsyncLifetime
 
     private async Task<List<EntryData>> SearchAsync(string q, string? status = null) =>
         (await GetAsync<PageData<EntryData>>($"{Files}/search?q={Uri.EscapeDataString(q)}&take=200{(status is null ? "" : $"&status={status}")}")).Items;
+
+    private async Task<List<string>> NamesAsync(string criteria) =>
+        [.. (await GetAsync<PageData<EntryData>>($"{Files}/search?{criteria}&take=200")).Items.Select(e => e.RelativePath.Split('/')[^1])];
 
     private async Task<T> GetAsync<T>(string url)
     {
@@ -270,7 +323,7 @@ public sealed class FilesScanTests : IAsyncLifetime
     private sealed record DeviceData(Guid Id);
     private sealed record RootData(Guid Id);
     private sealed record PageData<T>(List<T> Items, bool HasMore);
-    private sealed record EntryData(Guid Id, string RelativePath, string Status);
+    private sealed record EntryData(Guid Id, string RelativePath, string Status, FileMetadata? Metadata);
     private sealed record ScanData(Guid Id, string Status, int Created, int Moved, int Missing, int Excluded, string? Error);
     private sealed record ReviewNodeData(string Name, string Path, int Count, bool HasChildren, Guid? EntryId);
     private sealed record PreviewData(int Count);

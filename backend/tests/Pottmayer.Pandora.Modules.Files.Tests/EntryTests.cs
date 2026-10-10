@@ -10,7 +10,7 @@ public sealed class EntryTests
     private const string Hash = "0000000000000000000000000000000000000000000000000000000000000000";
 
     private static Entry File(string path = "/Movies/a.MKV", long size = 100, DateTimeOffset? modified = null, string? fingerprint = Hash) =>
-        Entry.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), EntryKind.File, path, size, modified ?? Now, fingerprint, Now);
+        Entry.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), EntryKind.File, path, size, modified ?? Now, fingerprint, null, Now);
 
     [Fact]
     public void A_file_takes_its_name_extension_and_category_from_the_path()

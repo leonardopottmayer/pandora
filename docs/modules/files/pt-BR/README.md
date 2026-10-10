@@ -3,8 +3,8 @@
 > Um catálogo de tudo o que está nos discos do usuário, dentro do monolito modular Pandora.
 > 🇺🇸 [English version](../README.md).
 >
-> **Status: F1 implementada** — backend (F1a), agente desktop (F1b) e web (F1c). A seguir, a
-> verificação de "pronto quando" da fase no homelab — ver
+> **Status: F1 e F2 implementadas** — catálogo (backend, agente desktop, web) e metadados. A
+> verificação de "pronto quando" da F1 no homelab segue pendente — ver
 > [product-plan.md](product-plan.md).
 
 O módulo **Files** indexa as pastas que o usuário escolhe nos seus discos — filmes, fotos, material

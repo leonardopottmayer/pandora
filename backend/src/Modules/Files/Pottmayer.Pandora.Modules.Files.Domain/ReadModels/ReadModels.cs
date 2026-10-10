@@ -20,7 +20,11 @@ public enum ReviewDecision
     Keep
 }
 
-/// <summary>Name terms all match (as fragments); the other criteria are optional.</summary>
+/// <summary>
+/// Terms all match (as fragments of the name, title, artist or album); the other criteria are optional.
+/// <see cref="MinShortSide"/>/<see cref="MaxShortSide"/> bound the shorter side of a video or photo, so a
+/// portrait phone video counts as the resolution it was filmed in.
+/// </summary>
 public sealed record EntrySearch(
     Guid UserId,
     IReadOnlyList<string> Terms,
@@ -30,4 +34,10 @@ public sealed record EntrySearch(
     long? MaxSize,
     DateTimeOffset? ModifiedFrom,
     DateTimeOffset? ModifiedTo,
-    EntryStatus? Status);
+    EntryStatus? Status,
+    DateTime? TakenFrom = null,
+    DateTime? TakenBefore = null,
+    int? MinShortSide = null,
+    int? MaxShortSide = null,
+    int? MinDuration = null,
+    int? MaxDuration = null);

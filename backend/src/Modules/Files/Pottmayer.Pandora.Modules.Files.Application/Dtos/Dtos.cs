@@ -55,6 +55,7 @@ public sealed record EntryDto(
     string? Category,
     long SizeBytes,
     DateTimeOffset? ModifiedAt,
+    FileMetadata? Metadata,
     string Status,
     DateTimeOffset? MissingSince,
     DateTimeOffset? KeptAt,
@@ -62,7 +63,7 @@ public sealed record EntryDto(
 {
     public static EntryDto From(Entry e) => new(
         e.Id, e.RootId, e.Kind.Value, e.RelativePath, e.ParentPath, e.Name, e.Extension, e.Category?.Value,
-        e.SizeBytes, e.ModifiedAt, e.Status.Value, e.MissingSince, e.KeptAt, e.FirstSeenAt);
+        e.SizeBytes, e.ModifiedAt, e.Metadata, e.Status.Value, e.MissingSince, e.KeptAt, e.FirstSeenAt);
 }
 
 /// <summary>A page without a total: counting millions of rows for a pager is not worth it.</summary>

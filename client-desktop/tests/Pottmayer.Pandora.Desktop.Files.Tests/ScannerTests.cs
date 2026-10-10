@@ -20,7 +20,7 @@ public sealed class ScannerTests : IDisposable
         new(Guid.NewGuid(), "Disk", localPath ?? _root, false, false, null, null, [], []);
 
     [Fact]
-    public async Task Every_walked_entry_is_sent_and_files_are_fingerprinted_when_asked()
+    public async Task Every_walked_entry_is_sent_and_files_are_fingerprinted_and_read_when_asked()
     {
         Directory.CreateDirectory(Path.Combine(_root, "Movies"));
         File.WriteAllText(Path.Combine(_root, "Movies", "a.mkv"), "a");
@@ -34,6 +34,9 @@ public sealed class ScannerTests : IDisposable
         Assert.Equal(["/Movies/a.mkv", "/b.txt"], _server.Fingerprints.Keys.Order(StringComparer.Ordinal));
         Assert.All(_server.Fingerprints.Values, f => Assert.True(Fingerprint.IsValid(f)));
         Assert.Equal(2, progress[^1].Fingerprinted);
+        // Only the readable extension is read; a file that is not really a video says nothing.
+        Assert.Equal(new FileMetadata(), Assert.Single(_server.Metadata, m => m.Key == "/Movies/a.mkv").Value);
+        Assert.Single(_server.Metadata);
     }
 
     [Fact]
@@ -67,13 +70,17 @@ public sealed class ScannerTests : IDisposable
         Assert.Contains("answered with a page", error.Message);
     }
 
-    /// <summary>Answers the agent endpoints like the backend: asks for the fingerprint of every file sent without one.</summary>
+    /// <summary>
+    /// Answers the agent endpoints like the backend: asks for the fingerprint of every file sent without
+    /// one, and for the metadata of every readable file sent without it.
+    /// </summary>
     private sealed class FakeServer : HttpMessageHandler, IHttpClientFactory
     {
         private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
         private readonly Guid _scanId = Guid.NewGuid();
 
         public Dictionary<string, string> Fingerprints { get; } = [];
+        public Dictionary<string, FileMetadata> Metadata { get; } = [];
         public int? EntriesSeen { get; private set; }
         public string? AbortReason { get; private set; }
         public bool FailBatches { get; set; }
@@ -94,7 +101,12 @@ public sealed class ScannerTests : IDisposable
                 if (FailBatches) return new HttpResponseMessage(HttpStatusCode.InternalServerError);
                 var batch = (await request.Content!.ReadFromJsonAsync<ScanBatch>(Json, ct))!;
                 foreach (var e in batch.Entries.Where(e => e.Fingerprint is not null)) Fingerprints[e.Path] = e.Fingerprint!;
-                return Ok(new ScanBatchResult([.. batch.Entries.Where(e => e.Kind == AgentValues.File && e.Fingerprint is null).Select(e => e.Path)]));
+                foreach (var e in batch.Entries.Where(e => e.Metadata is not null)) Metadata[e.Path] = e.Metadata!;
+                var files = batch.Entries.Where(e => e.Kind == AgentValues.File).ToList();
+                return Ok(new ScanBatchResult(
+                    [.. files.Where(e => e.Fingerprint is null && !Fingerprints.ContainsKey(e.Path)).Select(e => e.Path)],
+                    [.. files.Where(e => e.Metadata is null && !Metadata.ContainsKey(e.Path)
+                                         && FileMetadata.IsReadable(CatalogPath.Extension(CatalogPath.Name(e.Path)))).Select(e => e.Path)]));
             }
 
             if (path.EndsWith("/complete"))

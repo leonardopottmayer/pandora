@@ -7,9 +7,9 @@ namespace Pottmayer.Pandora.Desktop.Files;
 /// <summary>A file or folder the walk lets through: its catalog path, where it is on disk, and its stat.</summary>
 internal sealed record WalkItem(string Path, string FullPath, bool IsDirectory, long Size, DateTimeOffset ModifiedAt)
 {
-    public ScannedEntry ToEntry(string? fingerprint) => IsDirectory
+    public ScannedEntry ToEntry(string? fingerprint, FileMetadata? metadata = null) => IsDirectory
         ? new ScannedEntry(Path, AgentValues.Directory, 0, null, null)
-        : new ScannedEntry(Path, AgentValues.File, Size, ModifiedAt, fingerprint);
+        : new ScannedEntry(Path, AgentValues.File, Size, ModifiedAt, fingerprint, metadata);
 }
 
 /// <summary>

@@ -60,13 +60,18 @@ public sealed record ScanBatch(IReadOnlyList<ScannedEntry> Entries)
 }
 
 /// <summary>
-/// One item the walk let through. <see cref="Fingerprint"/> is sent only when the backend asked for it
-/// (see <see cref="Agent.Fingerprint"/>); folders never carry one, nor a size or date.
+/// One item the walk let through. <see cref="Fingerprint"/> (see <see cref="Agent.Fingerprint"/>) and
+/// <see cref="Metadata"/> are sent only when the backend asked for them; folders never carry them, nor a
+/// size or date.
 /// </summary>
-public sealed record ScannedEntry(string Path, string Kind, long Size, DateTimeOffset? ModifiedAt, string? Fingerprint);
+public sealed record ScannedEntry(
+    string Path, string Kind, long Size, DateTimeOffset? ModifiedAt, string? Fingerprint, FileMetadata? Metadata = null);
 
-/// <summary>The files of the batch the backend has no fingerprint for: send them again with one.</summary>
-public sealed record ScanBatchResult(IReadOnlyList<string> NeedsFingerprint);
+/// <summary>
+/// The files of the batch the backend has no fingerprint or no metadata for: send them again with what
+/// was asked. Metadata is asked only for <see cref="FileMetadata.IsReadable"/> extensions.
+/// </summary>
+public sealed record ScanBatchResult(IReadOnlyList<string> NeedsFingerprint, IReadOnlyList<string> NeedsMetadata);
 
 /// <summary><see cref="EntriesSeen"/> counts distinct paths sent; a mismatch aborts the scan instead of marking files missing.</summary>
 public sealed record CompleteScanRequest(int EntriesSeen);
