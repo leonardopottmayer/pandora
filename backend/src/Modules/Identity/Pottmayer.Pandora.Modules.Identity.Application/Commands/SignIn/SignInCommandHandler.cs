@@ -26,6 +26,9 @@ public sealed class SignInCommandHandler(
     TimeProvider timeProvider)
     : CommandHandlerBase<SignInCommand, SignInResultDto>
 {
+    // Hashed on the first unknown-user sign-in, then reused (the app has a single hasher).
+    private static string? DummyPasswordHash;
+
     private sealed record SignInOutcome(Guid UserId, bool MfaRequired, string? Ticket, DateTimeOffset ChallengeExpiresAt);
 
     protected override async Task<Result<SignInResultDto>> HandleAsync(SignInCommand request, CancellationToken ct)
@@ -43,7 +46,14 @@ public sealed class SignInCommandHandler(
                 ? await users.FindByEmailAsync(email!, token)
                 : await users.FindByUsernameAsync(input.EmailOrUsername, token);
 
-            if (user is null || !user.VerifyPassword(input.Password, passwordHasher))
+            if (user is null)
+            {
+                // Hash anyway so that an unknown username takes as long as a wrong password.
+                passwordHasher.Verify(input.Password, DummyPasswordHash ??= passwordHasher.Hash("pandora-dummy-password"));
+                return Result<SignInOutcome>.Failure([IdentityErrors.InvalidCredentials]);
+            }
+
+            if (!user.VerifyPassword(input.Password, passwordHasher))
                 return Result<SignInOutcome>.Failure([IdentityErrors.InvalidCredentials]);
 
             if (!user.CanAuthenticate)

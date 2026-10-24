@@ -46,10 +46,13 @@ public sealed class RefreshTokenRepository(IDataContextAccessor accessor)
         if (entity is null || !HashesMatch(entity.TokenHash, tokenHash))
             return null;
 
-        entity.ConsumedAt = DateTimeOffset.UtcNow;
-        await UpdateAsync(entity, ct);
+        // Conditional UPDATE so that only one of two concurrent refreshes with the same token consumes it.
+        var now      = DateTimeOffset.UtcNow;
+        var consumed = await Queryable()
+            .Where(t => t.Id == entity.Id && t.ConsumedAt == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.ConsumedAt, now), ct);
 
-        return ToPayload(entity);
+        return consumed == 1 ? ToPayload(entity) : null;
     }
 
     public async ValueTask<RefreshTokenPayload?> GetAsync(string tokenId, string tokenHash, CancellationToken ct = default)

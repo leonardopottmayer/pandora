@@ -81,6 +81,7 @@ public sealed class SignInCommandHandlerTests
 
         Assert.True(result.IsFailure);
         Assert.Equal("Identity.InvalidCredentials", result.Errors[0].Code);
+        Assert.Equal(1, _hasher.VerifyCount); // dummy verification keeps the timing of a wrong password
     }
 
     [Fact]
