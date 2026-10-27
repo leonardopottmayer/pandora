@@ -7,6 +7,7 @@ namespace Pottmayer.Pandora.Modules.Assistant.Application.Dtos;
 /// </summary>
 public sealed record AssistantProfileDto(
     string Provider,
+    Guid? ChatAccountId,
     string Model,
     bool IsEnabled,
     string? LocaleOverride,

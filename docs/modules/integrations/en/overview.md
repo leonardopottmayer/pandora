@@ -15,8 +15,10 @@ services. It handles:
 - **Transparent refresh**: a consumer asking for an access token gets a valid one or a typed failure;
   it never sees or implements refresh.
 - **Revocation and disconnection**: revoking at the provider and deleting the local account.
-- **User-supplied API keys** (`auth_kind = api-key`) as an alternative to OAuth, for providers that
-  authenticate with a static key.
+- **User-supplied API keys** (`auth_kind = api-key`) and **usernames + passwords**
+  (`auth_kind = password`, IMAP/SMTP mailboxes) as alternatives to OAuth.
+- **Several accounts per provider**, each named by the user; every consumer binds to the account it
+  uses, and the settings screen shows where each account is used.
 
 It is deliberately the smallest module in Pandora and answers exactly one question:
 
@@ -62,7 +64,9 @@ backend concerns. UI unity is not module unity.
 |---|---|
 | **External account** | One connected third-party account (`int001`). Holds the encrypted credentials Pandora uses on the user's behalf. Identified by `(user_id, provider, provider_account_id)`. |
 | **Provider** | A third-party service Pandora connects to: `google` today; `microsoft`, `openai`, `gemini` and others later. |
-| **Auth kind** | How an account authenticates: `oauth` (refreshable tokens) or `api-key` (a static user-supplied key). |
+| **Auth kind** | How an account authenticates: `oauth` (refreshable tokens), `api-key` (a static user-supplied key) or `password` (username + password). |
+| **Label** | The user's name for an account ("Personal", "Work"). What every account picker shows. |
+| **Usage** | One place a consumer module uses an account (`assistant` / `chat`), reported through `IExternalAccountUsageSource`. |
 | **OAuth state** | An in-flight authorization request (`int002`). The `state` is the single-use CSRF token; the PKCE `code_verifier` is stored encrypted for the duration of the flow. |
 | **Access token** | A short-lived OAuth credential, returned to consumers as a transient `ExternalAccessToken` (token + expiry + scopes). Never persisted by the consumer. |
 | **Refresh token** | A long-lived OAuth credential used only inside the module to mint new access tokens. Encrypted at rest, never handed out. |
@@ -83,7 +87,5 @@ disconnect with provider-side revocation; the `IExternalCredentialProvider` /
 
 | Feature | Status |
 |---|---|
-| **Channels reaction to revocation** (Telegram "reconnect needed") | Contracts published; no Channels subscriber/templates yet (phase I2). |
-| **`int003` integration event log** | Designed, not created (phase I2). |
-| **API-key management endpoints** (register/rotate/remove) + `openai`/`gemini` catalog | The read path (`GetApiKeyAsync`) exists; no way to create an `api-key` account yet (phase I3). |
+| **`openai` provider** | One `CredentialProviderDescriptor` away; not registered yet. |
 | **More providers** (Microsoft, CalDAV) | Future, demand-driven (phase I4). |

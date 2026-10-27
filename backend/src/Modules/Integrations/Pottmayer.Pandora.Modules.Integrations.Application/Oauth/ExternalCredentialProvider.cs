@@ -17,8 +17,8 @@ using Pottmayer.Tars.Security.DataProtection.Abstractions;
 namespace Pottmayer.Pandora.Modules.Integrations.Application.Oauth;
 
 /// <summary>
-/// The synchronous port every consumer uses. Returns a valid access token, refreshing invisibly, and
-/// never lets a refresh token leave the module.
+/// The synchronous port every consumer uses. Returns a valid credential for one account, refreshing
+/// OAuth tokens invisibly, and never lets a refresh token leave the module.
 /// </summary>
 /// <remarks>
 /// Refresh is serialized per account by an in-process gate rather than a Postgres advisory lock.
@@ -38,13 +38,13 @@ public sealed class ExternalCredentialProvider(
     private static readonly ConcurrentDictionary<Guid, SemaphoreSlim> Gates = new();
 
     public async Task<Result<ExternalAccessToken>> GetAccessTokenAsync(
-        Guid userId, string provider, CancellationToken ct = default)
+        Guid userId, Guid accountId, CancellationToken ct = default)
     {
-        var account = await LoadAsync(userId, provider, ct);
+        var account = await LoadAsync(userId, accountId, ct);
         if (account is null)
-            return Result<ExternalAccessToken>.Failure(IntegrationErrors.NotConnected(provider));
-        if (account.AuthKind == AuthKind.ApiKey)
-            return Result<ExternalAccessToken>.Failure(IntegrationErrors.NotConnected(provider));
+            return Result<ExternalAccessToken>.Failure(IntegrationErrors.NotConnected);
+        if (account.AuthKind != AuthKind.OAuth)
+            return Result<ExternalAccessToken>.Failure(IntegrationErrors.NotAnOAuthAccount);
         if (account.Status == AccountStatus.Revoked)
             return Result<ExternalAccessToken>.Failure(IntegrationErrors.AccountRevoked);
 
@@ -55,7 +55,7 @@ public sealed class ExternalCredentialProvider(
         await gate.WaitAsync(ct);
         try
         {
-            return await RefreshAndReturnAsync(userId, provider, ct);
+            return await RefreshAndReturnAsync(userId, accountId, ct);
         }
         finally
         {
@@ -63,24 +63,37 @@ public sealed class ExternalCredentialProvider(
         }
     }
 
-    public async Task<Result<string>> GetApiKeyAsync(Guid userId, string provider, CancellationToken ct = default)
+    public async Task<Result<string>> GetApiKeyAsync(Guid userId, Guid accountId, CancellationToken ct = default)
     {
-        var account = await LoadAsync(userId, provider, ct);
+        var account = await LoadAsync(userId, accountId, ct);
         if (account is null)
-            return Result<string>.Failure(IntegrationErrors.NotConnected(provider));
+            return Result<string>.Failure(IntegrationErrors.NotConnected);
         if (account.AuthKind != AuthKind.ApiKey || account.AccessTokenEnc is null)
-            return Result<string>.Failure(IntegrationErrors.NotAnApiKey(provider));
+            return Result<string>.Failure(IntegrationErrors.NotAnApiKey);
 
         return Result<string>.Success(protector.Unprotect(account.AccessTokenEnc));
     }
 
+    public async Task<Result<PasswordCredential>> GetPasswordAsync(
+        Guid userId, Guid accountId, CancellationToken ct = default)
+    {
+        var account = await LoadAsync(userId, accountId, ct);
+        if (account is null)
+            return Result<PasswordCredential>.Failure(IntegrationErrors.NotConnected);
+        if (account.AuthKind != AuthKind.Password || account.AccessTokenEnc is null)
+            return Result<PasswordCredential>.Failure(IntegrationErrors.NotAPassword);
+
+        return Result<PasswordCredential>.Success(
+            new PasswordCredential(account.ProviderAccountId, protector.Unprotect(account.AccessTokenEnc)));
+    }
+
     private async Task<Result<ExternalAccessToken>> RefreshAndReturnAsync(
-        Guid userId, string provider, CancellationToken ct)
+        Guid userId, Guid accountId, CancellationToken ct)
     {
         // Re-read under the gate: an earlier waiter may already have refreshed.
-        var account = await LoadAsync(userId, provider, ct);
+        var account = await LoadAsync(userId, accountId, ct);
         if (account is null)
-            return Result<ExternalAccessToken>.Failure(IntegrationErrors.NotConnected(provider));
+            return Result<ExternalAccessToken>.Failure(IntegrationErrors.NotConnected);
         if (account.Status == AccountStatus.Revoked)
             return Result<ExternalAccessToken>.Failure(IntegrationErrors.AccountRevoked);
         if (!account.NeedsRefresh(timeProvider.GetUtcNow(), RefreshMargin))
@@ -104,8 +117,8 @@ public sealed class ExternalCredentialProvider(
             return Result<ExternalAccessToken>.Failure(IntegrationErrors.NoRefreshToken);
         }
 
-        if (!registry.TryGet(provider, out var oauth))
-            return Result<ExternalAccessToken>.Failure(IntegrationErrors.UnknownProvider(provider));
+        if (!registry.TryGet(account.Provider, out var oauth))
+            return Result<ExternalAccessToken>.Failure(IntegrationErrors.UnknownProvider(account.Provider));
 
         OAuthTokens tokens;
         try
@@ -130,7 +143,8 @@ public sealed class ExternalCredentialProvider(
                 await AppendLogAsync(context, account, IntegrationEventType.Revoked, ex.Message, token);
                 await bus.PublishAsync(
                     new ExternalAccountRevoked(
-                        Guid.CreateVersion7(), timeProvider.GetUtcNow(), userId, account.Id, provider),
+                        Guid.CreateVersion7(), timeProvider.GetUtcNow(), userId, account.Id, account.Provider,
+                        account.Label),
                     token);
                 return true;
             }, cancellationToken: ct);
@@ -167,15 +181,15 @@ public sealed class ExternalCredentialProvider(
         }, cancellationToken: ct);
 
         return issued is null
-            ? Result<ExternalAccessToken>.Failure(IntegrationErrors.NotConnected(provider))
+            ? Result<ExternalAccessToken>.Failure(IntegrationErrors.NotConnected)
             : Result<ExternalAccessToken>.Success(issued);
     }
 
-    private Task<ExternalAccount?> LoadAsync(Guid userId, string provider, CancellationToken ct) =>
+    private Task<ExternalAccount?> LoadAsync(Guid userId, Guid accountId, CancellationToken ct) =>
         factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
         {
             var repo = context.AcquireRepository<IExternalAccountRepository>();
-            return await repo.FindAsync(userId, provider, token);
+            return await repo.GetOwnedAsync(userId, accountId, token);
         }, cancellationToken: ct);
 
     private Task AppendLogAsync(

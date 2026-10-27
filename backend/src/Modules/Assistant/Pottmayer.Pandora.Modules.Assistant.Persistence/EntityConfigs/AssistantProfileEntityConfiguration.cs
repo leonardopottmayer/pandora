@@ -22,6 +22,8 @@ internal sealed class AssistantProfileEntityConfiguration : IEntityTypeConfigura
                .HasMaxLength(40)
                .IsRequired();
 
+        builder.Property(p => p.ChatAccountId).HasColumnName("chat_account_id");
+
         builder.Property(p => p.ChatModel)
                .HasColumnName("chat_model")
                .HasMaxLength(100)

@@ -1,12 +1,10 @@
 namespace Pottmayer.Pandora.Modules.Assistant.Application.Dtos;
 
 /// <summary>
-/// A chat provider the assistant can use, and whether the user has an API key stored for it in
-/// Integrations. <see cref="KeyHint"/> is a non-secret masked hint (e.g. the last four characters), or
-/// null when no key is configured.
+/// A chat provider the assistant can use, and how many API keys the user has stored for it in
+/// Integrations. Which key the assistant uses is picked in the settings (the profile's chat account).
 /// </summary>
 public sealed record AssistantProviderDto(
     string Provider,
     string DisplayName,
-    bool KeyConfigured,
-    string? KeyHint);
+    int KeyCount);

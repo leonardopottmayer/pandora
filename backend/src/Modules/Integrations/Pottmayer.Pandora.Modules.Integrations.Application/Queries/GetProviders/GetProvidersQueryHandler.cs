@@ -1,5 +1,5 @@
 using Pottmayer.Pandora.Modules.Integrations.Abstractions;
-using Pottmayer.Pandora.Modules.Integrations.Application.ApiKeys;
+using Pottmayer.Pandora.Modules.Integrations.Application.Credentials;
 using Pottmayer.Pandora.Modules.Integrations.Application.Dtos;
 using Pottmayer.Pandora.Modules.Integrations.Domain.Ports;
 using Pottmayer.Pandora.Modules.Integrations.Domain.Ports.Repositories;
@@ -11,14 +11,13 @@ using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 namespace Pottmayer.Pandora.Modules.Integrations.Application.Queries.GetProviders;
 
 /// <summary>
-/// The provider catalog for settings: every provider the server can talk to — OAuth and api-key alike —
-/// and whether the user has connected it. Cross-references the registered providers with the user's
-/// accounts.
+/// The provider catalog for settings: every provider the server can talk to — OAuth and typed-in
+/// credentials alike — each listed once, with how many accounts the user has connected at it.
 /// </summary>
 public sealed class GetProvidersQueryHandler(
     IUnitOfWorkFactory factory,
     IEnumerable<IOAuthProvider> oauthProviders,
-    ApiKeyProviderRegistry apiKeyProviders)
+    CredentialProviderRegistry credentialProviders)
     : QueryHandlerBase<GetProvidersQuery, IReadOnlyList<ProviderCatalogItemDto>>
 {
     protected override async Task<Result<IReadOnlyList<ProviderCatalogItemDto>>> HandleAsync(
@@ -30,32 +29,23 @@ public sealed class GetProvidersQueryHandler(
             return await repo.GetByUserAsync(request.Input.UserId, ct);
         }, cancellationToken: cancellationToken);
 
-        var byProvider = accounts.ToDictionary(a => a.Provider, StringComparer.OrdinalIgnoreCase);
+        var counts = accounts
+            .GroupBy(a => a.Provider, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
+        int CountOf(string provider) => counts.GetValueOrDefault(provider);
 
         var catalog = new List<ProviderCatalogItemDto>();
 
         foreach (var provider in oauthProviders)
         {
-            byProvider.TryGetValue(provider.Name, out var account);
             catalog.Add(new ProviderCatalogItemDto(
-                provider.Name,
-                AuthKind.OAuth.Value,
-                DisplayName: null,
-                provider.DefaultScopes,
-                account is not null,
-                account?.Status.Value));
+                provider.Name, AuthKind.OAuth.Value, DisplayName: null, provider.DefaultScopes, CountOf(provider.Name)));
         }
 
-        foreach (var provider in apiKeyProviders.All)
+        foreach (var provider in credentialProviders.All)
         {
-            byProvider.TryGetValue(provider.Name, out var account);
             catalog.Add(new ProviderCatalogItemDto(
-                provider.Name,
-                AuthKind.ApiKey.Value,
-                provider.DisplayName,
-                DefaultScopes: [],
-                account is not null,
-                account?.Status.Value));
+                provider.Name, provider.AuthKind.Value, provider.DisplayName, DefaultScopes: [], CountOf(provider.Name)));
         }
 
         return Ok(catalog);

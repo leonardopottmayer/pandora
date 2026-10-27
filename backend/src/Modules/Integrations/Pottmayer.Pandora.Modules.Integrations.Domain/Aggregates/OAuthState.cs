@@ -19,6 +19,12 @@ public sealed class OAuthState : AggregateRoot<Guid>
     /// <summary>Relative path in the SPA to redirect to after the callback completes.</summary>
     public string RedirectAfter { get; private set; } = null!;
 
+    /// <summary>
+    /// The account being reconnected or widened, when the flow targets one. Null when adding an account.
+    /// The callback never overwrites it with a different provider identity.
+    /// </summary>
+    public Guid? TargetAccountId { get; private set; }
+
     public DateTimeOffset ExpiresAt { get; private set; }
     public DateTimeOffset? ConsumedAt { get; private set; }
 
@@ -30,6 +36,7 @@ public sealed class OAuthState : AggregateRoot<Guid>
         string state,
         string codeVerifierEnc,
         string redirectAfter,
+        Guid? targetAccountId,
         DateTimeOffset expiresAt)
     {
         return new OAuthState
@@ -40,6 +47,7 @@ public sealed class OAuthState : AggregateRoot<Guid>
             State = state,
             CodeVerifierEnc = codeVerifierEnc,
             RedirectAfter = redirectAfter,
+            TargetAccountId = targetAccountId,
             ExpiresAt = expiresAt
         };
     }

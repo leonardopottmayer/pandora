@@ -36,6 +36,7 @@ internal sealed class OAuthStateEntityConfiguration : IEntityTypeConfiguration<O
                .HasMaxLength(500)
                .IsRequired();
 
+        builder.Property(s => s.TargetAccountId).HasColumnName("target_account_id");
         builder.Property(s => s.ExpiresAt).HasColumnName("expires_at").IsRequired();
         builder.Property(s => s.ConsumedAt).HasColumnName("consumed_at");
 

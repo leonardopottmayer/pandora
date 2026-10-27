@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Pottmayer.Pandora.Modules.Integrations.Abstractions.Ports;
-using Pottmayer.Pandora.Modules.Integrations.Application.ApiKeys;
+using Pottmayer.Pandora.Modules.Integrations.Application.Credentials;
 using Pottmayer.Pandora.Modules.Integrations.Application.Oauth;
 using Pottmayer.Tars.Core.Mediator.DI;
 
@@ -14,9 +14,10 @@ public static class ApplicationDI
             opts.RegisterHandlersFromAssembly(typeof(ApplicationDI).Assembly));
 
         services.AddScoped<OAuthProviderRegistry>();
-        services.AddScoped<ApiKeyProviderRegistry>();
+        services.AddScoped<CredentialProviderRegistry>();
 
-        // The ports other modules consume.
+        // The ports other modules consume. (IExternalAccountUsageSource goes the other way: each
+        // consumer module registers its own implementation.)
         services.AddScoped<IExternalCredentialProvider, ExternalCredentialProvider>();
         services.AddScoped<IExternalAccountReader, ExternalAccountReader>();
 

@@ -40,4 +40,16 @@ public sealed class ExternalAccountRevokedHandlerTests
         Assert.Equal(eventId, notify.CorrelationId); // de-dups against a re-delivery
         Assert.Equal("Google", notify.Payload["provider"]); // title-cased for display
     }
+
+    [Fact]
+    public async Task Names_the_account_when_the_event_carries_its_label()
+    {
+        var (handler, bus) = Build();
+
+        await handler.HandleAsync(new ExternalAccountRevoked(
+            Guid.NewGuid(), Now, Guid.NewGuid(), Guid.NewGuid(), "google", Label: "Personal"));
+
+        var notify = Assert.IsType<NotifyUserRequested>(Assert.Single(bus.Published));
+        Assert.Equal("Google · Personal", notify.Payload["provider"]);
+    }
 }

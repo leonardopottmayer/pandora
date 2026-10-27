@@ -13,7 +13,6 @@
       "providerDesc": "The language model that interprets your sentences.",
       "noKeyTitle": "No API key configured",
       "noKeyAction": "Add the Gemini key under Connections",
-      "keyHint": "Key saved: {{hint}}",
       "modelLabel": "Model",
       "modelDesc": "The provider's model. You can change it anytime; the reachability test confirms it.",
       "confirmationLabel": "Confirmation",
@@ -39,7 +38,9 @@
           "rejected": "The provider rejected the call (invalid key or model).",
           "unreachable": "Provider unreachable. Try again shortly."
         }
-      }
+      },
+      "accountLabel": "Key",
+      "accountDesc": "Which of your keys the assistant uses."
     },
     "bar": {
       "title": "Assistant",
@@ -339,10 +340,8 @@
   },
   "connections": {
     "title": "Connected accounts",
-    "description": "Connect third-party accounts Pandora uses on your behalf, such as Google to sync your agenda.",
+    "description": "Connect the third-party accounts Pandora uses on your behalf. You can connect several per provider; each feature picks the one it uses.",
     "providersTitle": "Providers",
-    "providerDesc": "Not connected yet.",
-    "connect": "Connect {{provider}}",
     "reconnect": "Reconnect",
     "reconnectNeeded": "This connection was revoked. Reconnect it to continue.",
     "disconnect": "Disconnect",
@@ -355,8 +354,7 @@
       "placeholder": "Paste your API key",
       "save": "Save key",
       "saved": "API key saved.",
-      "saveError": "Could not save the API key.",
-      "connectedHint": "A key is saved. Paste a new one to replace it."
+      "saveError": "Could not save the API key."
     },
     "status": {
       "connected": "Connected",
@@ -379,6 +377,42 @@
         "disconnected": "Disconnected",
         "refresh-failed": "Refresh failed"
       }
+    },
+    "addAccount": "Add account",
+    "addAccountTitle": "Add a {{provider}} account",
+    "noAccounts": "No account yet.",
+    "labelField": "Name",
+    "labelPlaceholder": "e.g. Personal, Work",
+    "renamed": "Account renamed.",
+    "renameError": "Could not rename the account.",
+    "replaceKey": "Replace key",
+    "replacePassword": "Change password",
+    "secretReplaced": "Saved.",
+    "replaceError": "Could not save.",
+    "usedBy": "Used by",
+    "notUsed": "Not used by anything yet.",
+    "disconnectUsedTitle": "This account is in use",
+    "disconnectUsedDesc": "Disconnecting it pauses:",
+    "otherAccount": "You signed in with a different account, so it was added as a new one. The account you were reconnecting was left as it was.",
+    "password": {
+      "username": "Username (email)",
+      "password": "Password",
+      "saved": "Account saved.",
+      "saveError": "Could not save the account."
+    },
+    "usage": {
+      "assistant": {
+        "chat": "Assistant · chat"
+      }
+    },
+    "select": {
+      "placeholder": "Pick an account",
+      "none": "No account connected yet.",
+      "connect": "Connect an account",
+      "grantAccess": "Grant access: {{label}}",
+      "missingScopes": "needs access",
+      "unavailable": "unavailable",
+      "dangling": "The selected account was disconnected. Pick another one."
     }
   },
   "devices": {

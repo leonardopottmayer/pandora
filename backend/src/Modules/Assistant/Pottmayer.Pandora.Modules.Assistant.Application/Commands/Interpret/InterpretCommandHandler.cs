@@ -73,7 +73,10 @@ public sealed partial class InterpretCommandHandler(
         if (profile is null || !profile.IsEnabled)
             return Fail(AssistantErrors.NotEnabled);
 
-        var keyResult = await credentials.GetApiKeyAsync(userId, profile.ChatProvider, ct);
+        if (profile.ChatAccountId is not { } chatAccountId)
+            return Fail(AssistantErrors.NoApiKey(profile.ChatProvider));
+
+        var keyResult = await credentials.GetApiKeyAsync(userId, chatAccountId, ct);
         if (!keyResult.IsSuccess)
             return Fail(AssistantErrors.NoApiKey(profile.ChatProvider));
 

@@ -10,33 +10,43 @@ namespace Pottmayer.Pandora.Modules.Integrations.Domain.Aggregates;
 /// application layer already protected, and reasons about lifecycle by expiry and status, not by
 /// reading the secrets.
 /// </summary>
+/// <remarks>
+/// A user can hold any number of accounts per provider (three Google accounts, two Gemini keys). The
+/// account is identified by its id; consumers bind to that id, never to "the account of provider P".
+/// </remarks>
 public sealed class ExternalAccount : AggregateRoot<Guid>, IAuditable
 {
     private const int MaxErrorLength = 1000;
 
-    /// <summary>
-    /// The <see cref="ProviderAccountId"/> stored for an api-key account. An API key has no external
-    /// account identity, so a fixed marker keeps the (user, provider, account) uniqueness at one key
-    /// per provider per user.
-    /// </summary>
-    public const string ApiKeyAccountId = "api-key";
+    /// <summary>Longest <see cref="Label"/> accepted, matching the column.</summary>
+    public const int MaxLabelLength = 100;
 
     public Guid UserId { get; private set; }
     public string Provider { get; private set; } = null!;
     public AuthKind AuthKind { get; private set; } = null!;
+
+    /// <summary>
+    /// The account's identity at the provider: the Google <c>sub</c>, the mailbox username, or — for an
+    /// API key, which has none — the account's own id.
+    /// </summary>
     public string ProviderAccountId { get; private set; } = null!;
+
+    /// <summary>A non-secret technical hint: the email, the username, or the masked key.</summary>
     public string? DisplayName { get; private set; }
+
+    /// <summary>The user's name for the account ("Personal", "Work"). What every account picker shows.</summary>
+    public string Label { get; private set; } = null!;
 
     /// <summary>Granted scopes as stored, so a new feature can detect it needs re-consent.</summary>
     public string Scopes { get; private set; } = string.Empty;
 
-    /// <summary>Protected access token (OAuth) or protected API key (api-key). Never plaintext.</summary>
+    /// <summary>Protected access token (OAuth), API key (api-key) or password (password). Never plaintext.</summary>
     public string? AccessTokenEnc { get; private set; }
 
-    /// <summary>Null for api-key, which has no expiry.</summary>
+    /// <summary>Null for api-key and password, which have no expiry.</summary>
     public DateTimeOffset? AccessTokenExpiresAt { get; private set; }
 
-    /// <summary>Protected refresh token. Null when the provider issues none, and always null for api-key.</summary>
+    /// <summary>Protected refresh token. Null when the provider issues none, and always null for api-key and password.</summary>
     public string? RefreshTokenEnc { get; private set; }
 
     public AccountStatus Status { get; private set; } = null!;
@@ -72,6 +82,7 @@ public sealed class ExternalAccount : AggregateRoot<Guid>, IAuditable
             AuthKind = AuthKind.OAuth,
             ProviderAccountId = providerAccountId,
             DisplayName = displayName,
+            Label = DefaultLabel(displayName ?? provider),
             Scopes = scopes,
             AccessTokenEnc = accessTokenEnc,
             AccessTokenExpiresAt = accessTokenExpiresAt,
@@ -84,14 +95,47 @@ public sealed class ExternalAccount : AggregateRoot<Guid>, IAuditable
 
     /// <summary>
     /// Records a user-supplied API key (auth_kind = api-key): no expiry, no refresh, no authorization
-    /// flow. The key arrives already protected; <paramref name="displayName"/> is a non-secret hint
-    /// (e.g. the last four characters) so settings can show which key is stored.
+    /// flow. Every save is a new account — a key has no identity at the provider, so the account's own
+    /// id stands in for it. The key arrives already protected; <paramref name="displayName"/> is a
+    /// non-secret hint (e.g. the last four characters).
     /// </summary>
     public static ExternalAccount ConnectApiKey(
         Guid userId,
         string provider,
         string apiKeyEnc,
         string? displayName,
+        string label,
+        TimeProvider timeProvider)
+    {
+        var now = timeProvider.GetUtcNow();
+        var id = Guid.CreateVersion7();
+        return new ExternalAccount
+        {
+            Id = id,
+            UserId = userId,
+            Provider = provider,
+            AuthKind = AuthKind.ApiKey,
+            ProviderAccountId = id.ToString(),
+            DisplayName = displayName,
+            Label = DefaultLabel(label),
+            Scopes = string.Empty,
+            AccessTokenEnc = apiKeyEnc,
+            Status = AccountStatus.Connected,
+            ConnectedAt = now,
+            CreatedAt = now
+        };
+    }
+
+    /// <summary>
+    /// Records a username + password (auth_kind = password), e.g. an IMAP/SMTP mailbox. The username is
+    /// the account's identity at the provider; the password arrives already protected.
+    /// </summary>
+    public static ExternalAccount ConnectPassword(
+        Guid userId,
+        string provider,
+        string username,
+        string passwordEnc,
+        string? label,
         TimeProvider timeProvider)
     {
         var now = timeProvider.GetUtcNow();
@@ -100,13 +144,12 @@ public sealed class ExternalAccount : AggregateRoot<Guid>, IAuditable
             Id = Guid.CreateVersion7(),
             UserId = userId,
             Provider = provider,
-            AuthKind = AuthKind.ApiKey,
-            ProviderAccountId = ApiKeyAccountId,
-            DisplayName = displayName,
+            AuthKind = AuthKind.Password,
+            ProviderAccountId = username,
+            DisplayName = username,
+            Label = DefaultLabel(string.IsNullOrWhiteSpace(label) ? username : label),
             Scopes = string.Empty,
-            AccessTokenEnc = apiKeyEnc,
-            AccessTokenExpiresAt = null,
-            RefreshTokenEnc = null,
+            AccessTokenEnc = passwordEnc,
             Status = AccountStatus.Connected,
             ConnectedAt = now,
             CreatedAt = now
@@ -114,22 +157,30 @@ public sealed class ExternalAccount : AggregateRoot<Guid>, IAuditable
     }
 
     /// <summary>
-    /// Replaces the stored API key (the user pasted a new one). Clears any previous error and marks the
-    /// account connected again.
+    /// Replaces the stored API key or password (the user typed a new one). Clears any previous error and
+    /// marks the account connected again. <paramref name="displayName"/> null keeps the current hint.
     /// </summary>
-    public void ReplaceApiKey(string apiKeyEnc, string? displayName, TimeProvider timeProvider)
+    public void ReplaceSecret(string secretEnc, string? displayName, TimeProvider timeProvider)
     {
-        AccessTokenEnc = apiKeyEnc;
-        DisplayName = displayName;
+        if (AuthKind == AuthKind.OAuth)
+            throw new InvalidOperationException("An OAuth account is renewed by reconnecting, not by replacing a secret.");
+
+        AccessTokenEnc = secretEnc;
+        if (displayName is not null)
+            DisplayName = displayName;
         Status = AccountStatus.Connected;
         LastError = null;
         LastRefreshedAt = timeProvider.GetUtcNow();
     }
 
+    /// <summary>Renames the account. Blank names are refused by the caller; this only trims and caps.</summary>
+    public void Rename(string label) => Label = DefaultLabel(label);
+
     /// <summary>
     /// Re-runs the authorization for an existing account: a reconnect that may widen scopes. Clears a
     /// previous revoke, since the user just granted consent again. Keeps the old refresh token when the
-    /// provider returned none (Google omits it on a re-consent that reuses the existing grant).
+    /// provider returned none (Google omits it on a re-consent that reuses the existing grant). The
+    /// user's <see cref="Label"/> is kept.
     /// </summary>
     public void ReconnectOAuth(
         string? displayName,
@@ -182,6 +233,12 @@ public sealed class ExternalAccount : AggregateRoot<Guid>, IAuditable
     public void MarkExpired()
     {
         Status = AccountStatus.Expired;
+    }
+
+    private static string DefaultLabel(string value)
+    {
+        var trimmed = value.Trim();
+        return trimmed.Length <= MaxLabelLength ? trimmed : trimmed[..MaxLabelLength];
     }
 
     private static string Truncate(string value) =>

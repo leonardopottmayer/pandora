@@ -28,7 +28,9 @@ widens permissions. There is no separate `reconnect` endpoint; `connect` covers 
 
 ### Google specifics
 
-- `access_type=offline` and `prompt=consent` on first connect, to actually receive a refresh token.
+- `access_type=offline` and `prompt=select_account consent`: a refresh token on every consent, and
+  Google's account chooser, so a user with several Google accounts picks which one to connect.
+  A reconnect of a known account also sends `login_hint=<its email>`.
 - Scopes: calendar scopes for Agenda calendar sync; task scopes added when task sync is enabled.
 - A Google Cloud project with the OAuth consent screen configured is a **deployment prerequisite**
   (client id/secret supplied via `GoogleOAuthOptions`), documented under `docs/deployment/`.
@@ -56,16 +58,37 @@ configuration — an environment variable in Docker, a mounted secret in the hom
 database**. That separation is the entire point: a database dump alone must not yield working
 credentials.
 
-## 4. API keys (`auth_kind = api-key`)
+## 4. Typed-in credentials (`api-key`, `password`)
 
-For providers that authenticate with a static user-supplied key (OpenAI, Gemini), an account is stored
-with `auth_kind = api-key`, the key held encrypted in `access_token_enc`, and no refresh token.
-`GetApiKeyAsync(userId, provider)` decrypts and returns it; it fails with `NotAnApiKey` if the account
-isn't an API-key account.
+For providers that authenticate with something the user types in, there is no authorization flow —
+only a catalog entry (`CredentialProviderDescriptor`: name, display name, auth kind):
 
-> **Status.** The read path (`GetApiKeyAsync`) is implemented. The endpoints to *register / rotate /
-> remove* an API key, and the `openai`/`gemini` catalog entries, are phase I3 — see
-> [product-plan.md](product-plan.md).
+- **API keys** (`gemini` today; OpenAI is one registration more). `PUT /{provider}/api-key` always
+  creates a **new** account — a key has no identity at the provider, so the row's own id is its
+  `provider_account_id`, and two keys never collide. `GetApiKeyAsync(userId, accountId)` decrypts it.
+- **Username + password** (`titan`, `imap`). `PUT /{provider}/password` upserts on the username: the
+  same mailbox again replaces its password, another username is another account.
+  `GetPasswordAsync(userId, accountId)` returns `PasswordCredential(Username, Password)`.
+
+Both keep the secret encrypted in `access_token_enc`, with no expiry and no refresh token.
+`PUT /accounts/{id}/secret` rotates it; an OAuth account is renewed by reconnecting instead.
+
+## 6. Several accounts per provider
+
+A user can hold any number of accounts per provider, and **each use picks the account it runs on**:
+the consumer stores the account id (a mailbox, a calendar binding, the Assistant's
+`chat_account_id`) and asks the port by that id. There is no default account and no "first one"
+fallback. Connecting an account grants nothing by itself.
+
+- **Add another Google account:** `connect` with no target; the callback upserts by the returned
+  `sub` — a new `sub` creates a row, a known one reconnects it.
+- **Reconnect or widen one account:** `connect` with `accountId`; `int002.target_account_id` remembers
+  it. If the user signs in with a different identity, the target is **not** overwritten: the account
+  that came back is added/reconnected and the SPA lands with `?integration=other-account`.
+- **Used by:** each consumer module implements `IExternalAccountUsageSource`; `GET /accounts` returns
+  `usages` per account, and disconnecting an account in use warns (without blocking).
+- **A dangling binding** (the account was disconnected) surfaces at the consumer's next credential
+  call as `NotConnected`; consumers that must react at once subscribe to the events (§5).
 
 ## 5. Revocation & disconnection
 

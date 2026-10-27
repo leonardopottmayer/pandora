@@ -7,7 +7,7 @@ namespace Pottmayer.Pandora.Modules.Assistant.Application.Queries.GetProviders;
 
 /// <summary>
 /// The chat providers the assistant can use, cross-referenced with the API keys the user has stored in
-/// Integrations, so the settings screen can show which are ready. Cheap by design: it reads account
+/// Integrations (any number per provider), so the settings screen can show which are ready. Cheap by design: it reads account
 /// summaries (no secret, no external call). The live round-trip is a separate reachability test.
 /// </summary>
 public sealed class GetProvidersQueryHandler(IExternalAccountReader accountReader)
@@ -22,14 +22,14 @@ public sealed class GetProvidersQueryHandler(IExternalAccountReader accountReade
     protected override async Task<Result<IReadOnlyList<AssistantProviderDto>>> HandleAsync(
         GetProvidersQuery request, CancellationToken cancellationToken)
     {
-        var accounts = await accountReader.ListAsync(request.Input.UserId, cancellationToken);
-        var byProvider = accounts.ToDictionary(a => a.Provider, StringComparer.OrdinalIgnoreCase);
+        var accounts = await accountReader.ListAsync(request.Input.UserId, ct: cancellationToken);
 
         var result = new List<AssistantProviderDto>(Catalog.Length);
         foreach (var (provider, displayName) in Catalog)
         {
-            byProvider.TryGetValue(provider, out var account);
-            result.Add(new AssistantProviderDto(provider, displayName, account is not null, account?.DisplayName));
+            var keyCount = accounts.Count(a =>
+                a.AuthKind == "api-key" && string.Equals(a.Provider, provider, StringComparison.OrdinalIgnoreCase));
+            result.Add(new AssistantProviderDto(provider, displayName, keyCount));
         }
 
         return Ok((IReadOnlyList<AssistantProviderDto>)result);

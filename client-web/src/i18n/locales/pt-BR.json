@@ -13,7 +13,6 @@
       "providerDesc": "O modelo de linguagem que interpreta suas frases.",
       "noKeyTitle": "Nenhuma API key configurada",
       "noKeyAction": "Adicionar a key do Gemini em Conexões",
-      "keyHint": "Key salva: {{hint}}",
       "modelLabel": "Modelo",
       "modelDesc": "O modelo do provedor. Você pode trocar quando quiser; o teste de alcance confirma.",
       "confirmationLabel": "Confirmação",
@@ -39,7 +38,9 @@
           "rejected": "O provedor rejeitou a chamada (chave ou modelo inválido).",
           "unreachable": "Provedor inacessível. Tente de novo em instantes."
         }
-      }
+      },
+      "accountLabel": "Chave",
+      "accountDesc": "Qual das suas chaves o assistente usa."
     },
     "bar": {
       "title": "Assistente",
@@ -339,10 +340,8 @@
   },
   "connections": {
     "title": "Contas conectadas",
-    "description": "Conecte contas de terceiros que o Pandora usa em seu nome, como o Google para sincronizar a agenda.",
+    "description": "Conecte as contas de terceiros que o Pandora usa em seu nome. Dá para conectar várias por provedor; cada funcionalidade escolhe a que usa.",
     "providersTitle": "Provedores",
-    "providerDesc": "Ainda nao conectado.",
-    "connect": "Conectar {{provider}}",
     "reconnect": "Reconectar",
     "reconnectNeeded": "Esta conexao foi revogada. Reconecte para continuar.",
     "disconnect": "Desconectar",
@@ -355,8 +354,7 @@
       "placeholder": "Cole sua API key",
       "save": "Salvar key",
       "saved": "API key salva.",
-      "saveError": "Nao foi possivel salvar a API key.",
-      "connectedHint": "Uma key esta salva. Cole uma nova para substituir."
+      "saveError": "Nao foi possivel salvar a API key."
     },
     "status": {
       "connected": "Conectado",
@@ -379,6 +377,42 @@
         "disconnected": "Desconectado",
         "refresh-failed": "Falha na renovação"
       }
+    },
+    "addAccount": "Adicionar conta",
+    "addAccountTitle": "Adicionar conta {{provider}}",
+    "noAccounts": "Nenhuma conta ainda.",
+    "labelField": "Nome",
+    "labelPlaceholder": "ex.: Pessoal, Trabalho",
+    "renamed": "Conta renomeada.",
+    "renameError": "Não foi possível renomear a conta.",
+    "replaceKey": "Trocar chave",
+    "replacePassword": "Trocar senha",
+    "secretReplaced": "Salvo.",
+    "replaceError": "Não foi possível salvar.",
+    "usedBy": "Usada por",
+    "notUsed": "Ainda não é usada por nada.",
+    "disconnectUsedTitle": "Esta conta está em uso",
+    "disconnectUsedDesc": "Desconectar pausa:",
+    "otherAccount": "Você entrou com outra conta, então ela foi adicionada como uma conta nova. A conta que você estava reconectando ficou como estava.",
+    "password": {
+      "username": "Usuário (email)",
+      "password": "Senha",
+      "saved": "Conta salva.",
+      "saveError": "Não foi possível salvar a conta."
+    },
+    "usage": {
+      "assistant": {
+        "chat": "Assistant · chat"
+      }
+    },
+    "select": {
+      "placeholder": "Escolha uma conta",
+      "none": "Nenhuma conta conectada ainda.",
+      "connect": "Conectar uma conta",
+      "grantAccess": "Conceder acesso: {{label}}",
+      "missingScopes": "precisa de acesso",
+      "unavailable": "indisponível",
+      "dangling": "A conta escolhida foi desconectada. Escolha outra."
     }
   },
   "devices": {

@@ -10,8 +10,10 @@ public sealed class TestProviderCommandHandlerTests
 {
     private static readonly Guid User = Guid.NewGuid();
 
-    private static TestProviderCommand Command(string? model = null)
-        => new(new TestProviderInput(User, "gemini", model));
+    private static readonly Guid Account = Guid.NewGuid();
+
+    private static TestProviderCommand Command(string? model = null, bool withAccount = true)
+        => new(new TestProviderInput(User, "gemini", withAccount ? Account : null, model));
 
     private static TestProviderCommandHandler Build(
         FakeExternalCredentialProvider credentials, FakeAiChatCompletionClient client)
@@ -32,12 +34,29 @@ public sealed class TestProviderCommandHandlerTests
     }
 
     [Fact]
+    public async Task Reports_no_key_when_no_account_is_picked()
+    {
+        var client = FakeAiChatCompletionClient.Replies("ok");
+        var credentials = FakeExternalCredentialProvider.WithKey("k");
+        var handler = Build(credentials, client);
+
+        var result = await handler.Handle(Command(withAccount: false), CancellationToken.None);
+
+        Assert.Equal("no_key", result.Value!.ErrorKind);
+        Assert.Null(credentials.LastAccountId);
+        Assert.Equal(0, client.Calls);
+    }
+
+    [Fact]
     public async Task Reports_ok_with_the_reply_when_the_provider_answers()
     {
         var client = FakeAiChatCompletionClient.Replies("ok");
-        var handler = Build(FakeExternalCredentialProvider.WithKey("secret-key"), client);
+        var credentials = FakeExternalCredentialProvider.WithKey("secret-key");
+        var handler = Build(credentials, client);
 
         var result = await handler.Handle(Command(model: "gemini-3.6-flash"), CancellationToken.None);
+
+        Assert.Equal(Account, credentials.LastAccountId);
 
         Assert.True(result.Value!.Ok);
         Assert.Equal("ok", result.Value.Reply);

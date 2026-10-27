@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Pottmayer.Pandora.Modules.Integrations.Abstractions;
 using Pottmayer.Pandora.Modules.Integrations.Domain.Ports;
-using Pottmayer.Pandora.Modules.Integrations.Infrastructure.ApiKeys;
+using Pottmayer.Pandora.Modules.Integrations.Infrastructure.Credentials;
 using Pottmayer.Pandora.Modules.Integrations.Infrastructure.Google;
 using Pottmayer.Tars.Security.DataProtection.DI;
 
@@ -22,8 +22,10 @@ public static class InfrastructureDI
         builder.AddTarsDataProtectionOptions();
         builder.Services.AddTarsSecretProtector();
 
-        // api-key providers (Gemini, …): catalog entries only, no server-side secret, so always on.
+        // Typed-in credential providers (Gemini keys, Titan/IMAP passwords): catalog entries only, no
+        // server-side secret, so always on.
         builder.Services.AddIntegrationsApiKeyProviders();
+        builder.Services.AddIntegrationsPasswordProviders();
 
         // Google OAuth provider (Tars.Data-style guard): registered only when a client id is present,
         // so an unconfigured deployment simply has no Google provider rather than a half-wired one.

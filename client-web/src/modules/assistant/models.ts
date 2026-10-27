@@ -3,19 +3,19 @@ export type ConfirmationLevel = 'strict' | 'balanced' | 'trusting'
 /** A user's assistant configuration. Holds no secret — the API key lives in Integrations. */
 export interface AssistantProfile {
   provider: string
+  /** The Integrations account whose key the chat uses; null until one is picked. */
+  chatAccountId: string | null
   model: string
   isEnabled: boolean
   localeOverride: string | null
   confirmationLevel: ConfirmationLevel
 }
 
-/** A chat provider the assistant supports, and whether the user has a key stored for it. */
+/** A chat provider the assistant supports, and how many keys the user has stored for it. */
 export interface AssistantProvider {
   provider: string
   displayName: string
-  keyConfigured: boolean
-  /** A non-secret masked hint (e.g. the last four characters), or null when no key is configured. */
-  keyHint: string | null
+  keyCount: number
 }
 
 /** How one interpretation ended. Mirrors the backend's InvocationStatus. */

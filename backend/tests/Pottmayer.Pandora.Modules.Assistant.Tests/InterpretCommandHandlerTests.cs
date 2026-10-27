@@ -15,9 +15,10 @@ namespace Pottmayer.Pandora.Modules.Assistant.Tests;
 public sealed class InterpretCommandHandlerTests
 {
     private static readonly Guid User = Guid.NewGuid();
+    private static readonly Guid ChatAccount = Guid.NewGuid();
 
     private static AssistantProfile EnabledProfile(bool enabled = true, ConfirmationLevel? level = null) =>
-        AssistantProfile.Create(User, "gemini", "gemini-3.6-flash", enabled, null,
+        AssistantProfile.Create(User, "gemini", ChatAccount, "gemini-3.6-flash", enabled, null,
             level ?? ConfirmationLevel.Balanced, TimeProvider.System);
 
     private static (InterpretCommandHandler Handler, FakeCommandInvocationRepository Invocations) Build(
@@ -348,6 +349,34 @@ public sealed class InterpretCommandHandlerTests
     }
 
     [Fact]
+    public async Task Fails_without_asking_for_a_key_when_no_chat_account_is_selected()
+    {
+        var client = FakeAiChatCompletionClient.Replies("ok");
+        var credentials = FakeExternalCredentialProvider.WithKey("k");
+        var profile = AssistantProfile.Create(User, "gemini", null, "m", true, null, ConfirmationLevel.Balanced, TimeProvider.System);
+        var (handler, _) = Build(client, credentials, profile);
+
+        var result = await handler.Handle(Sentence(), CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Assistant.NoApiKey", result.Errors[0].Code);
+        Assert.Null(credentials.LastAccountId);
+        Assert.Equal(0, client.Calls);
+    }
+
+    [Fact]
+    public async Task Uses_the_key_of_the_selected_chat_account()
+    {
+        var client = FakeAiChatCompletionClient.Replies("   ");
+        var credentials = FakeExternalCredentialProvider.WithKey("k");
+        var (handler, _) = Build(client, credentials, EnabledProfile());
+
+        await handler.Handle(Sentence(), CancellationToken.None);
+
+        Assert.Equal(ChatAccount, credentials.LastAccountId);
+    }
+
+    [Fact]
     public async Task A_prose_reply_is_recorded_as_a_clarification_and_runs_nothing()
     {
         var client = FakeAiChatCompletionClient.Replies("Para quando é o lembrete?");
@@ -584,7 +613,7 @@ public sealed class InterpretCommandHandlerTests
     public async Task The_pipelines_own_replies_follow_the_locale_override()
     {
         var client = FakeAiChatCompletionClient.Replies("   ");
-        var profile = AssistantProfile.Create(User, "gemini", "m", true, "en-US", ConfirmationLevel.Balanced, TimeProvider.System);
+        var profile = AssistantProfile.Create(User, "gemini", ChatAccount, "m", true, "en-US", ConfirmationLevel.Balanced, TimeProvider.System);
         var (handler, _) = Build(client, FakeExternalCredentialProvider.WithKey("k"), profile);
 
         var result = await handler.Handle(Sentence(), CancellationToken.None);

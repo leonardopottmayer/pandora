@@ -6,6 +6,7 @@ import { PageHeading } from '@/components/settings/PageHeading'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { SettingRow } from '@/components/settings/SettingRow'
 import { toErrorMessage } from '@/lib/api/envelope'
+import { AccountSelect } from '@/modules/integrations/components/AccountSelect'
 import type { AssistantProfile, ConfirmationLevel, ReachabilityResult } from '../models'
 import {
   useAssistantProfile,
@@ -24,6 +25,7 @@ export function AssistantSettingsPage() {
   const testProvider = useTestProvider()
 
   const [provider, setProvider] = useState('gemini')
+  const [chatAccountId, setChatAccountId] = useState<string | null>(null)
   const [model, setModel] = useState('')
   const [isEnabled, setIsEnabled] = useState(false)
   const [localeOverride, setLocaleOverride] = useState<string | null>(null)
@@ -36,6 +38,7 @@ export function AssistantSettingsPage() {
   if (profile && profile !== seededFrom) {
     setSeededFrom(profile)
     setProvider(profile.provider)
+    setChatAccountId(profile.chatAccountId)
     setModel(profile.model)
     setIsEnabled(profile.isEnabled)
     setLocaleOverride(profile.localeOverride)
@@ -43,7 +46,7 @@ export function AssistantSettingsPage() {
   }
 
   const selectedProvider = (providers ?? []).find((p) => p.provider === provider)
-  const keyConfigured = selectedProvider?.keyConfigured ?? false
+  const keyConfigured = (selectedProvider?.keyCount ?? 0) > 0
 
   async function handleSave() {
     if (!model.trim()) {
@@ -53,6 +56,7 @@ export function AssistantSettingsPage() {
     try {
       await saveProfile.mutateAsync({
         provider,
+        chatAccountId,
         model: model.trim(),
         isEnabled,
         localeOverride,
@@ -67,7 +71,7 @@ export function AssistantSettingsPage() {
   async function handleTest() {
     setTestResult(null)
     try {
-      const result = await testProvider.mutateAsync({ provider, model: model.trim() || undefined })
+      const result = await testProvider.mutateAsync({ provider, accountId: chatAccountId, model: model.trim() || undefined })
       setTestResult(result)
     } catch (err) {
       message.error(toErrorMessage(err, t('assistant.settings.test.error')))
@@ -106,17 +110,30 @@ export function AssistantSettingsPage() {
       <SettingsSection title={t('assistant.settings.groupModel')}>
         <SettingRow
           label={t('assistant.settings.providerLabel')}
-          description={
-            keyConfigured && selectedProvider?.keyHint
-              ? t('assistant.settings.keyHint', { hint: selectedProvider.keyHint })
-              : t('assistant.settings.providerDesc')
-          }
+          description={t('assistant.settings.providerDesc')}
           control={
             <Select
               className="w-full min-w-56 sm:w-64"
               value={provider}
-              onChange={setProvider}
+              onChange={(next: string) => {
+                setProvider(next)
+                setChatAccountId(null)
+              }}
               options={providerOptions.length > 0 ? providerOptions : [{ label: 'Google Gemini', value: 'gemini' }]}
+            />
+          }
+        />
+        <SettingRow
+          label={t('assistant.settings.accountLabel')}
+          description={t('assistant.settings.accountDesc')}
+          control={
+            <AccountSelect
+              className="w-full min-w-56 sm:w-64"
+              providers={[provider]}
+              authKind="api-key"
+              value={chatAccountId}
+              onChange={setChatAccountId}
+              redirectAfter="/settings/assistant"
             />
           }
         />

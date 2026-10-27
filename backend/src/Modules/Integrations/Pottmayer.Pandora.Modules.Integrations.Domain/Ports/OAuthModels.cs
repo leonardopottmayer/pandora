@@ -3,12 +3,14 @@ namespace Pottmayer.Pandora.Modules.Integrations.Domain.Ports;
 /// <summary>
 /// Everything a provider needs to build the consent URL for one authorization request. The redirect
 /// URI is not here: it is a fixed, provider-registered value the implementation owns, and must match
-/// byte-for-byte between the authorization request and the code exchange.
+/// byte-for-byte between the authorization request and the code exchange. <see cref="LoginHint"/> is
+/// the account the user is expected to sign in with (a reconnect), or null to let them pick one.
 /// </summary>
 public sealed record OAuthAuthorizationRequest(
     string State,
     string CodeChallenge,
-    IReadOnlyList<string> Scopes);
+    IReadOnlyList<string> Scopes,
+    string? LoginHint = null);
 
 /// <summary>The tokens a provider returns from a code exchange or a refresh.</summary>
 /// <remarks>

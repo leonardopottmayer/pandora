@@ -28,7 +28,9 @@ tarefas) amplia permissões. Não há endpoint `reconnect` separado; `connect` c
 
 ### Especificidades do Google
 
-- `access_type=offline` e `prompt=consent` no primeiro connect, para realmente receber um refresh token.
+- `access_type=offline` e `prompt=select_account consent`: refresh token em todo consentimento, e o
+  seletor de contas do Google, para quem tem várias contas Google escolher qual conectar. A
+  reconexão de uma conta conhecida também manda `login_hint=<e-mail dela>`.
 - Escopos: escopos de calendário para o sync de calendário do Agenda; escopos de tarefas adicionados
   quando o sync de tarefas é ativado.
 - Um projeto no Google Cloud com a tela de consentimento OAuth configurada é um **pré-requisito de
@@ -56,16 +58,37 @@ por `ISecretProtector` (Tars `Security.DataProtection`, AES-GCM). A chave é lid
 variável de ambiente no Docker, um secret montado no homelab — **nunca do banco**. Essa separação é o
 ponto inteiro: um dump do banco sozinho não pode render credenciais funcionais.
 
-## 4. Chaves de API (`auth_kind = api-key`)
+## 4. Credenciais digitadas (`api-key`, `password`)
 
-Para provedores que autenticam com uma chave estática do usuário (OpenAI, Gemini), uma conta é
-guardada com `auth_kind = api-key`, a chave em `access_token_enc` encriptada e sem refresh token.
-`GetApiKeyAsync(userId, provider)` decripta e devolve; falha com `NotAnApiKey` se a conta não for de
-chave de API.
+Para provedores que autenticam com algo que o usuário digita, não há fluxo de autorização — só uma
+entrada de catálogo (`CredentialProviderDescriptor`: nome, nome de exibição, auth kind):
 
-> **Status.** O caminho de leitura (`GetApiKeyAsync`) está implementado. Os endpoints para *registrar /
-> rotacionar / remover* uma chave de API, e as entradas de catálogo `openai`/`gemini`, são a fase I3 —
-> ver [product-plan.md](product-plan.md).
+- **Chaves de API** (`gemini` hoje; OpenAI é mais um registro). `PUT /{provider}/api-key` sempre cria
+  uma conta **nova** — uma chave não tem identidade no provedor, então o id da própria linha é o
+  `provider_account_id`, e duas chaves nunca colidem. `GetApiKeyAsync(userId, accountId)` decripta.
+- **Usuário + senha** (`titan`, `imap`). `PUT /{provider}/password` faz upsert pelo usuário: a mesma
+  caixa de novo troca a senha, outro usuário é outra conta. `GetPasswordAsync(userId, accountId)`
+  devolve `PasswordCredential(Username, Password)`.
+
+As duas guardam o segredo encriptado em `access_token_enc`, sem expiração e sem refresh token.
+`PUT /accounts/{id}/secret` rotaciona; uma conta OAuth é renovada reconectando.
+
+## 6. Várias contas por provedor
+
+Um usuário pode ter quantas contas quiser por provedor, e **cada uso escolhe a conta em que roda**: o
+consumidor guarda o id da conta (uma caixa de e-mail, um vínculo de calendário, o `chat_account_id` do
+Assistant) e pede à porta por esse id. Não existe conta padrão nem fallback "a primeira". Conectar uma
+conta não concede nada por si só.
+
+- **Adicionar outra conta Google:** `connect` sem alvo; o callback faz upsert pelo `sub` devolvido —
+  `sub` novo cria linha, `sub` conhecido reconecta.
+- **Reconectar ou ampliar uma conta:** `connect` com `accountId`; o `int002.target_account_id` guarda o
+  alvo. Se o usuário entrar com outra identidade, o alvo **não** é sobrescrito: a conta que voltou é
+  adicionada/reconectada e a SPA recebe `?integration=other-account`.
+- **Usada por:** cada módulo consumidor implementa `IExternalAccountUsageSource`; `GET /accounts`
+  devolve `usages` por conta, e desconectar uma conta em uso avisa (sem bloquear).
+- **Vínculo órfão** (a conta foi desconectada) aparece na próxima chamada de credencial do consumidor
+  como `NotConnected`; quem precisa reagir na hora assina os eventos (§5).
 
 ## 5. Revogação e desconexão
 

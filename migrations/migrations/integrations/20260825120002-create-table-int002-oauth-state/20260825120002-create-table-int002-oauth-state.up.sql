@@ -9,6 +9,7 @@ CREATE TABLE integrations.int002_oauth_state (
 	state VARCHAR(255) NOT NULL,
 	code_verifier_enc TEXT NOT NULL,
 	redirect_after VARCHAR(500) NOT NULL,
+	target_account_id uuid NULL,
 	expires_at TIMESTAMPTZ NOT NULL,
 	consumed_at TIMESTAMPTZ NULL
 );

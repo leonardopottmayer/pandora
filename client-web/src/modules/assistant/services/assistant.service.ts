@@ -24,10 +24,15 @@ export async function listProviders(): Promise<AssistantProvider[]> {
   return data
 }
 
-/** Runs a reachability probe against a provider using the user's stored key. Always resolves; the
- *  payload says whether the probe itself succeeded. */
-export async function testProvider(provider: string, model?: string): Promise<ReachabilityResult> {
+/** Runs a reachability probe against a provider using the key of the picked account. Always resolves;
+ *  the payload says whether the probe itself succeeded. */
+export async function testProvider(
+  provider: string,
+  accountId: string | null,
+  model?: string,
+): Promise<ReachabilityResult> {
   const { data } = await apiClient.post<ReachabilityResult>(`${BASE}/providers/${provider}/test`, {
+    accountId,
     model: model ?? null,
   })
   return data

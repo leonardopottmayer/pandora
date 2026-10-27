@@ -26,9 +26,10 @@ public sealed class GetProfileQueryHandler(IUnitOfWorkFactory factory)
 
         var dto = profile is null
             ? new AssistantProfileDto(
-                AssistantDefaults.Provider, AssistantDefaults.Model, false, null, ConfirmationLevel.Balanced.Value)
+                AssistantDefaults.Provider, null, AssistantDefaults.Model, false, null, ConfirmationLevel.Balanced.Value)
             : new AssistantProfileDto(
-                profile.ChatProvider, profile.ChatModel, profile.IsEnabled, profile.LocaleOverride, profile.ConfirmationLevel.Value);
+                profile.ChatProvider, profile.ChatAccountId, profile.ChatModel, profile.IsEnabled, profile.LocaleOverride,
+                profile.ConfirmationLevel.Value);
 
         return Ok(dto);
     }

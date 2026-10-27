@@ -9,8 +9,13 @@ namespace Pottmayer.Pandora.Modules.Integrations.Persistence.Repositories;
 public sealed class ExternalAccountRepository(IDataContextAccessor accessor)
     : StandardRepository<ExternalAccount, Guid>(accessor), IExternalAccountRepository
 {
-    public Task<ExternalAccount?> FindAsync(Guid userId, string provider, CancellationToken ct = default) =>
-        Queryable().FirstOrDefaultAsync(a => a.UserId == userId && a.Provider == provider, ct);
+    public Task<ExternalAccount?> FindAsync(
+        Guid userId, string provider, string providerAccountId, CancellationToken ct = default) =>
+        Queryable().FirstOrDefaultAsync(
+            a => a.UserId == userId && a.Provider == provider && a.ProviderAccountId == providerAccountId, ct);
+
+    public Task<ExternalAccount?> GetOwnedAsync(Guid userId, Guid accountId, CancellationToken ct = default) =>
+        Queryable().FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId, ct);
 
     public async Task<IReadOnlyList<ExternalAccount>> GetByUserAsync(Guid userId, CancellationToken ct = default) =>
         await Queryable()

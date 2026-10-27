@@ -8,7 +8,10 @@ namespace Pottmayer.Pandora.Modules.Integrations.Abstractions.Ports;
 /// </summary>
 public interface IExternalAccountReader
 {
-    Task<IReadOnlyList<ExternalAccountSummary>> ListAsync(Guid userId, CancellationToken ct = default);
+    /// <summary>The user's accounts, optionally only those of <paramref name="provider"/>.</summary>
+    Task<IReadOnlyList<ExternalAccountSummary>> ListAsync(
+        Guid userId, string? provider = null, CancellationToken ct = default);
 
-    Task<ExternalAccountSummary?> GetAsync(Guid externalAccountId, CancellationToken ct = default);
+    /// <summary>One account, or null when it does not exist or belongs to someone else.</summary>
+    Task<ExternalAccountSummary?> GetAsync(Guid userId, Guid externalAccountId, CancellationToken ct = default);
 }

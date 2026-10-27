@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { assistantKeys } from './queryKeys'
+import { integrationsKeys } from '@/modules/integrations/hooks/queryKeys'
 import * as assistantService from '../services/assistant.service'
 import type { AssistantProfile } from '../models'
 
@@ -23,14 +24,16 @@ export function useSaveAssistantProfile() {
     mutationFn: (profile: AssistantProfile) => assistantService.saveProfile(profile),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: assistantKeys.all })
+      // The connections screen shows which key the assistant uses.
+      queryClient.invalidateQueries({ queryKey: integrationsKeys.accounts() })
     },
   })
 }
 
 export function useTestProvider() {
   return useMutation({
-    mutationFn: ({ provider, model }: { provider: string; model?: string }) =>
-      assistantService.testProvider(provider, model),
+    mutationFn: ({ provider, accountId, model }: { provider: string; accountId: string | null; model?: string }) =>
+      assistantService.testProvider(provider, accountId, model),
   })
 }
 

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { integrationsKeys } from './queryKeys'
 import * as integrationsService from '../services/integrations.service'
+import type { StartConnectionOptions } from '../services/integrations.service'
 
 export function useProviders() {
   return useQuery({
@@ -25,29 +26,51 @@ export function useIntegrationEvents(limit = 50) {
 
 export function useStartConnection() {
   return useMutation({
-    mutationFn: ({ provider, redirectAfter }: { provider: string; redirectAfter: string }) =>
-      integrationsService.startConnection(provider, redirectAfter),
+    mutationFn: ({
+      provider,
+      redirectAfter,
+      ...options
+    }: { provider: string; redirectAfter: string } & StartConnectionOptions) =>
+      integrationsService.startConnection(provider, redirectAfter, options),
+  })
+}
+
+/** Any write to accounts: the prefix covers providers, accounts and the event log in one shot. */
+function useAccountMutation<TArgs>(mutationFn: (args: TArgs) => Promise<unknown>) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: integrationsKeys.all })
+    },
   })
 }
 
 export function useSaveApiKey() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({ provider, apiKey }: { provider: string; apiKey: string }) =>
-      integrationsService.saveApiKey(provider, apiKey),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: integrationsKeys.all })
-    },
-  })
+  return useAccountMutation(({ provider, apiKey, label }: { provider: string; apiKey: string; label?: string }) =>
+    integrationsService.saveApiKey(provider, apiKey, label),
+  )
+}
+
+export function useSavePassword() {
+  return useAccountMutation(
+    ({ provider, username, password, label }: { provider: string; username: string; password: string; label?: string }) =>
+      integrationsService.savePassword(provider, username, password, label),
+  )
+}
+
+export function useReplaceSecret() {
+  return useAccountMutation(({ id, secret }: { id: string; secret: string }) =>
+    integrationsService.replaceSecret(id, secret),
+  )
+}
+
+export function useRenameAccount() {
+  return useAccountMutation(({ id, label }: { id: string; label: string }) =>
+    integrationsService.renameAccount(id, label),
+  )
 }
 
 export function useDisconnectAccount() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (id: string) => integrationsService.disconnectAccount(id),
-    onSuccess: () => {
-      // The prefix covers providers, accounts and the event log in one shot.
-      queryClient.invalidateQueries({ queryKey: integrationsKeys.all })
-    },
-  })
+  return useAccountMutation((id: string) => integrationsService.disconnectAccount(id))
 }

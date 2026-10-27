@@ -9,6 +9,7 @@ CREATE TABLE integrations.int001_external_account (
 	auth_kind VARCHAR(20) NOT NULL,
 	provider_account_id VARCHAR(255) NOT NULL,
 	display_name VARCHAR(255) NULL,
+	label VARCHAR(100) NOT NULL,
 	scopes TEXT NOT NULL DEFAULT '',
 	access_token_enc TEXT NULL,
 	access_token_expires_at TIMESTAMPTZ NULL,
@@ -28,13 +29,13 @@ ADD CONSTRAINT pk_int001 PRIMARY KEY (id);
 
 ALTER TABLE integrations.int001_external_account
 ADD CONSTRAINT chk_int001_auth_kind
-CHECK (auth_kind IN ('oauth', 'api-key'));
+CHECK (auth_kind IN ('oauth', 'api-key', 'password'));
 
 ALTER TABLE integrations.int001_external_account
 ADD CONSTRAINT chk_int001_status
 CHECK (status IN ('connected', 'expired', 'revoked', 'needs-consent'));
 
--- One account per (user, provider, account). Two Google accounts are already modelled by the
--- discriminating provider_account_id.
+-- One account per (user, provider, account): any number per provider, told apart by
+-- provider_account_id (the Google sub, the mailbox username, or the row's own id for an API key).
 CREATE UNIQUE INDEX uq_int001_user_provider_account
 ON integrations.int001_external_account (user_id, provider, provider_account_id);

@@ -12,12 +12,15 @@ public sealed class SaveProfileCommandHandlerTests
     private static readonly DateTimeOffset Now = new(2026, 9, 3, 12, 0, 0, TimeSpan.Zero);
     private static readonly Guid User = Guid.NewGuid();
 
+    private static readonly ExternalAccountSummaryFixture Keys = new();
+
     private static (SaveProfileCommandHandler Handler, FakeAssistantProfileRepository Repo) Build(
         params AssistantProfile[] seed)
     {
         var repo = new FakeAssistantProfileRepository(seed);
         var ctx = new FakeDataContext().Register<IAssistantProfileRepository>(repo);
-        var handler = new SaveProfileCommandHandler(new FakeUnitOfWorkFactory(ctx), new FixedTimeProvider(Now));
+        var reader = new FakeExternalAccountReader(Keys.Mine, Keys.MineOtherProvider, Keys.SomeoneElses);
+        var handler = new SaveProfileCommandHandler(new FakeUnitOfWorkFactory(ctx), reader, new FixedTimeProvider(Now));
         return (handler, repo);
     }
 
@@ -25,8 +28,19 @@ public sealed class SaveProfileCommandHandlerTests
         string model = "gemini-3.6-flash",
         string confirmationLevel = "balanced",
         string? localeOverride = null,
-        bool isEnabled = true)
-        => new(new SaveProfileInput(User, "gemini", model, isEnabled, localeOverride, confirmationLevel));
+        bool isEnabled = true,
+        Guid? chatAccountId = null)
+        => new(new SaveProfileInput(User, "gemini", chatAccountId, model, isEnabled, localeOverride, confirmationLevel));
+
+    private sealed class ExternalAccountSummaryFixture
+    {
+        public readonly Pottmayer.Pandora.Modules.Integrations.Abstractions.Models.ExternalAccountSummary Mine =
+            FakeExternalAccountReader.ApiKey(User);
+        public readonly Pottmayer.Pandora.Modules.Integrations.Abstractions.Models.ExternalAccountSummary MineOtherProvider =
+            FakeExternalAccountReader.ApiKey(User, "openai");
+        public readonly Pottmayer.Pandora.Modules.Integrations.Abstractions.Models.ExternalAccountSummary SomeoneElses =
+            FakeExternalAccountReader.ApiKey(Guid.NewGuid());
+    }
 
     [Fact]
     public async Task Creates_a_profile_when_none_exists()
@@ -50,7 +64,7 @@ public sealed class SaveProfileCommandHandlerTests
     public async Task Updates_the_existing_profile_instead_of_adding()
     {
         var existing = AssistantProfile.Create(
-            User, "gemini", "old-model", isEnabled: false, null, ConfirmationLevel.Strict, new FixedTimeProvider(Now));
+            User, "gemini", null, "old-model", isEnabled: false, null, ConfirmationLevel.Strict, new FixedTimeProvider(Now));
         var (handler, repo) = Build(existing);
 
         var result = await handler.Handle(Command(model: "gemini-3.6-pro", confirmationLevel: "trusting"), CancellationToken.None);
@@ -89,6 +103,39 @@ public sealed class SaveProfileCommandHandlerTests
         Assert.Equal("Assistant.ModelRequired", result.Errors[0].Code);
         Assert.Empty(repo.Added);
         Assert.Empty(repo.Updated);
+    }
+
+    [Fact]
+    public async Task Stores_the_chosen_chat_account()
+    {
+        var (handler, repo) = Build();
+
+        var result = await handler.Handle(Command(chatAccountId: Keys.Mine.Id), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(Keys.Mine.Id, Assert.Single(repo.Added).ChatAccountId);
+    }
+
+    [Fact]
+    public async Task Refuses_an_account_of_another_user()
+    {
+        var (handler, repo) = Build();
+
+        var result = await handler.Handle(Command(chatAccountId: Keys.SomeoneElses.Id), CancellationToken.None);
+
+        Assert.Equal("Assistant.ChatAccountNotFound", result.Errors[0].Code);
+        Assert.Empty(repo.Added);
+    }
+
+    [Fact]
+    public async Task Refuses_an_account_of_another_provider()
+    {
+        var (handler, repo) = Build();
+
+        var result = await handler.Handle(Command(chatAccountId: Keys.MineOtherProvider.Id), CancellationToken.None);
+
+        Assert.Equal("Assistant.ChatAccountMismatch", result.Errors[0].Code);
+        Assert.Empty(repo.Added);
     }
 
     [Fact]

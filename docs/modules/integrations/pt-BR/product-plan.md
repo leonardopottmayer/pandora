@@ -39,6 +39,19 @@ As duas metades entregues. Ver [implementation-status.md](implementation-status.
 - **Pronto quando:** o Assistant consegue chamar a OpenAI com uma chave que nunca viu em texto puro, e o
   mesmo cofre guarda o refresh token do Google.
 
+## Fase I5 — Várias contas ✅ *(construída; falta a checagem no Google real)*
+
+Quantas contas quiser por provedor, cada uma com um nome dado pelo usuário, e cada uso vinculado à
+conta em que roda (sem conta padrão). Construída de ponta a ponta — porta por id da conta, auth kind
+`password`, `label`, `IExternalAccountUsageSource`, os fluxos OAuth de adicionar/reconectar, a tela de
+conexões e o `AccountSelect` compartilhado — ver [oauth-and-credentials §6](oauth-and-credentials.md#6-várias-contas-por-provedor),
+[api-reference](api-reference.md) e [implementation-status](implementation-status.md).
+
+**Falta checar na mão** (precisa do projeto no Google Cloud): três contas Google e duas chaves Gemini
+conectadas e nomeadas; o Assistant roda na chave escolhida nas configurações dele; desconectar uma
+chave em uso mostra "Usada por: Assistant · chat" e desconecta mesmo assim; o Assistant então pede uma
+conta.
+
 ## Fase I4 — Mais provedores *(guiado por demanda, não agendado)*
 
 - Microsoft (Outlook Calendar / To Do), CalDAV (genérico; cobre Apple/Fastmail/Nextcloud).
@@ -49,6 +62,5 @@ As duas metades entregues. Ver [implementation-status.md](implementation-status.
 
 1. **Gate in-process vs. advisory lock.** A implementação serializa o refresh com um gate in-process
    (monólito de processo único). Reavaliar só se o host escalar horizontalmente.
-2. **Multi-conta por provedor.** A constraint única `(user_id, provider, provider_account_id)` já
-   modela duas contas Google. Se as bindings de um consumidor podem cruzá-las é decisão do consumidor,
-   não deste módulo.
+2. ~~**Multi-conta por provedor.**~~ Decidido na fase I5 acima: vínculo explícito pelo id da conta,
+   sem conta padrão.

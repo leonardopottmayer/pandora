@@ -1,12 +1,14 @@
 -- 20260903120001-create-table-ast001-assistant-profile.up.sql
 
--- One assistant configuration per user: which chat provider and model interpret their language,
--- whether the assistant is on, and how readily it executes without confirming. The API key itself is
--- not here — it lives in integrations.int001_external_account and is fetched per call by chat_provider.
+-- One assistant configuration per user: which chat provider, account and model interpret their
+-- language, whether the assistant is on, and how readily it executes without confirming. The API key
+-- itself is not here — chat_account_id points at the integrations.int001_external_account the user
+-- picked, and the key is fetched from there per call.
 CREATE TABLE assistant.ast001_assistant_profile (
 	id uuid NOT NULL DEFAULT uuid_generate_v7(),
 	user_id uuid NOT NULL,
 	chat_provider VARCHAR(40) NOT NULL,
+	chat_account_id uuid NULL,
 	chat_model VARCHAR(100) NOT NULL,
 	is_enabled BOOLEAN NOT NULL DEFAULT false,
 	locale_override VARCHAR(20) NULL,

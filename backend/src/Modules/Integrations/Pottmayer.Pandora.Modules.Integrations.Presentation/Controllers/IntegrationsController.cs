@@ -5,7 +5,10 @@ using Microsoft.Extensions.Options;
 using Pottmayer.Pandora.Modules.Integrations.Abstractions;
 using Pottmayer.Pandora.Modules.Integrations.Application.Commands.DisconnectAccount;
 using Pottmayer.Pandora.Modules.Integrations.Application.Commands.HandleCallback;
+using Pottmayer.Pandora.Modules.Integrations.Application.Commands.RenameAccount;
+using Pottmayer.Pandora.Modules.Integrations.Application.Commands.ReplaceSecret;
 using Pottmayer.Pandora.Modules.Integrations.Application.Commands.SaveApiKey;
+using Pottmayer.Pandora.Modules.Integrations.Application.Commands.SavePassword;
 using Pottmayer.Pandora.Modules.Integrations.Application.Commands.StartConnection;
 using Pottmayer.Pandora.Modules.Integrations.Application.Queries.GetAccounts;
 using Pottmayer.Pandora.Modules.Integrations.Application.Queries.GetEvents;
@@ -27,7 +30,7 @@ public sealed class IntegrationsController(
     IUserContextAccessor<UserData> userContextAccessor,
     IOptions<IntegrationsOptions> options) : ControllerBase
 {
-    /// <summary>Available providers and whether the user has connected each, for the settings catalog.</summary>
+    /// <summary>Available providers and how many accounts the user has at each, for the settings catalog.</summary>
     [Authorize]
     [HttpGet("providers")]
     public async Task<IActionResult> GetProvidersAsync(CancellationToken ct)
@@ -36,7 +39,7 @@ public sealed class IntegrationsController(
         return result.ToActionResult(errorMapper);
     }
 
-    /// <summary>The user's connected accounts, with status and last error.</summary>
+    /// <summary>The user's connected accounts, with status, last error and where each is used.</summary>
     [Authorize]
     [HttpGet("accounts")]
     public async Task<IActionResult> GetAccountsAsync(CancellationToken ct)
@@ -55,15 +58,16 @@ public sealed class IntegrationsController(
     }
 
     /// <summary>
-    /// Starts a connection: returns the provider consent URL for the SPA to send the browser to.
-    /// Re-running for an already-connected provider re-consents (e.g. to widen scopes).
+    /// Starts a connection: returns the provider consent URL for the SPA to send the browser to. Without
+    /// <c>accountId</c> it adds an account (the provider offers its account chooser); with it, it
+    /// reconnects that account or widens its scopes.
     /// </summary>
     [Authorize]
     [HttpPost("{provider}/connect")]
     public async Task<IActionResult> ConnectAsync(string provider, [FromBody] ConnectRequest body, CancellationToken ct)
     {
         var command = new StartConnectionCommand(
-            new StartConnectionInput(UserId, provider, body.RedirectAfter, body.Scopes));
+            new StartConnectionInput(UserId, provider, body.RedirectAfter, body.Scopes, body.AccountId));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
@@ -92,15 +96,47 @@ public sealed class IntegrationsController(
     }
 
     /// <summary>
-    /// Stores (or replaces) the user's API key for an <c>api-key</c> provider such as Gemini. The key is
-    /// protected before it is persisted; the response never echoes it back.
+    /// Adds an API key for an <c>api-key</c> provider such as Gemini as a new account and returns its
+    /// id. The key is protected before it is persisted; the response never echoes it back.
     /// </summary>
     [Authorize]
     [HttpPut("{provider}/api-key")]
     public async Task<IActionResult> SaveApiKeyAsync(string provider, [FromBody] SaveApiKeyRequest body, CancellationToken ct)
     {
-        var command = new SaveApiKeyCommand(new SaveApiKeyInput(UserId, provider, body.ApiKey));
+        var command = new SaveApiKeyCommand(new SaveApiKeyInput(UserId, provider, body.ApiKey, body.Label));
         var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>
+    /// Stores a username + password for a <c>password</c> provider (Titan, IMAP) and returns the
+    /// account id. The same username again replaces its password; the response never echoes it.
+    /// </summary>
+    [Authorize]
+    [HttpPut("{provider}/password")]
+    public async Task<IActionResult> SavePasswordAsync(string provider, [FromBody] SavePasswordRequest body, CancellationToken ct)
+    {
+        var command = new SavePasswordCommand(
+            new SavePasswordInput(UserId, provider, body.Username, body.Password, body.Label));
+        var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>Replaces the API key or password of one account.</summary>
+    [Authorize]
+    [HttpPut("accounts/{id:guid}/secret")]
+    public async Task<IActionResult> ReplaceSecretAsync(Guid id, [FromBody] ReplaceSecretRequest body, CancellationToken ct)
+    {
+        var result = await sender.Send(new ReplaceSecretCommand(new ReplaceSecretInput(UserId, id, body.Secret)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>Renames one account.</summary>
+    [Authorize]
+    [HttpPatch("accounts/{id:guid}")]
+    public async Task<IActionResult> RenameAsync(Guid id, [FromBody] RenameAccountRequest body, CancellationToken ct)
+    {
+        var result = await sender.Send(new RenameAccountCommand(new RenameAccountInput(UserId, id, body.Label)), ct);
         return result.ToActionResult(errorMapper);
     }
 
@@ -128,9 +164,18 @@ public sealed class IntegrationsController(
         return $"{root}?integration={outcome}";
     }
 
-    /// <summary>Body for starting a connection.</summary>
-    public sealed record ConnectRequest(string RedirectAfter, IReadOnlyList<string>? Scopes);
+    /// <summary>Body for starting a connection. <c>AccountId</c> targets an existing account.</summary>
+    public sealed record ConnectRequest(string RedirectAfter, IReadOnlyList<string>? Scopes, Guid? AccountId = null);
 
-    /// <summary>Body for saving an API key.</summary>
-    public sealed record SaveApiKeyRequest(string ApiKey);
+    /// <summary>Body for adding an API key.</summary>
+    public sealed record SaveApiKeyRequest(string ApiKey, string? Label = null);
+
+    /// <summary>Body for saving a username + password.</summary>
+    public sealed record SavePasswordRequest(string Username, string Password, string? Label = null);
+
+    /// <summary>Body for replacing an account's key or password.</summary>
+    public sealed record ReplaceSecretRequest(string Secret);
+
+    /// <summary>Body for renaming an account.</summary>
+    public sealed record RenameAccountRequest(string Label);
 }

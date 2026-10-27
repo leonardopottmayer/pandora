@@ -14,13 +14,15 @@ public sealed class AssistantProfileTests
     public void Create_sets_every_field_and_stamps_created_at()
     {
         var userId = Guid.NewGuid();
+        var accountId = Guid.NewGuid();
 
         var profile = AssistantProfile.Create(
-            userId, "gemini", "gemini-3.6-flash", isEnabled: true, "pt-BR", ConfirmationLevel.Trusting, Clock);
+            userId, "gemini", accountId, "gemini-3.6-flash", isEnabled: true, "pt-BR", ConfirmationLevel.Trusting, Clock);
 
         Assert.NotEqual(Guid.Empty, profile.Id);
         Assert.Equal(userId, profile.UserId);
         Assert.Equal("gemini", profile.ChatProvider);
+        Assert.Equal(accountId, profile.ChatAccountId);
         Assert.Equal("gemini-3.6-flash", profile.ChatModel);
         Assert.True(profile.IsEnabled);
         Assert.Equal("pt-BR", profile.LocaleOverride);
@@ -33,15 +35,17 @@ public sealed class AssistantProfileTests
     {
         var userId = Guid.NewGuid();
         var profile = AssistantProfile.Create(
-            userId, "gemini", "gemini-3.6-flash", isEnabled: false, null, ConfirmationLevel.Balanced, Clock);
+            userId, "gemini", null, "gemini-3.6-flash", isEnabled: false, null, ConfirmationLevel.Balanced, Clock);
         var originalId = profile.Id;
+        var accountId = Guid.NewGuid();
 
-        profile.Update("gemini", "gemini-3.6-pro", isEnabled: true, "en", ConfirmationLevel.Strict);
+        profile.Update("gemini", accountId, "gemini-3.6-pro", isEnabled: true, "en", ConfirmationLevel.Strict);
 
         Assert.Equal(originalId, profile.Id);
         Assert.Equal(userId, profile.UserId);
         Assert.Equal(Now, profile.CreatedAt);
         Assert.Equal("gemini-3.6-pro", profile.ChatModel);
+        Assert.Equal(accountId, profile.ChatAccountId);
         Assert.True(profile.IsEnabled);
         Assert.Equal("en", profile.LocaleOverride);
         Assert.Same(ConfirmationLevel.Strict, profile.ConfirmationLevel);

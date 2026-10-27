@@ -38,6 +38,18 @@ Both halves shipped. See [implementation-status.md](implementation-status.md).
 - **Done when:** Assistant can call OpenAI with a key it never saw in plaintext, and the same store
   holds the Google refresh token.
 
+## Phase I5 — Multiple accounts ✅ *(built; real-Google check pending)*
+
+Any number of accounts per provider, each named by the user, and each use binds to the account it runs
+on (no default account). Built end to end — port by account id, `password` auth kind, `label`,
+`IExternalAccountUsageSource`, the OAuth add/reconnect flows, the connections screen and the shared
+`AccountSelect` — see [oauth-and-credentials §6](oauth-and-credentials.md#6-several-accounts-per-provider),
+[api-reference](api-reference.md) and [implementation-status](implementation-status.md).
+
+**Still to check by hand** (needs the Google Cloud project): three Google accounts and two Gemini keys
+connected and named; the Assistant runs on the key picked in its settings; disconnecting a key in use
+shows "Used by: Assistant · chat" and still disconnects; the Assistant then asks for an account.
+
 ## Phase I4 — More providers *(driven by demand, not scheduled)*
 
 - Microsoft (Outlook Calendar / To Do), CalDAV (generic; covers Apple/Fastmail/Nextcloud).
@@ -48,6 +60,5 @@ Both halves shipped. See [implementation-status.md](implementation-status.md).
 
 1. **In-process refresh gate vs. advisory lock.** The implementation serializes refresh with an
    in-process gate (single-process monolith). Revisit only if the host is scaled out.
-2. **Multi-account per provider.** The unique constraint `(user_id, provider, provider_account_id)`
-   already models two Google accounts. Whether a consumer's bindings can span them is the consumer's
-   call, not this module's.
+2. ~~**Multi-account per provider.**~~ Decided in phase I5 above: explicit binding by
+   account id, no default account.

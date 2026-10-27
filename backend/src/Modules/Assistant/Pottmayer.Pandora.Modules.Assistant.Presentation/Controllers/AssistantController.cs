@@ -42,7 +42,7 @@ public sealed class AssistantController(
     public async Task<IActionResult> SaveProfileAsync([FromBody] SaveProfileRequest body, CancellationToken ct)
     {
         var command = new SaveProfileCommand(new SaveProfileInput(
-            UserId, body.Provider, body.Model, body.IsEnabled, body.LocaleOverride, body.ConfirmationLevel));
+            UserId, body.Provider, body.ChatAccountId, body.Model, body.IsEnabled, body.LocaleOverride, body.ConfirmationLevel));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
@@ -65,7 +65,7 @@ public sealed class AssistantController(
     [HttpPost("providers/{provider}/test")]
     public async Task<IActionResult> TestProviderAsync(string provider, [FromBody] TestProviderRequest? body, CancellationToken ct)
     {
-        var command = new TestProviderCommand(new TestProviderInput(UserId, provider, body?.Model));
+        var command = new TestProviderCommand(new TestProviderInput(UserId, provider, body?.AccountId, body?.Model));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
@@ -139,11 +139,15 @@ public sealed class AssistantController(
     /// <summary>Body for saving the assistant profile.</summary>
     public sealed record SaveProfileRequest(
         string Provider,
+        Guid? ChatAccountId,
         string Model,
         bool IsEnabled,
         string? LocaleOverride,
         string ConfirmationLevel);
 
-    /// <summary>Body for the reachability test. Model is optional; the default is used when omitted.</summary>
-    public sealed record TestProviderRequest(string? Model);
+    /// <summary>
+    /// Body for the reachability test: the account whose key to probe, and an optional model (the default
+    /// is used when omitted).
+    /// </summary>
+    public sealed record TestProviderRequest(Guid? AccountId, string? Model);
 }

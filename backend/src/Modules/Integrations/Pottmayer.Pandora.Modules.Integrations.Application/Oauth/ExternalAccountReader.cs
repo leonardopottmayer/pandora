@@ -10,7 +10,8 @@ namespace Pottmayer.Pandora.Modules.Integrations.Application.Oauth;
 /// <summary>Read-only account summaries for other modules. No tokens cross this boundary.</summary>
 public sealed class ExternalAccountReader(IUnitOfWorkFactory factory) : IExternalAccountReader
 {
-    public async Task<IReadOnlyList<ExternalAccountSummary>> ListAsync(Guid userId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<ExternalAccountSummary>> ListAsync(
+        Guid userId, string? provider = null, CancellationToken ct = default)
     {
         var accounts = await factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
         {
@@ -18,21 +19,23 @@ public sealed class ExternalAccountReader(IUnitOfWorkFactory factory) : IExterna
             return await repo.GetByUserAsync(userId, token);
         }, cancellationToken: ct);
 
-        return [.. accounts.Select(ToSummary)];
+        return [.. accounts
+            .Where(a => provider is null || string.Equals(a.Provider, provider, StringComparison.OrdinalIgnoreCase))
+            .Select(ToSummary)];
     }
 
-    public async Task<ExternalAccountSummary?> GetAsync(Guid externalAccountId, CancellationToken ct = default)
+    public async Task<ExternalAccountSummary?> GetAsync(Guid userId, Guid externalAccountId, CancellationToken ct = default)
     {
         var account = await factory.ExecuteAsync(IntegrationsModule.DatabaseKey, async (context, token) =>
         {
             var repo = context.AcquireRepository<IExternalAccountRepository>();
-            return await repo.GetByIdAsync(externalAccountId, token);
+            return await repo.GetOwnedAsync(userId, externalAccountId, token);
         }, cancellationToken: ct);
 
         return account is null ? null : ToSummary(account);
     }
 
     private static ExternalAccountSummary ToSummary(ExternalAccount a) =>
-        new(a.Id, a.UserId, a.Provider, a.AuthKind.Value, a.ProviderAccountId, a.DisplayName,
+        new(a.Id, a.UserId, a.Provider, a.AuthKind.Value, a.ProviderAccountId, a.DisplayName, a.Label,
             ScopeString.Split(a.Scopes), a.Status.Value);
 }

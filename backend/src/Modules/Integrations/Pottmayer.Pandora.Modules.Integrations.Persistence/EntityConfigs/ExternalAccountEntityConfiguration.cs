@@ -37,6 +37,11 @@ internal sealed class ExternalAccountEntityConfiguration : IEntityTypeConfigurat
                .HasColumnName("display_name")
                .HasMaxLength(255);
 
+        builder.Property(a => a.Label)
+               .HasColumnName("label")
+               .HasMaxLength(ExternalAccount.MaxLabelLength)
+               .IsRequired();
+
         builder.Property(a => a.Scopes)
                .HasColumnName("scopes")
                .HasColumnType("text")

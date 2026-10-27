@@ -28,12 +28,13 @@ encrypted at rest with a key that lives outside the database.
 |---|---|---|
 | `id` | uuid PK | |
 | `user_id` | uuid NOT NULL | owner |
-| `provider` | varchar(40) NOT NULL | `google` today; `microsoft`, `openai`, `gemini`, … later |
-| `auth_kind` | varchar(20) NOT NULL | `oauth \| api-key` |
-| `provider_account_id` | varchar(255) NOT NULL | provider's stable subject id; for `api-key`, a user-chosen label |
-| `display_name` | varchar(255) NULL | the account's email/handle, shown in settings |
+| `provider` | varchar(40) NOT NULL | `google`, `gemini`, `titan`, `imap` today; `microsoft`, `openai`, … later |
+| `auth_kind` | varchar(20) NOT NULL | `oauth \| api-key \| password` |
+| `provider_account_id` | varchar(255) NOT NULL | the account's identity at the provider: Google `sub`, the mailbox username, or — for `api-key`, which has none — the row's own id |
+| `display_name` | varchar(255) NULL | technical hint shown in settings: the email, the username, or the masked key (`••••1234`) |
+| `label` | varchar(100) NOT NULL | the user's name for the account ("Personal", "Work"); defaults to the email/username/"Gemini ••••1234"; what every account picker shows |
 | `scopes` | text NOT NULL DEFAULT '' | granted scopes as stored; used to detect a needed re-consent |
-| `access_token_enc` | text NULL | encrypted; short-lived (also holds the API key for `api-key`) |
+| `access_token_enc` | text NULL | encrypted; short-lived for `oauth`; holds the API key for `api-key` and the password for `password` |
 | `access_token_expires_at` | timestamptz NULL | |
 | `refresh_token_enc` | text NULL | encrypted; null when the provider issues none |
 | `status` | varchar(20) NOT NULL | `connected \| expired \| revoked \| needs-consent` |
@@ -42,11 +43,11 @@ encrypted at rest with a key that lives outside the database.
 | `last_error` | text NULL | last refresh/revocation error, surfaced in settings |
 | `created_by/created_at/updated_by/updated_at` | | audit columns |
 
-Constraints: `pk_int001`, `chk_int001_auth_kind (oauth|api-key)`,
+Constraints: `pk_int001`, `chk_int001_auth_kind (oauth|api-key|password)`,
 `chk_int001_status (connected|expired|revoked|needs-consent)`,
-`uq_int001_user_provider_account (user_id, provider, provider_account_id)` — one account per
-(user, provider, account), so two Google accounts are already modelled by the discriminating
-`provider_account_id`.
+`uq_int001_user_provider_account (user_id, provider, provider_account_id)` — any number of accounts
+per provider (three Google accounts, two Gemini keys), told apart by `provider_account_id`.
+Consumers bind to `id`, never to "the account of provider P".
 
 ## int002_oauth_state
 
@@ -61,6 +62,7 @@ issued: single use, short lived. The PKCE verifier is encrypted for the duration
 | `state` | varchar(255) NOT NULL | the CSRF token — **unique**, single-use |
 | `code_verifier_enc` | text NOT NULL | PKCE verifier, encrypted |
 | `redirect_after` | varchar(500) NOT NULL | where to bounce the browser back to in the SPA |
+| `target_account_id` | uuid NULL | the account being reconnected/widened; null when adding one. The callback never overwrites it with a different identity |
 | `expires_at` | timestamptz NOT NULL | ~10-minute TTL |
 | `consumed_at` | timestamptz NULL | set on first use; a second callback with the same state fails |
 

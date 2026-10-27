@@ -38,9 +38,14 @@ internal sealed class GoogleOAuthProvider(
             ["code_challenge_method"] = "S256",
             // Required to actually receive a refresh token on the first consent.
             ["access_type"] = "offline",
-            ["prompt"] = "consent",
+            // select_account: a user with several Google accounts picks which one to connect, instead
+            // of Google silently reusing the signed-in one.
+            ["prompt"] = "select_account consent",
             ["include_granted_scopes"] = "true"
         };
+
+        if (!string.IsNullOrWhiteSpace(request.LoginHint))
+            query["login_hint"] = request.LoginHint;
 
         var queryString = string.Join(
             '&',

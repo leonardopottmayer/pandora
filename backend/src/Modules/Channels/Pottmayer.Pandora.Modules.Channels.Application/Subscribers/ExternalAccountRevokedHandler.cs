@@ -36,7 +36,7 @@ public sealed class ExternalAccountRevokedHandler(IUnitOfWorkFactory factory, II
             Channels: null, // Channels resolves from the user's preference (else every usable channel).
             Payload: new Dictionary<string, string>
             {
-                ["provider"] = DisplayName(@event.Provider),
+                ["provider"] = AccountName(@event.Provider, @event.Label),
             },
             // The source event id is the correlation id, so the notification de-dups against a re-delivery.
             CorrelationId: @event.EventId);
@@ -47,9 +47,15 @@ public sealed class ExternalAccountRevokedHandler(IUnitOfWorkFactory factory, II
             cancellationToken: cancellationToken);
     }
 
-    /// <summary>A provider id (<c>google</c>) shown to a person reads better title-cased (<c>Google</c>).</summary>
-    private static string DisplayName(string provider) =>
-        string.IsNullOrEmpty(provider)
+    /// <summary>
+    /// A provider id (<c>google</c>) shown to a person reads better title-cased (<c>Google</c>); with the
+    /// user's name for the account it says which one (<c>Google · Personal</c>) — a user can hold several.
+    /// </summary>
+    private static string AccountName(string provider, string? label)
+    {
+        var name = string.IsNullOrEmpty(provider)
             ? provider
             : CultureInfo.InvariantCulture.TextInfo.ToTitleCase(provider);
+        return string.IsNullOrWhiteSpace(label) ? name : $"{name} · {label}";
+    }
 }

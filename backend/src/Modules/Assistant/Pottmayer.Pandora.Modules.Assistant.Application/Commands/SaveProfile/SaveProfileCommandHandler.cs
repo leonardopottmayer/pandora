@@ -3,6 +3,7 @@ using Pottmayer.Pandora.Modules.Assistant.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Assistant.Domain.Errors;
 using Pottmayer.Pandora.Modules.Assistant.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Assistant.Domain.ValueObjects;
+using Pottmayer.Pandora.Modules.Integrations.Abstractions.Ports;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
@@ -11,9 +12,12 @@ namespace Pottmayer.Pandora.Modules.Assistant.Application.Commands.SaveProfile;
 
 /// <summary>
 /// Upserts the user's assistant profile on (user): a first save creates it, a later save replaces the
-/// mutable configuration.
+/// mutable configuration. A chosen chat account must be one of the user's API keys at the provider.
 /// </summary>
-public sealed class SaveProfileCommandHandler(IUnitOfWorkFactory factory, TimeProvider timeProvider)
+public sealed class SaveProfileCommandHandler(
+    IUnitOfWorkFactory factory,
+    IExternalAccountReader accounts,
+    TimeProvider timeProvider)
     : CommandHandlerBase<SaveProfileCommand, bool>
 {
     protected override async Task<Result<bool>> HandleAsync(SaveProfileCommand request, CancellationToken ct)
@@ -37,6 +41,15 @@ public sealed class SaveProfileCommandHandler(IUnitOfWorkFactory factory, TimePr
         var provider = string.IsNullOrWhiteSpace(input.Provider) ? AssistantDefaults.Provider : input.Provider.Trim();
         var localeOverride = string.IsNullOrWhiteSpace(input.LocaleOverride) ? null : input.LocaleOverride.Trim();
 
+        if (input.ChatAccountId is { } chatAccountId)
+        {
+            var account = await accounts.GetAsync(input.UserId, chatAccountId, ct);
+            if (account is null)
+                return Fail(AssistantErrors.ChatAccountNotFound);
+            if (account.AuthKind != "api-key" || !string.Equals(account.Provider, provider, StringComparison.OrdinalIgnoreCase))
+                return Fail(AssistantErrors.ChatAccountMismatch(provider));
+        }
+
         await factory.ExecuteAsync(AssistantModule.DatabaseKey, async (context, token) =>
         {
             var repo = context.AcquireRepository<IAssistantProfileRepository>();
@@ -45,12 +58,12 @@ public sealed class SaveProfileCommandHandler(IUnitOfWorkFactory factory, TimePr
             if (existing is null)
             {
                 var profile = AssistantProfile.Create(
-                    input.UserId, provider, model, input.IsEnabled, localeOverride, level, timeProvider);
+                    input.UserId, provider, input.ChatAccountId, model, input.IsEnabled, localeOverride, level, timeProvider);
                 await repo.AddAsync(profile, token);
             }
             else
             {
-                existing.Update(provider, model, input.IsEnabled, localeOverride, level);
+                existing.Update(provider, input.ChatAccountId, model, input.IsEnabled, localeOverride, level);
                 await repo.UpdateAsync(existing, token);
             }
 

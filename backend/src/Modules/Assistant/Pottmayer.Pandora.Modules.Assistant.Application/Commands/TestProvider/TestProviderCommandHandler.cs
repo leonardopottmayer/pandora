@@ -25,11 +25,13 @@ public sealed class TestProviderCommandHandler(
         var input = request.Input;
         var provider = string.IsNullOrWhiteSpace(input.Provider) ? AssistantDefaults.Provider : input.Provider.Trim();
 
-        var keyResult = await credentials.GetApiKeyAsync(input.UserId, provider, ct);
-        if (!keyResult.IsSuccess)
+        var keyResult = input.AccountId is { } accountId
+            ? await credentials.GetApiKeyAsync(input.UserId, accountId, ct)
+            : null;
+        if (keyResult is not { IsSuccess: true })
             return Ok(new ReachabilityResultDto(
                 Ok: false, LatencyMs: 0, Reply: null,
-                Error: $"No API key configured for '{provider}'. Add it under Integrations.",
+                Error: $"No '{provider}' key selected. Pick one, or add it under Integrations.",
                 ErrorKind: "no_key"));
 
         var model = string.IsNullOrWhiteSpace(input.Model) ? AssistantDefaults.Model : input.Model!.Trim();

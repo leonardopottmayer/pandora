@@ -35,13 +35,13 @@ injected for all time reads, and a **command/query** application layer (one fold
 
 | Aggregate root | Responsibility / key invariants |
 |---|---|
-| **ExternalAccount** | One connected account. Holds encrypted credentials; transitions between `connected`/`expired`/`revoked`/`needs-consent`; `MarkRevoked` is the terminal degradation on a rejected refresh. Unique per `(user_id, provider, provider_account_id)`. |
+| **ExternalAccount** | One connected account. Holds encrypted credentials; transitions between `connected`/`expired`/`revoked`/`needs-consent`; `MarkRevoked` is the terminal degradation on a rejected refresh. Unique per `(user_id, provider, provider_account_id)`; any number per provider. Carries the user's `Label`. |
 | **OAuthState** | One in-flight authorization request. Carries the CSRF `state` and the encrypted PKCE verifier; single-use, TTL-bounded; consumed exactly once by the callback. |
 
 ### Value objects (`Domain/ValueObjects`)
 
 - **`AccountStatus`** — `connected` \| `expired` \| `revoked` \| `needs-consent`.
-- **`AuthKind`** — `oauth` (refreshable tokens, Google) \| `api-key` (static user key, OpenAI/Gemini).
+- **`AuthKind`** — `oauth` (refreshable tokens, Google) \| `api-key` (static user key, OpenAI/Gemini) \| `password` (username + password, Titan/IMAP).
 
 ### Ports (`Domain/Ports`)
 
@@ -56,16 +56,26 @@ The only surface other modules reference:
 ```csharp
 public interface IExternalCredentialProvider
 {
+    // Every call is by account id and checks it belongs to userId (NotConnected otherwise).
     // auth_kind = oauth — refreshes invisibly
-    Task<Result<ExternalAccessToken>> GetAccessTokenAsync(Guid userId, string provider, CancellationToken ct = default);
+    Task<Result<ExternalAccessToken>> GetAccessTokenAsync(Guid userId, Guid accountId, CancellationToken ct = default);
     // auth_kind = api-key — decrypts and returns; no expiry, no refresh
-    Task<Result<string>> GetApiKeyAsync(Guid userId, string provider, CancellationToken ct = default);
+    Task<Result<string>> GetApiKeyAsync(Guid userId, Guid accountId, CancellationToken ct = default);
+    // auth_kind = password — username + password (IMAP/SMTP)
+    Task<Result<PasswordCredential>> GetPasswordAsync(Guid userId, Guid accountId, CancellationToken ct = default);
 }
 
 public interface IExternalAccountReader
 {
-    Task<IReadOnlyList<ExternalAccountSummary>> ListAsync(Guid userId, CancellationToken ct = default);
-    Task<ExternalAccountSummary?> GetAsync(Guid externalAccountId, CancellationToken ct = default);
+    Task<IReadOnlyList<ExternalAccountSummary>> ListAsync(Guid userId, string? provider = null, CancellationToken ct = default);
+    Task<ExternalAccountSummary?> GetAsync(Guid userId, Guid externalAccountId, CancellationToken ct = default);
+}
+
+// The other direction: implemented by each consumer module, collected through DI, so the
+// connections screen can show "used by" without Integrations referencing any consumer.
+public interface IExternalAccountUsageSource
+{
+    Task<IReadOnlyList<ExternalAccountUsage>> ListAsync(Guid userId, CancellationToken ct = default);
 }
 ```
 
