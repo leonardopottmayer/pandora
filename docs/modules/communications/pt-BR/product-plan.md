@@ -1,7 +1,8 @@
 # Módulo Communications — Plano de Produto
 
-> **Status:** M1 implementada (2026-10-29); falta a verificação real. M2–M4 são planos. Este plano
-> cobre **email**, a primeira capacidade; fases M1–M4 abaixo. Lista de trabalho da M1: [execution-plan.md](execution-plan.md).
+> **Status:** M1 pronta (2026-10-30): o que existe está no [Status de implementação](implementation-status.md) e
+> nos documentos de tópicos, então este plano guarda só o que falta, M2–M4. Cobre **email**, a primeira capacidade.
+> Como a M1 foi construída: [execution-plan.md](execution-plan.md).
 > 🇺🇸 [English version](../en/product-plan.md)
 >
 > Relacionados: [Integrations](../../integrations/pt-BR/README.md) · [Channels](../../channels/pt-BR/README.md) ·
@@ -44,14 +45,14 @@
 
 | Item | Valor |
 |---|---|
-| Projetos do backend | `Pottmayer.Pandora.Modules.Communications.{Abstractions,Contracts,Domain,Application,Infrastructure,Persistence,Presentation}` (já existem, vazios) |
+| Projetos do backend | `Pottmayer.Pandora.Modules.Communications.{Abstractions,Contracts,Domain,Application,Infrastructure,Persistence,Presentation}` |
 | Schema PostgreSQL | `communications` |
 | Prefixo de tabela | `comXXX_`, PK `uuid_generate_v7()` |
 | Seção de options | `Pandora:Communications` |
 | Base da API | `/api/v{version}/communications` — JWT, escopo de usuário de sempre |
 | Frontend | `client-web/src/modules/communications`, rotas `mail`, `mail/accounts`, `mail/rules` |
 | Migrations | `migrations/migrations/communications/` |
-| Bibliotecas | `Google.Apis.Gmail.v1` (Gmail), MailKit + MimeKit (IMAP/SMTP e montagem do MIME para os dois) |
+| Bibliotecas | Gmail REST pelo `HttpClient`, MailKit + MimeKit (IMAP/SMTP e montagem do MIME para os dois) |
 
 ---
 
@@ -118,65 +119,33 @@
 
 ---
 
-## 5. Credenciais (mudanças no Integrations)
+## 5. Credenciais
 
-- Novo `AuthKind` **`password`**: usuário + senha encriptada. `provider_account_id` é o usuário e a
-  senha vai para a coluna de segredo encriptado que já existe (`access_token_enc`), então não há
-  coluna nova — só `'password'` acrescentado ao `chk_int001_auth_kind` no `CREATE TABLE` original
-  (pré-1.0, editado no lugar).
-- Novas descrições de provedor `titan` e `imap` (auth kind `password`), um comando `SavePassword` e
-  `PUT /api/v1/integrations/{provider}/password`. O `IExternalCredentialProvider` ganha um caminho de
-  leitura para o par usuário/senha.
-- O Google ganha os escopos `gmail.modify`, `gmail.send` e `gmail.settings.basic` na conexão que já
-  existe. Contas conectadas antes precisam reconectar para concedê-los.
-- O Communications assina o `ExternalAccountRevoked` e marca a caixa como `needs-reconnect`.
-- **Google Cloud:** os escopos do Gmail são *restritos*. Para uso pessoal o app funciona sem
-  verificação (o usuário vê a tela de "app não verificado"), mas no status **Testing** o refresh token
-  expira a cada 7 dias — o projeto precisa ir para **In production** (ainda sem verificação).
+Construído na M1: veja o [Integrations](../../integrations/pt-BR/README.md) e a [Arquitetura](architecture.md). Falta:
+
+- A M3 precisa de `gmail.send` e a M4 de `gmail.settings.basic`. A M1 só pede `gmail.modify`, então as contas já
+  conectadas terão de consentir de novo; a tela de consentimento também precisa declarar os escopos novos.
+- **Google Cloud:** em **Testing** o refresh token expira a cada 7 dias. Ainda falta confirmar se passar o projeto
+  para **In production** sem verificação basta para uso pessoal (o
+  [guia de configuração](../../../deployment/google-and-gemini-setup.md) assume que a verificação é exigida).
 
 ---
 
-## 6. Modelo de dados (rascunho)
+## 6. Modelo de dados
+
+O que existe está no [Modelo de dados](data-model.md). Falta:
 
 | Tabela | Guarda |
 |---|---|
-| `com001_mailbox` | usuário, `provider` (`gmail`/`titan`/`imap`), `external_account_id`, endereço, nome de exibição, `imap_host`/`imap_port`, `smtp_host`/`smtp_port`, `status` (`active`/`syncing`/`needs-reconnect`/`error`), `sync_cursor` (`historyId` do Gmail), `backfill_cursor`, `last_synced_at`, `last_error`, `consecutive_failures` |
-| `com002_mail_label` | caixa, `provider_label_id`, nome, `kind` (`system`/`user`), `role` (`inbox`/`sent`/`drafts`/`trash`/`spam`/`archive`/null), `is_exclusive` (o cursor por pasta do IMAP fica dentro do `sync_cursor` opaco da caixa) |
-| `com003_mail_message` | caixa, `provider_message_id`, `thread_key`, `rfc822_message_id`, remetente, para/cc (jsonb), assunto, prévia, `sent_at`, `is_unread`, `is_starred`, `has_attachments`, `size` |
-| `com004_mail_message_label` | mensagem ↔ etiqueta |
-| `com005_mail_content` | corpo em cache (texto + HTML, sanitizado na renderização) + lista de anexos (id, nome, tipo, tamanho, content-id), `fetched_at`, `last_accessed_at` |
 | `com006_mail_rule` | caixa, nome, `position`, `conditions` e `actions` (jsonb), `execution` (`provider-filter`/`pandora`), `provider_filter_id`, `is_enabled`, `status` (`ok`/`broken`) |
-| `tars-outbox-message` | o outbox do módulo, como nos outros módulos que publicam |
-
-Observações:
-
-- A caixa unificada é uma consulta (todas as caixas do usuário), não uma entidade.
-- O cache de conteúdo é despejado por `last_accessed_at` (teto de tamanho em `Pandora:Communications`).
 
 ---
 
 ## 7. Sincronização
 
-- **`MailboxSyncBackgroundService`** (Infrastructure/Jobs, mesmo padrão dos jobs do Finances)
-  sincroniza toda caixa ativa a cada 2 minutos (configurável). "Sincronizar agora" dispara uma caixa
-  na hora.
-- **Carga inicial.** Depois de conectar, todos os cabeçalhos são buscados **dos mais novos para os
-  mais antigos**, em lotes, retomável pelo `backfill_cursor` (`pageToken` no Gmail; menor UID buscado
-  no IMAP). As telas funcionam com o que já chegou. Ordem de grandeza: 100 mil mensagens ≈ 100 MB e
-  uns 35 minutos no Gmail (cota da API).
-- **Gmail, incremental.** `history.list(startHistoryId)` → mensagens adicionadas/removidas,
-  marcadores adicionados/removidos. O histórico expira em cerca de uma semana: no 404, uma
-  ressincronização de estado (listar ids, calcular a diferença).
-- **IMAP, incremental, por pasta assinada.** Se o `UIDVALIDITY` mudou → ressincroniza a pasta.
-  Senão: novas = `UID > último`; flags alteradas = `CHANGEDSINCE modseq`; removidas = `VANISHED` do
-  QRESYNC quando houver, senão a diferença do conjunto de UIDs.
-- **Etiquetas, nos dois sentidos.** Toda sincronização relê a lista de etiquetas (`labels.list` /
-  `LIST`) e aplica a diferença. Marcadores do Gmail têm id estável, então renomear é renomear. Pasta
-  IMAP não tem id: renomear no webmail aparece como "pasta sumiu + pasta nova", e as mensagens daquela
-  pasta são ressincronizadas.
-- **Evento.** `MailMessageReceived` (caixa, id da mensagem, remetente, assunto, etiquetas) sai pelo
-  outbox na mesma transação que salva a mensagem — **só para mensagens que chegam depois da carga
-  inicial**, nunca uma por mensagem antiga.
+Construída na M1: veja a [Arquitetura](architecture.md#3-o-ciclo-de-sincronização). Da M2 em diante, a comparação de
+etiquetas tem uma lacuna conhecida: uma pasta IMAP não tem id, então renomear no webmail aparece como "pasta sumiu +
+pasta nova" e as mensagens dela são lidas de novo.
 
 ---
 
@@ -278,63 +247,45 @@ Pandora, e filtros criados no webmail não são vistos. Se o Titan oferecer **Ma
 
 ## 12. API (`/api/v1/communications`)
 
+O que existe está na [Referência da API](api-reference.md). Falta:
+
 | Recurso | Endpoints |
 |---|---|
-| Caixas | `GET mailboxes`, `POST mailboxes`, `PATCH mailboxes/{id}`, `DELETE mailboxes/{id}`, `POST mailboxes/{id}/sync` |
-| Etiquetas | `GET/POST mailboxes/{id}/labels`, `PATCH/DELETE labels/{id}` |
-| Mensagens | `GET messages` (caixa, etiqueta, não lida, texto, conversa; paginado por data), `GET messages/{id}` (com o conteúdo), `GET messages/{id}/attachments/{attId}`, `POST messages/actions` (lote: ids + adicionar/remover etiquetas, mover, arquivar, lixeira, lida, estrela) |
+| Etiquetas | `POST mailboxes/{id}/labels`, `PATCH/DELETE labels/{id}` |
+| Mensagens | `POST messages/actions` (em lote: ids + adicionar/remover etiquetas, mover, arquivar, lixeira, lida, estrela) |
 | Envio | `POST messages/send` (multipart; `replyTo` / `forwardOf` opcionais) |
 | Regras | `GET/POST mailboxes/{id}/rules`, `PUT/DELETE rules/{id}`, `PUT mailboxes/{id}/rules/order` |
-
-E, no Integrations: `PUT /api/v1/integrations/{provider}/password`.
 
 ---
 
 ## 13. Erros
 
+As falhas de sincronização estão na [Arquitetura](architecture.md#falhas). Falta, para as ações do usuário:
+
 | Falha | Tratamento |
 |---|---|
-| Autenticação (`ExternalAccountRevoked`, `invalid_grant` do Google, login IMAP recusado) | caixa → `needs-reconnect`, sincronização pausada. No IMAP, o Communications publica `NotifyUserRequested` (template `communications.mailbox-auth-failed`); o caso OAuth o Integrations já avisa. |
-| Passageira (rede, 5xx, 429) | tenta de novo no próximo ciclo; depois de 5 falhas seguidas a caixa vai para `error` com o `last_error` na tela |
-| Histórico do Gmail expirado (404) / `UIDVALIDITY` do IMAP trocado | ressincronização de estado (§7) |
-| Ação do usuário ou envio falha no provedor | o erro volta para a tela, nada muda localmente; o formulário de escrita mantém o conteúdo |
+| Ação do usuário ou envio falha no provedor | o erro volta para a tela, nada muda localmente; o formulário mantém o conteúdo |
 | Sincronização e ação simultâneas numa caixa | serializadas pela trava por caixa (C8) |
 
 ---
 
 ## 14. Testes e verificações
 
-- **Unitários (domínio):** tradução de mover (etiqueta exclusiva vs. várias), avaliação de regras,
-  conversão regra ⇄ filtro do Gmail nos dois sentidos, a heurística "um sumiu + um novo = edição",
-  `thread_key` do IMAP.
-- **Integração** (`PandoraWebApplicationFactory` + Testcontainers): o adaptador IMAP/SMTP contra o
-  **GreenMail** (um servidor IMAP/SMTP de teste num container só). Provavelmente não tem CONDSTORE,
-  então cobre o caminho de reserva. Os endpoints rodam com um `IMailboxProvider` falso.
-- **Manual:** o adaptador Gmail contra a conta real do usuário (não existe Gmail falso confiável).
-- **A verificar no Titan real** (antes de fechar a M1):
-  1. Suporte a CONDSTORE / QRESYNC.
-  2. Se o envio por SMTP já salva em Enviados (para evitar duplicata).
-  3. Se oferece ManageSieve (§10.4).
-
-  Resultados até agora (2026-10-29, sem login): antes da autenticação o `imap.titan.email:993`
-  anuncia só `IMAP4rev1 AUTH=PLAIN SASL-IR ID LITERAL- APPENDLIMIT=52428800` — CONDSTORE/QRESYNC
-  costumam aparecer só depois do login, então o (1) continua aberto. As portas 4190 e 2000 do
-  `imap.titan.email` não respondem: **(3) o ManageSieve não é oferecido**, então as regras do Titan
-  ficam no motor do Pandora. O (2) continua aberto.
+- **Unitários (domínio):** tradução do mover (etiqueta exclusiva ou várias), casamento de regras, conversão regra ⇄
+  filtro do Gmail nos dois sentidos, a heurística "um sumiu + um novo = edição".
+- **Integração:** o adaptador IMAP/SMTP contra o GreenMail; endpoints contra um `IMailboxProvider` falso.
+- **Manual:** o adaptador do Gmail contra uma conta real.
+- **Titan, ainda a verificar:** se o envio SMTP já salva em Enviados (para evitar duplicatas), no início da M3. O
+  CONDSTORE é oferecido e o ManageSieve não: veja a
+  [verificação real](implementation-status.md#verificação-real-2026-10-30).
 
 ---
 
 ## 15. Fases
 
-### M1 — Conectar e ler
+### M1 — Conectar e ler ✅
 
-- Integrations: auth kind `password`, descrições `titan`/`imap`, escopos do Gmail.
-- Caixas, etiquetas (só leitura), carga inicial e sincronização incremental nos dois adaptadores,
-  cache de conteúdo, anexos, `MailMessageReceived` pelo outbox.
-- Telas: `mail` (lista + leitura) e `mail/accounts`.
-- **Pronto quando:** uma caixa Gmail e uma Titan estão conectadas, os cabeçalhos chegam dos mais
-  novos para os mais antigos, uma mensagem lida no webmail do provedor aparece como lida no Pandora em
-  um ciclo, e abrir uma newsletter não dispara nenhuma requisição remota até "Mostrar imagens".
+Pronta em 2026-10-30: veja o [Status de implementação](implementation-status.md).
 
 ### M2 — Organizar
 
@@ -374,5 +325,3 @@ E, no Integrations: `PUT /api/v1/integrations/{provider}/password`.
    "removida aqui + nova lá"; se vale costurar as duas pelo `rfc822_message_id` é decidido na M2. Até
    lá, a M1 não pode disparar `MailMessageReceived` para uma mensagem cujo `rfc822_message_id` a caixa
    já tem, para um mover no webmail não ser confundido com chegada nova.
-2. **Teto do cache de conteúdo.** Valor padrão decidido na M1 com os números reais da primeira carga
-   inicial.

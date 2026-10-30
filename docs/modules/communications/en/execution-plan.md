@@ -1,6 +1,7 @@
 # Communications — Execution Plan, M1 (Connect and read)
 
-> **Status:** Execution plan for phase **M1** of the [product-plan](product-plan.md). Nothing built yet.
+> **Status:** Phase **M1** is done (2026-10-30). This is the history of how it was built; what exists today is in
+> the topic documents, starting at [Implementation Status](implementation-status.md).
 > Step 1 was done by Integrations [phase I5](../../integrations/en/product-plan.md) (multiple
 > accounts): the `password` kind, `GetPasswordAsync`, lookups by account id, the `GetProviders` fix
 > and the `titan`/`imap` descriptors. The mailbox screens pick the account with I5's
@@ -41,7 +42,7 @@ sending (M3), no rules (M4).
 | Several mailboxes per provider | password accounts are looked up **by account id**, never by (user, provider) | two Titan mailboxes on two domains is the realistic case |
 | Several Google accounts | each Gmail mailbox stores its Google account id and asks for its token by that id | Integrations I5 lifted the one-account limit |
 | Body and attachments | the adapter fetches the **raw RFC 822** message (Gmail `format=raw`, IMAP `BODY.PEEK[]`) and MimeKit parses it — one parser for both providers | an attachment download re-fetches the raw message (`ponytail:` ceiling: huge messages; upgrade to Gmail `attachments.get` / IMAP `BODY[part]`) |
-| Content cache | age-based: rows not accessed in `ContentCacheRetentionDays` (default 30) are deleted by the sync job | closes open question 2 of the product-plan with the simplest rule |
+| Content cache | age-based: rows not accessed in `ContentCacheRetentionDays` (default 30) are deleted by the sync job | the simplest rule; the real numbers confirmed it ([Data Model](data-model.md#content-cache)) |
 | IMAP message key | `provider_message_id` built by the adapter from the folder path, `UIDVALIDITY` and UID | UIDs are per folder; a `UIDVALIDITY` change resyncs the folder and drops its rows |
 | IMAP snippet | empty until the message is opened, then filled from the parsed text | IMAP has no snippet; a partial body fetch per message is not worth it in M1 |
 | IMAP folders | subscribed folders (`LIST SUBSCRIBED`); all selectable folders when none is subscribed | §7 |
@@ -262,7 +263,7 @@ F1a/F1b/F1c: **M1a** = steps 1–2, **M1b** = steps 3–7, **M1c** = steps 8–9
 > With one batch per 2-minute cycle a 50,000-message mailbox took over 3 hours. Test:
 > `One_cycle_reads_backfill_batches_until_the_backfill_ends` (batches of 2, five messages, one cycle).
 
-### Step 7 — API
+### Step 7 — API ✅
 
 `/api/v1/communications`, `[Authorize]`, every query scoped to the caller's mailboxes:
 
@@ -308,7 +309,7 @@ F1a/F1b/F1c: **M1a** = steps 1–2, **M1b** = steps 3–7, **M1c** = steps 8–9
 >   cursor; opening fetches the raw message once and serves the PDF as `attachment`; another user's
 >   mailbox and message → 404 on every route; sync now stops/reconnects and delete removes the rows.
 
-### Step 8 — Web (`client-web/src/modules/communications`)
+### Step 8 — Web (`client-web/src/modules/communications`) ✅
 
 - `models.ts`, `services/communications.service.ts`, `hooks/` (TanStack Query, same shape as
   integrations/files).
@@ -351,7 +352,13 @@ F1a/F1b/F1c: **M1a** = steps 1–2, **M1b** = steps 3–7, **M1c** = steps 8–9
 >   scripts and handlers removed, `cid:` resolved, links in a new tab, CSP) and `MailPage.test.tsx`
 >   (the opened message is in the sandbox, with no tracker URL until "Show images").
 
-### Step 9 — Real-world check and docs
+### Step 9 — Real-world check and docs ✅
+
+> **Done (2026-10-30).** Results are in [Implementation Status](implementation-status.md#real-world-check-2026-10-30). Beyond
+> the list below, the check found a `Date` header with an offset could not be saved (Npgsql only writes UTC);
+> `MailMessage` now converts. A message read in Gmail took more than one cycle to show. The SMTP question moved to
+> the start of M3, since Pandora does not send yet.
+
 
 - Manual, against the real accounts — the product-plan's M1 **done when**:
   1. Gmail and Titan connected; headers arrive newest first; the progress bar moves.

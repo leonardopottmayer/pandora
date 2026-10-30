@@ -4,7 +4,7 @@
 > any provider, in one place. Email comes first.
 > **Language:** English is the primary documentation. 🇧🇷 [Versão em português](pt-BR/README.md).
 >
-> **Status: M1 (connect and read) implemented; the real-world check is pending.** Gmail, Titan and
+> **Status: M1 (connect and read) done, checked against real accounts on 2026-10-30.** Gmail, Titan and
 > any IMAP server connect, sync headers newest first and open messages in a sandboxed reader.
 > Organizing (M2), sending (M3) and rules (M4) are planned.
 
@@ -18,16 +18,19 @@ planned Radar module (tech news curation) will build on it later.
 
 ## How this documentation is organized
 
-M1 is built, but the module does not have the usual topic set yet: what was built, and where it
-differs from the plan, is recorded step by step in the execution plan's **Built** notes.
+Start with the **Overview** for the boundary and vocabulary, then read the topic you need.
 
-| Document | Language | What it covers |
+| # | Document | What it covers |
 |---|---|---|
-| [Product Plan](en/product-plan.md) / [pt-BR](pt-BR/product-plan.md) | en + pt-BR | Email in full: providers, credentials, data model, sync, organizing, sending, rules (with two-way Gmail filters), screens, API, errors, testing, phases M1–M4 |
-| [Execution plan](en/execution-plan.md) / [pt-BR](pt-BR/execution-plan.md) | en + pt-BR | M1 (connect and read), step by step, with what each step built |
+| 1 | [Overview](en/overview.md) | What the module does and does not do, principles, glossary, scope |
+| 2 | [Architecture](en/architecture.md) | Projects, the provider port and adapters, the sync cycle, failures, the mail reader's security, decisions |
+| 3 | [Data Model](en/data-model.md) | `com001`–`com005`, and the content cache in real numbers |
+| 4 | [API Reference](en/api-reference.md) | Endpoints, payloads, errors, the event |
+| 5 | [Implementation Status](en/implementation-status.md) | What is built, the real-world check, deviations from the plan, open points |
+| 6 | [Product Plan](en/product-plan.md) | What is left: organize (M2), send (M3), rules (M4) |
+| 7 | [Execution Plan](en/execution-plan.md) | How M1 was built, step by step (history) |
 
-The usual `en/` + `pt-BR/` topic set (`overview.md`, `architecture.md`, `data-model.md`,
-`api-reference.md`, `implementation-status.md`) comes once M1 passes its real-world check.
+🇧🇷 Every document also exists in Portuguese, under [`pt-BR/`](pt-BR/README.md).
 
 ---
 
@@ -37,8 +40,8 @@ The usual `en/` + `pt-BR/` topic set (`overview.md`, `architecture.md`, `data-mo
   through its REST API (no Google SDK), message bodies parsed with MimeKit.
 - **Schema:** PostgreSQL schema `communications`, tables `com001_mailbox`…`com005_mail_content`
   (`com006_mail_rule` is M4's), migrations in `migrations/migrations/communications/`.
-- **Sync:** a background job runs one cycle per mailbox every 2 minutes (labels, changes, one backfill
-  batch); "Sync now" runs one on demand. `MailMessageReceived` goes out through the outbox.
+- **Sync:** a background job runs one cycle per mailbox every 2 minutes (labels, changes, backfill batches
+  within a 5-minute budget); "Sync now" runs one on demand. `MailMessageReceived` goes out through the outbox.
 - **API base:** `/api/v1/communications` — mailboxes, labels, messages, attachments.
 - **Credentials:** in Integrations. Gmail is an OAuth account; Titan/IMAP is a `password` account.
   Each mailbox stores the account id it runs on.

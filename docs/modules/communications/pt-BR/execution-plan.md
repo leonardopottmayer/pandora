@@ -1,6 +1,7 @@
 # Communications — Plano de Execução, M1 (Conectar e ler)
 
-> **Status:** Plano de execução da fase **M1** do [product-plan](product-plan.md). Nada construído ainda.
+> **Status:** A fase **M1** está pronta (2026-10-30). Este é o histórico de como foi construída; o que existe hoje está
+> nos documentos de tópicos, a começar pelo [Status de implementação](implementation-status.md).
 > O passo 1 foi feito pela [fase I5](../../integrations/pt-BR/product-plan.md) do Integrations
 > (várias contas): o tipo `password`, o `GetPasswordAsync`, as buscas por id da conta, a correção do
 > `GetProviders` e as descrições `titan`/`imap`. As telas de caixa escolhem a conta com o
@@ -41,7 +42,7 @@ sem enviar (M3), sem regras (M4).
 | Várias caixas por provedor | contas de senha são buscadas **pelo id da conta**, nunca por (usuário, provedor) | duas caixas Titan em dois domínios é o caso realista |
 | Várias contas Google | cada caixa Gmail guarda o id da sua conta Google e pede o token por esse id | a I5 do Integrations tirou o limite de uma conta |
 | Corpo e anexos | o adaptador busca a mensagem **RFC 822 crua** (Gmail `format=raw`, IMAP `BODY.PEEK[]`) e o MimeKit faz o parse — um parser só para os dois provedores | baixar um anexo busca a mensagem crua de novo (teto `ponytail:`: mensagens enormes; evolui para `attachments.get` do Gmail / `BODY[part]` do IMAP) |
-| Cache de conteúdo | por idade: linhas não acessadas há `ContentCacheRetentionDays` (padrão 30) são apagadas pelo job de sincronização | fecha a questão em aberto 2 do product-plan com a regra mais simples |
+| Cache de conteúdo | por idade: linhas não acessadas há `ContentCacheRetentionDays` (padrão 30) são apagadas pelo job de sincronização | a regra mais simples; os números reais a confirmaram ([Modelo de dados](data-model.md#cache-de-conteúdo)) |
 | Chave de mensagem IMAP | `provider_message_id` montado pelo adaptador a partir do caminho da pasta, do `UIDVALIDITY` e do UID | UIDs são por pasta; uma troca de `UIDVALIDITY` ressincroniza a pasta e descarta as linhas dela |
 | Prévia no IMAP | vazia até a mensagem ser aberta, depois preenchida a partir do texto já parseado | IMAP não tem prévia; um fetch parcial de corpo por mensagem não compensa na M1 |
 | Pastas IMAP | pastas assinadas (`LIST SUBSCRIBED`); todas as selecionáveis se nenhuma estiver assinada | §7 |
@@ -276,7 +277,7 @@ Commit só quando pedido.
 > por ciclo de 2 minutos, uma caixa de 50 mil mensagens levava mais de 3 horas. Teste:
 > `One_cycle_reads_backfill_batches_until_the_backfill_ends` (lotes de 2, cinco mensagens, um ciclo).
 
-### Passo 7 — API
+### Passo 7 — API ✅
 
 `/api/v1/communications`, `[Authorize]`, toda consulta restrita às caixas de quem chama:
 
@@ -325,7 +326,7 @@ Commit só quando pedido.
 >   `attachment`; caixa e mensagem de outro usuário → 404 em todas as rotas; sincronizar agora
 >   para/reconecta e excluir apaga as linhas.
 
-### Passo 8 — Web (`client-web/src/modules/communications`)
+### Passo 8 — Web (`client-web/src/modules/communications`) ✅
 
 - `models.ts`, `services/communications.service.ts`, `hooks/` (TanStack Query, mesmo formato de
   integrations/files).
@@ -370,7 +371,13 @@ Commit só quando pedido.
 >   `MailPage.test.tsx` (a mensagem aberta fica no sandbox, sem a URL do rastreador até "Mostrar
 >   imagens").
 
-### Passo 9 — Verificação real e docs
+### Passo 9 — Verificação real e docs ✅
+
+> **Pronto (2026-10-30).** Os resultados estão no [Status de implementação](implementation-status.md#verificação-real-2026-10-30). Além
+> da lista abaixo, a verificação achou que um cabeçalho `Date` com fuso não podia ser salvo (o Npgsql só grava UTC); agora
+> o `MailMessage` converte. Uma mensagem lida no Gmail levou mais de um ciclo para aparecer. A pergunta do SMTP passou para
+> o início da M3, porque o Pandora ainda não envia.
+
 
 - Manual, contra as contas reais — o **pronto quando** da M1 no product-plan:
   1. Gmail e Titan conectados; cabeçalhos chegam dos mais novos para os mais antigos; a barra de

@@ -18,13 +18,13 @@ roadmap à frente fica no [product-plan.md](product-plan.md).
 | **Refresh transparente** | `GetAccessTokenAsync` renova perto da expiração, serializado por conta com um **gate in-process**; `MarkRevoked` + `ExternalAccountRevoked` (com o nome da conta) no `invalid_grant`. |
 | **Credenciais digitadas (I3, I5)** | Catálogo `CredentialProviderDescriptor` (`gemini` api-key; `titan`, `imap` password). `SaveApiKey` (sempre conta nova), `SavePassword` (upsert pelo usuário), `ReplaceSecret`, `RenameAccount`. |
 | **Várias contas por provedor (I5)** | Coluna `label`; toda chamada da porta por id da conta com checagem de dono (`NotConnected` para inexistente ou alheia); `IExternalAccountReader.GetAsync(userId, accountId)`; o catálogo conta as contas por provedor. |
-| **Visão de uso (I5)** | `IExternalAccountUsageSource` (implementada hoje pelo Assistant: `assistant`/`chat`); `GET /accounts` devolve `usages`, pulando uma fonte que falha. |
+| **Visão de uso (I5)** | `IExternalAccountUsageSource` (implementada hoje pelo Assistant, `assistant`/`chat`, e pelo Communications, `communications`/`mail`); `GET /accounts` devolve `usages`, pulando uma fonte que falha. |
 | **Desconectar** | `DisconnectAccount` revoga no provedor, apaga localmente, publica `ExternalAccountDisconnected`. |
 | **Contratos** | `ExternalAccountRevoked` (`Label` acrescentado, anulável), `ExternalAccountDisconnected`. O Channels transforma o primeiro no aviso `integrations.account-revoked` ("Google · Pessoal"). |
 | **Encriptação** | Toda coluna de credencial via `ISecretProtector` do Tars (AES-GCM, chave fora do banco). |
 | **Log de eventos (I2)** | `int003_integration_event_log` — append-only `connected`/`reconnected`/`refresh-failed`/`expired`/`revoked`/`disconnected`, cada linha escrita na mesma transação da mudança que registra. |
 | **API** | `GET /providers`, `GET /accounts`, `GET /events`, `POST /{provider}/connect`, `GET /{provider}/callback`, `PUT /{provider}/api-key`, `PUT /{provider}/password`, `PUT /accounts/{id}/secret`, `PATCH /accounts/{id}`, `DELETE /accounts/{id}`. |
-| **Frontend** | Tela de conexões agrupada por provedor (renomear no lugar, adicionar conta, trocar segredo, reconectar, desconectar listando os usos) + **Atividade recente**; o seletor compartilhado `AccountSelect` (`modules/integrations/components`), usado nas configurações do Assistant. |
+| **Frontend** | Tela de conexões agrupada por provedor (renomear no lugar, adicionar conta, trocar segredo, reconectar, desconectar listando os usos) + **Atividade recente**; o seletor compartilhado `AccountSelect` (`modules/integrations/components`), usado nas configurações do Assistant e nas telas de email. |
 | **Testes** | Domínio (`ExternalAccountApiKeyTests`); integração `ApiKeyTests`, `AccountsTests`, `OAuthCallbackTests` (Google falso); front `accountSelection.test.ts`. |
 
 ### Desvios notáveis do plano original

@@ -4,8 +4,8 @@
 > usuário, de qualquer provedor, num lugar só. Email vem primeiro.
 > 🇺🇸 [English version](../README.md).
 >
-> **Status: M1 (conectar e ler) implementada; falta a verificação real.** Gmail, Titan e qualquer
-> servidor IMAP conectam, sincronizam os cabeçalhos do mais novo para o mais antigo e abrem as
+> **Status: M1 (conectar e ler) pronta, verificada com contas reais em 2026-10-30.** Gmail, Titan e
+> qualquer servidor IMAP conectam, sincronizam os cabeçalhos do mais novo para o mais antigo e abrem as
 > mensagens num leitor em sandbox. Organizar (M2), enviar (M3) e regras (M4) estão planejados.
 
 O **Communications** conecta quantas caixas de email o usuário quiser (Gmail pela Gmail API; Titan
@@ -18,18 +18,19 @@ Radar (curadoria de notícias de tecnologia), planejado, vai se apoiar nele depo
 
 ## Como esta documentação está organizada
 
-A M1 está construída, mas o módulo ainda não tem o conjunto de tópicos de sempre: o que foi
-construído, e onde difere do plano, está registrado passo a passo nas notas **Construído** do plano
-de execução.
+Comece pela **Visão geral** para a fronteira e o vocabulário, depois leia o tópico que precisar.
 
-| Documento | Idioma | O que cobre |
+| # | Documento | O que cobre |
 |---|---|---|
-| [Plano de Produto](product-plan.md) / [en](../en/product-plan.md) | en + pt-BR | Email completo: provedores, credenciais, modelo de dados, sincronização, organização, envio, regras (com filtros do Gmail nos dois sentidos), telas, API, erros, testes, fases M1–M4 |
-| [Plano de execução](execution-plan.md) / [en](../en/execution-plan.md) | en + pt-BR | A M1 (conectar e ler), passo a passo, com o que cada passo construiu |
+| 1 | [Visão geral](overview.md) | O que o módulo faz e não faz, princípios, glossário, escopo |
+| 2 | [Arquitetura](architecture.md) | Projetos, a porta do provedor e os adaptadores, o ciclo de sincronização, falhas, a segurança do leitor de email, decisões |
+| 3 | [Modelo de dados](data-model.md) | `com001`–`com005`, e o cache de conteúdo em números reais |
+| 4 | [Referência da API](api-reference.md) | Endpoints, payloads, erros, o evento |
+| 5 | [Status de implementação](implementation-status.md) | O que está construído, a verificação real, desvios do plano, pontos em aberto |
+| 6 | [Plano de Produto](product-plan.md) | O que falta: organizar (M2), enviar (M3), regras (M4) |
+| 7 | [Plano de execução](execution-plan.md) | Como a M1 foi construída, passo a passo (histórico) |
 
-O conjunto de tópicos de sempre em `en/` + `pt-BR/` (`overview.md`, `architecture.md`,
-`data-model.md`, `api-reference.md`, `implementation-status.md`) vem quando a M1 passar na
-verificação real.
+🇺🇸 Todo documento também existe em inglês, em [`en/`](../README.md).
 
 ---
 
@@ -40,7 +41,8 @@ verificação real.
 - **Schema:** schema PostgreSQL `communications`, tabelas `com001_mailbox`…`com005_mail_content`
   (`com006_mail_rule` é da M4), migrations em `migrations/migrations/communications/`.
 - **Sincronização:** um job em segundo plano roda um ciclo por caixa a cada 2 minutos (etiquetas,
-  mudanças, um lote da carga inicial); "Sincronizar agora" roda um na hora. O `MailMessageReceived`
+  mudanças, lotes da carga inicial dentro de um orçamento de 5 minutos); "Sincronizar agora" roda um na
+  hora. O `MailMessageReceived`
   sai pelo outbox.
 - **Base da API:** `/api/v1/communications` — caixas, etiquetas, mensagens, anexos.
 - **Credenciais:** no Integrations. Gmail é conta OAuth; Titan/IMAP é conta `password`. Cada caixa

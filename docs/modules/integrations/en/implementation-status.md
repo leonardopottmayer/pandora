@@ -18,13 +18,13 @@ forward roadmap lives in [product-plan.md](product-plan.md).
 | **Transparent refresh** | `GetAccessTokenAsync` refreshes near expiry, serialized per account by an **in-process gate**; `MarkRevoked` + `ExternalAccountRevoked` (with the account's label) on `invalid_grant`. |
 | **Typed-in credentials (I3, I5)** | `CredentialProviderDescriptor` catalog (`gemini` api-key; `titan`, `imap` password). `SaveApiKey` (always a new account), `SavePassword` (upsert on username), `ReplaceSecret`, `RenameAccount`. |
 | **Several accounts per provider (I5)** | `label` column; every port call by account id with an ownership check (`NotConnected` for missing or foreign); `IExternalAccountReader.GetAsync(userId, accountId)`; the catalog counts accounts per provider. |
-| **Usage visibility (I5)** | `IExternalAccountUsageSource` (implemented today by Assistant: `assistant`/`chat`); `GET /accounts` returns `usages`, skipping a failing source. |
+| **Usage visibility (I5)** | `IExternalAccountUsageSource` (implemented today by Assistant, `assistant`/`chat`, and Communications, `communications`/`mail`); `GET /accounts` returns `usages`, skipping a failing source. |
 | **Disconnect** | `DisconnectAccount` revokes at the provider, deletes locally, publishes `ExternalAccountDisconnected`. |
 | **Contracts** | `ExternalAccountRevoked` (`Label` added, nullable), `ExternalAccountDisconnected`. Channels turns the first into the `integrations.account-revoked` notice ("Google · Personal"). |
 | **Encryption** | Every credential column via Tars `ISecretProtector` (AES-GCM, key outside the DB). |
 | **Event log (I2)** | `int003_integration_event_log` — append-only `connected`/`reconnected`/`refresh-failed`/`expired`/`revoked`/`disconnected`, each written in the same transaction as the state change it records. |
 | **API** | `GET /providers`, `GET /accounts`, `GET /events`, `POST /{provider}/connect`, `GET /{provider}/callback`, `PUT /{provider}/api-key`, `PUT /{provider}/password`, `PUT /accounts/{id}/secret`, `PATCH /accounts/{id}`, `DELETE /accounts/{id}`. |
-| **Frontend** | Connections screen grouped by provider (rename in place, add account, replace secret, reconnect, disconnect with the usages listed) + **Recent activity**; the shared `AccountSelect` picker (`modules/integrations/components`), used by the Assistant settings. |
+| **Frontend** | Connections screen grouped by provider (rename in place, add account, replace secret, reconnect, disconnect with the usages listed) + **Recent activity**; the shared `AccountSelect` picker (`modules/integrations/components`), used by the Assistant settings and the mail screens. |
 | **Tests** | Domain (`ExternalAccountApiKeyTests`); integration `ApiKeyTests`, `AccountsTests`, `OAuthCallbackTests` (fake Google); front `accountSelection.test.ts`. |
 
 ### Notable deviations from the original plan

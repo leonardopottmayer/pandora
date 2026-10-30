@@ -1,8 +1,8 @@
 # Communications Module — Product Plan
 
-> **Status:** M1 implemented (2026-10-29); its real-world check is pending. M2–M4 are plans. This
-> plan covers **email**, the first capability; phases M1–M4 below.
-> M1's work list: [execution-plan.md](execution-plan.md).
+> **Status:** M1 done (2026-10-30): what exists is in [Implementation Status](implementation-status.md) and
+> the topic documents, so this plan keeps only what is left, M2–M4. It covers **email**, the first capability.
+> How M1 was built: [execution-plan.md](execution-plan.md).
 > 🇧🇷 [Versão em português](../pt-BR/product-plan.md)
 >
 > Related: [Integrations](../../integrations/README.md) · [Channels](../../channels/README.md) ·
@@ -44,14 +44,14 @@ from any provider, in one place. Email comes first.
 
 | Thing | Value |
 |---|---|
-| Backend projects | `Pottmayer.Pandora.Modules.Communications.{Abstractions,Contracts,Domain,Application,Infrastructure,Persistence,Presentation}` (already exist, empty) |
+| Backend projects | `Pottmayer.Pandora.Modules.Communications.{Abstractions,Contracts,Domain,Application,Infrastructure,Persistence,Presentation}` |
 | PostgreSQL schema | `communications` |
 | Table prefix | `comXXX_`, PK `uuid_generate_v7()` |
 | Options section | `Pandora:Communications` |
 | API base | `/api/v{version}/communications` — JWT, the usual user scope |
 | Frontend | `client-web/src/modules/communications`, routes `mail`, `mail/accounts`, `mail/rules` |
 | Migrations | `migrations/migrations/communications/` |
-| Libraries | `Google.Apis.Gmail.v1` (Gmail), MailKit + MimeKit (IMAP/SMTP, MIME building for both) |
+| Libraries | Gmail REST through `HttpClient`, MailKit + MimeKit (IMAP/SMTP, MIME building for both) |
 
 ---
 
@@ -100,8 +100,8 @@ from any provider, in one place. Email comes first.
 
 | Adapter | Providers | How |
 |---|---|---|
-| `GmailMailboxProvider` | `gmail` | Gmail API with the access token from `IExternalCredentialProvider`. `history.list` for incremental sync, native labels and threads, send with the raw MIME, `settings.filters` for rules. |
-| `ImapMailboxProvider` | `titan`, `imap` | MailKit: IMAP with UID + CONDSTORE (QRESYNC when available), SMTP to send. `titan` is a preset of `imap` (`imap.titan.email:993`, `smtp.titan.email:465`). |
+| `GmailMailboxProvider` | `gmail` | Gmail API with the access token from `IExternalCredentialProvider`. `history.list` for incremental sync, native labels and threads; to come: send with the raw MIME, `settings.filters` for rules. |
+| `ImapMailboxProvider` | `titan`, `imap` | MailKit: IMAP with UID + CONDSTORE when available; to come: SMTP to send. `titan` is a preset of `imap` (`imap.titan.email:993`, `smtp.titan.email:465`). |
 
 ### 4.3 How the label model maps
 
@@ -116,62 +116,33 @@ from any provider, in one place. Email comes first.
 
 ---
 
-## 5. Credentials (changes in Integrations)
+## 5. Credentials
 
-- New `AuthKind` **`password`**: username + encrypted password. `provider_account_id` is the username
-  and the password goes to the existing encrypted secret column (`access_token_enc`), so there is no
-  new column — only `'password'` added to `chk_int001_auth_kind` in the original `CREATE TABLE`
-  (pre-1.0, edited in place).
-- New provider descriptors `titan` and `imap` (auth kind `password`), a `SavePassword` command and
-  `PUT /api/v1/integrations/{provider}/password`. `IExternalCredentialProvider` gains a read path for
-  the username/password pair.
-- Google gains the scopes `gmail.modify`, `gmail.send` and `gmail.settings.basic` on the existing
-  connection. Accounts connected before must reconnect to grant them.
-- Communications subscribes to `ExternalAccountRevoked` and marks the mailbox `needs-reconnect`.
-- **Google Cloud:** the Gmail scopes are *restricted*. For personal use the app works unverified (the
-  user sees the "unverified app" screen), but in **Testing** status the refresh token expires every
-  7 days — the project must be switched to **In production** (still unverified).
+Built in M1: see [Integrations](../../integrations/README.md) and [Architecture](architecture.md). Left:
+
+- M3 needs `gmail.send` and M4 needs `gmail.settings.basic`. M1 only requests `gmail.modify`, so connected
+  accounts will have to consent again; the consent screen also has to declare the new scopes.
+- **Google Cloud:** in **Testing** the refresh token expires every 7 days. Whether switching the project to
+  **In production** while unverified is enough for personal use is still to confirm (the
+  [setup guide](../../../deployment/google-and-gemini-setup.md) assumes verification is required).
 
 ---
 
-## 6. Data model (draft)
+## 6. Data model
+
+What exists is in [Data Model](data-model.md). Left:
 
 | Table | Holds |
 |---|---|
-| `com001_mailbox` | user, `provider` (`gmail`/`titan`/`imap`), `external_account_id`, address, display name, `imap_host`/`imap_port`, `smtp_host`/`smtp_port`, `status` (`active`/`syncing`/`needs-reconnect`/`error`), `sync_cursor` (Gmail `historyId`), `backfill_cursor`, `last_synced_at`, `last_error`, `consecutive_failures` |
-| `com002_mail_label` | mailbox, `provider_label_id`, name, `kind` (`system`/`user`), `role` (`inbox`/`sent`/`drafts`/`trash`/`spam`/`archive`/null), `is_exclusive` (the IMAP per-folder cursor lives inside the mailbox's opaque `sync_cursor`) |
-| `com003_mail_message` | mailbox, `provider_message_id`, `thread_key`, `rfc822_message_id`, from, to/cc (jsonb), subject, snippet, `sent_at`, `is_unread`, `is_starred`, `has_attachments`, `size` |
-| `com004_mail_message_label` | message ↔ label |
-| `com005_mail_content` | cached body (text + sanitized-at-render HTML) + attachment list (id, name, type, size, content-id), `fetched_at`, `last_accessed_at` |
 | `com006_mail_rule` | mailbox, name, `position`, `conditions` and `actions` (jsonb), `execution` (`provider-filter`/`pandora`), `provider_filter_id`, `is_enabled`, `status` (`ok`/`broken`) |
-| `tars-outbox-message` | the module's outbox, as in the other publishing modules |
-
-Notes:
-
-- A unified inbox is a query (all the user's mailboxes), not an entity.
-- The content cache is evicted by `last_accessed_at` (size cap in `Pandora:Communications`).
 
 ---
 
 ## 7. Sync
 
-- **`MailboxSyncBackgroundService`** (Infrastructure/Jobs, same pattern as Finances' jobs) syncs
-  every active mailbox every 2 minutes (configurable). "Sync now" triggers one mailbox immediately.
-- **Backfill.** After connecting, all headers are fetched **newest first**, in batches, resumable from
-  `backfill_cursor` (Gmail `pageToken`; IMAP lowest UID fetched). The screens work with whatever has
-  arrived. Order of magnitude: 100k messages ≈ 100 MB and ~35 minutes on Gmail (API quota).
-- **Gmail, incremental.** `history.list(startHistoryId)` → added/removed messages, label
-  added/removed. History expires after about a week: on 404, a state resync (list ids, diff).
-- **IMAP, incremental, per subscribed folder.** If `UIDVALIDITY` changed → resync the folder. Else:
-  new = `UID > last`; flag changes = `CHANGEDSINCE modseq`; removals = QRESYNC `VANISHED` when
-  supported, otherwise a diff of the UID set.
-- **Labels, both directions.** Every sync re-reads the label list (`labels.list` / `LIST`) and
-  applies the difference. Gmail labels have stable ids, so a rename is a rename. An IMAP folder has
-  no id: a rename in the webmail is seen as "folder gone + new folder" and that folder's messages are
-  resynced.
-- **Event.** `MailMessageReceived` (mailbox, message id, from, subject, labels) goes through the
-  outbox in the same transaction that saves the message — **only for messages that arrive after the
-  backfill**, never one per old message.
+Built in M1: see [Architecture](architecture.md#3-the-sync-cycle). For M2 onward, the label diff has one known
+gap: an IMAP folder has no id, so a rename in the webmail is seen as "folder gone + new folder" and that folder's
+messages are read again.
 
 ---
 
@@ -267,25 +238,23 @@ created in the webmail are not seen. If Titan offers **ManageSieve** (§14), a S
 
 ## 12. API (`/api/v1/communications`)
 
+What exists is in the [API Reference](api-reference.md). Left:
+
 | Resource | Endpoints |
 |---|---|
-| Mailboxes | `GET mailboxes`, `POST mailboxes`, `PATCH mailboxes/{id}`, `DELETE mailboxes/{id}`, `POST mailboxes/{id}/sync` |
-| Labels | `GET/POST mailboxes/{id}/labels`, `PATCH/DELETE labels/{id}` |
-| Messages | `GET messages` (mailbox, label, unread, text, thread; paginated by date), `GET messages/{id}` (with content), `GET messages/{id}/attachments/{attId}`, `POST messages/actions` (batch: ids + add/remove labels, move, archive, trash, read, star) |
+| Labels | `POST mailboxes/{id}/labels`, `PATCH/DELETE labels/{id}` |
+| Messages | `POST messages/actions` (batch: ids + add/remove labels, move, archive, trash, read, star) |
 | Send | `POST messages/send` (multipart; optional `replyTo` / `forwardOf`) |
 | Rules | `GET/POST mailboxes/{id}/rules`, `PUT/DELETE rules/{id}`, `PUT mailboxes/{id}/rules/order` |
-
-Plus, in Integrations: `PUT /api/v1/integrations/{provider}/password`.
 
 ---
 
 ## 13. Errors
 
+Sync failures are in [Architecture](architecture.md#failures). Left, for user actions:
+
 | Failure | Handling |
 |---|---|
-| Authentication (`ExternalAccountRevoked`, Google `invalid_grant`, IMAP login refused) | mailbox → `needs-reconnect`, sync paused. For IMAP, Communications publishes `NotifyUserRequested` (template `communications.mailbox-auth-failed`); the OAuth case is already notified by Integrations. |
-| Transient (network, 5xx, 429) | retried on the next cycle; after 5 consecutive failures the mailbox goes `error` with `last_error` on screen |
-| Gmail history expired (404) / IMAP `UIDVALIDITY` changed | state resync (§7) |
 | User action or send fails at the provider | the error goes back to the screen, nothing changes locally; the compose form keeps its content |
 | Concurrent sync and action on one mailbox | serialized by the per-mailbox gate (C8) |
 
@@ -293,36 +262,21 @@ Plus, in Integrations: `PUT /api/v1/integrations/{provider}/password`.
 
 ## 14. Testing and checks
 
-- **Unit (domain):** move translation (exclusive vs. multiple labels), rule matching, rule ⇄ Gmail
-  filter conversion both ways, the "one gone + one new = edit" heuristic, IMAP `thread_key`.
-- **Integration** (`PandoraWebApplicationFactory` + Testcontainers): the IMAP/SMTP adapter against
-  **GreenMail** (a test IMAP/SMTP server in one container). It likely lacks CONDSTORE, so it covers the
-  fallback path. Endpoints run against a fake `IMailboxProvider`.
-- **Manual:** the Gmail adapter against the user's real account (there is no reliable fake Gmail).
-- **To verify on the real Titan** (before M1 closes):
-  1. CONDSTORE / QRESYNC support.
-  2. Whether SMTP submission already saves to Sent (to avoid duplicates).
-  3. Whether ManageSieve is offered (§10.4).
-
-  Results so far (2026-10-29, without logging in): before authentication `imap.titan.email:993`
-  announces only `IMAP4rev1 AUTH=PLAIN SASL-IR ID LITERAL- APPENDLIMIT=52428800` — CONDSTORE/QRESYNC
-  usually appear only after login, so (1) is still open. Ports 4190 and 2000 on `imap.titan.email`
-  do not answer: **(3) ManageSieve is not offered**, so Titan rules stay in Pandora's engine. (2) is
-  still open.
+- **Unit (domain):** move translation (exclusive vs. multiple labels), rule matching, rule ⇄ Gmail filter
+  conversion both ways, the "one gone + one new = edit" heuristic.
+- **Integration:** the IMAP/SMTP adapter against GreenMail; endpoints against a fake `IMailboxProvider`.
+- **Manual:** the Gmail adapter against a real account.
+- **Titan, still to check:** whether SMTP submission already saves to Sent (to avoid duplicates), at the start of
+  M3. CONDSTORE is offered and ManageSieve is not: see the
+  [real-world check](implementation-status.md#real-world-check-2026-10-30).
 
 ---
 
 ## 15. Phases
 
-### M1 — Connect and read
+### M1 — Connect and read ✅
 
-- Integrations: `password` auth kind, `titan`/`imap` descriptors, Gmail scopes.
-- Mailboxes, labels (read only), backfill and incremental sync on both adapters, the content cache,
-  attachments, `MailMessageReceived` through the outbox.
-- Screens: `mail` (list + reading) and `mail/accounts`.
-- **Done when:** a Gmail and a Titan mailbox are connected, their headers arrive newest first, a
-  message read in the provider's webmail shows as read in Pandora within one cycle, and opening a
-  newsletter fires no remote request until "Show images".
+Done on 2026-10-30: see [Implementation Status](implementation-status.md).
 
 ### M2 — Organize
 
@@ -359,4 +313,3 @@ Plus, in Integrations: `PUT /api/v1/integrations/{provider}/password`.
    here + new there"; whether to stitch the two by `rfc822_message_id` is decided in M2. Until then,
    M1 must not fire `MailMessageReceived` for a message whose `rfc822_message_id` the mailbox already
    has, so a webmail move is not taken for a new arrival.
-2. **Content cache size cap.** Default to decide in M1 from the real numbers of the first backfill.
