@@ -41,4 +41,8 @@ describe('account selection', () => {
     expect(eligibleAccounts(accounts, mail).map((a) => a.id)).toEqual(['ok'])
     expect(preselectedAccount(accounts, mail)).toBe('ok')
   })
+
+  it('leaves out the accounts the feature already uses', () => {
+    expect(preselectedAccount([account('a'), account('b')], { ...gemini, excludeIds: ['a'] })).toBe('b')
+  })
 })

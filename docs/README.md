@@ -18,7 +18,7 @@ organized by module plus a few cross-cutting concerns.
   | [Agenda](modules/agenda/README.md) | Implemented | Reminders, tasks, calendar/events |
   | [Channels](modules/channels/README.md) | Implemented | Telegram/email delivery, quiet hours |
   | [Integrations](modules/integrations/README.md) | Implemented (I1–I3, I5); I5 real-Google check pending | OAuth, API-key and password credentials, encrypted at rest; many accounts per provider |
-  | [Communications](modules/communications/README.md) | **Plan only** | Email inbox (Gmail, Titan/IMAP): read, organize, send, rules |
+  | [Communications](modules/communications/README.md) | M1 (connect and read) implemented; real-world check pending | Email inbox (Gmail, Titan/IMAP): read now; organize, send, rules planned |
   | [Assistant](modules/assistant/README.md) | **Plan only** | Natural-language commands over the other modules |
   | [Files](modules/files/README.md) | F1 (catalog) and F2 (metadata) implemented; F1 homelab check pending | Catalog of the user's disks, fed by the desktop agent |
 
@@ -31,6 +31,7 @@ organized by module plus a few cross-cutting concerns.
 - **Deployment**, not module behavior:
   - [Deployment](deployment/deployment.md)
   - [Homelab deploy](deployment/homelab-deploy.md)
+  - [Google OAuth and Gemini setup](deployment/google-and-gemini-setup.md) — the OAuth client Gmail needs, the Gemini key the Assistant needs, and how to undo both.
 
 - **[Known issues](known-issues.md)** — understood-but-unfixed cross-cutting problems (time zones,
   mandatory-configuration gate), with root causes, affected places, and options for a fix.

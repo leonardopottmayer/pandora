@@ -39,10 +39,10 @@ sem enviar (M3), sem regras (M4).
 | Escopos do Gmail | pedidos no "Conectar Gmail" via `connect` com `scopes = [openid, email, gmail.modify, gmail.send, gmail.settings.basic]` | o consentimento incremental deixa os padrões intactos; os três escopos do Gmail já agora para M3/M4 não pedirem consentimento de novo |
 | Credencial de senha | `AuthKind.Password` (`password`), `provider_account_id` = usuário, segredo em `access_token_enc` | §5; sem coluna nova |
 | Várias caixas por provedor | contas de senha são buscadas **pelo id da conta**, nunca por (usuário, provedor) | duas caixas Titan em dois domínios é o caso realista |
-| Uma conta Google por usuário | mantido (o callback OAuth faz upsert por usuário + provedor) | limite conhecido, fora da M1 — ver [Limites conhecidos](#limites-conhecidos) |
+| Várias contas Google | cada caixa Gmail guarda o id da sua conta Google e pede o token por esse id | a I5 do Integrations tirou o limite de uma conta |
 | Corpo e anexos | o adaptador busca a mensagem **RFC 822 crua** (Gmail `format=raw`, IMAP `BODY.PEEK[]`) e o MimeKit faz o parse — um parser só para os dois provedores | baixar um anexo busca a mensagem crua de novo (teto `ponytail:`: mensagens enormes; evolui para `attachments.get` do Gmail / `BODY[part]` do IMAP) |
 | Cache de conteúdo | por idade: linhas não acessadas há `ContentCacheRetentionDays` (padrão 30) são apagadas pelo job de sincronização | fecha a questão em aberto 2 do product-plan com a regra mais simples |
-| Chave de mensagem IMAP | `provider_message_id = "{label_id}:{uid}"` (label = a linha `com002` da pasta) | UIDs são por pasta; uma troca de `UIDVALIDITY` ressincroniza a pasta e descarta as linhas dela |
+| Chave de mensagem IMAP | `provider_message_id` montado pelo adaptador a partir do caminho da pasta, do `UIDVALIDITY` e do UID | UIDs são por pasta; uma troca de `UIDVALIDITY` ressincroniza a pasta e descarta as linhas dela |
 | Prévia no IMAP | vazia até a mensagem ser aberta, depois preenchida a partir do texto já parseado | IMAP não tem prévia; um fetch parcial de corpo por mensagem não compensa na M1 |
 | Pastas IMAP | pastas assinadas (`LIST SUBSCRIBED`); todas as selecionáveis se nenhuma estiver assinada | §7 |
 | Laço de sincronização | um `BackgroundService`, caixas em sequência, a cada `SyncInterval` (padrão 2 min); cada ciclo = **incremental, depois um lote da carga inicial** | escala pessoal; `ponytail:` laço sequencial, paralelizar por caixa se ficar para trás |
@@ -82,7 +82,14 @@ Commit só quando pedido.
   `ApiKeyTests` (salvar → listado, sem texto puro no DTO da conta, upsert por usuário, dois usuários →
   duas contas, provedor desconhecido → 422, senha vazia → 422).
 
-### Passo 2 — Communications: schema, persistência, outbox
+### Passo 2 — Communications: schema, persistência, outbox ✅
+
+> **Construído (2026-10-27).** Além da lista abaixo: o `com001` também tem `backfill_completed_at` e
+> `uq (user_id, external_account_id)` (uma caixa por credencial); o `com003` separa o remetente em `from_name`/`from_address` e indexa
+> `(mailbox_id, thread_key)` para as conversas. O assembly Communications.Contracts entra no registry
+> de tipos de evento no passo 6, com o primeiro evento. Teste: `PersistenceTests` (ida e volta pelos
+> repositórios).
+
 
 - Migrations em `migrations/migrations/communications/` (uma pasta por arquivo, `.up.sql` +
   `.down.sql`, mesmo padrão de nomes do `integrations/`): `create-schema-communications`,
@@ -102,7 +109,26 @@ Commit só quando pedido.
   Communications.Contracts no registry de tipos de evento.
 - **Testes:** a suíte de integração sobe com o schema novo (os testes existentes continuam verdes).
 
-### Passo 3 — Domínio e a porta do provedor
+### Passo 3 — Domínio e a porta do provedor ✅
+
+> **Construído (2026-10-27).** Mudanças em relação à lista abaixo:
+> - **Cursores opacos, IMAP incluído.** O estado por pasta do IMAP (UIDVALIDITY, UIDNEXT, MODSEQ) fica
+>   dentro do `sync_cursor` da caixa, que só o adaptador IMAP lê, então o motor de sync é o mesmo para
+>   os dois provedores. O `com002` perdeu `uid_validity`/`highest_modseq`.
+> - **Sem coluna `security`.** A porta decide (993/465 TLS, 143/587 STARTTLS, o
+>   `SecureSocketOptions.Auto` do MailKit): um valor só para os dois servidores errava o par comum
+>   993 + 587.
+> - **Sem resolver.** Os adaptadores são serviços com chave, uma por valor de provedor (o IMAP em
+>   `titan` e `imap`); o motor pede pela chave.
+> - **Remoções sem QRESYNC** vêm como `RemoteLabelSnapshot` (todas as mensagens que uma etiqueta tem
+>   agora), não como diff por prefixo de id. Um histórico que o provedor não conhece mais é o erro
+>   `SyncCursorExpired`.
+> - `Mailbox.StartBackfill(syncCursor, backfillCursor, total, now)` também recomeça;
+>   `AdvanceBackfill(null)` conclui (sem `CompleteBackfill` separado); `Reconnect()` sai de
+>   `needs-reconnect`.
+> - Testes: novo `Pottmayer.Pandora.Modules.Communications.Tests` (35: caixa, thread key, papéis de
+>   etiqueta).
+
 
 - Valor `MailProvider` (`gmail`/`titan`/`imap`; o `titan` carrega os hosts predefinidos
   `imap.titan.email:993`, `smtp.titan.email:465`, SSL).
@@ -121,13 +147,32 @@ Commit só quando pedido.
 - **Testes:** transições de estado da caixa (contador de falhas, needs-reconnect), thread key,
   helpers de mapeamento de papel das etiquetas.
 
-### Passo 4 — Adaptador IMAP (MailKit)
+### Passo 4 — Adaptador IMAP (MailKit) ✅
 
-- Conecta com host/porta/segurança da caixa + `GetPasswordAsync`; `AuthenticationException` vira um
+> **Construído (2026-10-27)** — `Infrastructure/Imap/ImapMailboxProvider` (com chave em `titan` e
+> `imap`), MailKit 4.18.2. Mudanças em relação à lista abaixo:
+> - **Id da mensagem** = `"{uidvalidity}:{uid}:{caminho da pasta}"` (o caminho por último, porque pode
+>   ter `:`).
+> - **Remoções sempre por retrato:** todo ciclo manda o conjunto de UIDs de cada pasta
+>   (`UID SEARCH ALL`); ainda sem caminho QRESYNC/`VANISHED` (`ponytail:` acrescentar se pastas grandes
+>   deixarem a busca lenta).
+> - **Um UIDVALIDITY trocado** falha com `SyncCursorExpired` em vez de ressincronizar só aquela pasta.
+>   O passo 6 trata apagando as mensagens da caixa e recomeçando a carga inicial (evento raro).
+> - **Uma pasta que aparece depois da carga inicial** (criada ou assinada) chega inteira como upsert;
+>   uma mensagem movida para ela mantém o Message-ID, então a checagem de duplicata do passo 6 não
+>   publica evento para ela.
+> - A carga inicial lê uma pasta por lote, a INBOX primeiro. O ramo CONDSTORE está escrito mas sem
+>   cobertura (o GreenMail não tem CONDSTORE); o passo 9 confere no Titan.
+> - Testes: `ImapMailboxProviderTests` (2) contra `greenmail/standalone:2.1.0`: senha errada → falha
+>   de autenticação; carga inicial em lotes da mais nova para a mais antiga, thread key, uma chegada
+>   nova, lida no webmail, busca crua sem marcar como lida, movida para uma pasta nova, apagada.
+
+
+- Conecta com host/porta da caixa + `GetPasswordAsync`; `AuthenticationException` vira um
   erro tipado `MailboxAuthFailed` (que leva a `needs-reconnect`).
 - Etiquetas a partir das pastas: flags SPECIAL-USE (`\Sent`, `\Trash`, `\Junk`, `\Drafts`,
   `\Archive`) → `role`; `INBOX` → `inbox`; todas `is_exclusive = true`.
-- Por pasta, no início da carga inicial: guarda `UIDVALIDITY` e `UIDNEXT` (a fronteira).
+- Por pasta, no início da carga inicial: guarda `UIDVALIDITY` e `UIDNEXT` (a fronteira) no cursor de sync.
   Incremental: `UID ≥ fronteira` = nova; `CHANGEDSINCE highest_modseq` quando o servidor anuncia
   CONDSTORE, senão relê as flags dos últimos N UIDs (`ponytail:` janela; diff completo de flags se
   perder mudanças); removidas por `VANISHED` (QRESYNC) ou diff do conjunto de UIDs. Carga inicial: UIDs
@@ -138,9 +183,25 @@ Commit só quando pedido.
   carga inicial, entregar mais uma → vista como nova, marcar `\Seen` por outro cliente → vista como
   lida, apagar → removida. Cobre o caminho sem CONDSTORE.
 
-### Passo 5 — Adaptador Gmail
+### Passo 5 — Adaptador Gmail ✅
 
-- `Google.Apis.Gmail.v1`, `GoogleCredential.FromAccessToken(GetAccessTokenAsync(userId, "google"))`.
+> **Construído (2026-10-27)** — `Infrastructure/Gmail/GmailMailboxProvider` (com chave em `gmail`).
+> Mudanças em relação à lista abaixo:
+> - **Sem SDK.** A API REST do Gmail com `HttpClient` + `System.Text.Json`, como o `GoogleOAuthProvider`
+>   do Integrations já faz: sem `Google.Apis.*` + Newtonsoft, e o adaptador fica testável com um handler
+>   HTTP falso.
+> - **Sem batch request.** Um `messages.get` por mensagem, 4 por vez, dentro da cota por usuário
+>   (`ponytail:` endpoint de batch do Gmail se a carga inicial ficar lenta).
+> - `UNREAD`/`STARRED` são flags, não etiquetas; todo outro id de etiqueta (sistema, `CATEGORY_*`,
+>   usuário) é etiqueta. A carga inicial inclui spam e lixeira. O `sent_at` é o `internalDate` do Gmail.
+> - **Escopos:** o token precisa ter `gmail.modify` (ou `https://mail.google.com/`), checado antes de
+>   qualquer chamada; um 403 de escopo também é `MissingScopes`; um 401 é `MailboxAuthFailed`.
+> - Testes: 11 unitários sobre respostas prontas do Gmail (`GmailMailboxProviderTests`) +
+>   `ProviderRegistrationTests` (todo valor de provedor resolve um adaptador). A conta real continua no
+>   passo 9.
+
+
+- `Google.Apis.Gmail.v1`, `GoogleCredential.FromAccessToken(GetAccessTokenAsync(userId, mailbox.ExternalAccountId))`.
   Recusa uma conta Google cujos escopos não têm `gmail.modify` com `MissingScopes` (a tela pede
   reconexão).
 - `ListLabels` = `labels.list` (marcadores do sistema mapeiam para papéis; `is_exclusive = false`).
@@ -155,7 +216,37 @@ Commit só quando pedido.
 - **Testes:** nenhum automatizado (não existe Gmail falso confiável) — manual contra a conta real, no
   passo 9.
 
-### Passo 6 — Motor de sincronização
+> **Mudou (2026-10-29)** — a primeira carga inicial real (≈64 mil mensagens) falhava em todo lote por
+> alguns `403` que o Gmail manda quando limita a taxa, e nada era salvo. Agora cada pedido ao Gmail é
+> repetido depois de 1, 2, 4, 8 e 16 s (ou do `Retry-After` do servidor) em `429`, `5xx` e `403` com
+> motivo `rateLimitExceeded`/`userRateLimitExceeded`; um erro que persiste leva o motivo do Gmail no
+> último erro da caixa. Teste: `A_throttled_request_is_retried_and_a_lasting_one_names_the_reason`.
+
+### Passo 6 — Motor de sincronização ✅
+
+> **Construído (2026-10-27)** — `SyncMailboxCommand`, `MailboxSyncBackgroundService`, os dois
+> assinantes de conta, `MailMessageReceived` (Contracts, no registry de tipos de evento) e
+> `CommunicationsAccountUsageSource` ("Email · <endereço>" na tela de conexões). Detalhes e mudanças
+> em relação à lista abaixo:
+> - **`SyncCursorExpired`** (histórico do Gmail expirado, UIDVALIDITY do IMAP trocado) apaga as
+>   mensagens da caixa e recomeça a carga inicial: sem eventos, e os corpos em cache vão junto.
+> - **Quem é avisado.** Senha IMAP/Titan recusada → `needs-reconnect` e um aviso
+>   (`communications.mailbox-auth-failed`, email + Telegram, en + pt-BR), só na mudança. Falha de
+>   autenticação do Gmail e `MissingScopes` → `needs-reconnect` sem aviso (o Integrations já avisa
+>   quando o acesso é revogado; a tela mostra os escopos que faltam).
+> - **Uma etiqueta que o provedor deixou de listar** é apagada; no IMAP (etiqueta exclusiva, ou seja,
+>   uma pasta) as mensagens vão junto, no Gmail elas só perdem a etiqueta.
+> - **A retenção do cache de conteúdo** roda uma vez por ciclo do job para todas as caixas (um delete
+>   indexado), não dentro do comando de cada caixa.
+> - Mensagens que ficam sem etiqueta por um retrato são apagadas em bloco: o EF não consegue apagar uma
+>   entidade rastreada cujas coleções JSON (`to_recipients`) ele rastreia.
+> - `Mailbox.Reconnect()` é chamado pelo `sync` e pelo `PATCH` do passo 7 quando o provedor aceita a
+>   credencial de novo.
+> - Testes: `SyncEngineTests` (10) com um `FakeMailProvider` roteirizado em `titan`: carga inicial sem
+>   eventos, um evento por chegada, flags e remoções, remoção por retrato, mesmo Message-ID → sem
+>   evento, cursor expirado → releitura sem eventos, senha recusada → needs-reconnect + um aviso, falha
+>   transitória contada e depois limpa, conta revogada → needs-reconnect, uso na API de contas.
+
 
 - `SyncMailboxCommand(mailboxId)` (Application), sob uma trava `SemaphoreSlim` por caixa (mesma
   observação do `ExternalCredentialProvider`): diff de etiquetas → mudanças incrementais → um lote da
@@ -171,18 +262,23 @@ Commit só quando pedido.
   `active`/`syncing`/`error` em sequência; pula `needs-reconnect`.
 - Assinantes: `ExternalAccountRevoked` e `ExternalAccountDisconnected` → as caixas daquela conta vão
   para `needs-reconnect` (dados mantidos).
-- `CommunicationsOptions`: `SyncInterval`, `BackfillBatchSize`, `ContentCacheRetentionDays`.
+- `CommunicationsOptions`: `SyncInterval`, `BackfillBatchSize`, `BackfillBudget`, `ContentCacheRetentionDays`.
 - **Testes:** integração com um `IMailboxProvider` falso registrado na factory: a carga inicial
   preenche linhas sem eventos; uma chegada incremental publica um evento; um `rfc822_message_id` que
   reaparece não publica nada; falha de autenticação → `needs-reconnect` + um `NotifyUserRequested`;
   evento de revogação → `needs-reconnect`.
+
+> **Mudou (2026-10-29)** — um ciclo não lê mais um lote só da carga inicial: lê lotes seguidos até a
+> carga terminar ou o `BackfillBudget` (padrão 1 minuto, sempre ao menos um lote) acabar. Com um lote
+> por ciclo de 2 minutos, uma caixa de 50 mil mensagens levava mais de 3 horas. Teste:
+> `One_cycle_reads_backfill_batches_until_the_backfill_ends` (lotes de 2, cinco mensagens, um ciclo).
 
 ### Passo 7 — API
 
 `/api/v1/communications`, `[Authorize]`, toda consulta restrita às caixas de quem chama:
 
 - `GET mailboxes` (status, último erro, progresso da carga inicial = linhas / `message_total_estimate`).
-- `POST mailboxes` `{ provider, externalAccountId, address?, displayName?, imapHost?, imapPort?, smtpHost?, smtpPort?, security? }`
+- `POST mailboxes` `{ provider, externalAccountId, address?, displayName?, imapHost?, imapPort?, smtpHost?, smtpPort? }`
   — valida que a conta é de quem chama e do tipo certo, roda `TestConnection`, então cria a caixa e
   começa a carga inicial. Teste que falha → 422 com a mensagem do provedor.
 - `PATCH mailboxes/{id}` (nome de exibição, servidor), `DELETE mailboxes/{id}` (só os dados locais; a
@@ -196,6 +292,35 @@ Commit só quando pedido.
   também serve as imagens `cid:`.
 - **Testes:** integração com o provedor falso: caixa/mensagem de outro usuário → 404; criar com
   teste de conexão falhando → 422; a lista pagina por data; abrir uma mensagem põe em cache uma vez só.
+
+> **Construído (2026-10-28)** — `Presentation/Controllers/CommunicationsController`, comandos
+> `ConnectMailbox`, `UpdateMailbox`, `DeleteMailbox`, `SyncMailboxNow`, `OpenMessage`, consultas
+> `GetMailboxes`, `GetLabels`, `ListMessages`, `GetAttachment`. Mudanças em relação à lista acima:
+> - **`POST mailboxes` não começa a carga inicial**: cria a caixa sem cursor, e o primeiro ciclo de
+>   sincronização (o próximo tick do job, ou `POST mailboxes/{id}/sync`) começa. A tela chama `sync`
+>   logo depois de conectar. Conta que já tem caixa → 409. A conta precisa ser de quem chama (senão
+>   404) e do tipo do provedor (`gmail` ↔ `google`, senão 422); o endereço padrão é o email do Google
+>   ou o usuário do IMAP.
+> - **`POST mailboxes/{id}/sync` reconecta**: uma caixa em `needs-reconnect` é testada antes; teste
+>   recusado → 422 e nada muda, teste aceito → `Reconnect()` e o ciclo roda. Um ciclo que falha não é
+>   erro HTTP: a caixa volta com o status e o `lastError`.
+> - **`PATCH`** troca o nome de exibição; servidor novo (os quatro campos, ou nenhum) é testado antes
+>   e, se passar, também reconecta.
+> - **Cursor da página**: `nextCursor` é `"{ticks utc do sent_at}.{id}"`, devolvido como `before`;
+>   cursor inválido → 422. `limit` vai de 1 a 100 (padrão 50). `q` é um trecho, sem diferenciar
+>   maiúsculas, do assunto, da prévia e do remetente (`ILIKE`, sem índice — basta no volume de uma
+>   pessoa).
+> - **Abrir uma mensagem** não marca como lida (a M1 só lê) e preenche a prévia do IMAP com o texto
+>   (ou o HTML sem as tags). O corpo é lido com MimeKit no Application.
+> - **Id do anexo** é a posição da parte entre as partes do corpo (estável para os mesmos bytes); as
+>   partes são arquivos ou imagens inline com `Content-ID`. O download manda `nosniff`, e só
+>   PNG/JPEG/GIF/WebP/BMP vão `inline` — o resto (HTML, SVG, PDF) vai `attachment`, porque a parte vem
+>   de quem mandou o email.
+> - Testes: `CommunicationsApiTests` (6): teste recusado → 422 e nenhuma linha; conta de outro
+>   provedor → 422, segunda caixa na mesma conta → 409; paginação do mais novo + busca + etiquetas com
+>   contagem + cursor inválido; abrir busca a mensagem crua uma vez só e serve o PDF como
+>   `attachment`; caixa e mensagem de outro usuário → 404 em todas as rotas; sincronizar agora
+>   para/reconecta e excluir apaga as linhas.
 
 ### Passo 8 — Web (`client-web/src/modules/communications`)
 
@@ -219,6 +344,29 @@ Commit só quando pedido.
 - **Testes:** vitest do `prepareMailHtml` (imagem remota bloqueada, liberada depois do opt-in, script
   removido, `cid:` reescrito) — é a fronteira de segurança da tela.
 
+> **Construído (2026-10-29)** — `client-web/src/modules/communications`: `MailPage`,
+> `MailAccountsPage`, `ConnectMailboxModal`, `FixConnectionModal`, `MailSidebar`, `MessageList`,
+> `MessageReader`, `lib/prepareMailHtml`. Mudanças em relação à lista acima:
+> - **Imagens `cid:` viram URLs `data:`**, não a origem da API: o endpoint do anexo exige o token
+>   Bearer, e uma URL `blob:` pertence à origem do app, que o iframe em sandbox não compartilha. Por
+>   isso a CSP do iframe é `img-src data:` até "Mostrar imagens" (depois `data: https: http:`), mais
+>   `default-src 'none'; style-src 'unsafe-inline'`.
+> - **A lista é uma lista simples**, não uma `Table` virtual: páginas de 50 com "Carregar mais"
+>   (`ponytail:` no `MessageList`, virtualizar se a rolagem longa ficar lenta).
+> - **Na volta do Google** (`/mail/accounts?connect=gmail`) o modal de adicionar reabre no Gmail com a
+>   conta já escolhida; o usuário confirma, e então `POST mailboxes` e `sync`. O `AccountSelect`
+>   ganhou `excludeIds`, para não oferecer uma conta que já tem caixa.
+> - **Reconectar**: no Gmail o navegador vai ao Google com o id da conta e volta em `?sync={id}`; no
+>   Titan/IMAP abre "Editar conexão" (senha nova troca o segredo no Integrations, servidores IMAP novos
+>   passam pelo `PATCH`), e então `sync`.
+> - A lista de caixas consulta de novo a cada 15 s enquanto há carga inicial ou ciclo rodando, para a
+>   barra de progresso andar. Anexos baixam pelo cliente da API (o `downloadAttachment` do notes);
+>   imagens inline que o HTML mostra não aparecem de novo na lista de anexos.
+> - Testes: `prepareMailHtml.test.ts` (6: imagens externas bloqueadas e liberadas, `url()` em blocos
+>   de estilo, scripts e handlers removidos, `cid:` resolvido, links em nova aba, CSP) e
+>   `MailPage.test.tsx` (a mensagem aberta fica no sandbox, sem a URL do rastreador até "Mostrar
+>   imagens").
+
 ### Passo 9 — Verificação real e docs
 
 - Manual, contra as contas reais — o **pronto quando** da M1 no product-plan:
@@ -236,9 +384,5 @@ Commit só quando pedido.
 
 ## Limites conhecidos
 
-- **Uma conta Google por usuário.** O callback OAuth faz upsert por (usuário, provedor), então uma
-  segunda conta Google substitui a primeira. Tirar esse limite significa buscar contas OAuth pelo id da
-  conta de ponta a ponta (callback, `GetAccessTokenAsync`); é uma mudança no Integrations, agendada
-  quando um segundo Gmail for necessário.
 - **Prévia no IMAP** fica vazia até a mensagem ser aberta.
 - **Download de anexo** busca a mensagem crua inteira de novo.

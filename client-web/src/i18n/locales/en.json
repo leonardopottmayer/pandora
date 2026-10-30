@@ -141,7 +141,10 @@
     "filesRoots": "Devices and roots",
     "filesFilters": "Filters",
     "filesReview": "Review",
-    "filesSettings": "Settings"
+    "filesSettings": "Settings",
+    "mail": "Email",
+    "mailInbox": "Messages",
+    "mailAccounts": "Accounts"
   },
   "theme": {
     "toLight": "Light theme",
@@ -403,6 +406,9 @@
     "usage": {
       "assistant": {
         "chat": "Assistant · chat"
+      },
+      "communications": {
+        "mail": "Email"
       }
     },
     "select": {
@@ -1448,6 +1454,85 @@
       "keepDone": "Kept {{count}} entries.",
       "forgetDone": "Forgot {{count}} entries.",
       "error": "Could not apply the decision."
+    }
+  },
+  "mail": {
+    "allMailboxes": "All mailboxes",
+    "allMail": "All mail",
+    "manageAccounts": "Email accounts",
+    "noMailboxes": "No mailbox connected yet.",
+    "search": "Search subject, sender or text",
+    "filterAll": "All",
+    "filterUnread": "Unread",
+    "noMessages": "No messages here.",
+    "loadMore": "Load more",
+    "noSelection": "Select a message to read it.",
+    "noSubject": "(no subject)",
+    "unknownSender": "(unknown sender)",
+    "to": "To",
+    "cc": "Cc",
+    "conversation": "{{count}} messages in this conversation",
+    "imagesBlocked": "Remote images are hidden, so the sender does not learn you opened this message.",
+    "showImages": "Show images",
+    "emptyBody": "This message has no text.",
+    "openError": "Could not open the message.",
+    "downloadError": "Could not download the attachment.",
+    "provider": {
+      "imap": "Other (IMAP)"
+    },
+    "role": {
+      "inbox": "Inbox",
+      "sent": "Sent",
+      "drafts": "Drafts",
+      "trash": "Trash",
+      "spam": "Spam",
+      "archive": "Archive"
+    },
+    "status": {
+      "active": "Active",
+      "syncing": "Syncing",
+      "needs-reconnect": "Needs reconnect",
+      "error": "Error"
+    },
+    "accounts": {
+      "title": "Email accounts",
+      "description": "Mailboxes Pandora keeps a copy of. Only headers are stored; a message's body is fetched when you open it.",
+      "openInbox": "Open email",
+      "add": "Add mailbox",
+      "none": "No mailbox connected yet.",
+      "connect": "Connect",
+      "connected": "{{address}} connected. The first messages arrive in a moment.",
+      "connectError": "Could not connect the mailbox.",
+      "googleAccount": "Google account",
+      "connectGoogle": "Connect a new Google account",
+      "email": "Email address",
+      "titanHint": "The address and password you use in Titan webmail.",
+      "displayName": "Name",
+      "displayNamePlaceholder": "e.g. Personal, Work",
+      "imapHost": "IMAP server",
+      "smtpHost": "SMTP server",
+      "port": "Port",
+      "backfill": "Downloading headers: {{count}} of {{total}}",
+      "backfillStarting": "Starting the first download…",
+      "messages": "Messages: {{count}}",
+      "lastSynced": "synced {{when}}",
+      "reconnectTitle": "Sync stopped: the server refused the credentials.",
+      "errorTitle": "The last sync failed; it is retried on the next cycle.",
+      "syncNow": "Sync now",
+      "synced": "Synced.",
+      "syncError": "Could not sync the mailbox.",
+      "reconnect": "Reconnect",
+      "fix": "Edit connection",
+      "fixTitle": "Connection of {{address}}",
+      "fixSave": "Save and test",
+      "fixed": "Connection works again.",
+      "newPassword": "New password",
+      "newPasswordHint": "Leave empty to keep the current one.",
+      "renameError": "Could not rename the mailbox.",
+      "delete": "Remove",
+      "deleteTitle": "Remove {{address}}?",
+      "deleteDesc": "Pandora's copy of the messages is deleted; nothing changes on the server. The account stays in Connections.",
+      "deleteError": "Could not remove the mailbox."
     }
   }
 }

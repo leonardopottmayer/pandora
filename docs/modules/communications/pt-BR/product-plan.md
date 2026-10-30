@@ -1,8 +1,7 @@
 # Módulo Communications — Plano de Produto
 
-> **Status:** Só plano. Os projetos do backend existem como template vazio (ligados no Host, sem
-> funcionalidades, sem migrations). Este plano cobre **email**, a primeira capacidade; fases M1–M4
-> abaixo. Lista de trabalho da M1: [execution-plan.md](execution-plan.md).
+> **Status:** M1 implementada (2026-10-29); falta a verificação real. M2–M4 são planos. Este plano
+> cobre **email**, a primeira capacidade; fases M1–M4 abaixo. Lista de trabalho da M1: [execution-plan.md](execution-plan.md).
 > 🇺🇸 [English version](../en/product-plan.md)
 >
 > Relacionados: [Integrations](../../integrations/pt-BR/README.md) · [Channels](../../channels/pt-BR/README.md) ·
@@ -71,7 +70,7 @@
 5. **Cabeçalhos espelhados, corpos sob demanda.** Os metadados de toda mensagem são espelhados; o
    corpo é buscado ao abrir (ou quando uma regra precisa) e vai para o cache; anexos passam direto, não
    são guardados. *(C5)*
-6. **Credenciais ficam no Integrations.** O Communications guarda host/porta/segurança (uso); usuário,
+6. **Credenciais ficam no Integrations.** O Communications guarda host/porta (uso); usuário,
    senha e tokens OAuth são do Integrations (credencial). *(C6)*
 7. **Conteúdo remoto bloqueado por padrão.** O HTML do email renderiza isolado, sem scripts e sem
    imagens remotas até o usuário pedir — pixel de rastreamento nunca dispara só de abrir a mensagem.
@@ -141,8 +140,8 @@
 
 | Tabela | Guarda |
 |---|---|
-| `com001_mailbox` | usuário, `provider` (`gmail`/`titan`/`imap`), `external_account_id`, endereço, nome de exibição, `imap_host`/`imap_port`, `smtp_host`/`smtp_port`, `security`, `status` (`active`/`syncing`/`needs-reconnect`/`error`), `sync_cursor` (`historyId` do Gmail), `backfill_cursor`, `last_synced_at`, `last_error`, `consecutive_failures` |
-| `com002_mail_label` | caixa, `provider_label_id`, nome, `kind` (`system`/`user`), `role` (`inbox`/`sent`/`drafts`/`trash`/`spam`/`archive`/null), `is_exclusive`, `uid_validity` e `highest_modseq` (só IMAP — o cursor fica na pasta) |
+| `com001_mailbox` | usuário, `provider` (`gmail`/`titan`/`imap`), `external_account_id`, endereço, nome de exibição, `imap_host`/`imap_port`, `smtp_host`/`smtp_port`, `status` (`active`/`syncing`/`needs-reconnect`/`error`), `sync_cursor` (`historyId` do Gmail), `backfill_cursor`, `last_synced_at`, `last_error`, `consecutive_failures` |
+| `com002_mail_label` | caixa, `provider_label_id`, nome, `kind` (`system`/`user`), `role` (`inbox`/`sent`/`drafts`/`trash`/`spam`/`archive`/null), `is_exclusive` (o cursor por pasta do IMAP fica dentro do `sync_cursor` opaco da caixa) |
 | `com003_mail_message` | caixa, `provider_message_id`, `thread_key`, `rfc822_message_id`, remetente, para/cc (jsonb), assunto, prévia, `sent_at`, `is_unread`, `is_starred`, `has_attachments`, `size` |
 | `com004_mail_message_label` | mensagem ↔ etiqueta |
 | `com005_mail_content` | corpo em cache (texto + HTML, sanitizado na renderização) + lista de anexos (id, nome, tipo, tamanho, content-id), `fetched_at`, `last_accessed_at` |
@@ -316,6 +315,12 @@ E, no Integrations: `PUT /api/v1/integrations/{provider}/password`.
   1. Suporte a CONDSTORE / QRESYNC.
   2. Se o envio por SMTP já salva em Enviados (para evitar duplicata).
   3. Se oferece ManageSieve (§10.4).
+
+  Resultados até agora (2026-10-29, sem login): antes da autenticação o `imap.titan.email:993`
+  anuncia só `IMAP4rev1 AUTH=PLAIN SASL-IR ID LITERAL- APPENDLIMIT=52428800` — CONDSTORE/QRESYNC
+  costumam aparecer só depois do login, então o (1) continua aberto. As portas 4190 e 2000 do
+  `imap.titan.email` não respondem: **(3) o ManageSieve não é oferecido**, então as regras do Titan
+  ficam no motor do Pandora. O (2) continua aberto.
 
 ---
 

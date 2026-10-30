@@ -1,0 +1,4 @@
+Pandora can no longer read {{mailbox}}
+The mail server refused the password for {{mailbox}}, so Pandora stopped syncing it. Mail already in Pandora stays.
+
+Update the password under Settings → Integrations to resume.

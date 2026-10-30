@@ -53,7 +53,7 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
         _respawner = await Respawner.CreateAsync(_connection, new RespawnerOptions
         {
             DbAdapter = DbAdapter.Postgres,
-            SchemasToInclude = ["identity", "channels", "finances", "notes", "agenda", "integrations", "assistant", "files"],
+            SchemasToInclude = ["identity", "channels", "finances", "notes", "agenda", "integrations", "assistant", "files", "communications"],
             TablesToIgnore =
             [
                 new Respawn.Graph.Table("finances", "fin002_system_category"),
@@ -78,6 +78,7 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
                 ["Tars:Data:Connections:integrations:ConnectionString"] = ConnectionString,
                 ["Tars:Data:Connections:assistant:ConnectionString"] = ConnectionString,
                 ["Tars:Data:Connections:files:ConnectionString"] = ConnectionString,
+                ["Tars:Data:Connections:communications:ConnectionString"] = ConnectionString,
                 // A bot username is all the linking flow needs; no token, because nothing calls Telegram here.
                 ["Pandora:Channels:Telegram:BotUsername"] = "pandora_test_bot",
                 // Test users have no zone preference, so "today" falls back to this default. Pinned to UTC so it

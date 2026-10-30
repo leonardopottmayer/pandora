@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Tars: Messaging (integration events will land here in later phases) -->
+    <!-- Tars: Messaging -->
     <PackageReference Include="Pottmayer.Tars.Messaging.Abstractions" Version="0.0.18" />
   </ItemGroup>
 

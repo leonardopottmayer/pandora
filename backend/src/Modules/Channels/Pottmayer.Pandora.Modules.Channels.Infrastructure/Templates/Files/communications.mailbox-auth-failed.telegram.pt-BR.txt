@@ -1,0 +1,1 @@
+⚠️ O servidor de email recusou a senha de {{mailbox}}. Atualize em Configurações → Integrações para voltar a sincronizar.

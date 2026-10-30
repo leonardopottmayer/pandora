@@ -43,6 +43,8 @@ import { RootsPage } from '@/modules/files/pages/RootsPage'
 import { FiltersPage } from '@/modules/files/pages/FiltersPage'
 import { ReviewPage } from '@/modules/files/pages/ReviewPage'
 import { FilesSettingsPage } from '@/modules/files/pages/FilesSettingsPage'
+import { MailPage } from '@/modules/communications/pages/MailPage'
+import { MailAccountsPage } from '@/modules/communications/pages/MailAccountsPage'
 
 export const router = createBrowserRouter([
   // Public (redirect if already authenticated)
@@ -109,6 +111,10 @@ export const router = createBrowserRouter([
       { path: 'files/filters', element: <FiltersPage /> },
       { path: 'files/review', element: <ReviewPage /> },
       { path: 'files/settings', element: <FilesSettingsPage /> },
+
+      // Communications
+      { path: 'mail', element: <MailPage /> },
+      { path: 'mail/accounts', element: <MailAccountsPage /> },
     ],
   },
 

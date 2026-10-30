@@ -27,6 +27,7 @@ internal static class TemplateCatalog
             ["agenda.task.due"] = [Channel.Email, Channel.Telegram],
             ["agenda.event.due"] = [Channel.Email, Channel.Telegram],
             ["integrations.account-revoked"] = [Channel.Email, Channel.Telegram],
+            ["communications.mailbox-auth-failed"] = [Channel.Email, Channel.Telegram],
         };
 
     /// <summary>Every variant that has to be present, for the startup check to walk.</summary>

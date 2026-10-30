@@ -1,0 +1,4 @@
+O Pandora não consegue mais ler {{mailbox}}
+O servidor de email recusou a senha de {{mailbox}}, então o Pandora parou de sincronizá-la. Os emails que já estão no Pandora continuam lá.
+
+Atualize a senha em Configurações → Integrações para retomar.

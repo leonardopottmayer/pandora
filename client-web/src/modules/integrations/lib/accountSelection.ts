@@ -5,12 +5,17 @@ export interface AccountRequirement {
   providers: string[]
   authKind?: AuthKind
   requiredScopes?: string[]
+  /** Accounts the feature already uses and cannot take again (e.g. one mailbox per account). */
+  excludeIds?: string[]
 }
 
 /** Accounts of an accepted provider (and kind), whether or not they already have the scopes. */
 export function candidateAccounts(accounts: ExternalAccount[], req: AccountRequirement): ExternalAccount[] {
   return accounts.filter(
-    (a) => req.providers.includes(a.provider) && (req.authKind === undefined || a.authKind === req.authKind),
+    (a) =>
+      req.providers.includes(a.provider) &&
+      (req.authKind === undefined || a.authKind === req.authKind) &&
+      !req.excludeIds?.includes(a.id),
   )
 }
 

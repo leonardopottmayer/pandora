@@ -28,6 +28,8 @@ import {
   HddOutlined,
   FilterOutlined,
   CheckSquareFilled,
+  MailOutlined,
+  UserOutlined,
 } from '@ant-design/icons'
 import type { ReactNode } from 'react'
 
@@ -88,6 +90,15 @@ export const navigationModules: NavModule[] = [
     icon: <BookOutlined />,
     screens: [
       { key: 'notes-pages', labelKey: 'nav.notesPages', path: '/notes', icon: <FileTextOutlined /> },
+    ],
+  },
+  {
+    key: 'mail',
+    labelKey: 'nav.mail',
+    icon: <MailOutlined />,
+    screens: [
+      { key: 'mail-inbox', labelKey: 'nav.mailInbox', path: '/mail', icon: <MailOutlined /> },
+      { key: 'mail-accounts', labelKey: 'nav.mailAccounts', path: '/mail/accounts', icon: <UserOutlined /> },
     ],
   },
   {

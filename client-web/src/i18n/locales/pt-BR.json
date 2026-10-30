@@ -141,7 +141,10 @@
     "filesRoots": "Dispositivos e raízes",
     "filesFilters": "Filtros",
     "filesReview": "Revisão",
-    "filesSettings": "Configurações"
+    "filesSettings": "Configurações",
+    "mail": "Email",
+    "mailInbox": "Mensagens",
+    "mailAccounts": "Contas"
   },
   "theme": {
     "toLight": "Tema claro",
@@ -403,6 +406,9 @@
     "usage": {
       "assistant": {
         "chat": "Assistant · chat"
+      },
+      "communications": {
+        "mail": "Email"
       }
     },
     "select": {
@@ -1448,6 +1454,85 @@
       "keepDone": "{{count}} itens mantidos.",
       "forgetDone": "{{count}} itens esquecidos.",
       "error": "Não foi possível aplicar a decisão."
+    }
+  },
+  "mail": {
+    "allMailboxes": "Todas as caixas",
+    "allMail": "Todas as mensagens",
+    "manageAccounts": "Contas de email",
+    "noMailboxes": "Nenhuma caixa conectada ainda.",
+    "search": "Buscar no assunto, remetente ou texto",
+    "filterAll": "Todas",
+    "filterUnread": "Não lidas",
+    "noMessages": "Nenhuma mensagem aqui.",
+    "loadMore": "Carregar mais",
+    "noSelection": "Selecione uma mensagem para ler.",
+    "noSubject": "(sem assunto)",
+    "unknownSender": "(remetente desconhecido)",
+    "to": "Para",
+    "cc": "Cc",
+    "conversation": "{{count}} mensagens nesta conversa",
+    "imagesBlocked": "Imagens externas estão ocultas, para quem mandou não saber que você abriu a mensagem.",
+    "showImages": "Mostrar imagens",
+    "emptyBody": "Esta mensagem não tem texto.",
+    "openError": "Não foi possível abrir a mensagem.",
+    "downloadError": "Não foi possível baixar o anexo.",
+    "provider": {
+      "imap": "Outro (IMAP)"
+    },
+    "role": {
+      "inbox": "Caixa de entrada",
+      "sent": "Enviados",
+      "drafts": "Rascunhos",
+      "trash": "Lixeira",
+      "spam": "Spam",
+      "archive": "Arquivo"
+    },
+    "status": {
+      "active": "Ativa",
+      "syncing": "Sincronizando",
+      "needs-reconnect": "Reconectar",
+      "error": "Erro"
+    },
+    "accounts": {
+      "title": "Contas de email",
+      "description": "Caixas de que o Pandora guarda uma cópia. Só os cabeçalhos ficam salvos; o corpo da mensagem é buscado quando você abre.",
+      "openInbox": "Abrir email",
+      "add": "Adicionar caixa",
+      "none": "Nenhuma caixa conectada ainda.",
+      "connect": "Conectar",
+      "connected": "{{address}} conectada. As primeiras mensagens chegam em instantes.",
+      "connectError": "Não foi possível conectar a caixa.",
+      "googleAccount": "Conta Google",
+      "connectGoogle": "Conectar outra conta Google",
+      "email": "Endereço de email",
+      "titanHint": "O endereço e a senha que você usa no webmail do Titan.",
+      "displayName": "Nome",
+      "displayNamePlaceholder": "ex.: Pessoal, Trabalho",
+      "imapHost": "Servidor IMAP",
+      "smtpHost": "Servidor SMTP",
+      "port": "Porta",
+      "backfill": "Baixando cabeçalhos: {{count}} de {{total}}",
+      "backfillStarting": "Começando a primeira carga…",
+      "messages": "Mensagens: {{count}}",
+      "lastSynced": "sincronizada {{when}}",
+      "reconnectTitle": "A sincronização parou: o servidor recusou as credenciais.",
+      "errorTitle": "A última sincronização falhou; ela é tentada de novo no próximo ciclo.",
+      "syncNow": "Sincronizar agora",
+      "synced": "Sincronizada.",
+      "syncError": "Não foi possível sincronizar a caixa.",
+      "reconnect": "Reconectar",
+      "fix": "Editar conexão",
+      "fixTitle": "Conexão de {{address}}",
+      "fixSave": "Salvar e testar",
+      "fixed": "A conexão voltou a funcionar.",
+      "newPassword": "Nova senha",
+      "newPasswordHint": "Deixe vazio para manter a atual.",
+      "renameError": "Não foi possível renomear a caixa.",
+      "delete": "Remover",
+      "deleteTitle": "Remover {{address}}?",
+      "deleteDesc": "A cópia das mensagens no Pandora é apagada; nada muda no servidor. A conta continua em Conexões.",
+      "deleteError": "Não foi possível remover a caixa."
     }
   }
 }

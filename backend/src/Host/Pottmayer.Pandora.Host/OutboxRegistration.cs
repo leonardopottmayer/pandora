@@ -2,6 +2,8 @@ using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions;
 using Pottmayer.Pandora.Modules.Channels.Abstractions;
 using Pottmayer.Pandora.Modules.Channels.Contracts;
+using Pottmayer.Pandora.Modules.Communications.Abstractions;
+using Pottmayer.Pandora.Modules.Communications.Contracts;
 using Pottmayer.Pandora.Modules.Identity.Abstractions;
 using Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
 using Pottmayer.Pandora.Modules.Integrations.Abstractions;
@@ -37,7 +39,8 @@ internal static class OutboxRegistration
         services.AddTarsIntegrationEventTypeRegistry(
             typeof(AccountActivationRequested).Assembly,   // Identity.Contracts
             typeof(NotifyUserRequested).Assembly,          // Channels.Contracts
-            typeof(ExternalAccountDisconnected).Assembly); // Integrations.Contracts
+            typeof(ExternalAccountDisconnected).Assembly,  // Integrations.Contracts
+            typeof(MailMessageReceived).Assembly);         // Communications.Contracts
 
         // The last mile, the serializer, the outbox-backed bus and the outbox store.
         services.AddTarsIntegrationEventDispatcher();
@@ -51,6 +54,7 @@ internal static class OutboxRegistration
         services.AddTarsOutboxRelay(AgendaModule.DatabaseKey);
         services.AddTarsOutboxRelay(IntegrationsModule.DatabaseKey);
         services.AddTarsOutboxRelay(AssistantModule.DatabaseKey);
+        services.AddTarsOutboxRelay(CommunicationsModule.DatabaseKey);
 
         return builder;
     }

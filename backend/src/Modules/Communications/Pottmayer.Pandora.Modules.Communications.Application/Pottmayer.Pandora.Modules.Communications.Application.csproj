@@ -14,6 +14,16 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Communications.Abstractions/Pottmayer.Pandora.Modules.Communications.Abstractions.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Communications.Contracts/Pottmayer.Pandora.Modules.Communications.Contracts.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Communications.Domain/Pottmayer.Pandora.Modules.Communications.Domain.csproj" />
+    <!-- Integrations: credentials (usage source) and the account events -->
+    <ProjectReference Include="../../Integrations/Pottmayer.Pandora.Modules.Integrations.Abstractions/Pottmayer.Pandora.Modules.Integrations.Abstractions.csproj" />
+    <ProjectReference Include="../../Integrations/Pottmayer.Pandora.Modules.Integrations.Contracts/Pottmayer.Pandora.Modules.Integrations.Contracts.csproj" />
+    <!-- Channels: NotifyUserRequested -->
+    <ProjectReference Include="../../Channels/Pottmayer.Pandora.Modules.Channels.Contracts/Pottmayer.Pandora.Modules.Channels.Contracts.csproj" />
+    <!-- Tars: Messaging -->
+    <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.0.18" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.2" />
+    <!-- Opened messages: the raw RFC 822 bytes are parsed here (same version MailKit pulls) -->
+    <PackageReference Include="MimeKit" Version="4.18.2" />
     <!-- Tars: Core -->
     <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.18" />
     <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.18" />
