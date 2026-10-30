@@ -75,5 +75,3 @@ datas, então o teste dele não pegaria o segundo; agora o `SyncEngineTests` cob
    por semana. Passar de 100 usuários exigiria a verificação do Google para um escopo restrito.
 4. **A busca** usa `ILIKE` sem índice e não lê o corpo. Serve no volume de uma pessoa.
 5. **O download de anexo** busca a mensagem crua inteira de novo.
-6. **O comentário da migration da `com003`** ainda descreve o id IMAP como `{label_id}:{uid}`; o código e esta documentação
-   estão certos. Só o comentário está desatualizado; a coluna não é afetada.

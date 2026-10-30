@@ -75,5 +75,3 @@ catch the second; `SyncEngineTests` now covers it with an offset through the fak
    once a week. Going past 100 users would need Google's verification of a restricted scope.
 4. **Search** uses `ILIKE` with no index, and does not read bodies. Fine at one person's volume.
 5. **Attachment download** fetches the whole raw message again.
-6. **The migration comment on `com003`** still describes the IMAP id as `{label_id}:{uid}`; the code and this
-   documentation are right. Only the comment is out of date; the column is unaffected.

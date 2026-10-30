@@ -1,7 +1,7 @@
 -- 20261027120003-create-table-com003-mail-message.up.sql
 
 -- The mirrored header of one message. provider_message_id is the Gmail message id or, on IMAP,
--- "{label_id}:{uid}" (UIDs are per folder). The body lives in com005, fetched on demand.
+-- "{uidvalidity}:{uid}:{folder path}" (UIDs are per folder). The body lives in com005, fetched on demand.
 -- to_recipients and cc_recipients: [{ "Name": ..., "Address": ... }].
 CREATE TABLE communications.com003_mail_message (
 	id uuid NOT NULL DEFAULT uuid_generate_v7(),
