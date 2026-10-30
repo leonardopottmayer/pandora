@@ -206,7 +206,8 @@ F1a/F1b/F1c: **M1a** = steps 1–2, **M1b** = steps 3–7, **M1c** = steps 8–9
 > `403`s Gmail sends when throttling, and nothing was saved. Each Gmail request is now retried after
 > 1, 2, 4, 8 and 16 s (or the server's `Retry-After`) on `429`, `5xx` and a `403` whose reason is
 > `rateLimitExceeded`/`userRateLimitExceeded`; an error that persists carries Gmail's reason in the
-> mailbox's last error. Test: `A_throttled_request_is_retried_and_a_lasting_one_names_the_reason`.
+> mailbox's last error, and `ParallelGets` went from 4 to 2. Test:
+> `A_throttled_request_is_retried_and_a_lasting_one_names_the_reason`.
 
 ### Step 6 — Sync engine ✅
 
@@ -255,7 +256,9 @@ F1a/F1b/F1c: **M1a** = steps 1–2, **M1b** = steps 3–7, **M1c** = steps 8–9
   `needs-reconnect`.
 
 > **Changed (2026-10-29)** — one cycle no longer reads a single backfill batch: it reads batches back
-> to back until the backfill ends or `BackfillBudget` (default 1 minute, at least one batch) runs out.
+> to back until the backfill ends or `BackfillBudget` runs out (at least one batch). The default went
+> from 1 to 5 minutes after the real Gmail test: longer than the 2-minute interval, so a backfill runs
+> almost all the time instead of half of it.
 > With one batch per 2-minute cycle a 50,000-message mailbox took over 3 hours. Test:
 > `One_cycle_reads_backfill_batches_until_the_backfill_ends` (batches of 2, five messages, one cycle).
 

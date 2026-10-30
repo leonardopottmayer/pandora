@@ -220,7 +220,8 @@ Commit só quando pedido.
 > alguns `403` que o Gmail manda quando limita a taxa, e nada era salvo. Agora cada pedido ao Gmail é
 > repetido depois de 1, 2, 4, 8 e 16 s (ou do `Retry-After` do servidor) em `429`, `5xx` e `403` com
 > motivo `rateLimitExceeded`/`userRateLimitExceeded`; um erro que persiste leva o motivo do Gmail no
-> último erro da caixa. Teste: `A_throttled_request_is_retried_and_a_lasting_one_names_the_reason`.
+> último erro da caixa, e o `ParallelGets` passou de 4 para 2. Teste:
+> `A_throttled_request_is_retried_and_a_lasting_one_names_the_reason`.
 
 ### Passo 6 — Motor de sincronização ✅
 
@@ -269,7 +270,9 @@ Commit só quando pedido.
   evento de revogação → `needs-reconnect`.
 
 > **Mudou (2026-10-29)** — um ciclo não lê mais um lote só da carga inicial: lê lotes seguidos até a
-> carga terminar ou o `BackfillBudget` (padrão 1 minuto, sempre ao menos um lote) acabar. Com um lote
+> carga terminar ou o `BackfillBudget` acabar (sempre ao menos um lote). O padrão passou de 1 para 5
+> minutos depois do teste real com o Gmail: maior que o intervalo de 2 minutos, a carga inicial roda
+> quase o tempo todo em vez de metade. Com um lote
 > por ciclo de 2 minutos, uma caixa de 50 mil mensagens levava mais de 3 horas. Teste:
 > `One_cycle_reads_backfill_batches_until_the_backfill_ends` (lotes de 2, cinco mensagens, um ciclo).
 

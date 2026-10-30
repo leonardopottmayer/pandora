@@ -14,8 +14,10 @@ public sealed class CommunicationsOptions
     /// <summary>
     /// How long one cycle keeps reading backfill batches of a mailbox; at least one batch always runs.
     /// Bounds how long the job (sequential) and "Sync now" spend on a large mailbox's first download.
+    /// Longer than <see cref="SyncInterval"/> on purpose: a backfill then runs almost all the time, and the
+    /// timer skips the ticks a long cycle covers.
     /// </summary>
-    public TimeSpan BackfillBudget { get; set; } = TimeSpan.FromMinutes(1);
+    public TimeSpan BackfillBudget { get; set; } = TimeSpan.FromMinutes(5);
 
     /// <summary>A cached body not opened for this many days is deleted (it is fetched again on open).</summary>
     public int ContentCacheRetentionDays { get; set; } = 30;

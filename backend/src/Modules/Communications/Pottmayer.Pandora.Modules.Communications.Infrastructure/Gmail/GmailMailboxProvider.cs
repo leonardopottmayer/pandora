@@ -32,9 +32,9 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
     internal static readonly string[] AcceptedScopes =
         ["https://www.googleapis.com/auth/gmail.modify", "https://mail.google.com/"];
 
-    // ponytail: one GET per message, a few at a time, to stay under the per-user quota (250 units/s,
-    // 5 per get). Gmail's batch endpoint (100 per request) if the backfill is too slow.
-    internal const int ParallelGets = 4;
+    // ponytail: one GET per message, two at a time — four drew frequent rate-limit 403s on a real
+    // 64k-message backfill. Gmail's batch endpoint (100 per request) if the backfill is too slow.
+    internal const int ParallelGets = 2;
 
     private static readonly string[] MetadataHeaders = ["From", "To", "Cc", "Subject", "Message-ID"];
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
