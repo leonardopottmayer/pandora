@@ -101,7 +101,7 @@ cobre. "Sincronizar agora" (`POST mailboxes/{id}/sync`) roda um ciclo dentro da 
 | `ExternalAccountRevoked` / `ExternalAccountDisconnected` | As caixas daquela conta vão para `needs-reconnect`; os dados ficam |
 | Erro do provedor (rede, 5xx, cota) | `RecordFailure`, repete no próximo ciclo; `error` depois de 5 seguidas, e um sucesso limpa |
 | Cursor expirado | A caixa é lida de novo do início, sem eventos |
-| Uma exceção que escapa do ciclo (uma escrita no banco que falhou, por exemplo) | Registrada no log pelo job, **não** na caixa; veja [Pontos em aberto](implementation-status.md#pontos-em-aberto) |
+| Uma exceção no ciclo (uma escrita no banco que falhou, por exemplo) | Vai para o log com o stack trace e conta como erro do provedor, com um `last_error` fixo: os detalhes ficam no log |
 
 ## 4. Abrir uma mensagem
 

@@ -101,7 +101,7 @@ after 1, 2, 4, 8 and 16 s (a `Retry-After` wins). Four at a time drew frequent `
 | `ExternalAccountRevoked` / `ExternalAccountDisconnected` | The mailboxes on that account go `needs-reconnect`; data kept |
 | Provider error (network, 5xx, quota) | `RecordFailure`, retried next cycle; `error` after 5 in a row, and a success clears it |
 | Cursor expired | The mailbox is read again from the start, without events |
-| An exception out of the cycle (a failed database write, say) | Logged by the job, **not** recorded on the mailbox; see [Known open points](implementation-status.md#known-open-points) |
+| An exception in the cycle (a failed database write, say) | Logged with its stack trace and counted like a provider error, with a fixed `last_error`: the details stay in the log |
 
 ## 4. Opening a message
 

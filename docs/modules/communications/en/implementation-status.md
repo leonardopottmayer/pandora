@@ -22,7 +22,7 @@ lives in [product-plan.md](product-plan.md).
 | **API** | `GET`/`POST /mailboxes`, `PATCH`/`DELETE /mailboxes/{id}`, `POST /mailboxes/{id}/sync`, `GET /mailboxes/{id}/labels`, `GET /messages`, `GET /messages/{id}`, `GET /messages/{id}/attachments/{attachmentId}`. |
 | **Integrations** | `CommunicationsAccountUsageSource`: the connections screen shows "Email · address" as a usage of the account. |
 | **Frontend** | `/mail` and `/mail/accounts`; `prepareMailHtml` + sandboxed iframe + CSP. |
-| **Tests** | Unit: 47 (`MailboxTests`, `ThreadKeyTests`, `LabelRoleTests`, `GmailMailboxProviderTests`). Integration: 22 (`SyncEngineTests`, `CommunicationsApiTests`, `ImapMailboxProviderTests` against GreenMail, `PersistenceTests`, `ProviderRegistrationTests`). Front: `prepareMailHtml.test.ts`, `MailPage.test.tsx`. |
+| **Tests** | Unit: 47 (`MailboxTests`, `ThreadKeyTests`, `LabelRoleTests`, `GmailMailboxProviderTests`). Integration: 23 (`SyncEngineTests`, `CommunicationsApiTests`, `ImapMailboxProviderTests` against GreenMail, `PersistenceTests`, `ProviderRegistrationTests`). Front: `prepareMailHtml.test.ts`, `MailPage.test.tsx`. |
 
 ### Real-world check (2026-10-30)
 
@@ -71,12 +71,9 @@ catch the second; `SyncEngineTests` now covers it with an offset through the fak
 1. **The job is sequential**, so a large mailbox's backfill delays every other mailbox by up to its 5-minute budget.
    Fine for one user. The first thing to change with several: a separate backfill queue with limited concurrency.
 2. **Single instance.** The gate is in process; several instances would need a lease in the database.
-3. **An exception out of a cycle is not recorded on the mailbox.** Only `Result` failures reach `RecordFailure`. A
-   thrown exception (a failed write, as the date bug was) is logged by the job, and the screen keeps showing
-   "syncing" while the same batch fails each cycle.
-4. **Testing mode on Google.** The Gmail refresh token expires after 7 days, so the mailbox asks to reconnect about
+3. **Testing mode on Google.** The Gmail refresh token expires after 7 days, so the mailbox asks to reconnect about
    once a week. Going past 100 users would need Google's verification of a restricted scope.
-5. **Search** uses `ILIKE` with no index, and does not read bodies. Fine at one person's volume.
-6. **Attachment download** fetches the whole raw message again.
-7. **The migration comment on `com003`** still describes the IMAP id as `{label_id}:{uid}`; the code and this
+4. **Search** uses `ILIKE` with no index, and does not read bodies. Fine at one person's volume.
+5. **Attachment download** fetches the whole raw message again.
+6. **The migration comment on `com003`** still describes the IMAP id as `{label_id}:{uid}`; the code and this
    documentation are right. Only the comment is out of date; the column is unaffected.

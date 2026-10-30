@@ -20,6 +20,10 @@ public static class MailErrors
     public static Error ProviderFailed(string detail) =>
         Error.Validation("Communications.ProviderFailed", detail);
 
+    /// <summary>The cycle threw instead of answering; the details are in the server log. The next cycle retries.</summary>
+    public static Error SyncFailed =>
+        Error.Validation("Communications.SyncFailed", "The sync stopped on an unexpected error. The server log has the details.");
+
     public static Error MailboxNotFound =>
         Error.NotFound("Communications.MailboxNotFound", "This mailbox does not exist.");
 

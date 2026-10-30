@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Pottmayer.Pandora.Modules.Channels.Contracts;
 using Pottmayer.Pandora.Modules.Communications.Abstractions;
@@ -30,7 +31,8 @@ public sealed class SyncMailboxCommandHandler(
     IServiceProvider services,
     IIntegrationEventBus bus,
     IOptions<CommunicationsOptions> options,
-    TimeProvider timeProvider) : CommandHandlerBase<SyncMailboxCommand, bool>
+    TimeProvider timeProvider,
+    ILogger<SyncMailboxCommandHandler> logger) : CommandHandlerBase<SyncMailboxCommand, bool>
 {
     private const string NotifyCategory = "communications.mailbox";
     private const string AuthFailedTemplate = "communications.mailbox-auth-failed";
@@ -49,7 +51,19 @@ public sealed class SyncMailboxCommandHandler(
                 return Result<bool>.Success(false);
 
             var provider = services.GetRequiredKeyedService<IMailboxProvider>(mailbox.Provider.Value);
-            var cycle = await RunCycleAsync(mailbox, provider, ct);
+            Result<bool> cycle;
+            try
+            {
+                cycle = await RunCycleAsync(mailbox, provider, ct);
+            }
+            catch (Exception ex) when (!ct.IsCancellationRequested)
+            {
+                // A bug or a failed write, not a provider's answer: the mailbox must not look healthy while it
+                // fails the same way every cycle. The details stay in the log, the screen gets the fixed text.
+                logger.LogError(ex, "Mailbox {MailboxId} sync cycle threw.", mailboxId);
+                cycle = Result<bool>.Failure(MailErrors.SyncFailed);
+            }
+
             if (cycle.IsSuccess)
                 return cycle;
 

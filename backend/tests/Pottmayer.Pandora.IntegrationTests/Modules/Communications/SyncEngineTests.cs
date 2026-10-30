@@ -206,6 +206,26 @@ public sealed class SyncEngineTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task An_exception_in_the_cycle_is_recorded_on_the_mailbox_without_its_details()
+    {
+        var mailbox = await CreateMailboxAsync();
+        _provider.ThrowWith = new InvalidOperationException("internal details");
+
+        var result = await SyncAsync(mailbox.Id);
+
+        Assert.True(result.IsFailure);
+        var failed = await LoadAsync(mailbox.Id);
+        Assert.Equal(1, failed.ConsecutiveFailures);
+        Assert.Equal(MailErrors.SyncFailed.Message, failed.LastError);
+
+        _provider.ThrowWith = null;
+        Assert.True(Value(await SyncAsync(mailbox.Id)));
+        var recovered = await LoadAsync(mailbox.Id);
+        Assert.Equal(0, recovered.ConsecutiveFailures);
+        Assert.Null(recovered.LastError);
+    }
+
+    [Fact]
     public async Task A_revoked_account_stops_its_mailboxes()
     {
         var mailbox = await CreateMailboxAsync();

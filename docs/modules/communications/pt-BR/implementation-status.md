@@ -22,7 +22,7 @@ frente está em [product-plan.md](product-plan.md).
 | **API** | `GET`/`POST /mailboxes`, `PATCH`/`DELETE /mailboxes/{id}`, `POST /mailboxes/{id}/sync`, `GET /mailboxes/{id}/labels`, `GET /messages`, `GET /messages/{id}`, `GET /messages/{id}/attachments/{attachmentId}`. |
 | **Integrations** | `CommunicationsAccountUsageSource`: a tela de conexões mostra "Email · endereço" como uso da conta. |
 | **Frontend** | `/mail` e `/mail/accounts`; `prepareMailHtml` + iframe em sandbox + CSP. |
-| **Testes** | Unitários: 47 (`MailboxTests`, `ThreadKeyTests`, `LabelRoleTests`, `GmailMailboxProviderTests`). Integração: 22 (`SyncEngineTests`, `CommunicationsApiTests`, `ImapMailboxProviderTests` contra o GreenMail, `PersistenceTests`, `ProviderRegistrationTests`). Front: `prepareMailHtml.test.ts`, `MailPage.test.tsx`. |
+| **Testes** | Unitários: 47 (`MailboxTests`, `ThreadKeyTests`, `LabelRoleTests`, `GmailMailboxProviderTests`). Integração: 23 (`SyncEngineTests`, `CommunicationsApiTests`, `ImapMailboxProviderTests` contra o GreenMail, `PersistenceTests`, `ProviderRegistrationTests`). Front: `prepareMailHtml.test.ts`, `MailPage.test.tsx`. |
 
 ### Verificação real (2026-10-30)
 
@@ -71,12 +71,9 @@ datas, então o teste dele não pegaria o segundo; agora o `SyncEngineTests` cob
 1. **O job é sequencial**, então a carga inicial de uma caixa grande atrasa as outras em até 5 minutos. Serve para um
    usuário. A primeira coisa a mudar com vários: uma fila separada de cargas iniciais, com concorrência limitada.
 2. **Instância única.** A trava é em processo; várias instâncias precisariam de uma concessão no banco.
-3. **Uma exceção que escapa do ciclo não fica registrada na caixa.** Só falhas de `Result` chegam ao `RecordFailure`. Uma
-   exceção (uma escrita que falhou, como no bug da data) vai para o log do job, e a tela continua em "sincronizando"
-   enquanto o mesmo lote falha a cada ciclo.
-4. **Modo de teste no Google.** O refresh token do Gmail expira em 7 dias, então a caixa pede reconexão cerca de uma vez
+3. **Modo de teste no Google.** O refresh token do Gmail expira em 7 dias, então a caixa pede reconexão cerca de uma vez
    por semana. Passar de 100 usuários exigiria a verificação do Google para um escopo restrito.
-5. **A busca** usa `ILIKE` sem índice e não lê o corpo. Serve no volume de uma pessoa.
-6. **O download de anexo** busca a mensagem crua inteira de novo.
-7. **O comentário da migration da `com003`** ainda descreve o id IMAP como `{label_id}:{uid}`; o código e esta documentação
+4. **A busca** usa `ILIKE` sem índice e não lê o corpo. Serve no volume de uma pessoa.
+5. **O download de anexo** busca a mensagem crua inteira de novo.
+6. **O comentário da migration da `com003`** ainda descreve o id IMAP como `{label_id}:{uid}`; o código e esta documentação
    estão certos. Só o comentário está desatualizado; a coluna não é afetada.

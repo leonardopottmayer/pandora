@@ -24,6 +24,9 @@ internal sealed class FakeMailProvider : IMailboxProvider
     /// <summary>Every call answers with this error while it is set.</summary>
     public Error? FailWith { get; set; }
 
+    /// <summary>Every call throws this while it is set.</summary>
+    public Exception? ThrowWith { get; set; }
+
     /// <summary>The next FetchChanges answers SyncCursorExpired once.</summary>
     public bool ExpireCursorOnce { get; set; }
 
@@ -114,6 +117,11 @@ internal sealed class FakeMailProvider : IMailboxProvider
         return Answer(stream.ToArray());
     }
 
-    private Task<Result<T>> Answer<T>(T value) =>
-        Task.FromResult(FailWith is { } error ? Result<T>.Failure(error) : Result<T>.Success(value));
+    private Task<Result<T>> Answer<T>(T value)
+    {
+        if (ThrowWith is { } exception)
+            throw exception;
+
+        return Task.FromResult(FailWith is { } error ? Result<T>.Failure(error) : Result<T>.Success(value));
+    }
 }
