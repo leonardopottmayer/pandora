@@ -56,7 +56,8 @@ public sealed class MailMessage
             Cc = [.. cc],
             Subject = subject,
             Snippet = snippet,
-            SentAt = sentAt,
+            // A Date header keeps the sender's offset; Npgsql only writes UTC to timestamptz.
+            SentAt = sentAt.ToUniversalTime(),
             IsUnread = isUnread,
             IsStarred = isStarred,
             HasAttachments = hasAttachments,
@@ -85,7 +86,7 @@ public sealed class MailMessage
         // IMAP has no snippet: keep the one filled when the message was opened.
         if (remote.Snippet.Length > 0)
             Snippet = remote.Snippet;
-        SentAt = remote.SentAt;
+        SentAt = remote.SentAt.ToUniversalTime();
         IsUnread = remote.IsUnread;
         IsStarred = remote.IsStarred;
         HasAttachments = remote.HasAttachments;

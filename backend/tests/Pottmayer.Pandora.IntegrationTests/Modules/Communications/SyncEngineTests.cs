@@ -63,6 +63,21 @@ public sealed class SyncEngineTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_date_with_the_senders_offset_is_saved_on_arrival_and_on_change()
+    {
+        var sent = new DateTimeOffset(2026, 10, 30, 12, 0, 0, TimeSpan.FromHours(2));
+        _provider.Deliver("m1", "From Berlin", sentAt: sent);
+        var mailbox = await CreateMailboxAsync();
+
+        Assert.True(Value(await SyncAsync(mailbox.Id)));
+
+        _provider.Deliver("m1", "From Berlin", sentAt: sent.AddHours(1));
+
+        Assert.True(Value(await SyncAsync(mailbox.Id)));
+        Assert.Equal(MailboxStatus.Active, (await LoadAsync(mailbox.Id)).Status);
+    }
+
+    [Fact]
     public async Task One_cycle_reads_backfill_batches_until_the_backfill_ends()
     {
         for (var i = 1; i <= 5; i++)
