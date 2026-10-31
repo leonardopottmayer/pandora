@@ -1,7 +1,7 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchAttachmentBlob } from '@/modules/notes/services/attachments.service'
 import * as mailService from '../services/communications.service'
-import type { ConnectMailboxInput, ServerSettings } from '../services/communications.service'
+import type { ConnectMailboxInput, MessageActionInput, ServerSettings } from '../services/communications.service'
 import type { MailAttachment, MessageFilter } from '../models'
 
 // Central query keys of the Communications module; invalidating `all` refreshes every mail screen.
@@ -112,4 +112,20 @@ export function useDeleteMailbox() {
 
 export function useSyncMailbox() {
   return useMailMutation((id: string) => mailService.syncMailbox(id))
+}
+
+export function useMessageAction() {
+  return useMailMutation((input: MessageActionInput) => mailService.applyMessageAction(input))
+}
+
+export function useCreateLabel() {
+  return useMailMutation(({ mailboxId, name }: { mailboxId: string; name: string }) => mailService.createLabel(mailboxId, name))
+}
+
+export function useRenameLabel() {
+  return useMailMutation(({ id, name }: { id: string; name: string }) => mailService.renameLabel(id, name))
+}
+
+export function useDeleteLabel() {
+  return useMailMutation((id: string) => mailService.deleteLabel(id))
 }

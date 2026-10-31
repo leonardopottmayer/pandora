@@ -1477,6 +1477,33 @@
     "emptyBody": "Esta mensagem não tem texto.",
     "openError": "Não foi possível abrir a mensagem.",
     "downloadError": "Não foi possível baixar o anexo.",
+    "actions": {
+      "selectPage": "Selecionar as carregadas",
+      "select": "Selecionar: {{subject}}",
+      "markRead": "Marcar como lida",
+      "markUnread": "Marcar como não lida",
+      "star": "Dar estrela",
+      "unstar": "Tirar estrela",
+      "archive": "Arquivar",
+      "trash": "Mover para a lixeira",
+      "trashConfirm_one": "Mover esta mensagem para a lixeira?",
+      "trashConfirm_other": "Mover {{count}} mensagens para a lixeira?",
+      "move": "Mover para",
+      "label": "Etiquetas",
+      "error": "O servidor de email não aceitou. Nada foi alterado."
+    },
+    "labels": {
+      "new": "Nova etiqueta",
+      "rename": "Renomear",
+      "delete": "Apagar",
+      "menu": "Opções de {{name}}",
+      "name": "Nome",
+      "save": "Salvar",
+      "saveError": "Não foi possível salvar a etiqueta.",
+      "deleteConfirm": "Apagar {{name}}?",
+      "deleteHint": "No Gmail as mensagens só perdem a etiqueta. Nos outros provedores só uma pasta vazia pode ser apagada.",
+      "deleteError": "Não foi possível apagar a etiqueta."
+    },
     "provider": {
       "imap": "Outro (IMAP)"
     },

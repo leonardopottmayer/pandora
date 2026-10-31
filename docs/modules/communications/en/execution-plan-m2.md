@@ -1,6 +1,6 @@
 # Communications — Execution Plan, M2 (Organize)
 
-> **Status:** In progress: steps 1–4 built. It is phase **M2** of the [product-plan](product-plan.md); what exists today is in
+> **Status:** In progress: steps 1–5 built; the real-world check is left. It is phase **M2** of the [product-plan](product-plan.md); what exists today is in
 > [Implementation Status](implementation-status.md).
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan-m2.md)
 
@@ -180,7 +180,15 @@ No new feature, and it changes no mailbox.
   failure → the error and **no local change**; each action's local result; more than 100 ids → 422; a system label refused; a null id
   from a move leaves the row until the next cycle, which stitches it.
 
-### Step 5 — Web
+### Step 5 — Web ✅
+
+> **Built (2026-10-30).** `MailActions` is one component for both the list's selection and the open message. Beyond the list below:
+> - **Only what applies is offered:** "mark as read" with something unread, and so on. One label menu toggles: a label all the selected
+>   messages have is removed, otherwise it is added.
+> - **Trash asks first**, since Pandora has no undo.
+> - **A renamed or deleted label that was open** sends the list back to its mailbox, since an IMAP rename gives the label a new row.
+> - **A selection over 100** becomes several requests.
+> - Tests: `MailPage.test.tsx` +5. The sidebar's label menu has no test of its own; the real check covers it.
 
 - **`MessageList`:** a checkbox per row, "select the loaded page".
 - **Toolbar** with a selection: read, unread, star, archive, trash, move to, label (Gmail only). It reads `mailbox.provider` for what to

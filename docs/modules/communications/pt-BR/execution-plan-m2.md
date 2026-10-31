@@ -1,6 +1,6 @@
 # Communications — Plano de Execução, M2 (Organizar)
 
-> **Status:** Em andamento: passos 1–4 construídos. É a fase **M2** do [product-plan](product-plan.md); o que existe hoje está no
+> **Status:** Em andamento: passos 1–5 construídos; falta a verificação real. É a fase **M2** do [product-plan](product-plan.md); o que existe hoje está no
 > [Status de implementação](implementation-status.md).
 > 🇺🇸 [English version](../en/execution-plan-m2.md)
 
@@ -178,7 +178,15 @@ Sem funcionalidade nova, e não altera nenhuma caixa.
   provedor → o erro e **nenhuma mudança local**; o resultado local de cada ação; mais de 100 ids → 422; uma etiqueta do sistema recusada; um id nulo
   de um mover deixa a linha até o próximo ciclo, que a junta.
 
-### Passo 5 — Web
+### Passo 5 — Web ✅
+
+> **Construído (2026-10-30).** `MailActions` é um componente só para a seleção da lista e para a mensagem aberta. Além da lista abaixo:
+> - **Só aparece o que se aplica:** "marcar como lida" quando há não lida, e assim por diante. Um menu de etiquetas alterna: a etiqueta que todas as
+>   mensagens selecionadas têm é removida, senão é adicionada.
+> - **A lixeira pede confirmação**, porque o Pandora não tem desfazer.
+> - **Uma etiqueta aberta que foi renomeada ou apagada** devolve a lista à caixa, porque renomear no IMAP dá uma linha nova à etiqueta.
+> - **Uma seleção acima de 100** vira várias requisições.
+> - Testes: `MailPage.test.tsx` +5. O menu de etiquetas da barra lateral não tem teste próprio; a verificação real o cobre.
 
 - **`MessageList`:** uma checkbox por linha, "selecionar a página carregada".
 - **Barra de ações** com seleção: lida, não lida, estrela, arquivar, lixeira, mover para, etiqueta (só Gmail). Lê `mailbox.provider` para saber o que

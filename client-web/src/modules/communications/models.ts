@@ -78,6 +78,34 @@ export interface MailMessage {
   attachments: MailAttachment[]
 }
 
+export type MessageAction =
+  | 'mark-read'
+  | 'mark-unread'
+  | 'star'
+  | 'unstar'
+  | 'move'
+  | 'archive'
+  | 'trash'
+  | 'add-label'
+  | 'remove-label'
+
+/** The server takes this many messages per request, and one mailbox per request. */
+export const MAX_MESSAGES_PER_ACTION = 100
+
+/** After these the message is no longer where it was. */
+export const ACTIONS_THAT_REMOVE: MessageAction[] = ['move', 'archive', 'trash']
+
+/** Only Gmail has labels a message can carry several of; on IMAP a label is the folder it lives in. */
+export function hasMultipleLabels(provider: MailProvider): boolean {
+  return provider === 'gmail'
+}
+
+/** The same rule the server applies: nothing moves into Sent or Drafts; on Gmail, of the system labels, only the inbox. */
+export function canMoveTo(label: MailLabel): boolean {
+  if (label.role === 'sent' || label.role === 'drafts') return false
+  return label.isExclusive || label.kind === 'user' || label.role === 'inbox'
+}
+
 export interface MessageFilter {
   mailboxId?: string
   labelId?: string

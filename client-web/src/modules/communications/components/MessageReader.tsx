@@ -1,13 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, App, Button, Empty, Space, Spin, Typography, theme } from 'antd'
 import { PaperClipOutlined } from '@ant-design/icons'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { downloadAttachment } from '@/modules/notes/services/attachments.service'
-import { addressLabel, shortDate, type MailAddress, type MessageSummary } from '../models'
+import { addressLabel, shortDate, type MailAddress, type Mailbox, type MessageAction, type MessageSummary } from '../models'
 import { attachmentUrl } from '../services/communications.service'
-import { useInlineImages, useMessage, useMessages } from '../hooks/useMail'
+import { useInlineImages, useMessage, useMessageAction, useMessages } from '../hooks/useMail'
 import { mailSrcDoc, prepareMailHtml } from '../lib/prepareMailHtml'
+import { MailActions } from './MailActions'
 
 function addresses(list: MailAddress[]): string {
   return list.map((a) => (a.name ? `${a.name} <${a.address}>` : a.address)).join(', ')
@@ -16,10 +17,14 @@ function addresses(list: MailAddress[]): string {
 /** The open message, with the other messages of its conversation above it. */
 export function MessageReader({
   summary,
+  mailboxes,
   onSelect,
+  onActionDone,
 }: {
   summary: MessageSummary
+  mailboxes: Mailbox[]
   onSelect: (message: MessageSummary) => void
+  onActionDone: (action: MessageAction, ids: string[]) => void
 }) {
   const { t } = useTranslation()
   const { message: toast } = App.useApp()
@@ -27,6 +32,19 @@ export function MessageReader({
   const [allowImages, setAllowImages] = useState(false)
 
   const { data: opened, isLoading, error } = useMessage(summary.id)
+
+  // Opening reads the message. Only once per open, and a failure is silent: it must not get in the way of reading,
+  // and the mark stays as the provider has it.
+  const { mutate: applyAction } = useMessageAction()
+  const markedRead = useRef(false)
+  const hasBody = opened !== undefined
+  const { id: messageId, mailboxId, isUnread } = summary
+  useEffect(() => {
+    if (!hasBody || !isUnread || markedRead.current) return
+    markedRead.current = true
+    applyAction({ mailboxId, messageIds: [messageId], action: 'mark-read' })
+  }, [hasBody, isUnread, mailboxId, messageId, applyAction])
+
   const thread = useMessages({ mailboxId: summary.mailboxId, threadKey: summary.threadKey })
   const conversation = thread.data?.pages.flatMap((p) => p.items) ?? []
   const inlineImages = useInlineImages(opened?.message.id, opened?.attachments)
@@ -51,9 +69,14 @@ export function MessageReader({
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-col gap-1 px-4 py-3" style={{ borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
-        <Typography.Title level={5} className="!mb-0">
-          {summary.subject || t('mail.noSubject')}
-        </Typography.Title>
+        <div className="flex items-start justify-between gap-2">
+          <Typography.Title level={5} className="!mb-0">
+            {summary.subject || t('mail.noSubject')}
+          </Typography.Title>
+          <div className="shrink-0">
+            <MailActions messages={[summary]} mailboxes={mailboxes} onDone={onActionDone} />
+          </div>
+        </div>
         <Typography.Text>{summary.from ? addresses([summary.from]) : t('mail.unknownSender')}</Typography.Text>
         {summary.to.length > 0 && (
           <Typography.Text type="secondary" className="text-xs">

@@ -1477,6 +1477,33 @@
     "emptyBody": "This message has no text.",
     "openError": "Could not open the message.",
     "downloadError": "Could not download the attachment.",
+    "actions": {
+      "selectPage": "Select all loaded",
+      "select": "Select: {{subject}}",
+      "markRead": "Mark as read",
+      "markUnread": "Mark as unread",
+      "star": "Star",
+      "unstar": "Remove star",
+      "archive": "Archive",
+      "trash": "Move to trash",
+      "trashConfirm_one": "Move this message to the trash?",
+      "trashConfirm_other": "Move {{count}} messages to the trash?",
+      "move": "Move to",
+      "label": "Labels",
+      "error": "The mail server did not accept this. Nothing was changed."
+    },
+    "labels": {
+      "new": "New label",
+      "rename": "Rename",
+      "delete": "Delete",
+      "menu": "Options for {{name}}",
+      "name": "Name",
+      "save": "Save",
+      "saveError": "Could not save the label.",
+      "deleteConfirm": "Delete {{name}}?",
+      "deleteHint": "On Gmail the messages only lose the label. On other providers only an empty folder can be deleted.",
+      "deleteError": "Could not delete the label."
+    },
     "provider": {
       "imap": "Other (IMAP)"
     },

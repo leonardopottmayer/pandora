@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button, Card, Empty, Flex, Input, Segmented, Spin } from 'antd'
 import { SettingOutlined } from '@ant-design/icons'
-import type { MessageSummary } from '../models'
+import { ACTIONS_THAT_REMOVE, type MessageAction, type MessageSummary } from '../models'
 import { useMailboxes, useMessages } from '../hooks/useMail'
+import { MailActions } from '../components/MailActions'
 import { MailSidebar, type MailFolder } from '../components/MailSidebar'
 import { MessageList } from '../components/MessageList'
 import { MessageReader } from '../components/MessageReader'
@@ -17,9 +18,23 @@ export function MailPage() {
   const [unreadOnly, setUnreadOnly] = useState(false)
   const [q, setQ] = useState('')
   const [selected, setSelected] = useState<MessageSummary | null>(null)
+  const [checkedIds, setCheckedIds] = useState<ReadonlySet<string>>(new Set())
 
   const messages = useMessages({ ...folder, unread: unreadOnly || undefined, q: q || undefined })
   const items = messages.data?.pages.flatMap((p) => p.items) ?? []
+
+  // The list has the row's current flags after an action; the state only remembers which one is open.
+  const current = selected && (items.find((m) => m.id === selected.id) ?? selected)
+  const checked = items.filter((m) => checkedIds.has(m.id))
+
+  function onActionDone(action: MessageAction, ids: string[]) {
+    setCheckedIds(new Set())
+    if (ACTIONS_THAT_REMOVE.includes(action) && selected && ids.includes(selected.id)) setSelected(null)
+  }
+
+  function clearList() {
+    setCheckedIds(new Set())
+  }
 
   if (isLoading) return <Spin />
   if (!mailboxes?.length)
@@ -44,6 +59,7 @@ export function MailPage() {
             onSelect={(next) => {
               setFolder(next)
               setSelected(null)
+              clearList()
             }}
           />
         </div>
@@ -57,22 +73,35 @@ export function MailPage() {
         style={{ width: 380, flexShrink: 0, height: '100%', overflow: 'hidden' }}
       >
         <div className="flex flex-col gap-2 p-3">
-          <Input.Search allowClear placeholder={t('mail.search')} onSearch={(value) => setQ(value.trim())} />
+          <Input.Search
+            allowClear
+            placeholder={t('mail.search')}
+            onSearch={(value) => {
+              setQ(value.trim())
+              clearList()
+            }}
+          />
           <Segmented<'all' | 'unread'>
             size="small"
             value={unreadOnly ? 'unread' : 'all'}
-            onChange={(value) => setUnreadOnly(value === 'unread')}
+            onChange={(value) => {
+              setUnreadOnly(value === 'unread')
+              clearList()
+            }}
             options={[
               { value: 'all', label: t('mail.filterAll') },
               { value: 'unread', label: t('mail.filterUnread') },
             ]}
           />
+          {checked.length > 0 && <MailActions messages={checked} mailboxes={mailboxes} onDone={onActionDone} />}
         </div>
         <div className="flex-1 overflow-auto">
           <MessageList
             messages={items}
             selectedId={selected?.id ?? null}
             onSelect={setSelected}
+            checkedIds={checkedIds}
+            onCheckedChange={setCheckedIds}
             loading={messages.isLoading}
             hasMore={messages.hasNextPage}
             loadingMore={messages.isFetchingNextPage}
@@ -85,8 +114,14 @@ export function MailPage() {
         styles={{ body: { padding: 0, height: '100%' } }}
         style={{ flex: 1, minWidth: 0, height: '100%', overflow: 'hidden' }}
       >
-        {selected ? (
-          <MessageReader key={selected.id} summary={selected} onSelect={setSelected} />
+        {current ? (
+          <MessageReader
+            key={current.id}
+            summary={current}
+            mailboxes={mailboxes}
+            onSelect={setSelected}
+            onActionDone={onActionDone}
+          />
         ) : (
           <Flex align="center" justify="center" style={{ height: '100%' }}>
             <Empty description={t('mail.noSelection')} />

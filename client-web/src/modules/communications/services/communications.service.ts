@@ -1,5 +1,14 @@
 import { apiClient } from '@/lib/api/client'
-import type { MailLabel, MailMessage, Mailbox, MailProvider, MessageFilter, MessagePage } from '../models'
+import type {
+  MailLabel,
+  MailMessage,
+  Mailbox,
+  MailProvider,
+  MessageAction,
+  MessageFilter,
+  MessagePage,
+  MessageSummary,
+} from '../models'
 
 const BASE = '/api/v1/communications'
 
@@ -50,6 +59,36 @@ export async function syncMailbox(id: string): Promise<Mailbox> {
 
 export async function listLabels(mailboxId: string): Promise<MailLabel[]> {
   const { data } = await apiClient.get<MailLabel[]>(`${BASE}/mailboxes/${mailboxId}/labels`)
+  return data
+}
+
+/** The label endpoints answer with the mailbox's labels as they are after the operation. */
+export async function createLabel(mailboxId: string, name: string): Promise<MailLabel[]> {
+  const { data } = await apiClient.post<MailLabel[]>(`${BASE}/mailboxes/${mailboxId}/labels`, { name })
+  return data
+}
+
+export async function renameLabel(id: string, name: string): Promise<MailLabel[]> {
+  const { data } = await apiClient.patch<MailLabel[]>(`${BASE}/labels/${id}`, { name })
+  return data
+}
+
+/** An IMAP folder with messages is refused: deleting it would delete what is inside. */
+export async function deleteLabel(id: string): Promise<MailLabel[]> {
+  const { data } = await apiClient.delete<MailLabel[]>(`${BASE}/labels/${id}`)
+  return data
+}
+
+export interface MessageActionInput {
+  mailboxId: string
+  messageIds: string[]
+  action: MessageAction
+  labelId?: string
+}
+
+/** Goes to the provider first: a failure changes nothing. */
+export async function applyMessageAction(input: MessageActionInput): Promise<MessageSummary[]> {
+  const { data } = await apiClient.post<MessageSummary[]>(`${BASE}/messages/actions`, input)
   return data
 }
 
