@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using Pottmayer.Pandora.Modules.Communications.Domain.Entities;
 using Pottmayer.Pandora.Modules.Communications.Domain.Ports;
 using Pottmayer.Pandora.Modules.Communications.Domain.ValueObjects;
@@ -197,6 +198,150 @@ public sealed class GmailMailboxProviderTests
         Assert.Equal(mime, Value(await gmail.GetRawMessageAsync(_mailbox, "m1")));
     }
 
+    [Fact]
+    public async Task Flags_become_the_unread_and_starred_labels_in_one_batch_call()
+    {
+        var calls = new List<Call>();
+        var gmail = Provider(Routes(("messages/batchModify", NoContent())), calls: calls);
+
+        Value(await gmail.SetFlagsAsync(_mailbox, ["m1", "m2"], isUnread: false, isStarred: true));
+
+        var call = Assert.Single(calls);
+        Assert.Equal("POST", call.Method);
+        Assert.EndsWith("/messages/batchModify", call.Url);
+        Assert.Equal(["m1", "m2"], Strings(call.Body, "ids"));
+        Assert.Equal(["STARRED"], Strings(call.Body, "addLabelIds"));
+        Assert.Equal(["UNREAD"], Strings(call.Body, "removeLabelIds"));
+    }
+
+    [Fact]
+    public async Task Nothing_to_change_makes_no_call()
+    {
+        var calls = new List<Call>();
+        var gmail = Provider(Routes(), calls: calls);
+
+        Value(await gmail.SetFlagsAsync(_mailbox, ["m1"], isUnread: null, isStarred: null));
+        Value(await gmail.ChangeLabelsAsync(_mailbox, [], ["Label_1"], []));
+
+        Assert.Empty(calls);
+    }
+
+    [Fact]
+    public async Task Labels_change_as_asked()
+    {
+        var calls = new List<Call>();
+        var gmail = Provider(Routes(("messages/batchModify", NoContent())), calls: calls);
+
+        Value(await gmail.ChangeLabelsAsync(_mailbox, ["m1"], ["Label_1"], ["Label_2"]));
+
+        var body = Assert.Single(calls).Body;
+        Assert.Equal(["Label_1"], Strings(body, "addLabelIds"));
+        Assert.Equal(["Label_2"], Strings(body, "removeLabelIds"));
+    }
+
+    [Fact]
+    public async Task A_move_takes_the_label_leaves_the_inbox_and_keeps_the_id()
+    {
+        var calls = new List<Call>();
+        var gmail = Provider(Routes(("messages/batchModify", NoContent())), calls: calls);
+
+        var moved = Value(await gmail.MoveAsync(_mailbox, ["m1"], "Label_1"));
+
+        Assert.Equal("m1", moved["m1"]);
+        var body = Assert.Single(calls).Body;
+        Assert.Equal(["Label_1"], Strings(body, "addLabelIds"));
+        Assert.Equal(["INBOX"], Strings(body, "removeLabelIds"));
+    }
+
+    [Fact]
+    public async Task A_move_to_the_inbox_removes_nothing()
+    {
+        var calls = new List<Call>();
+        var gmail = Provider(Routes(("messages/batchModify", NoContent())), calls: calls);
+
+        Value(await gmail.MoveAsync(_mailbox, ["m1"], "INBOX"));
+
+        Assert.Empty(Strings(Assert.Single(calls).Body, "removeLabelIds"));
+    }
+
+    [Fact]
+    public async Task Trash_calls_trash_per_message_counts_a_gone_one_as_done_and_never_deletes()
+    {
+        var calls = new List<Call>();
+        var gmail = Provider(Routes(
+            ("messages/m1/trash", Ok(MessageJson("m1", "t1", 1, ["TRASH"], "text/plain"))),
+            ("messages/m2/trash", NotFound())), calls: calls);
+
+        var trashed = Value(await gmail.TrashAsync(_mailbox, ["m1", "m2"]));
+
+        Assert.Equal(["m1", "m2"], trashed.Keys.Order());
+        Assert.All(calls, c =>
+        {
+            Assert.Equal("POST", c.Method);
+            Assert.EndsWith("/trash", c.Url);
+        });
+        Assert.Equal(2, calls.Count);
+    }
+
+    [Fact]
+    public async Task Labels_are_created_renamed_and_deleted()
+    {
+        var calls = new List<Call>();
+        var gmail = Provider(url => url.EndsWith("/labels", StringComparison.Ordinal)
+            ? Ok("""{ "id": "Label_9", "name": "pandora-test", "type": "user" }""")()
+            : NoContent()(), calls: calls);
+
+        var created = Value(await gmail.CreateLabelAsync(_mailbox, "pandora-test"));
+        Value(await gmail.RenameLabelAsync(_mailbox, "Label_9", "renamed"));
+        Value(await gmail.DeleteLabelAsync(_mailbox, "Label_9"));
+
+        Assert.Equal(new RemoteLabel("Label_9", "pandora-test", LabelKind.User, null, IsExclusive: false), created);
+        Assert.Equal(["POST", "PATCH", "DELETE"], calls.Select(c => c.Method));
+        Assert.Equal("pandora-test", Text(calls[0].Body, "name"));
+        Assert.EndsWith("/labels/Label_9", calls[1].Url);
+        Assert.Equal("renamed", Text(calls[1].Body, "name"));
+        Assert.EndsWith("/labels/Label_9", calls[2].Url);
+    }
+
+    [Fact]
+    public async Task A_throttled_write_is_sent_again_with_its_body()
+    {
+        const string RateLimited = """{"error":{"code":403,"errors":[{"reason":"rateLimitExceeded"}]}}""";
+        var answers = new Queue<Func<HttpResponseMessage>>([Status(HttpStatusCode.Forbidden, RateLimited), NoContent()]);
+        var calls = new List<Call>();
+        var gmail = Provider(_ => answers.Dequeue()(), calls: calls);
+
+        Value(await gmail.SetFlagsAsync(_mailbox, ["m1"], isUnread: false, isStarred: null));
+
+        Assert.Equal(2, calls.Count);
+        Assert.Equal(["m1"], Strings(calls[1].Body, "ids"));
+    }
+
+    [Fact]
+    public async Task A_write_without_the_scope_is_a_missing_scope()
+    {
+        var refused = Provider(Routes(("messages/batchModify", Status(HttpStatusCode.Forbidden,
+            """{"error":{"status":"PERMISSION_DENIED","details":[{"reason":"ACCESS_TOKEN_SCOPE_INSUFFICIENT"}]}}"""))));
+        AssertError("Communications.MissingScopes", await refused.MoveAsync(_mailbox, ["m1"], "Label_1"));
+
+        var calls = new List<Call>();
+        var noScope = Provider(Routes(), scopes: ["openid"], calls: calls);
+        AssertError("Communications.MissingScopes", await noScope.TrashAsync(_mailbox, ["m1"]));
+        Assert.Empty(calls);
+    }
+
+    private static string[] Strings(string? json, string property)
+    {
+        using var document = JsonDocument.Parse(json!);
+        return document.RootElement.GetProperty(property).EnumerateArray().Select(e => e.GetString()!).ToArray();
+    }
+
+    private static string? Text(string? json, string property)
+    {
+        using var document = JsonDocument.Parse(json!);
+        return document.RootElement.GetProperty(property).GetString();
+    }
+
     private static string MessageJson(string id, string threadId, long internalDate, string[] labels, string mimeType) => $$"""
         { "id": "{{id}}", "threadId": "{{threadId}}", "labelIds": [{{string.Join(", ", labels.Select(l => $"\"{l}\""))}}],
           "snippet": "It&#39;s here &amp; ready", "sizeEstimate": 1234, "internalDate": "{{internalDate}}",
@@ -208,8 +353,8 @@ public sealed class GmailMailboxProviderTests
         """;
 
     private static GmailMailboxProvider Provider(
-        Func<string, HttpResponseMessage> routes, List<string>? requests = null, string[]? scopes = null) =>
-        new(new HttpClient(new FakeHandler(routes, requests)), new FakeCredentials(scopes ?? ["openid", Modify]))
+        Func<string, HttpResponseMessage> routes, List<string>? requests = null, string[]? scopes = null, List<Call>? calls = null) =>
+        new(new HttpClient(new FakeHandler(routes, requests, calls)), new FakeCredentials(scopes ?? ["openid", Modify]))
         {
             RetryDelays = [TimeSpan.Zero, TimeSpan.Zero],
         };
@@ -221,6 +366,7 @@ public sealed class GmailMailboxProviderTests
 
     private static Func<HttpResponseMessage> Ok(string json) => Status(HttpStatusCode.OK, json);
     private static Func<HttpResponseMessage> NotFound() => Status(HttpStatusCode.NotFound, "{}");
+    private static Func<HttpResponseMessage> NoContent() => () => new HttpResponseMessage(HttpStatusCode.NoContent);
 
     private static Func<HttpResponseMessage> Status(HttpStatusCode status, string json) =>
         () => new HttpResponseMessage(status) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
@@ -237,15 +383,22 @@ public sealed class GmailMailboxProviderTests
         Assert.Equal(code, Assert.Single(result.Errors).Code);
     }
 
-    private sealed class FakeHandler(Func<string, HttpResponseMessage> routes, List<string>? requests = null) : HttpMessageHandler
+    private sealed record Call(string Method, string Url, string? Body);
+
+    private sealed class FakeHandler(
+        Func<string, HttpResponseMessage> routes, List<string>? requests = null, List<Call>? calls = null) : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             Assert.Equal("Bearer", request.Headers.Authorization?.Scheme);
             var url = request.RequestUri!.PathAndQuery;
+            var body = request.Content is null ? null : await request.Content.ReadAsStringAsync(ct);
             lock (this)
+            {
                 requests?.Add(url);
-            return Task.FromResult(routes(url));
+                calls?.Add(new Call(request.Method.Method, url, body));
+            }
+            return routes(url);
         }
     }
 

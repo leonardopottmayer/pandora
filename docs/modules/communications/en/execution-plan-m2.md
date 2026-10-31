@@ -1,6 +1,6 @@
 # Communications — Execution Plan, M2 (Organize)
 
-> **Status:** In progress: steps 1–2 built. It is phase **M2** of the [product-plan](product-plan.md); what exists today is in
+> **Status:** In progress: steps 1–3 built. It is phase **M2** of the [product-plan](product-plan.md); what exists today is in
 > [Implementation Status](implementation-status.md).
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan-m2.md)
 
@@ -126,7 +126,18 @@ No new feature, and it changes no mailbox.
 - **Tests (GreenMail):** read and star seen from another client; a move leaves the source and reaches the target; a created folder is
   listed; a rename; deleting a non-empty folder is refused and the messages are still there; `INBOX` cannot be deleted.
 
-### Step 3 — Gmail writes
+### Step 3 — Gmail writes ✅
+
+> **Built (2026-10-30).** Calls as listed below, confirmed against Google's documentation; `gmail.modify` accepts all of them, and
+> `batchModify` takes up to 1,000 ids. A label is created with its name only. A message already gone counts as trashed.
+>
+> **Correction on quotas.** The numbers we held from memory were wrong. Per Google's page: **6,000 units per user per minute** and
+> 1,200,000 per project per minute; `messages.get` costs **20** (60 with `raw` or `full`), `messages.trash` 20, `batchModify` 50,
+> `labels.create` and `labels.delete` 5, `labels.list` 1, `history.list` 2. So a user gets at most 5 `messages.get` per second, whatever
+> the parallelism, which fits the throttling seen on the first backfill. For M2, a batch of 100 trashed messages costs 2,000 units,
+> a third of a user's minute, and is fine.
+>
+> Tests: `GmailMailboxProviderTests` +9, on canned answers. The real API is step 6.
 
 - `labels.create`, `labels.patch`, `labels.delete` (user labels only).
 - `messages.batchModify` for flags (`UNREAD`, `STARRED`) and labels. Move = add the target, remove `INBOX` or the current exclusive one

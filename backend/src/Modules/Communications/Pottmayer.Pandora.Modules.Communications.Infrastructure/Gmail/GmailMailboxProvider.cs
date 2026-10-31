@@ -33,7 +33,8 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
         ["https://www.googleapis.com/auth/gmail.modify", "https://mail.google.com/"];
 
     // ponytail: one GET per message, two at a time — four drew frequent rate-limit 403s on a real
-    // 64k-message backfill. Gmail's batch endpoint (100 per request) if the backfill is too slow.
+    // 64k-message backfill. The quota is 6,000 units per user per minute and a get costs 20, so at most 5 per
+    // second whatever is done here. Gmail's batch endpoint (100 per request) if the backfill is too slow.
     internal const int ParallelGets = 2;
 
     private static readonly string[] MetadataHeaders = ["From", "To", "Cc", "Subject", "Message-ID"];
@@ -62,12 +63,7 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
         RunAsync<IReadOnlyList<RemoteLabel>>(mailbox, async (token, c) =>
         {
             var response = await GetAsync<LabelList>(token, "labels", c);
-            return response.Labels
-                .Where(l => !IsFlag(l.Id))
-                .Select(l => new RemoteLabel(
-                    l.Id, l.Name, l.Type == "system" ? LabelKind.System : LabelKind.User,
-                    LabelRole.FromGmailLabelId(l.Id), IsExclusive: false))
-                .ToList();
+            return response.Labels.Where(l => !IsFlag(l.Id)).Select(ToLabel).ToList();
         }, ct);
 
     public Task<Result<BackfillStart>> StartBackfillAsync(Mailbox mailbox, CancellationToken ct = default) =>
@@ -135,32 +131,82 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
             return DecodeBase64Url(message.Raw);
         }, ct);
 
-    // Temporary, until M2's step 3: nothing calls the writes yet.
     public Task<Result<RemoteLabel>> CreateLabelAsync(Mailbox mailbox, string name, CancellationToken ct = default) =>
-        Task.FromResult(Result<RemoteLabel>.Failure(MailErrors.ActionNotSupported));
+        RunAsync(mailbox, async (token, c) =>
+            ToLabel(await SendAsync(HttpMethod.Post, token, "labels", new { name }, ReadJson<Label>, c)), ct);
 
     public Task<Result<bool>> RenameLabelAsync(Mailbox mailbox, string providerLabelId, string newName, CancellationToken ct = default) =>
-        Task.FromResult(Result<bool>.Failure(MailErrors.ActionNotSupported));
+        RunAsync(mailbox, (token, c) => SendAsync(
+            HttpMethod.Patch, token, $"labels/{Uri.EscapeDataString(providerLabelId)}", new { name = newName }, Done, c), ct);
 
+    /// <summary>The messages only lose the label: unlike an IMAP folder, nothing else goes with it.</summary>
     public Task<Result<bool>> DeleteLabelAsync(Mailbox mailbox, string providerLabelId, CancellationToken ct = default) =>
-        Task.FromResult(Result<bool>.Failure(MailErrors.ActionNotSupported));
+        RunAsync(mailbox, (token, c) => SendAsync(
+            HttpMethod.Delete, token, $"labels/{Uri.EscapeDataString(providerLabelId)}", null, Done, c), ct);
 
     public Task<Result<bool>> SetFlagsAsync(
-        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, bool? isUnread, bool? isStarred, CancellationToken ct = default) =>
-        Task.FromResult(Result<bool>.Failure(MailErrors.ActionNotSupported));
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, bool? isUnread, bool? isStarred, CancellationToken ct = default)
+    {
+        List<string> add = [];
+        List<string> remove = [];
+        if (isUnread is { } unread)
+            (unread ? add : remove).Add("UNREAD");
+        if (isStarred is { } starred)
+            (starred ? add : remove).Add("STARRED");
+
+        return ChangeLabelsAsync(mailbox, providerMessageIds, add, remove, ct);
+    }
 
     public Task<Result<bool>> ChangeLabelsAsync(
         Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, IReadOnlyCollection<string> add, IReadOnlyCollection<string> remove,
         CancellationToken ct = default) =>
-        Task.FromResult(Result<bool>.Failure(MailErrors.ActionNotSupported));
+        RunAsync(mailbox, (token, c) => BatchModifyAsync(token, providerMessageIds, add, remove, c), ct);
 
+    /// <summary>The id does not change. Gmail has no folders: moving is taking the label and leaving the inbox.</summary>
     public Task<Result<IReadOnlyDictionary<string, string?>>> MoveAsync(
         Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, string targetProviderLabelId, CancellationToken ct = default) =>
-        Task.FromResult(Result<IReadOnlyDictionary<string, string?>>.Failure(MailErrors.ActionNotSupported));
+        RunAsync<IReadOnlyDictionary<string, string?>>(mailbox, async (token, c) =>
+        {
+            await BatchModifyAsync(
+                token, providerMessageIds, [targetProviderLabelId], targetProviderLabelId == "INBOX" ? [] : ["INBOX"], c);
+            return providerMessageIds.ToDictionary(id => id, id => (string?)id);
+        }, ct);
 
+    /// <summary>
+    /// No batch form, so one call per message. A message already gone is what was asked for. If one fails midway the
+    /// others stay in the trash, and the next cycle shows them there. <c>messages.delete</c> is never called.
+    /// </summary>
     public Task<Result<IReadOnlyDictionary<string, string?>>> TrashAsync(
         Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, CancellationToken ct = default) =>
-        Task.FromResult(Result<IReadOnlyDictionary<string, string?>>.Failure(MailErrors.ActionNotSupported));
+        RunAsync<IReadOnlyDictionary<string, string?>>(mailbox, async (token, c) =>
+        {
+            await Parallel.ForEachAsync(providerMessageIds, new ParallelOptions { MaxDegreeOfParallelism = ParallelGets, CancellationToken = c },
+                async (id, inner) =>
+                {
+                    try
+                    {
+                        await SendAsync(HttpMethod.Post, token, $"messages/{Uri.EscapeDataString(id)}/trash", null, Done, inner, MessageGone);
+                    }
+                    catch (GmailException ex) when (ReferenceEquals(ex.Error, MessageGone))
+                    {
+                    }
+                });
+            return providerMessageIds.ToDictionary(id => id, id => (string?)id);
+        }, ct);
+
+    private async Task<bool> BatchModifyAsync(
+        string token, IReadOnlyCollection<string> ids, IReadOnlyCollection<string> add, IReadOnlyCollection<string> remove, CancellationToken ct)
+    {
+        if (ids.Count == 0 || (add.Count == 0 && remove.Count == 0))
+            return true;
+
+        return await SendAsync(
+            HttpMethod.Post, token, "messages/batchModify", new { ids, addLabelIds = add, removeLabelIds = remove }, Done, ct);
+    }
+
+    private static RemoteLabel ToLabel(Label label) =>
+        new(label.Id, label.Name, label.Type == "system" ? LabelKind.System : LabelKind.User,
+            LabelRole.FromGmailLabelId(label.Id), IsExclusive: false);
 
     /// <summary>Gets the token, checks the scope, runs <paramref name="work"/> and maps Gmail's answers to the port's errors.</summary>
     private async Task<Result<T>> RunAsync<T>(Mailbox mailbox, Func<string, CancellationToken, Task<T>> work, CancellationToken ct)
@@ -186,16 +232,30 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
         }
     }
 
-    private async Task<T> GetAsync<T>(string token, string path, CancellationToken ct, Error? notFound = null)
+    private Task<T> GetAsync<T>(string token, string path, CancellationToken ct, Error? notFound = null) =>
+        SendAsync(HttpMethod.Get, token, path, null, ReadJson<T>, ct, notFound);
+
+    private static async Task<T> ReadJson<T>(HttpContent content, CancellationToken ct) =>
+        (await content.ReadFromJsonAsync<T>(Json, ct))!;
+
+    /// <summary>For the answers with nothing to read (<c>batchModify</c> and <c>labels.delete</c> have an empty body).</summary>
+    private static Task<bool> Done(HttpContent content, CancellationToken ct) => Task.FromResult(true);
+
+    /// <summary>Retrying a write is safe: each one ends in the same state, and a second create of a label is refused.</summary>
+    private async Task<T> SendAsync<T>(
+        HttpMethod method, string token, string path, object? payload, Func<HttpContent, CancellationToken, Task<T>> read,
+        CancellationToken ct, Error? notFound = null)
     {
         for (var attempt = 0; ; attempt++)
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, BaseUrl + path);
+            using var request = new HttpRequestMessage(method, BaseUrl + path);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            if (payload is not null)
+                request.Content = JsonContent.Create(payload, payload.GetType(), options: Json);
             using var response = await http.SendAsync(request, ct);
 
             if (response.IsSuccessStatusCode)
-                return (await response.Content.ReadFromJsonAsync<T>(Json, ct))!;
+                return await read(response.Content, ct);
 
             var body = await response.Content.ReadAsStringAsync(ct);
             var throttled = response.StatusCode is HttpStatusCode.TooManyRequests

@@ -1,6 +1,6 @@
 # Communications — Plano de Execução, M2 (Organizar)
 
-> **Status:** Em andamento: passos 1–2 construídos. É a fase **M2** do [product-plan](product-plan.md); o que existe hoje está no
+> **Status:** Em andamento: passos 1–3 construídos. É a fase **M2** do [product-plan](product-plan.md); o que existe hoje está no
 > [Status de implementação](implementation-status.md).
 > 🇺🇸 [English version](../en/execution-plan-m2.md)
 
@@ -125,7 +125,18 @@ Sem funcionalidade nova, e não altera nenhuma caixa.
 - **Testes (GreenMail):** lida e estrela vistas de outro cliente; um mover sai da origem e chega ao destino; uma pasta criada aparece na lista;
   uma renomeação; apagar uma pasta com mensagens é recusado e as mensagens continuam lá; a `INBOX` não pode ser apagada.
 
-### Passo 3 — Escritas no Gmail
+### Passo 3 — Escritas no Gmail ✅
+
+> **Construído (2026-10-30).** Chamadas como listadas abaixo, confirmadas na documentação do Google; o `gmail.modify` aceita todas, e o
+> `batchModify` aceita até 1.000 ids. A etiqueta é criada só com o nome. Uma mensagem que já sumiu conta como enviada à lixeira.
+>
+> **Correção sobre as cotas.** Os números que tínhamos de memória estavam errados. Pela página do Google: **6.000 unidades por usuário por
+> minuto** e 1.200.000 por projeto por minuto; `messages.get` custa **20** (60 com `raw` ou `full`), `messages.trash` 20, `batchModify` 50,
+> `labels.create` e `labels.delete` 5, `labels.list` 1, `history.list` 2. Então um usuário tem no máximo 5 `messages.get` por segundo, seja
+> qual for o paralelismo, o que combina com os limites de taxa vistos na primeira carga. Para a M2, um lote de 100 mensagens na lixeira custa
+> 2.000 unidades, um terço do minuto de um usuário, e não há problema.
+>
+> Testes: `GmailMailboxProviderTests` +9, com respostas prontas. A API real fica para o passo 6.
 
 - `labels.create`, `labels.patch`, `labels.delete` (só etiquetas do usuário).
 - `messages.batchModify` para flags (`UNREAD`, `STARRED`) e etiquetas. Mover = adicionar o destino, remover `INBOX` ou a exclusiva atual (§4.3);
