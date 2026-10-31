@@ -1,6 +1,6 @@
 # Communications — Plano de Execução, M3 (Enviar)
 
-> **Status:** Em andamento: decisões aprovadas, passos 1–4 construídos. É a fase **M3** do [product-plan](product-plan.md); o que existe hoje está no
+> **Status:** Em andamento: decisões aprovadas, passos 1–5 construídos. É a fase **M3** do [product-plan](product-plan.md); o que existe hoje está no
 > [Status de implementação](implementation-status.md).
 > 🇺🇸 [English version](../en/execution-plan-m3.md)
 
@@ -110,7 +110,16 @@ Cada passo termina verde antes do próximo. Pontos de commit sugeridos: **M3a** 
 - O `SendAsync` do adaptador ganha um parâmetro para o que pode ser repetido: aqui só `429` e `403` de limite de taxa. Todo o resto ambíguo → `SendUncertain`. O Gmail guarda a própria cópia: `CopySaved: true`.
 - **Testes (respostas prontas):** a URL, as partes e o `threadId`; um `500` faz **exatamente uma** requisição e é `SendUncertain`; um `429` é repetido; um timeout é `SendUncertain`.
 
-### Passo 5 — Application e API
+### Passo 5 — Application e API ✅
+
+> **Construído (2026-10-31).** `SendMessageCommand`, `SendKeys`, `GetComposeDraftQuery`, e `POST messages/send` e `GET messages/{id}/compose`. Além da lista abaixo:
+> - **Sem nome de remetente.** O nome de exibição da caixa é o rótulo do usuário ("Trabalho"), não quem escreve, então o From é só o endereço. Nome por caixa fica para o "depois" da §15.
+> - **Destinatários são só endereços** no formulário, um campo por endereço; um nome no rascunho não é enviado.
+> - **Só uma recusa certa libera a chave,** para o mesmo formulário tentar de novo. `SendUncertain` e uma exceção a mantêm.
+> - **Tudo que pode ser recusado é checado antes:** a chave é pega logo antes de enviar, então um endereço inválido não a gasta.
+> - **Depois do envio, nada parece falha de envio:** o passo de etiquetas + mudanças só vai para o log se falhar ou lançar exceção.
+> - **O limite da requisição é de 40 MB**, acima dos 25 MB de anexos, para passar do limite responder 422 com mensagem.
+> - Testes: `SendMessageApiTests` (13).
 
 - `SendMessageCommand`: confere se a caixa é de quem chama, os endereços, os limites e a chave de envio; monta; envia **sem a trava de ação**, porque um SMTP lento não pode segurar as ações; depois roda o passo de etiquetas +
   mudanças, cuja falha só vai para o log.

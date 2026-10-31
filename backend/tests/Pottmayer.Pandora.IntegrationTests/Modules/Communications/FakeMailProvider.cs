@@ -143,6 +143,8 @@ internal sealed class FakeMailProvider : IMailboxProvider
         var body = new BodyBuilder { TextBody = $"Text of {subject}", HtmlBody = $"<p>Html of {subject}</p>" };
         body.Attachments.Add("invoice.pdf", "%PDF-1.4 fake"u8.ToArray(), new ContentType("application", "pdf"));
         var message = new MimeMessage { Subject = subject, Body = body.ToMessageBody() };
+        if (known?.Rfc822MessageId is { } messageId)
+            message.MessageId = messageId;
         message.From.Add(new MailboxAddress("Ana", "ana@mail.test"));
 
         using var stream = new MemoryStream();

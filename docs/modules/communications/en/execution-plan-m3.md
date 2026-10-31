@@ -1,6 +1,6 @@
 # Communications — Execution Plan, M3 (Send)
 
-> **Status:** In progress: decisions approved, steps 1–4 built. It is phase **M3** of the [product-plan](product-plan.md); what exists today is in
+> **Status:** In progress: decisions approved, steps 1–5 built. It is phase **M3** of the [product-plan](product-plan.md); what exists today is in
 > [Implementation Status](implementation-status.md).
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan-m3.md)
 
@@ -111,7 +111,16 @@ Each step ends green before the next one. Suggested commit points: **M3a** = ste
 - `SendAsync` in the adapter gets a parameter for what may be retried: here only `429` and a rate-limit `403`. Everything else ambiguous → `SendUncertain`. Gmail keeps its own sent copy: `CopySaved: true`.
 - **Tests (canned answers):** the URL, the parts and `threadId`; a `500` makes **exactly one** request and is `SendUncertain`; a `429` is retried; a timeout is `SendUncertain`.
 
-### Step 5 — Application and API
+### Step 5 — Application and API ✅
+
+> **Built (2026-10-31).** `SendMessageCommand`, `SendKeys`, `GetComposeDraftQuery`, and `POST messages/send` and `GET messages/{id}/compose`. Beyond the list below:
+> - **No sender name.** A mailbox's display name is the user's label for it ("Work"), not who is writing, so the From is the bare address. A name per mailbox is §15's "later".
+> - **Recipients are bare addresses** in the form, one field each; a name in a draft is not sent on.
+> - **Only a certain refusal frees the key,** so the same form can try again. `SendUncertain` and a thrown exception keep it.
+> - **Everything that can be refused is checked first:** the key is taken right before handing over, so a bad address does not spend it.
+> - **After the send, nothing looks like a failure to send:** the labels + changes step is logged if it fails or throws.
+> - **The request limit is 40 MB**, above the 25 MB of attachments, so going over answers a 422 with a message.
+> - Tests: `SendMessageApiTests` (13).
 
 - `SendMessageCommand`: checks the mailbox is the caller's, the addresses, the limits and the send key; builds; sends **without the action gate**, since a slow SMTP must not hold actions back; then runs the labels +
   changes step, whose failure is only logged.

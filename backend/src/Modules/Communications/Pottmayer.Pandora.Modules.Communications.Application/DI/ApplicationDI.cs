@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.ManageLabels;
+using Pottmayer.Pandora.Modules.Communications.Application.Commands.SendMessage;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.SyncMailbox;
 using Pottmayer.Pandora.Modules.Communications.Application.Integrations;
 using Pottmayer.Pandora.Modules.Integrations.Abstractions.Ports;
@@ -21,6 +22,7 @@ public static class ApplicationDI
         services.AddSingleton<MailboxGates>();
         services.AddScoped<MailboxChangesStep>();
         services.AddScoped<LabelOperation>();
+        services.AddSingleton<SendKeys>();
 
         // "Used by" on the connections screen: the account each mailbox runs on.
         services.AddScoped<IExternalAccountUsageSource, CommunicationsAccountUsageSource>();

@@ -1,15 +1,19 @@
 using System.Net.Mime;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.ApplyMessageAction;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.ConnectMailbox;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.DeleteMailbox;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.ManageLabels;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.OpenMessage;
+using Pottmayer.Pandora.Modules.Communications.Application.Commands.SendMessage;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.SyncMailboxNow;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.UpdateMailbox;
+using Pottmayer.Pandora.Modules.Communications.Application.Mime;
 using Pottmayer.Pandora.Modules.Communications.Application.Queries.GetAttachment;
+using Pottmayer.Pandora.Modules.Communications.Application.Queries.GetComposeDraft;
 using Pottmayer.Pandora.Modules.Communications.Application.Queries.GetLabels;
 using Pottmayer.Pandora.Modules.Communications.Application.Queries.GetMailboxes;
 using Pottmayer.Pandora.Modules.Communications.Application.Queries.ListMessages;
@@ -35,6 +39,9 @@ public sealed class CommunicationsController(
     /// <summary>Images a browser renders without running anything; every other type is a download.</summary>
     private static readonly HashSet<string> InlineTypes =
         new(["image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp"], StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Above the attachments' limit, so going over it is a 422 with a message rather than a dropped request.</summary>
+    private const long SendRequestLimit = 40 * 1024 * 1024;
 
     private Guid UserId => userContextAccessor.Context.User!.Id;
 
@@ -107,6 +114,38 @@ public sealed class CommunicationsController(
     [HttpGet("messages/{id:guid}")]
     public async Task<IActionResult> OpenMessageAsync(Guid id, CancellationToken ct) =>
         (await sender.Send(new OpenMessageCommand(new OpenMessageInput(UserId, id)), ct)).ToActionResult(errorMapper);
+
+    /// <summary>The form for a reply or a forward: <c>reply</c>, <c>reply-all</c> or <c>forward</c>.</summary>
+    [HttpGet("messages/{id:guid}/compose")]
+    public async Task<IActionResult> GetComposeDraftAsync(Guid id, [FromQuery] string? mode, CancellationToken ct) =>
+        (await sender.Send(new GetComposeDraftQuery(new GetComposeDraftInput(UserId, id, mode)), ct)).ToActionResult(errorMapper);
+
+    /// <summary>
+    /// This cannot be taken back. A key already used is a 409. <c>SendUncertain</c> means it may have gone: the same key
+    /// stays refused, and the screen says to look in Sent. <c>copySaved: false</c> is a success.
+    /// </summary>
+    [HttpPost("messages/send")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(SendRequestLimit)]
+    [RequestFormLimits(MultipartBodyLengthLimit = SendRequestLimit)]
+    public async Task<IActionResult> SendMessageAsync(
+        [FromForm] SendMessageRequest body, [FromForm] List<IFormFile>? files, CancellationToken ct)
+    {
+        var attachments = new List<OutgoingAttachment>();
+        foreach (var file in files ?? [])
+        {
+            await using var stream = file.OpenReadStream();
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, ct);
+            attachments.Add(new OutgoingAttachment(
+                file.FileName, string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType, buffer.ToArray()));
+        }
+
+        return (await sender.Send(new SendMessageCommand(new SendMessageInput(
+            UserId, body.MailboxId, body.SendKey, body.To ?? [], body.Cc ?? [], body.Bcc ?? [], body.Subject, body.TextBody, body.HtmlBody,
+            body.ReplyToId, body.ForwardOfId, body.KeepAttachmentIds ?? [], attachments)), ct))
+            .ToActionResult(errorMapper);
+    }
 
     [HttpGet("messages/{id:guid}/attachments/{attachmentId}")]
     public async Task<IActionResult> GetAttachmentAsync(Guid id, string attachmentId, CancellationToken ct)

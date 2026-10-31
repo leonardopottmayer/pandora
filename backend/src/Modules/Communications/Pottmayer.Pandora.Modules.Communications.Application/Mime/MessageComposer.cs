@@ -75,7 +75,9 @@ internal static class MessageComposer
 
         var body = new BodyBuilder { TextBody = input.TextBody, HtmlBody = input.HtmlBody };
         foreach (var attachment in input.Attachments)
-            body.Attachments.Add(OneLine(attachment.FileName), attachment.Content, ContentType.Parse(attachment.ContentType));
+            body.Attachments.Add(
+                OneLine(attachment.FileName), attachment.Content,
+                ContentType.TryParse(attachment.ContentType, out var type) ? type : new ContentType("application", "octet-stream"));
         message.Body = body.ToMessageBody();
 
         using var stream = new MemoryStream();
