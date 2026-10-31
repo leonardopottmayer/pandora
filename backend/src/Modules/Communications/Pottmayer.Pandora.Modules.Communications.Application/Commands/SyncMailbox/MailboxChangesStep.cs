@@ -4,6 +4,7 @@ using Pottmayer.Pandora.Modules.Communications.Domain.Entities;
 using Pottmayer.Pandora.Modules.Communications.Domain.Errors;
 using Pottmayer.Pandora.Modules.Communications.Domain.Ports;
 using Pottmayer.Pandora.Modules.Communications.Domain.Ports.Repositories;
+using Pottmayer.Pandora.Modules.Communications.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.DataContext;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
@@ -161,8 +162,9 @@ public sealed class MailboxChangesStep(
         bool publish, CancellationToken ct)
     {
         var messages = context.AcquireRepository<IMailMessageRepository>();
-        var labelIds = (await context.AcquireRepository<IMailLabelRepository>().ListByMailboxAsync(mailbox.Id, ct))
-            .ToDictionary(l => l.ProviderLabelId, l => l.Id);
+        var labels = await context.AcquireRepository<IMailLabelRepository>().ListByMailboxAsync(mailbox.Id, ct);
+        var labelIds = labels.ToDictionary(l => l.ProviderLabelId, l => l.Id);
+        var ownMail = labels.Where(l => l.Role == LabelRole.Sent || l.Role == LabelRole.Drafts).Select(l => l.ProviderLabelId).ToHashSet();
         var upsertIds = upserts.Select(u => u.ProviderMessageId).ToHashSet();
 
         var vanishing = await FindVanishingAsync(messages, mailbox.Id, removedIds, snapshots, labelIds, ct);
@@ -198,20 +200,24 @@ public sealed class MailboxChangesStep(
 
         foreach (var remote in upserts)
         {
-            var labels = remote.ProviderLabelIds.Where(labelIds.ContainsKey).Select(id => labelIds[id]).ToList();
+            var messageLabels = remote.ProviderLabelIds.Where(labelIds.ContainsKey).Select(id => labelIds[id]).ToList();
 
             if (existing.TryGetValue(remote.ProviderMessageId, out var message))
             {
-                message.ApplyRemote(remote, labels);
+                message.ApplyRemote(remote, messageLabels);
                 await messages.UpdateAsync(message, ct);
                 continue;
             }
 
-            // An arrival is a message the mailbox has never had: a copy keeps its Message-ID.
-            var isArrival = publish && (remote.Rfc822MessageId is not { } rfc822
+            // An arrival is a message the mailbox has never had (a copy keeps its Message-ID) and that the user did
+            // not write. ponytail: mail sent to yourself, if its sent copy comes a cycle before the inbox's, has
+            // no arrival, since the Message-ID is already here.
+            var isOwnMail = remote.ProviderLabelIds.Count > 0 && remote.ProviderLabelIds.All(ownMail.Contains);
+            var isArrival = publish && !isOwnMail
+                                    && (remote.Rfc822MessageId is not { } rfc822
                                         || (seenRfc822.Add(rfc822) && !await messages.ExistsWithRfc822IdAsync(mailbox.Id, rfc822, ct)));
 
-            var created = MailMessage.FromRemote(mailbox.Id, remote, labels);
+            var created = MailMessage.FromRemote(mailbox.Id, remote, messageLabels);
             await messages.AddAsync(created, ct);
 
             if (isArrival)

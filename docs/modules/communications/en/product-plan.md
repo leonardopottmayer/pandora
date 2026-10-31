@@ -119,8 +119,8 @@ from any provider, in one place. Email comes first.
 
 Built in M1: see [Integrations](../../integrations/README.md) and [Architecture](architecture.md). Left:
 
-- M3 needs `gmail.send` and M4 needs `gmail.settings.basic`. M1 only requests `gmail.modify`, so connected
-  accounts will have to consent again; the consent screen also has to declare the new scopes.
+- M3 needs no new scope: `messages.send` accepts `gmail.modify`. M4 needs `gmail.settings.basic`, so connected accounts will have to
+  consent again, and the consent screen has to declare it.
 - **Google Cloud:** in **Testing** the refresh token expires every 7 days. Whether switching the project to
   **In production** while unverified is enough for personal use is still to confirm (the
   [setup guide](../../../deployment/google-and-gemini-setup.md) assumes verification is required).
@@ -276,6 +276,8 @@ Done on 2026-10-30: see [Implementation Status](implementation-status.md).
 Done on 2026-10-31: see [Implementation Status](implementation-status.md).
 
 ### M3 — Send
+
+Work list: [execution-plan-m3.md](execution-plan-m3.md).
 
 - Compose, reply, forward, attachments, the sent copy over IMAP.
 - **Done when:** a reply sent from Pandora lands in the same Gmail conversation, and a message sent

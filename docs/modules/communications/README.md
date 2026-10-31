@@ -29,6 +29,7 @@ Start with the **Overview** for the boundary and vocabulary, then read the topic
 | 6 | [Product Plan](en/product-plan.md) | What is left: send (M3), rules (M4) |
 | 7 | [Execution Plan](en/execution-plan.md) | How M1 was built, step by step (history) |
 | 8 | [M2 Execution Plan](en/execution-plan-m2.md) | How M2 was built, step by step (history) |
+| 9 | [M3 Execution Plan](en/execution-plan-m3.md) | The next phase, send: decisions and steps (plan) |
 
 🇧🇷 Every document also exists in Portuguese, under [`pt-BR/`](pt-BR/README.md).
 

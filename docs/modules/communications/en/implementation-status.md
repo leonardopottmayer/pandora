@@ -68,8 +68,8 @@ others dropped out of Pandora on Titan, though nothing changed at the provider. 
 
 - **No `Google.Apis.Gmail.v1`.** REST with `HttpClient`, as `GoogleOAuthProvider` does.
 - **No Gmail batch endpoint.** One `messages.get` per message, two at a time.
-- **Only `gmail.modify` is requested.** The plan asked for `gmail.send` and `gmail.settings.basic` as well; M3 and
-  M4 will need a new consent.
+- **Only `gmail.modify` is requested.** The plan asked for `gmail.send` and `gmail.settings.basic` as well. Sending needs no more
+  than `gmail.modify`; M4 will need a new consent for filters.
 - **A cycle reads backfill batches until a budget runs out**, not one batch per cycle: one batch per 2 minutes took
   over 3 hours on 50,000 messages.
 - **`POST /mailboxes` does not start the backfill.** The first cycle does.

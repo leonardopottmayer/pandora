@@ -138,6 +138,27 @@ public sealed class SyncEngineTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Mail_in_sent_or_drafts_is_not_an_arrival()
+    {
+        _provider.Labels.Add(new RemoteLabel("Sent", "Sent", LabelKind.System, LabelRole.Sent, IsExclusive: true));
+        _provider.Labels.Add(new RemoteLabel("Drafts", "Drafts", LabelKind.System, LabelRole.Drafts, IsExclusive: true));
+        var mailbox = await CreateMailboxAsync();
+        await SyncAsync(mailbox.Id);
+
+        _provider.Deliver("s1", "I wrote this", label: "Sent");
+        _provider.Deliver("d1", "Still writing", label: "Drafts");
+        Assert.True(Value(await SyncAsync(mailbox.Id)));
+
+        Assert.Equal(["I wrote this", "Still writing"], (await SubjectsAsync(mailbox.Id)).Order());
+        Assert.Equal(0, await CountOutboxAsync(MessageReceived));
+
+        // Anything else still is.
+        _provider.Deliver("i1", "For me");
+        Assert.True(Value(await SyncAsync(mailbox.Id)));
+        Assert.Equal(1, await CountOutboxAsync(MessageReceived));
+    }
+
+    [Fact]
     public async Task A_message_id_the_mailbox_already_has_is_not_an_arrival()
     {
         _provider.Deliver("m1", "Original", rfc822: "same@mail.test");

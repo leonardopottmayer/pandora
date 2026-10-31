@@ -30,6 +30,7 @@ Comece pela **Visão geral** para a fronteira e o vocabulário, depois leia o t�
 | 6 | [Plano de Produto](product-plan.md) | O que falta: enviar (M3), regras (M4) |
 | 7 | [Plano de execução](execution-plan.md) | Como a M1 foi construída, passo a passo (histórico) |
 | 8 | [Plano de execução da M2](execution-plan-m2.md) | Como a M2 foi construída, passo a passo (histórico) |
+| 9 | [Plano de execução da M3](execution-plan-m3.md) | A próxima fase, enviar: decisões e passos (plano) |
 
 🇺🇸 Todo documento também existe em inglês, em [`en/`](../README.md).
 

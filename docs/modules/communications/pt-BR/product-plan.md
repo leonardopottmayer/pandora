@@ -122,8 +122,8 @@
 
 Construído na M1: veja o [Integrations](../../integrations/pt-BR/README.md) e a [Arquitetura](architecture.md). Falta:
 
-- A M3 precisa de `gmail.send` e a M4 de `gmail.settings.basic`. A M1 só pede `gmail.modify`, então as contas já
-  conectadas terão de consentir de novo; a tela de consentimento também precisa declarar os escopos novos.
+- A M3 não precisa de escopo novo: `messages.send` aceita `gmail.modify`. A M4 precisa de `gmail.settings.basic`, então as contas já
+  conectadas terão de consentir de novo, e a tela de consentimento precisa declará-lo.
 - **Google Cloud:** em **Testing** o refresh token expira a cada 7 dias. Ainda falta confirmar se passar o projeto
   para **In production** sem verificação basta para uso pessoal (o
   [guia de configuração](../../../deployment/google-and-gemini-setup.md) assume que a verificação é exigida).
@@ -285,6 +285,8 @@ Pronta em 2026-10-30: veja o [Status de implementação](implementation-status.m
 Pronta em 2026-10-31: veja o [Status de implementação](implementation-status.md).
 
 ### M3 — Enviar
+
+Lista de trabalho: [execution-plan-m3.md](execution-plan-m3.md).
 
 - Escrever, responder, encaminhar, anexos, cópia em Enviados no IMAP.
 - **Pronto quando:** uma resposta enviada pelo Pandora cai na mesma conversa do Gmail, e uma mensagem

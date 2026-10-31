@@ -68,8 +68,8 @@ outras saíram do Pandora no Titan, embora nada tenha mudado no provedor. Agora 
 
 - **Sem `Google.Apis.Gmail.v1`.** REST com `HttpClient`, como faz o `GoogleOAuthProvider`.
 - **Sem o endpoint de batch do Gmail.** Um `messages.get` por mensagem, dois por vez.
-- **Só `gmail.modify` é pedido.** O plano pedia também `gmail.send` e `gmail.settings.basic`; a M3 e a M4 vão precisar de
-  um novo consentimento.
+- **Só `gmail.modify` é pedido.** O plano pedia também `gmail.send` e `gmail.settings.basic`. Enviar não precisa de mais que o `gmail.modify`; a M4 vai
+  precisar de um novo consentimento para os filtros.
 - **Um ciclo lê lotes da carga inicial até o orçamento acabar**, não um lote por ciclo: um lote a cada 2 minutos levava
   mais de 3 horas em 50 mil mensagens.
 - **`POST /mailboxes` não começa a carga inicial.** O primeiro ciclo começa.
