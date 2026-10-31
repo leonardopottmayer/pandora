@@ -1,6 +1,6 @@
 # Communications — Execution Plan, M3 (Send)
 
-> **Status:** In progress: decisions approved, steps 1–2 built. It is phase **M3** of the [product-plan](product-plan.md); what exists today is in
+> **Status:** In progress: decisions approved, steps 1–3 built. It is phase **M3** of the [product-plan](product-plan.md); what exists today is in
 > [Implementation Status](implementation-status.md).
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan-m3.md)
 
@@ -87,7 +87,13 @@ Each step ends green before the next one. Suggested commit points: **M3a** = ste
 - **Tests (unit):** `Reply-To` wins over `From`; reply all leaves out the mailbox's own address, in any case; `Re: ` is not doubled; `References` grows by the original's Message-ID; a header with a line break
   cannot inject another header; the forward carries the files.
 
-### Step 3 — IMAP: SMTP and the sent copy
+### Step 3 — IMAP: SMTP and the sent copy ✅
+
+> **Built (2026-10-31).** Changes from the list below:
+> - **The sent folder** is the one with the role, else one named `Sent`, `Sent Items`, `Sent Messages` or `Enviados`, for a server with no SPECIAL-USE. It also let GreenMail test the copy, with no seam.
+> - **A refused answer from the server is a plain error; anything else once connected is `SendUncertain`,** including a connection lost before the data. Calling that uncertain costs one look at Sent; the other way round risks a duplicate.
+> - **The wait** is 3 seconds, once.
+> - Tests: `ImapMailboxProviderTests` +4. **Not exercised:** `SendUncertain`, since GreenMail cannot drop a connection mid-send, and a wrong SMTP password, which has no test yet; the real check covers the password.
 
 - `ImapMailboxProvider.SendAsync`: MailKit `SmtpClient`, `SecureSocketOptions.Auto`, the same credential. Bcc goes on the envelope, not on the wire, and stays in the sent copy.
 - Before the server has accepted, any failure is a plain error. Once data has been sent and the answer is lost → `SendUncertain`. Refused recipients are a plain error.

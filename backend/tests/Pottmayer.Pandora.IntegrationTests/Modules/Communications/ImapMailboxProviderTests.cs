@@ -246,6 +246,101 @@ public sealed class ImapMailboxProviderTests(PandoraWebApplicationFactory factor
     }
 
     [Fact]
+    public async Task A_sent_message_reaches_everyone_and_leaves_one_copy_with_the_bcc_only_there()
+    {
+        const string user = "send@example.com";
+        var mailbox = await ConnectMailboxAsync(user, GreenMailFixture.Password);
+        Value(await WithProviderAsync(p => p.CreateLabelAsync(mailbox, "Sent")));
+
+        var raw = Raw(user, "Hello there", to: "to@example.com", cc: "cc@example.com", bcc: "bcc@example.com");
+        var sent = Value(await WithProviderAsync(p => p.SendAsync(mailbox, raw, null)));
+
+        Assert.True(sent.CopySaved);
+        Assert.Equal(["Hello there"], await SubjectsSeenByWebmailAsync("to@example.com", "INBOX"));
+        Assert.Equal(["Hello there"], await SubjectsSeenByWebmailAsync("cc@example.com", "INBOX"));
+        Assert.Equal(["Hello there"], await SubjectsSeenByWebmailAsync("bcc@example.com", "INBOX"));
+
+        // Bcc is on the sent copy, and nowhere the recipients can read it.
+        Assert.Equal(["Hello there"], await SubjectsSeenByWebmailAsync(user, "Sent"));
+        Assert.Equal(["bcc@example.com"], await BccSeenByWebmailAsync(user, "Sent"));
+        Assert.Empty(await BccSeenByWebmailAsync("to@example.com", "INBOX"));
+    }
+
+    [Fact]
+    public async Task A_copy_the_server_already_saved_is_not_added_again()
+    {
+        const string user = "copy@example.com";
+        var mailbox = await ConnectMailboxAsync(user, GreenMailFixture.Password);
+        Value(await WithProviderAsync(p => p.CreateLabelAsync(mailbox, "Sent")));
+        var raw = Raw(user, "Saved by the server", to: "to2@example.com");
+
+        using (var webmail = await mail.ConnectAsync(user))
+        {
+            var folder = await webmail.GetFolderAsync("Sent");
+            await folder.OpenAsync(FolderAccess.ReadWrite);
+            await folder.AppendAsync(new AppendRequest(MimeMessage.Load(new MemoryStream(raw))));
+        }
+
+        Assert.True(Value(await WithProviderAsync(p => p.SendAsync(mailbox, raw, null))).CopySaved);
+
+        Assert.Equal(["Saved by the server"], await SubjectsSeenByWebmailAsync(user, "Sent"));
+    }
+
+    [Fact]
+    public async Task Without_a_sent_folder_the_mail_still_goes_and_says_there_is_no_copy()
+    {
+        const string user = "nosent@example.com";
+        var mailbox = await ConnectMailboxAsync(user, GreenMailFixture.Password);
+        var raw = Raw(user, "No copy", to: "to3@example.com");
+
+        var sent = Value(await WithProviderAsync(p => p.SendAsync(mailbox, raw, null)));
+
+        Assert.False(sent.CopySaved);
+        Assert.Equal(["No copy"], await SubjectsSeenByWebmailAsync("to3@example.com", "INBOX"));
+    }
+
+    [Fact]
+    public async Task A_server_that_cannot_be_reached_is_a_plain_failure_not_an_uncertain_send()
+    {
+        const string user = "badsend@example.com";
+        var owner = await ConnectMailboxAsync(user, GreenMailFixture.Password);
+        var mailbox = Mailbox.Connect(owner.UserId, MailProvider.Imap, owner.ExternalAccountId, user, null,
+            new MailServerSettings(mail.Host, mail.MappedImapPort, mail.Host, 1));
+
+        var result = await WithProviderAsync(p => p.SendAsync(mailbox, Raw(user, "Never", to: "to@example.com"), null));
+
+        Assert.Equal(MailErrors.ProviderFailed(string.Empty).Code, Assert.Single(result.Errors).Code);
+    }
+
+    private static byte[] Raw(string from, string subject, string to, string? cc = null, string? bcc = null)
+    {
+        var message = new MimeMessage { Subject = subject, MessageId = MimeKit.Utils.MimeUtils.GenerateMessageId("example.com") };
+        message.From.Add(MailboxAddress.Parse(from));
+        message.To.Add(MailboxAddress.Parse(to));
+        if (cc is not null)
+            message.Cc.Add(MailboxAddress.Parse(cc));
+        if (bcc is not null)
+            message.Bcc.Add(MailboxAddress.Parse(bcc));
+        message.Body = new TextPart("plain") { Text = "The body" };
+
+        using var stream = new MemoryStream();
+        message.WriteTo(stream);
+        return stream.ToArray();
+    }
+
+    private async Task<List<string>> BccSeenByWebmailAsync(string user, string path)
+    {
+        using var webmail = await mail.ConnectAsync(user);
+        var folder = path == "INBOX" ? webmail.Inbox : await webmail.GetFolderAsync(path);
+        await folder.OpenAsync(FolderAccess.ReadOnly);
+        var uids = await folder.SearchAsync(SearchQuery.All);
+        var result = new List<string>();
+        foreach (var uid in uids)
+            result.AddRange((await folder.GetMessageAsync(uid)).Bcc.Mailboxes.Select(m => m.Address));
+        return result;
+    }
+
+    [Fact]
     public async Task Every_folder_stays_in_scope_whatever_is_subscribed()
     {
         const string user = "scope@example.com";

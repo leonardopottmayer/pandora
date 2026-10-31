@@ -1,6 +1,6 @@
 # Communications — Plano de Execução, M3 (Enviar)
 
-> **Status:** Em andamento: decisões aprovadas, passos 1–2 construídos. É a fase **M3** do [product-plan](product-plan.md); o que existe hoje está no
+> **Status:** Em andamento: decisões aprovadas, passos 1–3 construídos. É a fase **M3** do [product-plan](product-plan.md); o que existe hoje está no
 > [Status de implementação](implementation-status.md).
 > 🇺🇸 [English version](../en/execution-plan-m3.md)
 
@@ -86,7 +86,13 @@ Cada passo termina verde antes do próximo. Pontos de commit sugeridos: **M3a** 
 - **Testes (unitários):** `Reply-To` vence `From`; responder a todos tira o endereço da própria caixa, em qualquer caixa alta ou baixa; `Re: ` não duplica; `References` cresce com o Message-ID da original; um cabeçalho com quebra de linha
   não injeta outro cabeçalho; o encaminhamento leva os arquivos.
 
-### Passo 3 — IMAP: SMTP e a cópia em Enviados
+### Passo 3 — IMAP: SMTP e a cópia em Enviados ✅
+
+> **Construído (2026-10-31).** Mudanças em relação à lista abaixo:
+> - **A pasta de Enviados** é a que tem o papel, senão uma chamada `Sent`, `Sent Items`, `Sent Messages` ou `Enviados`, para servidores sem SPECIAL-USE. Isso também permitiu testar a cópia no GreenMail, sem ponto de teste.
+> - **Uma recusa do servidor é um erro comum; qualquer outra coisa depois de conectar é `SendUncertain`,** inclusive conexão perdida antes dos dados. Chamar isso de incerto custa uma olhada em Enviados; o contrário arrisca uma duplicata.
+> - **A espera** é de 3 segundos, uma vez.
+> - Testes: `ImapMailboxProviderTests` +4. **Não exercitado:** `SendUncertain`, porque o GreenMail não derruba a conexão no meio do envio, e senha SMTP errada, que ainda não tem teste; a verificação real cobre a senha.
 
 - `ImapMailboxProvider.SendAsync`: `SmtpClient` do MailKit, `SecureSocketOptions.Auto`, a mesma credencial. Cco vai no envelope, não na mensagem, e fica na cópia em Enviados.
 - Antes de o servidor aceitar, qualquer falha é um erro comum. Depois de enviar os dados, com a resposta perdida → `SendUncertain`. Destinatários recusados são um erro comum.

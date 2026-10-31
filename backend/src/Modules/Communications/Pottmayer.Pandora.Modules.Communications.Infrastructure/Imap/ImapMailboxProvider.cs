@@ -1,5 +1,6 @@
 using MailKit;
 using MailKit.Net.Imap;
+using MailKit.Net.Smtp;
 using MailKit.Search;
 using MailKit.Security;
 using Pottmayer.Pandora.Modules.Communications.Domain.Entities;
@@ -28,6 +29,12 @@ internal sealed class ImapMailboxProvider(IExternalCredentialProvider credential
     // ponytail: without CONDSTORE a flag change on an older message is missed; a full flag diff per
     // cycle if that matters on a real server.
     internal const int FlagWindow = 200;
+
+    /// <summary>How long a server gets to save its own copy of a sent message.</summary>
+    private static readonly TimeSpan SentCopyWait = TimeSpan.FromSeconds(3);
+
+    /// <summary>For a server with no SPECIAL-USE, where no folder has the role.</summary>
+    private static readonly string[] SentFolderNames = ["Sent", "Sent Items", "Sent Messages", "Enviados"];
 
     private const MessageSummaryItems SummaryItems =
         MessageSummaryItems.UniqueId | MessageSummaryItems.Envelope | MessageSummaryItems.Flags |
@@ -256,9 +263,89 @@ internal sealed class ImapMailboxProvider(IExternalCredentialProvider credential
                 : await MoveToAsync(client, providerMessageIds, trash, token);
         }, ct);
 
-    // Temporary, until M3's step 3: nothing calls it yet.
-    public Task<Result<SentMessage>> SendAsync(Mailbox mailbox, byte[] rawMessage, string? threadKey, CancellationToken ct = default) =>
-        Task.FromResult(Result<SentMessage>.Failure(MailErrors.ActionNotSupported));
+    /// <summary>
+    /// SMTP, then the sent copy. Nothing is repeated here: only an answer from the server says the mail did not go, and
+    /// anything else after connecting is <see cref="MailErrors.SendUncertain"/>. A copy that fails does not fail the send.
+    /// </summary>
+    public async Task<Result<SentMessage>> SendAsync(Mailbox mailbox, byte[] rawMessage, string? threadKey, CancellationToken ct = default)
+    {
+        var server = mailbox.Server
+                     ?? throw new InvalidOperationException($"Mailbox {mailbox.Id} ({mailbox.Provider}) has no SMTP server.");
+
+        var credential = await credentials.GetPasswordAsync(mailbox.UserId, mailbox.ExternalAccountId, ct);
+        if (!credential.IsSuccess)
+            return Result<SentMessage>.Failure(MailErrors.MailboxAuthFailed(string.Join("; ", credential.Errors.Select(e => e.Message))));
+
+        using var stream = new MemoryStream(rawMessage);
+        var message = await MimeKit.MimeMessage.LoadAsync(stream, ct);
+
+        using var smtp = new SmtpClient();
+        try
+        {
+            await smtp.ConnectAsync(server.SmtpHost, server.SmtpPort, SecureSocketOptions.Auto, ct);
+            if (smtp.Capabilities.HasFlag(SmtpCapabilities.Authentication))
+                await smtp.AuthenticateAsync(credential.Value.Username, credential.Value.Password, ct);
+        }
+        catch (AuthenticationException ex)
+        {
+            return Result<SentMessage>.Failure(MailErrors.MailboxAuthFailed(ex.Message));
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return Result<SentMessage>.Failure(MailErrors.ProviderFailed(ex.Message));
+        }
+
+        try
+        {
+            // MailKit keeps Bcc on the envelope and off the wire.
+            await smtp.SendAsync(message, ct);
+        }
+        catch (SmtpCommandException ex)
+        {
+            return Result<SentMessage>.Failure(MailErrors.ProviderFailed(ex.Message));
+        }
+        catch (Exception)
+        {
+            return Result<SentMessage>.Failure(MailErrors.SendUncertain);
+        }
+
+        try
+        {
+            await smtp.DisconnectAsync(true, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // The server has the message; only the goodbye was lost.
+        }
+
+        var copy = await RunAsync(mailbox, (client, token) => SaveSentCopyAsync(client, message, token), ct);
+        return Result<SentMessage>.Success(new SentMessage(copy.IsSuccess && copy.Value));
+    }
+
+    /// <summary>
+    /// Many servers save the copy themselves, some a moment later, and nothing says which: look for it, and add it only
+    /// if it is not there. ponytail: a server slower than <see cref="SentCopyWait"/> ends up with two copies.
+    /// </summary>
+    private static async Task<Result<bool>> SaveSentCopyAsync(ImapClient client, MimeKit.MimeMessage message, CancellationToken ct)
+    {
+        var folders = await FoldersInScopeAsync(client, ct);
+        var sent = folders.FirstOrDefault(f => ToLabel(f).Role == LabelRole.Sent)
+                   ?? folders.FirstOrDefault(f => SentFolderNames.Contains(f.Name, StringComparer.OrdinalIgnoreCase));
+        if (sent is null)
+            return Result<bool>.Success(false);
+
+        await sent.OpenAsync(FolderAccess.ReadWrite, ct);
+        var query = SearchQuery.HeaderContains("Message-ID", message.MessageId);
+        if ((await sent.SearchAsync(query, ct)).Count == 0)
+        {
+            await Task.Delay(SentCopyWait, ct);
+            if ((await sent.SearchAsync(query, ct)).Count == 0)
+                await sent.AppendAsync(new AppendRequest(message, MessageFlags.Seen), ct);
+        }
+
+        await sent.CloseAsync(false, ct);
+        return Result<bool>.Success(true);
+    }
 
     /// <summary>A UID is per folder, so a move gets a new one; without UIDPLUS the server does not say which.</summary>
     private static async Task<Result<IReadOnlyDictionary<string, string?>>> MoveToAsync(
