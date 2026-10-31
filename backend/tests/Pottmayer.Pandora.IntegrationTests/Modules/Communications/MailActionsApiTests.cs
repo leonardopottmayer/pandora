@@ -194,7 +194,7 @@ public sealed class MailActionsApiTests : IAsyncLifetime
         Assert.Contains(receipts.Id, labeled.LabelIds);
 
         var moved = Assert.Single(await ActAsync(client, mailbox, "move", [message.Id], taxes.Id));
-        Assert.Equal([receipts.Id, taxes.Id], moved.LabelIds.Order());
+        Assert.Equal(new[] { receipts.Id, taxes.Id }.Order(), moved.LabelIds.Order());
 
         var removed = Assert.Single(await ActAsync(client, mailbox, "remove-label", [message.Id], receipts.Id));
         Assert.Equal([taxes.Id], removed.LabelIds);

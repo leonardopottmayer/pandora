@@ -1,6 +1,6 @@
 # Communications — Plano de Execução, M3 (Enviar)
 
-> **Status:** Em andamento: decisões aprovadas, passo 1 construído. É a fase **M3** do [product-plan](product-plan.md); o que existe hoje está no
+> **Status:** Em andamento: decisões aprovadas, passos 1–2 construídos. É a fase **M3** do [product-plan](product-plan.md); o que existe hoje está no
 > [Status de implementação](implementation-status.md).
 > 🇺🇸 [English version](../en/execution-plan-m3.md)
 
@@ -73,7 +73,11 @@ Cada passo termina verde antes do próximo. Pontos de commit sugeridos: **M3a** 
 - **Primeiro, um teste que falha:** uma mensagem nova numa etiqueta com papel `sent` ou `drafts` → nenhum `MailMessageReceived`.
 - `MailboxChangesStep`: um upsert cujas etiquetas são só `sent` ou `drafts` não é chegada.
 
-### Passo 2 — A porta e a mensagem
+### Passo 2 — A porta e a mensagem ✅
+
+> **Construído (2026-10-31).** `SendAsync` na porta, com os dois adaptadores respondendo `ActionNotSupported` até os passos 3 e 4; `MailErrors`; `MessageComposer`, com `Build` e `DraftFrom`. Além da lista abaixo:
+> o rascunho traz o texto da original como está, e a tela o cita, no idioma do usuário. Responder à própria mensagem continua para as mesmas pessoas. Os arquivos de um encaminhamento deixam de fora imagens inline. Testes:
+> `MessageComposerTests`.
 
 - `IMailboxProvider.SendAsync(mailbox, rawMessage, threadKey?)` → `SentMessage(CopySaved)`. Bytes crus, para o MimeKit ficar fora do Domain; cada adaptador os carrega ou repassa.
 - `MailErrors`: `SendUncertain` (pode ter saído), `AlreadySent` (409), `RecipientsInvalid`, `MessageTooLarge`.

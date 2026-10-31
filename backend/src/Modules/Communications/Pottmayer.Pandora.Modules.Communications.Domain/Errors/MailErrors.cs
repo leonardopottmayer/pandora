@@ -49,6 +49,19 @@ public static class MailErrors
     public static Error ActionNotSupported =>
         Error.Validation("Communications.ActionNotSupported", "This mailbox does not support this action.");
 
+    /// <summary>The answer was lost after the mail was handed over. It must not be sent again without looking.</summary>
+    public static Error SendUncertain =>
+        Error.Validation("Communications.SendUncertain", "The mail server did not confirm this message. It may have been sent: check the Sent folder before sending it again.");
+
+    public static Error AlreadySent =>
+        Error.Conflict("Communications.AlreadySent", "This message was already handed to the mail server.");
+
+    public static Error RecipientsInvalid =>
+        Error.Validation("Communications.RecipientsInvalid", "The message needs at least one recipient, at most 100, and valid addresses.");
+
+    public static Error MessageTooLarge =>
+        Error.Validation("Communications.MessageTooLarge", "The message is over the size limit.");
+
     public static Error MailboxNotFound =>
         Error.NotFound("Communications.MailboxNotFound", "This mailbox does not exist.");
 

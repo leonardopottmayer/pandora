@@ -71,7 +71,17 @@ public interface IMailboxProvider
     /// <summary>To the provider's trash, where it can be restored; the ids as in <see cref="MoveAsync"/>.</summary>
     Task<Result<IReadOnlyDictionary<string, string?>>> TrashAsync(
         Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, CancellationToken ct = default);
+
+    /// <summary>
+    /// Sends a whole RFC 822 message and sees that a sent copy exists. This cannot be taken back, so it is never
+    /// repeated when the mail may have gone: that is <see cref="MailErrors.SendUncertain"/>.
+    /// </summary>
+    /// <param name="threadKey">The conversation of a reply, where the provider has them.</param>
+    Task<Result<SentMessage>> SendAsync(Mailbox mailbox, byte[] rawMessage, string? threadKey, CancellationToken ct = default);
 }
+
+/// <param name="CopySaved">False when the mail went but no sent copy could be saved. The send still succeeded.</param>
+public sealed record SentMessage(bool CopySaved);
 
 /// <summary>What the screens may offer for a provider.</summary>
 /// <param name="MultipleLabels">A message carries several labels (Gmail); otherwise a label is a folder.</param>

@@ -1,6 +1,6 @@
 # Communications — Execution Plan, M3 (Send)
 
-> **Status:** In progress: decisions approved, step 1 built. It is phase **M3** of the [product-plan](product-plan.md); what exists today is in
+> **Status:** In progress: decisions approved, steps 1–2 built. It is phase **M3** of the [product-plan](product-plan.md); what exists today is in
 > [Implementation Status](implementation-status.md).
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan-m3.md)
 
@@ -74,7 +74,11 @@ Each step ends green before the next one. Suggested commit points: **M3a** = ste
 - **First, a failing test:** a new message under a label with role `sent` or `drafts` → no `MailMessageReceived`.
 - `MailboxChangesStep`: an upsert whose labels are only `sent` or `drafts` is not an arrival.
 
-### Step 2 — The port and the message
+### Step 2 — The port and the message ✅
+
+> **Built (2026-10-31).** `SendAsync` on the port, with both adapters answering `ActionNotSupported` until steps 3 and 4; `MailErrors`; `MessageComposer`, with `Build` and `DraftFrom`. Beyond the list below:
+> the draft gives the original's text as it is, and the screen quotes it, in the user's language. Replying to your own message continues to the same people. A forward's files leave out inline images. Tests:
+> `MessageComposerTests`.
 
 - `IMailboxProvider.SendAsync(mailbox, rawMessage, threadKey?)` → `SentMessage(CopySaved)`. Raw bytes, so MimeKit stays out of the Domain; each adapter loads or forwards them.
 - `MailErrors`: `SendUncertain` (it may have gone), `AlreadySent` (409), `RecipientsInvalid`, `MessageTooLarge`.

@@ -256,6 +256,10 @@ internal sealed class ImapMailboxProvider(IExternalCredentialProvider credential
                 : await MoveToAsync(client, providerMessageIds, trash, token);
         }, ct);
 
+    // Temporary, until M3's step 3: nothing calls it yet.
+    public Task<Result<SentMessage>> SendAsync(Mailbox mailbox, byte[] rawMessage, string? threadKey, CancellationToken ct = default) =>
+        Task.FromResult(Result<SentMessage>.Failure(MailErrors.ActionNotSupported));
+
     /// <summary>A UID is per folder, so a move gets a new one; without UIDPLUS the server does not say which.</summary>
     private static async Task<Result<IReadOnlyDictionary<string, string?>>> MoveToAsync(
         ImapClient client, IReadOnlyCollection<string> providerMessageIds, IMailFolder target, CancellationToken ct)

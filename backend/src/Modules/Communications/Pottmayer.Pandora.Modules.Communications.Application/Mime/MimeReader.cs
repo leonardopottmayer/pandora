@@ -23,9 +23,12 @@ internal static partial class MimeReader
             .Select(a => new MailAttachment(a.Id, a.Part.FileName, a.Part.ContentType.MimeType, Decode(a.Part).LongLength, a.Part.ContentId))
             .ToList();
 
-        var text = message.TextBody ?? (message.HtmlBody is { } html ? WebUtility.HtmlDecode(Tags().Replace(html, " ")) : null);
-        return new Body(message.TextBody, message.HtmlBody, attachments, Snippet(text));
+        return new Body(message.TextBody, message.HtmlBody, attachments, Snippet(PlainText(message)));
     }
+
+    /// <summary>The text part, or the HTML with its tags stripped.</summary>
+    public static string? PlainText(MimeMessage message) =>
+        message.TextBody ?? (message.HtmlBody is { } html ? WebUtility.HtmlDecode(Tags().Replace(html, " ")) : null);
 
     public static AttachmentPart? FindAttachment(byte[] raw, string attachmentId) =>
         Attachments(Load(raw)).Where(a => a.Id == attachmentId)
@@ -41,7 +44,7 @@ internal static partial class MimeReader
                .Where(a => a.Part is not null && (a.Part.IsAttachment || (a.Part.ContentId is not null && a.Part is not TextPart)))
                .Select(a => (a.Id, a.Part!));
 
-    private static MimeMessage Load(byte[] raw)
+    public static MimeMessage Load(byte[] raw)
     {
         using var stream = new MemoryStream(raw);
         return MimeMessage.Load(stream);

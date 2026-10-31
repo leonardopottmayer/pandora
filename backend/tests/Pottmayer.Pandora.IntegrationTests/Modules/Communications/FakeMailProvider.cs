@@ -47,6 +47,11 @@ internal sealed class FakeMailProvider : IMailboxProvider
     /// <summary>Every write, in order: <c>"move:m1:Archive"</c>.</summary>
     public List<string> Writes { get; } = [];
 
+    /// <summary>Every message sent, in order.</summary>
+    public List<(byte[] Raw, string? ThreadKey)> Sent { get; } = [];
+
+    public bool CopySaved { get; set; } = true;
+
     /// <summary>The id a move gives a message; null is a provider that does not say. By default the id stays.</summary>
     public Func<string, string?> MovedId { get; set; } = id => id;
 
@@ -209,6 +214,13 @@ internal sealed class FakeMailProvider : IMailboxProvider
         if (FailWith is null)
             Writes.Add($"trash:{string.Join(',', providerMessageIds)}");
         return Answer<IReadOnlyDictionary<string, string?>>(providerMessageIds.ToDictionary(id => id, id => MovedId(id)));
+    }
+
+    public Task<Result<SentMessage>> SendAsync(Mailbox mailbox, byte[] rawMessage, string? threadKey, CancellationToken ct = default)
+    {
+        if (FailWith is null)
+            Sent.Add((rawMessage, threadKey));
+        return Answer(new SentMessage(CopySaved));
     }
 
     private Task<Result<T>> Answer<T>(T value)

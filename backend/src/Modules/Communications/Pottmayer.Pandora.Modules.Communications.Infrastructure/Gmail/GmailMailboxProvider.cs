@@ -194,6 +194,10 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
             return providerMessageIds.ToDictionary(id => id, id => (string?)id);
         }, ct);
 
+    // Temporary, until M3's step 4: nothing calls it yet.
+    public Task<Result<SentMessage>> SendAsync(Mailbox mailbox, byte[] rawMessage, string? threadKey, CancellationToken ct = default) =>
+        Task.FromResult(Result<SentMessage>.Failure(MailErrors.ActionNotSupported));
+
     private async Task<bool> BatchModifyAsync(
         string token, IReadOnlyCollection<string> ids, IReadOnlyCollection<string> add, IReadOnlyCollection<string> remove, CancellationToken ct)
     {
