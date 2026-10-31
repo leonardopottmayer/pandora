@@ -28,6 +28,8 @@ returns the account id a mailbox needs. A Google account comes from `POST /api/v
 | GET | `/messages/{id}` | One message with its body, fetched and cached on the first open |
 | GET | `/messages/{id}/attachments/{attachmentId}` | The attachment's bytes |
 | POST | `/messages/actions` | One action on up to 100 messages of one mailbox |
+| POST | `/messages/send` | Send a message |
+| GET | `/messages/{id}/compose` | The prefilled form for a reply or a forward |
 
 ### GET `/mailboxes`
 
@@ -131,6 +133,21 @@ a keyset over `(sent_at, id)`, stable while new mail arrives.
 
 The bytes, with `X-Content-Type-Options: nosniff`. `Content-Disposition` is `inline` only for PNG, JPEG, GIF, WebP
 and BMP, and `attachment` for anything else. It also serves `cid:` images.
+
+### POST `/messages/send`
+
+`multipart/form-data`: `mailboxId`, `sendKey` (a uuid made when the form opens), `to`, `cc`, `bcc` (bare addresses, one field each), `subject`, `textBody`, `htmlBody`, `replyToId?` or `forwardOfId?`, `keepAttachmentIds` (which of the forwarded message's files go along), `files`. Answers `{ copySaved }`. **This cannot be taken back.**
+
+| Status | When |
+|---|---|
+| 200 | Sent. `copySaved: false` means it went, but no sent copy could be saved |
+| 404 | The mailbox or the original does not exist or is someone else's, or a kept file does not exist |
+| 409 | This key was already handled (`AlreadySent`) |
+| 422 | Bad or no recipients, over 100 (`RecipientsInvalid`); attachments over 25 MB (`MessageTooLarge`); a refusal by the provider (the key is freed); `SendUncertain`: it **may have gone**, and the key stays taken |
+
+### GET `/messages/{id}/compose?mode=reply|reply-all|forward`
+
+The form, worked out from the raw message: `to`, `cc`, `subject`, `inReplyTo`, `references`, `originalFrom`, `originalDate`, `originalText` (as written; the screen quotes it), `attachments` (a forward's files, without inline images).
 
 ---
 

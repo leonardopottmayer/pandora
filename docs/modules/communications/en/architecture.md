@@ -16,7 +16,7 @@ Pottmayer.Pandora.Modules.Communications.
                       (MailProvider, MailboxStatus, LabelKind, LabelRole, ThreadKey),
                       Ports (IMailboxProvider, repositories), MailErrors
   Application       → Commands (ConnectMailbox, UpdateMailbox, DeleteMailbox, SyncMailbox,
-                      SyncMailboxNow, OpenMessage, ApplyMessageAction, ManageLabels), Queries (GetMailboxes, GetLabels, ListMessages,
+                      SyncMailboxNow, OpenMessage, ApplyMessageAction, ManageLabels, SendMessage), Queries (GetMailboxes, GetLabels, ListMessages,
                       GetAttachment), MimeReader, subscribers, the account usage source
   Infrastructure    → Gmail/ and Imap/ adapters, Jobs/MailboxSyncBackgroundService
   Persistence       → EntityConfigs, Repositories, DbContext (with the outbox)
@@ -43,6 +43,7 @@ under each `MailProvider` value it serves, so the engine asks for the mailbox's 
 | `SetFlagsAsync` | Read and starred |
 | `ChangeLabelsAsync` | Add and remove labels, where `MultipleLabels` |
 | `MoveAsync`, `TrashAsync` | Return each message's id after the move, or null when the provider does not say |
+| `SendAsync` | Sends a whole RFC 822 message and sees that a sent copy exists; never repeated on a doubt |
 
 Taking the incremental cursor before the first batch is what keeps mail from being lost: anything that
 arrives or changes during the backfill shows up in the next `FetchChangesAsync`.
@@ -65,6 +66,8 @@ arrives or changes during the backfill shows up in the next `FetchChangesAsync`.
 | **Write flags and labels** | `messages.batchModify` | `STORE` per folder |
 | **Move** | Add the target, remove `INBOX`; the id stays | `MOVE`, reading the new UID |
 | **Trash** | `messages.trash`, one call per message | Move to the folder with role `trash` |
+| **Send** | `messages.send`, multipart upload with `threadId` | SMTP with the same credential |
+| **Sent copy** | Gmail keeps its own | Looks for the Message-ID in the sent folder, waits 3 s, looks again, and appends only if it is not there |
 
 The Gmail adapter sends two `messages.get` at a time and retries `429`, `5xx` and a rate-limit `403`
 after 1, 2, 4, 8 and 16 s (a `Retry-After` wins), writes included. Four at a time drew frequent `403`s on a real
@@ -140,7 +143,19 @@ the row to that cycle. Move targets are never Sent or Drafts; on Gmail, of the s
 Label operations (`LabelOperation`) call the provider under the action gate, release it, then run `MailboxChangesStep`. The provider has accepted by
 then, so if the step fails the operation still succeeded: it is logged, and the next cycle catches up.
 
-## 6. Frontend
+## 6. Sending
+
+**Sending cannot be taken back,** so it differs from every other write:
+
+- **Repeated only when the provider certainly refused:** a `429` or a rate-limit `403` on Gmail. A `5xx`, a timeout or a lost connection is `SendUncertain`: it may have gone, and the screen says to look in Sent.
+- **A send key,** made when the form opens, is refused the second time (`SendKeys`, in process memory for an hour). Only a certain refusal frees it. It stops a double click, a second tab and a retry after a timeout.
+- **A failed sent copy is a success:** the mail went, and an error would invite sending it again.
+- **No gate and no sync step:** a slow SMTP cannot hold actions back, and a send does not wait for a cycle reading a long backlog. The sent copy shows up on the next cycle.
+- **No sender name:** a mailbox's display name is the user's label for it, not who is writing.
+
+`MessageComposer` builds the outgoing message and works out a reply or forward from the raw original: `Reply-To` wins over `From`, reply all leaves out the mailbox's own address, and a line break in a field cannot add a header. Gmail replaces the Message-ID on what it sends, so the key does not survive as the id there; the check is on the server, so that does not matter.
+
+## 7. Frontend
 
 - **`/mail` (`MailPage`):** `MailSidebar` (mailboxes, labels, unread counts), `MessageList` (pages of 50
   behind "Load more"), `MessageReader` (the conversation).
@@ -150,6 +165,7 @@ then, so if the step fails the operation still succeeded: it is logged, and the 
   request per mailbox, with no move or labels on offer. Nothing updates optimistically; a refusal leaves the selection as it was. Trash asks first.
 - **Opening an unread message** marks it as read at the provider, once, after the body loads. A failure is silent.
 - **`MailSidebar`** creates, renames and deletes labels. A renamed or deleted label that was open sends the list back to its mailbox.
+- **`ComposeDrawer`** writes, replies and forwards: Markdown with a preview, attachments, a draft in the browser. A failure keeps the form; when the mail may have gone it will not send again unless asked, with a new key. `lib/composeBody` removes images, styles and forms from the HTML part, so a tracker in a quote cannot fire in the preview.
 - **Connecting Gmail:** consent at Google with `gmail.modify` added to the default scopes, back to
   `?connect=gmail`, where the modal reopens with the account chosen and the user confirms.
 - **Reconnecting:** Gmail goes through Google and returns to `?sync={id}`; Titan and IMAP open "Edit
@@ -169,7 +185,7 @@ The result renders in `<iframe sandbox="allow-popups allow-popups-to-escape-sand
 `default-src 'none'; style-src 'unsafe-inline'; img-src data:`, widened to `data: https: http:` after "Show
 images".
 
-## 7. Key design decisions
+## 8. Key design decisions
 
 | # | Decision | Rationale (rejected alternative) |
 |---|---|---|
@@ -183,8 +199,11 @@ images".
 | **D8** | Every IMAP folder is in scope; subscriptions are ignored. | "Subscribed, or all when none is" flips the whole mirror when any client subscribes the first folder. It happened on Titan. |
 | **D9** | Two gates, the backfill outside the action gate. | One gate: a click waits up to 5 minutes. A shorter budget: the backfill can take twice as long. |
 | **D10** | Stitch a moved message by Message-ID. | "Removed + new" loses the cached body on every move and fired a false event. |
+| **D11** | A send is repeated only on a certain refusal, with a key against duplicates. | Retrying like the other writes can send twice. |
+| **D12** | The sent copy is detected, not configured. | A per-provider flag is something someone has to know and keep right. |
+| **D13** | A Markdown text area, not a rich editor. | No new dependency, and plain text just works. Notes' editor is tied to pages and tags. |
 
-## 8. Cross-cutting rules
+## 9. Cross-cutting rules
 
 - **Scoped to the user.** Every query goes through the caller's mailboxes; another user's mailbox,
   message or account answers 404, the same as one that does not exist.

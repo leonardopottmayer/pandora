@@ -18,7 +18,7 @@ organized by module plus a few cross-cutting concerns.
   | [Agenda](modules/agenda/README.md) | Implemented | Reminders, tasks, calendar/events |
   | [Channels](modules/channels/README.md) | Implemented | Telegram/email delivery, quiet hours |
   | [Integrations](modules/integrations/README.md) | Implemented (I1–I3, I5); I5 real-Google check pending | OAuth, API-key and password credentials, encrypted at rest; many accounts per provider |
-  | [Communications](modules/communications/README.md) | M1 and M2 (read and organize) done | Email inbox (Gmail, Titan/IMAP): read and organize now; send and rules planned |
+  | [Communications](modules/communications/README.md) | M1–M3 (read, organize, send) done | Email inbox (Gmail, Titan/IMAP): read, organize and send now; rules planned |
   | [Assistant](modules/assistant/README.md) | **Plan only** | Natural-language commands over the other modules |
   | [Files](modules/files/README.md) | F1 (catalog) and F2 (metadata) implemented; F1 homelab check pending | Catalog of the user's disks, fed by the desktop agent |
 

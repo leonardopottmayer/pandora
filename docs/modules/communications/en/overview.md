@@ -9,7 +9,7 @@
 **Communications** is the user's **inbox** inside Pandora: the messages that arrive *to* the user,
 from any provider, in one place. Email comes first.
 
-Built today (M1, connect and read; M2, organize):
+Built today (M1, connect and read; M2, organize; M3, send):
 
 - Connect **any number of mailboxes**: Gmail through the Gmail API, Titan Email and any other server
   through IMAP.
@@ -21,10 +21,11 @@ Built today (M1, connect and read; M2, organize):
   blocked until the user asks for them.
 - **Organize**: read and unread, star, move, archive and trash, in batches, and labels created, renamed and deleted. It all goes to the
   provider first, and what is changed in the webmail comes back to Pandora.
+- **Send**: compose, reply, reply all and forward, with attachments. A send is never repeated when the mail may have gone.
 - **Publish `MailMessageReceived`** through the outbox for each new message, so other modules can
   process mail. Nothing consumes it yet.
 
-Sending (M3) and rules (M4) are plans: see the [product plan](product-plan.md).
+Rules (M4) are a plan: see the [product plan](product-plan.md).
 
 ## 2. What it is not
 
@@ -73,13 +74,12 @@ Sending (M3) and rules (M4) are plans: see the [product plan](product-plan.md).
 ### In scope (implemented — see [Implementation Status](implementation-status.md))
 
 The `communications` schema (`com001`–`com005` + outbox); the Gmail and IMAP adapters; backfill and
-incremental sync; the content cache and attachments; the mailbox, label and message endpoints; labels both ways and batch actions;
+incremental sync; the content cache and attachments; the mailbox, label and message endpoints; labels both ways and batch actions; sending;
 `MailMessageReceived`; the `mail` and `mail/accounts` screens.
 
 ### Out of scope / future (see [product-plan.md](product-plan.md))
 
 | Feature | Phase |
 |---|---|
-| Compose, reply, forward, attachments | M3 |
 | Rules, with Gmail filters both ways | M4 |
 | Gmail push instead of polling, Radar consuming the event, more providers | Later |

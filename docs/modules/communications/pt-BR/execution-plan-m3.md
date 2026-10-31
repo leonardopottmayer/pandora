@@ -1,6 +1,6 @@
 # Communications — Plano de Execução, M3 (Enviar)
 
-> **Status:** Em andamento: decisões aprovadas, passos 1–6 construídos; falta a verificação real. É a fase **M3** do [product-plan](product-plan.md); o que existe hoje está no
+> **Status:** Pronta (2026-10-31); este é o histórico de como foi construída. Foi a fase **M3** do [product-plan](product-plan.md); o que existe hoje está no
 > [Status de implementação](implementation-status.md).
 > 🇺🇸 [English version](../en/execution-plan-m3.md)
 
@@ -146,7 +146,10 @@ Cada passo termina verde antes do próximo. Pontos de commit sugeridos: **M3a** 
 - i18n `mail.compose.*` em `en.json` e `pt-BR.json`.
 - **Testes:** clique duplo envia uma vez; uma falha mantém o conteúdo; `SendUncertain` aparece como tal; a parte HTML não tem script; o rascunho volta depois de fechar e some depois de enviar.
 
-### Passo 7 — Verificação real e docs
+### Passo 7 — Verificação real e docs ✅
+
+> **Encerrado pelo usuário (2026-10-31).** Os resultados, inclusive o que o espelho não mostra, estão no [Status de implementação](implementation-status.md#verificação-real-da-m3-2026-10-31). Salvar as mudanças do Gmail em partes, previsto antes de fechar, não foi feito: é um ponto em aberto lá.
+
 
 **Só para os seus próprios endereços.**
 

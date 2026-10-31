@@ -1,8 +1,8 @@
 # Módulo Communications — Plano de Produto
 
-> **Status:** M1 e M2 prontas (2026-10-31): o que existe está no [Status de implementação](implementation-status.md) e
-> nos documentos de tópicos, então este plano guarda só o que falta, M3–M4. Cobre **email**, a primeira capacidade.
-> Como foram construídas: [M1](execution-plan.md), [M2](execution-plan-m2.md).
+> **Status:** M1, M2 e M3 prontas (2026-10-31): o que existe está no [Status de implementação](implementation-status.md) e
+> nos documentos de tópicos, então este plano guarda só o que falta, a M4. Cobre **email**, a primeira capacidade.
+> Como foram construídas: [M1](execution-plan.md), [M2](execution-plan-m2.md), [M3](execution-plan-m3.md).
 > 🇺🇸 [English version](../en/product-plan.md)
 >
 > Relacionados: [Integrations](../../integrations/pt-BR/README.md) · [Channels](../../channels/pt-BR/README.md) ·
@@ -156,17 +156,7 @@ Construído na M2: veja a [Arquitetura](architecture.md#5-organizar).
 
 ## 9. Envio
 
-- **Escrever**: de (qual caixa), para, cc, cco, assunto, corpo HTML, anexos (enviados na mesma
-  requisição multipart, dentro do limite do provedor — 25 MB no Gmail). O editor reaproveita o do
-  Notes se ele gerar um HTML que sirva; senão, escolhe-se outro na M3.
-- **Responder / encaminhar** preenchem `In-Reply-To` e `References`; no Gmail o `threadId` também
-  vai, para a mensagem cair na mesma conversa.
-- **Síncrono**: "Enviado" ou o erro na tela; na falha o formulário mantém o conteúdo. Sem fila, sem
-  desfazer envio.
-- **Cópia em Enviados**: o Gmail salva sozinho. Via SMTP, o adaptador faz `APPEND` na pasta com papel
-  `sent` — a menos que a descrição do provedor diga que o servidor já salva (a verificar no Titan,
-  §14).
-- **Rascunhos** não são sincronizados com o provedor: o formulário guarda o conteúdo no navegador.
+Construído na M3: veja a [Arquitetura](architecture.md#6-envio).
 
 ---
 
@@ -247,30 +237,21 @@ O que existe está na [Referência da API](api-reference.md). Falta:
 
 | Recurso | Endpoints |
 |---|---|
-| Envio | `POST messages/send` (multipart; `replyTo` / `forwardOf` opcionais) |
 | Regras | `GET/POST mailboxes/{id}/rules`, `PUT/DELETE rules/{id}`, `PUT mailboxes/{id}/rules/order` |
 
 ---
 
 ## 13. Erros
 
-As falhas de sincronização estão na [Arquitetura](architecture.md#falhas). Falta, para as ações do usuário:
-
-| Falha | Tratamento |
-|---|---|
-| Envio falha no provedor | o erro volta para a tela, nada muda localmente; o formulário mantém o conteúdo |
+As falhas de sincronização e de envio estão na [Arquitetura](architecture.md#falhas). As da M4 estão na §10.
 
 ---
 
 ## 14. Testes e verificações
 
-- **Unitários (domínio):** tradução do mover (etiqueta exclusiva ou várias), casamento de regras, conversão regra ⇄
-  filtro do Gmail nos dois sentidos, a heurística "um sumiu + um novo = edição".
-- **Integração:** o adaptador IMAP/SMTP contra o GreenMail; endpoints contra um `IMailboxProvider` falso.
-- **Manual:** o adaptador do Gmail contra uma conta real.
-- **Titan, ainda a verificar:** se o envio SMTP já salva em Enviados (para evitar duplicatas), no início da M3. O
-  CONDSTORE é oferecido e o ManageSieve não: veja a
-  [verificação real](implementation-status.md#verificação-real-2026-10-30).
+- **Unitários (domínio):** casamento de regras, conversão regra ⇄ filtro do Gmail nos dois sentidos, a heurística "um sumiu + um novo = edição".
+- **Integração:** o motor de regras contra um `IMailboxProvider` falso.
+- **Manual:** filtros do Gmail contra uma conta real.
 
 ---
 
@@ -284,13 +265,9 @@ Pronta em 2026-10-30: veja o [Status de implementação](implementation-status.m
 
 Pronta em 2026-10-31: veja o [Status de implementação](implementation-status.md).
 
-### M3 — Enviar
+### M3 — Enviar ✅
 
-Lista de trabalho: [execution-plan-m3.md](execution-plan-m3.md).
-
-- Escrever, responder, encaminhar, anexos, cópia em Enviados no IMAP.
-- **Pronto quando:** uma resposta enviada pelo Pandora cai na mesma conversa do Gmail, e uma mensagem
-  enviada pelo Titan aparece exatamente uma vez na pasta Enviados.
+Pronta em 2026-10-31: veja o [Status de implementação](implementation-status.md).
 
 ### M4 — Regras
 

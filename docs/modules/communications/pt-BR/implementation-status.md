@@ -7,7 +7,7 @@ frente está em [product-plan.md](product-plan.md).
 
 ---
 
-## Implementado (M1 — conectar e ler; M2 — organizar)
+## Implementado (M1 — conectar e ler; M2 — organizar; M3 — enviar)
 
 | Área | Notas |
 |---|---|
@@ -20,11 +20,12 @@ frente está em [product-plan.md](product-plan.md).
 | **Leitura** | `OpenMessage` com o cache de conteúdo; retenção de 30 dias; `MimeReader`; anexos sob demanda. |
 | **Evento** | `MailMessageReceived` pelo outbox, sem duplicar mensagens movidas. Sem consumidor ainda. |
 | **Organizar (M2)** | `ApplyMessageAction` (lida, estrela, mover, arquivar, lixeira, etiquetas), `CreateLabel`, `RenameLabel`, `DeleteLabel`; escritas nos dois adaptadores; sem exclusão definitiva. |
+| **Envio (M3)** | `SendMessage`, `SendKeys`, `GetComposeDraft`, `MessageComposer`; SMTP com cópia em Enviados detectada; upload multipart do Gmail; sem repetir em caso de dúvida. Email em Enviados ou Rascunhos não é chegada. |
 | **Sincronização, M2** | `MailboxGates` (duas por caixa), `MailboxChangesStep`, junção de mensagens movidas pelo Message-ID, etiquetas que sumiram removidas depois das mudanças. |
-| **API** | `GET`/`POST /mailboxes`, `PATCH`/`DELETE /mailboxes/{id}`, `POST /mailboxes/{id}/sync`, `GET /mailboxes/{id}/labels`, `GET /messages`, `GET /messages/{id}`, `GET /messages/{id}/attachments/{attachmentId}`, `POST /messages/actions`, `POST /mailboxes/{id}/labels`, `PATCH`/`DELETE /labels/{id}`. |
+| **API** | `GET`/`POST /mailboxes`, `PATCH`/`DELETE /mailboxes/{id}`, `POST /mailboxes/{id}/sync`, `GET /mailboxes/{id}/labels`, `GET /messages`, `GET /messages/{id}`, `GET /messages/{id}/attachments/{attachmentId}`, `POST /messages/actions`, `POST /mailboxes/{id}/labels`, `PATCH`/`DELETE /labels/{id}`, `POST /messages/send`, `GET /messages/{id}/compose`. |
 | **Integrations** | `CommunicationsAccountUsageSource`: a tela de conexões mostra "Email · endereço" como uso da conta. |
-| **Frontend** | `/mail` e `/mail/accounts`; `prepareMailHtml` + iframe em sandbox + CSP; `MailActions`, seleção na lista, menu de etiquetas na barra lateral. |
-| **Testes** | Unitários: 56 (`MailboxTests`, `ThreadKeyTests`, `LabelRoleTests`, `GmailMailboxProviderTests`). Integração: 48 (`SyncEngineTests`, `CommunicationsApiTests`, `MailActionsApiTests`, `ImapMailboxProviderTests` contra o GreenMail, `PersistenceTests`, `ProviderRegistrationTests`). Front: `prepareMailHtml.test.ts`, `MailPage.test.tsx`. |
+| **Frontend** | `/mail` e `/mail/accounts`; `prepareMailHtml` + iframe em sandbox + CSP; `MailActions`, seleção na lista, menu de etiquetas na barra lateral; `ComposeDrawer`. |
+| **Testes** | Unitários: 89 (`MailboxTests`, `MessageComposerTests`, `ThreadKeyTests`, `LabelRoleTests`, `GmailMailboxProviderTests`). Integração: 66 (`SyncEngineTests`, `CommunicationsApiTests`, `MailActionsApiTests`, `SendMessageApiTests`, `ImapMailboxProviderTests` contra o GreenMail, `PersistenceTests`, `ProviderRegistrationTests`). Front: `prepareMailHtml.test.ts`, `MailPage.test.tsx`, `ComposeDrawer.test.tsx`, `composeBody.test.ts`. |
 
 ### Verificação real (2026-10-30)
 
@@ -64,6 +65,24 @@ A verificação achou um bug que os testes não tinham pegado: assinar uma pasta
 outras saíram do Pandora no Titan, embora nada tenha mudado no provedor. Agora toda pasta selecionável está no escopo (decisão D8 na
 [Arquitetura](architecture.md)). O retorno das pastas publicou 25 `MailMessageReceived` falsos (ponto em aberto 6 abaixo), sem efeito, porque nada os consome.
 
+### Verificação real da M3 (2026-10-31)
+
+Nas mesmas contas, entre os endereços do próprio usuário. Encerrada pelo usuário; o banco mostra o que está marcado com ✅:
+
+| Verificação | Resultado |
+|---|---|
+| Titan para Gmail com anexo, Gmail para Titan | ✅ Recebidas uma vez |
+| Exatamente uma cópia em Enviados do Titan | ✅ Uma por envio, conferido no espelho |
+| Uma resposta pelo Titan entra na conversa do Gmail | ✅ Mesma conversa |
+| Encaminhar pelo Gmail, sem anexo | ✅ Recebida uma vez |
+| Email enviado não é chegada | ✅ Nenhum evento de cópia em Enviados |
+| **Uma resposta pelo Gmail** (`threadId`), o critério do próprio plano | Não há essa mensagem no espelho: **não comprovado** |
+| **Encaminhar com anexo, Cco, clique duplo** | Não há essas mensagens no espelho: **não comprovado** |
+| Responder a todos, `Reply-To`, layout | Sem relato em nenhum sentido |
+| Uma resposta pelo Titan caiu no Spam do Gmail | Visto uma vez. O usuário avaliou como não relacionado ao Pandora; a causa não foi registrada |
+
+A verificação achou um bug que os testes não tinham pegado: o envio esperava a trava de ação enquanto o job lia um acúmulo grande do Gmail, com o email já enviado e a tela carregando. Ele não roda mais o passo de sincronização.
+
 ### Desvios relevantes em relação ao plano original
 
 - **Sem `Google.Apis.Gmail.v1`.** REST com `HttpClient`, como faz o `GoogleOAuthProvider`.
@@ -82,7 +101,6 @@ outras saíram do Pandora no Titan, embora nada tenha mudado no provedor. Agora 
 
 | Área | Status | Fase |
 |---|---|---|
-| **Escrever, responder, encaminhar, anexos** | Planejado | M3 |
 | **Regras, filtros do Gmail nos dois sentidos, `com006`** | Planejado | M4 |
 | **Push do Gmail, Radar, mais provedores** | Futuro | Depois |
 
@@ -100,3 +118,8 @@ outras saíram do Pandora no Titan, embora nada tenha mudado no provedor. Agora 
 7. **Um mover que atravessa a varredura IMAP**, de uma pasta ainda não lida para uma já lida, ocupa dois ciclos, então não é juntado e pode disparar um evento falso.
 8. **Depois de uma ação no Gmail durante uma carga inicial**, um lote antigo pode mostrar o estado anterior por até um ciclo.
 9. **Só a página carregada pode ser selecionada**, e não há desfazer; a lixeira pode ser restaurada no provedor.
+10. **As mudanças do Gmail só são salvas no fim.** Depois de 9 horas parado, um ciclo leu por mais de 20 minutos (cerca de 44 mil ids de histórico; a causa de tantos não foi achada), segurando a trava de ação, e reiniciar o recomeça. A correção é salvar em partes.
+11. **As chaves de envio ficam na memória do processo,** então uma nova tentativa logo depois de reiniciar pode enviar duas vezes.
+12. **Um servidor que salva a cópia mais de 3 segundos depois** fica com duas. O Titan não ficou.
+13. **O limite de 25 MB não está confirmado:** as páginas da API do Google não informam nenhum. Um email acima do limite real volta como recusa.
+14. **Sem nome de remetente, sem imagens inline, texto citado puro.**

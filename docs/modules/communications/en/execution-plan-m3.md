@@ -1,6 +1,6 @@
 # Communications — Execution Plan, M3 (Send)
 
-> **Status:** In progress: decisions approved, steps 1–6 built; the real-world check is left. It is phase **M3** of the [product-plan](product-plan.md); what exists today is in
+> **Status:** Done (2026-10-31); this is the history of how it was built. It was phase **M3** of the [product-plan](product-plan.md); what exists today is in
 > [Implementation Status](implementation-status.md).
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan-m3.md)
 
@@ -147,7 +147,10 @@ Each step ends green before the next one. Suggested commit points: **M3a** = ste
 - i18n `mail.compose.*` in `en.json` and `pt-BR.json`.
 - **Tests:** a double click sends once; a failure keeps the content; `SendUncertain` is shown as such; the HTML part has no script; the draft comes back after closing and is gone after sending.
 
-### Step 7 — Real-world check and docs
+### Step 7 — Real-world check and docs ✅
+
+> **Closed by the user (2026-10-31).** Results, including what the mirror does not show, are in [Implementation Status](implementation-status.md#real-world-check-of-m3-2026-10-31). Saving the Gmail changes in parts, planned before closing, did not get done: it is an open point there.
+
 
 **Only to your own addresses.**
 

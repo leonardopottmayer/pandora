@@ -9,7 +9,7 @@
 O **Communications** é a **caixa de entrada** do usuário dentro do Pandora: as mensagens que chegam
 *para* o usuário, de qualquer provedor, num lugar só. Email vem primeiro.
 
-Construído hoje (M1, conectar e ler; M2, organizar):
+Construído hoje (M1, conectar e ler; M2, organizar; M3, enviar):
 
 - Conectar **quantas caixas o usuário quiser**: Gmail pela Gmail API, Titan Email e qualquer outro
   servidor por IMAP.
@@ -21,10 +21,11 @@ Construído hoje (M1, conectar e ler; M2, organizar):
   ficam bloqueadas até o usuário pedir.
 - **Organizar**: lida e não lida, estrela, mover, arquivar e lixeira, em lote, e etiquetas criadas, renomeadas e apagadas. Tudo vai primeiro ao
   provedor, e o que muda no webmail volta para o Pandora.
+- **Enviar**: escrever, responder, responder a todos e encaminhar, com anexos. Um envio nunca é repetido quando o email pode ter saído.
 - **Publicar `MailMessageReceived`** pelo outbox a cada mensagem nova, para outros módulos processarem
   email. Nada consome esse evento ainda.
 
-Enviar (M3) e regras (M4) são planos: veja o [plano de produto](product-plan.md).
+Regras (M4) são um plano: veja o [plano de produto](product-plan.md).
 
 ## 2. O que ele não é
 
@@ -74,12 +75,11 @@ Enviar (M3) e regras (M4) são planos: veja o [plano de produto](product-plan.md
 
 O schema `communications` (`com001`–`com005` + outbox); os adaptadores Gmail e IMAP; carga inicial e
 sincronização incremental; o cache de conteúdo e os anexos; os endpoints de caixas, etiquetas e mensagens; etiquetas nos dois sentidos e ações em
-lote; `MailMessageReceived`; as telas `mail` e `mail/accounts`.
+lote; envio; `MailMessageReceived`; as telas `mail` e `mail/accounts`.
 
 ### Fora do escopo / futuro (veja [product-plan.md](product-plan.md))
 
 | Funcionalidade | Fase |
 |---|---|
-| Escrever, responder, encaminhar, anexos | M3 |
 | Regras, com filtros do Gmail nos dois sentidos | M4 |
 | Push do Gmail no lugar do polling, Radar consumindo o evento, mais provedores | Depois |

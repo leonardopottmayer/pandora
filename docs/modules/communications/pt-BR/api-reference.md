@@ -28,6 +28,8 @@ conta que a caixa precisa. Uma conta Google vem de `POST /api/v1/integrations/go
 | GET | `/messages/{id}` | Uma mensagem com o corpo, buscado e guardado em cache na primeira abertura |
 | GET | `/messages/{id}/attachments/{attachmentId}` | Os bytes do anexo |
 | POST | `/messages/actions` | Uma ação em até 100 mensagens de uma caixa |
+| POST | `/messages/send` | Envia uma mensagem |
+| GET | `/messages/{id}/compose` | O formulário preenchido para responder ou encaminhar |
 
 ### GET `/mailboxes`
 
@@ -129,6 +131,21 @@ sobre `(sent_at, id)`, estável enquanto chega email novo.
 
 Os bytes, com `X-Content-Type-Options: nosniff`. O `Content-Disposition` é `inline` só para PNG, JPEG, GIF, WebP e BMP,
 e `attachment` para o resto. Também serve as imagens `cid:`.
+
+### POST `/messages/send`
+
+`multipart/form-data`: `mailboxId`, `sendKey` (um uuid gerado ao abrir o formulário), `to`, `cc`, `bcc` (só endereços, um campo por endereço), `subject`, `textBody`, `htmlBody`, `replyToId?` ou `forwardOfId?`, `keepAttachmentIds` (quais arquivos da mensagem encaminhada vão junto), `files`. Responde `{ copySaved }`. **Isso não tem volta.**
+
+| Status | Quando |
+|---|---|
+| 200 | Enviada. `copySaved: false` significa que saiu, mas não foi possível salvar a cópia |
+| 404 | A caixa ou a original não existe ou é de outro usuário, ou um arquivo mantido não existe |
+| 409 | Esta chave já foi tratada (`AlreadySent`) |
+| 422 | Destinatários inválidos, ausentes ou acima de 100 (`RecipientsInvalid`); anexos acima de 25 MB (`MessageTooLarge`); recusa do provedor (a chave é liberada); `SendUncertain`: **pode ter saído**, e a chave continua presa |
+
+### GET `/messages/{id}/compose?mode=reply|reply-all|forward`
+
+O formulário, calculado a partir da mensagem crua: `to`, `cc`, `subject`, `inReplyTo`, `references`, `originalFrom`, `originalDate`, `originalText` (como escrito; a tela cita), `attachments` (os arquivos de um encaminhamento, sem imagens inline).
 
 ---
 

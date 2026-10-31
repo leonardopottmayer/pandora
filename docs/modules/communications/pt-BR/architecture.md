@@ -16,7 +16,7 @@ Pottmayer.Pandora.Modules.Communications.
                       (MailProvider, MailboxStatus, LabelKind, LabelRole, ThreadKey),
                       Portas (IMailboxProvider, repositórios), MailErrors
   Application       → Commands (ConnectMailbox, UpdateMailbox, DeleteMailbox, SyncMailbox,
-                      SyncMailboxNow, OpenMessage, ApplyMessageAction, ManageLabels), Queries (GetMailboxes, GetLabels, ListMessages,
+                      SyncMailboxNow, OpenMessage, ApplyMessageAction, ManageLabels, SendMessage), Queries (GetMailboxes, GetLabels, ListMessages,
                       GetAttachment), MimeReader, subscribers, a fonte de uso da conta
   Infrastructure    → Adaptadores Gmail/ e Imap/, Jobs/MailboxSyncBackgroundService
   Persistence       → EntityConfigs, Repositórios, DbContext (com o outbox)
@@ -43,6 +43,7 @@ cada valor de `MailProvider` que atende, então o motor pede o provedor da caixa
 | `SetFlagsAsync` | Lida e estrela |
 | `ChangeLabelsAsync` | Adicionar e remover etiquetas, onde há `MultipleLabels` |
 | `MoveAsync`, `TrashAsync` | Devolvem o id de cada mensagem depois de mover, ou nulo quando o provedor não informa |
+| `SendAsync` | Envia uma mensagem RFC 822 inteira e garante a cópia em Enviados; nunca repete em caso de dúvida |
 
 Pegar o cursor incremental antes do primeiro lote é o que evita perder email: o que chega ou muda durante a
 carga inicial aparece no próximo `FetchChangesAsync`.
@@ -65,6 +66,8 @@ carga inicial aparece no próximo `FetchChangesAsync`.
 | **Escrever flags e etiquetas** | `messages.batchModify` | `STORE` por pasta |
 | **Mover** | Adiciona o destino, remove `INBOX`; o id fica | `MOVE`, lendo o UID novo |
 | **Lixeira** | `messages.trash`, uma chamada por mensagem | Move para a pasta com papel `trash` |
+| **Envio** | `messages.send`, upload multipart com `threadId` | SMTP com a mesma credencial |
+| **Cópia em Enviados** | O Gmail guarda a própria | Procura o Message-ID na pasta, espera 3 s, procura de novo e só adiciona se não estiver lá |
 
 O adaptador do Gmail faz dois `messages.get` por vez e repete `429`, `5xx` e `403` de limite de taxa depois de
 1, 2, 4, 8 e 16 s (um `Retry-After` tem prioridade), inclusive nas escritas. Quatro por vez geraram `403` frequentes numa carga real de
@@ -140,7 +143,19 @@ Os destinos de mover nunca são Enviados nem Rascunhos; no Gmail, das etiquetas 
 As operações de etiqueta (`LabelOperation`) chamam o provedor sob a trava de ação, soltam a trava e rodam o `MailboxChangesStep`. O provedor já aceitou nessa
 hora, então se o passo falhar a operação continua valendo: vai para o log, e o próximo ciclo acerta.
 
-## 6. Frontend
+## 6. Envio
+
+**Enviar não tem volta,** então é diferente de todas as outras escritas:
+
+- **Só repete quando o provedor certamente recusou:** `429` ou `403` de limite de taxa no Gmail. `5xx`, timeout ou conexão perdida é `SendUncertain`: pode ter saído, e a tela manda olhar em Enviados.
+- **Uma chave de envio,** gerada ao abrir o formulário, é recusada na segunda vez (`SendKeys`, na memória do processo por uma hora). Só uma recusa certa a libera. Ela impede clique duplo, segunda aba e nova tentativa depois de timeout.
+- **Uma cópia que falha é sucesso:** o email saiu, e um erro convidaria a enviar de novo.
+- **Sem trava e sem passo de sincronização:** um SMTP lento não segura as ações, e o envio não espera um ciclo lendo um acúmulo grande. A cópia aparece no próximo ciclo.
+- **Sem nome de remetente:** o nome de exibição da caixa é o rótulo do usuário, não quem escreve.
+
+O `MessageComposer` monta a mensagem de saída e calcula a resposta ou o encaminhamento a partir da original crua: `Reply-To` vence `From`, responder a todos tira o endereço da própria caixa, e uma quebra de linha num campo não adiciona cabeçalho. O Gmail troca o Message-ID do que envia, então a chave não sobrevive como id lá; a checagem é no servidor, então isso não importa.
+
+## 7. Frontend
 
 - **`/mail` (`MailPage`):** `MailSidebar` (caixas, etiquetas, não lidas), `MessageList` (páginas de 50 com "Carregar
   mais"), `MessageReader` (a conversa).
@@ -151,6 +166,7 @@ hora, então se o passo falhar a operação continua valendo: vai para o log, e 
   requisição por caixa, sem mover nem etiquetas. Nada é otimista; uma recusa mantém a seleção. A lixeira pede confirmação.
 - **Abrir uma mensagem não lida** a marca como lida no provedor, uma vez, depois que o corpo carrega. Uma falha é silenciosa.
 - **`MailSidebar`** cria, renomeia e apaga etiquetas. Uma etiqueta aberta que foi renomeada ou apagada devolve a lista à caixa.
+- **`ComposeDrawer`** escreve, responde e encaminha: Markdown com prévia, anexos, rascunho no navegador. Uma falha mantém o formulário; quando o email pode ter saído, só envia de novo se pedido, com uma chave nova. O `lib/composeBody` tira imagens, estilos e formulários da parte HTML, para um rastreador numa citação não disparar na prévia.
 - **Conectar o Gmail:** consentimento no Google com `gmail.modify` somado aos escopos padrão, volta em
   `?connect=gmail`, onde o modal reabre com a conta escolhida e o usuário confirma.
 - **Reconectar:** o Gmail passa pelo Google e volta em `?sync={id}`; Titan e IMAP abrem "Editar conexão". Nos dois
@@ -170,7 +186,7 @@ O resultado é mostrado em `<iframe sandbox="allow-popups allow-popups-to-escape
 `default-src 'none'; style-src 'unsafe-inline'; img-src data:`, ampliada para `data: https: http:` depois de "Mostrar
 imagens".
 
-## 7. Principais decisões de design
+## 8. Principais decisões de design
 
 | # | Decisão | Motivo (alternativa rejeitada) |
 |---|---|---|
@@ -184,8 +200,11 @@ imagens".
 | **D8** | Toda pasta IMAP está no escopo; assinaturas são ignoradas. | "Assinadas, ou todas se nenhuma estiver" vira o espelho inteiro quando qualquer cliente assina a primeira pasta. Aconteceu no Titan. |
 | **D9** | Duas travas, a carga inicial fora da trava de ação. | Uma trava: um clique espera até 5 minutos. Orçamento menor: a carga pode levar o dobro. |
 | **D10** | Juntar uma mensagem movida pelo Message-ID. | "Removida + nova" perde o corpo em cache a cada mover e disparava um evento falso. |
+| **D11** | Um envio só repete em recusa certa, com uma chave contra duplicatas. | Repetir como nas outras escritas pode enviar duas vezes. |
+| **D12** | A cópia em Enviados é detectada, não configurada. | Uma opção por provedor é algo que alguém precisa saber e manter certo. |
+| **D13** | Uma área de texto em Markdown, não um editor rico. | Sem dependência nova, e texto puro simplesmente funciona. O editor do Notes é preso a páginas e tags. |
 
-## 8. Regras transversais
+## 9. Regras transversais
 
 - **Restrito ao usuário.** Toda consulta passa pelas caixas de quem chama; caixa, mensagem ou conta de outro usuário
   responde 404, igual a uma que não existe.

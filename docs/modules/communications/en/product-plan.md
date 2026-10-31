@@ -1,8 +1,8 @@
 # Communications Module — Product Plan
 
-> **Status:** M1 and M2 done (2026-10-31): what exists is in [Implementation Status](implementation-status.md) and
-> the topic documents, so this plan keeps only what is left, M3–M4. It covers **email**, the first capability.
-> How they were built: [M1](execution-plan.md), [M2](execution-plan-m2.md).
+> **Status:** M1, M2 and M3 done (2026-10-31): what exists is in [Implementation Status](implementation-status.md) and
+> the topic documents, so this plan keeps only what is left, M4. It covers **email**, the first capability.
+> How they were built: [M1](execution-plan.md), [M2](execution-plan-m2.md), [M3](execution-plan-m3.md).
 > 🇧🇷 [Versão em português](../pt-BR/product-plan.md)
 >
 > Related: [Integrations](../../integrations/README.md) · [Channels](../../channels/README.md) ·
@@ -153,16 +153,7 @@ Built in M2: see [Architecture](architecture.md#5-organizing).
 
 ## 9. Sending
 
-- **Compose**: from (which mailbox), to, cc, bcc, subject, HTML body, attachments (sent in the same
-  multipart request, within the provider's limit — 25 MB on Gmail). The editor reuses Notes' editor
-  if it produces HTML that fits; otherwise a separate one is chosen in M3.
-- **Reply / forward** set `In-Reply-To` and `References`; on Gmail the `threadId` is passed too, so
-  the message joins the conversation.
-- **Synchronous**: "Sent" or the error on screen; on failure the form keeps its content. No queue, no
-  undo-send.
-- **Sent copy**: Gmail saves it itself. Over SMTP, the adapter `APPEND`s to the folder with role
-  `sent` — unless the provider descriptor says the server already does (to verify on Titan, §14).
-- **Drafts** are not synced with the provider: the form keeps its content in the browser.
+Built in M3: see [Architecture](architecture.md#6-sending).
 
 ---
 
@@ -238,30 +229,21 @@ What exists is in the [API Reference](api-reference.md). Left:
 
 | Resource | Endpoints |
 |---|---|
-| Send | `POST messages/send` (multipart; optional `replyTo` / `forwardOf`) |
 | Rules | `GET/POST mailboxes/{id}/rules`, `PUT/DELETE rules/{id}`, `PUT mailboxes/{id}/rules/order` |
 
 ---
 
 ## 13. Errors
 
-Sync failures are in [Architecture](architecture.md#failures). Left, for user actions:
-
-| Failure | Handling |
-|---|---|
-| Send fails at the provider | the error goes back to the screen, nothing changes locally; the compose form keeps its content |
+Sync and send failures are in [Architecture](architecture.md#failures). M4's are in §10.
 
 ---
 
 ## 14. Testing and checks
 
-- **Unit (domain):** move translation (exclusive vs. multiple labels), rule matching, rule ⇄ Gmail filter
-  conversion both ways, the "one gone + one new = edit" heuristic.
-- **Integration:** the IMAP/SMTP adapter against GreenMail; endpoints against a fake `IMailboxProvider`.
-- **Manual:** the Gmail adapter against a real account.
-- **Titan, still to check:** whether SMTP submission already saves to Sent (to avoid duplicates), at the start of
-  M3. CONDSTORE is offered and ManageSieve is not: see the
-  [real-world check](implementation-status.md#real-world-check-2026-10-30).
+- **Unit (domain):** rule matching, rule ⇄ Gmail filter conversion both ways, the "one gone + one new = edit" heuristic.
+- **Integration:** the rule engine against a fake `IMailboxProvider`.
+- **Manual:** Gmail filters against a real account.
 
 ---
 
@@ -275,13 +257,9 @@ Done on 2026-10-30: see [Implementation Status](implementation-status.md).
 
 Done on 2026-10-31: see [Implementation Status](implementation-status.md).
 
-### M3 — Send
+### M3 — Send ✅
 
-Work list: [execution-plan-m3.md](execution-plan-m3.md).
-
-- Compose, reply, forward, attachments, the sent copy over IMAP.
-- **Done when:** a reply sent from Pandora lands in the same Gmail conversation, and a message sent
-  from Titan appears exactly once in its Sent folder.
+Done on 2026-10-31: see [Implementation Status](implementation-status.md).
 
 ### M4 — Rules
 
