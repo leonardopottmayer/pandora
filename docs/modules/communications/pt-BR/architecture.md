@@ -84,6 +84,7 @@ segundo, seja qual for o paralelismo. `messages.delete` e `batchDelete` nunca s�
                  cursor expirado     → apaga as mensagens da caixa, StartBackfill
                  senão               → aplica FetchChanges, guarda o cursor novo
                  depois              → remove as etiquetas que o provedor parou de listar
+                 um acúmulo longo vem em partes: os passos 1–2 repetem até acabar ou o BackfillBudget se esgotar
 3. Carga inicial lotes seguidos até acabar ou o BackfillBudget se esgotar (ao menos um)
 4. Sucesso       RecordSuccess
 ```
@@ -91,6 +92,8 @@ segundo, seja qual for o paralelismo. `messages.delete` e `batchDelete` nunca s�
 **Duas travas por caixa** (`MailboxGates`). `Cycle` cobre o ciclo inteiro, então o job e "Sincronizar agora" nunca rodam dois ao mesmo tempo. `Action`
 cobre uma ação do usuário, ou os passos 1–2. A carga inicial roda fora de `Action`, então um clique nunca a espera. Um lote antigo pode sobrescrever uma
 ação, e o próximo ciclo corrige, porque a ação é uma mudança no provedor: a tela pode ficar errada por um ciclo.
+
+**Um acúmulo longo é salvo em partes.** O adaptador do Gmail para depois de cerca de 100 mensagens, com o cursor no último registro de histórico lido (o histórico vem em `historyId` crescente; o id que a resposta informa é o atual da caixa, e pularia o que não foi lido). Cada parte é salva por si, com a trava de ação livre entre as partes, então um clique espera no máximo uma parte, e um reinício continua dali.
 
 **Junção.** No IMAP, mover dá um id novo à mensagem. Uma mensagem que some e reaparece com o Message-ID na mesma aplicação mantém a linha e o corpo em
 cache, e não conta como chegada. É uma para uma, então duas cópias continuam duas linhas, e uma mensagem sem Message-ID é exclusão + criação. Uma pasta

@@ -103,7 +103,7 @@ public sealed class GmailMailboxProviderTests
     {
         var requests = new List<string>();
         var gmail = Provider(Routes(
-            ("history?startHistoryId=100&pageToken=h2", Ok("""{ "history": [ { "messages": [ { "id": "m4" } ] } ], "historyId": "160" }""")),
+            ("history?startHistoryId=100&maxResults=100&pageToken=h2", Ok("""{ "history": [ { "messages": [ { "id": "m4" } ] } ], "historyId": "160" }""")),
             ("history?startHistoryId=100", Ok("""
                 { "history": [
                     { "messages": [ { "id": "m1" }, { "id": "m2" }, { "id": "m3" } ] },
@@ -121,6 +121,42 @@ public sealed class GmailMailboxProviderTests
         Assert.Empty(changes.Snapshots);
         Assert.Equal("160", changes.SyncCursor);
         Assert.DoesNotContain(requests, r => r.Contains("messages/m3"));
+    }
+
+    [Fact]
+    public async Task A_long_backlog_stops_after_a_batch_with_the_cursor_on_the_last_record_read()
+    {
+        var requests = new List<string>();
+        var ids = Enumerable.Range(0, GmailMailboxProvider.ChangesBatch).Select(i => $$"""{ "id": "m{{i}}" }""");
+        var gmail = Provider(Routes(
+            ("history?", Ok($$"""
+                { "history": [ { "id": "150", "messages": [ {{string.Join(", ", ids)}} ] } ],
+                  "nextPageToken": "h2", "historyId": "999" }
+                """)),
+            ("messages/", Ok(MessageJson("m", "t", 1_000, ["INBOX"], "text/plain")))), requests);
+
+        var changes = Value(await gmail.FetchChangesAsync(_mailbox, "100"));
+
+        Assert.True(changes.HasMore);
+        // Not the 999 Gmail reports as current: that would skip everything not read yet.
+        Assert.Equal("150", changes.SyncCursor);
+        var history = Assert.Single(requests, r => r.Contains("history?"));
+        Assert.DoesNotContain("pageToken", history);
+    }
+
+    [Fact]
+    public async Task Pages_under_a_batch_are_read_together_and_the_last_one_ends_on_the_current_id()
+    {
+        var gmail = Provider(Routes(
+            ("history?startHistoryId=100&maxResults=100&pageToken=h2", Ok("""{ "history": [ { "id": "151", "messages": [ { "id": "m2" } ] } ], "historyId": "160" }""")),
+            ("history?startHistoryId=100", Ok("""{ "history": [ { "id": "150", "messages": [ { "id": "m1" } ] } ], "nextPageToken": "h2", "historyId": "160" }""")),
+            ("messages/", Ok(MessageJson("m", "t", 1_000, ["INBOX"], "text/plain")))));
+
+        var changes = Value(await gmail.FetchChangesAsync(_mailbox, "100"));
+
+        Assert.False(changes.HasMore);
+        Assert.Equal("160", changes.SyncCursor);
+        Assert.Equal(2, changes.Upserts.Count);
     }
 
     [Fact]

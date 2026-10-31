@@ -38,6 +38,11 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
     // second whatever is done here. Gmail's batch endpoint (100 per request) if the backfill is too slow.
     internal const int ParallelGets = 2;
 
+    /// <summary>Roughly how many messages one part of a backlog reads: at 5 per second, the most a click waits.</summary>
+    internal const int ChangesBatch = 100;
+
+    private const int HistoryPageSize = 100;
+
     private static readonly string[] MetadataHeaders = ["From", "To", "Cc", "Subject", "Message-ID"];
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
@@ -89,7 +94,10 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
 
     /// <summary>
     /// Every message the history touched is read again in full (a 404 means it is gone), so a label change
-    /// and an arrival are the same thing to the engine: an upsert.
+    /// and an arrival are the same thing to the engine: an upsert. A long backlog stops after
+    /// <see cref="ChangesBatch"/> messages, with the cursor on the last record read: history comes in increasing
+    /// <c>historyId</c>, so the rest starts there. The response's own <c>historyId</c> is the mailbox's current one,
+    /// and only means "up to date" once the last page has been read.
     /// </summary>
     public Task<Result<RemoteChanges>> FetchChangesAsync(Mailbox mailbox, string syncCursor, CancellationToken ct = default) =>
         RunAsync(mailbox, async (token, c) =>
@@ -98,31 +106,43 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
             var deleted = new HashSet<string>();
             var cursor = syncCursor;
             string? pageToken = null;
+            string? lastRecord = null;
+            var hasMore = false;
 
             do
             {
-                var url = $"history?startHistoryId={Uri.EscapeDataString(syncCursor)}";
+                var url = $"history?startHistoryId={Uri.EscapeDataString(syncCursor)}&maxResults={HistoryPageSize}";
                 if (pageToken is not null)
                     url += "&pageToken=" + Uri.EscapeDataString(pageToken);
 
                 var page = await GetAsync<HistoryList>(token, url, c, notFound: MailErrors.SyncCursorExpired);
                 foreach (var record in page.History ?? [])
                 {
+                    lastRecord = record.Id ?? lastRecord;
                     foreach (var m in record.Messages ?? [])
                         touched.Add(m.Id);
                     foreach (var d in record.MessagesDeleted ?? [])
                         deleted.Add(d.Message.Id);
                 }
 
-                cursor = page.HistoryId ?? cursor;
                 pageToken = page.NextPageToken;
+                if (pageToken is null)
+                {
+                    cursor = page.HistoryId ?? cursor;
+                }
+                else if (touched.Count + deleted.Count >= ChangesBatch && lastRecord is not null)
+                {
+                    cursor = lastRecord;
+                    hasMore = true;
+                    break;
+                }
             } while (pageToken is not null);
 
             touched.ExceptWith(deleted);
             var current = await GetMetadataAsync(token, touched, c);
             deleted.UnionWith(touched.Where(id => !current.ContainsKey(id)));
 
-            return new RemoteChanges(current.Values.ToList(), deleted.ToList(), [], cursor);
+            return new RemoteChanges(current.Values.ToList(), deleted.ToList(), [], cursor, hasMore);
         }, ct);
 
     public Task<Result<byte[]>> GetRawMessageAsync(Mailbox mailbox, string providerMessageId, CancellationToken ct = default) =>
@@ -428,7 +448,7 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
     internal sealed record MessageList(List<MessageRef>? Messages, string? NextPageToken);
     internal sealed record MessageRef(string Id);
     internal sealed record HistoryList(List<HistoryRecord>? History, string? NextPageToken, string? HistoryId);
-    internal sealed record HistoryRecord(List<MessageRef>? Messages, List<MessageDeleted>? MessagesDeleted);
+    internal sealed record HistoryRecord(string? Id, List<MessageRef>? Messages, List<MessageDeleted>? MessagesDeleted);
     internal sealed record MessageDeleted(MessageRef Message);
     internal sealed record Message(
         string Id, string ThreadId, List<string>? LabelIds, string? Snippet, long SizeEstimate, string InternalDate, Payload? Payload);

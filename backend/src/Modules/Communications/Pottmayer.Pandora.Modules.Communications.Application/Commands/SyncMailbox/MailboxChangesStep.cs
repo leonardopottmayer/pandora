@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Pottmayer.Pandora.Modules.Communications.Abstractions;
 using Pottmayer.Pandora.Modules.Communications.Contracts;
 using Pottmayer.Pandora.Modules.Communications.Domain.Entities;
@@ -12,9 +13,14 @@ using Pottmayer.Tars.Messaging.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Communications.Application.Commands.SyncMailbox;
 
+/// <param name="MailboxExists">False when it was deleted meanwhile.</param>
+/// <param name="HasMore">This was a part of a long backlog: run it again for the rest.</param>
+public sealed record MailboxChangesResult(bool MailboxExists, bool HasMore);
+
 /// <summary>
 /// The part of a cycle that brings the mirror up to date with the provider: labels, then changes. It runs under
-/// the action gate, so it cannot interleave with a user's action. A mailbox with no cursor yet starts its backfill.
+/// the action gate, so it cannot interleave with a user's action, and it reads one part of a long backlog per run, so
+/// the gate is free between parts. A mailbox with no cursor yet starts its backfill.
 /// </summary>
 /// <remarks>
 /// A vanished label is removed only after the changes are applied: its messages may have moved (a renamed folder
@@ -24,10 +30,10 @@ public sealed class MailboxChangesStep(
     IUnitOfWorkFactory factory,
     IIntegrationEventBus bus,
     MailboxGates gates,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    ILogger<MailboxChangesStep> logger)
 {
-    /// <summary>False when the mailbox no longer exists.</summary>
-    public async Task<Result<bool>> RunAsync(Guid mailboxId, IMailboxProvider provider, CancellationToken ct)
+    public async Task<Result<MailboxChangesResult>> RunAsync(Guid mailboxId, IMailboxProvider provider, CancellationToken ct)
     {
         var gate = gates.Action(mailboxId);
         await gate.WaitAsync(ct);
@@ -36,24 +42,24 @@ public sealed class MailboxChangesStep(
             var mailbox = await factory.ExecuteAsync(CommunicationsModule.DatabaseKey, (context, token) =>
                 context.AcquireRepository<IMailboxRepository>().GetByIdAsync(mailboxId, token), cancellationToken: ct);
             if (mailbox is null)
-                return Result<bool>.Success(false);
+                return Result<MailboxChangesResult>.Success(new MailboxChangesResult(false, false));
 
             var labels = await provider.ListLabelsAsync(mailbox, ct);
             if (!labels.IsSuccess)
-                return Result<bool>.Failure(labels.Errors);
+                return Result<MailboxChangesResult>.Failure(labels.Errors);
 
             var vanished = await factory.ExecuteAsync(CommunicationsModule.DatabaseKey, (context, token) =>
                 AddAndUpdateLabelsAsync(context, mailbox.Id, labels.Value, token), cancellationToken: ct);
 
             var applied = await ApplyChangesAsync(mailbox, provider, ct);
             if (!applied.IsSuccess)
-                return applied;
+                return Result<MailboxChangesResult>.Failure(applied.Errors);
 
             if (vanished.Count > 0)
                 await factory.ExecuteAsync(CommunicationsModule.DatabaseKey, (context, token) =>
                     RemoveLabelsAsync(context, mailbox.Id, vanished, token), cancellationToken: ct);
 
-            return Result<bool>.Success(true);
+            return Result<MailboxChangesResult>.Success(new MailboxChangesResult(true, applied.Value));
         }
         finally
         {
@@ -65,6 +71,7 @@ public sealed class MailboxChangesStep(
     public Task ApplyBackfillBatchAsync(IDataContext context, Mailbox mailbox, IReadOnlyList<RemoteMessage> messages, CancellationToken ct) =>
         ApplyMessagesAsync(context, mailbox, messages, [], [], publish: false, ct);
 
+    /// <summary>True when there is more of this backlog to read.</summary>
     private async Task<Result<bool>> ApplyChangesAsync(Mailbox mailbox, IMailboxProvider provider, CancellationToken ct)
     {
         if (mailbox.SyncCursor is not { } syncCursor)
@@ -86,7 +93,12 @@ public sealed class MailboxChangesStep(
             await ApplyMessagesAsync(context, m, value.Upserts, value.RemovedIds, value.Snapshots, publish: true, ct);
             m.SetSyncCursor(value.SyncCursor);
         }, ct);
-        return Result<bool>.Success(true);
+
+        if (value.Upserts.Count + value.RemovedIds.Count > 0)
+            logger.LogInformation("Mailbox {MailboxId}: {Changed} changed, {Removed} removed, more to read: {HasMore}.",
+                mailbox.Id, value.Upserts.Count, value.RemovedIds.Count, value.HasMore);
+
+        return Result<bool>.Success(value.HasMore);
     }
 
     private async Task<Result<bool>> StartBackfillAsync(Mailbox mailbox, IMailboxProvider provider, bool wipe, CancellationToken ct)
@@ -101,7 +113,7 @@ public sealed class MailboxChangesStep(
                 await context.AcquireRepository<IMailMessageRepository>().DeleteByMailboxAsync(m.Id, ct);
             m.StartBackfill(start.Value.SyncCursor, start.Value.BackfillCursor, start.Value.TotalEstimate, timeProvider.GetUtcNow());
         }, ct);
-        return Result<bool>.Success(true);
+        return Result<bool>.Success(false);
     }
 
     /// <summary>Returns the provider ids of the local labels the provider no longer lists.</summary>

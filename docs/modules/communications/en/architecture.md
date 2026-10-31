@@ -84,6 +84,7 @@ after 1, 2, 4, 8 and 16 s (a `Retry-After` wins), writes included. Four at a tim
               cursor expired      → delete the mailbox's messages, StartBackfill
               otherwise           → apply FetchChanges, store the new cursor
               then                → remove the labels the provider stopped listing
+              a long backlog comes in parts: steps 1–2 repeat until it ends or BackfillBudget runs out
 3. Backfill   batches back to back until it ends or BackfillBudget runs out (at least one)
 4. Success    RecordSuccess
 ```
@@ -91,6 +92,8 @@ after 1, 2, 4, 8 and 16 s (a `Retry-After` wins), writes included. Four at a tim
 **Two gates per mailbox** (`MailboxGates`). `Cycle` covers the whole cycle, so the job and "Sync now" never run two at once. `Action` covers a
 user's action, or steps 1–2. The backfill runs outside `Action`, so a click never waits for it. A stale batch can overwrite an action, and the
 next cycle corrects it, since the action is a change at the provider: the screen can be wrong for one cycle.
+
+**A long backlog is saved in parts.** The Gmail adapter stops after about 100 messages, with the cursor on the last history record read (history comes in increasing `historyId`; the id the response reports is the mailbox's current one, and would skip what was not read). Each part is saved on its own, with the action gate free between parts, so a click waits for at most one part, and a restart goes on from there.
 
 **Stitching.** On IMAP a move gives a message a new id. A message that vanishes and reappears with its Message-ID in the same apply keeps its row
 and its cached body, and it is not an arrival. It is one to one, so two copies stay two rows, and a message with no Message-ID is delete + create.

@@ -124,10 +124,14 @@ public sealed record BackfillBatch(IReadOnlyList<RemoteMessage> Messages, string
 /// A local message under that label and not in the set loses it, and a message left with no label is
 /// removed.
 /// </param>
+/// <param name="HasMore">
+/// This is a part of what changed, and <see cref="SyncCursor"/> is where the rest starts, so a long backlog is saved as it goes.
+/// </param>
 public sealed record RemoteChanges(
     IReadOnlyList<RemoteMessage> Upserts,
     IReadOnlyList<string> RemovedIds,
     IReadOnlyList<RemoteLabelSnapshot> Snapshots,
-    string SyncCursor);
+    string SyncCursor,
+    bool HasMore = false);
 
 public sealed record RemoteLabelSnapshot(string ProviderLabelId, IReadOnlyCollection<string> ProviderMessageIds);

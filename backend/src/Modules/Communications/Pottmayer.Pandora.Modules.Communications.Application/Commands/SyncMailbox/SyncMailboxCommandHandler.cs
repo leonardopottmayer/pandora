@@ -16,7 +16,8 @@ using Pottmayer.Tars.Messaging.Abstractions;
 namespace Pottmayer.Pandora.Modules.Communications.Application.Commands.SyncMailbox;
 
 /// <summary>
-/// One cycle: labels and changes (<see cref="MailboxChangesStep"/>), then backfill batches while there is budget.
+/// One cycle: labels and changes (<see cref="MailboxChangesStep"/>), part by part while there is budget, then backfill
+/// batches while there is budget.
 /// Provider calls happen outside any transaction; each result is applied in its own unit of work, so a slow server
 /// never holds a database transaction open and a failure keeps what was already applied.
 /// </summary>
@@ -77,9 +78,17 @@ public sealed class SyncMailboxCommandHandler(
 
     private async Task<Result<bool>> RunCycleAsync(Mailbox mailbox, IMailboxProvider provider, CancellationToken ct)
     {
-        var upToDate = await changes.RunAsync(mailbox.Id, provider, ct);
-        if (!upToDate.IsSuccess || !upToDate.Value)
-            return upToDate;
+        // A long backlog stops at the budget too, so one mailbox does not hold the job's others for as long as it lasts.
+        var changesBudgetEnds = timeProvider.GetUtcNow() + options.Value.BackfillBudget;
+        Result<MailboxChangesResult> part;
+        do
+        {
+            part = await changes.RunAsync(mailbox.Id, provider, ct);
+            if (!part.IsSuccess)
+                return Result<bool>.Failure(part.Errors);
+            if (!part.Value.MailboxExists)
+                return Result<bool>.Success(false);
+        } while (part.Value.HasMore && timeProvider.GetUtcNow() < changesBudgetEnds);
 
         // Batches back to back until the backfill ends or the budget runs out; each is saved on its own.
         var budgetEnds = timeProvider.GetUtcNow() + options.Value.BackfillBudget;

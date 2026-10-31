@@ -38,6 +38,11 @@ internal sealed class FakeMailProvider : IMailboxProvider
 
     public Func<Task>? BeforeBackfillBatch { get; set; }
 
+    /// <summary>At most this many changes per FetchChanges; the rest comes with HasMore, like a long Gmail backlog.</summary>
+    public int? ChangesPerCall { get; set; }
+
+    public int FetchChangesCalls { get; private set; }
+
     public int StartBackfillCalls { get; private set; }
 
     public int RawFetches { get; private set; }
@@ -125,14 +130,21 @@ internal sealed class FakeMailProvider : IMailboxProvider
             return Result<RemoteChanges>.Failure(MailErrors.SyncCursorExpired);
         }
 
-        var upserts = _changed.Distinct().Where(_messages.ContainsKey).Select(id => _messages[id]).ToList();
+        FetchChangesCalls++;
+        var changed = _changed.Distinct().Where(_messages.ContainsKey).ToList();
+        var taken = changed.Take(ChangesPerCall ?? int.MaxValue).ToList();
+        var upserts = taken.Select(id => _messages[id]).ToList();
         IReadOnlyList<string> removed = SnapshotLabel is null ? [.. _removed] : [];
         IReadOnlyList<RemoteLabelSnapshot> snapshots = SnapshotLabel is null
             ? []
             : [new RemoteLabelSnapshot(SnapshotLabel, _messages.Values.Where(m => m.ProviderLabelIds.Contains(SnapshotLabel)).Select(m => m.ProviderMessageId).ToList())];
-        _changed.Clear();
-        _removed.Clear();
-        return await Answer(new RemoteChanges(upserts, removed, snapshots, $"v{++_version}"));
+        if (FailWith is null)
+        {
+            _changed.RemoveAll(taken.Contains);
+            _changed.RemoveAll(id => !_messages.ContainsKey(id));
+            _removed.Clear();
+        }
+        return await Answer(new RemoteChanges(upserts, removed, snapshots, $"v{++_version}", HasMore: taken.Count < changed.Count));
     }
 
     /// <summary>A text + HTML body and one PDF attachment, whatever the message.</summary>

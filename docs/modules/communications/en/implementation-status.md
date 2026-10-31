@@ -25,7 +25,7 @@ lives in [product-plan.md](product-plan.md).
 | **API** | `GET`/`POST /mailboxes`, `PATCH`/`DELETE /mailboxes/{id}`, `POST /mailboxes/{id}/sync`, `GET /mailboxes/{id}/labels`, `GET /messages`, `GET /messages/{id}`, `GET /messages/{id}/attachments/{attachmentId}`, `POST /messages/actions`, `POST /mailboxes/{id}/labels`, `PATCH`/`DELETE /labels/{id}`, `POST /messages/send`, `GET /messages/{id}/compose`. |
 | **Integrations** | `CommunicationsAccountUsageSource`: the connections screen shows "Email · address" as a usage of the account. |
 | **Frontend** | `/mail` and `/mail/accounts`; `prepareMailHtml` + sandboxed iframe + CSP; `MailActions`, selection in the list, the label menu in the sidebar; `ComposeDrawer`. |
-| **Tests** | Unit: 89 (`MailboxTests`, `MessageComposerTests`, `ThreadKeyTests`, `LabelRoleTests`, `GmailMailboxProviderTests`). Integration: 66 (`SyncEngineTests`, `CommunicationsApiTests`, `MailActionsApiTests`, `SendMessageApiTests`, `ImapMailboxProviderTests` against GreenMail, `PersistenceTests`, `ProviderRegistrationTests`). Front: `prepareMailHtml.test.ts`, `MailPage.test.tsx`, `ComposeDrawer.test.tsx`, `composeBody.test.ts`. |
+| **Tests** | Unit: 91 (`MailboxTests`, `MessageComposerTests`, `ThreadKeyTests`, `LabelRoleTests`, `GmailMailboxProviderTests`). Integration: 70 (`SyncEngineTests`, `CommunicationsApiTests`, `MailActionsApiTests`, `SendMessageApiTests`, `ImapMailboxProviderTests` against GreenMail, `PersistenceTests`, `ProviderRegistrationTests`). Front: `prepareMailHtml.test.ts`, `MailPage.test.tsx`, `ComposeDrawer.test.tsx`, `composeBody.test.ts`. |
 
 ### Real-world check (2026-10-30)
 
@@ -119,7 +119,7 @@ The check found a bug the tests had not caught: a send waited on the action gate
 7. **A move straddling the IMAP walk**, from a folder not read yet to one already read, spans two cycles, so it is not stitched and can fire a false event.
 8. **After a Gmail action during a backfill**, a stale batch can show the old state for up to one cycle.
 9. **Only the loaded page can be selected**, and there is no undo; trash can be restored at the provider.
-10. **The Gmail changes are saved only at the end.** After 9 hours stopped, a cycle read for over 20 minutes (about 44,000 history ids; the cause of so many was not found), holding the action gate, and a restart starts it over. Saving in parts is the fix.
+10. **Why one backlog was so long is unknown.** After 9 hours stopped, a cycle read for over 20 minutes, about 44,000 history ids. It is now saved in parts, and the log says how many messages each part read.
 11. **Send keys live in process memory,** so a retry right after a restart can send twice.
 12. **A server that saves its sent copy more than 3 seconds later** gets two copies. Titan did not.
 13. **The 25 MB limit is unconfirmed:** Google's API pages state none. A mail over the real limit comes back as a refusal.

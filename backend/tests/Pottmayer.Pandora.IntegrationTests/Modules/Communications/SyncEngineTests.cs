@@ -137,6 +137,103 @@ public sealed class SyncEngineTests : IAsyncLifetime
         Assert.Equal(["Stays"], await SubjectsAsync(mailbox.Id));
     }
 
+    private async Task<Mailbox> SyncedThenBacklogAsync(int messages, int perCall)
+    {
+        var mailbox = await CreateMailboxAsync();
+        await SyncAsync(mailbox.Id);
+
+        _provider.ChangesPerCall = perCall;
+        for (var i = 1; i <= messages; i++)
+            _provider.Deliver($"b{i}", $"Backlog {i}");
+        return mailbox;
+    }
+
+    [Fact]
+    public async Task One_cycle_reads_a_long_backlog_in_parts_until_it_ends()
+    {
+        var mailbox = await SyncedThenBacklogAsync(messages: 5, perCall: 2);
+        var before = _provider.FetchChangesCalls;
+
+        Assert.True(Value(await SyncAsync(mailbox.Id)));
+
+        Assert.Equal(3, _provider.FetchChangesCalls - before);
+        Assert.Equal(5, (await SubjectsAsync(mailbox.Id)).Count);
+        Assert.Equal(5, await CountOutboxAsync(MessageReceived));
+    }
+
+    [Fact]
+    public async Task A_failure_midway_keeps_the_parts_already_read_and_the_next_cycle_goes_on()
+    {
+        var mailbox = await SyncedThenBacklogAsync(messages: 5, perCall: 2);
+        var calls = 0;
+        _provider.BeforeFetchChanges = () =>
+        {
+            if (++calls == 2)
+                _provider.FailWith = MailErrors.ProviderFailed("timeout");
+            return Task.CompletedTask;
+        };
+
+        await SyncAsync(mailbox.Id);
+
+        Assert.Equal(2, (await SubjectsAsync(mailbox.Id)).Count);
+        Assert.Equal(1, (await LoadAsync(mailbox.Id)).ConsecutiveFailures);
+
+        _provider.FailWith = null;
+        _provider.BeforeFetchChanges = null;
+        Assert.True(Value(await SyncAsync(mailbox.Id)));
+
+        Assert.Equal(5, (await SubjectsAsync(mailbox.Id)).Count);
+        Assert.Equal(5, await CountOutboxAsync(MessageReceived));
+    }
+
+    [Fact]
+    public async Task A_backlog_stops_at_the_budget_and_the_next_cycle_goes_on()
+    {
+        var host = _host.WithWebHostBuilder(b => b.ConfigureTestServices(s =>
+            s.Configure<CommunicationsOptions>(o => o.BackfillBudget = TimeSpan.Zero)));
+        var mailbox = await SyncedThenBacklogAsync(messages: 5, perCall: 2);
+        var before = _provider.FetchChangesCalls;
+
+        using (var scope = host.Services.CreateScope())
+            Assert.True(Value(await scope.ServiceProvider.GetRequiredService<ISender>().Send(new SyncMailboxCommand(new SyncMailboxInput(mailbox.Id)))));
+
+        Assert.Equal(1, _provider.FetchChangesCalls - before);
+        Assert.Equal(2, (await SubjectsAsync(mailbox.Id)).Count);
+
+        Assert.True(Value(await SyncAsync(mailbox.Id)));
+        Assert.Equal(5, (await SubjectsAsync(mailbox.Id)).Count);
+    }
+
+    [Fact]
+    public async Task An_action_gets_in_between_the_parts_of_a_backlog()
+    {
+        var mailbox = await SyncedThenBacklogAsync(messages: 4, perCall: 2);
+        var gates = _host.Services.GetRequiredService<MailboxGates>();
+
+        var inFirst = new TaskCompletionSource();
+        var finishFirst = new TaskCompletionSource();
+        var calls = 0;
+        _provider.BeforeFetchChanges = () =>
+        {
+            if (++calls > 1)
+                return Task.CompletedTask;
+            inFirst.TrySetResult();
+            return finishFirst.Task;
+        };
+        var cycle = SyncAsync(mailbox.Id);
+        await inFirst.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        // An action waiting on the gate gets it when the first part is saved, before the second part starts.
+        var action = gates.Action(mailbox.Id).WaitAsync(TimeSpan.FromSeconds(30));
+        finishFirst.SetResult();
+        Assert.True(await action);
+        Assert.Equal(1, calls);
+
+        gates.Action(mailbox.Id).Release();
+        Assert.True(Value(await cycle));
+        Assert.Equal(4, (await SubjectsAsync(mailbox.Id)).Count);
+    }
+
     [Fact]
     public async Task Mail_in_sent_or_drafts_is_not_an_arrival()
     {

@@ -25,7 +25,7 @@ frente está em [product-plan.md](product-plan.md).
 | **API** | `GET`/`POST /mailboxes`, `PATCH`/`DELETE /mailboxes/{id}`, `POST /mailboxes/{id}/sync`, `GET /mailboxes/{id}/labels`, `GET /messages`, `GET /messages/{id}`, `GET /messages/{id}/attachments/{attachmentId}`, `POST /messages/actions`, `POST /mailboxes/{id}/labels`, `PATCH`/`DELETE /labels/{id}`, `POST /messages/send`, `GET /messages/{id}/compose`. |
 | **Integrations** | `CommunicationsAccountUsageSource`: a tela de conexões mostra "Email · endereço" como uso da conta. |
 | **Frontend** | `/mail` e `/mail/accounts`; `prepareMailHtml` + iframe em sandbox + CSP; `MailActions`, seleção na lista, menu de etiquetas na barra lateral; `ComposeDrawer`. |
-| **Testes** | Unitários: 89 (`MailboxTests`, `MessageComposerTests`, `ThreadKeyTests`, `LabelRoleTests`, `GmailMailboxProviderTests`). Integração: 66 (`SyncEngineTests`, `CommunicationsApiTests`, `MailActionsApiTests`, `SendMessageApiTests`, `ImapMailboxProviderTests` contra o GreenMail, `PersistenceTests`, `ProviderRegistrationTests`). Front: `prepareMailHtml.test.ts`, `MailPage.test.tsx`, `ComposeDrawer.test.tsx`, `composeBody.test.ts`. |
+| **Testes** | Unitários: 91 (`MailboxTests`, `MessageComposerTests`, `ThreadKeyTests`, `LabelRoleTests`, `GmailMailboxProviderTests`). Integração: 70 (`SyncEngineTests`, `CommunicationsApiTests`, `MailActionsApiTests`, `SendMessageApiTests`, `ImapMailboxProviderTests` contra o GreenMail, `PersistenceTests`, `ProviderRegistrationTests`). Front: `prepareMailHtml.test.ts`, `MailPage.test.tsx`, `ComposeDrawer.test.tsx`, `composeBody.test.ts`. |
 
 ### Verificação real (2026-10-30)
 
@@ -118,7 +118,7 @@ A verificação achou um bug que os testes não tinham pegado: o envio esperava 
 7. **Um mover que atravessa a varredura IMAP**, de uma pasta ainda não lida para uma já lida, ocupa dois ciclos, então não é juntado e pode disparar um evento falso.
 8. **Depois de uma ação no Gmail durante uma carga inicial**, um lote antigo pode mostrar o estado anterior por até um ciclo.
 9. **Só a página carregada pode ser selecionada**, e não há desfazer; a lixeira pode ser restaurada no provedor.
-10. **As mudanças do Gmail só são salvas no fim.** Depois de 9 horas parado, um ciclo leu por mais de 20 minutos (cerca de 44 mil ids de histórico; a causa de tantos não foi achada), segurando a trava de ação, e reiniciar o recomeça. A correção é salvar em partes.
+10. **Não se sabe por que um acúmulo foi tão longo.** Depois de 9 horas parado, um ciclo leu por mais de 20 minutos, cerca de 44 mil ids de histórico. Agora é salvo em partes, e o log diz quantas mensagens cada parte leu.
 11. **As chaves de envio ficam na memória do processo,** então uma nova tentativa logo depois de reiniciar pode enviar duas vezes.
 12. **Um servidor que salva a cópia mais de 3 segundos depois** fica com duas. O Titan não ficou.
 13. **O limite de 25 MB não está confirmado:** as páginas da API do Google não informam nenhum. Um email acima do limite real volta como recusa.
