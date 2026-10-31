@@ -1,6 +1,6 @@
 # Communications — Execution Plan, M3 (Send)
 
-> **Status:** In progress: decisions approved, steps 1–3 built. It is phase **M3** of the [product-plan](product-plan.md); what exists today is in
+> **Status:** In progress: decisions approved, steps 1–4 built. It is phase **M3** of the [product-plan](product-plan.md); what exists today is in
 > [Implementation Status](implementation-status.md).
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan-m3.md)
 
@@ -101,7 +101,10 @@ Each step ends green before the next one. Suggested commit points: **M3a** = ste
 - **Tests (GreenMail):** received by the recipient; one copy in a folder set up as sent (GreenMail has no SPECIAL-USE, so the folder finding needs a seam, or stays for the real check); a wrong password →
   `MailboxAuthFailed`. A copy already there is not added again.
 
-### Step 4 — Gmail send
+### Step 4 — Gmail send ✅
+
+> **Built (2026-10-31).** The multipart upload, confirmed against Google's upload guide: `multipart/related`, the metadata first, then `message/rfc822`. `PostMessageAsync` is apart from the other writes, so it cannot inherit their
+> retry. **Google's pages state no size limit,** so the 25 MB is unconfirmed; the real check does not reach it, and a mail over the real limit comes back as a refusal, which is safe. Tests: `GmailMailboxProviderTests` +9, on canned answers.
 
 - `messages.send` with the multipart upload, carrying `threadId` as metadata and the raw message as `message/rfc822`. **Confirm against Google's upload guide** before relying on it, along with the size limit,
   which the method's page does not state.

@@ -26,6 +26,7 @@ namespace Pottmayer.Pandora.Modules.Communications.Infrastructure.Gmail;
 internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialProvider credentials) : IMailboxProvider
 {
     internal const string BaseUrl = "https://gmail.googleapis.com/gmail/v1/users/me/";
+    internal const string SendUrl = "https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=multipart";
     internal const string FirstPage = "first";
 
     /// <summary>Read and change labels; <c>gmail.send</c> and <c>gmail.settings.basic</c> are M3/M4's.</summary>
@@ -194,9 +195,13 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
             return providerMessageIds.ToDictionary(id => id, id => (string?)id);
         }, ct);
 
-    // Temporary, until M3's step 4: nothing calls it yet.
+    /// <summary>The multipart upload, since it carries the thread with the message. Gmail keeps its own sent copy.</summary>
     public Task<Result<SentMessage>> SendAsync(Mailbox mailbox, byte[] rawMessage, string? threadKey, CancellationToken ct = default) =>
-        Task.FromResult(Result<SentMessage>.Failure(MailErrors.ActionNotSupported));
+        RunAsync(mailbox, async (token, c) =>
+        {
+            await PostMessageAsync(token, rawMessage, threadKey, c);
+            return new SentMessage(CopySaved: true);
+        }, ct);
 
     private async Task<bool> BatchModifyAsync(
         string token, IReadOnlyCollection<string> ids, IReadOnlyCollection<string> add, IReadOnlyCollection<string> remove, CancellationToken ct)
@@ -262,25 +267,74 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
                 return await read(response.Content, ct);
 
             var body = await response.Content.ReadAsStringAsync(ct);
-            var throttled = response.StatusCode is HttpStatusCode.TooManyRequests
-                            || (int)response.StatusCode >= 500
-                            || (response.StatusCode == HttpStatusCode.Forbidden && RateLimitReasons.Any(r => body.Contains(r, StringComparison.Ordinal)));
+            var throttled = IsRateLimited(response.StatusCode, body) || (int)response.StatusCode >= 500;
             if (throttled && attempt < RetryDelays.Count)
             {
                 await Task.Delay(response.Headers.RetryAfter?.Delta ?? RetryDelays[attempt], ct);
                 continue;
             }
 
-            throw new GmailException(response.StatusCode switch
-            {
-                HttpStatusCode.Unauthorized => MailErrors.MailboxAuthFailed("Gmail rejected the access token."),
-                HttpStatusCode.Forbidden when body.Contains("insufficientPermissions", StringComparison.Ordinal)
-                    || body.Contains("ACCESS_TOKEN_SCOPE_INSUFFICIENT", StringComparison.Ordinal) => MailErrors.MissingScopes,
-                HttpStatusCode.NotFound when notFound is not null => notFound,
-                _ => MailErrors.ProviderFailed($"Gmail answered {(int)response.StatusCode}{Reason(body)} on {path.Split('?')[0]}.")
-            });
+            throw new GmailException(ToError(response.StatusCode, body, path, notFound));
         }
     }
+
+    /// <summary>
+    /// Unlike every other write, this one cannot be repeated on a doubt: a 5xx, a timeout or a dropped connection may
+    /// come after Gmail took the mail. Only a rate limit certainly means it did not go.
+    /// </summary>
+    private async Task<bool> PostMessageAsync(string token, byte[] rawMessage, string? threadKey, CancellationToken ct)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, SendUrl);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Content = new MultipartContent("related")
+            {
+                JsonContent.Create(
+                    threadKey is null ? new Dictionary<string, string>() : new Dictionary<string, string> { ["threadId"] = threadKey },
+                    options: Json),
+                new ByteArrayContent(rawMessage) { Headers = { ContentType = new MediaTypeHeaderValue("message/rfc822") } },
+            };
+
+            HttpResponseMessage answer;
+            try
+            {
+                answer = await http.SendAsync(request, ct);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+            {
+                throw new GmailException(MailErrors.SendUncertain);
+            }
+
+            using var response = answer;
+            if (response.IsSuccessStatusCode)
+                return true;
+            if ((int)response.StatusCode >= 500)
+                throw new GmailException(MailErrors.SendUncertain);
+
+            var body = await response.Content.ReadAsStringAsync(ct);
+            if (IsRateLimited(response.StatusCode, body) && attempt < RetryDelays.Count)
+            {
+                await Task.Delay(response.Headers.RetryAfter?.Delta ?? RetryDelays[attempt], ct);
+                continue;
+            }
+
+            throw new GmailException(ToError(response.StatusCode, body, "messages/send", null));
+        }
+    }
+
+    private static bool IsRateLimited(HttpStatusCode status, string body) =>
+        status is HttpStatusCode.TooManyRequests
+        || (status == HttpStatusCode.Forbidden && RateLimitReasons.Any(r => body.Contains(r, StringComparison.Ordinal)));
+
+    private static Error ToError(HttpStatusCode status, string body, string path, Error? notFound) => status switch
+    {
+        HttpStatusCode.Unauthorized => MailErrors.MailboxAuthFailed("Gmail rejected the access token."),
+        HttpStatusCode.Forbidden when body.Contains("insufficientPermissions", StringComparison.Ordinal)
+            || body.Contains("ACCESS_TOKEN_SCOPE_INSUFFICIENT", StringComparison.Ordinal) => MailErrors.MissingScopes,
+        HttpStatusCode.NotFound when notFound is not null => notFound,
+        _ => MailErrors.ProviderFailed($"Gmail answered {(int)status}{Reason(body)} on {path.Split('?')[0]}.")
+    };
 
     /// <summary>Gmail's own reason for an error (<c>error.errors[0].reason</c>, else <c>error.status</c>), for the mailbox's last error.</summary>
     private static string Reason(string body)

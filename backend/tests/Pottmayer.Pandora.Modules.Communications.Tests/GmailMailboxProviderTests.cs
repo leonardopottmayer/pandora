@@ -330,6 +330,96 @@ public sealed class GmailMailboxProviderTests
         Assert.Empty(calls);
     }
 
+    [Fact]
+    public async Task Sending_uses_the_multipart_upload_with_the_thread_and_the_message_in_that_order()
+    {
+        var calls = new List<Call>();
+        var gmail = Provider(Routes(("messages/send", Ok("""{ "id": "new", "threadId": "t1" }"""))), calls: calls);
+
+        var sent = Value(await gmail.SendAsync(_mailbox, "Subject: Hi\r\n\r\nBody"u8.ToArray(), "t1"));
+
+        Assert.True(sent.CopySaved);
+        var call = Assert.Single(calls);
+        Assert.Equal("POST", call.Method);
+        Assert.Equal("/upload/gmail/v1/users/me/messages/send?uploadType=multipart", call.Url);
+        Assert.StartsWith("multipart/related", call.ContentType);
+
+        var thread = call.Body!.IndexOf("\"threadId\":\"t1\"", StringComparison.Ordinal);
+        var media = call.Body.IndexOf("message/rfc822", StringComparison.Ordinal);
+        var message = call.Body.IndexOf("Subject: Hi", StringComparison.Ordinal);
+        Assert.True(thread >= 0 && thread < media && media < message, call.Body);
+    }
+
+    [Fact]
+    public async Task A_new_message_sends_no_thread_at_all()
+    {
+        var calls = new List<Call>();
+        var gmail = Provider(Routes(("messages/send", Ok("""{ "id": "new" }"""))), calls: calls);
+
+        Value(await gmail.SendAsync(_mailbox, "Subject: Hi\r\n\r\nBody"u8.ToArray(), null));
+
+        Assert.DoesNotContain("threadId", Assert.Single(calls).Body);
+    }
+
+    [Fact]
+    public async Task A_server_error_on_a_send_is_uncertain_and_never_repeated()
+    {
+        var calls = new List<Call>();
+        var gmail = Provider(Routes(("messages/send", Status(HttpStatusCode.InternalServerError, "{}"))), calls: calls);
+
+        AssertError("Communications.SendUncertain", await gmail.SendAsync(_mailbox, "m"u8.ToArray(), null));
+
+        Assert.Single(calls);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task A_lost_answer_on_a_send_is_uncertain_and_never_repeated(bool timeout)
+    {
+        var calls = new List<Call>();
+        var gmail = Provider(_ => timeout ? throw new TaskCanceledException() : throw new HttpRequestException("Connection reset"), calls: calls);
+
+        AssertError("Communications.SendUncertain", await gmail.SendAsync(_mailbox, "m"u8.ToArray(), null));
+
+        Assert.Single(calls);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.TooManyRequests, "{}")]
+    [InlineData(HttpStatusCode.Forbidden, """{"error":{"errors":[{"reason":"userRateLimitExceeded"}]}}""")]
+    public async Task A_rate_limit_on_a_send_certainly_refused_it_so_it_is_repeated(HttpStatusCode status, string body)
+    {
+        var answers = new Queue<Func<HttpResponseMessage>>([Status(status, body), Ok("""{ "id": "new" }""")]);
+        var calls = new List<Call>();
+        var gmail = Provider(_ => answers.Dequeue()(), calls: calls);
+
+        Value(await gmail.SendAsync(_mailbox, "Subject: Hi\r\n\r\nBody"u8.ToArray(), null));
+
+        Assert.Equal(2, calls.Count);
+        Assert.All(calls, c => Assert.Contains("Subject: Hi", c.Body));
+    }
+
+    [Fact]
+    public async Task A_lasting_rate_limit_on_a_send_is_a_plain_failure()
+    {
+        var gmail = Provider(Routes(("messages/send", Status(HttpStatusCode.TooManyRequests, "{}"))));
+
+        AssertError("Communications.ProviderFailed", await gmail.SendAsync(_mailbox, "m"u8.ToArray(), null));
+    }
+
+    [Fact]
+    public async Task A_refused_send_says_why_and_is_not_uncertain()
+    {
+        var bad = Provider(Routes(("messages/send", Status(HttpStatusCode.BadRequest, """{"error":{"errors":[{"reason":"invalidArgument"}]}}"""))));
+        var failed = await bad.SendAsync(_mailbox, "m"u8.ToArray(), null);
+        AssertError("Communications.ProviderFailed", failed);
+        Assert.Contains("invalidArgument", failed.Errors[0].Message);
+
+        AssertError("Communications.MailboxAuthFailed",
+            await Provider(Routes(("messages/send", Status(HttpStatusCode.Unauthorized, "{}")))).SendAsync(_mailbox, "m"u8.ToArray(), null));
+    }
+
     private static string[] Strings(string? json, string property)
     {
         using var document = JsonDocument.Parse(json!);
@@ -383,7 +473,7 @@ public sealed class GmailMailboxProviderTests
         Assert.Equal(code, Assert.Single(result.Errors).Code);
     }
 
-    private sealed record Call(string Method, string Url, string? Body);
+    private sealed record Call(string Method, string Url, string? Body, string? ContentType);
 
     private sealed class FakeHandler(
         Func<string, HttpResponseMessage> routes, List<string>? requests = null, List<Call>? calls = null) : HttpMessageHandler
@@ -396,7 +486,7 @@ public sealed class GmailMailboxProviderTests
             lock (this)
             {
                 requests?.Add(url);
-                calls?.Add(new Call(request.Method.Method, url, body));
+                calls?.Add(new Call(request.Method.Method, url, body, request.Content?.Headers.ContentType?.ToString()));
             }
             return routes(url);
         }
