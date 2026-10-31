@@ -1,6 +1,6 @@
 # Communications — Execution Plan, M2 (Organize)
 
-> **Status:** In progress: steps 1–3 built. It is phase **M2** of the [product-plan](product-plan.md); what exists today is in
+> **Status:** In progress: steps 1–4 built. It is phase **M2** of the [product-plan](product-plan.md); what exists today is in
 > [Implementation Status](implementation-status.md).
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan-m2.md)
 
@@ -148,7 +148,18 @@ No new feature, and it changes no mailbox.
   throttle is safe.
 - **Tests:** on canned answers, the URL and body of each call; a `403` for scopes → `MissingScopes`; a throttled write is retried.
 
-### Step 4 — Application and API
+### Step 4 — Application and API ✅
+
+> **Built (2026-10-30).** `ApplyMessageAction`, `CreateLabel`, `RenameLabel`, `DeleteLabel`, with `LabelOperation` shared by the three.
+> Changes from the list below:
+> - **Label endpoints return the mailbox's labels**, as they are after the labels + changes step. If that step fails, the operation
+>   still succeeded at the provider: it is logged and the next cycle catches up.
+> - **The step runs after the action gate is released**, since it takes the gate itself.
+> - **`TooManyMessages` became `MessageCountInvalid`**, which also covers an empty list. `LabelNotFound` (404) is new.
+> - **A label name** is trimmed and at most 100 characters; beyond that, the provider decides.
+> - **Move targets:** never Sent or Drafts; on Gmail, of the system labels, only the inbox.
+> - **Local trash and move** are what the next cycle will report anyway; a provider that gives no new id leaves the row to it.
+> - Tests: `MailActionsApiTests` (14), including the stranger's ids with no provider call, and a failure with no local change.
 
 - Commands under the action gate: `CreateLabel`, `RenameLabel`, `DeleteLabel`, `ApplyMessageAction`.
 - **Label operations** call the provider, then run the labels + changes step, so renames take the one path.

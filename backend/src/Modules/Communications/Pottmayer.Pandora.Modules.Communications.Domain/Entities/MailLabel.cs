@@ -8,6 +8,8 @@ namespace Pottmayer.Pandora.Modules.Communications.Domain.Entities;
 /// </summary>
 public sealed class MailLabel
 {
+    public const int NameMaxLength = 100;
+
     public Guid Id { get; private set; }
     public Guid MailboxId { get; private set; }
 

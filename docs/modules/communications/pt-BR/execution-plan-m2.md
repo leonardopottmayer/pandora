@@ -1,6 +1,6 @@
 # Communications — Plano de Execução, M2 (Organizar)
 
-> **Status:** Em andamento: passos 1–3 construídos. É a fase **M2** do [product-plan](product-plan.md); o que existe hoje está no
+> **Status:** Em andamento: passos 1–4 construídos. É a fase **M2** do [product-plan](product-plan.md); o que existe hoje está no
 > [Status de implementação](implementation-status.md).
 > 🇺🇸 [English version](../en/execution-plan-m2.md)
 
@@ -147,7 +147,18 @@ Sem funcionalidade nova, e não altera nenhuma caixa.
   repetir depois de um limite de taxa é seguro.
 - **Testes:** com respostas prontas, a URL e o corpo de cada chamada; um `403` de escopos → `MissingScopes`; uma escrita limitada é repetida.
 
-### Passo 4 — Application e API
+### Passo 4 — Application e API ✅
+
+> **Construído (2026-10-30).** `ApplyMessageAction`, `CreateLabel`, `RenameLabel`, `DeleteLabel`, com `LabelOperation` compartilhado pelos três.
+> Mudanças em relação à lista abaixo:
+> - **Os endpoints de etiqueta devolvem as etiquetas da caixa**, como ficam depois do passo de etiquetas + mudanças. Se esse passo falhar, a
+>   operação continua valendo no provedor: vai para o log e o próximo ciclo acerta.
+> - **O passo roda depois de soltar a trava de ação**, porque ele mesmo a pega.
+> - **`TooManyMessages` virou `MessageCountInvalid`**, que também cobre lista vazia. `LabelNotFound` (404) é novo.
+> - **O nome de etiqueta** é aparado e tem até 100 caracteres; além disso, quem decide é o provedor.
+> - **Destinos de mover:** nunca Enviados nem Rascunhos; no Gmail, das etiquetas do sistema, só a entrada.
+> - **Lixeira e mover locais** são o que o próximo ciclo informaria de qualquer forma; um provedor que não dá id novo deixa a linha para ele.
+> - Testes: `MailActionsApiTests` (14), incluindo ids de outro usuário sem chamada ao provedor, e falha sem mudança local.
 
 - Comandos sob a trava de ação: `CreateLabel`, `RenameLabel`, `DeleteLabel`, `ApplyMessageAction`.
 - **Operações de etiqueta** chamam o provedor e depois rodam o passo de etiquetas + mudanças, para as renomeações seguirem o caminho único.

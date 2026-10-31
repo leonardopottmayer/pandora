@@ -42,7 +42,13 @@ internal sealed class FakeMailProvider : IMailboxProvider
 
     public int RawFetches { get; private set; }
 
-    public MailboxCapabilities Capabilities { get; } = new(true, false, false);
+    public MailboxCapabilities Capabilities { get; set; } = new(true, false, false);
+
+    /// <summary>Every write, in order: <c>"move:m1:Archive"</c>.</summary>
+    public List<string> Writes { get; } = [];
+
+    /// <summary>The id a move gives a message; null is a provider that does not say. By default the id stays.</summary>
+    public Func<string, string?> MovedId { get; set; } = id => id;
 
     public RemoteMessage Deliver(
         string id, string subject, string? rfc822 = null, DateTimeOffset? sentAt = null, bool unread = true,
@@ -139,32 +145,71 @@ internal sealed class FakeMailProvider : IMailboxProvider
         return Answer(stream.ToArray());
     }
 
-    // Writes: M2's step 4 scripts them.
-    public Task<Result<RemoteLabel>> CreateLabelAsync(Mailbox mailbox, string name, CancellationToken ct = default) =>
-        Answer(new RemoteLabel(name, name, LabelKind.User, null, IsExclusive: true));
+    public Task<Result<RemoteLabel>> CreateLabelAsync(Mailbox mailbox, string name, CancellationToken ct = default)
+    {
+        if (FailWith is not null)
+            return Answer<RemoteLabel>(null!);
 
-    public Task<Result<bool>> RenameLabelAsync(Mailbox mailbox, string providerLabelId, string newName, CancellationToken ct = default) =>
-        Answer(true);
+        Writes.Add($"create:{name}");
+        var label = new RemoteLabel(name, name, LabelKind.User, null, IsExclusive: !Capabilities.MultipleLabels);
+        Labels.Add(label);
+        return Answer(label);
+    }
 
-    public Task<Result<bool>> DeleteLabelAsync(Mailbox mailbox, string providerLabelId, CancellationToken ct = default) =>
-        Answer(true);
+    /// <summary>The way Gmail does it: the id stays. An IMAP rename is a folder gone and one new.</summary>
+    public Task<Result<bool>> RenameLabelAsync(Mailbox mailbox, string providerLabelId, string newName, CancellationToken ct = default)
+    {
+        if (FailWith is not null)
+            return Answer(false);
+
+        Writes.Add($"rename:{providerLabelId}:{newName}");
+        var index = Labels.FindIndex(l => l.ProviderLabelId == providerLabelId);
+        Labels[index] = Labels[index] with { Name = newName };
+        return Answer(true);
+    }
+
+    public Task<Result<bool>> DeleteLabelAsync(Mailbox mailbox, string providerLabelId, CancellationToken ct = default)
+    {
+        if (FailWith is not null)
+            return Answer(false);
+
+        Writes.Add($"delete:{providerLabelId}");
+        Labels.RemoveAll(l => l.ProviderLabelId == providerLabelId);
+        return Answer(true);
+    }
 
     public Task<Result<bool>> SetFlagsAsync(
-        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, bool? isUnread, bool? isStarred, CancellationToken ct = default) =>
-        Answer(true);
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, bool? isUnread, bool? isStarred, CancellationToken ct = default)
+    {
+        if (FailWith is null)
+            Writes.Add($"flags:{string.Join(',', providerMessageIds)}:{isUnread}:{isStarred}");
+        return Answer(true);
+    }
 
     public Task<Result<bool>> ChangeLabelsAsync(
         Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, IReadOnlyCollection<string> add, IReadOnlyCollection<string> remove,
-        CancellationToken ct = default) =>
-        Answer(true);
+        CancellationToken ct = default)
+    {
+        if (FailWith is null)
+            Writes.Add($"labels:{string.Join(',', providerMessageIds)}:+{string.Join(',', add)}:-{string.Join(',', remove)}");
+        return Answer(true);
+    }
 
     public Task<Result<IReadOnlyDictionary<string, string?>>> MoveAsync(
-        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, string targetProviderLabelId, CancellationToken ct = default) =>
-        Answer<IReadOnlyDictionary<string, string?>>(providerMessageIds.ToDictionary(id => id, id => (string?)id));
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, string targetProviderLabelId, CancellationToken ct = default)
+    {
+        if (FailWith is null)
+            Writes.Add($"move:{string.Join(',', providerMessageIds)}:{targetProviderLabelId}");
+        return Answer<IReadOnlyDictionary<string, string?>>(providerMessageIds.ToDictionary(id => id, id => MovedId(id)));
+    }
 
     public Task<Result<IReadOnlyDictionary<string, string?>>> TrashAsync(
-        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, CancellationToken ct = default) =>
-        Answer<IReadOnlyDictionary<string, string?>>(providerMessageIds.ToDictionary(id => id, id => (string?)id));
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, CancellationToken ct = default)
+    {
+        if (FailWith is null)
+            Writes.Add($"trash:{string.Join(',', providerMessageIds)}");
+        return Answer<IReadOnlyDictionary<string, string?>>(providerMessageIds.ToDictionary(id => id, id => MovedId(id)));
+    }
 
     private Task<Result<T>> Answer<T>(T value)
     {

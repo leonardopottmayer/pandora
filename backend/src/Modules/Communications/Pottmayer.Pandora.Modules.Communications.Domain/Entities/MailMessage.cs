@@ -94,6 +94,13 @@ public sealed class MailMessage
         SetLabels(labelIds);
     }
 
+    /// <summary>A null flag stays as it is.</summary>
+    public void SetFlags(bool? isUnread, bool? isStarred)
+    {
+        IsUnread = isUnread ?? IsUnread;
+        IsStarred = isStarred ?? IsStarred;
+    }
+
     /// <summary>The same message under a new provider id (an IMAP move): the row and its cached body stay.</summary>
     public void Rebind(string providerMessageId) => ProviderMessageId = providerMessageId;
 

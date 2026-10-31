@@ -2,8 +2,10 @@ using System.Net.Mime;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Pottmayer.Pandora.Modules.Communications.Application.Commands.ApplyMessageAction;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.ConnectMailbox;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.DeleteMailbox;
+using Pottmayer.Pandora.Modules.Communications.Application.Commands.ManageLabels;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.OpenMessage;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.SyncMailboxNow;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.UpdateMailbox;
@@ -70,7 +72,27 @@ public sealed class CommunicationsController(
     public async Task<IActionResult> GetLabelsAsync(Guid id, CancellationToken ct) =>
         (await sender.Send(new GetLabelsQuery(new GetLabelsInput(UserId, id)), ct)).ToActionResult(errorMapper);
 
+    [HttpPost("mailboxes/{id:guid}/labels")]
+    public async Task<IActionResult> CreateLabelAsync(Guid id, LabelNameRequest body, CancellationToken ct) =>
+        (await sender.Send(new CreateLabelCommand(new CreateLabelInput(UserId, id, body.Name)), ct)).ToActionResult(errorMapper);
+
+    [HttpPatch("labels/{id:guid}")]
+    public async Task<IActionResult> RenameLabelAsync(Guid id, LabelNameRequest body, CancellationToken ct) =>
+        (await sender.Send(new RenameLabelCommand(new RenameLabelInput(UserId, id, body.Name)), ct)).ToActionResult(errorMapper);
+
+    /// <summary>On IMAP only an empty folder can go, since what is inside goes with it (409 otherwise).</summary>
+    [HttpDelete("labels/{id:guid}")]
+    public async Task<IActionResult> DeleteLabelAsync(Guid id, CancellationToken ct) =>
+        (await sender.Send(new DeleteLabelCommand(new DeleteLabelInput(UserId, id)), ct)).ToActionResult(errorMapper);
+
     // ── Messages ──
+
+    /// <summary>One action on up to 100 messages of one mailbox; returns them as they are now.</summary>
+    [HttpPost("messages/actions")]
+    public async Task<IActionResult> ApplyMessageActionAsync(MessageActionRequest body, CancellationToken ct) =>
+        (await sender.Send(new ApplyMessageActionCommand(new ApplyMessageActionInput(
+            UserId, body.MailboxId, body.MessageIds ?? [], body.Action, body.LabelId)), ct))
+        .ToActionResult(errorMapper);
 
     /// <summary>Newest first; <paramref name="before"/> is the previous page's <c>nextCursor</c>.</summary>
     [HttpGet("messages")]

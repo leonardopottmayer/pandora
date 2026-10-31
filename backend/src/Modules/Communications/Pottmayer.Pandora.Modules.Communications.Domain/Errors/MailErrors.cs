@@ -37,6 +37,15 @@ public static class MailErrors
     public static Error NoTrashFolder =>
         Error.Validation("Communications.NoTrashFolder", "This mailbox has no trash folder.");
 
+    public static Error NoArchiveFolder =>
+        Error.Validation("Communications.NoArchiveFolder", "This mailbox has no archive folder.");
+
+    public static Error MessageCountInvalid =>
+        Error.Validation("Communications.MessageCountInvalid", "An action takes between 1 and 100 messages.");
+
+    public static Error LabelNotFound =>
+        Error.NotFound("Communications.LabelNotFound", "This label does not exist.");
+
     public static Error ActionNotSupported =>
         Error.Validation("Communications.ActionNotSupported", "This mailbox does not support this action.");
 
