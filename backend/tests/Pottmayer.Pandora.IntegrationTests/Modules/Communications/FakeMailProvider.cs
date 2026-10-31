@@ -33,21 +33,37 @@ internal sealed class FakeMailProvider : IMailboxProvider
     /// <summary>Send the label's whole id set instead of removed ids (the IMAP way).</summary>
     public string? SnapshotLabel { get; set; }
 
+    /// <summary>Awaited at the start of FetchChanges and of each backfill batch, to hold a cycle there.</summary>
+    public Func<Task>? BeforeFetchChanges { get; set; }
+
+    public Func<Task>? BeforeBackfillBatch { get; set; }
+
     public int StartBackfillCalls { get; private set; }
 
     public int RawFetches { get; private set; }
 
     public MailboxCapabilities Capabilities { get; } = new(true, false, false);
 
-    public RemoteMessage Deliver(string id, string subject, string? rfc822 = null, DateTimeOffset? sentAt = null, bool unread = true)
+    public RemoteMessage Deliver(
+        string id, string subject, string? rfc822 = null, DateTimeOffset? sentAt = null, bool unread = true,
+        string label = "INBOX", bool noMessageId = false)
     {
         var message = new RemoteMessage(
-            id, $"thread-{id}", rfc822 ?? $"{id}@mail.test", new MailAddress("Ana", "ana@mail.test"),
+            id, $"thread-{id}", noMessageId ? null : rfc822 ?? $"{id}@mail.test", new MailAddress("Ana", "ana@mail.test"),
             [new MailAddress(null, "me@mail.test")], [], subject, $"About {subject}",
-            sentAt ?? DateTimeOffset.UtcNow, unread, false, false, 100, ["INBOX"]);
+            sentAt ?? DateTimeOffset.UtcNow, unread, false, false, 100, [label]);
         _messages[id] = message;
         _changed.Add(id);
         return message;
+    }
+
+    /// <summary>What a move does on IMAP: a new id under another label, and the old id gone.</summary>
+    public void Move(string id, string newId, string label)
+    {
+        var moved = _messages[id] with { ProviderMessageId = newId, ProviderLabelIds = [label] };
+        _messages.Remove(id);
+        _messages[newId] = moved;
+        _changed.Add(newId);
     }
 
     public void MarkRead(string id)
@@ -75,21 +91,27 @@ internal sealed class FakeMailProvider : IMailboxProvider
         return Answer(new BackfillStart($"v{_version}", _messages.Count > 0 ? "0" : null, _messages.Count));
     }
 
-    public Task<Result<BackfillBatch>> FetchBackfillBatchAsync(
+    public async Task<Result<BackfillBatch>> FetchBackfillBatchAsync(
         Mailbox mailbox, string backfillCursor, int batchSize, CancellationToken ct = default)
     {
+        if (BeforeBackfillBatch is { } hold)
+            await hold();
+
         var offset = int.Parse(backfillCursor, CultureInfo.InvariantCulture);
         var page = _messages.Values.OrderByDescending(m => m.SentAt).Skip(offset).Take(batchSize).ToList();
         var next = offset + page.Count < _messages.Count ? (offset + page.Count).ToString(CultureInfo.InvariantCulture) : null;
-        return Answer(new BackfillBatch(page, next));
+        return await Answer(new BackfillBatch(page, next));
     }
 
-    public Task<Result<RemoteChanges>> FetchChangesAsync(Mailbox mailbox, string syncCursor, CancellationToken ct = default)
+    public async Task<Result<RemoteChanges>> FetchChangesAsync(Mailbox mailbox, string syncCursor, CancellationToken ct = default)
     {
+        if (BeforeFetchChanges is { } hold)
+            await hold();
+
         if (ExpireCursorOnce)
         {
             ExpireCursorOnce = false;
-            return Task.FromResult(Result<RemoteChanges>.Failure(MailErrors.SyncCursorExpired));
+            return Result<RemoteChanges>.Failure(MailErrors.SyncCursorExpired);
         }
 
         var upserts = _changed.Distinct().Where(_messages.ContainsKey).Select(id => _messages[id]).ToList();
@@ -99,7 +121,7 @@ internal sealed class FakeMailProvider : IMailboxProvider
             : [new RemoteLabelSnapshot(SnapshotLabel, _messages.Values.Where(m => m.ProviderLabelIds.Contains(SnapshotLabel)).Select(m => m.ProviderMessageId).ToList())];
         _changed.Clear();
         _removed.Clear();
-        return Answer(new RemoteChanges(upserts, removed, snapshots, $"v{++_version}"));
+        return await Answer(new RemoteChanges(upserts, removed, snapshots, $"v{++_version}"));
     }
 
     /// <summary>A text + HTML body and one PDF attachment, whatever the message.</summary>

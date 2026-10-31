@@ -29,6 +29,7 @@ Start with the **Overview** for the boundary and vocabulary, then read the topic
 | 5 | [Implementation Status](en/implementation-status.md) | What is built, the real-world check, deviations from the plan, open points |
 | 6 | [Product Plan](en/product-plan.md) | What is left: organize (M2), send (M3), rules (M4) |
 | 7 | [Execution Plan](en/execution-plan.md) | How M1 was built, step by step (history) |
+| 8 | [M2 Execution Plan](en/execution-plan-m2.md) | The next phase, organize: decisions and steps (plan) |
 
 🇧🇷 Every document also exists in Portuguese, under [`pt-BR/`](pt-BR/README.md).
 

@@ -280,6 +280,8 @@ Done on 2026-10-30: see [Implementation Status](implementation-status.md).
 
 ### M2 — Organize
 
+Work list: [execution-plan-m2.md](execution-plan-m2.md).
+
 - Labels both directions (create, rename, delete), batch actions (read, star, move, archive, trash).
 - **Done when:** a label created in Pandora appears in Gmail and in Titan, a folder renamed in the
   Titan webmail shows renamed in Pandora, and a move done in either side is reflected on the other.
@@ -310,6 +312,6 @@ Done on 2026-10-30: see [Implementation Status](implementation-status.md).
 1. **IMAP message identity across folders.** A `MOVE` gives the message a new UID in the destination.
    M1 keys IMAP messages by (folder, UID) and treats a move done in Pandora as an update of that row
    (the adapter returns the new UID via `COPYUID`). A move done in the webmail looks like "removed
-   here + new there"; whether to stitch the two by `rfc822_message_id` is decided in M2. Until then,
+   here + new there"; whether to stitch the two by `rfc822_message_id` is decided in M2. (Decided: they are stitched, see the [M2 plan](execution-plan-m2.md).) Until then,
    M1 must not fire `MailMessageReceived` for a message whose `rfc822_message_id` the mailbox already
    has, so a webmail move is not taken for a new arrival.

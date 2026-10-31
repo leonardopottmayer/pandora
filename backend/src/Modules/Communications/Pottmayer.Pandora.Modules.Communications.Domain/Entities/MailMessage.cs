@@ -94,6 +94,9 @@ public sealed class MailMessage
         SetLabels(labelIds);
     }
 
+    /// <summary>The same message under a new provider id (an IMAP move): the row and its cached body stay.</summary>
+    public void Rebind(string providerMessageId) => ProviderMessageId = providerMessageId;
+
     /// <summary>Replaces the label set by difference, so an unchanged link is never deleted and re-added.</summary>
     public void SetLabels(IEnumerable<Guid> labelIds)
     {

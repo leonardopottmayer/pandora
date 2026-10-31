@@ -289,6 +289,8 @@ Pronta em 2026-10-30: veja o [Status de implementação](implementation-status.m
 
 ### M2 — Organizar
 
+Lista de trabalho: [execution-plan-m2.md](execution-plan-m2.md).
+
 - Etiquetas nos dois sentidos (criar, renomear, apagar), ações em lote (lida, estrela, mover,
   arquivar, lixeira).
 - **Pronto quando:** uma etiqueta criada no Pandora aparece no Gmail e no Titan, uma pasta renomeada
@@ -322,6 +324,6 @@ Pronta em 2026-10-30: veja o [Status de implementação](implementation-status.m
 1. **Identidade de mensagem IMAP entre pastas.** Um `MOVE` dá um UID novo à mensagem no destino. A
    M1 identifica mensagens IMAP por (pasta, UID) e trata um mover feito no Pandora como atualização
    daquela linha (o adaptador devolve o UID novo via `COPYUID`). Um mover feito no webmail aparece como
-   "removida aqui + nova lá"; se vale costurar as duas pelo `rfc822_message_id` é decidido na M2. Até
+   "removida aqui + nova lá"; se vale costurar as duas pelo `rfc822_message_id` é decidido na M2. (Decidido: são juntadas, veja o [plano da M2](execution-plan-m2.md).) Até
    lá, a M1 não pode disparar `MailMessageReceived` para uma mensagem cujo `rfc822_message_id` a caixa
    já tem, para um mover no webmail não ser confundido com chegada nova.

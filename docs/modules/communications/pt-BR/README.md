@@ -29,6 +29,7 @@ Comece pela **Visão geral** para a fronteira e o vocabulário, depois leia o t�
 | 5 | [Status de implementação](implementation-status.md) | O que está construído, a verificação real, desvios do plano, pontos em aberto |
 | 6 | [Plano de Produto](product-plan.md) | O que falta: organizar (M2), enviar (M3), regras (M4) |
 | 7 | [Plano de execução](execution-plan.md) | Como a M1 foi construída, passo a passo (histórico) |
+| 8 | [Plano de execução da M2](execution-plan-m2.md) | A próxima fase, organizar: decisões e passos (plano) |
 
 🇺🇸 Todo documento também existe em inglês, em [`en/`](../README.md).
 

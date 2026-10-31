@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Pottmayer.Pandora.Modules.Communications.Application.Commands.SyncMailbox;
 using Pottmayer.Pandora.Modules.Communications.Application.Integrations;
 using Pottmayer.Pandora.Modules.Integrations.Abstractions.Ports;
 using Pottmayer.Tars.Core.Mediator.DI;
@@ -15,6 +16,9 @@ public static class ApplicationDI
 
         // Integration-event subscribers (dispatched by the in-process IIntegrationEventBus).
         services.AddIntegrationEventHandlersFromAssembly(typeof(ApplicationDI).Assembly);
+
+        services.AddSingleton<MailboxGates>();
+        services.AddScoped<MailboxChangesStep>();
 
         // "Used by" on the connections screen: the account each mailbox runs on.
         services.AddScoped<IExternalAccountUsageSource, CommunicationsAccountUsageSource>();

@@ -153,6 +153,146 @@ public sealed class SyncEngineTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_message_moved_in_the_webmail_keeps_its_row_and_body_and_is_not_an_arrival()
+    {
+        _provider.Labels.Add(new RemoteLabel("Archive", "Archive", LabelKind.User, null, IsExclusive: true));
+        _provider.SnapshotLabel = "INBOX";
+        _provider.Deliver("inbox-1", "Moved");
+        var mailbox = await CreateMailboxAsync();
+        await SyncAsync(mailbox.Id);
+        var rowId = await RowIdAsync(mailbox.Id, "inbox-1");
+        await CacheBodyAsync(rowId);
+
+        _provider.Move("inbox-1", "archive-7", "Archive");
+        Assert.True(Value(await SyncAsync(mailbox.Id)));
+
+        Assert.Equal(rowId, await RowIdAsync(mailbox.Id, "archive-7"));
+        Assert.Equal(["Moved"], await SubjectsAsync(mailbox.Id));
+        Assert.Equal(["Archive"], await LabelsOfAsync(rowId));
+        Assert.Equal(1, await CountBodiesAsync(rowId));
+        Assert.Equal(0, await CountOutboxAsync(MessageReceived));
+    }
+
+    [Fact]
+    public async Task A_folder_renamed_in_the_webmail_keeps_its_rows_and_bodies_and_fires_no_event()
+    {
+        _provider.Labels.Add(new RemoteLabel("Old", "Old", LabelKind.User, null, IsExclusive: true));
+        _provider.Deliver("old-1", "Kept", label: "Old");
+        var mailbox = await CreateMailboxAsync();
+        await SyncAsync(mailbox.Id);
+        var rowId = await RowIdAsync(mailbox.Id, "old-1");
+        await CacheBodyAsync(rowId);
+
+        _provider.Labels.RemoveAll(l => l.ProviderLabelId == "Old");
+        _provider.Labels.Add(new RemoteLabel("New", "New", LabelKind.User, null, IsExclusive: true));
+        _provider.SnapshotLabel = "Old";
+        _provider.Move("old-1", "new-1", "New");
+        Assert.True(Value(await SyncAsync(mailbox.Id)));
+
+        Assert.Equal(rowId, await RowIdAsync(mailbox.Id, "new-1"));
+        Assert.Equal(["New"], await LabelsOfAsync(rowId));
+        Assert.Equal(1, await CountBodiesAsync(rowId));
+        Assert.Equal(0, await CountOutboxAsync(MessageReceived));
+        Assert.DoesNotContain("Old", await LabelNamesAsync(mailbox.Id));
+    }
+
+    [Fact]
+    public async Task A_folder_gone_for_good_takes_its_messages_with_it()
+    {
+        _provider.Labels.Add(new RemoteLabel("Old", "Old", LabelKind.User, null, IsExclusive: true));
+        _provider.Deliver("old-1", "Gone", label: "Old");
+        var mailbox = await CreateMailboxAsync();
+        await SyncAsync(mailbox.Id);
+
+        _provider.Labels.RemoveAll(l => l.ProviderLabelId == "Old");
+        _provider.SnapshotLabel = "Old";
+        _provider.Delete("old-1");
+        Assert.True(Value(await SyncAsync(mailbox.Id)));
+
+        Assert.Empty(await SubjectsAsync(mailbox.Id));
+        Assert.DoesNotContain("Old", await LabelNamesAsync(mailbox.Id));
+    }
+
+    [Fact]
+    public async Task Two_copies_moved_together_are_matched_one_to_one()
+    {
+        _provider.Labels.Add(new RemoteLabel("Archive", "Archive", LabelKind.User, null, IsExclusive: true));
+        _provider.SnapshotLabel = "INBOX";
+        _provider.Deliver("a", "Same", rfc822: "same@mail.test");
+        _provider.Deliver("b", "Same", rfc822: "same@mail.test");
+        var mailbox = await CreateMailboxAsync();
+        await SyncAsync(mailbox.Id);
+        var rows = new[] { await RowIdAsync(mailbox.Id, "a"), await RowIdAsync(mailbox.Id, "b") };
+
+        _provider.Move("a", "a2", "Archive");
+        _provider.Move("b", "b2", "Archive");
+        Assert.True(Value(await SyncAsync(mailbox.Id)));
+
+        var moved = new[] { await RowIdAsync(mailbox.Id, "a2"), await RowIdAsync(mailbox.Id, "b2") };
+        Assert.Equal(rows.Order(), moved.Order());
+    }
+
+    [Fact]
+    public async Task A_moved_message_without_a_message_id_is_a_new_row()
+    {
+        _provider.Labels.Add(new RemoteLabel("Archive", "Archive", LabelKind.User, null, IsExclusive: true));
+        _provider.SnapshotLabel = "INBOX";
+        _provider.Deliver("inbox-1", "No id", noMessageId: true);
+        var mailbox = await CreateMailboxAsync();
+        await SyncAsync(mailbox.Id);
+        var rowId = await RowIdAsync(mailbox.Id, "inbox-1");
+
+        _provider.Move("inbox-1", "archive-7", "Archive");
+        Assert.True(Value(await SyncAsync(mailbox.Id)));
+
+        Assert.NotEqual(rowId, await RowIdAsync(mailbox.Id, "archive-7"));
+        Assert.Equal(["No id"], await SubjectsAsync(mailbox.Id));
+    }
+
+    [Fact]
+    public async Task An_action_waits_for_the_changes_but_not_for_the_backfill()
+    {
+        _provider.Deliver("m1", "First");
+        var mailbox = await CreateMailboxAsync();
+        var gates = _host.Services.GetRequiredService<MailboxGates>();
+
+        // The backfill holds the cycle, and the action gate is free.
+        var inBackfill = new TaskCompletionSource();
+        var finishBackfill = new TaskCompletionSource();
+        _provider.BeforeBackfillBatch = () =>
+        {
+            inBackfill.TrySetResult();
+            return finishBackfill.Task;
+        };
+        var backfill = SyncAsync(mailbox.Id);
+        await inBackfill.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        Assert.False(gates.Cycle(mailbox.Id).Wait(0));
+        Assert.True(await gates.Action(mailbox.Id).WaitAsync(0));
+        gates.Action(mailbox.Id).Release();
+
+        finishBackfill.SetResult();
+        await backfill;
+        _provider.BeforeBackfillBatch = null;
+
+        // Reading the changes holds the action gate.
+        var inChanges = new TaskCompletionSource();
+        var finishChanges = new TaskCompletionSource();
+        _provider.BeforeFetchChanges = () =>
+        {
+            inChanges.TrySetResult();
+            return finishChanges.Task;
+        };
+        var changes = SyncAsync(mailbox.Id);
+        await inChanges.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        Assert.False(await gates.Action(mailbox.Id).WaitAsync(0));
+
+        finishChanges.SetResult();
+        Assert.True(Value(await changes));
+    }
+
+    [Fact]
     public async Task An_expired_cursor_reads_the_mailbox_again_without_events()
     {
         _provider.Deliver("m1", "First");
@@ -291,6 +431,26 @@ public sealed class SyncEngineTests : IAsyncLifetime
     private async Task<bool> IsUnreadAsync(Guid mailboxId, string providerMessageId) =>
         (await QueryAsync($"SELECT is_unread FROM communications.com003_mail_message WHERE mailbox_id = $1 AND provider_message_id = '{providerMessageId}'",
             mailboxId, r => r.GetBoolean(0))).Single();
+
+    private async Task<Guid> RowIdAsync(Guid mailboxId, string providerMessageId) =>
+        (await QueryAsync($"SELECT id FROM communications.com003_mail_message WHERE mailbox_id = $1 AND provider_message_id = '{providerMessageId}'",
+            mailboxId, r => r.GetGuid(0))).Single();
+
+    private async Task<List<string>> LabelsOfAsync(Guid messageId) =>
+        await QueryAsync(
+            "SELECT l.name FROM communications.com004_mail_message_label ml JOIN communications.com002_mail_label l ON l.id = ml.label_id WHERE ml.message_id = $1",
+            messageId, r => r.GetString(0));
+
+    private async Task<List<string>> LabelNamesAsync(Guid mailboxId) =>
+        await QueryAsync("SELECT name FROM communications.com002_mail_label WHERE mailbox_id = $1", mailboxId, r => r.GetString(0));
+
+    private async Task<int> CountBodiesAsync(Guid messageId) =>
+        (await QueryAsync("SELECT count(*)::int FROM communications.com005_mail_content WHERE message_id = $1", messageId,
+            r => r.GetInt32(0))).Single();
+
+    private Task CacheBodyAsync(Guid messageId) =>
+        RunAsync((context, token) => context.AcquireRepository<IMailContentRepository>()
+            .AddAsync(MailContent.Create(messageId, "text", null, [], DateTimeOffset.UtcNow), token));
 
     private async Task<int> CountOutboxAsync(string eventType) =>
         (await QueryAsync("SELECT count(*)::int FROM communications.tars_outbox_message WHERE event_type = $1", eventType,
