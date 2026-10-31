@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button, Card, Empty, Flex, Input, Segmented, Spin } from 'antd'
-import { SettingOutlined } from '@ant-design/icons'
+import { EditOutlined, SettingOutlined } from '@ant-design/icons'
 import { ACTIONS_THAT_REMOVE, type MessageAction, type MessageSummary } from '../models'
 import { useMailboxes, useMessages } from '../hooks/useMail'
+import { ComposeDrawer, type ComposeRequest } from '../components/ComposeDrawer'
 import { MailActions } from '../components/MailActions'
 import { MailSidebar, type MailFolder } from '../components/MailSidebar'
 import { MessageList } from '../components/MessageList'
@@ -19,6 +20,7 @@ export function MailPage() {
   const [q, setQ] = useState('')
   const [selected, setSelected] = useState<MessageSummary | null>(null)
   const [checkedIds, setCheckedIds] = useState<ReadonlySet<string>>(new Set())
+  const [composing, setComposing] = useState<ComposeRequest | null>(null)
 
   const messages = useMessages({ ...folder, unread: unreadOnly || undefined, q: q || undefined })
   const items = messages.data?.pages.flatMap((p) => p.items) ?? []
@@ -52,6 +54,15 @@ export function MailPage() {
         styles={{ body: { padding: 8, height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column' } }}
         style={{ width: 240, flexShrink: 0, height: '100%' }}
       >
+        <Button
+          type="primary"
+          block
+          icon={<EditOutlined />}
+          className="mb-2"
+          onClick={() => setComposing({ mode: 'new', mailboxId: folder.mailboxId })}
+        >
+          {t('mail.compose.new')}
+        </Button>
         <div className="flex-1">
           <MailSidebar
             mailboxes={mailboxes}
@@ -121,6 +132,7 @@ export function MailPage() {
             mailboxes={mailboxes}
             onSelect={setSelected}
             onActionDone={onActionDone}
+            onCompose={(mode) => setComposing({ mode, message: current })}
           />
         ) : (
           <Flex align="center" justify="center" style={{ height: '100%' }}>
@@ -128,6 +140,8 @@ export function MailPage() {
           </Flex>
         )}
       </Card>
+
+      {composing && <ComposeDrawer request={composing} mailboxes={mailboxes} onClose={() => setComposing(null)} />}
     </Flex>
   )
 }

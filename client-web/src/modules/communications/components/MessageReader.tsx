@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, App, Button, Empty, Space, Spin, Typography, theme } from 'antd'
-import { PaperClipOutlined } from '@ant-design/icons'
+import { PaperClipOutlined, RollbackOutlined, SendOutlined } from '@ant-design/icons'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { downloadAttachment } from '@/modules/notes/services/attachments.service'
-import { addressLabel, shortDate, type MailAddress, type Mailbox, type MessageAction, type MessageSummary } from '../models'
+import { addressLabel, shortDate, type ComposeMode, type MailAddress, type Mailbox, type MessageAction, type MessageSummary } from '../models'
 import { attachmentUrl } from '../services/communications.service'
 import { useInlineImages, useMessage, useMessageAction, useMessages } from '../hooks/useMail'
 import { mailSrcDoc, prepareMailHtml } from '../lib/prepareMailHtml'
@@ -20,11 +20,13 @@ export function MessageReader({
   mailboxes,
   onSelect,
   onActionDone,
+  onCompose,
 }: {
   summary: MessageSummary
   mailboxes: Mailbox[]
   onSelect: (message: MessageSummary) => void
   onActionDone: (action: MessageAction, ids: string[]) => void
+  onCompose: (mode: ComposeMode) => void
 }) {
   const { t } = useTranslation()
   const { message: toast } = App.useApp()
@@ -77,6 +79,17 @@ export function MessageReader({
             <MailActions messages={[summary]} mailboxes={mailboxes} onDone={onActionDone} />
           </div>
         </div>
+        <Space size={4} className="my-1" wrap>
+          <Button size="small" icon={<RollbackOutlined />} onClick={() => onCompose('reply')}>
+            {t('mail.compose.reply')}
+          </Button>
+          <Button size="small" onClick={() => onCompose('reply-all')}>
+            {t('mail.compose.replyAll')}
+          </Button>
+          <Button size="small" icon={<SendOutlined />} onClick={() => onCompose('forward')}>
+            {t('mail.compose.forward')}
+          </Button>
+        </Space>
         <Typography.Text>{summary.from ? addresses([summary.from]) : t('mail.unknownSender')}</Typography.Text>
         {summary.to.length > 0 && (
           <Typography.Text type="secondary" className="text-xs">

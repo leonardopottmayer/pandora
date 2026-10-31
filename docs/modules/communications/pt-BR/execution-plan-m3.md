@@ -1,6 +1,6 @@
 # Communications — Plano de Execução, M3 (Enviar)
 
-> **Status:** Em andamento: decisões aprovadas, passos 1–5 construídos. É a fase **M3** do [product-plan](product-plan.md); o que existe hoje está no
+> **Status:** Em andamento: decisões aprovadas, passos 1–6 construídos; falta a verificação real. É a fase **M3** do [product-plan](product-plan.md); o que existe hoje está no
 > [Status de implementação](implementation-status.md).
 > 🇺🇸 [English version](../en/execution-plan-m3.md)
 
@@ -131,7 +131,14 @@ Cada passo termina verde antes do próximo. Pontos de commit sugeridos: **M3a** 
 - **Testes (provedor falso):** caixa ou original de outro usuário → 404 e nenhum envio; a mesma chave duas vezes → `409` e **um** envio; envios simultâneos com uma chave → um envio; endereço inválido → 422 e nenhum envio; grande demais → 422; uma
   cópia que falhou é `200`; `SendUncertain` guarda a chave, então uma nova tentativa é recusada.
 
-### Passo 6 — Web
+### Passo 6 — Web ✅
+
+> **Construído (2026-10-31).** `ComposeDrawer`, `lib/composeBody`. Além da lista abaixo:
+> - **Depois de `SendUncertain`, "Enviar mesmo assim" é deliberado:** gera uma chave nova, depois de o usuário olhar em Enviados.
+> - **Imagens saem da parte HTML,** para um rastreador numa citação não disparar na prévia. Estilos, formulários e iframes também.
+> - **Um teste achou um clique duplo enviando duas vezes:** o formulário se liberava depois de um sucesso. Agora só uma falha o libera.
+> - **A chave de envio não usa `crypto.randomUUID`,** que só existe em contexto seguro, e um homelab pode estar em http puro.
+> - Testes: `ComposeDrawer.test.tsx`, `composeBody.test.ts`. Os botões da `MailPage` e do `MessageReader` que abrem o formulário não têm teste próprio, e o layout não foi visto no navegador; a verificação real cobre os dois.
 
 - **`ComposeDrawer`:** de (qual caixa), para, cc, cco, assunto, Markdown com prévia, anexos; uma chave de envio nova a cada abertura. `marked` + `DOMPurify` para a parte HTML.
 - "Nova mensagem" na `MailPage`; "Responder", "Responder a todos" e "Encaminhar" no `MessageReader`.

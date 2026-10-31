@@ -1,6 +1,6 @@
 # Communications — Execution Plan, M3 (Send)
 
-> **Status:** In progress: decisions approved, steps 1–5 built. It is phase **M3** of the [product-plan](product-plan.md); what exists today is in
+> **Status:** In progress: decisions approved, steps 1–6 built; the real-world check is left. It is phase **M3** of the [product-plan](product-plan.md); what exists today is in
 > [Implementation Status](implementation-status.md).
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan-m3.md)
 
@@ -132,7 +132,14 @@ Each step ends green before the next one. Suggested commit points: **M3a** = ste
 - **Tests (fake provider):** another user's mailbox or original → 404 and no send; the same key twice → `409` and **one** send; concurrent sends with one key → one send; bad address → 422 and no send; too large → 422; a failed
   copy is a `200`; `SendUncertain` keeps the key, so a retry is refused.
 
-### Step 6 — Web
+### Step 6 — Web ✅
+
+> **Built (2026-10-31).** `ComposeDrawer`, `lib/composeBody`. Beyond the list below:
+> - **After `SendUncertain`, "Send anyway" is deliberate:** it makes a new key, after the user has looked in Sent.
+> - **Images leave the HTML part,** so a tracker in a quote cannot fire in the preview. Styles, forms and iframes too.
+> - **A test found a double click sending twice:** the form freed itself after a success. Now only a failure frees it.
+> - **The send key does not use `crypto.randomUUID`,** which only exists in a secure context, and a homelab may be plain http.
+> - Tests: `ComposeDrawer.test.tsx`, `composeBody.test.ts`. The buttons on `MailPage` and `MessageReader` that open the drawer have no test of their own, and the layout has not been seen in a browser; the real check covers both.
 
 - **`ComposeDrawer`:** from (which mailbox), to, cc, bcc, subject, Markdown with a preview, attachments; a new send key each time it opens. `marked` + `DOMPurify` for the HTML part.
 - "New message" on `MailPage`; "Reply", "Reply all" and "Forward" in `MessageReader`.

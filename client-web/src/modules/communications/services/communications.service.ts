@@ -1,5 +1,7 @@
 import { apiClient } from '@/lib/api/client'
 import type {
+  ComposeDraft,
+  ComposeMode,
   MailLabel,
   MailMessage,
   Mailbox,
@@ -89,6 +91,52 @@ export interface MessageActionInput {
 /** Goes to the provider first: a failure changes nothing. */
 export async function applyMessageAction(input: MessageActionInput): Promise<MessageSummary[]> {
   const { data } = await apiClient.post<MessageSummary[]>(`${BASE}/messages/actions`, input)
+  return data
+}
+
+export async function getComposeDraft(messageId: string, mode: ComposeMode): Promise<ComposeDraft> {
+  const { data } = await apiClient.get<ComposeDraft>(`${BASE}/messages/${messageId}/compose`, { params: { mode } })
+  return data
+}
+
+export interface SendMessageInput {
+  mailboxId: string
+  /** Made when the form opens: the server refuses a key it has already handled. */
+  sendKey: string
+  to: string[]
+  cc: string[]
+  bcc: string[]
+  subject: string
+  textBody: string
+  htmlBody: string
+  replyToId?: string
+  forwardOfId?: string
+  keepAttachmentIds: string[]
+  files: File[]
+}
+
+export function toSendForm(input: SendMessageInput): FormData {
+  const form = new FormData()
+  form.append('mailboxId', input.mailboxId)
+  form.append('sendKey', input.sendKey)
+  form.append('subject', input.subject)
+  form.append('textBody', input.textBody)
+  form.append('htmlBody', input.htmlBody)
+  input.to.forEach((a) => form.append('to', a))
+  input.cc.forEach((a) => form.append('cc', a))
+  input.bcc.forEach((a) => form.append('bcc', a))
+  if (input.replyToId) form.append('replyToId', input.replyToId)
+  if (input.forwardOfId) form.append('forwardOfId', input.forwardOfId)
+  input.keepAttachmentIds.forEach((id) => form.append('keepAttachmentIds', id))
+  input.files.forEach((file) => form.append('files', file))
+  return form
+}
+
+/** This cannot be taken back. `copySaved: false` is a success: the mail went, only the sent copy is missing. */
+export async function sendMessage(input: SendMessageInput): Promise<{ copySaved: boolean }> {
+  const { data } = await apiClient.post<{ copySaved: boolean }>(`${BASE}/messages/send`, toSendForm(input), {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
   return data
 }
 

@@ -1,8 +1,8 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchAttachmentBlob } from '@/modules/notes/services/attachments.service'
 import * as mailService from '../services/communications.service'
-import type { ConnectMailboxInput, MessageActionInput, ServerSettings } from '../services/communications.service'
-import type { MailAttachment, MessageFilter } from '../models'
+import type { ConnectMailboxInput, MessageActionInput, SendMessageInput, ServerSettings } from '../services/communications.service'
+import type { ComposeMode, MailAttachment, MessageFilter } from '../models'
 
 // Central query keys of the Communications module; invalidating `all` refreshes every mail screen.
 export const mailKeys = {
@@ -112,6 +112,20 @@ export function useDeleteMailbox() {
 
 export function useSyncMailbox() {
   return useMailMutation((id: string) => mailService.syncMailbox(id))
+}
+
+export function useSendMessage() {
+  return useMailMutation((input: SendMessageInput) => mailService.sendMessage(input))
+}
+
+export function useComposeDraft(messageId: string | undefined, mode: ComposeMode | undefined) {
+  return useQuery({
+    queryKey: [...mailKeys.all, 'compose', messageId, mode],
+    queryFn: () => mailService.getComposeDraft(messageId!, mode!),
+    enabled: messageId !== undefined && mode !== undefined,
+    staleTime: Infinity,
+    retry: false,
+  })
 }
 
 export function useMessageAction() {

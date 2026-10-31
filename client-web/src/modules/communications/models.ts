@@ -106,6 +106,21 @@ export function canMoveTo(label: MailLabel): boolean {
   return label.isExclusive || label.kind === 'user' || label.role === 'inbox'
 }
 
+export type ComposeMode = 'reply' | 'reply-all' | 'forward'
+
+/** The form for a reply or a forward. `originalText` is as written: the screen quotes it. */
+export interface ComposeDraft {
+  to: MailAddress[]
+  cc: MailAddress[]
+  subject: string
+  inReplyTo: string | null
+  references: string[]
+  originalFrom: MailAddress | null
+  originalDate: string
+  originalText: string
+  attachments: MailAttachment[]
+}
+
 export interface MessageFilter {
   mailboxId?: string
   labelId?: string
