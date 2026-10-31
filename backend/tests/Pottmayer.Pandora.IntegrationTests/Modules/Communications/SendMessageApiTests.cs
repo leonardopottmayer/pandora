@@ -140,16 +140,28 @@ public sealed class SendMessageApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task A_failure_after_the_send_is_not_a_failure_to_send()
+    public async Task A_send_answers_at_once_even_while_a_long_cycle_is_reading_the_changes()
     {
-        var (client, mailbox) = await SignInAsync("after");
-        _provider.BeforeFetchChanges = () => throw new InvalidOperationException("Sync broke");
+        var (client, mailbox) = await SignInAsync("during-cycle");
         await client.PostAsync($"{Base}/mailboxes/{mailbox}/sync", null);
 
-        var response = await SendAsync(client, mailbox, Guid.NewGuid());
+        var inChanges = new TaskCompletionSource();
+        var finishChanges = new TaskCompletionSource();
+        _provider.BeforeFetchChanges = () =>
+        {
+            inChanges.TrySetResult();
+            return finishChanges.Task;
+        };
+        var cycle = client.PostAsync($"{Base}/mailboxes/{mailbox}/sync", null);
+        await inChanges.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        var response = await SendAsync(client, mailbox, Guid.NewGuid()).WaitAsync(TimeSpan.FromSeconds(20));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Single(_provider.Sent);
+
+        finishChanges.SetResult();
+        await cycle;
     }
 
     [Fact]

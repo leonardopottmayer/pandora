@@ -1,8 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Pottmayer.Pandora.Modules.Communications.Abstractions;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.OpenMessage;
-using Pottmayer.Pandora.Modules.Communications.Application.Commands.SyncMailbox;
 using Pottmayer.Pandora.Modules.Communications.Application.Mime;
 using Pottmayer.Pandora.Modules.Communications.Application.Queries.GetMailboxes;
 using Pottmayer.Pandora.Modules.Communications.Domain.Entities;
@@ -15,16 +13,15 @@ using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 namespace Pottmayer.Pandora.Modules.Communications.Application.Commands.SendMessage;
 
 /// <remarks>
-/// Everything that can be refused is checked before the key is taken and the mail handed over. Sending holds no gate: a
-/// slow SMTP server must not hold a mailbox's actions back.
+/// Everything that can be refused is checked before the key is taken and the mail handed over. Sending holds no gate, so a
+/// slow SMTP server cannot hold a mailbox's actions back, and it waits for none: a cycle reading a long backlog holds the
+/// action gate for as long as that takes. The sent copy shows up on the next cycle.
 /// </remarks>
 public sealed class SendMessageCommandHandler(
     IUnitOfWorkFactory factory,
     IServiceProvider services,
     SendKeys sendKeys,
-    MailboxChangesStep changes,
-    TimeProvider timeProvider,
-    ILogger<SendMessageCommandHandler> logger) : CommandHandlerBase<SendMessageCommand, SentMessageDto>
+    TimeProvider timeProvider) : CommandHandlerBase<SendMessageCommand, SentMessageDto>
 {
     internal const int MaxRecipients = 100;
 
@@ -102,18 +99,6 @@ public sealed class SendMessageCommandHandler(
             if (sent.Errors[0].Code != MailErrors.SendUncertain.Code)
                 sendKeys.Release(input.UserId, input.SendKey);
             return Result<SentMessageDto>.Failure(sent.Errors);
-        }
-
-        // The mail has gone, so nothing from here on may look like a failure to send.
-        try
-        {
-            var updated = await changes.RunAsync(mailbox.Id, provider, ct);
-            if (updated.IsFailure)
-                logger.LogWarning("Mailbox {MailboxId} not refreshed after a send: {Error}.", mailbox.Id, updated.Errors[0].Message);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            logger.LogError(ex, "Mailbox {MailboxId} not refreshed after a send.", mailbox.Id);
         }
 
         return Ok(new SentMessageDto(sent.Value.CopySaved));

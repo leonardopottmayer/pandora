@@ -24,7 +24,6 @@ Enviados.
 | Servidores SMTP e senha | `com001`, `GetPasswordAsync` do Integrations | A mesma conta do IMAP |
 | MIME | MimeKit, no Application (`MimeReader`) | Monta a mensagem de saída e lê a original numa resposta |
 | Mensagem crua | `GetRawMessageAsync` | Responder e encaminhar leem `Reply-To`, `References` e anexos da original, que o espelho não guarda |
-| Passo de etiquetas + mudanças | `MailboxChangesStep` | Traz a cópia enviada para o espelho logo depois do envio |
 | Markdown | `marked` + `dompurify`, no `client-web` | Transforma o texto escrito na parte HTML |
 | Upload de arquivo | `IFormFile`, como em Notes e Finances | Os anexos |
 
@@ -117,12 +116,12 @@ Cada passo termina verde antes do próximo. Pontos de commit sugeridos: **M3a** 
 > - **Destinatários são só endereços** no formulário, um campo por endereço; um nome no rascunho não é enviado.
 > - **Só uma recusa certa libera a chave,** para o mesmo formulário tentar de novo. `SendUncertain` e uma exceção a mantêm.
 > - **Tudo que pode ser recusado é checado antes:** a chave é pega logo antes de enviar, então um endereço inválido não a gasta.
-> - **Depois do envio, nada parece falha de envio:** o passo de etiquetas + mudanças só vai para o log se falhar ou lançar exceção.
+> - **O envio não roda o passo de etiquetas + mudanças (mudou na verificação real, 2026-10-31).** Na primeira versão rodava, e por isso o envio esperava a trava de ação enquanto o job lia um acúmulo grande do Gmail, com o email já
+>   enviado e a tela ainda carregando. A cópia enviada agora aparece no próximo ciclo, em até 2 minutos. Teste: `A_send_answers_at_once_even_while_a_long_cycle_is_reading_the_changes`.
 > - **O limite da requisição é de 40 MB**, acima dos 25 MB de anexos, para passar do limite responder 422 com mensagem.
 > - Testes: `SendMessageApiTests` (13).
 
-- `SendMessageCommand`: confere se a caixa é de quem chama, os endereços, os limites e a chave de envio; monta; envia **sem a trava de ação**, porque um SMTP lento não pode segurar as ações; depois roda o passo de etiquetas +
-  mudanças, cuja falha só vai para o log.
+- `SendMessageCommand`: confere se a caixa é de quem chama, os endereços, os limites e a chave de envio; monta; envia **sem a trava de ação**, porque um SMTP lento não pode segurar as ações.
 - `GetComposeDraftQuery`: para responder, responder a todos ou encaminhar, o formulário preenchido.
 - API:
   - `POST messages/send`, multipart: os campos, `sendKey`, `replyToId?` ou `forwardOfId?`, `files`. Responde `{ copySaved }`. `[RequestSizeLimit]` no limite.

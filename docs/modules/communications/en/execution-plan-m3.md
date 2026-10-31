@@ -25,7 +25,6 @@ below.
 | SMTP servers and password | `com001`, Integrations' `GetPasswordAsync` | The same account as IMAP |
 | MIME | MimeKit, in Application (`MimeReader`) | Builds the outgoing message and reads the original for a reply |
 | Raw message | `GetRawMessageAsync` | Reply and forward read the original's `Reply-To`, `References` and attachments, which the mirror does not keep |
-| Labels + changes step | `MailboxChangesStep` | Brings the sent copy into the mirror right after sending |
 | Markdown | `marked` + `dompurify`, in `client-web` | Turns the composed text into the HTML part |
 | File upload | `IFormFile`, as in Notes and Finances | The attachments |
 
@@ -118,12 +117,12 @@ Each step ends green before the next one. Suggested commit points: **M3a** = ste
 > - **Recipients are bare addresses** in the form, one field each; a name in a draft is not sent on.
 > - **Only a certain refusal frees the key,** so the same form can try again. `SendUncertain` and a thrown exception keep it.
 > - **Everything that can be refused is checked first:** the key is taken right before handing over, so a bad address does not spend it.
-> - **After the send, nothing looks like a failure to send:** the labels + changes step is logged if it fails or throws.
+> - **The send does not run the labels + changes step (changed in the real check, 2026-10-31).** As first built, it did, and so a send waited on the action gate while the job read a long Gmail backlog, with the mail already
+>   gone and the screen still loading. The sent copy now shows up on the next cycle, within 2 minutes. Test: `A_send_answers_at_once_even_while_a_long_cycle_is_reading_the_changes`.
 > - **The request limit is 40 MB**, above the 25 MB of attachments, so going over answers a 422 with a message.
 > - Tests: `SendMessageApiTests` (13).
 
-- `SendMessageCommand`: checks the mailbox is the caller's, the addresses, the limits and the send key; builds; sends **without the action gate**, since a slow SMTP must not hold actions back; then runs the labels +
-  changes step, whose failure is only logged.
+- `SendMessageCommand`: checks the mailbox is the caller's, the addresses, the limits and the send key; builds; sends **without the action gate**, since a slow SMTP must not hold actions back.
 - `GetComposeDraftQuery`: for a reply, reply all or forward, the prefilled form.
 - API:
   - `POST messages/send`, multipart: the fields, `sendKey`, `replyToId?` or `forwardOfId?`, `files`. Answers `{ copySaved }`. `[RequestSizeLimit]` at the limit.
