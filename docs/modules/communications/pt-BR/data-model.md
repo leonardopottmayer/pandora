@@ -19,7 +19,7 @@ As migrations ficam em `migrations/migrations/communications/`.
 | com005 | `mail_content` | O corpo em cache de uma mensagem aberta |
 | — | `tars_outbox_message` | O outbox do módulo (`MailMessageReceived`, o aviso de senha recusada) |
 
-A `com006_mail_rule` chega com a M4.
+A `com006_mail_rule` chega com a M4. A M2 não criou tabelas: no IMAP, mover reescreve o `provider_message_id` e mantém a linha.
 
 ---
 

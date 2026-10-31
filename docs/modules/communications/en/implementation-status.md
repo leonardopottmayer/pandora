@@ -7,7 +7,7 @@ lives in [product-plan.md](product-plan.md).
 
 ---
 
-## Implemented (M1 — connect and read)
+## Implemented (M1 — connect and read; M2 — organize)
 
 | Area | Notes |
 |---|---|
@@ -19,10 +19,12 @@ lives in [product-plan.md](product-plan.md).
 | **Failures** | `needs-reconnect` with one notice for IMAP (`communications.mailbox-auth-failed`, email + Telegram, en + pt-BR); `error` after 5 failures; subscribers to `ExternalAccountRevoked` and `ExternalAccountDisconnected`. |
 | **Reading** | `OpenMessage` with the content cache; 30-day retention; `MimeReader`; attachments on demand. |
 | **Event** | `MailMessageReceived` through the outbox, without duplicates for moved messages. No consumer yet. |
-| **API** | `GET`/`POST /mailboxes`, `PATCH`/`DELETE /mailboxes/{id}`, `POST /mailboxes/{id}/sync`, `GET /mailboxes/{id}/labels`, `GET /messages`, `GET /messages/{id}`, `GET /messages/{id}/attachments/{attachmentId}`. |
+| **Organizing (M2)** | `ApplyMessageAction` (read, star, move, archive, trash, labels), `CreateLabel`, `RenameLabel`, `DeleteLabel`; writes on both adapters; no permanent deletion. |
+| **Sync, M2** | `MailboxGates` (two per mailbox), `MailboxChangesStep`, stitching moved messages by Message-ID, vanished labels removed after the changes. |
+| **API** | `GET`/`POST /mailboxes`, `PATCH`/`DELETE /mailboxes/{id}`, `POST /mailboxes/{id}/sync`, `GET /mailboxes/{id}/labels`, `GET /messages`, `GET /messages/{id}`, `GET /messages/{id}/attachments/{attachmentId}`, `POST /messages/actions`, `POST /mailboxes/{id}/labels`, `PATCH`/`DELETE /labels/{id}`. |
 | **Integrations** | `CommunicationsAccountUsageSource`: the connections screen shows "Email · address" as a usage of the account. |
-| **Frontend** | `/mail` and `/mail/accounts`; `prepareMailHtml` + sandboxed iframe + CSP. |
-| **Tests** | Unit: 47 (`MailboxTests`, `ThreadKeyTests`, `LabelRoleTests`, `GmailMailboxProviderTests`). Integration: 23 (`SyncEngineTests`, `CommunicationsApiTests`, `ImapMailboxProviderTests` against GreenMail, `PersistenceTests`, `ProviderRegistrationTests`). Front: `prepareMailHtml.test.ts`, `MailPage.test.tsx`. |
+| **Frontend** | `/mail` and `/mail/accounts`; `prepareMailHtml` + sandboxed iframe + CSP; `MailActions`, selection in the list, the label menu in the sidebar. |
+| **Tests** | Unit: 56 (`MailboxTests`, `ThreadKeyTests`, `LabelRoleTests`, `GmailMailboxProviderTests`). Integration: 48 (`SyncEngineTests`, `CommunicationsApiTests`, `MailActionsApiTests`, `ImapMailboxProviderTests` against GreenMail, `PersistenceTests`, `ProviderRegistrationTests`). Front: `prepareMailHtml.test.ts`, `MailPage.test.tsx`. |
 
 ### Real-world check (2026-10-30)
 
@@ -43,6 +45,25 @@ The first real runs found two bugs the tests had not caught, both fixed: Gmail's
 batches, and a `Date` header with an offset could not be saved. GreenMail normalizes dates, so its test could not
 catch the second; `SyncEngineTests` now covers it with an offset through the fake provider.
 
+### Real-world check of M2 (2026-10-31)
+
+On the same accounts, with disposable messages, by hand; the outbox and labels checked in the database:
+
+| Check | Result |
+|---|---|
+| A label created in Pandora appears in Gmail and in Titan | ✅ |
+| Opening, star, labels, move, archive and trash reach the provider | ✅ |
+| A change in the webmail comes back to Pandora | ✅ |
+| A folder renamed in the Titan webmail shows renamed, messages inside | ✅ |
+| A move in the Titan webmail is not an arrival | ✅ No event came from a move or a rename |
+| A folder with a message cannot be deleted; empty, it can | ✅ on Titan |
+| Trash on Titan | ✅ after the fix below |
+| Titan: `UIDPLUS` and `MOVE` | Not recorded: what they change, a move showing a cycle later, was not reported |
+
+The check found one bug the tests had not caught: subscribing a folder created in Pandora flipped M1's rule of subscribed folders, so Trash, Sent and the
+others dropped out of Pandora on Titan, though nothing changed at the provider. Every selectable folder is now in scope (decision D8 in
+[Architecture](architecture.md)). The folders' return published 25 false `MailMessageReceived` (open point 6 below), with no effect, since nothing consumes them.
+
 ### Notable deviations from the original plan
 
 - **No `Google.Apis.Gmail.v1`.** REST with `HttpClient`, as `GoogleOAuthProvider` does.
@@ -61,7 +82,6 @@ catch the second; `SyncEngineTests` now covers it with an offset through the fak
 
 | Area | Status | Phase |
 |---|---|---|
-| **Labels both ways, batch actions** | Planned | M2 |
 | **Compose, reply, forward, attachments** | Planned | M3 |
 | **Rules, Gmail filters both ways, `com006`** | Planned | M4 |
 | **Gmail push, Radar, more providers** | Future | Later |
@@ -75,3 +95,8 @@ catch the second; `SyncEngineTests` now covers it with an offset through the fak
    once a week. Going past 100 users would need Google's verification of a restricted scope.
 4. **Search** uses `ILIKE` with no index, and does not read bodies. Fine at one person's volume.
 5. **Attachment download** fetches the whole raw message again.
+6. **A folder that newly comes into scope with messages** arrives as new mail, with one false `MailMessageReceived` per message. Must be fixed before Radar consumes
+   the event.
+7. **A move straddling the IMAP walk**, from a folder not read yet to one already read, spans two cycles, so it is not stitched and can fire a false event.
+8. **After a Gmail action during a backfill**, a stale batch can show the old state for up to one cycle.
+9. **Only the loaded page can be selected**, and there is no undo; trash can be restored at the provider.

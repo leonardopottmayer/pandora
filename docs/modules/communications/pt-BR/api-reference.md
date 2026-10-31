@@ -21,9 +21,13 @@ conta que a caixa precisa. Uma conta Google vem de `POST /api/v1/integrations/go
 | DELETE | `/mailboxes/{id}` | Apaga a cópia local; nada muda no provedor, e a credencial fica |
 | POST | `/mailboxes/{id}/sync` | Roda um ciclo agora e devolve a caixa |
 | GET | `/mailboxes/{id}/labels` | As etiquetas, com total e não lidas |
+| POST | `/mailboxes/{id}/labels` | Cria uma etiqueta |
+| PATCH | `/labels/{id}` | Renomeia uma etiqueta |
+| DELETE | `/labels/{id}` | Apaga uma etiqueta |
 | GET | `/messages` | Lista mensagens, da mais nova para a mais antiga |
 | GET | `/messages/{id}` | Uma mensagem com o corpo, buscado e guardado em cache na primeira abertura |
 | GET | `/messages/{id}/attachments/{attachmentId}` | Os bytes do anexo |
+| POST | `/messages/actions` | Uma ação em até 100 mensagens de uma caixa |
 
 ### GET `/mailboxes`
 
@@ -69,6 +73,31 @@ ciclo roda. **Um ciclo que falha não é erro HTTP**: a caixa volta com o `statu
 
 `LabelDto`: `id`, `name`, `kind`, `role`, `isExclusive`, `total`, `unread`.
 
+### POST `/mailboxes/{id}/labels`, PATCH `/labels/{id}`, DELETE `/labels/{id}`
+
+`{ name }`, aparado, de 1 a 100 caracteres. Cada um responde com as etiquetas da caixa como ficam depois da operação. Só uma etiqueta do usuário pode ser
+renomeada ou apagada. No Gmail, apagar uma etiqueta só a tira das mensagens; no IMAP só uma pasta vazia e sem subpastas pode ser apagada.
+
+| Status | Quando |
+|---|---|
+| 404 | A caixa ou a etiqueta não existe ou é de outro usuário |
+| 409 | A pasta tem mensagens ou subpastas (`LabelNotEmpty`) |
+| 422 | Etiqueta do sistema (`SystemLabel`), nome inválido (`LabelNameInvalid`), ou recusa do provedor |
+
+### POST `/messages/actions`
+
+```json
+{ "mailboxId": "…", "messageIds": ["…"], "action": "move", "labelId": "…" }
+```
+
+`action`: `mark-read`, `mark-unread`, `star`, `unstar`, `move`, `archive`, `trash`, `add-label`, `remove-label`; `labelId` acompanha `move`, `add-label` e
+`remove-label`. O provedor vai primeiro: uma falha não muda nada. Responde com as mensagens como estão agora. Não há como apagar uma mensagem de vez.
+
+| Status | Quando |
+|---|---|
+| 404 | A caixa, uma mensagem ou a etiqueta não existe ou é de outro usuário; uma mensagem de outra caixa interrompe a ação inteira, antes do provedor |
+| 422 | Fora de 1–100 ids (`MessageCountInvalid`), ação desconhecida ou etiquetas no IMAP (`ActionNotSupported`), etiqueta que não pode ser usada (`SystemLabel`), pasta que não existe (`NoTrashFolder`, `NoArchiveFolder`), ou recusa do provedor |
+
 ### GET `/messages`
 
 | Query | Notas |
@@ -93,7 +122,7 @@ sobre `(sent_at, id)`, estável enquanto chega email novo.
 (`{ id, fileName, contentType, sizeBytes, contentId }`).
 
 - **O `htmlBody` vem como recebido.** O cliente precisa limpá-lo antes de mostrar.
-- **Abrir não marca a mensagem como lida.**
+- **Este endpoint não marca a mensagem como lida.** A tela envia `mark-read` depois de abrir.
 - A primeira abertura chama o provedor, então pode falhar com os erros dele.
 
 ### GET `/messages/{id}/attachments/{attachmentId}`

@@ -1,6 +1,6 @@
 # Communications — Plano de Execução, M2 (Organizar)
 
-> **Status:** Em andamento: passos 1–5 construídos; falta a verificação real. É a fase **M2** do [product-plan](product-plan.md); o que existe hoje está no
+> **Status:** Pronta (2026-10-31); este é o histórico de como foi construída. Foi a fase **M2** do [product-plan](product-plan.md); o que existe hoje está no
 > [Status de implementação](implementation-status.md).
 > 🇺🇸 [English version](../en/execution-plan-m2.md)
 
@@ -203,7 +203,11 @@ Sem funcionalidade nova, e não altera nenhuma caixa.
 - **Testes:** uma seleção em duas caixas faz duas requisições e esconde "mover"; uma ação que falha deixa a linha como estava; abrir uma mensagem não lida
   envia `mark-read` uma vez.
 
-### Passo 6 — Verificação real e docs
+### Passo 6 — Verificação real e docs ✅
+
+> **Pronto (2026-10-31).** Os resultados estão no [Status de implementação](implementation-status.md#verificação-real-da-m2-2026-10-31). `UIDPLUS` e `MOVE` no Titan
+> não foram registrados.
+
 
 Só com material descartável: uma etiqueta e uma pasta `pandora-test`, e mensagens enviadas para você mesmo.
 

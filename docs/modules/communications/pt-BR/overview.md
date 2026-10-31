@@ -9,7 +9,7 @@
 O **Communications** é a **caixa de entrada** do usuário dentro do Pandora: as mensagens que chegam
 *para* o usuário, de qualquer provedor, num lugar só. Email vem primeiro.
 
-Construído hoje (M1, conectar e ler):
+Construído hoje (M1, conectar e ler; M2, organizar):
 
 - Conectar **quantas caixas o usuário quiser**: Gmail pela Gmail API, Titan Email e qualquer outro
   servidor por IMAP.
@@ -19,10 +19,12 @@ Construído hoje (M1, conectar e ler):
   quando a mensagem é aberta e depois fica em cache.
 - **Mostrar o email com segurança**: o HTML é limpo e mostrado num iframe em sandbox, e as imagens externas
   ficam bloqueadas até o usuário pedir.
+- **Organizar**: lida e não lida, estrela, mover, arquivar e lixeira, em lote, e etiquetas criadas, renomeadas e apagadas. Tudo vai primeiro ao
+  provedor, e o que muda no webmail volta para o Pandora.
 - **Publicar `MailMessageReceived`** pelo outbox a cada mensagem nova, para outros módulos processarem
   email. Nada consome esse evento ainda.
 
-Organizar (M2), enviar (M3) e regras (M4) são planos: veja o [plano de produto](product-plan.md).
+Enviar (M3) e regras (M4) são planos: veja o [plano de produto](product-plan.md).
 
 ## 2. O que ele não é
 
@@ -32,8 +34,8 @@ Organizar (M2), enviar (M3) e regras (M4) são planos: veja o [plano de produto]
   apaga a cópia do Pandora e nada no provedor.
 - **Não guarda credenciais.** Senhas e tokens OAuth ficam no
   [Integrations](../../integrations/pt-BR/README.md); a caixa guarda só o id da conta.
-- **Ainda não altera email.** A M1 nunca escreve numa caixa. Abrir uma mensagem no Pandora nem a marca como
-  lida.
+- **Não é um jeito de perder email.** Nada aqui apaga uma mensagem de vez: "excluir" é a lixeira do provedor, e só uma pasta IMAP vazia pode ser
+  apagada, porque o que está dentro iria junto.
 
 ## 3. Princípios
 
@@ -47,8 +49,8 @@ Organizar (M2), enviar (M3) e regras (M4) são planos: veja o [plano de produto]
    guardados.
 5. **Conteúdo externo bloqueado por padrão.** Um pixel de rastreamento nunca dispara só porque a mensagem foi
    aberta.
-6. **Instância única.** A sincronização de uma caixa é serializada por uma trava em processo, a mesma
-   premissa da trava de refresh do Integrations.
+6. **O provedor primeiro.** Uma ação do usuário vai ao provedor, e a linha só muda depois que ele aceita. Uma falha não muda nada.
+7. **Instância única.** Cada caixa tem duas travas em processo, a mesma premissa da trava de refresh do Integrations.
 
 ## 4. Linguagem ubíqua (glossário)
 
@@ -71,14 +73,13 @@ Organizar (M2), enviar (M3) e regras (M4) são planos: veja o [plano de produto]
 ### Dentro do escopo (implementado — veja [Status de implementação](implementation-status.md))
 
 O schema `communications` (`com001`–`com005` + outbox); os adaptadores Gmail e IMAP; carga inicial e
-sincronização incremental; o cache de conteúdo e os anexos; os endpoints de caixas, etiquetas e mensagens;
-`MailMessageReceived`; as telas `mail` e `mail/accounts`.
+sincronização incremental; o cache de conteúdo e os anexos; os endpoints de caixas, etiquetas e mensagens; etiquetas nos dois sentidos e ações em
+lote; `MailMessageReceived`; as telas `mail` e `mail/accounts`.
 
 ### Fora do escopo / futuro (veja [product-plan.md](product-plan.md))
 
 | Funcionalidade | Fase |
 |---|---|
-| Etiquetas nos dois sentidos, ações em lote (lida, estrela, mover, arquivar, lixeira) | M2 |
 | Escrever, responder, encaminhar, anexos | M3 |
 | Regras, com filtros do Gmail nos dois sentidos | M4 |
 | Push do Gmail no lugar do polling, Radar consumindo o evento, mais provedores | Depois |

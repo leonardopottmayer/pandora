@@ -16,7 +16,7 @@ Pottmayer.Pandora.Modules.Communications.
                       (MailProvider, MailboxStatus, LabelKind, LabelRole, ThreadKey),
                       Ports (IMailboxProvider, repositories), MailErrors
   Application       → Commands (ConnectMailbox, UpdateMailbox, DeleteMailbox, SyncMailbox,
-                      SyncMailboxNow, OpenMessage), Queries (GetMailboxes, GetLabels, ListMessages,
+                      SyncMailboxNow, OpenMessage, ApplyMessageAction, ManageLabels), Queries (GetMailboxes, GetLabels, ListMessages,
                       GetAttachment), MimeReader, subscribers, the account usage source
   Infrastructure    → Gmail/ and Imap/ adapters, Jobs/MailboxSyncBackgroundService
   Persistence       → EntityConfigs, Repositories, DbContext (with the outbox)
@@ -39,6 +39,10 @@ under each `MailProvider` value it serves, so the engine asks for the mailbox's 
 | `FetchBackfillBatchAsync` | The next batch, newest first |
 | `FetchChangesAsync` | What changed since the cursor: upserts, removed ids, snapshots, new cursor |
 | `GetRawMessageAsync` | The whole RFC 822 message, without marking it as read |
+| `CreateLabelAsync`, `RenameLabelAsync`, `DeleteLabelAsync` | Labels; an IMAP folder with messages or subfolders is refused |
+| `SetFlagsAsync` | Read and starred |
+| `ChangeLabelsAsync` | Add and remove labels, where `MultipleLabels` |
+| `MoveAsync`, `TrashAsync` | Return each message's id after the move, or null when the provider does not say |
 
 Taking the incremental cursor before the first batch is what keeps mail from being lost: anything that
 arrives or changes during the backfill shows up in the next `FetchChangesAsync`.
@@ -57,30 +61,44 @@ arrives or changes during the backfill shows up in the next `FetchChangesAsync`.
 | **Cursor expired** | History answers 404 | UIDVALIDITY changed |
 | **Read / starred** | `UNREAD` / `STARRED` labels, turned into flags | `\Seen` / `\Flagged` |
 | **Sent date** | `internalDate` | `Date` header, or the internal date |
+| **Folders or labels in scope** | Every label | Every selectable folder of the personal namespace; subscriptions are ignored |
+| **Write flags and labels** | `messages.batchModify` | `STORE` per folder |
+| **Move** | Add the target, remove `INBOX`; the id stays | `MOVE`, reading the new UID |
+| **Trash** | `messages.trash`, one call per message | Move to the folder with role `trash` |
 
 The Gmail adapter sends two `messages.get` at a time and retries `429`, `5xx` and a rate-limit `403`
-after 1, 2, 4, 8 and 16 s (a `Retry-After` wins). Four at a time drew frequent `403`s on a real
-64,000-message backfill.
+after 1, 2, 4, 8 and 16 s (a `Retry-After` wins), writes included. Four at a time drew frequent `403`s on a real
+64,000-message backfill. Google's quota is 6,000 units per user per minute, and a `messages.get` costs 20, so a user gets at most
+5 per second whatever the parallelism. `messages.delete` and `batchDelete` are never called.
 
 ## 3. The sync cycle
 
-`SyncMailboxCommand`, one mailbox, under an in-process gate per mailbox:
+`SyncMailboxCommand`, one mailbox. Steps 1–2 are `MailboxChangesStep`, which label operations also run:
 
 ```
-1. Labels     ListLabels → create, update, delete local labels
+1. Labels     ListLabels → create and update local labels
 2. Changes    no cursor yet       → StartBackfill
               cursor expired      → delete the mailbox's messages, StartBackfill
               otherwise           → apply FetchChanges, store the new cursor
+              then                → remove the labels the provider stopped listing
 3. Backfill   batches back to back until it ends or BackfillBudget runs out (at least one)
 4. Success    RecordSuccess
 ```
+
+**Two gates per mailbox** (`MailboxGates`). `Cycle` covers the whole cycle, so the job and "Sync now" never run two at once. `Action` covers a
+user's action, or steps 1–2. The backfill runs outside `Action`, so a click never waits for it. A stale batch can overwrite an action, and the
+next cycle corrects it, since the action is a change at the provider: the screen can be wrong for one cycle.
+
+**Stitching.** On IMAP a move gives a message a new id. A message that vanishes and reappears with its Message-ID in the same apply keeps its row
+and its cached body, and it is not an arrival. It is one to one, so two copies stay two rows, and a message with no Message-ID is delete + create.
+A folder renamed in the webmail looks like one gone and one new, which is why a vanished label is removed only after the changes are applied. A
+rename in Pandora takes the same path, since a folder's path is inside each message's id and in the cursor.
 
 - **Provider calls run outside transactions.** Each result is applied in its own unit of work, so a slow
   server never holds a transaction open, and a failure keeps what was already applied. A batch and the
   cursor that follows it are saved together, so a failed batch is simply read again.
 - **`MailMessageReceived`** comes only from the incremental path, in the same transaction as the
-  message, and only when the mailbox has no row with that Message-ID. A backfill publishes nothing, and
-  a message moved in the webmail is not an arrival.
+  message, and only when the mailbox has no row with that Message-ID. A backfill publishes nothing.
 - **A label the provider stopped listing** is deleted. On IMAP its messages go with it; on Gmail they
   only lose the label.
 - **All dates are saved in UTC.** IMAP hands over the sender's offset and Npgsql only writes UTC to
@@ -113,12 +131,25 @@ the snippet, which IMAP does not provide.
 parts. The endpoint sends `nosniff`, and only PNG, JPEG, GIF, WebP and BMP go `inline`. Anything else (HTML,
 SVG, PDF) downloads, since the part comes from whoever sent the mail.
 
-## 5. Frontend
+## 5. Organizing
+
+`ApplyMessageActionCommand`, under the action gate: up to 100 messages of one mailbox, all checked before the provider hears of them. The provider
+goes first and the rows change after it accepts. The local change only anticipates what the next cycle reports, so a move with no new id leaves
+the row to that cycle. Move targets are never Sent or Drafts; on Gmail, of the system labels, only the inbox.
+
+Label operations (`LabelOperation`) call the provider under the action gate, release it, then run `MailboxChangesStep`. The provider has accepted by
+then, so if the step fails the operation still succeeded: it is logged, and the next cycle catches up.
+
+## 6. Frontend
 
 - **`/mail` (`MailPage`):** `MailSidebar` (mailboxes, labels, unread counts), `MessageList` (pages of 50
   behind "Load more"), `MessageReader` (the conversation).
 - **`/mail/accounts` (`MailAccountsPage`):** status, backfill progress, "Sync now", `ConnectMailboxModal`,
   `FixConnectionModal`. The list polls every 15 s while a backfill or a cycle runs.
+- **`MailActions`** serves both the list's selection and the open message, offering only what applies. A selection across mailboxes becomes one
+  request per mailbox, with no move or labels on offer. Nothing updates optimistically; a refusal leaves the selection as it was. Trash asks first.
+- **Opening an unread message** marks it as read at the provider, once, after the body loads. A failure is silent.
+- **`MailSidebar`** creates, renames and deletes labels. A renamed or deleted label that was open sends the list back to its mailbox.
 - **Connecting Gmail:** consent at Google with `gmail.modify` added to the default scopes, back to
   `?connect=gmail`, where the modal reopens with the account chosen and the user confirms.
 - **Reconnecting:** Gmail goes through Google and returns to `?sync={id}`; Titan and IMAP open "Edit
@@ -138,7 +169,7 @@ The result renders in `<iframe sandbox="allow-popups allow-popups-to-escape-sand
 `default-src 'none'; style-src 'unsafe-inline'; img-src data:`, widened to `data: https: http:` after "Show
 images".
 
-## 6. Key design decisions
+## 7. Key design decisions
 
 | # | Decision | Rationale (rejected alternative) |
 |---|---|---|
@@ -149,8 +180,11 @@ images".
 | **D5** | An expired cursor reads the whole mailbox again. | Rare; a state diff would be a second sync path. |
 | **D6** | The content cache is bounded by age, not size. | Real numbers: see [Data Model](data-model.md#content-cache). |
 | **D7** | Gmail through its API, not IMAP with an app password. | IMAP would show one row per Gmail label for each message and could not reach filters (M4). |
+| **D8** | Every IMAP folder is in scope; subscriptions are ignored. | "Subscribed, or all when none is" flips the whole mirror when any client subscribes the first folder. It happened on Titan. |
+| **D9** | Two gates, the backfill outside the action gate. | One gate: a click waits up to 5 minutes. A shorter budget: the backfill can take twice as long. |
+| **D10** | Stitch a moved message by Message-ID. | "Removed + new" loses the cached body on every move and fired a false event. |
 
-## 7. Cross-cutting rules
+## 8. Cross-cutting rules
 
 - **Scoped to the user.** Every query goes through the caller's mailboxes; another user's mailbox,
   message or account answers 404, the same as one that does not exist.

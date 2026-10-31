@@ -1,8 +1,8 @@
 # Módulo Communications — Plano de Produto
 
-> **Status:** M1 pronta (2026-10-30): o que existe está no [Status de implementação](implementation-status.md) e
-> nos documentos de tópicos, então este plano guarda só o que falta, M2–M4. Cobre **email**, a primeira capacidade.
-> Como a M1 foi construída: [execution-plan.md](execution-plan.md).
+> **Status:** M1 e M2 prontas (2026-10-31): o que existe está no [Status de implementação](implementation-status.md) e
+> nos documentos de tópicos, então este plano guarda só o que falta, M3–M4. Cobre **email**, a primeira capacidade.
+> Como foram construídas: [M1](execution-plan.md), [M2](execution-plan-m2.md).
 > 🇺🇸 [English version](../en/product-plan.md)
 >
 > Relacionados: [Integrations](../../integrations/pt-BR/README.md) · [Channels](../../channels/pt-BR/README.md) ·
@@ -76,9 +76,8 @@
 7. **Conteúdo remoto bloqueado por padrão.** O HTML do email renderiza isolado, sem scripts e sem
    imagens remotas até o usuário pedir — pixel de rastreamento nunca dispara só de abrir a mensagem.
    *(C7)*
-8. **Instância única.** Sincronização e ações do usuário numa caixa são serializadas por uma trava em
-   processo por caixa, mesma premissa da trava de refresh do Integrations. Revisitar só se o host for
-   escalado. *(C8)*
+8. **Instância única.** Cada caixa tem duas travas em processo, a mesma premissa da trava de refresh do Integrations: veja a
+   [Arquitetura](architecture.md). Rever só se o host escalar. *(C8)*
 
 ---
 
@@ -151,10 +150,7 @@ pasta nova" e as mensagens dela são lidas de novo.
 
 ## 8. Organizar
 
-- Gestão de etiquetas (criar, renomear, apagar) e ações em mensagens (etiquetas, mover, arquivar,
-  lixeira, lida/não lida, estrela) em lote, todas gravando primeiro no provedor (C2).
-- No IMAP, etiqueta é pasta, então "adicionar etiqueta" numa mensagem que já tem uma é mover; as
-  telas oferecem só o que as capacidades permitem (C4).
+Construído na M2: veja a [Arquitetura](architecture.md#5-organizar).
 
 ---
 
@@ -251,8 +247,6 @@ O que existe está na [Referência da API](api-reference.md). Falta:
 
 | Recurso | Endpoints |
 |---|---|
-| Etiquetas | `POST mailboxes/{id}/labels`, `PATCH/DELETE labels/{id}` |
-| Mensagens | `POST messages/actions` (em lote: ids + adicionar/remover etiquetas, mover, arquivar, lixeira, lida, estrela) |
 | Envio | `POST messages/send` (multipart; `replyTo` / `forwardOf` opcionais) |
 | Regras | `GET/POST mailboxes/{id}/rules`, `PUT/DELETE rules/{id}`, `PUT mailboxes/{id}/rules/order` |
 
@@ -264,8 +258,7 @@ As falhas de sincronização estão na [Arquitetura](architecture.md#falhas). Fa
 
 | Falha | Tratamento |
 |---|---|
-| Ação do usuário ou envio falha no provedor | o erro volta para a tela, nada muda localmente; o formulário mantém o conteúdo |
-| Sincronização e ação simultâneas numa caixa | serializadas pela trava por caixa (C8) |
+| Envio falha no provedor | o erro volta para a tela, nada muda localmente; o formulário mantém o conteúdo |
 
 ---
 
@@ -287,14 +280,9 @@ As falhas de sincronização estão na [Arquitetura](architecture.md#falhas). Fa
 
 Pronta em 2026-10-30: veja o [Status de implementação](implementation-status.md).
 
-### M2 — Organizar
+### M2 — Organizar ✅
 
-Lista de trabalho: [execution-plan-m2.md](execution-plan-m2.md).
-
-- Etiquetas nos dois sentidos (criar, renomear, apagar), ações em lote (lida, estrela, mover,
-  arquivar, lixeira).
-- **Pronto quando:** uma etiqueta criada no Pandora aparece no Gmail e no Titan, uma pasta renomeada
-  no webmail do Titan aparece renomeada no Pandora, e um mover feito de qualquer lado reflete no outro.
+Pronta em 2026-10-31: veja o [Status de implementação](implementation-status.md).
 
 ### M3 — Enviar
 

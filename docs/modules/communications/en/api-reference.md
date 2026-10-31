@@ -21,9 +21,13 @@ returns the account id a mailbox needs. A Google account comes from `POST /api/v
 | DELETE | `/mailboxes/{id}` | Delete the local copy; nothing changes at the provider, and the credential stays |
 | POST | `/mailboxes/{id}/sync` | Run one cycle now and return the mailbox |
 | GET | `/mailboxes/{id}/labels` | The labels, with total and unread counts |
+| POST | `/mailboxes/{id}/labels` | Create a label |
+| PATCH | `/labels/{id}` | Rename a label |
+| DELETE | `/labels/{id}` | Delete a label |
 | GET | `/messages` | List messages, newest first |
 | GET | `/messages/{id}` | One message with its body, fetched and cached on the first open |
 | GET | `/messages/{id}/attachments/{attachmentId}` | The attachment's bytes |
+| POST | `/messages/actions` | One action on up to 100 messages of one mailbox |
 
 ### GET `/mailboxes`
 
@@ -70,6 +74,32 @@ reconnects it and the cycle runs. **A cycle that fails is not an HTTP error**: t
 
 `LabelDto`: `id`, `name`, `kind`, `role`, `isExclusive`, `total`, `unread`.
 
+### POST `/mailboxes/{id}/labels`, PATCH `/labels/{id}`, DELETE `/labels/{id}`
+
+`{ name }`, trimmed, 1 to 100 characters. Each answers with the mailbox's labels as they are after the operation. Only a user's label can be renamed or
+deleted. On Gmail a deleted label only leaves its messages; on IMAP only an empty folder with no subfolders can go.
+
+| Status | When |
+|---|---|
+| 404 | The mailbox or label does not exist or is someone else's |
+| 409 | The folder has messages or subfolders (`LabelNotEmpty`) |
+| 422 | A system label (`SystemLabel`), a bad name (`LabelNameInvalid`), or the provider's refusal |
+
+### POST `/messages/actions`
+
+```json
+{ "mailboxId": "…", "messageIds": ["…"], "action": "move", "labelId": "…" }
+```
+
+`action`: `mark-read`, `mark-unread`, `star`, `unstar`, `move`, `archive`, `trash`, `add-label`, `remove-label`; `labelId` goes with `move`, `add-label` and
+`remove-label`. The provider goes first: a failure changes nothing. Answers with the messages as they are now. There is no way to delete a
+message for good.
+
+| Status | When |
+|---|---|
+| 404 | The mailbox, a message or the label does not exist or is someone else's; a message of another mailbox stops the whole action, before the provider |
+| 422 | Not 1–100 ids (`MessageCountInvalid`), an unknown action or labels on IMAP (`ActionNotSupported`), a label that cannot be used (`SystemLabel`), no such folder (`NoTrashFolder`, `NoArchiveFolder`), or the provider's refusal |
+
 ### GET `/messages`
 
 | Query | Notes |
@@ -94,7 +124,7 @@ a keyset over `(sent_at, id)`, stable while new mail arrives.
 (`{ id, fileName, contentType, sizeBytes, contentId }`).
 
 - **`htmlBody` is as received.** The client must sanitize it before rendering.
-- **Opening does not mark the message as read.**
+- **This endpoint does not mark the message as read.** The screen sends `mark-read` after it opens.
 - The first open calls the provider, so it can fail with the provider's errors.
 
 ### GET `/messages/{id}/attachments/{attachmentId}`

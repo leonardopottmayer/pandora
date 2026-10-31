@@ -7,7 +7,7 @@ frente está em [product-plan.md](product-plan.md).
 
 ---
 
-## Implementado (M1 — conectar e ler)
+## Implementado (M1 — conectar e ler; M2 — organizar)
 
 | Área | Notas |
 |---|---|
@@ -19,10 +19,12 @@ frente está em [product-plan.md](product-plan.md).
 | **Falhas** | `needs-reconnect` com um aviso no IMAP (`communications.mailbox-auth-failed`, email + Telegram, en + pt-BR); `error` depois de 5 falhas; subscribers de `ExternalAccountRevoked` e `ExternalAccountDisconnected`. |
 | **Leitura** | `OpenMessage` com o cache de conteúdo; retenção de 30 dias; `MimeReader`; anexos sob demanda. |
 | **Evento** | `MailMessageReceived` pelo outbox, sem duplicar mensagens movidas. Sem consumidor ainda. |
-| **API** | `GET`/`POST /mailboxes`, `PATCH`/`DELETE /mailboxes/{id}`, `POST /mailboxes/{id}/sync`, `GET /mailboxes/{id}/labels`, `GET /messages`, `GET /messages/{id}`, `GET /messages/{id}/attachments/{attachmentId}`. |
+| **Organizar (M2)** | `ApplyMessageAction` (lida, estrela, mover, arquivar, lixeira, etiquetas), `CreateLabel`, `RenameLabel`, `DeleteLabel`; escritas nos dois adaptadores; sem exclusão definitiva. |
+| **Sincronização, M2** | `MailboxGates` (duas por caixa), `MailboxChangesStep`, junção de mensagens movidas pelo Message-ID, etiquetas que sumiram removidas depois das mudanças. |
+| **API** | `GET`/`POST /mailboxes`, `PATCH`/`DELETE /mailboxes/{id}`, `POST /mailboxes/{id}/sync`, `GET /mailboxes/{id}/labels`, `GET /messages`, `GET /messages/{id}`, `GET /messages/{id}/attachments/{attachmentId}`, `POST /messages/actions`, `POST /mailboxes/{id}/labels`, `PATCH`/`DELETE /labels/{id}`. |
 | **Integrations** | `CommunicationsAccountUsageSource`: a tela de conexões mostra "Email · endereço" como uso da conta. |
-| **Frontend** | `/mail` e `/mail/accounts`; `prepareMailHtml` + iframe em sandbox + CSP. |
-| **Testes** | Unitários: 47 (`MailboxTests`, `ThreadKeyTests`, `LabelRoleTests`, `GmailMailboxProviderTests`). Integração: 23 (`SyncEngineTests`, `CommunicationsApiTests`, `ImapMailboxProviderTests` contra o GreenMail, `PersistenceTests`, `ProviderRegistrationTests`). Front: `prepareMailHtml.test.ts`, `MailPage.test.tsx`. |
+| **Frontend** | `/mail` e `/mail/accounts`; `prepareMailHtml` + iframe em sandbox + CSP; `MailActions`, seleção na lista, menu de etiquetas na barra lateral. |
+| **Testes** | Unitários: 56 (`MailboxTests`, `ThreadKeyTests`, `LabelRoleTests`, `GmailMailboxProviderTests`). Integração: 48 (`SyncEngineTests`, `CommunicationsApiTests`, `MailActionsApiTests`, `ImapMailboxProviderTests` contra o GreenMail, `PersistenceTests`, `ProviderRegistrationTests`). Front: `prepareMailHtml.test.ts`, `MailPage.test.tsx`. |
 
 ### Verificação real (2026-10-30)
 
@@ -43,6 +45,25 @@ As primeiras execuções reais acharam dois bugs que os testes não tinham pegad
 taxa do Gmail derrubavam lotes inteiros, e um cabeçalho `Date` com fuso não podia ser salvo. O GreenMail normaliza as
 datas, então o teste dele não pegaria o segundo; agora o `SyncEngineTests` cobre isso com um fuso pelo provedor falso.
 
+### Verificação real da M2 (2026-10-31)
+
+Nas mesmas contas, com mensagens descartáveis, à mão; o outbox e as etiquetas conferidos no banco:
+
+| Verificação | Resultado |
+|---|---|
+| Uma etiqueta criada no Pandora aparece no Gmail e no Titan | ✅ |
+| Abrir, estrela, etiquetas, mover, arquivar e lixeira chegam ao provedor | ✅ |
+| Uma mudança no webmail volta para o Pandora | ✅ |
+| Uma pasta renomeada no webmail do Titan aparece renomeada, com as mensagens dentro | ✅ |
+| Um mover no webmail do Titan não conta como chegada | ✅ Nenhum evento veio de mover ou renomear |
+| Uma pasta com mensagem não pode ser apagada; vazia, pode | ✅ no Titan |
+| Lixeira no Titan | ✅ depois da correção abaixo |
+| Titan: `UIDPLUS` e `MOVE` | Não registrado: o que eles mudam, um mover aparecendo um ciclo depois, não foi relatado |
+
+A verificação achou um bug que os testes não tinham pegado: assinar uma pasta criada no Pandora virava a regra de pastas assinadas da M1, então Trash, Sent e as
+outras saíram do Pandora no Titan, embora nada tenha mudado no provedor. Agora toda pasta selecionável está no escopo (decisão D8 na
+[Arquitetura](architecture.md)). O retorno das pastas publicou 25 `MailMessageReceived` falsos (ponto em aberto 6 abaixo), sem efeito, porque nada os consome.
+
 ### Desvios relevantes em relação ao plano original
 
 - **Sem `Google.Apis.Gmail.v1`.** REST com `HttpClient`, como faz o `GoogleOAuthProvider`.
@@ -61,7 +82,6 @@ datas, então o teste dele não pegaria o segundo; agora o `SyncEngineTests` cob
 
 | Área | Status | Fase |
 |---|---|---|
-| **Etiquetas nos dois sentidos, ações em lote** | Planejado | M2 |
 | **Escrever, responder, encaminhar, anexos** | Planejado | M3 |
 | **Regras, filtros do Gmail nos dois sentidos, `com006`** | Planejado | M4 |
 | **Push do Gmail, Radar, mais provedores** | Futuro | Depois |
@@ -75,3 +95,8 @@ datas, então o teste dele não pegaria o segundo; agora o `SyncEngineTests` cob
    por semana. Passar de 100 usuários exigiria a verificação do Google para um escopo restrito.
 4. **A busca** usa `ILIKE` sem índice e não lê o corpo. Serve no volume de uma pessoa.
 5. **O download de anexo** busca a mensagem crua inteira de novo.
+6. **Uma pasta que entra no escopo com mensagens** chega como email novo, com um `MailMessageReceived` falso por mensagem. Precisa ser corrigido antes de o Radar
+   consumir o evento.
+7. **Um mover que atravessa a varredura IMAP**, de uma pasta ainda não lida para uma já lida, ocupa dois ciclos, então não é juntado e pode disparar um evento falso.
+8. **Depois de uma ação no Gmail durante uma carga inicial**, um lote antigo pode mostrar o estado anterior por até um ciclo.
+9. **Só a página carregada pode ser selecionada**, e não há desfazer; a lixeira pode ser restaurada no provedor.

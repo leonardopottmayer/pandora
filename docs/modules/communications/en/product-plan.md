@@ -1,8 +1,8 @@
 # Communications Module — Product Plan
 
-> **Status:** M1 done (2026-10-30): what exists is in [Implementation Status](implementation-status.md) and
-> the topic documents, so this plan keeps only what is left, M2–M4. It covers **email**, the first capability.
-> How M1 was built: [execution-plan.md](execution-plan.md).
+> **Status:** M1 and M2 done (2026-10-31): what exists is in [Implementation Status](implementation-status.md) and
+> the topic documents, so this plan keeps only what is left, M3–M4. It covers **email**, the first capability.
+> How they were built: [M1](execution-plan.md), [M2](execution-plan-m2.md).
 > 🇧🇷 [Versão em português](../pt-BR/product-plan.md)
 >
 > Related: [Integrations](../../integrations/README.md) · [Channels](../../channels/README.md) ·
@@ -73,9 +73,8 @@ from any provider, in one place. Email comes first.
    username, password and OAuth tokens are Integrations' (credential). *(C6)*
 7. **Remote content is blocked by default.** Mail HTML renders sandboxed, with no scripts and no
    remote images until the user asks — tracking pixels never fire by just opening a message. *(C7)*
-8. **Single instance.** Sync and user actions on a mailbox are serialized by an in-process gate per
-   mailbox, the same assumption as Integrations' refresh gate. Revisit only if the host scales out.
-   *(C8)*
+8. **Single instance.** Each mailbox has two in-process gates, the same assumption as Integrations' refresh gate: see
+   [Architecture](architecture.md). Revisit only if the host scales out. *(C8)*
 
 ---
 
@@ -148,10 +147,7 @@ messages are read again.
 
 ## 8. Organizing
 
-- Label management (create, rename, delete) and message actions (labels, move, archive, trash,
-  read/unread, star) in batches, all write-through (C2).
-- On IMAP, a label is a folder, so "add a label" on a message that already has one is a move; the
-  screens offer only what the capabilities allow (C4).
+Built in M2: see [Architecture](architecture.md#5-organizing).
 
 ---
 
@@ -242,8 +238,6 @@ What exists is in the [API Reference](api-reference.md). Left:
 
 | Resource | Endpoints |
 |---|---|
-| Labels | `POST mailboxes/{id}/labels`, `PATCH/DELETE labels/{id}` |
-| Messages | `POST messages/actions` (batch: ids + add/remove labels, move, archive, trash, read, star) |
 | Send | `POST messages/send` (multipart; optional `replyTo` / `forwardOf`) |
 | Rules | `GET/POST mailboxes/{id}/rules`, `PUT/DELETE rules/{id}`, `PUT mailboxes/{id}/rules/order` |
 
@@ -255,8 +249,7 @@ Sync failures are in [Architecture](architecture.md#failures). Left, for user ac
 
 | Failure | Handling |
 |---|---|
-| User action or send fails at the provider | the error goes back to the screen, nothing changes locally; the compose form keeps its content |
-| Concurrent sync and action on one mailbox | serialized by the per-mailbox gate (C8) |
+| Send fails at the provider | the error goes back to the screen, nothing changes locally; the compose form keeps its content |
 
 ---
 
@@ -278,13 +271,9 @@ Sync failures are in [Architecture](architecture.md#failures). Left, for user ac
 
 Done on 2026-10-30: see [Implementation Status](implementation-status.md).
 
-### M2 — Organize
+### M2 — Organize ✅
 
-Work list: [execution-plan-m2.md](execution-plan-m2.md).
-
-- Labels both directions (create, rename, delete), batch actions (read, star, move, archive, trash).
-- **Done when:** a label created in Pandora appears in Gmail and in Titan, a folder renamed in the
-  Titan webmail shows renamed in Pandora, and a move done in either side is reflected on the other.
+Done on 2026-10-31: see [Implementation Status](implementation-status.md).
 
 ### M3 — Send
 

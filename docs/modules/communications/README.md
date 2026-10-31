@@ -4,9 +4,8 @@
 > any provider, in one place. Email comes first.
 > **Language:** English is the primary documentation. 🇧🇷 [Versão em português](pt-BR/README.md).
 >
-> **Status: M1 (connect and read) done, checked against real accounts on 2026-10-30.** Gmail, Titan and
-> any IMAP server connect, sync headers newest first and open messages in a sandboxed reader.
-> Organizing (M2), sending (M3) and rules (M4) are planned.
+> **Status: M1 (connect and read) and M2 (organize) done, checked against real accounts.** Gmail, Titan and any IMAP server connect, sync
+> headers newest first, open messages in a sandboxed reader, and organize mail both ways. Sending (M3) and rules (M4) are planned.
 
 **Communications** connects any number of mailboxes (Gmail through the Gmail API; Titan Email and any
 IMAP/SMTP server through MailKit) and lets the user read, organize and send from Pandora, with rules
@@ -27,9 +26,9 @@ Start with the **Overview** for the boundary and vocabulary, then read the topic
 | 3 | [Data Model](en/data-model.md) | `com001`–`com005`, and the content cache in real numbers |
 | 4 | [API Reference](en/api-reference.md) | Endpoints, payloads, errors, the event |
 | 5 | [Implementation Status](en/implementation-status.md) | What is built, the real-world check, deviations from the plan, open points |
-| 6 | [Product Plan](en/product-plan.md) | What is left: organize (M2), send (M3), rules (M4) |
+| 6 | [Product Plan](en/product-plan.md) | What is left: send (M3), rules (M4) |
 | 7 | [Execution Plan](en/execution-plan.md) | How M1 was built, step by step (history) |
-| 8 | [M2 Execution Plan](en/execution-plan-m2.md) | The next phase, organize: decisions and steps (plan) |
+| 8 | [M2 Execution Plan](en/execution-plan-m2.md) | How M2 was built, step by step (history) |
 
 🇧🇷 Every document also exists in Portuguese, under [`pt-BR/`](pt-BR/README.md).
 

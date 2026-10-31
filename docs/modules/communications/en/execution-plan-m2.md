@@ -1,6 +1,6 @@
 # Communications — Execution Plan, M2 (Organize)
 
-> **Status:** In progress: steps 1–5 built; the real-world check is left. It is phase **M2** of the [product-plan](product-plan.md); what exists today is in
+> **Status:** Done (2026-10-31); this is the history of how it was built. It was phase **M2** of the [product-plan](product-plan.md); what exists today is in
 > [Implementation Status](implementation-status.md).
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan-m2.md)
 
@@ -204,7 +204,11 @@ No new feature, and it changes no mailbox.
 - **Tests:** a selection in two mailboxes makes two requests and hides "move"; a failed action leaves the row as it was; opening an unread
   message sends `mark-read` once.
 
-### Step 6 — Real-world check and docs
+### Step 6 — Real-world check and docs ✅
+
+> **Done (2026-10-31).** Results are in [Implementation Status](implementation-status.md#real-world-check-of-m2-2026-10-31). `UIDPLUS` and `MOVE` on Titan were
+> not recorded.
+
 
 Only on disposable material: a `pandora-test` label and folder, and messages sent to yourself.
 

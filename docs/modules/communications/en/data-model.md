@@ -19,7 +19,7 @@ Migrations live in `migrations/migrations/communications/`.
 | com005 | `mail_content` | The cached body of an opened message |
 | — | `tars_outbox_message` | The module's outbox (`MailMessageReceived`, the auth-failure notice) |
 
-`com006_mail_rule` arrives with M4.
+`com006_mail_rule` arrives with M4. M2 added no tables: on IMAP, a move rewrites `provider_message_id` and keeps the row.
 
 ---
 

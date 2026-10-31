@@ -4,9 +4,9 @@
 > usuário, de qualquer provedor, num lugar só. Email vem primeiro.
 > 🇺🇸 [English version](../README.md).
 >
-> **Status: M1 (conectar e ler) pronta, verificada com contas reais em 2026-10-30.** Gmail, Titan e
-> qualquer servidor IMAP conectam, sincronizam os cabeçalhos do mais novo para o mais antigo e abrem as
-> mensagens num leitor em sandbox. Organizar (M2), enviar (M3) e regras (M4) estão planejados.
+> **Status: M1 (conectar e ler) e M2 (organizar) prontas, verificadas com contas reais.** Gmail, Titan e qualquer servidor IMAP conectam,
+> sincronizam os cabeçalhos do mais novo para o mais antigo, abrem as mensagens num leitor em sandbox e organizam o email nos dois sentidos. Enviar (M3) e
+> regras (M4) estão planejados.
 
 O **Communications** conecta quantas caixas de email o usuário quiser (Gmail pela Gmail API; Titan
 Email e qualquer servidor IMAP/SMTP pelo MailKit) e permite ler, organizar e enviar pelo Pandora, com
@@ -27,9 +27,9 @@ Comece pela **Visão geral** para a fronteira e o vocabulário, depois leia o t�
 | 3 | [Modelo de dados](data-model.md) | `com001`–`com005`, e o cache de conteúdo em números reais |
 | 4 | [Referência da API](api-reference.md) | Endpoints, payloads, erros, o evento |
 | 5 | [Status de implementação](implementation-status.md) | O que está construído, a verificação real, desvios do plano, pontos em aberto |
-| 6 | [Plano de Produto](product-plan.md) | O que falta: organizar (M2), enviar (M3), regras (M4) |
+| 6 | [Plano de Produto](product-plan.md) | O que falta: enviar (M3), regras (M4) |
 | 7 | [Plano de execução](execution-plan.md) | Como a M1 foi construída, passo a passo (histórico) |
-| 8 | [Plano de execução da M2](execution-plan-m2.md) | A próxima fase, organizar: decisões e passos (plano) |
+| 8 | [Plano de execução da M2](execution-plan-m2.md) | Como a M2 foi construída, passo a passo (histórico) |
 
 🇺🇸 Todo documento também existe em inglês, em [`en/`](../README.md).
 
