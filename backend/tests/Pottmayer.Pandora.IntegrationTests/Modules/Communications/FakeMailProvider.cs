@@ -240,6 +240,16 @@ internal sealed class FakeMailProvider : IMailboxProvider
         return Answer(new SentMessage(CopySaved));
     }
 
+    public Task<Result<IReadOnlyList<RemoteFilter>>> ListFiltersAsync(Mailbox mailbox, CancellationToken ct = default) =>
+        Task.FromResult(Result<IReadOnlyList<RemoteFilter>>.Failure(MailErrors.ActionNotSupported));
+
+    public Task<Result<RemoteFilter>> CreateFilterAsync(
+        Mailbox mailbox, IReadOnlyCollection<MailRuleCondition> conditions, IReadOnlyCollection<RemoteRuleAction> actions, CancellationToken ct = default) =>
+        Task.FromResult(Result<RemoteFilter>.Failure(MailErrors.ActionNotSupported));
+
+    public Task<Result<bool>> DeleteFilterAsync(Mailbox mailbox, string providerFilterId, CancellationToken ct = default) =>
+        Task.FromResult(Result<bool>.Failure(MailErrors.ActionNotSupported));
+
     private Task<Result<T>> Answer<T>(T value)
     {
         if (ThrowWith is { } exception)

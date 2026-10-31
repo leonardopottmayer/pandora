@@ -78,7 +78,30 @@ public interface IMailboxProvider
     /// </summary>
     /// <param name="threadKey">The conversation of a reply, where the provider has them.</param>
     Task<Result<SentMessage>> SendAsync(Mailbox mailbox, byte[] rawMessage, string? threadKey, CancellationToken ct = default);
+
+    // Filters, only where MailboxCapabilities.ServerFilters; otherwise ActionNotSupported. A write without the provider's
+    // consent for it is MissingFilterScope, which says nothing about the mailbox: mail keeps working.
+
+    Task<Result<IReadOnlyList<RemoteFilter>>> ListFiltersAsync(Mailbox mailbox, CancellationToken ct = default);
+
+    Task<Result<RemoteFilter>> CreateFilterAsync(
+        Mailbox mailbox, IReadOnlyCollection<MailRuleCondition> conditions, IReadOnlyCollection<RemoteRuleAction> actions, CancellationToken ct = default);
+
+    /// <summary>One already gone is what was asked for.</summary>
+    Task<Result<bool>> DeleteFilterAsync(Mailbox mailbox, string providerFilterId, CancellationToken ct = default);
 }
+
+/// <summary>A rule's action in the provider's terms: <paramref name="ProviderLabelId"/> instead of the local label.</summary>
+public sealed record RemoteRuleAction(string Kind, string? ProviderLabelId);
+
+/// <param name="Raw">The filter as the provider sent it.</param>
+/// <param name="IsReadOnly">It holds what a rule cannot, so conditions and actions are empty and only the provider can edit it.</param>
+public sealed record RemoteFilter(
+    string ProviderFilterId,
+    IReadOnlyList<MailRuleCondition> Conditions,
+    IReadOnlyList<RemoteRuleAction> Actions,
+    string Raw,
+    bool IsReadOnly);
 
 /// <param name="CopySaved">False when the mail went but no sent copy could be saved. The send still succeeded.</param>
 public sealed record SentMessage(bool CopySaved);

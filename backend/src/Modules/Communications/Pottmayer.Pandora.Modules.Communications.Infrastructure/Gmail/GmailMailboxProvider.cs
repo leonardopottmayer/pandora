@@ -29,9 +29,12 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
     internal const string SendUrl = "https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=multipart";
     internal const string FirstPage = "first";
 
-    /// <summary>Read and change labels; <c>gmail.send</c> and <c>gmail.settings.basic</c> are M3/M4's.</summary>
+    /// <summary>Read and change mail and labels, send, and list filters.</summary>
     internal static readonly string[] AcceptedScopes =
         ["https://www.googleapis.com/auth/gmail.modify", "https://mail.google.com/"];
+
+    /// <summary>The only scope <c>filters.create</c> and <c>filters.delete</c> accept.</summary>
+    internal const string FilterWriteScope = "https://www.googleapis.com/auth/gmail.settings.basic";
 
     // ponytail: one GET per message, two at a time — four drew frequent rate-limit 403s on a real
     // 64k-message backfill. The quota is 6,000 units per user per minute and a get costs 20, so at most 5 per
@@ -223,6 +226,32 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
             return new SentMessage(CopySaved: true);
         }, ct);
 
+    public Task<Result<IReadOnlyList<RemoteFilter>>> ListFiltersAsync(Mailbox mailbox, CancellationToken ct = default) =>
+        RunAsync<IReadOnlyList<RemoteFilter>>(mailbox, async (token, c) =>
+        {
+            var response = await GetAsync<FilterList>(token, "settings/filters", c);
+            return (response.Filter ?? []).Select(GmailFilterMapper.ToRemote).ToList();
+        }, ct);
+
+    public Task<Result<RemoteFilter>> CreateFilterAsync(
+        Mailbox mailbox, IReadOnlyCollection<MailRuleCondition> conditions, IReadOnlyCollection<RemoteRuleAction> actions, CancellationToken ct = default) =>
+        RunAsync(mailbox, async (token, c) => GmailFilterMapper.ToRemote(await SendAsync(
+            HttpMethod.Post, token, "settings/filters", GmailFilterMapper.ToPayload(conditions, actions), ReadJson<JsonElement>, c)),
+            ct, FilterWriteScope);
+
+    public Task<Result<bool>> DeleteFilterAsync(Mailbox mailbox, string providerFilterId, CancellationToken ct = default) =>
+        RunAsync(mailbox, async (token, c) =>
+        {
+            try
+            {
+                return await SendAsync(HttpMethod.Delete, token, $"settings/filters/{Uri.EscapeDataString(providerFilterId)}", null, Done, c, MessageGone);
+            }
+            catch (GmailException ex) when (ReferenceEquals(ex.Error, MessageGone))
+            {
+                return true;
+            }
+        }, ct, FilterWriteScope);
+
     private async Task<bool> BatchModifyAsync(
         string token, IReadOnlyCollection<string> ids, IReadOnlyCollection<string> add, IReadOnlyCollection<string> remove, CancellationToken ct)
     {
@@ -238,7 +267,11 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
             LabelRole.FromGmailLabelId(label.Id), IsExclusive: false);
 
     /// <summary>Gets the token, checks the scope, runs <paramref name="work"/> and maps Gmail's answers to the port's errors.</summary>
-    private async Task<Result<T>> RunAsync<T>(Mailbox mailbox, Func<string, CancellationToken, Task<T>> work, CancellationToken ct)
+    /// <param name="writeScope">
+    /// What this one call needs beyond the mailbox's scopes. Lacking it stops only this call, whether the token says so or Gmail
+    /// does, and the second can happen: the scopes on record are the ones granted when the token was issued.
+    /// </param>
+    private async Task<Result<T>> RunAsync<T>(Mailbox mailbox, Func<string, CancellationToken, Task<T>> work, CancellationToken ct, string? writeScope = null)
     {
         var token = await credentials.GetAccessTokenAsync(mailbox.UserId, mailbox.ExternalAccountId, ct);
         if (!token.IsSuccess)
@@ -247,9 +280,16 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
         if (!token.Value.Scopes.Any(s => AcceptedScopes.Contains(s)))
             return Result<T>.Failure(MailErrors.MissingScopes);
 
+        if (writeScope is not null && !token.Value.Scopes.Contains(writeScope))
+            return Result<T>.Failure(MailErrors.MissingFilterScope);
+
         try
         {
             return Result<T>.Success(await work(token.Value.Token, ct));
+        }
+        catch (GmailException ex) when (writeScope is not null && ex.Error.Code == MailErrors.MissingScopes.Code)
+        {
+            return Result<T>.Failure(MailErrors.MissingFilterScope);
         }
         catch (GmailException ex)
         {
@@ -455,4 +495,7 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
     internal sealed record Payload(string? MimeType, List<Header>? Headers);
     internal sealed record Header(string Name, string Value);
     internal sealed record RawMessage(string Raw);
+
+    /// <summary>Kept as JSON: what does not fit a rule has to be saved as Gmail sent it.</summary>
+    internal sealed record FilterList(List<JsonElement>? Filter);
 }

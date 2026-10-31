@@ -1,6 +1,6 @@
 # Communications — Execution Plan, M4 (Rules)
 
-> **Status:** In progress: decisions approved, steps 1–3 built. It is phase **M4** of the [product-plan](product-plan.md), whose §10 has the model; what exists today is in
+> **Status:** In progress: decisions approved, steps 1–4 built. It is phase **M4** of the [product-plan](product-plan.md), whose §10 has the model; what exists today is in
 > [Implementation Status](implementation-status.md).
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan-m4.md)
 
@@ -79,7 +79,9 @@ Each step ends green before the next one. Suggested commit points: **M4a** = ste
 - A rule whose label is gone → `broken` when the labels step removes it.
 - **Tests:** a new message is moved; old mail is not; a rule fails → the sync goes on and the error is on the rule; `broken` does not run; a rule delivered twice acts once.
 
-### Step 4 — Gmail filters in the adapter
+### Step 4 — Gmail filters in the adapter ✅
+
+> **Built (2026-10-31).** `ListFiltersAsync`, `CreateFilterAsync` and `DeleteFilterAsync` on the port (IMAP answers `ActionNotSupported`), `GmailFilterMapper`, `MailErrors.MissingFilterScope`. Decided here: on Gmail a rule takes one condition of each kind, since a filter has one field for each, and `has-words` and `provider-query` share `query`; a `query` with a `:` reads back as `provider-query`, otherwise as `has-words`, which Gmail treats alike. A user label is an id starting with `Label_`; any other system label (`IMPORTANT`, `SPAM`, a category) makes the filter read-only. Deleting a filter already gone counts as done. The scope is checked on the token, and Gmail's own 403 gives the same error, since the scopes on record can be out of date. Not checked against real Gmail until step 8: all of this comes from the documentation, including the `Label_` prefix. Tests: `GmailMailboxProviderTests` and `MailRuleTests`.
 
 - `ListFiltersAsync`, `CreateFilterAsync`, `DeleteFilterAsync` on the port, only where `ServerFilters`.
 - `GmailFilterMapper`: rule ⇄ filter. Move = add label + remove `INBOX`; archive = remove `INBOX`; read = remove `UNREAD`; star = add `STARRED`; trash = add `TRASH`. A filter with `forward`, `size`, `negatedQuery` or anything else it cannot express → read-only.

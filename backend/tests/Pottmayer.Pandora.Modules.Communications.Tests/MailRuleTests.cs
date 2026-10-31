@@ -76,6 +76,17 @@ public sealed class MailRuleTests
     }
 
     [Fact]
+    public void Gmail_has_one_field_per_condition_while_imap_can_ask_for_both()
+    {
+        var two = new[] { FromAna, new MailRuleCondition(RuleConditionKinds.From, "bo") };
+        var query = new[] { new MailRuleCondition(RuleConditionKinds.HasWords, "x"), new MailRuleCondition(RuleConditionKinds.ProviderQuery, "y") };
+
+        Assert.Equal(MailErrors.RuleConditionsInvalid.Code, Check(two, [Read], MailProvider.Gmail)!.Code);
+        Assert.Equal(MailErrors.RuleConditionsInvalid.Code, Check(query, [Read], MailProvider.Gmail)!.Code);
+        Assert.Null(Check(two, [Read]));
+    }
+
+    [Fact]
     public void Imap_cannot_add_a_label_only_move() =>
         Assert.Equal(MailErrors.RuleActionsInvalid.Code, Check([FromAna], [new MailRuleAction(RuleActionKinds.AddLabel, LabelA.Id)])!.Code);
 

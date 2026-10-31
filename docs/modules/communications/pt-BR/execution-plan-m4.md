@@ -1,6 +1,6 @@
 # Communications — Plano de Execução, M4 (Regras)
 
-> **Status:** Em andamento: decisões aprovadas, passos 1–3 construídos. É a fase **M4** do [product-plan](product-plan.md), cuja §10 tem o modelo; o que existe hoje está no
+> **Status:** Em andamento: decisões aprovadas, passos 1–4 construídos. É a fase **M4** do [product-plan](product-plan.md), cuja §10 tem o modelo; o que existe hoje está no
 > [Status de implementação](implementation-status.md).
 > 🇺🇸 [English version](../en/execution-plan-m4.md)
 
@@ -79,7 +79,9 @@ Cada passo termina verde antes do próximo. Pontos de commit sugeridos: **M4a** 
 - Uma regra cuja etiqueta sumiu → `broken` quando o passo de etiquetas a remove.
 - **Testes:** uma mensagem nova é movida; email antigo não; uma regra falha → a sincronização segue e o erro fica na regra; `broken` não roda; uma regra entregue duas vezes age uma.
 
-### Passo 4 — Filtros do Gmail no adaptador
+### Passo 4 — Filtros do Gmail no adaptador ✅
+
+> **Construído (2026-10-31).** `ListFiltersAsync`, `CreateFilterAsync` e `DeleteFilterAsync` na porta (o IMAP responde `ActionNotSupported`), `GmailFilterMapper`, `MailErrors.MissingFilterScope`. Decidido aqui: no Gmail a regra aceita uma condição de cada tipo, porque o filtro tem um campo para cada, e `has-words` e `provider-query` dividem o `query`; um `query` com `:` volta como `provider-query`, senão como `has-words`, que o Gmail trata igual. Etiqueta do usuário é id que começa com `Label_`; qualquer outra etiqueta de sistema (`IMPORTANT`, `SPAM`, categoria) deixa o filtro só leitura. Apagar filtro que já não existe conta como feito. O escopo é checado no token, e o 403 do próprio Gmail dá o mesmo erro, porque os escopos registrados podem estar desatualizados. Sem checagem no Gmail real até o passo 8: tudo isso vem da documentação, inclusive o prefixo `Label_`. Testes: `GmailMailboxProviderTests` e `MailRuleTests`.
 
 - `ListFiltersAsync`, `CreateFilterAsync`, `DeleteFilterAsync` na porta, só onde há `ServerFilters`.
 - `GmailFilterMapper`: regra ⇄ filtro. Mover = adiciona etiqueta + remove `INBOX`; arquivar = remove `INBOX`; lida = remove `UNREAD`; estrela = adiciona `STARRED`; lixeira = adiciona `TRASH`. Um filtro com `forward`, `size`, `negatedQuery` ou qualquer coisa que não dê para expressar → só leitura.

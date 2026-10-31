@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using Pottmayer.Pandora.Modules.Communications.Domain.Entities;
+using Pottmayer.Pandora.Modules.Communications.Domain.Errors;
 using Pottmayer.Pandora.Modules.Communications.Domain.Ports;
 using Pottmayer.Pandora.Modules.Communications.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Communications.Infrastructure.Gmail;
@@ -455,6 +456,184 @@ public sealed class GmailMailboxProviderTests
         AssertError("Communications.MailboxAuthFailed",
             await Provider(Routes(("messages/send", Status(HttpStatusCode.Unauthorized, "{}")))).SendAsync(_mailbox, "m"u8.ToArray(), null));
     }
+
+    private const string FilterWrite = "https://www.googleapis.com/auth/gmail.settings.basic";
+
+    [Fact]
+    public async Task Filters_list_with_the_scope_the_mailbox_already_has_and_read_each_field()
+    {
+        var gmail = Provider(Routes(("settings/filters", Ok("""
+            { "filter": [ {
+                "id": "f1",
+                "criteria": { "from": "ana", "to": "me", "subject": "bill", "query": "invoice", "hasAttachment": true },
+                "action": { "addLabelIds": ["Label_7", "STARRED"], "removeLabelIds": ["INBOX", "UNREAD"] } } ] }
+            """))));
+
+        var filter = Assert.Single(Value(await gmail.ListFiltersAsync(_mailbox)));
+
+        Assert.False(filter.IsReadOnly);
+        Assert.Equal("f1", filter.ProviderFilterId);
+        Assert.Equal(
+            [
+                new MailRuleCondition(RuleConditionKinds.From, "ana"),
+                new MailRuleCondition(RuleConditionKinds.To, "me"),
+                new MailRuleCondition(RuleConditionKinds.Subject, "bill"),
+                new MailRuleCondition(RuleConditionKinds.HasWords, "invoice"),
+                new MailRuleCondition(RuleConditionKinds.HasAttachment, ""),
+            ],
+            filter.Conditions);
+        Assert.Equal(
+            [
+                new RemoteRuleAction(RuleActionKinds.Move, "Label_7"),
+                new RemoteRuleAction(RuleActionKinds.MarkRead, null),
+                new RemoteRuleAction(RuleActionKinds.Star, null),
+            ],
+            filter.Actions);
+    }
+
+    [Fact]
+    public async Task No_filters_is_an_empty_list() =>
+        Assert.Empty(Value(await Provider(Routes(("settings/filters", Ok("{}")))).ListFiltersAsync(_mailbox)));
+
+    [Theory]
+    [InlineData("""{ "from": "a" }""", """{ "forward": "bo@mail.test" }""")]
+    [InlineData("""{ "from": "a" }""", """{ "addLabelIds": ["STARRED"], "forward": "bo@mail.test" }""")]
+    [InlineData("""{ "from": "a", "size": 1000, "sizeComparison": "larger" }""", """{ "addLabelIds": ["STARRED"] }""")]
+    [InlineData("""{ "from": "a", "negatedQuery": "b" }""", """{ "addLabelIds": ["STARRED"] }""")]
+    [InlineData("""{ "from": "a", "excludeChats": true }""", """{ "addLabelIds": ["STARRED"] }""")]
+    [InlineData("""{ "from": "a" }""", """{ "addLabelIds": ["IMPORTANT"] }""")]
+    [InlineData("""{ "from": "a" }""", """{ "removeLabelIds": ["SPAM"] }""")]
+    [InlineData("""{ "from": "a" }""", """{ "addLabelIds": ["CATEGORY_UPDATES"] }""")]
+    [InlineData("""{ "from": "a" }""", """{ "addLabelIds": ["Label_1", "Label_2"] }""")]
+    [InlineData("""{ "from": "a" }""", """{ }""")]
+    [InlineData("""{ }""", """{ "addLabelIds": ["STARRED"] }""")]
+    public async Task A_filter_that_does_not_fit_a_rule_is_read_only_and_kept_as_sent(string criteria, string action)
+    {
+        var json = $$"""{ "id": "f1", "criteria": {{criteria}}, "action": {{action}} }""";
+        var gmail = Provider(Routes(("settings/filters", Ok($$"""{ "filter": [ {{json}} ] }"""))));
+
+        var filter = Assert.Single(Value(await gmail.ListFiltersAsync(_mailbox)));
+
+        Assert.True(filter.IsReadOnly);
+        Assert.Equal(json, filter.Raw);
+        Assert.Empty(filter.Conditions);
+        Assert.Empty(filter.Actions);
+    }
+
+    [Theory]
+    [InlineData(RuleActionKinds.AddLabel, "Label_7", """["Label_7"]""", "[]")]
+    [InlineData(RuleActionKinds.Move, "Label_7", """["Label_7"]""", """["INBOX"]""")]
+    [InlineData(RuleActionKinds.Archive, null, "[]", """["INBOX"]""")]
+    [InlineData(RuleActionKinds.MarkRead, null, "[]", """["UNREAD"]""")]
+    [InlineData(RuleActionKinds.Star, null, """["STARRED"]""", "[]")]
+    [InlineData(RuleActionKinds.Trash, null, """["TRASH"]""", "[]")]
+    public async Task Each_action_goes_to_gmail_as_labels_and_comes_back_the_same(string kind, string? label, string add, string remove)
+    {
+        var calls = new List<Call>();
+        var gmail = Provider(
+            Routes(("settings/filters", Ok($$"""{ "id": "f9", "criteria": { "from": "ana" }, "action": { "addLabelIds": {{add}}, "removeLabelIds": {{remove}} } }"""))),
+            scopes: [Modify, FilterWrite], calls: calls);
+        var action = new RemoteRuleAction(kind, label);
+
+        var created = Value(await gmail.CreateFilterAsync(_mailbox, [new MailRuleCondition(RuleConditionKinds.From, "ana")], [action]));
+
+        var call = Assert.Single(calls);
+        Assert.Equal("POST", call.Method);
+        Assert.EndsWith("/settings/filters", call.Url);
+        using var body = JsonDocument.Parse(call.Body!);
+        var sent = body.RootElement.GetProperty("action");
+        Assert.Equal(JsonSerializer.Deserialize<string[]>(add), sent.GetProperty("addLabelIds").EnumerateArray().Select(e => e.GetString()));
+        Assert.Equal(JsonSerializer.Deserialize<string[]>(remove), sent.GetProperty("removeLabelIds").EnumerateArray().Select(e => e.GetString()));
+
+        Assert.Equal("f9", created.ProviderFilterId);
+        Assert.False(created.IsReadOnly);
+        Assert.Equal(action, Assert.Single(created.Actions));
+    }
+
+    [Theory]
+    [InlineData(RuleConditionKinds.From, "ana", "from", "ana")]
+    [InlineData(RuleConditionKinds.To, "me", "to", "me")]
+    [InlineData(RuleConditionKinds.Subject, "bill", "subject", "bill")]
+    [InlineData(RuleConditionKinds.HasWords, "invoice", "query", "invoice")]
+    [InlineData(RuleConditionKinds.ProviderQuery, "larger:5M", "query", "larger:5M")]
+    public async Task Each_condition_goes_to_gmail_and_comes_back_the_same(string kind, string value, string field, string expected)
+    {
+        var calls = new List<Call>();
+        var gmail = Provider(
+            Routes(("settings/filters", Ok($$"""{ "id": "f9", "criteria": { "{{field}}": "{{expected}}" }, "action": { "addLabelIds": ["STARRED"] } }"""))),
+            scopes: [Modify, FilterWrite], calls: calls);
+        var condition = new MailRuleCondition(kind, value);
+
+        var created = Value(await gmail.CreateFilterAsync(_mailbox, [condition], [new RemoteRuleAction(RuleActionKinds.Star, null)]));
+
+        using var body = JsonDocument.Parse(Assert.Single(calls).Body!);
+        Assert.Equal(expected, body.RootElement.GetProperty("criteria").GetProperty(field).GetString());
+        Assert.Equal(condition, Assert.Single(created.Conditions));
+    }
+
+    [Fact]
+    public async Task Has_attachment_goes_to_gmail_as_a_flag()
+    {
+        var calls = new List<Call>();
+        var gmail = Provider(
+            Routes(("settings/filters", Ok("""{ "id": "f9", "criteria": { "hasAttachment": true }, "action": { "addLabelIds": ["STARRED"] } }"""))),
+            scopes: [Modify, FilterWrite], calls: calls);
+        var condition = new MailRuleCondition(RuleConditionKinds.HasAttachment, "");
+
+        var created = Value(await gmail.CreateFilterAsync(_mailbox, [condition], [new RemoteRuleAction(RuleActionKinds.Star, null)]));
+
+        using var body = JsonDocument.Parse(Assert.Single(calls).Body!);
+        Assert.True(body.RootElement.GetProperty("criteria").GetProperty("hasAttachment").GetBoolean());
+        Assert.Equal(condition, Assert.Single(created.Conditions));
+    }
+
+    [Fact]
+    public async Task Writing_a_filter_without_its_scope_asks_nothing_of_gmail_and_says_so_apart_from_the_mailbox()
+    {
+        var calls = new List<Call>();
+        var gmail = Provider(Routes(), calls: calls);
+
+        AssertError(MailErrors.MissingFilterScope.Code, await gmail.CreateFilterAsync(
+            _mailbox, [new MailRuleCondition(RuleConditionKinds.From, "a")], [new RemoteRuleAction(RuleActionKinds.Star, null)]));
+        AssertError(MailErrors.MissingFilterScope.Code, await gmail.DeleteFilterAsync(_mailbox, "f1"));
+
+        Assert.Empty(calls);
+    }
+
+    [Fact]
+    public async Task Gmail_refusing_the_scope_of_a_filter_write_is_the_same_error()
+    {
+        var gmail = Provider(
+            Routes(("settings/filters", Status(HttpStatusCode.Forbidden, """{ "error": { "errors": [ { "reason": "insufficientPermissions" } ] } }"""))),
+            scopes: [Modify, FilterWrite]);
+
+        AssertError(MailErrors.MissingFilterScope.Code, await gmail.DeleteFilterAsync(_mailbox, "f1"));
+    }
+
+    [Fact]
+    public async Task Gmail_refusing_the_scope_elsewhere_is_still_the_mailbox_error() =>
+        AssertError(MailErrors.MissingScopes.Code, await Provider(Routes(
+            ("settings/filters", Status(HttpStatusCode.Forbidden, """{ "error": { "errors": [ { "reason": "insufficientPermissions" } ] } }""")))).ListFiltersAsync(_mailbox));
+
+    [Fact]
+    public async Task Deleting_a_filter_calls_delete_and_one_already_gone_is_done()
+    {
+        var calls = new List<Call>();
+        var gmail = Provider(Routes(("settings/filters/f1", NoContent()), ("settings/filters/gone", NotFound())), scopes: [Modify, FilterWrite], calls: calls);
+
+        Assert.True(Value(await gmail.DeleteFilterAsync(_mailbox, "f1")));
+        Assert.True(Value(await gmail.DeleteFilterAsync(_mailbox, "gone")));
+
+        Assert.Equal("DELETE", calls[0].Method);
+        Assert.EndsWith("/settings/filters/f1", calls[0].Url);
+    }
+
+    [Fact]
+    public async Task Gmail_refusing_a_filter_says_why() =>
+        AssertError(MailErrors.ProviderFailed("").Code, await Provider(
+            Routes(("settings/filters", Status(HttpStatusCode.BadRequest, """{ "error": { "status": "FAILED_PRECONDITION" } }"""))),
+            scopes: [Modify, FilterWrite]).CreateFilterAsync(
+                _mailbox, [new MailRuleCondition(RuleConditionKinds.From, "a")], [new RemoteRuleAction(RuleActionKinds.Star, null)]));
 
     private static string[] Strings(string? json, string property)
     {

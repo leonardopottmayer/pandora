@@ -12,6 +12,10 @@ public static class MailErrors
     public static Error MissingScopes =>
         Error.Validation("Communications.MissingScopes", "This Google account has not granted access to Gmail.");
 
+    /// <summary>Only writing filters needs this consent, so unlike <see cref="MissingScopes"/> the mailbox goes on.</summary>
+    public static Error MissingFilterScope =>
+        Error.Validation("Communications.MissingFilterScope", "This Google account has not granted access to change Gmail filters.");
+
     /// <summary>The provider no longer knows the sync cursor (Gmail history expired, IMAP UIDVALIDITY changed).</summary>
     public static Error SyncCursorExpired =>
         Error.Validation("Communications.SyncCursorExpired", "The mailbox must be read again from the start.");

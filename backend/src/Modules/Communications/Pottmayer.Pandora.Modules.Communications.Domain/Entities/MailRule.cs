@@ -83,6 +83,11 @@ public sealed class MailRule
         if (provider != MailProvider.Gmail && conditions.Any(c => c.Kind == RuleConditionKinds.ProviderQuery))
             return MailErrors.RuleConditionsInvalid;
 
+        // A Gmail filter has one field for each, and has-words and provider-query are the same one.
+        if (provider == MailProvider.Gmail
+            && conditions.GroupBy(c => c.Kind == RuleConditionKinds.ProviderQuery ? RuleConditionKinds.HasWords : c.Kind).Any(g => g.Count() > 1))
+            return MailErrors.RuleConditionsInvalid;
+
         if (actions.Count == 0 || actions.Any(a => !RuleActionKinds.All.Contains(a.Kind)))
             return MailErrors.RuleActionsInvalid;
 

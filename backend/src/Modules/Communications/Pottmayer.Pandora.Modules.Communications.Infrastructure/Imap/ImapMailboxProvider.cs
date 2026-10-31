@@ -249,6 +249,16 @@ internal sealed class ImapMailboxProvider(IExternalCredentialProvider credential
         CancellationToken ct = default) =>
         Task.FromResult(Result<bool>.Failure(MailErrors.ActionNotSupported));
 
+    public Task<Result<IReadOnlyList<RemoteFilter>>> ListFiltersAsync(Mailbox mailbox, CancellationToken ct = default) =>
+        Task.FromResult(Result<IReadOnlyList<RemoteFilter>>.Failure(MailErrors.ActionNotSupported));
+
+    public Task<Result<RemoteFilter>> CreateFilterAsync(
+        Mailbox mailbox, IReadOnlyCollection<MailRuleCondition> conditions, IReadOnlyCollection<RemoteRuleAction> actions, CancellationToken ct = default) =>
+        Task.FromResult(Result<RemoteFilter>.Failure(MailErrors.ActionNotSupported));
+
+    public Task<Result<bool>> DeleteFilterAsync(Mailbox mailbox, string providerFilterId, CancellationToken ct = default) =>
+        Task.FromResult(Result<bool>.Failure(MailErrors.ActionNotSupported));
+
     public Task<Result<IReadOnlyDictionary<string, string?>>> MoveAsync(
         Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, string targetProviderLabelId, CancellationToken ct = default) =>
         RunAsync(mailbox, async (client, token) =>
