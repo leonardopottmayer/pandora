@@ -62,6 +62,15 @@ public static class MailErrors
     public static Error MessageTooLarge =>
         Error.Validation("Communications.MessageTooLarge", "The message is over the size limit.");
 
+    public static Error RuleNameInvalid =>
+        Error.Validation("Communications.RuleNameInvalid", "A rule needs a name of at most 100 characters.");
+
+    public static Error RuleConditionsInvalid =>
+        Error.Validation("Communications.RuleConditionsInvalid", "A rule needs at least one condition, each with a value this mailbox supports.");
+
+    public static Error RuleActionsInvalid =>
+        Error.Validation("Communications.RuleActionsInvalid", "A rule needs at least one action this mailbox supports, and on Gmail at most one label.");
+
     public static Error MailboxNotFound =>
         Error.NotFound("Communications.MailboxNotFound", "This mailbox does not exist.");
 

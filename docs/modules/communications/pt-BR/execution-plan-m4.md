@@ -1,6 +1,6 @@
 # Communications — Plano de Execução, M4 (Regras)
 
-> **Status:** Em andamento: decisões aprovadas, passo 1 construído. É a fase **M4** do [product-plan](product-plan.md), cuja §10 tem o modelo; o que existe hoje está no
+> **Status:** Em andamento: decisões aprovadas, passos 1–2 construídos. É a fase **M4** do [product-plan](product-plan.md), cuja §10 tem o modelo; o que existe hoje está no
 > [Status de implementação](implementation-status.md).
 > 🇺🇸 [English version](../en/execution-plan-m4.md)
 
@@ -60,7 +60,9 @@ Cada passo termina verde antes do próximo. Pontos de commit sugeridos: **M4a** 
 - **Primeiro, um teste que falha:** uma pasta IMAP com mensagens aparece depois da carga inicial → as mensagens são salvas, nenhum `MailMessageReceived`. Uma mensagem nova de verdade nela num ciclo seguinte → um evento.
 - O adaptador marca o que vem de uma pasta que o cursor não conhece; o motor não publica nada para essas.
 
-### Passo 2 — O modelo
+### Passo 2 — O modelo ✅
+
+> **Construído (2026-10-31).** Migration `20261031120000-create-table-com006-mail-rule`, `MailRule`, `RuleExecution`, `RuleStatus`, `RuleMatcher` (com `RulePlan`), `IMailRuleRepository`. Decidido aqui, além do texto abaixo: condição com valor vazio é recusada (casaria com todo email; `has-attachment` não leva valor); "adicionar etiqueta" é recusado fora do Gmail, onde a pasta é o lugar da mensagem; mover vence arquivar; `has-words` olha assunto e texto, como trecho, não palavra inteira; o motor nunca casa `provider-query`, que só o Gmail sabe rodar. `provider_filter_id` fica nulo com a regra desligada, porque o Gmail não tem filtro desligado. Testes: `MailRuleTests` e um ida e volta em `PersistenceTests`.
 
 - Migration `com006_mail_rule`: caixa, nome, `position`, `conditions` e `actions` (jsonb), `execution` (`provider-filter`/`pandora`), `provider_filter_id`, `provider_filter_raw` (jsonb, para o que não cabe), `is_enabled`, `status` (`ok`/`broken`/`read-only`), `last_error`.
 - `MailRule`: condições `from`, `to`, `subject`, `has-words`, `has-attachment`, `provider-query`; ações adicionar etiqueta, mover, arquivar, marcar como lida, estrela, lixeira. Validação: ao menos uma condição e uma ação; no Gmail, no máximo uma etiqueta do usuário; `provider-query` só no Gmail.

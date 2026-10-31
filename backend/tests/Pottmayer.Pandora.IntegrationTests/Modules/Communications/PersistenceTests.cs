@@ -10,12 +10,53 @@ using Xunit;
 
 namespace Pottmayer.Pandora.IntegrationTests.Modules.Communications;
 
-/// <summary>The EF mappings against the com001–com005 tables: what is written reads back the same.</summary>
+/// <summary>The EF mappings against the com001–com006 tables: what is written reads back the same.</summary>
 [Collection("Integration")]
 public sealed class PersistenceTests(PandoraWebApplicationFactory factory) : IAsyncLifetime
 {
     public Task InitializeAsync() => factory.ResetDatabaseAsync();
     public Task DisposeAsync() => Task.CompletedTask;
+
+    [Fact]
+    public async Task A_rule_round_trips_and_comes_back_in_position_order()
+    {
+        var mailbox = Mailbox.Connect(Guid.CreateVersion7(), MailProvider.Gmail, Guid.CreateVersion7(), "me@example.com", null);
+        var labelId = Guid.CreateVersion7();
+        var second = MailRule.Create(mailbox.Id, " Second ", 2,
+            [new MailRuleCondition(RuleConditionKinds.From, "ana"), new MailRuleCondition(RuleConditionKinds.HasAttachment, "")],
+            [new MailRuleAction(RuleActionKinds.AddLabel, labelId), new MailRuleAction(RuleActionKinds.MarkRead, null)],
+            RuleExecution.ProviderFilter);
+        second.BindFilter("filter-1");
+        var first = MailRule.ImportReadOnly(mailbox.Id, "First", 1, "filter-2", """{"id": "filter-2", "action": {"forward": "bo@mail.test"}}""");
+
+        await RunAsync(async (ctx, ct) =>
+        {
+            await ctx.AcquireRepository<IMailboxRepository>().AddAsync(mailbox, ct);
+            var rules = ctx.AcquireRepository<IMailRuleRepository>();
+            await rules.AddAsync(second, ct);
+            await rules.AddAsync(first, ct);
+        });
+
+        await RunAsync(async (ctx, ct) =>
+        {
+            var rules = await ctx.AcquireRepository<IMailRuleRepository>().ListByMailboxAsync(mailbox.Id, ct);
+
+            Assert.Equal(["First", "Second"], rules.Select(r => r.Name));
+
+            Assert.True(rules[0].IsReadOnly);
+            Assert.Contains("bo@mail.test", rules[0].ProviderFilterRaw);
+            Assert.Empty(rules[0].Conditions);
+
+            var saved = rules[1];
+            Assert.Equal(RuleExecution.ProviderFilter, saved.Execution);
+            Assert.Equal("filter-1", saved.ProviderFilterId);
+            Assert.Equal(RuleStatus.Ok, saved.Status);
+            Assert.True(saved.IsEnabled);
+            Assert.Equal(new MailRuleCondition(RuleConditionKinds.From, "ana"), saved.Conditions[0]);
+            Assert.Equal(new MailRuleAction(RuleActionKinds.AddLabel, labelId), saved.Actions[0]);
+            Assert.Null(saved.Actions[1].LabelId);
+        });
+    }
 
     [Fact]
     public async Task Mailbox_label_message_and_content_round_trip()

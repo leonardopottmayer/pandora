@@ -1,6 +1,6 @@
 # Communications — Execution Plan, M4 (Rules)
 
-> **Status:** In progress: decisions approved, step 1 built. It is phase **M4** of the [product-plan](product-plan.md), whose §10 has the model; what exists today is in
+> **Status:** In progress: decisions approved, steps 1–2 built. It is phase **M4** of the [product-plan](product-plan.md), whose §10 has the model; what exists today is in
 > [Implementation Status](implementation-status.md).
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan-m4.md)
 
@@ -60,7 +60,9 @@ Each step ends green before the next one. Suggested commit points: **M4a** = ste
 - **First, a failing test:** an IMAP folder with messages appears after the backfill → its messages are saved, no `MailMessageReceived`. A real new message in it on a later cycle → one event.
 - The adapter marks what comes from a folder the cursor does not know; the engine publishes nothing for those.
 
-### Step 2 — The model
+### Step 2 — The model ✅
+
+> **Built (2026-10-31).** Migration `20261031120000-create-table-com006-mail-rule`, `MailRule`, `RuleExecution`, `RuleStatus`, `RuleMatcher` (with `RulePlan`), `IMailRuleRepository`. Decided here, beyond the text below: a condition with an empty value is refused (it would match all mail; `has-attachment` takes none); "add label" is refused off Gmail, where a folder is where a message lives; a move beats an archive; `has-words` looks at subject and text, as a substring, not whole words; the engine never matches `provider-query`, which only Gmail can run. `provider_filter_id` is null while a rule is disabled, since Gmail has no disabled filters. Tests: `MailRuleTests`, and a round trip in `PersistenceTests`.
 
 - Migration `com006_mail_rule`: mailbox, name, `position`, `conditions` and `actions` (jsonb), `execution` (`provider-filter`/`pandora`), `provider_filter_id`, `provider_filter_raw` (jsonb, for what does not fit), `is_enabled`, `status` (`ok`/`broken`/`read-only`), `last_error`.
 - `MailRule`: conditions `from`, `to`, `subject`, `has-words`, `has-attachment`, `provider-query`; actions add label, move, archive, mark as read, star, trash. Validation: at least one condition and one action; on Gmail, one user label at most; `provider-query` on Gmail only.
