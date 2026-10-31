@@ -1,6 +1,6 @@
 # Communications — Plano de Execução, M2 (Organizar)
 
-> **Status:** Em andamento: passo 1 construído. É a fase **M2** do [product-plan](product-plan.md); o que existe hoje está no
+> **Status:** Em andamento: passos 1–2 construídos. É a fase **M2** do [product-plan](product-plan.md); o que existe hoje está no
 > [Status de implementação](implementation-status.md).
 > 🇺🇸 [English version](../en/execution-plan-m2.md)
 
@@ -94,7 +94,17 @@ Sem funcionalidade nova, e não altera nenhuma caixa.
 - `ponytail:` um mover entre pastas que atravessa a varredura (de uma pasta ainda não lida para uma já lida) ocupa dois ciclos, então não é
   juntado e ainda pode disparar um evento falso. Uma janela de segundos, só na varredura IMAP.
 
-### Passo 2 — Porta e escritas IMAP
+### Passo 2 — Porta e escritas IMAP ✅
+
+> **Construído (2026-10-30).** Mudanças em relação à lista abaixo:
+> - **`TrashAsync` devolve os ids** como o `MoveAsync`, porque no IMAP é um mover.
+> - **Renomear move a assinatura à mão**, subpastas incluídas: a assinatura pertence ao nome, então a pasta sairia do escopo.
+> - **Uma pasta com subpastas** também é `LabelNotEmpty`, e a checagem usa `STATUS`.
+> - **O adaptador do Gmail responde `ActionNotSupported`** a toda escrita até o passo 3. Nada chama as escritas ainda.
+> - **Não coberto pelo GreenMail, portanto para o passo 6:** ele não tem SPECIAL-USE, então nenhuma pasta lá tem o papel `trash` (só a recusa
+>   é testada); e ele derruba a conexão ao apagar uma pasta que já teve mensagem, então o teste apaga uma nunca usada. O comportamento do
+>   MailKit sem `MOVE` também não foi exercitado: o GreenMail anuncia `MOVE` e `UIDPLUS`.
+> - Testes: `ImapMailboxProviderTests` +4.
 
 - O `IMailboxProvider` ganha:
   - `CreateLabelAsync(mailbox, name)` → `RemoteLabel`
@@ -167,7 +177,8 @@ Só com material descartável: uma etiqueta e uma pasta `pandora-test`, e mensag
 - **Gmail:** criar `pandora-test` no Pandora → aparece no Gmail. Etiquetar, mover e dar estrela → aparece no Gmail. Lixeira → está na lixeira do Gmail, e pode
   ser restaurada. Uma mudança no Gmail → aparece no Pandora.
 - **Titan:** o mesmo, com uma pasta. Mover no webmail → mesma linha, corpo em cache mantido, nenhum `MailMessageReceived` no outbox. Renomear no webmail →
-  renomeada no Pandora, corpos mantidos. Apagar uma pasta com mensagem → recusado.
+  renomeada no Pandora, corpos mantidos. Apagar uma pasta com mensagem → recusado. Esvaziar essa pasta e apagar → ela some.
+  A lixeira encontra a pasta com o papel `trash`.
 - **Tempo:** uma ação durante um ciclo do Gmail ou do Titan não espera por ele.
 - **Titan:** registrar `UIDPLUS` e `MOVE`.
 - **Docs:** `overview`, `architecture` (travas, junção), `data-model`, `api-reference`, `implementation-status`, en + pt-BR; o product plan guarda só M3–M4, e a

@@ -139,6 +139,33 @@ internal sealed class FakeMailProvider : IMailboxProvider
         return Answer(stream.ToArray());
     }
 
+    // Writes: M2's step 4 scripts them.
+    public Task<Result<RemoteLabel>> CreateLabelAsync(Mailbox mailbox, string name, CancellationToken ct = default) =>
+        Answer(new RemoteLabel(name, name, LabelKind.User, null, IsExclusive: true));
+
+    public Task<Result<bool>> RenameLabelAsync(Mailbox mailbox, string providerLabelId, string newName, CancellationToken ct = default) =>
+        Answer(true);
+
+    public Task<Result<bool>> DeleteLabelAsync(Mailbox mailbox, string providerLabelId, CancellationToken ct = default) =>
+        Answer(true);
+
+    public Task<Result<bool>> SetFlagsAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, bool? isUnread, bool? isStarred, CancellationToken ct = default) =>
+        Answer(true);
+
+    public Task<Result<bool>> ChangeLabelsAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, IReadOnlyCollection<string> add, IReadOnlyCollection<string> remove,
+        CancellationToken ct = default) =>
+        Answer(true);
+
+    public Task<Result<IReadOnlyDictionary<string, string?>>> MoveAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, string targetProviderLabelId, CancellationToken ct = default) =>
+        Answer<IReadOnlyDictionary<string, string?>>(providerMessageIds.ToDictionary(id => id, id => (string?)id));
+
+    public Task<Result<IReadOnlyDictionary<string, string?>>> TrashAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, CancellationToken ct = default) =>
+        Answer<IReadOnlyDictionary<string, string?>>(providerMessageIds.ToDictionary(id => id, id => (string?)id));
+
     private Task<Result<T>> Answer<T>(T value)
     {
         if (ThrowWith is { } exception)

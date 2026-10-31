@@ -15,7 +15,8 @@ namespace Pottmayer.Pandora.IntegrationTests.Modules.Communications;
 public sealed class GreenMailFixture : IAsyncLifetime
 {
     public const string Password = "secret";
-    public static readonly string[] Users = ["sync@example.com", "auth@example.com"];
+    public static readonly string[] Users =
+        ["sync@example.com", "auth@example.com", "flags@example.com", "move@example.com", "trash@example.com", "folders@example.com"];
 
     private const int SmtpPort = 3025;
     private const int ImapPort = 3143;

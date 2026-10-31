@@ -42,6 +42,35 @@ public interface IMailboxProvider
     /// <c>BODY[part]</c>) if large messages hurt.
     /// </summary>
     Task<Result<byte[]>> GetRawMessageAsync(Mailbox mailbox, string providerMessageId, CancellationToken ct = default);
+
+    // Writes. Nothing here deletes mail for good: "trash" is the provider's trash, and a folder with messages is
+    // refused (LabelNotEmpty), since deleting an IMAP folder deletes what is inside it.
+
+    Task<Result<RemoteLabel>> CreateLabelAsync(Mailbox mailbox, string name, CancellationToken ct = default);
+
+    Task<Result<bool>> RenameLabelAsync(Mailbox mailbox, string providerLabelId, string newName, CancellationToken ct = default);
+
+    Task<Result<bool>> DeleteLabelAsync(Mailbox mailbox, string providerLabelId, CancellationToken ct = default);
+
+    /// <summary>A null flag stays as it is.</summary>
+    Task<Result<bool>> SetFlagsAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, bool? isUnread, bool? isStarred, CancellationToken ct = default);
+
+    /// <summary>Only where <see cref="MailboxCapabilities.MultipleLabels"/>; otherwise <c>ActionNotSupported</c>.</summary>
+    Task<Result<bool>> ChangeLabelsAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, IReadOnlyCollection<string> add, IReadOnlyCollection<string> remove,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// The message's id after the move, by its id before it. Null when the provider does not say: the next
+    /// <see cref="FetchChangesAsync"/> reports it, and the Message-ID finds its row.
+    /// </summary>
+    Task<Result<IReadOnlyDictionary<string, string?>>> MoveAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, string targetProviderLabelId, CancellationToken ct = default);
+
+    /// <summary>To the provider's trash, where it can be restored; the ids as in <see cref="MoveAsync"/>.</summary>
+    Task<Result<IReadOnlyDictionary<string, string?>>> TrashAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, CancellationToken ct = default);
 }
 
 /// <summary>What the screens may offer for a provider.</summary>

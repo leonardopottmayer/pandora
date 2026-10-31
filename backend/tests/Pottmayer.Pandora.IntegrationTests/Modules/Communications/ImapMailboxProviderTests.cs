@@ -6,6 +6,7 @@ using MimeKit;
 using Pottmayer.Pandora.IntegrationTests.Modules.Integrations;
 using Pottmayer.Pandora.IntegrationTests.Support;
 using Pottmayer.Pandora.Modules.Communications.Domain.Entities;
+using Pottmayer.Pandora.Modules.Communications.Domain.Errors;
 using Pottmayer.Pandora.Modules.Communications.Domain.Ports;
 using Pottmayer.Pandora.Modules.Communications.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
@@ -119,6 +120,172 @@ public sealed class ImapMailboxProviderTests(PandoraWebApplicationFactory factor
 
         var labelsNow = Value(await WithProviderAsync(p => p.ListLabelsAsync(mailbox)));
         Assert.Equal(["INBOX", "Archive"], labelsNow.Select(l => l.ProviderLabelId));
+    }
+
+    [Fact]
+    public async Task Read_and_star_are_seen_from_another_client_and_can_be_undone()
+    {
+        const string user = "flags@example.com";
+        await mail.DeliverAsync(user, "Flagged");
+        var mailbox = await ConnectMailboxAsync(user, GreenMailFixture.Password);
+        var id = (await BackfillAsync(mailbox)).Single().ProviderMessageId;
+
+        Value(await WithProviderAsync(p => p.SetFlagsAsync(mailbox, [id], isUnread: false, isStarred: true)));
+        Assert.Equal(MessageFlags.Seen | MessageFlags.Flagged, await FlagsSeenByWebmailAsync(user));
+
+        Value(await WithProviderAsync(p => p.SetFlagsAsync(mailbox, [id], isUnread: null, isStarred: false)));
+        Assert.Equal(MessageFlags.Seen, await FlagsSeenByWebmailAsync(user));
+
+        Value(await WithProviderAsync(p => p.SetFlagsAsync(mailbox, [id], isUnread: true, isStarred: null)));
+        Assert.Equal(MessageFlags.None, await FlagsSeenByWebmailAsync(user));
+    }
+
+    [Fact]
+    public async Task A_move_leaves_the_source_reaches_the_target_and_says_the_new_id()
+    {
+        const string user = "move@example.com";
+        await mail.DeliverAsync(user, "One");
+        await mail.DeliverAsync(user, "Two");
+        await mail.DeliverAsync(user, "Stays");
+        var mailbox = await ConnectMailboxAsync(user, GreenMailFixture.Password);
+        var created = Value(await WithProviderAsync(p => p.CreateLabelAsync(mailbox, "Archive2")));
+        var messages = await BackfillAsync(mailbox);
+        var ids = messages.Where(m => m.Subject != "Stays").Select(m => m.ProviderMessageId).ToList();
+
+        var moved = Value(await WithProviderAsync(p => p.MoveAsync(mailbox, ids, created.ProviderLabelId)));
+
+        Assert.Equal(ids.Order(), moved.Keys.Order());
+        Assert.All(moved.Values, next => Assert.EndsWith($":{created.ProviderLabelId}", next));
+        Assert.Equal(["Stays"], await SubjectsSeenByWebmailAsync(user, "INBOX"));
+        Assert.Equal(["One", "Two"], (await SubjectsSeenByWebmailAsync(user, created.ProviderLabelId)).Order());
+
+        // The new ids work: the message opens from there.
+        var raw = Value(await WithProviderAsync(p => p.GetRawMessageAsync(mailbox, moved.Values.First()!)));
+        Assert.NotEmpty(raw);
+
+        // Moving to where it already is changes nothing.
+        var same = Value(await WithProviderAsync(p => p.MoveAsync(mailbox, [moved.Values.First()!], created.ProviderLabelId)));
+        Assert.Equal(moved.Values.First(), same.Values.Single());
+        Assert.Equal(2, (await SubjectsSeenByWebmailAsync(user, created.ProviderLabelId)).Count);
+    }
+
+    [Fact]
+    public async Task Trash_without_a_folder_marked_as_trash_is_refused_and_keeps_the_message()
+    {
+        // GreenMail has no SPECIAL-USE, so no folder there can have the role, not even one named Trash. The move
+        // itself is MoveAsync's; the real check on Titan covers finding the folder.
+        const string user = "trash@example.com";
+        await mail.DeliverAsync(user, "Kept");
+        var mailbox = await ConnectMailboxAsync(user, GreenMailFixture.Password);
+        var id = (await BackfillAsync(mailbox)).Single().ProviderMessageId;
+        Value(await WithProviderAsync(p => p.CreateLabelAsync(mailbox, "Trash")));
+
+        var refused = await WithProviderAsync(p => p.TrashAsync(mailbox, [id]));
+
+        Assert.Equal(MailErrors.NoTrashFolder.Code, Assert.Single(refused.Errors).Code);
+        Assert.Equal(["Kept"], await SubjectsSeenByWebmailAsync(user, "INBOX"));
+    }
+
+    [Fact]
+    public async Task Folders_are_created_renamed_and_deleted_only_when_empty()
+    {
+        const string user = "folders@example.com";
+        await mail.DeliverAsync(user, "Inside");
+        var mailbox = await ConnectMailboxAsync(user, GreenMailFixture.Password);
+
+        // Created and subscribed, so both stay in scope.
+        var keep = Value(await WithProviderAsync(p => p.CreateLabelAsync(mailbox, "Keep")));
+        var work = Value(await WithProviderAsync(p => p.CreateLabelAsync(mailbox, "Work")));
+        Assert.Equal(LabelKind.User, work.Kind);
+        Assert.True(work.IsExclusive);
+        Assert.Contains(work.ProviderLabelId, await LabelIdsAsync(mailbox));
+
+        using (var webmail = await mail.ConnectAsync(user))
+        {
+            var parent = await webmail.GetFolderAsync(work.ProviderLabelId);
+            var child = await parent.CreateAsync("Child", isMessageFolder: true);
+            await child.SubscribeAsync();
+        }
+
+        // A rename keeps the folder and its subfolder in scope.
+        Value(await WithProviderAsync(p => p.RenameLabelAsync(mailbox, work.ProviderLabelId, "Renamed")));
+        var labels = await LabelIdsAsync(mailbox);
+        Assert.DoesNotContain(work.ProviderLabelId, labels);
+        Assert.Contains(labels, l => l == "Renamed");
+        Assert.Contains(labels, l => l.StartsWith("Renamed", StringComparison.Ordinal) && l.EndsWith("Child", StringComparison.Ordinal));
+        Assert.Contains(keep.ProviderLabelId, labels);
+
+        // A name with the separator would create a hierarchy.
+        var separator = await SeparatorAsync(user);
+        var badName = await WithProviderAsync(p => p.CreateLabelAsync(mailbox, $"a{separator}b"));
+        Assert.Equal(MailErrors.LabelNameInvalid.Code, Assert.Single(badName.Errors).Code);
+
+        // A folder with a subfolder or with messages stays.
+        var hasChild = await WithProviderAsync(p => p.DeleteLabelAsync(mailbox, "Renamed"));
+        Assert.Equal(MailErrors.LabelNotEmpty.Code, Assert.Single(hasChild.Errors).Code);
+
+        var id = (await BackfillAsync(mailbox)).Single().ProviderMessageId;
+        var moved = Value(await WithProviderAsync(p => p.MoveAsync(mailbox, [id], keep.ProviderLabelId)));
+        var hasMessage = await WithProviderAsync(p => p.DeleteLabelAsync(mailbox, keep.ProviderLabelId));
+        Assert.Equal(MailErrors.LabelNotEmpty.Code, Assert.Single(hasMessage.Errors).Code);
+        Assert.Equal(["Inside"], await SubjectsSeenByWebmailAsync(user, keep.ProviderLabelId));
+
+        // The message can go back to the inbox from there.
+        Value(await WithProviderAsync(p => p.MoveAsync(mailbox, [moved[id]!], "INBOX")));
+        Assert.Equal(["Inside"], await SubjectsSeenByWebmailAsync(user, "INBOX"));
+
+        // Empty, it goes. A never-used folder: GreenMail drops the connection on deleting one that held a message,
+        // so that case is for the real check on Titan.
+        var empty = Value(await WithProviderAsync(p => p.CreateLabelAsync(mailbox, "Empty")));
+        Value(await WithProviderAsync(p => p.DeleteLabelAsync(mailbox, empty.ProviderLabelId)));
+        Assert.DoesNotContain(empty.ProviderLabelId, await LabelIdsAsync(mailbox));
+
+        // The inbox can be neither renamed nor deleted.
+        var rename = await WithProviderAsync(p => p.RenameLabelAsync(mailbox, "INBOX", "Nope"));
+        Assert.Equal(MailErrors.SystemLabel.Code, Assert.Single(rename.Errors).Code);
+        var delete = await WithProviderAsync(p => p.DeleteLabelAsync(mailbox, "INBOX"));
+        Assert.Equal(MailErrors.SystemLabel.Code, Assert.Single(delete.Errors).Code);
+    }
+
+    private async Task<IReadOnlyList<RemoteMessage>> BackfillAsync(Mailbox mailbox)
+    {
+        var messages = new List<RemoteMessage>();
+        var cursor = Value(await WithProviderAsync(p => p.StartBackfillAsync(mailbox))).BackfillCursor;
+        while (cursor is not null)
+        {
+            var current = cursor;
+            var batch = Value(await WithProviderAsync(p => p.FetchBackfillBatchAsync(mailbox, current, 100)));
+            messages.AddRange(batch.Messages);
+            cursor = batch.NextCursor;
+        }
+        return messages;
+    }
+
+    private async Task<List<string>> LabelIdsAsync(Mailbox mailbox) =>
+        Value(await WithProviderAsync(p => p.ListLabelsAsync(mailbox))).Select(l => l.ProviderLabelId).ToList();
+
+    private async Task<char> SeparatorAsync(string user)
+    {
+        using var webmail = await mail.ConnectAsync(user);
+        return webmail.GetFolder(webmail.PersonalNamespaces[0]).DirectorySeparator;
+    }
+
+    private async Task<MessageFlags> FlagsSeenByWebmailAsync(string user)
+    {
+        using var webmail = await mail.ConnectAsync(user);
+        await webmail.Inbox.OpenAsync(FolderAccess.ReadOnly);
+        var summary = (await webmail.Inbox.FetchAsync(0, -1, MessageSummaryItems.Flags)).Single();
+        return summary.Flags!.Value & (MessageFlags.Seen | MessageFlags.Flagged);
+    }
+
+    private async Task<List<string>> SubjectsSeenByWebmailAsync(string user, string path)
+    {
+        using var webmail = await mail.ConnectAsync(user);
+        var folder = path == "INBOX" ? webmail.Inbox : await webmail.GetFolderAsync(path);
+        await folder.OpenAsync(FolderAccess.ReadOnly);
+        if (folder.Count == 0)
+            return [];
+        return (await folder.FetchAsync(0, -1, MessageSummaryItems.Envelope)).Select(s => s.Envelope.Subject).ToList();
     }
 
     /// <summary>A Pandora user with a password account for <paramref name="user"/>, and a mailbox on it.</summary>

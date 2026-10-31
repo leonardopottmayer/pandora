@@ -164,6 +164,185 @@ internal sealed class ImapMailboxProvider(IExternalCredentialProvider credential
             return Result<byte[]>.Success(buffer.ToArray());
         }, ct);
 
+    /// <summary>
+    /// Also subscribes: only subscribed folders are in scope once any is, so the new one would never appear.
+    /// </summary>
+    public Task<Result<RemoteLabel>> CreateLabelAsync(Mailbox mailbox, string name, CancellationToken ct = default) =>
+        RunAsync(mailbox, async (client, token) =>
+        {
+            if (client.PersonalNamespaces.Count == 0)
+                return Result<RemoteLabel>.Failure(MailErrors.ActionNotSupported);
+
+            var root = client.GetFolder(client.PersonalNamespaces[0]);
+            if (name.Contains(root.DirectorySeparator))
+                return Result<RemoteLabel>.Failure(MailErrors.LabelNameInvalid);
+
+            var folder = await root.CreateAsync(name, isMessageFolder: true, token);
+            await folder.SubscribeAsync(token);
+            return Result<RemoteLabel>.Success(ToLabel(folder));
+        }, ct);
+
+    /// <summary>
+    /// A subscription belongs to the name, so it moves by hand, subfolders included, or the folder would drop out
+    /// of scope and its messages out of Pandora.
+    /// </summary>
+    public Task<Result<bool>> RenameLabelAsync(Mailbox mailbox, string providerLabelId, string newName, CancellationToken ct = default) =>
+        RunAsync(mailbox, async (client, token) =>
+        {
+            var folder = await client.GetFolderAsync(providerLabelId, token);
+            if (IsSystem(folder))
+                return Result<bool>.Failure(MailErrors.SystemLabel);
+            if (newName.Contains(folder.DirectorySeparator))
+                return Result<bool>.Failure(MailErrors.LabelNameInvalid);
+
+            await folder.UnsubscribeAsync(token);
+            try
+            {
+                await folder.RenameAsync(folder.ParentFolder, newName, token);
+            }
+            catch
+            {
+                await folder.SubscribeAsync(token);
+                throw;
+            }
+
+            await SubscribeTreeAsync(folder, token);
+            return Result<bool>.Success(true);
+        }, ct);
+
+    public Task<Result<bool>> DeleteLabelAsync(Mailbox mailbox, string providerLabelId, CancellationToken ct = default) =>
+        RunAsync(mailbox, async (client, token) =>
+        {
+            var folder = await client.GetFolderAsync(providerLabelId, token);
+            if (IsSystem(folder))
+                return Result<bool>.Failure(MailErrors.SystemLabel);
+
+            // Asked of the server, not of the mirror: the mirror can be a cycle behind.
+            await folder.StatusAsync(StatusItems.Count, token);
+            if (folder.Count > 0 || (await folder.GetSubfoldersAsync(false, token)).Count > 0)
+                return Result<bool>.Failure(MailErrors.LabelNotEmpty);
+
+            // In this order: some servers refuse to unsubscribe a folder that no longer exists.
+            await folder.UnsubscribeAsync(token);
+            try
+            {
+                await folder.DeleteAsync(token);
+            }
+            catch
+            {
+                await folder.SubscribeAsync(token);
+                throw;
+            }
+
+            return Result<bool>.Success(true);
+        }, ct);
+
+    public Task<Result<bool>> SetFlagsAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, bool? isUnread, bool? isStarred, CancellationToken ct = default) =>
+        RunAsync(mailbox, async (client, token) =>
+        {
+            foreach (var group in GroupByFolder(providerMessageIds))
+            {
+                var folder = await TryOpenAsync(client, group.Path, token, FolderAccess.ReadWrite);
+                if (folder is null || folder.UidValidity != group.UidValidity)
+                    return Result<bool>.Failure(MailErrors.SyncCursorExpired);
+
+                if (isUnread is { } unread)
+                    await (unread
+                        ? folder.RemoveFlagsAsync(group.Uids, MessageFlags.Seen, silent: true, token)
+                        : folder.AddFlagsAsync(group.Uids, MessageFlags.Seen, silent: true, token));
+                if (isStarred is { } starred)
+                    await (starred
+                        ? folder.AddFlagsAsync(group.Uids, MessageFlags.Flagged, silent: true, token)
+                        : folder.RemoveFlagsAsync(group.Uids, MessageFlags.Flagged, silent: true, token));
+
+                await folder.CloseAsync(false, token);
+            }
+
+            return Result<bool>.Success(true);
+        }, ct);
+
+    public Task<Result<bool>> ChangeLabelsAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, IReadOnlyCollection<string> add, IReadOnlyCollection<string> remove,
+        CancellationToken ct = default) =>
+        Task.FromResult(Result<bool>.Failure(MailErrors.ActionNotSupported));
+
+    public Task<Result<IReadOnlyDictionary<string, string?>>> MoveAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, string targetProviderLabelId, CancellationToken ct = default) =>
+        RunAsync(mailbox, async (client, token) =>
+        {
+            var target = IsInboxPath(targetProviderLabelId) ? client.Inbox : await client.GetFolderAsync(targetProviderLabelId, token);
+            return await MoveToAsync(client, providerMessageIds, target, token);
+        }, ct);
+
+    public Task<Result<IReadOnlyDictionary<string, string?>>> TrashAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, CancellationToken ct = default) =>
+        RunAsync(mailbox, async (client, token) =>
+        {
+            var trash = (await FoldersInScopeAsync(client, token)).FirstOrDefault(f => ToLabel(f).Role == LabelRole.Trash);
+            return trash is null
+                ? Result<IReadOnlyDictionary<string, string?>>.Failure(MailErrors.NoTrashFolder)
+                : await MoveToAsync(client, providerMessageIds, trash, token);
+        }, ct);
+
+    /// <summary>A UID is per folder, so a move gets a new one; without UIDPLUS the server does not say which.</summary>
+    private static async Task<Result<IReadOnlyDictionary<string, string?>>> MoveToAsync(
+        ImapClient client, IReadOnlyCollection<string> providerMessageIds, IMailFolder target, CancellationToken ct)
+    {
+        var moved = new Dictionary<string, string?>();
+
+        foreach (var group in GroupByFolder(providerMessageIds))
+        {
+            if (string.Equals(group.Path, target.FullName, StringComparison.Ordinal))
+            {
+                foreach (var uid in group.Uids)
+                    moved[MessageId(group.UidValidity, uid.Id, group.Path)] = MessageId(group.UidValidity, uid.Id, group.Path);
+                continue;
+            }
+
+            var source = await TryOpenAsync(client, group.Path, ct, FolderAccess.ReadWrite);
+            if (source is null || source.UidValidity != group.UidValidity)
+                return Result<IReadOnlyDictionary<string, string?>>.Failure(MailErrors.SyncCursorExpired);
+
+            var map = await source.MoveToAsync(group.Uids, target, ct);
+            foreach (var uid in group.Uids)
+                moved[MessageId(group.UidValidity, uid.Id, group.Path)] =
+                    map.TryGetValue(uid, out var next) ? MessageId(next.Validity, next.Id, target.FullName) : null;
+
+            await source.CloseAsync(false, ct);
+        }
+
+        return Result<IReadOnlyDictionary<string, string?>>.Success(moved);
+    }
+
+    private sealed record FolderGroup(string Path, uint UidValidity, IList<UniqueId> Uids);
+
+    /// <summary>An id that is not one of this adapter's is a bug in the caller: it fails the whole action.</summary>
+    private static List<FolderGroup> GroupByFolder(IReadOnlyCollection<string> providerMessageIds)
+    {
+        var groups = new Dictionary<(string Path, uint UidValidity), List<UniqueId>>();
+        foreach (var id in providerMessageIds)
+        {
+            if (!TryParseMessageId(id, out var uidValidity, out var uid, out var path))
+                throw new ArgumentException($"Not an IMAP message id: '{id}'.", nameof(providerMessageIds));
+
+            if (!groups.TryGetValue((path, uidValidity), out var uids))
+                groups[(path, uidValidity)] = uids = [];
+            uids.Add(new UniqueId(uid));
+        }
+
+        return groups.Select(g => new FolderGroup(g.Key.Path, g.Key.UidValidity, g.Value)).ToList();
+    }
+
+    private static async Task SubscribeTreeAsync(IMailFolder folder, CancellationToken ct)
+    {
+        await folder.SubscribeAsync(ct);
+        foreach (var child in await folder.GetSubfoldersAsync(false, ct))
+            await SubscribeTreeAsync(child, ct);
+    }
+
+    private static bool IsSystem(IMailFolder folder) => IsInbox(folder) || ToLabel(folder).Role is not null;
+
     /// <summary>Connects and logs in, runs <paramref name="work"/>, and maps what the server says to the port's errors.</summary>
     private async Task<Result<T>> RunAsync<T>(
         Mailbox mailbox, Func<ImapClient, CancellationToken, Task<Result<T>>> work, CancellationToken ct)
@@ -214,12 +393,13 @@ internal sealed class ImapMailboxProvider(IExternalCredentialProvider credential
         ];
     }
 
-    private static async Task<IMailFolder?> TryOpenAsync(ImapClient client, string path, CancellationToken ct)
+    private static async Task<IMailFolder?> TryOpenAsync(
+        ImapClient client, string path, CancellationToken ct, FolderAccess access = FolderAccess.ReadOnly)
     {
         try
         {
             var folder = IsInboxPath(path) ? client.Inbox : await client.GetFolderAsync(path, ct);
-            await folder.OpenAsync(FolderAccess.ReadOnly, ct);
+            await folder.OpenAsync(access, ct);
             return folder;
         }
         catch (FolderNotFoundException)

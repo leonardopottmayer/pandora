@@ -1,6 +1,6 @@
 # Communications — Execution Plan, M2 (Organize)
 
-> **Status:** In progress: step 1 built. It is phase **M2** of the [product-plan](product-plan.md); what exists today is in
+> **Status:** In progress: steps 1–2 built. It is phase **M2** of the [product-plan](product-plan.md); what exists today is in
 > [Implementation Status](implementation-status.md).
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan-m2.md)
 
@@ -94,7 +94,18 @@ No new feature, and it changes no mailbox.
 - `ponytail:` a move between folders that straddles the walk (from a folder not read yet to one already read) spans two cycles, so it
   is not stitched and can still fire a false event. A window of seconds, on the IMAP walk only.
 
-### Step 2 — Port and IMAP writes
+### Step 2 — Port and IMAP writes ✅
+
+> **Built (2026-10-30).** Changes from the list below:
+> - **`TrashAsync` returns the ids** like `MoveAsync`, since on IMAP it is a move.
+> - **A rename moves the subscription by hand**, subfolders included: a subscription belongs to the name, so the folder would drop out
+>   of scope.
+> - **A folder with subfolders** is also `LabelNotEmpty`, and the check uses `STATUS`.
+> - **The Gmail adapter answers `ActionNotSupported`** to every write until step 3. Nothing calls the writes yet.
+> - **Not covered by GreenMail, so for step 6:** it has no SPECIAL-USE, so no folder there has the `trash` role (only the refusal is
+>   tested); and it drops the connection on deleting a folder that once held a message, so the test deletes a never-used one. MailKit's
+>   behavior without `MOVE` was not exercised either: GreenMail announces `MOVE` and `UIDPLUS`.
+> - Tests: `ImapMailboxProviderTests` +4.
 
 - `IMailboxProvider` gains:
   - `CreateLabelAsync(mailbox, name)` → `RemoteLabel`
@@ -168,7 +179,8 @@ Only on disposable material: a `pandora-test` label and folder, and messages sen
 - **Gmail:** create `pandora-test` in Pandora → it appears in Gmail. Label, move and star → they show in Gmail. Trash → it is in Gmail's
   trash, and can be restored. A change in Gmail → it shows in Pandora.
 - **Titan:** the same, with a folder. Move in the webmail → same row, cached body kept, no `MailMessageReceived` in the outbox. Rename in
-  the webmail → renamed in Pandora, bodies kept. Delete a folder with a message → refused.
+  the webmail → renamed in Pandora, bodies kept. Delete a folder with a message → refused. Empty that folder and delete it → it goes.
+  Trash finds the folder with the `trash` role.
 - **Timing:** an action during a Gmail or Titan cycle does not wait for it.
 - **Titan:** record `UIDPLUS` and `MOVE`.
 - **Docs:** `overview`, `architecture` (gates, stitching), `data-model`, `api-reference`, `implementation-status`, en + pt-BR; the product

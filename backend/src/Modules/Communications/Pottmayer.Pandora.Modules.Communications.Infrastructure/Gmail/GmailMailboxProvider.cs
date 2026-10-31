@@ -135,6 +135,33 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
             return DecodeBase64Url(message.Raw);
         }, ct);
 
+    // Temporary, until M2's step 3: nothing calls the writes yet.
+    public Task<Result<RemoteLabel>> CreateLabelAsync(Mailbox mailbox, string name, CancellationToken ct = default) =>
+        Task.FromResult(Result<RemoteLabel>.Failure(MailErrors.ActionNotSupported));
+
+    public Task<Result<bool>> RenameLabelAsync(Mailbox mailbox, string providerLabelId, string newName, CancellationToken ct = default) =>
+        Task.FromResult(Result<bool>.Failure(MailErrors.ActionNotSupported));
+
+    public Task<Result<bool>> DeleteLabelAsync(Mailbox mailbox, string providerLabelId, CancellationToken ct = default) =>
+        Task.FromResult(Result<bool>.Failure(MailErrors.ActionNotSupported));
+
+    public Task<Result<bool>> SetFlagsAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, bool? isUnread, bool? isStarred, CancellationToken ct = default) =>
+        Task.FromResult(Result<bool>.Failure(MailErrors.ActionNotSupported));
+
+    public Task<Result<bool>> ChangeLabelsAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, IReadOnlyCollection<string> add, IReadOnlyCollection<string> remove,
+        CancellationToken ct = default) =>
+        Task.FromResult(Result<bool>.Failure(MailErrors.ActionNotSupported));
+
+    public Task<Result<IReadOnlyDictionary<string, string?>>> MoveAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, string targetProviderLabelId, CancellationToken ct = default) =>
+        Task.FromResult(Result<IReadOnlyDictionary<string, string?>>.Failure(MailErrors.ActionNotSupported));
+
+    public Task<Result<IReadOnlyDictionary<string, string?>>> TrashAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, CancellationToken ct = default) =>
+        Task.FromResult(Result<IReadOnlyDictionary<string, string?>>.Failure(MailErrors.ActionNotSupported));
+
     /// <summary>Gets the token, checks the scope, runs <paramref name="work"/> and maps Gmail's answers to the port's errors.</summary>
     private async Task<Result<T>> RunAsync<T>(Mailbox mailbox, Func<string, CancellationToken, Task<T>> work, CancellationToken ct)
     {

@@ -24,6 +24,22 @@ public static class MailErrors
     public static Error SyncFailed =>
         Error.Validation("Communications.SyncFailed", "The sync stopped on an unexpected error. The server log has the details.");
 
+    /// <summary>Deleting an IMAP folder deletes what is inside it, so only an empty one can go.</summary>
+    public static Error LabelNotEmpty =>
+        Error.Conflict("Communications.LabelNotEmpty", "This folder still has messages or subfolders.");
+
+    public static Error SystemLabel =>
+        Error.Validation("Communications.SystemLabel", "A system label cannot be changed.");
+
+    public static Error LabelNameInvalid =>
+        Error.Validation("Communications.LabelNameInvalid", "This name cannot be used for a label.");
+
+    public static Error NoTrashFolder =>
+        Error.Validation("Communications.NoTrashFolder", "This mailbox has no trash folder.");
+
+    public static Error ActionNotSupported =>
+        Error.Validation("Communications.ActionNotSupported", "This mailbox does not support this action.");
+
     public static Error MailboxNotFound =>
         Error.NotFound("Communications.MailboxNotFound", "This mailbox does not exist.");
 
