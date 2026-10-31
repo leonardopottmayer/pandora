@@ -341,6 +341,35 @@ public sealed class ImapMailboxProviderTests(PandoraWebApplicationFactory factor
     }
 
     [Fact]
+    public async Task A_folder_the_cursor_does_not_know_reports_its_mail_as_existing_and_later_mail_as_new()
+    {
+        const string user = "inview@example.com";
+        await mail.DeliverAsync(user, "In the inbox");
+        var mailbox = await ConnectMailboxAsync(user, GreenMailFixture.Password);
+        var cursor = Value(await WithProviderAsync(p => p.StartBackfillAsync(mailbox))).SyncCursor;
+
+        using (var webmail = await mail.ConnectAsync(user))
+        {
+            var folder = await webmail.GetFolder(webmail.PersonalNamespaces[0]).CreateAsync("Old", isMessageFolder: true);
+            await folder.AppendAsync(new AppendRequest(MimeMessage.Load(new MemoryStream(Raw(user, "From years ago", to: user)))));
+        }
+
+        var first = Value(await WithProviderAsync(p => p.FetchChangesAsync(mailbox, cursor)));
+        var old = Assert.Single(first.Upserts, m => m.Subject == "From years ago");
+        Assert.Contains(old.ProviderMessageId, first.ExistingIds!);
+
+        using (var webmail = await mail.ConnectAsync(user))
+        {
+            var folder = await webmail.GetFolderAsync("Old");
+            await folder.AppendAsync(new AppendRequest(MimeMessage.Load(new MemoryStream(Raw(user, "Really new", to: user)))));
+        }
+
+        var second = Value(await WithProviderAsync(p => p.FetchChangesAsync(mailbox, first.SyncCursor)));
+        var fresh = Assert.Single(second.Upserts, m => m.Subject == "Really new");
+        Assert.DoesNotContain(fresh.ProviderMessageId, second.ExistingIds ?? []);
+    }
+
+    [Fact]
     public async Task Every_folder_stays_in_scope_whatever_is_subscribed()
     {
         const string user = "scope@example.com";

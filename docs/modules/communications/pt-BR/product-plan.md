@@ -122,8 +122,8 @@
 
 Construído na M1: veja o [Integrations](../../integrations/pt-BR/README.md) e a [Arquitetura](architecture.md). Falta:
 
-- A M3 não precisa de escopo novo: `messages.send` aceita `gmail.modify`. A M4 precisa de `gmail.settings.basic`, então as contas já
-  conectadas terão de consentir de novo, e a tela de consentimento precisa declará-lo.
+- A M3 não precisa de escopo novo: `messages.send` aceita `gmail.modify`. A M4 precisa de `gmail.settings.basic` para escrever filtros, então as contas já
+  conectadas terão de consentir de novo, e a tela de consentimento precisa declará-lo. Ler filtros não pede escopo novo.
 - **Google Cloud:** em **Testing** o refresh token expira a cada 7 dias. Ainda falta confirmar se passar o projeto
   para **In production** sem verificação basta para uso pessoal (o
   [guia de configuração](../../../deployment/google-and-gemini-setup.md) assume que a verificação é exigida).
@@ -270,6 +270,8 @@ Pronta em 2026-10-31: veja o [Status de implementação](implementation-status.m
 Pronta em 2026-10-31: veja o [Status de implementação](implementation-status.md).
 
 ### M4 — Regras
+
+Lista de trabalho: [execution-plan-m4.md](execution-plan-m4.md).
 
 - Modelo de regra, motor do Pandora (IMAP), filtros do Gmail nos dois sentidos, status `broken`,
   `mail/rules`.

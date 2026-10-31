@@ -119,8 +119,8 @@ from any provider, in one place. Email comes first.
 
 Built in M1: see [Integrations](../../integrations/README.md) and [Architecture](architecture.md). Left:
 
-- M3 needs no new scope: `messages.send` accepts `gmail.modify`. M4 needs `gmail.settings.basic`, so connected accounts will have to
-  consent again, and the consent screen has to declare it.
+- M3 needs no new scope: `messages.send` accepts `gmail.modify`. M4 needs `gmail.settings.basic` to write filters, so connected accounts will have to
+  consent again, and the consent screen has to declare it. Reading filters needs no new scope.
 - **Google Cloud:** in **Testing** the refresh token expires every 7 days. Whether switching the project to
   **In production** while unverified is enough for personal use is still to confirm (the
   [setup guide](../../../deployment/google-and-gemini-setup.md) assumes verification is required).
@@ -262,6 +262,8 @@ Done on 2026-10-31: see [Implementation Status](implementation-status.md).
 Done on 2026-10-31: see [Implementation Status](implementation-status.md).
 
 ### M4 — Rules
+
+Work list: [execution-plan-m4.md](execution-plan-m4.md).
 
 - Rule model, Pandora's engine (IMAP), Gmail filters both directions, `broken` status, `mail/rules`.
 - **Done when:** existing Gmail filters show up as rules on connect; a rule created in Pandora

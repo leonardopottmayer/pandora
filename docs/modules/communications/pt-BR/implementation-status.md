@@ -25,7 +25,7 @@ frente está em [product-plan.md](product-plan.md).
 | **API** | `GET`/`POST /mailboxes`, `PATCH`/`DELETE /mailboxes/{id}`, `POST /mailboxes/{id}/sync`, `GET /mailboxes/{id}/labels`, `GET /messages`, `GET /messages/{id}`, `GET /messages/{id}/attachments/{attachmentId}`, `POST /messages/actions`, `POST /mailboxes/{id}/labels`, `PATCH`/`DELETE /labels/{id}`, `POST /messages/send`, `GET /messages/{id}/compose`. |
 | **Integrations** | `CommunicationsAccountUsageSource`: a tela de conexões mostra "Email · endereço" como uso da conta. |
 | **Frontend** | `/mail` e `/mail/accounts`; `prepareMailHtml` + iframe em sandbox + CSP; `MailActions`, seleção na lista, menu de etiquetas na barra lateral; `ComposeDrawer`. |
-| **Testes** | Unitários: 91 (`MailboxTests`, `MessageComposerTests`, `ThreadKeyTests`, `LabelRoleTests`, `GmailMailboxProviderTests`). Integração: 70 (`SyncEngineTests`, `CommunicationsApiTests`, `MailActionsApiTests`, `SendMessageApiTests`, `ImapMailboxProviderTests` contra o GreenMail, `PersistenceTests`, `ProviderRegistrationTests`). Front: `prepareMailHtml.test.ts`, `MailPage.test.tsx`, `ComposeDrawer.test.tsx`, `composeBody.test.ts`. |
+| **Testes** | Unitários: 91 (`MailboxTests`, `MessageComposerTests`, `ThreadKeyTests`, `LabelRoleTests`, `GmailMailboxProviderTests`). Integração: 72 (`SyncEngineTests`, `CommunicationsApiTests`, `MailActionsApiTests`, `SendMessageApiTests`, `ImapMailboxProviderTests` contra o GreenMail, `PersistenceTests`, `ProviderRegistrationTests`). Front: `prepareMailHtml.test.ts`, `MailPage.test.tsx`, `ComposeDrawer.test.tsx`, `composeBody.test.ts`. |
 
 ### Verificação real (2026-10-30)
 
@@ -63,7 +63,7 @@ Nas mesmas contas, com mensagens descartáveis, à mão; o outbox e as etiquetas
 
 A verificação achou um bug que os testes não tinham pegado: assinar uma pasta criada no Pandora virava a regra de pastas assinadas da M1, então Trash, Sent e as
 outras saíram do Pandora no Titan, embora nada tenha mudado no provedor. Agora toda pasta selecionável está no escopo (decisão D8 na
-[Arquitetura](architecture.md)). O retorno das pastas publicou 25 `MailMessageReceived` falsos (ponto em aberto 6 abaixo), sem efeito, porque nada os consome.
+[Arquitetura](architecture.md)). O retorno das pastas publicou 25 `MailMessageReceived` falsos, sem efeito, porque nada os consumia; corrigido na M4.
 
 ### Verificação real da M3 (2026-10-31)
 
@@ -113,13 +113,11 @@ A verificação achou um bug que os testes não tinham pegado: o envio esperava 
    por semana. Passar de 100 usuários exigiria a verificação do Google para um escopo restrito.
 4. **A busca** usa `ILIKE` sem índice e não lê o corpo. Serve no volume de uma pessoa.
 5. **O download de anexo** busca a mensagem crua inteira de novo.
-6. **Uma pasta que entra no escopo com mensagens** chega como email novo, com um `MailMessageReceived` falso por mensagem. Precisa ser corrigido antes de o Radar
-   consumir o evento.
-7. **Um mover que atravessa a varredura IMAP**, de uma pasta ainda não lida para uma já lida, ocupa dois ciclos, então não é juntado e pode disparar um evento falso.
-8. **Depois de uma ação no Gmail durante uma carga inicial**, um lote antigo pode mostrar o estado anterior por até um ciclo.
-9. **Só a página carregada pode ser selecionada**, e não há desfazer; a lixeira pode ser restaurada no provedor.
-10. **Não se sabe por que um acúmulo foi tão longo.** Depois de 9 horas parado, um ciclo leu por mais de 20 minutos, cerca de 44 mil ids de histórico. Agora é salvo em partes, e o log diz quantas mensagens cada parte leu.
-11. **As chaves de envio ficam na memória do processo,** então uma nova tentativa logo depois de reiniciar pode enviar duas vezes.
-12. **Um servidor que salva a cópia mais de 3 segundos depois** fica com duas. O Titan não ficou.
-13. **O limite de 25 MB não está confirmado:** as páginas da API do Google não informam nenhum. Um email acima do limite real volta como recusa.
-14. **Sem nome de remetente, sem imagens inline, texto citado puro.**
+6. **Um mover que atravessa a varredura IMAP**, de uma pasta ainda não lida para uma já lida, ocupa dois ciclos, então não é juntado e pode disparar um evento falso.
+7. **Depois de uma ação no Gmail durante uma carga inicial**, um lote antigo pode mostrar o estado anterior por até um ciclo.
+8. **Só a página carregada pode ser selecionada**, e não há desfazer; a lixeira pode ser restaurada no provedor.
+9. **Não se sabe por que um acúmulo foi tão longo.** Depois de 9 horas parado, um ciclo leu por mais de 20 minutos, cerca de 44 mil ids de histórico. Agora é salvo em partes, e o log diz quantas mensagens cada parte leu.
+10. **As chaves de envio ficam na memória do processo,** então uma nova tentativa logo depois de reiniciar pode enviar duas vezes.
+11. **Um servidor que salva a cópia mais de 3 segundos depois** fica com duas. O Titan não ficou.
+12. **O limite de 25 MB não está confirmado:** as páginas da API do Google não informam nenhum. Um email acima do limite real volta como recusa.
+13. **Sem nome de remetente, sem imagens inline, texto citado puro.**

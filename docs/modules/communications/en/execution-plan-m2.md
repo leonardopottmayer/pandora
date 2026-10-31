@@ -228,8 +228,6 @@ Only on disposable material: a `pandora-test` label and folder, and messages sen
 
 - **A folder rename reads its headers again.** Quick on a small folder; a very large one would need rename detection.
 - **A move straddling the IMAP walk** spans two cycles (see step 1).
-- **A folder that newly comes into scope with messages** arrives as new mail, with one false `MailMessageReceived` per message. Nothing
-  consumes the event yet; it must be fixed before Radar does.
 - **Only the loaded page can be selected.** "Everything under this label" is later.
 - **No undo.** Trash can be restored at the provider.
 - **After a Gmail action the screen is right at once**, but a stale backfill batch can put the old state back for up to one cycle.

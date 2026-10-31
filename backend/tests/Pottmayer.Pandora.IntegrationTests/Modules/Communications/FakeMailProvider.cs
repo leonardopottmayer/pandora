@@ -43,6 +43,9 @@ internal sealed class FakeMailProvider : IMailboxProvider
 
     public int FetchChangesCalls { get; private set; }
 
+    /// <summary>What FetchChanges reports as already in the mailbox: a folder that just came into view.</summary>
+    public List<string> ExistingIds { get; } = [];
+
     public int StartBackfillCalls { get; private set; }
 
     public int RawFetches { get; private set; }
@@ -144,7 +147,7 @@ internal sealed class FakeMailProvider : IMailboxProvider
             _changed.RemoveAll(id => !_messages.ContainsKey(id));
             _removed.Clear();
         }
-        return await Answer(new RemoteChanges(upserts, removed, snapshots, $"v{++_version}", HasMore: taken.Count < changed.Count));
+        return await Answer(new RemoteChanges(upserts, removed, snapshots, $"v{++_version}", HasMore: taken.Count < changed.Count, ExistingIds: [.. ExistingIds]));
     }
 
     /// <summary>A text + HTML body and one PDF attachment, whatever the message.</summary>

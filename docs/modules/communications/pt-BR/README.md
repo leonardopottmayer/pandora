@@ -31,6 +31,7 @@ Comece pela **Visão geral** para a fronteira e o vocabulário, depois leia o t�
 | 7 | [Plano de execução](execution-plan.md) | Como a M1 foi construída, passo a passo (histórico) |
 | 8 | [Plano de execução da M2](execution-plan-m2.md) | Como a M2 foi construída, passo a passo (histórico) |
 | 9 | [Plano de execução da M3](execution-plan-m3.md) | Como a M3 foi construída, passo a passo (histórico) |
+| 10 | [Plano de execução da M4](execution-plan-m4.md) | A próxima fase, regras: decisões e passos (plano) |
 
 🇺🇸 Todo documento também existe em inglês, em [`en/`](../README.md).
 

@@ -123,6 +123,7 @@ internal sealed class ImapMailboxProvider(IExternalCredentialProvider credential
             var next = new Dictionary<string, FolderState>();
             var upserts = new List<RemoteMessage>();
             var snapshots = new List<RemoteLabelSnapshot>();
+            var existing = new List<string>();
 
             foreach (var folder in await FoldersInScopeAsync(client, token))
             {
@@ -134,9 +135,12 @@ internal sealed class ImapMailboxProvider(IExternalCredentialProvider credential
                 if (before is not null && before.UidValidity != folder.UidValidity)
                     return Result<RemoteChanges>.Failure(MailErrors.SyncCursorExpired);
 
-                // A folder the cursor does not know yet (created since): all of it is new.
+                // A folder the cursor does not know yet (created since, or back in view): all of it is read, but what it
+                // already holds is not mail that just arrived.
                 var boundary = before?.UidNext ?? 1;
                 var fresh = all.Where(u => u.Id >= boundary).ToList();
+                if (before is null)
+                    existing.AddRange(fresh.Select(u => MessageId(folder.UidValidity, u.Id, path)));
                 var changed = await ChangedSinceAsync(client, folder, before, all, boundary, token);
 
                 upserts.AddRange(await FetchAsync(folder, [.. fresh, .. changed], token));
@@ -151,7 +155,7 @@ internal sealed class ImapMailboxProvider(IExternalCredentialProvider credential
             foreach (var path in known.Keys.Where(p => !next.ContainsKey(p)))
                 snapshots.Add(new RemoteLabelSnapshot(path, []));
 
-            return Result<RemoteChanges>.Success(new RemoteChanges(upserts, [], snapshots, Write(next)));
+            return Result<RemoteChanges>.Success(new RemoteChanges(upserts, [], snapshots, Write(next), ExistingIds: existing));
         }, ct);
 
     public Task<Result<byte[]>> GetRawMessageAsync(Mailbox mailbox, string providerMessageId, CancellationToken ct = default) =>

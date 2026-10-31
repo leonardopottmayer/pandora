@@ -227,8 +227,6 @@ Só com material descartável: uma etiqueta e uma pasta `pandora-test`, e mensag
 
 - **Renomear uma pasta relê os cabeçalhos dela.** Rápido numa pasta pequena; uma muito grande precisaria de detecção de renomeação.
 - **Um mover que atravessa a varredura IMAP** ocupa dois ciclos (veja o passo 1).
-- **Uma pasta que entra no escopo com mensagens** chega como email novo, com um `MailMessageReceived` falso por mensagem. Nada consome o evento
-  ainda; precisa ser corrigido antes do Radar.
 - **Só a página carregada pode ser selecionada.** "Tudo nesta etiqueta" fica para depois.
 - **Sem desfazer.** A lixeira pode ser restaurada no provedor.
 - **Depois de uma ação no Gmail a tela fica certa na hora**, mas um lote antigo da carga inicial pode trazer o estado anterior de volta por até um ciclo.

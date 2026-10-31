@@ -90,7 +90,7 @@ public sealed class MailboxChangesStep(
         var value = changes.Value;
         await factory.UpdateMailboxAsync(mailbox.Id, async (context, m) =>
         {
-            await ApplyMessagesAsync(context, m, value.Upserts, value.RemovedIds, value.Snapshots, publish: true, ct);
+            await ApplyMessagesAsync(context, m, value.Upserts, value.RemovedIds, value.Snapshots, publish: true, ct, value.ExistingIds);
             m.SetSyncCursor(value.SyncCursor);
         }, ct);
 
@@ -171,7 +171,7 @@ public sealed class MailboxChangesStep(
     private async Task ApplyMessagesAsync(
         IDataContext context, Mailbox mailbox,
         IReadOnlyList<RemoteMessage> upserts, IReadOnlyList<string> removedIds, IReadOnlyList<RemoteLabelSnapshot> snapshots,
-        bool publish, CancellationToken ct)
+        bool publish, CancellationToken ct, IReadOnlyCollection<string>? existingIds = null)
     {
         var messages = context.AcquireRepository<IMailMessageRepository>();
         var labels = await context.AcquireRepository<IMailLabelRepository>().ListByMailboxAsync(mailbox.Id, ct);
@@ -221,11 +221,13 @@ public sealed class MailboxChangesStep(
                 continue;
             }
 
-            // An arrival is a message the mailbox has never had (a copy keeps its Message-ID) and that the user did
-            // not write. ponytail: mail sent to yourself, if its sent copy comes a cycle before the inbox's, has
-            // no arrival, since the Message-ID is already here.
+            // An arrival is a message the mailbox has never had (a copy keeps its Message-ID), that the user did not
+            // write, and that did not just come into view. Rules run on arrivals, so a false one acts on old mail.
+            // ponytail: mail sent to yourself, if its sent copy comes a cycle before the inbox's, has no arrival, since
+            // the Message-ID is already here.
             var isOwnMail = remote.ProviderLabelIds.Count > 0 && remote.ProviderLabelIds.All(ownMail.Contains);
-            var isArrival = publish && !isOwnMail
+            var isExisting = existingIds?.Contains(remote.ProviderMessageId) == true;
+            var isArrival = publish && !isOwnMail && !isExisting
                                     && (remote.Rfc822MessageId is not { } rfc822
                                         || (seenRfc822.Add(rfc822) && !await messages.ExistsWithRfc822IdAsync(mailbox.Id, rfc822, ct)));
 

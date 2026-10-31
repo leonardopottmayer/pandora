@@ -127,11 +127,15 @@ public sealed record BackfillBatch(IReadOnlyList<RemoteMessage> Messages, string
 /// <param name="HasMore">
 /// This is a part of what changed, and <see cref="SyncCursor"/> is where the rest starts, so a long backlog is saved as it goes.
 /// </param>
+/// <param name="ExistingIds">
+/// Upserts that were already in the mailbox and only came into view (an IMAP folder the cursor did not know), so not arrivals.
+/// </param>
 public sealed record RemoteChanges(
     IReadOnlyList<RemoteMessage> Upserts,
     IReadOnlyList<string> RemovedIds,
     IReadOnlyList<RemoteLabelSnapshot> Snapshots,
     string SyncCursor,
-    bool HasMore = false);
+    bool HasMore = false,
+    IReadOnlyCollection<string>? ExistingIds = null);
 
 public sealed record RemoteLabelSnapshot(string ProviderLabelId, IReadOnlyCollection<string> ProviderMessageIds);

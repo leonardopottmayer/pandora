@@ -235,6 +235,28 @@ public sealed class SyncEngineTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Mail_that_only_came_into_view_is_saved_but_is_not_an_arrival()
+    {
+        var mailbox = await CreateMailboxAsync();
+        await SyncAsync(mailbox.Id);
+
+        _provider.Labels.Add(new RemoteLabel("Old", "Old", LabelKind.User, null, IsExclusive: true));
+        _provider.Deliver("old-1", "From years ago", label: "Old");
+        _provider.ExistingIds.Add("old-1");
+        Assert.True(Value(await SyncAsync(mailbox.Id)));
+
+        Assert.Equal(["From years ago"], await SubjectsAsync(mailbox.Id));
+        Assert.Equal(0, await CountOutboxAsync(MessageReceived));
+
+        // A message that really arrives there afterwards is one.
+        _provider.ExistingIds.Clear();
+        _provider.Deliver("old-2", "New", label: "Old");
+        Assert.True(Value(await SyncAsync(mailbox.Id)));
+
+        Assert.Equal(1, await CountOutboxAsync(MessageReceived));
+    }
+
+    [Fact]
     public async Task Mail_in_sent_or_drafts_is_not_an_arrival()
     {
         _provider.Labels.Add(new RemoteLabel("Sent", "Sent", LabelKind.System, LabelRole.Sent, IsExclusive: true));
