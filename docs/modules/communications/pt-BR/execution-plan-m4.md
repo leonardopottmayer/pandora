@@ -1,6 +1,6 @@
 # Communications — Plano de Execução, M4 (Regras)
 
-> **Status:** Em andamento: decisões aprovadas, passos 1–2 construídos. É a fase **M4** do [product-plan](product-plan.md), cuja §10 tem o modelo; o que existe hoje está no
+> **Status:** Em andamento: decisões aprovadas, passos 1–3 construídos. É a fase **M4** do [product-plan](product-plan.md), cuja §10 tem o modelo; o que existe hoje está no
 > [Status de implementação](implementation-status.md).
 > 🇺🇸 [English version](../en/execution-plan-m4.md)
 
@@ -70,7 +70,9 @@ Cada passo termina verde antes do próximo. Pontos de commit sugeridos: **M4a** 
 - `RulePlan`: das regras que casam, um conjunto de ações, como decidido.
 - **Testes (unitários):** cada condição; E lógico; a combinação; regras vazias recusadas; etiqueta além da permitida recusada.
 
-### Passo 3 — O motor (IMAP)
+### Passo 3 — O motor (IMAP) ✅
+
+> **Construído (2026-10-31).** `RunMailRulesHandler`, e o `MailboxChangesStep` marca regras como `broken`. O que a checagem do outbox achou: a entrega é pelo menos uma vez, um handler que lança exceção é repetido até 8 vezes e depois vai para dead-letter, e uma queda depois de o handler terminar o repete. Por isso o handler pula o que já está feito, olhando a linha: mensagem que já está na pasta não é movida de novo. Decidido aqui: só `ProviderFailed` e `MailboxAuthFailed` lançam exceção para repetir; qualquer outra falha (sem pasta de arquivo, por exemplo) só se repetiria, então fica na regra. O erro vai para todas as regras que casaram, porque o plano as junta, e o próximo sucesso o limpa. Uma execução que falhou não é refeita depois de esgotadas as tentativas. Renomear pasta no IMAP é uma que some e outra que aparece, então as regras dela ficam `broken` e pedem a pasta de novo. Testes: `MailRulesEngineTests`.
 
 - `RunMailRulesHandler : IIntegrationEventHandler<MailMessageReceived>`: só caixa com regras `pandora`; carrega; casa; aplica pelo mesmo caminho do `ApplyMessageAction`, sob a trava de ação.
 - **Verificar como o outbox repete um handler que lança exceção, e se pode repetir um que deu certo.** Aplicar uma regra duas vezes precisa ser inofensivo: uma mensagem movida é achada pela linha, e lida e estrela são idempotentes.

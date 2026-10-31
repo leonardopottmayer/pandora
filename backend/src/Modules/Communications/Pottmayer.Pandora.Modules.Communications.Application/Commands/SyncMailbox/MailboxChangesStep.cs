@@ -148,6 +148,8 @@ public sealed class MailboxChangesStep(
     {
         var labels = context.AcquireRepository<IMailLabelRepository>();
         var messages = context.AcquireRepository<IMailMessageRepository>();
+        var rules = context.AcquireRepository<IMailRuleRepository>();
+        var mailboxRules = await rules.ListByMailboxAsync(mailboxId, ct);
 
         foreach (var gone in (await labels.ListByMailboxAsync(mailboxId, ct)).Where(l => providerLabelIds.Contains(l.ProviderLabelId)))
         {
@@ -156,6 +158,13 @@ public sealed class MailboxChangesStep(
                 var ids = (await messages.ListKeysUnderLabelAsync(gone.Id, ct)).Select(k => k.ProviderMessageId).ToList();
                 await messages.DeleteByProviderIdsAsync(mailboxId, ids, ct);
             }
+
+            foreach (var rule in mailboxRules.Where(r => r.Actions.Any(a => a.LabelId == gone.Id)))
+            {
+                rule.MarkBroken($"The label '{gone.Name}' no longer exists.");
+                await rules.UpdateAsync(rule, ct);
+            }
+
             await labels.RemoveAsync(gone, ct);
         }
     }

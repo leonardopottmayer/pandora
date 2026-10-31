@@ -1,6 +1,6 @@
 # Communications — Execution Plan, M4 (Rules)
 
-> **Status:** In progress: decisions approved, steps 1–2 built. It is phase **M4** of the [product-plan](product-plan.md), whose §10 has the model; what exists today is in
+> **Status:** In progress: decisions approved, steps 1–3 built. It is phase **M4** of the [product-plan](product-plan.md), whose §10 has the model; what exists today is in
 > [Implementation Status](implementation-status.md).
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan-m4.md)
 
@@ -70,7 +70,9 @@ Each step ends green before the next one. Suggested commit points: **M4a** = ste
 - `RulePlan`: from the rules that match, one set of actions, as decided.
 - **Tests (unit):** each condition; AND; the merge; empty rules refused; a label beyond the one allowed refused.
 
-### Step 3 — The engine (IMAP)
+### Step 3 — The engine (IMAP) ✅
+
+> **Built (2026-10-31).** `RunMailRulesHandler`, and `MailboxChangesStep` marks rules `broken`. What the check of the outbox found: delivery is at least once, a handler that throws is retried up to 8 times and then dead-lettered, and a crash after a handler finishes repeats it. So the handler skips what is already done, by the row: a message already in its folder is not moved again. Decided here: only `ProviderFailed` and `MailboxAuthFailed` throw for a retry; any other failure (no archive folder, say) would only repeat, so it stays on the rule. An error goes on all the rules that matched, since the plan merges them, and the next success clears it. A failed run is not repeated once the retries are spent. Renaming a folder in IMAP is one gone and one new, so its rules go `broken` and need the folder picked again. Tests: `MailRulesEngineTests`.
 
 - `RunMailRulesHandler : IIntegrationEventHandler<MailMessageReceived>`: mailbox with `pandora` rules only; loads them; matches; applies through the same path as `ApplyMessageAction`, under the action gate.
 - **Check how the outbox retries a handler that throws, and whether it can repeat one that succeeded.** Applying a rule twice must be harmless: a moved message is found by its row, and read and star are idempotent.

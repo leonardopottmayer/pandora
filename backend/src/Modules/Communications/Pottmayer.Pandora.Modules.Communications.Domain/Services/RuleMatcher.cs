@@ -14,7 +14,10 @@ public sealed record RulePlan(bool Trash, Guid? MoveTo, bool Archive, bool MarkR
 /// </summary>
 public static class RuleMatcher
 {
-    public static bool NeedsText(MailRule rule) => rule.Conditions.Any(c => c.Kind == RuleConditionKinds.HasWords);
+    /// <summary>Only when the text can still decide: the subject did not have the words, and the rest of the rule matches.</summary>
+    public static bool NeedsText(MailRule rule, MailMessage message) =>
+        rule.Conditions.Any(c => c.Kind == RuleConditionKinds.HasWords && !Has(message.Subject, c.Value))
+        && rule.Conditions.Where(c => c.Kind != RuleConditionKinds.HasWords).All(c => Matches(c, message, null));
 
     public static bool Matches(MailRule rule, MailMessage message, string? text) =>
         rule.Conditions.Count > 0 && rule.Conditions.All(c => Matches(c, message, text));

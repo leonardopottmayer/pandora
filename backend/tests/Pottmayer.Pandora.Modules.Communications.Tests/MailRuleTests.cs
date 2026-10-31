@@ -129,10 +129,18 @@ public sealed class MailRuleTests
         Assert.False(RuleMatcher.Matches(Rule(), Message(), null));
 
     [Fact]
-    public void Only_a_body_condition_needs_the_text()
+    public void The_text_is_needed_only_when_it_can_still_decide()
     {
-        Assert.False(RuleMatcher.NeedsText(Rule(FromAna)));
-        Assert.True(RuleMatcher.NeedsText(Rule(FromAna, new MailRuleCondition(RuleConditionKinds.HasWords, "x"))));
+        var words = new MailRuleCondition(RuleConditionKinds.HasWords, "invoice");
+
+        Assert.False(RuleMatcher.NeedsText(Rule(FromAna), Message()));
+        Assert.True(RuleMatcher.NeedsText(Rule(FromAna, words), Message()));
+
+        // The subject already has the words.
+        Assert.False(RuleMatcher.NeedsText(Rule(new MailRuleCondition(RuleConditionKinds.HasWords, "digest")), Message()));
+
+        // Another condition already failed.
+        Assert.False(RuleMatcher.NeedsText(Rule(new MailRuleCondition(RuleConditionKinds.From, "bo"), words), Message()));
     }
 
     [Fact]
