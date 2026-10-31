@@ -16,7 +16,7 @@ public sealed class GreenMailFixture : IAsyncLifetime
 {
     public const string Password = "secret";
     public static readonly string[] Users =
-        ["sync@example.com", "auth@example.com", "flags@example.com", "move@example.com", "trash@example.com", "folders@example.com"];
+        ["sync@example.com", "auth@example.com", "flags@example.com", "move@example.com", "trash@example.com", "folders@example.com", "scope@example.com"];
 
     private const int SmtpPort = 3025;
     private const int ImapPort = 3143;

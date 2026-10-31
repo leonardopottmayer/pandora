@@ -193,7 +193,6 @@ public sealed class ImapMailboxProviderTests(PandoraWebApplicationFactory factor
         await mail.DeliverAsync(user, "Inside");
         var mailbox = await ConnectMailboxAsync(user, GreenMailFixture.Password);
 
-        // Created and subscribed, so both stay in scope.
         var keep = Value(await WithProviderAsync(p => p.CreateLabelAsync(mailbox, "Keep")));
         var work = Value(await WithProviderAsync(p => p.CreateLabelAsync(mailbox, "Work")));
         Assert.Equal(LabelKind.User, work.Kind);
@@ -203,8 +202,7 @@ public sealed class ImapMailboxProviderTests(PandoraWebApplicationFactory factor
         using (var webmail = await mail.ConnectAsync(user))
         {
             var parent = await webmail.GetFolderAsync(work.ProviderLabelId);
-            var child = await parent.CreateAsync("Child", isMessageFolder: true);
-            await child.SubscribeAsync();
+            await parent.CreateAsync("Child", isMessageFolder: true);
         }
 
         // A rename keeps the folder and its subfolder in scope.
@@ -245,6 +243,40 @@ public sealed class ImapMailboxProviderTests(PandoraWebApplicationFactory factor
         Assert.Equal(MailErrors.SystemLabel.Code, Assert.Single(rename.Errors).Code);
         var delete = await WithProviderAsync(p => p.DeleteLabelAsync(mailbox, "INBOX"));
         Assert.Equal(MailErrors.SystemLabel.Code, Assert.Single(delete.Errors).Code);
+    }
+
+    [Fact]
+    public async Task Every_folder_stays_in_scope_whatever_is_subscribed()
+    {
+        const string user = "scope@example.com";
+        var mailbox = await ConnectMailboxAsync(user, GreenMailFixture.Password);
+
+        // A server with no subscriptions at all, like Titan.
+        using (var webmail = await mail.ConnectAsync(user))
+        {
+            var root = webmail.GetFolder(webmail.PersonalNamespaces[0]);
+            await root.CreateAsync("Unsubscribed", isMessageFolder: true);
+        }
+
+        // Creating a folder in Pandora must not make the others disappear.
+        var created = Value(await WithProviderAsync(p => p.CreateLabelAsync(mailbox, "Mine")));
+        Assert.Contains("Unsubscribed", await LabelIdsAsync(mailbox));
+        Assert.Contains(created.ProviderLabelId, await LabelIdsAsync(mailbox));
+
+        // Neither must a subscription made in another mail client.
+        using (var webmail = await mail.ConnectAsync(user))
+        {
+            await (await webmail.GetFolderAsync(created.ProviderLabelId)).SubscribeAsync();
+        }
+
+        Assert.Contains("Unsubscribed", await LabelIdsAsync(mailbox));
+
+        // Nor a rename.
+        Value(await WithProviderAsync(p => p.RenameLabelAsync(mailbox, created.ProviderLabelId, "Renamed")));
+        var labels = await LabelIdsAsync(mailbox);
+        Assert.Contains("Unsubscribed", labels);
+        Assert.Contains("Renamed", labels);
+        Assert.DoesNotContain(created.ProviderLabelId, labels);
     }
 
     private async Task<IReadOnlyList<RemoteMessage>> BackfillAsync(Mailbox mailbox)

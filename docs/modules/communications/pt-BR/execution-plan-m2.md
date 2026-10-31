@@ -98,7 +98,10 @@ Sem funcionalidade nova, e não altera nenhuma caixa.
 
 > **Construído (2026-10-30).** Mudanças em relação à lista abaixo:
 > - **`TrashAsync` devolve os ids** como o `MoveAsync`, porque no IMAP é um mover.
-> - **Renomear move a assinatura à mão**, subpastas incluídas: a assinatura pertence ao nome, então a pasta sairia do escopo.
+> - **Assinaturas são ignoradas (mudou na verificação real, 2026-10-31).** Este passo primeiro assinava cada pasta nova, como diz a lista abaixo.
+>   No Titan, que não tem assinaturas, isso virou a regra da M1 ("pastas assinadas, ou todas se nenhuma estiver"): Trash, Sent e as outras
+>   saíram do Pandora, embora nada tenha mudado no provedor. Agora toda pasta selecionável está no escopo, o que substitui essa decisão da M1.
+>   Teste: `Every_folder_stays_in_scope_whatever_is_subscribed`.
 > - **Uma pasta com subpastas** também é `LabelNotEmpty`, e a checagem usa `STATUS`.
 > - **O adaptador do Gmail responde `ActionNotSupported`** a toda escrita até o passo 3. Nada chama as escritas ainda.
 > - **Não coberto pelo GreenMail, portanto para o passo 6:** ele não tem SPECIAL-USE, então nenhuma pasta lá tem o papel `trash` (só a recusa
@@ -119,7 +122,7 @@ Sem funcionalidade nova, e não altera nenhuma caixa.
   - Flags: `AddFlags`/`RemoveFlags` para `\Seen` e `\Flagged`.
   - Mover: `MoveToAsync`, lendo o UID novo. Sem `UIDPLUS` o id é nulo, e o próximo ciclo junta a linha. Verificar o que o MailKit faz num
     servidor sem `MOVE`, e registrar se o Titan tem `UIDPLUS` e `MOVE`.
-  - Criar: **também assinar.** O `FoldersInScopeAsync` só lista pastas assinadas, então uma pasta nova não assinada nunca apareceria.
+  - Criar: `CreateAsync`, sem assinatura (veja a nota acima).
   - Renomear: `RenameAsync`. Apagar: recusar pasta com mensagens (`LabelNotEmpty`), checando no servidor, não só localmente.
   - Lixeira: resolver o papel `trash` no adaptador, e mover.
 - **Testes (GreenMail):** lida e estrela vistas de outro cliente; um mover sai da origem e chega ao destino; uma pasta criada aparece na lista;
@@ -220,6 +223,8 @@ Só com material descartável: uma etiqueta e uma pasta `pandora-test`, e mensag
 
 - **Renomear uma pasta relê os cabeçalhos dela.** Rápido numa pasta pequena; uma muito grande precisaria de detecção de renomeação.
 - **Um mover que atravessa a varredura IMAP** ocupa dois ciclos (veja o passo 1).
+- **Uma pasta que entra no escopo com mensagens** chega como email novo, com um `MailMessageReceived` falso por mensagem. Nada consome o evento
+  ainda; precisa ser corrigido antes do Radar.
 - **Só a página carregada pode ser selecionada.** "Tudo nesta etiqueta" fica para depois.
 - **Sem desfazer.** A lixeira pode ser restaurada no provedor.
 - **Depois de uma ação no Gmail a tela fica certa na hora**, mas um lote antigo da carga inicial pode trazer o estado anterior de volta por até um ciclo.

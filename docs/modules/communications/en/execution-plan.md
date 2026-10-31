@@ -45,7 +45,7 @@ sending (M3), no rules (M4).
 | Content cache | age-based: rows not accessed in `ContentCacheRetentionDays` (default 30) are deleted by the sync job | the simplest rule; the real numbers confirmed it ([Data Model](data-model.md#content-cache)) |
 | IMAP message key | `provider_message_id` built by the adapter from the folder path, `UIDVALIDITY` and UID | UIDs are per folder; a `UIDVALIDITY` change resyncs the folder and drops its rows |
 | IMAP snippet | empty until the message is opened, then filled from the parsed text | IMAP has no snippet; a partial body fetch per message is not worth it in M1 |
-| IMAP folders | subscribed folders (`LIST SUBSCRIBED`); all selectable folders when none is subscribed | §7 |
+| IMAP folders | subscribed folders (`LIST SUBSCRIBED`); all selectable folders when none is subscribed. **Replaced in M2:** every selectable folder | §7 |
 | Sync loop | one `BackgroundService`, mailboxes in sequence, every `SyncInterval` (default 2 min); each cycle = **incremental, then one backfill batch** | personal scale; `ponytail:` sequential loop, parallelize per mailbox if it falls behind |
 | "Sync now" | runs one cycle inside the request, under the mailbox gate | no signalling between request and job |
 | Search | `ILIKE` on from/subject/snippet, within the user's mailboxes | `ponytail:` add `pg_trgm` when it is slow |

@@ -17,7 +17,8 @@ namespace Pottmayer.Pandora.Modules.Communications.Infrastructure.Imap;
 /// password account. A folder is a label (<c>is_exclusive</c>), identified by its full path.
 /// </summary>
 /// <remarks>
-/// Folders in scope: the subscribed ones, or every selectable one when none is subscribed; INBOX always.
+/// Folders in scope: every selectable one of the personal namespace, INBOX first. Subscriptions are ignored: a rule
+/// that depends on them makes the whole mirror flip when any client subscribes the first folder.
 /// New messages are the UIDs at or above the folder's UIDNEXT; flag changes come from CONDSTORE when the
 /// server has it, otherwise from re-reading the last <see cref="FlagWindow"/> UIDs; removals from a
 /// snapshot of the folder's UIDs (no QRESYNC needed).
@@ -126,7 +127,7 @@ internal sealed class ImapMailboxProvider(IExternalCredentialProvider credential
                 if (before is not null && before.UidValidity != folder.UidValidity)
                     return Result<RemoteChanges>.Failure(MailErrors.SyncCursorExpired);
 
-                // A folder the cursor does not know yet (created or subscribed since): all of it is new.
+                // A folder the cursor does not know yet (created since): all of it is new.
                 var boundary = before?.UidNext ?? 1;
                 var fresh = all.Where(u => u.Id >= boundary).ToList();
                 var changed = await ChangedSinceAsync(client, folder, before, all, boundary, token);
@@ -139,7 +140,7 @@ internal sealed class ImapMailboxProvider(IExternalCredentialProvider credential
                 await folder.CloseAsync(false, token);
             }
 
-            // Out of scope now (deleted, unsubscribed): its messages are gone from Pandora's view.
+            // Gone (deleted, or renamed): its messages are gone from this folder.
             foreach (var path in known.Keys.Where(p => !next.ContainsKey(p)))
                 snapshots.Add(new RemoteLabelSnapshot(path, []));
 
@@ -164,9 +165,6 @@ internal sealed class ImapMailboxProvider(IExternalCredentialProvider credential
             return Result<byte[]>.Success(buffer.ToArray());
         }, ct);
 
-    /// <summary>
-    /// Also subscribes: only subscribed folders are in scope once any is, so the new one would never appear.
-    /// </summary>
     public Task<Result<RemoteLabel>> CreateLabelAsync(Mailbox mailbox, string name, CancellationToken ct = default) =>
         RunAsync(mailbox, async (client, token) =>
         {
@@ -178,14 +176,9 @@ internal sealed class ImapMailboxProvider(IExternalCredentialProvider credential
                 return Result<RemoteLabel>.Failure(MailErrors.LabelNameInvalid);
 
             var folder = await root.CreateAsync(name, isMessageFolder: true, token);
-            await folder.SubscribeAsync(token);
             return Result<RemoteLabel>.Success(ToLabel(folder));
         }, ct);
 
-    /// <summary>
-    /// A subscription belongs to the name, so it moves by hand, subfolders included, or the folder would drop out
-    /// of scope and its messages out of Pandora.
-    /// </summary>
     public Task<Result<bool>> RenameLabelAsync(Mailbox mailbox, string providerLabelId, string newName, CancellationToken ct = default) =>
         RunAsync(mailbox, async (client, token) =>
         {
@@ -195,18 +188,7 @@ internal sealed class ImapMailboxProvider(IExternalCredentialProvider credential
             if (newName.Contains(folder.DirectorySeparator))
                 return Result<bool>.Failure(MailErrors.LabelNameInvalid);
 
-            await folder.UnsubscribeAsync(token);
-            try
-            {
-                await folder.RenameAsync(folder.ParentFolder, newName, token);
-            }
-            catch
-            {
-                await folder.SubscribeAsync(token);
-                throw;
-            }
-
-            await SubscribeTreeAsync(folder, token);
+            await folder.RenameAsync(folder.ParentFolder, newName, token);
             return Result<bool>.Success(true);
         }, ct);
 
@@ -222,18 +204,7 @@ internal sealed class ImapMailboxProvider(IExternalCredentialProvider credential
             if (folder.Count > 0 || (await folder.GetSubfoldersAsync(false, token)).Count > 0)
                 return Result<bool>.Failure(MailErrors.LabelNotEmpty);
 
-            // In this order: some servers refuse to unsubscribe a folder that no longer exists.
-            await folder.UnsubscribeAsync(token);
-            try
-            {
-                await folder.DeleteAsync(token);
-            }
-            catch
-            {
-                await folder.SubscribeAsync(token);
-                throw;
-            }
-
+            await folder.DeleteAsync(token);
             return Result<bool>.Success(true);
         }, ct);
 
@@ -334,13 +305,6 @@ internal sealed class ImapMailboxProvider(IExternalCredentialProvider credential
         return groups.Select(g => new FolderGroup(g.Key.Path, g.Key.UidValidity, g.Value)).ToList();
     }
 
-    private static async Task SubscribeTreeAsync(IMailFolder folder, CancellationToken ct)
-    {
-        await folder.SubscribeAsync(ct);
-        foreach (var child in await folder.GetSubfoldersAsync(false, ct))
-            await SubscribeTreeAsync(child, ct);
-    }
-
     private static bool IsSystem(IMailFolder folder) => IsInbox(folder) || ToLabel(folder).Role is not null;
 
     /// <summary>Connects and logs in, runs <paramref name="work"/>, and maps what the server says to the port's errors.</summary>
@@ -378,11 +342,7 @@ internal sealed class ImapMailboxProvider(IExternalCredentialProvider credential
         if (client.PersonalNamespaces.Count == 0)
             return [client.Inbox];
 
-        var root = client.PersonalNamespaces[0];
-        var subscribed = await client.GetFoldersAsync(root, StatusItems.None, subscribedOnly: true, ct);
-        var folders = subscribed.Any(f => !IsInbox(f))
-            ? subscribed
-            : await client.GetFoldersAsync(root, StatusItems.None, subscribedOnly: false, ct);
+        var folders = await client.GetFoldersAsync(client.PersonalNamespaces[0], StatusItems.None, subscribedOnly: false, ct);
 
         return
         [

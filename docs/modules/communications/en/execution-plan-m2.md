@@ -98,8 +98,10 @@ No new feature, and it changes no mailbox.
 
 > **Built (2026-10-30).** Changes from the list below:
 > - **`TrashAsync` returns the ids** like `MoveAsync`, since on IMAP it is a move.
-> - **A rename moves the subscription by hand**, subfolders included: a subscription belongs to the name, so the folder would drop out
->   of scope.
+> - **Subscriptions are ignored (changed during the real check, 2026-10-31).** This step first subscribed each new folder, as the list below
+>   says. On Titan, which has no subscriptions, that flipped M1's rule ("subscribed folders, or all when none is"): Trash, Sent and the
+>   others dropped out of Pandora, though nothing changed at the provider. Now every selectable folder is in scope, which replaces that
+>   M1 decision. Test: `Every_folder_stays_in_scope_whatever_is_subscribed`.
 > - **A folder with subfolders** is also `LabelNotEmpty`, and the check uses `STATUS`.
 > - **The Gmail adapter answers `ActionNotSupported`** to every write until step 3. Nothing calls the writes yet.
 > - **Not covered by GreenMail, so for step 6:** it has no SPECIAL-USE, so no folder there has the `trash` role (only the refusal is
@@ -120,7 +122,7 @@ No new feature, and it changes no mailbox.
   - Flags: `AddFlags`/`RemoveFlags` for `\Seen` and `\Flagged`.
   - Move: `MoveToAsync`, reading the new UID. Without `UIDPLUS` the id is null, and the next cycle stitches the row. Check what MailKit
     does on a server without `MOVE`, and record whether Titan has `UIDPLUS` and `MOVE`.
-  - Create: **also subscribe.** `FoldersInScopeAsync` lists subscribed folders only, so an unsubscribed new folder would never appear.
+  - Create: `CreateAsync`, with no subscription (see the note above).
   - Rename: `RenameAsync`. Delete: refuse a folder with messages (`LabelNotEmpty`), checked at the server, not just locally.
   - Trash: resolve the `trash` role in the adapter, and move.
 - **Tests (GreenMail):** read and star seen from another client; a move leaves the source and reaches the target; a created folder is
@@ -222,6 +224,8 @@ Only on disposable material: a `pandora-test` label and folder, and messages sen
 
 - **A folder rename reads its headers again.** Quick on a small folder; a very large one would need rename detection.
 - **A move straddling the IMAP walk** spans two cycles (see step 1).
+- **A folder that newly comes into scope with messages** arrives as new mail, with one false `MailMessageReceived` per message. Nothing
+  consumes the event yet; it must be fixed before Radar does.
 - **Only the loaded page can be selected.** "Everything under this label" is later.
 - **No undo.** Trash can be restored at the provider.
 - **After a Gmail action the screen is right at once**, but a stale backfill batch can put the old state back for up to one cycle.

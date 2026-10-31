@@ -45,7 +45,7 @@ sem enviar (M3), sem regras (M4).
 | Cache de conteúdo | por idade: linhas não acessadas há `ContentCacheRetentionDays` (padrão 30) são apagadas pelo job de sincronização | a regra mais simples; os números reais a confirmaram ([Modelo de dados](data-model.md#cache-de-conteúdo)) |
 | Chave de mensagem IMAP | `provider_message_id` montado pelo adaptador a partir do caminho da pasta, do `UIDVALIDITY` e do UID | UIDs são por pasta; uma troca de `UIDVALIDITY` ressincroniza a pasta e descarta as linhas dela |
 | Prévia no IMAP | vazia até a mensagem ser aberta, depois preenchida a partir do texto já parseado | IMAP não tem prévia; um fetch parcial de corpo por mensagem não compensa na M1 |
-| Pastas IMAP | pastas assinadas (`LIST SUBSCRIBED`); todas as selecionáveis se nenhuma estiver assinada | §7 |
+| Pastas IMAP | pastas assinadas (`LIST SUBSCRIBED`); todas as selecionáveis se nenhuma estiver assinada. **Substituído na M2:** toda pasta selecionável | §7 |
 | Laço de sincronização | um `BackgroundService`, caixas em sequência, a cada `SyncInterval` (padrão 2 min); cada ciclo = **incremental, depois um lote da carga inicial** | escala pessoal; `ponytail:` laço sequencial, paralelizar por caixa se ficar para trás |
 | "Sincronizar agora" | roda um ciclo dentro da requisição, sob a trava da caixa | sem sinalização entre requisição e job |
 | Busca | `ILIKE` em remetente/assunto/prévia, dentro das caixas do usuário | `ponytail:` adicionar `pg_trgm` quando ficar lento |
