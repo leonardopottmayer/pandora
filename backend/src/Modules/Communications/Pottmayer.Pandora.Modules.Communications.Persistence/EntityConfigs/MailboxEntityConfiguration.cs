@@ -44,6 +44,7 @@ internal sealed class MailboxEntityConfiguration : IEntityTypeConfiguration<Mail
         builder.Property(m => m.LastSyncedAt).HasColumnName("last_synced_at");
         builder.Property(m => m.LastError).HasColumnName("last_error");
         builder.Property(m => m.ConsecutiveFailures).HasColumnName("consecutive_failures").IsRequired();
+        builder.Property(m => m.FilterSyncError).HasColumnName("filter_sync_error");
 
         builder.Property(m => m.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(m => m.CreatedBy).HasColumnName("created_by");

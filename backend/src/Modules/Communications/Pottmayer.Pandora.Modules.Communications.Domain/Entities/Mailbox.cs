@@ -48,6 +48,9 @@ public sealed class Mailbox : IAuditable
     public string? LastError { get; private set; }
     public int ConsecutiveFailures { get; private set; }
 
+    /// <summary>Why the last read of the provider's filters failed. It does not stop the mailbox.</summary>
+    public string? FilterSyncError { get; private set; }
+
     public Guid? CreatedBy { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public Guid? UpdatedBy { get; set; }
@@ -134,6 +137,8 @@ public sealed class Mailbox : IAuditable
         ConsecutiveFailures = 0;
         Status = IsBackfillComplete ? MailboxStatus.Active : MailboxStatus.Syncing;
     }
+
+    public void RecordFilterSync(string? error) => FilterSyncError = error;
 
     public void RecordFailure(string error)
     {

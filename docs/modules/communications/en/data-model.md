@@ -45,6 +45,7 @@ key leaves the schema.
 | `last_synced_at` | timestamptz NULL | |
 | `last_error` | text NULL | |
 | `consecutive_failures` | int NOT NULL DEFAULT 0 | `error` at 5 |
+| `filter_sync_error` | text NULL | why the last read of Gmail's filters failed; it does not stop the mailbox |
 | `created_by`, `created_at`, `updated_by`, `updated_at` | | audit |
 
 **Constraints:** `uq_com001_user_external_account (user_id, external_account_id)`: one mailbox per

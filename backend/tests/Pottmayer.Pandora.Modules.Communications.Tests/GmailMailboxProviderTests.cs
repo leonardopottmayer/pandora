@@ -473,6 +473,7 @@ public sealed class GmailMailboxProviderTests
 
         Assert.False(filter.IsReadOnly);
         Assert.Equal("f1", filter.ProviderFilterId);
+        Assert.StartsWith("from: ", filter.Name);
         Assert.Equal(
             [
                 new MailRuleCondition(RuleConditionKinds.From, "ana"),

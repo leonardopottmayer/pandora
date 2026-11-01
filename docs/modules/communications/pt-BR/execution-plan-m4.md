@@ -1,6 +1,6 @@
 # Communications — Plano de Execução, M4 (Regras)
 
-> **Status:** Em andamento: decisões aprovadas, passos 1–4 construídos. É a fase **M4** do [product-plan](product-plan.md), cuja §10 tem o modelo; o que existe hoje está no
+> **Status:** Em andamento: decisões aprovadas, passos 1–5 construídos. É a fase **M4** do [product-plan](product-plan.md), cuja §10 tem o modelo; o que existe hoje está no
 > [Status de implementação](implementation-status.md).
 > 🇺🇸 [English version](../en/execution-plan-m4.md)
 
@@ -88,7 +88,9 @@ Cada passo termina verde antes do próximo. Pontos de commit sugeridos: **M4a** 
 - Criar ou apagar sem `gmail.settings.basic` → `MissingFilterScope`, que **não** para a caixa (não é `MissingScopes`).
 - **Testes (respostas prontas):** cada um, nos dois sentidos; uma ida e volta não muda nada; um filtro que encaminha é só leitura; o erro de escopo.
 
-### Passo 5 — Filtros nos dois sentidos
+### Passo 5 — Filtros nos dois sentidos ✅
+
+> **Construído (2026-10-31).** `SyncFiltersCommand`, enviado pelo ciclo depois das mudanças, para o filtro achar seus marcadores. Conectar não precisa de nada próprio: no primeiro ciclo todo filtro é novo. Decidido aqui: o erro vai numa nova `com001.filter_sync_error`, porque a tela de regras precisa mostrá-lo mesmo sem nenhuma regra, e uma exceção mostra só o texto fixo; um filtro que aponta para um marcador desconhecido aqui é importado somente leitura, não descartado; o nome vem de todos os critérios do filtro, para um somente leitura também ter um nome útil, e quem monta é o adaptador, que conhece o formato. Regras novas entram depois da última. **Para o passo 6:** o EF 10 não consegue salvar um `Remove` de entidade com coleção complexa em JSON, então apagar regra é `DeleteByIdsAsync`; e as escritas de regra precisam dividir um gate com este diff, ou um sync entre a resposta do Gmail e o save da regra importa o filtro de novo. Testes: `FilterSyncTests`.
 
 - `SyncFiltersCommand`, uma vez por ciclo, fora da trava de ação, falhas no log: `list`, diff por `provider_filter_id`, os casos da §10.3.
 - Conectar uma caixa Gmail importa pelo mesmo diff.

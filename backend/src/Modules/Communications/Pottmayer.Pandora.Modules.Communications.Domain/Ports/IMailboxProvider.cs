@@ -98,6 +98,7 @@ public sealed record RemoteRuleAction(string Kind, string? ProviderLabelId);
 /// <param name="IsReadOnly">It holds what a rule cannot, so conditions and actions are empty and only the provider can edit it.</param>
 public sealed record RemoteFilter(
     string ProviderFilterId,
+    string Name,
     IReadOnlyList<MailRuleCondition> Conditions,
     IReadOnlyList<RemoteRuleAction> Actions,
     string Raw,

@@ -82,10 +82,30 @@ internal static class GmailFilterMapper
 
         var conditions = ReadConditions(filter);
         var actions = ReadActions(filter);
+        var name = NameOf(filter);
 
         return conditions is { Count: > 0 } && actions is { Count: > 0 }
-            ? new RemoteFilter(id, conditions, actions, raw, IsReadOnly: false)
-            : new RemoteFilter(id, [], [], raw, IsReadOnly: true);
+            ? new RemoteFilter(id, name, conditions, actions, raw, IsReadOnly: false)
+            : new RemoteFilter(id, name, [], [], raw, IsReadOnly: true);
+    }
+
+    /// <summary>From all of its criteria, so a filter that a rule cannot hold gets a name that says something too.</summary>
+    private static string NameOf(JsonElement filter)
+    {
+        var name = filter.TryGetProperty("criteria", out var criteria)
+            ? string.Join(", ", criteria.EnumerateObject()
+                .Where(p => p.Value.ValueKind != JsonValueKind.False)
+                .Select(p => p.Value.ValueKind == JsonValueKind.True ? p.Name : $"{p.Name}: {p.Value}"))
+            : string.Empty;
+
+        if (string.IsNullOrWhiteSpace(name))
+            return "Gmail filter";
+        if (name.Length <= MailRule.NameMaxLength)
+            return name;
+
+        // Half an emoji is not something the database takes.
+        var cut = MailRule.NameMaxLength;
+        return name[..(char.IsHighSurrogate(name[cut - 1]) ? cut - 1 : cut)];
     }
 
     /// <summary>Null when the filter matches on something a rule cannot hold.</summary>

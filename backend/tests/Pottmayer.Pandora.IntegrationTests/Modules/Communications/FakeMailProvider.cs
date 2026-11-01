@@ -60,6 +60,15 @@ internal sealed class FakeMailProvider : IMailboxProvider
 
     public bool CopySaved { get; set; } = true;
 
+    /// <summary>What ListFilters answers, and on its own, so the rest of the mailbox keeps working.</summary>
+    public List<RemoteFilter> Filters { get; } = [];
+
+    public Error? FailFiltersWith { get; set; }
+
+    public Exception? ThrowOnFilters { get; set; }
+
+    public int ListFiltersCalls { get; private set; }
+
     /// <summary>The id a move gives a message; null is a provider that does not say. By default the id stays.</summary>
     public Func<string, string?> MovedId { get; set; } = id => id;
 
@@ -240,8 +249,16 @@ internal sealed class FakeMailProvider : IMailboxProvider
         return Answer(new SentMessage(CopySaved));
     }
 
-    public Task<Result<IReadOnlyList<RemoteFilter>>> ListFiltersAsync(Mailbox mailbox, CancellationToken ct = default) =>
-        Task.FromResult(Result<IReadOnlyList<RemoteFilter>>.Failure(MailErrors.ActionNotSupported));
+    public Task<Result<IReadOnlyList<RemoteFilter>>> ListFiltersAsync(Mailbox mailbox, CancellationToken ct = default)
+    {
+        ListFiltersCalls++;
+        if (ThrowOnFilters is { } exception)
+            throw exception;
+
+        return Task.FromResult(FailFiltersWith is { } error
+            ? Result<IReadOnlyList<RemoteFilter>>.Failure(error)
+            : Result<IReadOnlyList<RemoteFilter>>.Success(Filters.ToList()));
+    }
 
     public Task<Result<RemoteFilter>> CreateFilterAsync(
         Mailbox mailbox, IReadOnlyCollection<MailRuleCondition> conditions, IReadOnlyCollection<RemoteRuleAction> actions, CancellationToken ct = default) =>

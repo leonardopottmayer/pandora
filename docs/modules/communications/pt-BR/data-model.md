@@ -45,6 +45,7 @@ estrangeira sai do schema.
 | `last_synced_at` | timestamptz NULL | |
 | `last_error` | text NULL | |
 | `consecutive_failures` | int NOT NULL DEFAULT 0 | `error` em 5 |
+| `filter_sync_error` | text NULL | por que a última leitura dos filtros do Gmail falhou; não para a caixa |
 | `created_by`, `created_at`, `updated_by`, `updated_at` | | auditoria |
 
 **Constraints:** `uq_com001_user_external_account (user_id, external_account_id)`: uma caixa por credencial.

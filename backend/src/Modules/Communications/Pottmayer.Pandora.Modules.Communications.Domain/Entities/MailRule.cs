@@ -145,6 +145,28 @@ public sealed class MailRule
         LastError = null;
     }
 
+    /// <summary>Its filter was edited in the provider, which recreates it: the same rule, with what the new one says.</summary>
+    public void FollowFilter(string providerFilterId, IEnumerable<MailRuleCondition> conditions, IEnumerable<MailRuleAction> actions)
+    {
+        ProviderFilterId = providerFilterId;
+        ProviderFilterRaw = null;
+        Conditions = [.. conditions];
+        Actions = [.. actions];
+        Status = RuleStatus.Ok;
+        LastError = null;
+    }
+
+    /// <summary>The same, when the new filter is one the model cannot express.</summary>
+    public void FollowReadOnlyFilter(string providerFilterId, string raw)
+    {
+        ProviderFilterId = providerFilterId;
+        ProviderFilterRaw = raw;
+        Conditions = [];
+        Actions = [];
+        Status = RuleStatus.ReadOnly;
+        LastError = null;
+    }
+
     public void MoveTo(int position) => Position = position;
 
     public void BindFilter(string? providerFilterId) => ProviderFilterId = providerFilterId;

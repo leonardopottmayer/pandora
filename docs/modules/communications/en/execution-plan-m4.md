@@ -1,6 +1,6 @@
 # Communications — Execution Plan, M4 (Rules)
 
-> **Status:** In progress: decisions approved, steps 1–4 built. It is phase **M4** of the [product-plan](product-plan.md), whose §10 has the model; what exists today is in
+> **Status:** In progress: decisions approved, steps 1–5 built. It is phase **M4** of the [product-plan](product-plan.md), whose §10 has the model; what exists today is in
 > [Implementation Status](implementation-status.md).
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan-m4.md)
 
@@ -88,7 +88,9 @@ Each step ends green before the next one. Suggested commit points: **M4a** = ste
 - A create or delete without `gmail.settings.basic` → `MissingFilterScope`, which does **not** stop the mailbox (not `MissingScopes`).
 - **Tests (canned answers):** each way, both directions; a round trip changes nothing; a filter that forwards is read-only; the scope error.
 
-### Step 5 — Filters both ways
+### Step 5 — Filters both ways ✅
+
+> **Built (2026-10-31).** `SyncFiltersCommand`, sent by the cycle after the changes, so a filter finds its labels. Connecting needs nothing of its own: on the first cycle every filter is new. Decided here: the error goes on a new `com001.filter_sync_error`, since the rules screen must show it even with no rules, and a throw shows only the fixed text; a filter pointing at a label not known here is imported read-only, not dropped; the name comes from all of a filter's criteria, so a read-only one gets a useful name too, and the adapter builds it, since it knows the format. New rules go after the last one. **For step 6:** EF 10 cannot save a `Remove` of an entity with a JSON complex collection, so deleting a rule is `DeleteByIdsAsync`; and the rule writes must share a gate with this diff, or a sync between Gmail's answer and the rule's save imports the filter a second time. Tests: `FilterSyncTests`.
 
 - `SyncFiltersCommand`, once per cycle, outside the action gate, failures logged: `list`, diff by `provider_filter_id`, §10.3's cases.
 - Connecting a Gmail mailbox imports through the same diff.

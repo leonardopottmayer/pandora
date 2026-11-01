@@ -26,6 +26,7 @@ CREATE TABLE communications.com001_mailbox (
 	last_synced_at TIMESTAMPTZ NULL,
 	last_error TEXT NULL,
 	consecutive_failures INTEGER NOT NULL DEFAULT 0,
+	filter_sync_error TEXT NULL,
 	created_by UUID NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
 	updated_by UUID NULL,

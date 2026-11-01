@@ -3,12 +3,14 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Pottmayer.Pandora.Modules.Channels.Contracts;
 using Pottmayer.Pandora.Modules.Communications.Abstractions;
+using Pottmayer.Pandora.Modules.Communications.Application.Commands.SyncFilters;
 using Pottmayer.Pandora.Modules.Communications.Domain.Entities;
 using Pottmayer.Pandora.Modules.Communications.Domain.Errors;
 using Pottmayer.Pandora.Modules.Communications.Domain.Ports;
 using Pottmayer.Pandora.Modules.Communications.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Communications.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Core.Mediator.Abstractions;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 using Pottmayer.Tars.Messaging.Abstractions;
@@ -32,6 +34,7 @@ public sealed class SyncMailboxCommandHandler(
     IIntegrationEventBus bus,
     MailboxGates gates,
     MailboxChangesStep changes,
+    ISender sender,
     IOptions<CommunicationsOptions> options,
     TimeProvider timeProvider,
     ILogger<SyncMailboxCommandHandler> logger) : CommandHandlerBase<SyncMailboxCommand, bool>
@@ -90,6 +93,8 @@ public sealed class SyncMailboxCommandHandler(
                 return Result<bool>.Success(false);
         } while (part.Value.HasMore && timeProvider.GetUtcNow() < changesBudgetEnds);
 
+        await SyncFiltersAsync(mailbox, provider, ct);
+
         // Batches back to back until the backfill ends or the budget runs out; each is saved on its own.
         var budgetEnds = timeProvider.GetUtcNow() + options.Value.BackfillBudget;
         mailbox = (await LoadMailboxAsync(mailbox.Id, ct))!;
@@ -118,6 +123,38 @@ public sealed class SyncMailboxCommandHandler(
             return Task.CompletedTask;
         }, ct);
         return Result<bool>.Success(true);
+    }
+
+    /// <summary>
+    /// After the changes, so a filter finds the labels it points at. Whatever goes wrong here stays here: the mailbox's
+    /// cycle goes on, and the error is kept for the rules screen. Outside the action gate, so a click never waits for it.
+    /// </summary>
+    private async Task SyncFiltersAsync(Mailbox mailbox, IMailboxProvider provider, CancellationToken ct)
+    {
+        if (!provider.Capabilities.ServerFilters)
+            return;
+
+        string? error = null;
+        try
+        {
+            var synced = await sender.Send(new SyncFiltersCommand(new SyncFiltersInput(mailbox.Id)), ct);
+            if (synced.IsFailure)
+            {
+                error = synced.Errors[0].Message;
+                logger.LogWarning("Mailbox {MailboxId} filter sync failed: {Error}", mailbox.Id, error);
+            }
+        }
+        catch (Exception ex) when (!ct.IsCancellationRequested)
+        {
+            logger.LogError(ex, "Mailbox {MailboxId} filter sync threw.", mailbox.Id);
+            error = MailErrors.SyncFailed.Message;
+        }
+
+        await factory.UpdateMailboxAsync(mailbox.Id, (_, m) =>
+        {
+            m.RecordFilterSync(error);
+            return Task.CompletedTask;
+        }, ct);
     }
 
     /// <summary>

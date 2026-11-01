@@ -13,4 +13,7 @@ public sealed class MailRuleRepository(IDataContextAccessor accessor)
         await Set.Where(r => r.MailboxId == mailboxId)
                  .OrderBy(r => r.Position)
                  .ToListAsync(ct);
+
+    public Task DeleteByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default) =>
+        Set.Where(r => ids.Contains(r.Id)).ExecuteDeleteAsync(ct);
 }
