@@ -1,3 +1,5 @@
+using Pottmayer.Pandora.Modules.Communications.Domain.Entities;
+
 namespace Pottmayer.Pandora.Modules.Communications.Presentation.Requests;
 
 /// <param name="ExternalAccountId">The Integrations account the mailbox runs on.</param>
@@ -13,6 +15,12 @@ public sealed record ConnectMailboxRequest(
     int? SmtpPort);
 
 public sealed record LabelNameRequest(string? Name);
+
+public sealed record CreateRuleRequest(string? Name, List<MailRuleCondition>? Conditions, List<MailRuleAction>? Actions);
+
+public sealed record UpdateRuleRequest(string? Name, List<MailRuleCondition>? Conditions, List<MailRuleAction>? Actions, bool IsEnabled);
+
+public sealed record ReorderRulesRequest(List<Guid>? RuleIds);
 
 /// <param name="SendKey">Generated when the form opens; the same key is never sent twice.</param>
 /// <param name="To">Bare addresses, one form field per address; same for Cc and Bcc.</param>

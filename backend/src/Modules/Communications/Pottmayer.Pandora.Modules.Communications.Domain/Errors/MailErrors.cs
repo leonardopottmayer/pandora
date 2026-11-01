@@ -75,6 +75,12 @@ public static class MailErrors
     public static Error RuleActionsInvalid =>
         Error.Validation("Communications.RuleActionsInvalid", "A rule needs at least one action this mailbox supports, and on Gmail at most one label.");
 
+    public static Error RuleReadOnly =>
+        Error.Validation("Communications.RuleReadOnly", "This filter does more than a rule can hold. Edit it in Gmail.");
+
+    public static Error RuleNotFound =>
+        Error.NotFound("Communications.RuleNotFound", "This rule does not exist.");
+
     public static Error MailboxNotFound =>
         Error.NotFound("Communications.MailboxNotFound", "This mailbox does not exist.");
 

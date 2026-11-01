@@ -7,6 +7,7 @@ using Pottmayer.Pandora.Modules.Communications.Application.Commands.ApplyMessage
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.ConnectMailbox;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.DeleteMailbox;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.ManageLabels;
+using Pottmayer.Pandora.Modules.Communications.Application.Commands.ManageRules;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.OpenMessage;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.SendMessage;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.SyncMailboxNow;
@@ -16,6 +17,7 @@ using Pottmayer.Pandora.Modules.Communications.Application.Queries.GetAttachment
 using Pottmayer.Pandora.Modules.Communications.Application.Queries.GetComposeDraft;
 using Pottmayer.Pandora.Modules.Communications.Application.Queries.GetLabels;
 using Pottmayer.Pandora.Modules.Communications.Application.Queries.GetMailboxes;
+using Pottmayer.Pandora.Modules.Communications.Application.Queries.GetRules;
 using Pottmayer.Pandora.Modules.Communications.Application.Queries.ListMessages;
 using Pottmayer.Pandora.Modules.Communications.Presentation.Requests;
 using Pottmayer.Pandora.Shared.Domain;
@@ -91,6 +93,33 @@ public sealed class CommunicationsController(
     [HttpDelete("labels/{id:guid}")]
     public async Task<IActionResult> DeleteLabelAsync(Guid id, CancellationToken ct) =>
         (await sender.Send(new DeleteLabelCommand(new DeleteLabelInput(UserId, id)), ct)).ToActionResult(errorMapper);
+
+    // ── Rules ──
+
+    [HttpGet("mailboxes/{id:guid}/rules")]
+    public async Task<IActionResult> GetRulesAsync(Guid id, CancellationToken ct) =>
+        (await sender.Send(new GetRulesQuery(new GetRulesInput(UserId, id)), ct)).ToActionResult(errorMapper);
+
+    /// <summary>On Gmail it goes to Gmail first, and writing filters can answer <c>MissingFilterScope</c>.</summary>
+    [HttpPost("mailboxes/{id:guid}/rules")]
+    public async Task<IActionResult> CreateRuleAsync(Guid id, CreateRuleRequest body, CancellationToken ct) =>
+        (await sender.Send(new CreateRuleCommand(new CreateRuleInput(UserId, id, body.Name, body.Conditions ?? [], body.Actions ?? [])), ct))
+        .ToActionResult(errorMapper);
+
+    [HttpPut("mailboxes/{id:guid}/rules/order")]
+    public async Task<IActionResult> ReorderRulesAsync(Guid id, ReorderRulesRequest body, CancellationToken ct) =>
+        (await sender.Send(new ReorderRulesCommand(new ReorderRulesInput(UserId, id, body.RuleIds ?? [])), ct)).ToActionResult(errorMapper);
+
+    /// <summary>Disabling on Gmail deletes the filter. A filter a rule cannot hold is refused: it is edited in Gmail.</summary>
+    [HttpPut("rules/{id:guid}")]
+    public async Task<IActionResult> UpdateRuleAsync(Guid id, UpdateRuleRequest body, CancellationToken ct) =>
+        (await sender.Send(new UpdateRuleCommand(new UpdateRuleInput(UserId, id, body.Name, body.Conditions ?? [], body.Actions ?? [], body.IsEnabled)), ct))
+        .ToActionResult(errorMapper);
+
+    /// <summary>On Gmail this deletes the filter too, for good.</summary>
+    [HttpDelete("rules/{id:guid}")]
+    public async Task<IActionResult> DeleteRuleAsync(Guid id, CancellationToken ct) =>
+        (await sender.Send(new DeleteRuleCommand(new DeleteRuleInput(UserId, id)), ct)).ToActionResult(errorMapper);
 
     // ── Messages ──
 

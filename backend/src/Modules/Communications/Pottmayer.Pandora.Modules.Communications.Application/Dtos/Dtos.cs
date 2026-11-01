@@ -19,13 +19,30 @@ public sealed record MailboxDto(
     DateTimeOffset? LastSyncedAt,
     int MessageCount,
     int? MessageTotalEstimate,
-    DateTimeOffset? BackfillCompletedAt)
+    DateTimeOffset? BackfillCompletedAt,
+    string? FilterSyncError)
 {
     public static MailboxDto From(Mailbox m, int messageCount) => new(
         m.Id, m.Provider.Value, m.ExternalAccountId, m.Address, m.DisplayName,
         m.ImapHost, m.ImapPort, m.SmtpHost, m.SmtpPort,
         m.Status.Value, m.LastError, m.LastSyncedAt,
-        messageCount, m.MessageTotalEstimate, m.BackfillCompletedAt);
+        messageCount, m.MessageTotalEstimate, m.BackfillCompletedAt, m.FilterSyncError);
+}
+
+public sealed record RuleDto(
+    Guid Id,
+    string Name,
+    int Position,
+    IReadOnlyList<MailRuleCondition> Conditions,
+    IReadOnlyList<MailRuleAction> Actions,
+    string Execution,
+    bool IsEnabled,
+    string Status,
+    string? LastError,
+    string? ProviderFilterRaw)
+{
+    public static RuleDto From(MailRule r) => new(
+        r.Id, r.Name, r.Position, r.Conditions, r.Actions, r.Execution.Value, r.IsEnabled, r.Status.Value, r.LastError, r.ProviderFilterRaw);
 }
 
 public sealed record LabelDto(Guid Id, string Name, string Kind, string? Role, bool IsExclusive, int Total, int Unread)

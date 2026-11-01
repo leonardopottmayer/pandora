@@ -1,6 +1,6 @@
 # Communications — Plano de Execução, M4 (Regras)
 
-> **Status:** Em andamento: decisões aprovadas, passos 1–5 construídos. É a fase **M4** do [product-plan](product-plan.md), cuja §10 tem o modelo; o que existe hoje está no
+> **Status:** Em andamento: decisões aprovadas, passos 1–6 construídos. É a fase **M4** do [product-plan](product-plan.md), cuja §10 tem o modelo; o que existe hoje está no
 > [Status de implementação](implementation-status.md).
 > 🇺🇸 [English version](../en/execution-plan-m4.md)
 
@@ -96,7 +96,9 @@ Cada passo termina verde antes do próximo. Pontos de commit sugeridos: **M4a** 
 - Conectar uma caixa Gmail importa pelo mesmo diff.
 - **Testes:** um filtro novo → uma regra; um sumiu → a regra sai (regra desativada é ignorada); um sumiu + um novo → mesma regra, mesmo nome e posição; dois sumiram + um novo → exclusão + importação; `list` falhando não mexe nas regras nem no ciclo.
 
-### Passo 6 — API
+### Passo 6 — API ✅
+
+> **Construído (2026-11-01).** As rotas, `RuleOperation`, `GetRulesQuery` e `MailboxGates.Rules`, dividido com o diff dos filtros; o DTO da caixa traz `filterSyncError`. Toda escrita responde com as regras da caixa como estão agora. Decidido aqui: habilitar e desabilitar passam por `PUT rules/{id}`, com `isEnabled`; mudar só o nome não toca no Gmail, porque o nome é do Pandora; uma regra somente leitura não pode ser renomeada nem desabilitada, porque um filtro desabilitado não voltaria a ser como era, mas pode ser apagada, o que apaga o filtro, senão o próximo ciclo a importaria de novo; reordenar pega as listadas e depois as outras, então um filtro importado com a tela aberta não é erro. No Gmail uma regra só aponta para marcador do usuário, porque um de sistema voltaria como somente leitura. Se o delete de uma edição falha, o filtro antigo volta como regra própria no próximo ciclo, o que é a verdade: ele continua rodando. Os endpoints de filtro são testados com o provedor roteirizado em `titan` com a capacidade de filtros, porque uma caixa Gmail exige OAuth; o Gmail real é o passo 8. Testes: `MailRulesApiTests`, `MailRuleTests` +1.
 
 - `GET/POST mailboxes/{id}/rules`, `PUT/DELETE rules/{id}`, `PUT mailboxes/{id}/rules/order`.
 - Salvar no Gmail vai ao Gmail primeiro (C2). Editar é criar, salvar, apagar; se apagar falhar, a regra fica certa e o filtro antigo é informado.

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Pottmayer.Pandora.Modules.Communications.Abstractions;
+using Pottmayer.Pandora.Modules.Communications.Application.Commands.SyncMailbox;
 using Pottmayer.Pandora.Modules.Communications.Domain.Entities;
 using Pottmayer.Pandora.Modules.Communications.Domain.Ports;
 using Pottmayer.Pandora.Modules.Communications.Domain.Ports.Repositories;
@@ -15,7 +16,7 @@ namespace Pottmayer.Pandora.Modules.Communications.Application.Commands.SyncFilt
 /// The diff of §10.3, by filter id. A disabled rule has no filter id, so it is not in it. A filter id does not change
 /// while the filter lives (Gmail has no update), so a filter already known has nothing to bring.
 /// </summary>
-public sealed class SyncFiltersCommandHandler(IUnitOfWorkFactory factory, IServiceProvider services)
+public sealed class SyncFiltersCommandHandler(IUnitOfWorkFactory factory, IServiceProvider services, MailboxGates gates)
     : CommandHandlerBase<SyncFiltersCommand, bool>
 {
     protected override async Task<Result<bool>> HandleAsync(SyncFiltersCommand request, CancellationToken ct)
@@ -26,13 +27,22 @@ public sealed class SyncFiltersCommandHandler(IUnitOfWorkFactory factory, IServi
         if (mailbox is null)
             return Ok(false);
 
-        var filters = await services.GetRequiredKeyedService<IMailboxProvider>(mailbox.Provider.Value).ListFiltersAsync(mailbox, ct);
-        if (filters.IsFailure)
-            return Result<bool>.Failure(filters.Errors);
+        var gate = gates.Rules(mailboxId);
+        await gate.WaitAsync(ct);
+        try
+        {
+            var filters = await services.GetRequiredKeyedService<IMailboxProvider>(mailbox.Provider.Value).ListFiltersAsync(mailbox, ct);
+            if (filters.IsFailure)
+                return Result<bool>.Failure(filters.Errors);
 
-        await factory.ExecuteAsync(CommunicationsModule.DatabaseKey, (ctx, token) =>
-            ApplyAsync(ctx, mailboxId, filters.Value, token), cancellationToken: ct);
-        return Ok(true);
+            await factory.ExecuteAsync(CommunicationsModule.DatabaseKey, (ctx, token) =>
+                ApplyAsync(ctx, mailboxId, filters.Value, token), cancellationToken: ct);
+            return Ok(true);
+        }
+        finally
+        {
+            gate.Release();
+        }
     }
 
     private static async Task ApplyAsync(IDataContext context, Guid mailboxId, IReadOnlyList<RemoteFilter> filters, CancellationToken ct)

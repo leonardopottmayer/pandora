@@ -18,6 +18,7 @@ internal sealed class FakeMailProvider : IMailboxProvider
     private readonly List<string> _changed = [];
     private readonly List<string> _removed = [];
     private int _version;
+    private int _filterIds;
 
     public List<RemoteLabel> Labels { get; } = [new("INBOX", "INBOX", LabelKind.System, LabelRole.Inbox, IsExclusive: false)];
 
@@ -68,6 +69,11 @@ internal sealed class FakeMailProvider : IMailboxProvider
     public Exception? ThrowOnFilters { get; set; }
 
     public int ListFiltersCalls { get; private set; }
+
+    public Error? FailFilterDeleteWith { get; set; }
+
+    /// <summary>Awaited once the filter exists, to hold a rule's save back.</summary>
+    public Func<Task>? AfterFilterCreated { get; set; }
 
     /// <summary>The id a move gives a message; null is a provider that does not say. By default the id stays.</summary>
     public Func<string, string?> MovedId { get; set; } = id => id;
@@ -260,12 +266,31 @@ internal sealed class FakeMailProvider : IMailboxProvider
             : Result<IReadOnlyList<RemoteFilter>>.Success(Filters.ToList()));
     }
 
-    public Task<Result<RemoteFilter>> CreateFilterAsync(
-        Mailbox mailbox, IReadOnlyCollection<MailRuleCondition> conditions, IReadOnlyCollection<RemoteRuleAction> actions, CancellationToken ct = default) =>
-        Task.FromResult(Result<RemoteFilter>.Failure(MailErrors.ActionNotSupported));
+    public async Task<Result<RemoteFilter>> CreateFilterAsync(
+        Mailbox mailbox, IReadOnlyCollection<MailRuleCondition> conditions, IReadOnlyCollection<RemoteRuleAction> actions, CancellationToken ct = default)
+    {
+        if (FailWith is { } error)
+            return Result<RemoteFilter>.Failure(error);
 
-    public Task<Result<bool>> DeleteFilterAsync(Mailbox mailbox, string providerFilterId, CancellationToken ct = default) =>
-        Task.FromResult(Result<bool>.Failure(MailErrors.ActionNotSupported));
+        var filter = new RemoteFilter($"f{++_filterIds}", "made here", [.. conditions], [.. actions], "{}", IsReadOnly: false);
+        Filters.Add(filter);
+        Writes.Add($"create-filter:{filter.ProviderFilterId}:{string.Join(',', actions.Select(a => a.ProviderLabelId ?? a.Kind))}");
+        if (AfterFilterCreated is { } hold)
+            await hold();
+        return Result<RemoteFilter>.Success(filter);
+    }
+
+    public Task<Result<bool>> DeleteFilterAsync(Mailbox mailbox, string providerFilterId, CancellationToken ct = default)
+    {
+        if (FailFilterDeleteWith is { } error)
+            return Task.FromResult(Result<bool>.Failure(error));
+        if (FailWith is null)
+        {
+            Filters.RemoveAll(f => f.ProviderFilterId == providerFilterId);
+            Writes.Add($"delete-filter:{providerFilterId}");
+        }
+        return Answer(true);
+    }
 
     private Task<Result<T>> Answer<T>(T value)
     {

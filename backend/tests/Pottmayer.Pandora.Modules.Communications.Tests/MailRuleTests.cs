@@ -76,6 +76,17 @@ public sealed class MailRuleTests
     }
 
     [Fact]
+    public void Gmail_takes_only_a_user_label_while_imap_can_move_to_a_system_folder()
+    {
+        var system = MailLabel.Create(Mailbox, "IMPORTANT", "Important", LabelKind.System, null, isExclusive: false);
+        var labels = new Dictionary<Guid, MailLabel> { [system.Id] = system };
+        MailRuleAction[] move = [new(RuleActionKinds.Move, system.Id)];
+
+        Assert.Equal(MailErrors.RuleActionsInvalid.Code, MailRule.Validate("Rule", [FromAna], move, MailProvider.Gmail, labels)!.Code);
+        Assert.Null(MailRule.Validate("Rule", [FromAna], move, MailProvider.Titan, labels));
+    }
+
+    [Fact]
     public void Gmail_has_one_field_per_condition_while_imap_can_ask_for_both()
     {
         var two = new[] { FromAna, new MailRuleCondition(RuleConditionKinds.From, "bo") };

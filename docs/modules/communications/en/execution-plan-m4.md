@@ -1,6 +1,6 @@
 # Communications — Execution Plan, M4 (Rules)
 
-> **Status:** In progress: decisions approved, steps 1–5 built. It is phase **M4** of the [product-plan](product-plan.md), whose §10 has the model; what exists today is in
+> **Status:** In progress: decisions approved, steps 1–6 built. It is phase **M4** of the [product-plan](product-plan.md), whose §10 has the model; what exists today is in
 > [Implementation Status](implementation-status.md).
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan-m4.md)
 
@@ -96,7 +96,9 @@ Each step ends green before the next one. Suggested commit points: **M4a** = ste
 - Connecting a Gmail mailbox imports through the same diff.
 - **Tests:** a new filter → a rule; one gone → the rule goes (a disabled rule is skipped); one gone + one new → same rule, same name and position; two gone + one new → delete + import; `list` failing leaves the rules and the cycle alone.
 
-### Step 6 — API
+### Step 6 — API ✅
+
+> **Built (2026-11-01).** The routes, `RuleOperation`, `GetRulesQuery`, and `MailboxGates.Rules`, shared with the filter diff; the mailbox's DTO carries `filterSyncError`. Every write answers with the mailbox's rules as they are now. Decided here: enabling and disabling go through `PUT rules/{id}`, with `isEnabled`; a change of name alone does not touch Gmail, since it is Pandora's own; a read-only rule cannot be renamed or disabled, since a disabled filter could not be made again as it was, but it can be deleted, which deletes the filter, or the next cycle would import it again; reordering takes the ones listed, then any other, so a filter imported while the screen was open is no error. On Gmail a rule can only point at a user label, since a system one would read back as read-only. If an edit's delete fails, the old filter comes back as a rule of its own on the next cycle, which is the truth: it is still running. The filter endpoints are tested with the scripted provider under `titan` with the filters capability, since a Gmail mailbox needs OAuth; real Gmail is step 8. Tests: `MailRulesApiTests`, `MailRuleTests` +1.
 
 - `GET/POST mailboxes/{id}/rules`, `PUT/DELETE rules/{id}`, `PUT mailboxes/{id}/rules/order`.
 - Saving on Gmail goes to Gmail first (C2). An edit is create, save, delete; if the delete fails, the rule is right and the old filter is reported.

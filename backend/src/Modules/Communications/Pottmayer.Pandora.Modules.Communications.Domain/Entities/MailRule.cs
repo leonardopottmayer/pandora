@@ -99,6 +99,10 @@ public sealed class MailRule
         if (provider != MailProvider.Gmail && actions.Any(a => a.Kind == RuleActionKinds.AddLabel))
             return MailErrors.RuleActionsInvalid;
 
+        // A filter that adds a system label would read back as one a rule cannot hold.
+        if (provider == MailProvider.Gmail && labelled.Any(a => labels[a.LabelId!.Value].Kind != LabelKind.User))
+            return MailErrors.RuleActionsInvalid;
+
         // "Only one user-defined label is allowed per filter."
         if (provider == MailProvider.Gmail && labelled.Select(a => a.LabelId).Distinct().Count() > 1)
             return MailErrors.RuleActionsInvalid;
