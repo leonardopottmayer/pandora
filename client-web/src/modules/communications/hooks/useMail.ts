@@ -1,7 +1,7 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchAttachmentBlob } from '@/modules/notes/services/attachments.service'
 import * as mailService from '../services/communications.service'
-import type { ConnectMailboxInput, MessageActionInput, SendMessageInput, ServerSettings } from '../services/communications.service'
+import type { ConnectMailboxInput, MessageActionInput, RuleInput, SendMessageInput, ServerSettings } from '../services/communications.service'
 import type { ComposeMode, MailAttachment, MessageFilter } from '../models'
 
 // Central query keys of the Communications module; invalidating `all` refreshes every mail screen.
@@ -9,6 +9,7 @@ export const mailKeys = {
   all: ['mail'] as const,
   mailboxes: () => [...mailKeys.all, 'mailboxes'] as const,
   labels: (mailboxId: string) => [...mailKeys.all, 'labels', mailboxId] as const,
+  rules: (mailboxId: string) => [...mailKeys.all, 'rules', mailboxId] as const,
   messages: (filter: MessageFilter) => [...mailKeys.all, 'messages', filter] as const,
   message: (id: string) => [...mailKeys.all, 'message', id] as const,
   inline: (messageId: string, attachmentId: string) => [...mailKeys.all, 'inline', messageId, attachmentId] as const,
@@ -142,4 +143,28 @@ export function useRenameLabel() {
 
 export function useDeleteLabel() {
   return useMailMutation((id: string) => mailService.deleteLabel(id))
+}
+
+export function useRules(mailboxId: string | null) {
+  return useQuery({
+    queryKey: mailKeys.rules(mailboxId ?? ''),
+    queryFn: () => mailService.listRules(mailboxId!),
+    enabled: mailboxId !== null,
+  })
+}
+
+export function useCreateRule() {
+  return useMailMutation(({ mailboxId, input }: { mailboxId: string; input: RuleInput }) => mailService.createRule(mailboxId, input))
+}
+
+export function useUpdateRule() {
+  return useMailMutation(({ id, input }: { id: string; input: RuleInput & { isEnabled: boolean } }) => mailService.updateRule(id, input))
+}
+
+export function useDeleteRule() {
+  return useMailMutation((id: string) => mailService.deleteRule(id))
+}
+
+export function useReorderRules() {
+  return useMailMutation(({ mailboxId, ruleIds }: { mailboxId: string; ruleIds: string[] }) => mailService.reorderRules(mailboxId, ruleIds))
 }

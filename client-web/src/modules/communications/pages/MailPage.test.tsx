@@ -27,6 +27,7 @@ const mailbox: Mailbox = {
   messageCount: 1,
   messageTotalEstimate: 1,
   backfillCompletedAt: '2026-10-28T00:00:00Z',
+  filterSyncError: null,
 }
 
 const summary: MessageSummary = {

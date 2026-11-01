@@ -1,6 +1,6 @@
 # Communications — Plano de Execução, M4 (Regras)
 
-> **Status:** Em andamento: decisões aprovadas, passos 1–6 construídos. É a fase **M4** do [product-plan](product-plan.md), cuja §10 tem o modelo; o que existe hoje está no
+> **Status:** Em andamento: decisões aprovadas, passos 1–7 construídos. É a fase **M4** do [product-plan](product-plan.md), cuja §10 tem o modelo; o que existe hoje está no
 > [Status de implementação](implementation-status.md).
 > 🇺🇸 [English version](../en/execution-plan-m4.md)
 
@@ -104,7 +104,9 @@ Cada passo termina verde antes do próximo. Pontos de commit sugeridos: **M4a** 
 - Salvar no Gmail vai ao Gmail primeiro (C2). Editar é criar, salvar, apagar; se apagar falhar, a regra fica certa e o filtro antigo é informado.
 - **Testes:** de outro usuário → 404; só leitura não edita; falha no Gmail não muda nada; uma edição cujo apagar falha mantém a nova e avisa; mais de 1.000 filtros é a recusa do Gmail, mostrada.
 
-### Passo 7 — Web
+### Passo 7 — Web ✅
+
+> **Construído (2026-11-01).** `MailRulesPage` em `mail/rules`, `RuleFormModal`, `lib/ruleForm` (as mesmas checagens do servidor, para o formulário dizer o que está errado antes de pedir). Decidido aqui: o arrastar é o do próprio navegador, sem biblioteca, e botões de subir e descer fazem o mesmo pelo teclado; no Gmail o formulário oferece só marcadores do usuário; um marcador que sumiu volta vazio no formulário, para ser escolhido de novo; o formulário fica no `sessionStorage` durante o consentimento e volta uma vez. Desabilitar ou apagar sem o escopo mostra o mesmo aviso na página. Apagar uma regra somente leitura avisa que o que ela guarda, como um encaminhamento, vai junto. Não aberta no navegador: a página precisa do backend logado com `com001.filter_sync_error` e `com006` aplicadas, então isso abre o passo 8. Testes: `MailRulesPage.test.tsx`, `ruleForm.test.ts`.
 
 - `mail/rules`: regras por caixa, arrastar para reordenar, botão de ativar, um selo de onde cada uma roda, `broken` e só leitura destacados; o formulário de condições e ações.
 - Apagar ou desativar uma regra do Gmail avisa que muda o Gmail.

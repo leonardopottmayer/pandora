@@ -1,6 +1,6 @@
 # Communications — Execution Plan, M4 (Rules)
 
-> **Status:** In progress: decisions approved, steps 1–6 built. It is phase **M4** of the [product-plan](product-plan.md), whose §10 has the model; what exists today is in
+> **Status:** In progress: decisions approved, steps 1–7 built. It is phase **M4** of the [product-plan](product-plan.md), whose §10 has the model; what exists today is in
 > [Implementation Status](implementation-status.md).
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan-m4.md)
 
@@ -104,7 +104,9 @@ Each step ends green before the next one. Suggested commit points: **M4a** = ste
 - Saving on Gmail goes to Gmail first (C2). An edit is create, save, delete; if the delete fails, the rule is right and the old filter is reported.
 - **Tests:** another user's → 404; read-only cannot be edited; a Gmail failure changes nothing; an edit whose delete fails keeps the new one and says so; more than 1,000 filters is Gmail's refusal, shown.
 
-### Step 7 — Web
+### Step 7 — Web ✅
+
+> **Built (2026-11-01).** `MailRulesPage` at `mail/rules`, `RuleFormModal`, `lib/ruleForm` (the same checks as the server, so the form says what is wrong before asking). Decided here: dragging is the browser's own, no library, and up and down buttons do the same from the keyboard; on Gmail the form offers only user labels; a label that is gone comes back empty in the form, to be chosen again; the form is kept in `sessionStorage` during a consent and comes back once. A disable or a delete that lacks the scope shows the same prompt on the page. Deleting a read-only rule warns that what it holds, such as a forward, goes too. Not opened in a browser: the page needs a logged-in backend with `com001.filter_sync_error` and `com006` applied, so that is the start of step 8. Tests: `MailRulesPage.test.tsx`, `ruleForm.test.ts`.
 
 - `mail/rules`: rules per mailbox, drag to reorder, enable toggle, a badge for where each runs, `broken` and read-only highlighted; the condition and action form.
 - Deleting or disabling a Gmail rule says it changes Gmail.

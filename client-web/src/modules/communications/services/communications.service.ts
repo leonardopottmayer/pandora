@@ -4,12 +4,15 @@ import type {
   ComposeMode,
   MailLabel,
   MailMessage,
+  MailRule,
   Mailbox,
   MailProvider,
   MessageAction,
   MessageFilter,
   MessagePage,
   MessageSummary,
+  RuleAction,
+  RuleCondition,
 } from '../models'
 
 const BASE = '/api/v1/communications'
@@ -78,6 +81,40 @@ export async function renameLabel(id: string, name: string): Promise<MailLabel[]
 /** An IMAP folder with messages is refused: deleting it would delete what is inside. */
 export async function deleteLabel(id: string): Promise<MailLabel[]> {
   const { data } = await apiClient.delete<MailLabel[]>(`${BASE}/labels/${id}`)
+  return data
+}
+
+export interface RuleInput {
+  name: string
+  conditions: RuleCondition[]
+  actions: RuleAction[]
+}
+
+export async function listRules(mailboxId: string): Promise<MailRule[]> {
+  const { data } = await apiClient.get<MailRule[]>(`${BASE}/mailboxes/${mailboxId}/rules`)
+  return data
+}
+
+/** The rule endpoints answer with the mailbox's rules as they are after the operation. On Gmail, Gmail goes first. */
+export async function createRule(mailboxId: string, input: RuleInput): Promise<MailRule[]> {
+  const { data } = await apiClient.post<MailRule[]>(`${BASE}/mailboxes/${mailboxId}/rules`, input)
+  return data
+}
+
+/** Disabling a Gmail rule deletes its filter; enabling makes it again. A new name alone does not reach Gmail. */
+export async function updateRule(id: string, input: RuleInput & { isEnabled: boolean }): Promise<MailRule[]> {
+  const { data } = await apiClient.put<MailRule[]>(`${BASE}/rules/${id}`, input)
+  return data
+}
+
+/** On Gmail this deletes the filter too, for good. */
+export async function deleteRule(id: string): Promise<MailRule[]> {
+  const { data } = await apiClient.delete<MailRule[]>(`${BASE}/rules/${id}`)
+  return data
+}
+
+export async function reorderRules(mailboxId: string, ruleIds: string[]): Promise<MailRule[]> {
+  const { data } = await apiClient.put<MailRule[]>(`${BASE}/mailboxes/${mailboxId}/rules/order`, { ruleIds })
   return data
 }
 

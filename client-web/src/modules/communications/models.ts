@@ -19,6 +19,8 @@ export interface Mailbox {
   messageCount: number
   messageTotalEstimate: number | null
   backfillCompletedAt: string | null
+  /** Why the last read of Gmail's filters failed. It does not stop the mailbox. */
+  filterSyncError: string | null
 }
 
 export type LabelRole = 'inbox' | 'sent' | 'drafts' | 'trash' | 'spam' | 'archive'
@@ -135,8 +137,41 @@ export const ACCOUNT_PROVIDER: Record<MailProvider, string> = { gmail: 'google',
 /** Read and change labels — what the Gmail adapter needs (`mail.google.com` also works). */
 export const GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.modify'
 
+/** Only writing filters needs this; reading them comes with `GMAIL_SCOPE`. */
+export const GMAIL_FILTER_SCOPE = 'https://www.googleapis.com/auth/gmail.settings.basic'
+
 /** Where Google sends the browser back to after a Gmail consent: the accounts page reopens "add" on Gmail. */
 export const GMAIL_RETURN = '/mail/accounts?connect=gmail'
+
+export type RuleConditionKind = 'from' | 'to' | 'subject' | 'has-words' | 'has-attachment' | 'provider-query'
+
+export type RuleActionKind = 'add-label' | 'move' | 'archive' | 'mark-read' | 'star' | 'trash'
+
+export interface RuleCondition {
+  kind: RuleConditionKind
+  /** Empty for `has-attachment`. */
+  value: string
+}
+
+export interface RuleAction {
+  kind: RuleActionKind
+  /** Only for `add-label` and `move`. */
+  labelId: string | null
+}
+
+export interface MailRule {
+  id: string
+  name: string
+  position: number
+  conditions: RuleCondition[]
+  actions: RuleAction[]
+  execution: 'provider-filter' | 'pandora'
+  isEnabled: boolean
+  status: 'ok' | 'broken' | 'read-only'
+  lastError: string | null
+  /** The filter as Gmail sent it, on a read-only rule. */
+  providerFilterRaw: string | null
+}
 
 export function addressLabel(a: MailAddress | null): string {
   return a ? a.name || a.address : ''

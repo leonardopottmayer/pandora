@@ -45,6 +45,7 @@ import { ReviewPage } from '@/modules/files/pages/ReviewPage'
 import { FilesSettingsPage } from '@/modules/files/pages/FilesSettingsPage'
 import { MailPage } from '@/modules/communications/pages/MailPage'
 import { MailAccountsPage } from '@/modules/communications/pages/MailAccountsPage'
+import { MailRulesPage } from '@/modules/communications/pages/MailRulesPage'
 
 export const router = createBrowserRouter([
   // Public (redirect if already authenticated)
@@ -115,6 +116,7 @@ export const router = createBrowserRouter([
       // Communications
       { path: 'mail', element: <MailPage /> },
       { path: 'mail/accounts', element: <MailAccountsPage /> },
+      { path: 'mail/rules', element: <MailRulesPage /> },
     ],
   },
 

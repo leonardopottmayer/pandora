@@ -99,6 +99,7 @@ export const navigationModules: NavModule[] = [
     screens: [
       { key: 'mail-inbox', labelKey: 'nav.mailInbox', path: '/mail', icon: <MailOutlined /> },
       { key: 'mail-accounts', labelKey: 'nav.mailAccounts', path: '/mail/accounts', icon: <UserOutlined /> },
+      { key: 'mail-rules', labelKey: 'nav.mailRules', path: '/mail/rules', icon: <FilterOutlined /> },
     ],
   },
   {
