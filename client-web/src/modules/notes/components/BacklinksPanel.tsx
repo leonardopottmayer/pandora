@@ -18,6 +18,8 @@ export function BacklinksPanel({ pageId, onSelect }: BacklinksPanelProps) {
     <Collapse
       ghost
       size="small"
+      // In the info panel the mentions are what one opens it for, so they start open.
+      defaultActiveKey={['backlinks']}
       style={{ borderTop: `1px solid ${token.colorBorderSecondary}` }}
       items={[
         {

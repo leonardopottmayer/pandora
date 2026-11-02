@@ -30,6 +30,8 @@ interface MarkdownEditorProps {
   onChange: (value: string) => void
   /** Uploads a pasted/dropped file and returns its attachment metadata for embedding. */
   onUpload: (file: File) => Promise<AttachmentDto>
+  /** Grows with the text instead of scrolling inside, so the page around it scrolls as one document. */
+  autoHeight?: boolean
 }
 
 /** Only images embed inline as `![]`; other files embed as a plain markdown link. */
@@ -47,6 +49,7 @@ export function MarkdownEditor({
   tags,
   onChange,
   onUpload,
+  autoHeight = false,
 }: MarkdownEditorProps) {
   const { t } = useTranslation()
   const hostRef = useRef<HTMLDivElement>(null)
@@ -169,7 +172,11 @@ export function MarkdownEditor({
 
   return (
     <>
-      <div ref={hostRef} className="notes-editor" style={{ height: '100%', overflow: 'auto' }} />
+      <div
+        ref={hostRef}
+        className={autoHeight ? 'notes-editor notes-editor-auto' : 'notes-editor'}
+        style={autoHeight ? undefined : { height: '100%', overflow: 'auto' }}
+      />
       {tableSizeOpen && (
         <TableSizeModal
           onCancel={closeTableSize}

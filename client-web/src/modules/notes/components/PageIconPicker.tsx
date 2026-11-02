@@ -7,6 +7,8 @@ import { normalizeIcon, SUGGESTED_ICONS } from '../lib/pageIcon'
 interface PageIconPickerProps {
   value: string | null
   onChange: (icon: string | null) => void
+  /** `large` is the page header's: the emoji as big as the title. */
+  size?: 'default' | 'large'
 }
 
 /**
@@ -14,7 +16,7 @@ interface PageIconPickerProps {
  * a full emoji library: every OS already ships a searchable emoji panel (Win+. on Windows), and
  * anything typed is reduced to its first grapheme, so the field cannot become a second title.
  */
-export function PageIconPicker({ value, onChange }: PageIconPickerProps) {
+export function PageIconPicker({ value, onChange, size = 'default' }: PageIconPickerProps) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
 
@@ -58,7 +60,15 @@ export function PageIconPicker({ value, onChange }: PageIconPickerProps) {
       content={content}
     >
       <Tooltip title={t('notes.icon')}>
-        <Button type="text" style={{ fontSize: 20, flexShrink: 0, padding: '0 6px' }}>
+        <Button
+          type="text"
+          aria-label={t('notes.icon')}
+          style={
+            size === 'large'
+              ? { fontSize: 40, height: 56, flexShrink: 0, padding: '0 6px' }
+              : { fontSize: 20, flexShrink: 0, padding: '0 6px' }
+          }
+        >
           {value ?? <FileTextOutlined style={{ opacity: 0.45 }} />}
         </Button>
       </Tooltip>

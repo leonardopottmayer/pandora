@@ -1076,7 +1076,20 @@
       "switch": "Trocar de espaço",
       "moveTo": "Mover para o espaço",
       "thisSpace": "Neste espaço"
-    }
+    },
+    "edited": "editado {{when}}",
+    "openSidebar": "Abrir as páginas",
+    "showSidebar": "Mostrar a barra lateral (Ctrl+\\)",
+    "hideSidebar": "Esconder a barra lateral (Ctrl+\\)",
+    "edit": "Editar",
+    "doneEditing": "Concluir",
+    "viewEdit": "Só o editor",
+    "viewSplit": "Lado a lado",
+    "viewPreview": "Só leitura",
+    "info": "Informações da página",
+    "breadcrumb": "Onde esta página fica",
+    "newChildOf": "Nova subpágina em {{title}}",
+    "pageActions": "Ações de {{title}}"
   },
   "agenda": {
     "settings": {

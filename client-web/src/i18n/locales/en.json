@@ -1076,7 +1076,20 @@
       "switch": "Switch space",
       "moveTo": "Move to space",
       "thisSpace": "This space"
-    }
+    },
+    "edited": "edited {{when}}",
+    "openSidebar": "Open pages",
+    "showSidebar": "Show the sidebar (Ctrl+\\)",
+    "hideSidebar": "Hide the sidebar (Ctrl+\\)",
+    "edit": "Edit",
+    "doneEditing": "Done",
+    "viewEdit": "Editor only",
+    "viewSplit": "Side by side",
+    "viewPreview": "Reading only",
+    "info": "Page info",
+    "breadcrumb": "Where this page is",
+    "newChildOf": "New subpage in {{title}}",
+    "pageActions": "Actions for {{title}}"
   },
   "agenda": {
     "settings": {

@@ -178,13 +178,28 @@ export function NotesSidebar({
           {node.title || t('notes.untitled')}
         </span>
         {node.isFavorite && <StarFilled style={{ color: '#fadb14', flexShrink: 0 }} />}
+        {/* Shown on hover; a touch screen has no hover, so there they stay visible. */}
+        <Button
+          type="text"
+          size="small"
+          icon={<PlusOutlined />}
+          title={t('notes.newChild')}
+          aria-label={t('notes.newChildOf', { title: node.title || t('notes.untitled') })}
+          onClick={(e) => {
+            e.stopPropagation()
+            void handleCreate(node.id)
+          }}
+          className="opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+          style={{ flexShrink: 0 }}
+        />
         <Dropdown menu={{ items: nodeMenu(node) }} trigger={['click']}>
           <Button
             type="text"
             size="small"
             icon={<EllipsisOutlined />}
+            aria-label={t('notes.pageActions', { title: node.title || t('notes.untitled') })}
             onClick={(e) => e.stopPropagation()}
-            className="opacity-0 group-hover:opacity-100"
+            className="opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
             style={{ flexShrink: 0 }}
           />
         </Dropdown>

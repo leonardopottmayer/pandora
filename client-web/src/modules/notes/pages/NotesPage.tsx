@@ -1,8 +1,17 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
-import { App, Card, Empty, Flex, Input, Segmented, Spin, Tag, Tooltip, Typography, theme } from 'antd'
-import { EditOutlined, EyeOutlined, SplitCellsOutlined } from '@ant-design/icons'
+import { App, Button, Drawer, Empty, Grid, Segmented, Spin, Tooltip, theme } from 'antd'
+import {
+  CheckOutlined,
+  EditOutlined,
+  EyeOutlined,
+  InfoCircleOutlined,
+  MenuFoldOutlined,
+  MenuOutlined,
+  MenuUnfoldOutlined,
+  SplitCellsOutlined,
+} from '@ant-design/icons'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { BacklinksPanel } from '../components/BacklinksPanel'
@@ -10,7 +19,8 @@ import { LocalGraphPanel } from '../components/LocalGraphPanel'
 import { MarkdownEditor } from '../components/MarkdownEditor'
 import { MarkdownPreview } from '../components/MarkdownPreview'
 import { NotesSidebar } from '../components/NotesSidebar'
-import { PageIconPicker } from '../components/PageIconPicker'
+import { PageBreadcrumb } from '../components/PageBreadcrumb'
+import { PageHeader } from '../components/PageHeader'
 import { SearchPalette } from '../components/SearchPalette'
 import { SpaceOverview } from '../components/SpaceOverview'
 import { useAutosave } from '../hooks/useAutosave'
@@ -23,7 +33,28 @@ import '../components/notes.css'
 
 type ViewMode = 'edit' | 'split' | 'preview'
 
-const SIDEBAR_WIDTH = 280
+const SIDEBAR_WIDTH = 272
+const VIEW_MODES: ViewMode[] = ['edit', 'split', 'preview']
+const VIEW_MODE_KEY = 'pandora.notes_view_mode'
+const SIDEBAR_KEY = 'pandora.notes_sidebar_closed'
+
+// Remembered per device: how one likes to write and whether the tree is in the way are habits.
+function readStored<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+  try {
+    const value = localStorage.getItem(key)
+    return value && (allowed as readonly string[]).includes(value) ? (value as T) : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function store(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // Private mode or blocked storage: the choice just lasts until the reload.
+  }
+}
 
 /** What autosave writes: the whole editable surface of a page. */
 interface PageDraft {
@@ -39,12 +70,20 @@ export function NotesPage() {
   const { isDark } = usePreferences()
   const navigate = useNavigate()
   const { id: routeId, spaceId: routeSpaceId } = useParams<{ id: string; spaceId: string }>()
+  const screens = Grid.useBreakpoint()
+  // Until the first measure lands, assume the wide layout: a phone settles a frame later.
+  const isMobile = screens.md === false
 
   const selectedId = routeId ?? null
   const [includeArchived, setIncludeArchived] = useState(false)
   const [tagIds, setTagIds] = useState<string[]>([])
   const [searchOpen, setSearchOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<ViewMode>('split')
+  const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(VIEW_MODE_KEY, VIEW_MODES, 'split'))
+  const [sidebarClosed, setSidebarClosed] = useState(() => readStored(SIDEBAR_KEY, ['1', '0'], '0') === '1')
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [infoOpen, setInfoOpen] = useState(false)
+  // A phone opens a page to read it; editing is a step it takes on purpose.
+  const [mobileEditing, setMobileEditing] = useState(false)
 
   // Local draft of the open page; the source of truth while typing.
   const [draft, setDraft] = useState<PageDraft>({ title: '', icon: null, contentMarkdown: '' })
@@ -67,10 +106,40 @@ export function NotesPage() {
   // (in the body or in the header) is what fills the sidebar filter.
   const { tags, index: tagIndex } = useTags()
 
+  function filterByTag(tagId: string) {
+    setTagIds([tagId])
+    if (isMobile) setDrawerOpen(true)
+    else if (sidebarClosed) toggleSidebar()
+  }
+
   function filterByTagSlug(slug: string) {
     const tag = tags.find((candidate) => candidate.slug === slug)
-    if (tag) setTagIds([tag.id])
+    if (tag) filterByTag(tag.id)
   }
+
+  function changeViewMode(mode: ViewMode) {
+    setViewMode(mode)
+    store(VIEW_MODE_KEY, mode)
+  }
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarClosed((closed) => {
+      store(SIDEBAR_KEY, closed ? '0' : '1')
+      return !closed
+    })
+  }, [])
+
+  // Ctrl+\ (Cmd+\ on a Mac) folds the tree away to write, as in Notion.
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if ((event.ctrlKey || event.metaKey) && event.key === '\\') {
+        event.preventDefault()
+        toggleSidebar()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [toggleSidebar])
 
   // The page the draft belongs to — also the id autosave writes to. It trails `selectedId`
   // while the next page loads, so a flush during a switch still targets the page being left.
@@ -80,6 +149,7 @@ export function NotesPage() {
   if (page && page.id !== draftPageId) {
     setDraftPageId(page.id)
     setDraft({ title: page.title, icon: page.icon, contentMarkdown: page.contentMarkdown })
+    setMobileEditing(false)
   }
 
   const handleSave = useCallback(
@@ -97,6 +167,8 @@ export function NotesPage() {
 
   // Selecting another page: write pending edits to the page being left, then navigate.
   async function handleSelect(id: string | null) {
+    setDrawerOpen(false)
+    setInfoOpen(false)
     if (id === selectedId) return
     await flush()
     if (id) navigate(`/notes/${id}`)
@@ -108,6 +180,7 @@ export function NotesPage() {
   }
 
   async function handleSpaceChange(id: string) {
+    setDrawerOpen(false)
     await flush()
     reset()
     setDraftPageId(null)
@@ -158,139 +231,221 @@ export function NotesPage() {
     error: t('notes.saveError'),
   }
 
-  const editorPane = selectedId && (
-    <MarkdownEditor
-      docId={selectedId}
-      initialValue={page?.contentMarkdown ?? ''}
-      placeholder={t('notes.contentPlaceholder')}
-      isDark={isDark}
-      pages={allPages ?? []}
-      tags={tags}
-      onChange={(value) => updateDraft({ contentMarkdown: value })}
-      onUpload={handleUpload}
+  // A phone has no room for two panes: it reads, or it edits.
+  const mode: ViewMode = isMobile ? (mobileEditing ? 'edit' : 'preview') : viewMode
+  const border = `1px solid ${token.colorBorderSecondary}`
+
+  const sidebar = (
+    <NotesSidebar
+      spaceId={spaceId}
+      onSpaceChange={handleSpaceChange}
+      selectedId={selectedId}
+      onSelect={handleSelect}
+      includeArchived={includeArchived}
+      onToggleArchived={setIncludeArchived}
+      tagIds={tagIds}
+      onTagIdsChange={setTagIds}
+      onSearch={() => {
+        setDrawerOpen(false)
+        setSearchOpen(true)
+      }}
     />
   )
 
+  const editor = (autoHeight: boolean) =>
+    selectedId && (
+      <MarkdownEditor
+        docId={selectedId}
+        initialValue={page?.contentMarkdown ?? ''}
+        placeholder={t('notes.contentPlaceholder')}
+        isDark={isDark}
+        pages={allPages ?? []}
+        tags={tags}
+        onChange={(value) => updateDraft({ contentMarkdown: value })}
+        onUpload={handleUpload}
+        autoHeight={autoHeight}
+      />
+    )
+
+  const preview = (
+    <MarkdownPreview
+      markdown={draft.contentMarkdown}
+      pageIndex={pageIndex}
+      tagIndex={tagIndex}
+      onOpenPage={handleSelect}
+      onCreatePage={handleCreateFromLink}
+      onSelectTag={filterByTagSlug}
+    />
+  )
+
+  const header = page && (
+    <PageHeader
+      icon={draft.icon}
+      title={draft.title}
+      editedAt={page.updatedAt ?? page.createdAt}
+      status={statusLabel[status]}
+      statusIsError={status === 'error'}
+      tags={page.tags}
+      editable={!isMobile || mobileEditing}
+      onIconChange={(icon) => updateDraft({ icon })}
+      onTitleChange={(title) => updateDraft({ title })}
+      onSelectTag={filterByTag}
+    />
+  )
+
+  const toolbar = (
+    <div className="flex h-12 shrink-0 items-center gap-2 px-3" style={{ borderBottom: border }}>
+      {isMobile ? (
+        <Button type="text" icon={<MenuOutlined />} aria-label={t('notes.openSidebar')} onClick={() => setDrawerOpen(true)} />
+      ) : (
+        <Tooltip title={t(sidebarClosed ? 'notes.showSidebar' : 'notes.hideSidebar')}>
+          <Button
+            type="text"
+            icon={sidebarClosed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            aria-label={t(sidebarClosed ? 'notes.showSidebar' : 'notes.hideSidebar')}
+            onClick={toggleSidebar}
+          />
+        </Tooltip>
+      )}
+
+      <div className="min-w-0 flex-1">
+        <PageBreadcrumb
+          space={space}
+          page={page && selectedId ? { ...page, title: draft.title, icon: draft.icon } : null}
+          pages={allPages ?? []}
+          compact={isMobile}
+          onOpenSpace={() => handleSelect(null)}
+          onOpenPage={handleSelect}
+        />
+      </div>
+
+      {selectedId && page && (
+        <>
+          {isMobile ? (
+            <Button
+              type={mobileEditing ? 'primary' : 'default'}
+              size="small"
+              icon={mobileEditing ? <CheckOutlined /> : <EditOutlined />}
+              onClick={() => {
+                if (mobileEditing) void flush()
+                setMobileEditing(!mobileEditing)
+              }}
+            >
+              {t(mobileEditing ? 'notes.doneEditing' : 'notes.edit')}
+            </Button>
+          ) : (
+            <Segmented
+              size="small"
+              value={viewMode}
+              onChange={(value) => changeViewMode(value as ViewMode)}
+              aria-label={t('notes.viewMode')}
+              options={[
+                { value: 'edit', icon: <EditOutlined />, title: t('notes.viewEdit') },
+                { value: 'split', icon: <SplitCellsOutlined />, title: t('notes.viewSplit') },
+                { value: 'preview', icon: <EyeOutlined />, title: t('notes.viewPreview') },
+              ]}
+            />
+          )}
+          <Tooltip title={t('notes.info')}>
+            <Button
+              type={infoOpen ? 'default' : 'text'}
+              icon={<InfoCircleOutlined />}
+              aria-label={t('notes.info')}
+              onClick={() => setInfoOpen(!infoOpen)}
+            />
+          </Tooltip>
+        </>
+      )}
+    </div>
+  )
+
+  let body: ReactNode
+  if (!selectedId) {
+    body = space ? (
+      <SpaceOverview space={space} onOpenPage={handleSelect} onCreatePage={handleCreateInSpace} />
+    ) : (
+      <div className="flex h-full items-center justify-center">
+        <Empty description={t('notes.noSelection')} />
+      </div>
+    )
+  } else if (isLoading || !page) {
+    body = (
+      <div className="flex h-full items-center justify-center">
+        <Spin />
+      </div>
+    )
+  } else if (mode === 'split') {
+    // Side by side, each pane scrolls on its own; the title sits above both.
+    body = (
+      <div className="flex h-full flex-col">
+        <div className="notes-doc shrink-0 px-8 pt-6">{header}</div>
+        <div className="flex min-h-0 flex-1" style={{ borderTop: border }}>
+          <div className="min-w-0 flex-1" style={{ borderRight: border }}>
+            {editor(false)}
+          </div>
+          <div className="notes-doc min-w-0 flex-1 overflow-auto px-6 py-4">{preview}</div>
+        </div>
+      </div>
+    )
+  } else {
+    // One column at a reading width, scrolling as a whole document.
+    body = (
+      <div className="h-full overflow-auto">
+        <div className="notes-doc mx-auto w-full max-w-[760px] px-5 py-8 md:px-10 md:py-12">
+          {header}
+          {mode === 'edit' ? editor(true) : preview}
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <Flex gap={16} align="stretch" style={{ height: 'calc(100vh - 112px)' }}>
+    <div className="flex gap-4" style={{ height: 'calc(100dvh - 112px)' }}>
       <SearchPalette open={searchOpen} onOpenChange={setSearchOpen} onSelect={handleSelect} spaceId={spaceId} />
 
-      <Card
-        styles={{ body: { padding: 12, height: '100%', overflow: 'hidden' } }}
-        style={{ width: SIDEBAR_WIDTH, flexShrink: 0, height: '100%' }}
+      {isMobile ? (
+        <Drawer
+          placement="left"
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          size={300}
+          closable={false}
+          styles={{ body: { padding: 12 } }}
+        >
+          {sidebar}
+        </Drawer>
+      ) : (
+        !sidebarClosed && (
+          <aside
+            className="h-full shrink-0 overflow-hidden rounded-xl p-3"
+            style={{ width: SIDEBAR_WIDTH, border, background: token.colorBgContainer }}
+          >
+            {sidebar}
+          </aside>
+        )
+      )}
+
+      <main
+        className="flex h-full min-w-0 flex-1 flex-col overflow-hidden rounded-xl"
+        style={{ border, background: token.colorBgContainer }}
       >
-        <NotesSidebar
-          spaceId={spaceId}
-          onSpaceChange={handleSpaceChange}
-          selectedId={selectedId}
-          onSelect={handleSelect}
-          includeArchived={includeArchived}
-          onToggleArchived={setIncludeArchived}
-          tagIds={tagIds}
-          onTagIdsChange={setTagIds}
-          onSearch={() => setSearchOpen(true)}
-        />
-      </Card>
+        {toolbar}
+        <div className="min-h-0 flex-1">{body}</div>
+      </main>
 
-      <Card
-        styles={{ body: { padding: 0, height: '100%', display: 'flex', flexDirection: 'column' } }}
-        style={{ flex: 1, height: '100%', overflow: 'hidden' }}
-      >
-        {!selectedId && space ? (
-          <SpaceOverview space={space} onOpenPage={handleSelect} onCreatePage={handleCreateInSpace} />
-        ) : !selectedId ? (
-          <Flex align="center" justify="center" style={{ height: '100%' }}>
-            <Empty description={t('notes.noSelection')} />
-          </Flex>
-        ) : isLoading ? (
-          <Flex align="center" justify="center" style={{ height: '100%' }}>
-            <Spin />
-          </Flex>
-        ) : (
-          <>
-            <Flex
-              align="center"
-              gap={12}
-              style={{ padding: '12px 16px', borderBottom: `1px solid ${token.colorBorderSecondary}` }}
-            >
-              <PageIconPicker value={draft.icon} onChange={(icon) => updateDraft({ icon })} />
-              <Input
-                variant="borderless"
-                value={draft.title}
-                placeholder={t('notes.titlePlaceholder')}
-                onChange={(e) => updateDraft({ title: e.target.value })}
-                style={{ flex: 1, fontSize: 20, fontWeight: 600, padding: 0 }}
-              />
-              <Typography.Text type={status === 'error' ? 'danger' : 'secondary'} style={{ fontSize: 12 }}>
-                {statusLabel[status]}
-              </Typography.Text>
-              <Tooltip title={t('notes.viewMode')}>
-                <Segmented
-                  size="small"
-                  value={viewMode}
-                  onChange={(value) => setViewMode(value as ViewMode)}
-                  options={[
-                    { value: 'edit', icon: <EditOutlined /> },
-                    { value: 'split', icon: <SplitCellsOutlined /> },
-                    { value: 'preview', icon: <EyeOutlined /> },
-                  ]}
-                />
-              </Tooltip>
-            </Flex>
-
-            {page && page.tags.length > 0 && (
-              <Flex
-                wrap
-                gap={4}
-                style={{ padding: '8px 16px', borderBottom: `1px solid ${token.colorBorderSecondary}` }}
-              >
-                {/* The tags the saved body mentions — clicking one narrows the sidebar to it. */}
-                {page.tags.map((tag) => (
-                  <Tag
-                    key={tag.id}
-                    color={tag.color ?? undefined}
-                    style={{ cursor: 'pointer', marginInlineEnd: 0 }}
-                    onClick={() => setTagIds([tag.id])}
-                  >
-                    #{tag.name}
-                  </Tag>
-                ))}
-              </Flex>
-            )}
-
-            <Flex style={{ flex: 1, minHeight: 0 }}>
-              {viewMode !== 'preview' && (
-                <div
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    height: '100%',
-                    borderRight:
-                      viewMode === 'split' ? `1px solid ${token.colorBorderSecondary}` : undefined,
-                  }}
-                >
-                  {editorPane}
-                </div>
-              )}
-              {viewMode !== 'edit' && (
-                <div style={{ flex: 1, minWidth: 0, height: '100%', overflow: 'auto' }}>
-                  <MarkdownPreview
-                    markdown={draft.contentMarkdown}
-                    pageIndex={pageIndex}
-                    tagIndex={tagIndex}
-                    onOpenPage={handleSelect}
-                    onCreatePage={handleCreateFromLink}
-                    onSelectTag={filterByTagSlug}
-                  />
-                </div>
-              )}
-            </Flex>
-
-            <BacklinksPanel pageId={selectedId} onSelect={handleSelect} />
-            <LocalGraphPanel pageId={selectedId} onSelect={handleSelect} />
-          </>
-        )}
-      </Card>
-    </Flex>
+      {selectedId && (
+        <Drawer
+          title={t('notes.info')}
+          placement={isMobile ? 'bottom' : 'right'}
+          open={infoOpen}
+          onClose={() => setInfoOpen(false)}
+          size={isMobile ? '75%' : 380}
+          styles={{ body: { padding: 0 } }}
+        >
+          <BacklinksPanel pageId={selectedId} onSelect={handleSelect} />
+          <LocalGraphPanel pageId={selectedId} onSelect={handleSelect} />
+        </Drawer>
+      )}
+    </div>
   )
 }

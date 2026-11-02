@@ -12,6 +12,14 @@
 .notes-editor .cm-focused {
   outline: none;
 }
+/* Growing with the text: the page scrolls, not the editor. */
+.notes-editor-auto .cm-editor { height: auto; min-height: 50vh; }
+.notes-editor-auto .cm-scroller { overflow: visible; }
+
+/* In the reading column the text starts where the title does. */
+.notes-doc .notes-preview { padding: 0; }
+.notes-doc .notes-editor .cm-content { padding-top: 0; }
+.notes-doc .notes-editor .cm-line { padding-left: 0; }
 
 /* Rendered markdown preview. */
 .notes-preview {
