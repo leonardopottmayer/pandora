@@ -1,11 +1,33 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { App, Badge, Button, Dropdown, Form, Input, Menu, Modal } from 'antd'
+import type { ReactNode } from 'react'
+import { App, Button, Dropdown, Form, Input, Menu, Modal } from 'antd'
 import type { MenuProps } from 'antd'
-import { MoreOutlined, PlusOutlined } from '@ant-design/icons'
+import {
+  ContainerOutlined,
+  DeleteOutlined,
+  FileTextOutlined,
+  FolderOutlined,
+  InboxOutlined,
+  MailOutlined,
+  MoreOutlined,
+  PlusOutlined,
+  SendOutlined,
+  StopOutlined,
+  TagOutlined,
+} from '@ant-design/icons'
 import { toErrorMessage } from '@/lib/api/envelope'
-import type { MailLabel, Mailbox } from '../models'
+import { hasMultipleLabels, type LabelRole, type MailLabel, type Mailbox } from '../models'
 import { useCreateLabel, useDeleteLabel, useLabels, useRenameLabel } from '../hooks/useMail'
+
+const ROLE_ICON: Record<LabelRole, ReactNode> = {
+  inbox: <InboxOutlined />,
+  sent: <SendOutlined />,
+  drafts: <FileTextOutlined />,
+  trash: <DeleteOutlined />,
+  spam: <StopOutlined />,
+  archive: <ContainerOutlined />,
+}
 
 /** What the list shows: every mailbox, one mailbox, or one label of a mailbox. */
 export interface MailFolder {
@@ -83,9 +105,15 @@ export function MailSidebar({
 
   const labelRow = (mailboxId: string, l: MailLabel) => (
     <span className="flex items-center justify-between gap-1">
-      <span className="truncate">{labelName(l)}</span>
+      <span className="truncate" style={l.unread > 0 ? { fontWeight: 600 } : undefined}>
+        {labelName(l)}
+      </span>
       <span className="flex shrink-0 items-center gap-1">
-        {l.unread > 0 && <Badge count={l.unread} overflowCount={999} color="blue" />}
+        {l.unread > 0 && (
+          <span className="text-xs font-semibold tabular-nums" aria-label={t('mail.unreadCount', { count: l.unread })}>
+            {l.unread > 999 ? '999+' : l.unread}
+          </span>
+        )}
         {l.kind === 'user' && (
           // The menu belongs to the row, but opening it must not select the label.
           <span onClick={(e) => e.stopPropagation()}>
@@ -117,14 +145,18 @@ export function MailSidebar({
   )
 
   const items: MenuProps['items'] = [
-    { key: 'all', label: t('mail.allMailboxes') },
+    ...(mailboxes.length > 1 ? [{ key: 'all', icon: <MailOutlined />, label: t('mail.allMailboxes') }] : []),
     ...mailboxes.map((m, index) => ({
       type: 'group' as const,
       key: `group:${m.id}`,
-      label: m.displayName ?? m.address,
+      label: <span className="block truncate">{m.displayName ?? m.address}</span>,
       children: [
-        { key: `mailbox:${m.id}`, label: t('mail.allMail') },
-        ...(labels[index]?.data ?? []).map((l) => ({ key: `label:${m.id}:${l.id}`, label: labelRow(m.id, l) })),
+        { key: `mailbox:${m.id}`, icon: <MailOutlined />, label: t('mail.allMail') },
+        ...(labels[index]?.data ?? []).map((l) => ({
+          key: `label:${m.id}:${l.id}`,
+          icon: l.role ? ROLE_ICON[l.role] : hasMultipleLabels(m.provider) ? <TagOutlined /> : <FolderOutlined />,
+          label: labelRow(m.id, l),
+        })),
         { key: `new:${m.id}`, icon: <PlusOutlined />, label: t('mail.labels.new') },
       ],
     })),
@@ -134,8 +166,9 @@ export function MailSidebar({
     <>
       <Menu
         mode="inline"
-        className="!border-0"
-        selectedKeys={[folderKey(folder)]}
+        style={{ borderInlineEnd: 0, background: 'transparent' }}
+        // With one mailbox there is no "all mailboxes": everything is that mailbox's mail.
+        selectedKeys={[mailboxes.length === 1 && !folder.mailboxId ? `mailbox:${mailboxes[0].id}` : folderKey(folder)]}
         onClick={({ key }) => {
           if (key.startsWith('new:')) setEditing({ mailboxId: key.slice('new:'.length) })
           else onSelect(parseKey(key))

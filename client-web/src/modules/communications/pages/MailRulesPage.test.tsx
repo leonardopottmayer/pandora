@@ -119,7 +119,8 @@ describe('MailRulesPage', () => {
     const user = userEvent.setup()
     renderWithProviders(<MailRulesPage />)
 
-    await user.click(await screen.findByRole('button', { name: 'Delete' }))
+    await user.click(await screen.findByRole('button', { name: 'Options for Bills' }))
+    await user.click(await screen.findByRole('menuitem', { name: /Delete/ }))
 
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByText(/deletes the filter from your Gmail account too/)).toBeInTheDocument()
@@ -171,10 +172,11 @@ describe('MailRulesPage', () => {
 
     expect(await screen.findByText(/Edit it in Gmail/)).toBeInTheDocument()
     expect(screen.getByText(/"forward"/)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
     expect(screen.queryByRole('switch')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Delete' }))
+    await user.click(screen.getByRole('button', { name: 'Options for size: 100' }))
+    expect(screen.queryByRole('menuitem', { name: /Edit/ })).not.toBeInTheDocument()
+    await user.click(await screen.findByRole('menuitem', { name: /Delete/ }))
     expect(await screen.findByText(/such as a forward/)).toBeInTheDocument()
   })
 
@@ -201,7 +203,8 @@ describe('MailRulesPage', () => {
     const user = userEvent.setup()
     renderWithProviders(<MailRulesPage />)
 
-    await user.click((await screen.findAllByRole('button', { name: 'Move down' }))[0])
+    await user.click(await screen.findByRole('button', { name: 'Options for Bills' }))
+    await user.click(await screen.findByRole('menuitem', { name: /Move down/ }))
 
     await waitFor(() => expect(bodies).toEqual([{ ruleIds: ['r3', 'r1'] }]))
   })

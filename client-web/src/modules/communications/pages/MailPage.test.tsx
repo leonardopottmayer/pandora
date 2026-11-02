@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -78,7 +78,52 @@ function recordActions(status = 200) {
   return actions
 }
 
+/** antd reads the width through matchMedia; the test setup answers "no" to every query, a phone. */
+function asDesktop() {
+  vi.spyOn(window, 'matchMedia').mockImplementation(
+    (query: string) =>
+      ({
+        matches: query.includes('min-width'),
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      }) as MediaQueryList,
+  )
+}
+
+describe('MailPage on a phone', () => {
+  it('shows the list or the open message, and goes back to the list', async () => {
+    server.use(
+      http.get(`${BASE}/mailboxes`, () => ok([mailbox])),
+      http.get(`${BASE}/mailboxes/mb1/labels`, () => ok([inbox])),
+      http.get(`${BASE}/messages`, () => ok({ items: [summary], nextCursor: null })),
+      http.get(`${BASE}/messages/m1`, () => ok(opened)),
+    )
+    recordActions()
+    const user = userEvent.setup()
+    renderWithProviders(<MailPage />)
+
+    // The folders wait in a drawer.
+    expect(await screen.findByRole('button', { name: 'Folders' })).toBeInTheDocument()
+    expect(screen.queryByText('Inbox')).not.toBeInTheDocument()
+
+    await user.click(await screen.findByText('Newsletter'))
+    await screen.findByTitle('Weekly digest')
+    expect(screen.queryByRole('checkbox', { name: 'Select: Weekly digest' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Back to the list' }))
+    expect(await screen.findByRole('checkbox', { name: 'Select: Weekly digest' })).toBeInTheDocument()
+  })
+})
+
 describe('MailPage', () => {
+  beforeEach(asDesktop)
+  afterEach(() => vi.restoreAllMocks())
+
   it('splits a selection in two mailboxes into two requests, and offers no move for it', async () => {
     server.use(
       http.get(`${BASE}/mailboxes`, () => ok([mailbox, second])),

@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Alert, App, Button, Empty, Progress, Space, Spin, Tag, Typography, theme } from 'antd'
-import { PlusOutlined, SyncOutlined } from '@ant-design/icons'
+import { Alert, App, Button, Dropdown, Empty, Progress, Space, Spin, Tag, Typography, theme } from 'antd'
+import { EllipsisOutlined, PlusOutlined, SyncOutlined } from '@ant-design/icons'
 import { PageHeading } from '@/components/settings/PageHeading'
+import { SettingRow } from '@/components/settings/SettingRow'
+import { SettingsSection } from '@/components/settings/SettingsSection'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { useProviders, useStartConnection } from '@/modules/integrations/hooks/useIntegrations'
 import { GMAIL_SCOPE, type Mailbox, type MailboxStatus, type MailProvider } from '../models'
@@ -116,103 +118,125 @@ export function MailAccountsPage() {
     const backfilling = mailbox.backfillCompletedAt === null
     const estimate = mailbox.messageTotalEstimate
     const broken = mailbox.status === 'needs-reconnect' || mailbox.status === 'error'
+    // Gmail is fixed by a new consent; the others by editing the connection, which is always offered.
+    const canFix = mailbox.status === 'needs-reconnect' || mailbox.provider !== 'gmail'
+    const fixLabel = mailbox.status === 'needs-reconnect' ? t('mail.accounts.reconnect') : t('mail.accounts.fix')
+    const name = mailbox.displayName ?? mailbox.address
+
+    const summary = [
+      mailbox.displayName && mailbox.address,
+      t('mail.accounts.messages', { count: mailbox.messageCount }),
+      mailbox.lastSyncedAt && t('mail.accounts.lastSynced', { when: new Date(mailbox.lastSyncedAt).toLocaleString() }),
+    ]
+      .filter(Boolean)
+      .join(' · ')
 
     return (
+      // The row's own divider is dropped as the wrapper's last child, so the wrapper draws it.
       <div
         key={mailbox.id}
-        className="flex flex-col gap-2 rounded-xl p-4"
-        style={{ border: `1px solid ${token.colorBorderSecondary}`, background: token.colorBgContainer }}
+        className="border-b border-solid last:border-b-0"
+        style={{ borderColor: token.colorBorderSecondary }}
       >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <Space size={8}>
-            <Typography.Text strong editable={{ onChange: (value) => rename(mailbox, value) }}>
-              {mailbox.displayName ?? mailbox.address}
-            </Typography.Text>
-            <Tag>{PROVIDER_LABEL[mailbox.provider]}</Tag>
-          </Space>
-          <Tag color={STATUS_COLOR[mailbox.status]}>{t(`mail.status.${mailbox.status}`)}</Tag>
-        </div>
-        {mailbox.displayName && <Typography.Text type="secondary">{mailbox.address}</Typography.Text>}
+        <SettingRow
+          label={
+            <Space size={8} wrap>
+              <Typography.Text strong editable={{ onChange: (value) => rename(mailbox, value) }}>
+                {name}
+              </Typography.Text>
+              <Tag>{PROVIDER_LABEL[mailbox.provider]}</Tag>
+              <Tag color={STATUS_COLOR[mailbox.status]}>{t(`mail.status.${mailbox.status}`)}</Tag>
+            </Space>
+          }
+          description={summary}
+          control={
+            <Space size={4}>
+              {broken && canFix && (
+                <Button
+                  type="primary"
+                  size="small"
+                  loading={mailbox.provider === 'gmail' && startConnection.isPending}
+                  onClick={() => reconnect(mailbox)}
+                >
+                  {fixLabel}
+                </Button>
+              )}
+              <Dropdown
+                trigger={['click']}
+                placement="bottomRight"
+                menu={{
+                  items: [
+                    {
+                      key: 'sync',
+                      icon: <SyncOutlined spin={sync.isPending && sync.variables === mailbox.id} />,
+                      label: t('mail.accounts.syncNow'),
+                      onClick: () => void syncNow(mailbox.id),
+                    },
+                    ...(canFix && !broken ? [{ key: 'fix', label: fixLabel, onClick: () => void reconnect(mailbox) }] : []),
+                    { type: 'divider' as const },
+                    { key: 'delete', danger: true, label: t('mail.accounts.delete'), onClick: () => confirmDelete(mailbox) },
+                  ],
+                }}
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<EllipsisOutlined />}
+                  aria-label={t('mail.accounts.moreActions', { name })}
+                />
+              </Dropdown>
+            </Space>
+          }
+        />
 
-        {backfilling && !broken ? (
-          <div className="flex flex-col">
-            <Typography.Text type="secondary" className="text-xs">
-              {estimate
-                ? t('mail.accounts.backfill', { count: mailbox.messageCount, total: estimate })
-                : t('mail.accounts.backfillStarting')}
-            </Typography.Text>
-            <Progress
-              percent={estimate ? Math.min(99, Math.floor((mailbox.messageCount / estimate) * 100)) : 0}
-              status="active"
-              size="small"
-            />
+        {backfilling || broken ? (
+          <div className="flex flex-col gap-1 px-4 pb-4">
+            {broken ? (
+              <Alert
+                type={mailbox.status === 'error' ? 'error' : 'warning'}
+                showIcon
+                title={mailbox.status === 'error' ? t('mail.accounts.errorTitle') : t('mail.accounts.reconnectTitle')}
+                description={mailbox.lastError ?? undefined}
+              />
+            ) : (
+              <>
+                <Typography.Text type="secondary" className="text-xs">
+                  {estimate
+                    ? t('mail.accounts.backfill', { count: mailbox.messageCount, total: estimate })
+                    : t('mail.accounts.backfillStarting')}
+                </Typography.Text>
+                <Progress
+                  percent={estimate ? Math.min(99, Math.floor((mailbox.messageCount / estimate) * 100)) : 0}
+                  status="active"
+                  size="small"
+                />
+              </>
+            )}
           </div>
-        ) : (
-          <Typography.Text type="secondary" className="text-xs">
-            {t('mail.accounts.messages', { count: mailbox.messageCount })}
-            {mailbox.lastSyncedAt &&
-              ` · ${t('mail.accounts.lastSynced', { when: new Date(mailbox.lastSyncedAt).toLocaleString() })}`}
-          </Typography.Text>
-        )}
-
-        {broken && (
-          <Alert
-            type={mailbox.status === 'error' ? 'error' : 'warning'}
-            showIcon
-            message={mailbox.status === 'error' ? t('mail.accounts.errorTitle') : t('mail.accounts.reconnectTitle')}
-            description={mailbox.lastError ?? undefined}
-          />
-        )}
-
-        <Space wrap>
-          <Button
-            size="small"
-            icon={<SyncOutlined />}
-            loading={sync.isPending && sync.variables === mailbox.id}
-            onClick={() => syncNow(mailbox.id)}
-          >
-            {t('mail.accounts.syncNow')}
-          </Button>
-          {(mailbox.status === 'needs-reconnect' || mailbox.provider !== 'gmail') && (
-            <Button
-              size="small"
-              type={mailbox.status === 'needs-reconnect' ? 'primary' : 'default'}
-              loading={mailbox.provider === 'gmail' && startConnection.isPending}
-              onClick={() => reconnect(mailbox)}
-            >
-              {mailbox.status === 'needs-reconnect' ? t('mail.accounts.reconnect') : t('mail.accounts.fix')}
-            </Button>
-          )}
-          <Button size="small" danger onClick={() => confirmDelete(mailbox)}>
-            {t('mail.accounts.delete')}
-          </Button>
-        </Space>
+        ) : null}
       </div>
     )
   }
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
+    <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PageHeading title={t('mail.accounts.title')} description={t('mail.accounts.description')} />
-        <Space>
-          <Link to="/mail">{t('mail.accounts.openInbox')}</Link>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setAdding(providers?.some((p) => p.provider === 'google') ? 'gmail' : 'titan')}
-          >
-            {t('mail.accounts.add')}
-          </Button>
-        </Space>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => setAdding(providers?.some((p) => p.provider === 'google') ? 'gmail' : 'titan')}
+        >
+          {t('mail.accounts.add')}
+        </Button>
       </div>
 
       {isLoading ? (
         <Spin />
       ) : (mailboxes ?? []).length === 0 ? (
-        <Empty description={t('mail.accounts.none')} />
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('mail.accounts.none')} />
       ) : (
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">{mailboxes!.map(renderMailbox)}</div>
+        <SettingsSection>{mailboxes!.map(renderMailbox)}</SettingsSection>
       )}
 
       <ConnectMailboxModal

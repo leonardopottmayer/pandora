@@ -1,9 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Alert, App, Button, Empty, Select, Space, Spin, Switch, Tag, Typography, theme } from 'antd'
-import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, HolderOutlined, PlusOutlined } from '@ant-design/icons'
+import { Alert, App, Button, Dropdown, Empty, Select, Space, Spin, Switch, Tag, Typography, theme } from 'antd'
+import {
+  ArrowDownOutlined,
+  ArrowUpOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  EllipsisOutlined,
+  HolderOutlined,
+  PlusOutlined,
+} from '@ant-design/icons'
 import { PageHeading } from '@/components/settings/PageHeading'
+import { SettingsSection } from '@/components/settings/SettingsSection'
 import { ApiResponseError, toErrorMessage } from '@/lib/api/envelope'
 import { useProviders, useStartConnection } from '@/modules/integrations/hooks/useIntegrations'
 import { GMAIL_FILTER_SCOPE, GMAIL_SCOPE, type MailRule } from '../models'
@@ -161,7 +170,8 @@ export function MailRulesPage() {
   function renderRule(rule: MailRule, index: number) {
     const readOnly = rule.status === 'read-only'
     const broken = rule.status === 'broken'
-    const borderColor = broken ? token.colorError : readOnly ? token.colorWarning : token.colorBorderSecondary
+    // A strip on the left says something is off with the rule, without coloring the whole row.
+    const stripe = broken ? token.colorError : readOnly ? token.colorWarning : null
 
     return (
       <div
@@ -175,90 +185,116 @@ export function MailRulesPage() {
           if (dragging !== null) void move(dragging, index)
           setDragging(null)
         }}
-        className="flex flex-col gap-2 rounded-xl p-4"
-        style={{ border: `1px solid ${borderColor}`, background: token.colorBgContainer, opacity: dragging === index ? 0.5 : 1 }}
+        className="flex items-start gap-3 border-b border-solid px-4 py-3.5 last:border-b-0"
+        style={{
+          borderColor: token.colorBorderSecondary,
+          boxShadow: stripe ? `inset 3px 0 0 ${stripe}` : undefined,
+          opacity: dragging === index ? 0.5 : 1,
+        }}
       >
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <HolderOutlined className="mt-1" style={{ cursor: 'grab', color: token.colorTextTertiary }} />
+
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
           <Space size={8} wrap>
-            <HolderOutlined style={{ cursor: 'grab', color: token.colorTextTertiary }} />
-            <Typography.Text strong>{rule.name}</Typography.Text>
+            <Typography.Text strong type={rule.isEnabled ? undefined : 'secondary'}>
+              {rule.name}
+            </Typography.Text>
             <Tag>{t(rule.execution === 'provider-filter' ? 'mail.rules.runsGmail' : 'mail.rules.runsPandora')}</Tag>
             {broken && <Tag color="red">{t('mail.rules.broken')}</Tag>}
             {readOnly && <Tag color="gold">{t('mail.rules.readOnly')}</Tag>}
             {!rule.isEnabled && <Tag>{t('mail.rules.disabled')}</Tag>}
           </Space>
-          <Space size={4}>
-            {!readOnly && (
-              <Switch
-                size="small"
-                aria-label={t('mail.rules.enable')}
-                checked={rule.isEnabled}
-                onChange={(checked) => toggle(rule, checked)}
-              />
-            )}
-            <Button
-              type="text"
-              size="small"
-              aria-label={t('mail.rules.moveUp')}
-              icon={<ArrowUpOutlined />}
-              disabled={index === 0}
-              onClick={() => move(index, index - 1)}
-            />
-            <Button
-              type="text"
-              size="small"
-              aria-label={t('mail.rules.moveDown')}
-              icon={<ArrowDownOutlined />}
-              disabled={index === rules!.length - 1}
-              onClick={() => move(index, index + 1)}
-            />
-            {!readOnly && (
-              <Button
-                type="text"
-                size="small"
-                aria-label={t('mail.rules.edit')}
-                icon={<EditOutlined />}
-                onClick={() => setForm({ ruleId: rule.id, draft: draftFrom(rule, labels) })}
-              />
-            )}
-            <Button
-              type="text"
-              size="small"
-              danger
-              aria-label={t('mail.rules.delete')}
-              icon={<DeleteOutlined />}
-              onClick={() => confirmDelete(rule)}
-            />
-          </Space>
+          {renderSummary(rule)}
+          {rule.lastError && <Alert className="mt-1" type={broken ? 'error' : 'warning'} showIcon title={rule.lastError} />}
         </div>
 
-        {readOnly ? (
-          <>
-            <Typography.Text type="secondary">{t('mail.rules.readOnlyHint')}</Typography.Text>
-            {rule.providerFilterRaw && (
-              <details>
-                <summary className="cursor-pointer text-xs">{t('mail.rules.rawFilter')}</summary>
-                <pre className="mt-1 overflow-x-auto text-xs">{rule.providerFilterRaw}</pre>
-              </details>
-            )}
-          </>
-        ) : (
-          <Typography.Text type="secondary" className="text-xs">
-            {rule.conditions
-              .map((c) => (c.kind === 'has-attachment' ? t('mail.rules.condition.has-attachment') : `${t(`mail.rules.condition.${c.kind}`)} "${c.value}"`))
-              .join(' · ')}
-            {' → '}
-            {rule.actions.map(actionText).join(' · ')}
-          </Typography.Text>
-        )}
-
-        {rule.lastError && <Alert type={broken ? 'error' : 'warning'} showIcon message={rule.lastError} />}
+        <Space size={4} className="shrink-0">
+          {!readOnly && (
+            <Switch
+              size="small"
+              aria-label={t('mail.rules.enable')}
+              checked={rule.isEnabled}
+              onChange={(checked) => toggle(rule, checked)}
+            />
+          )}
+          <Dropdown
+            trigger={['click']}
+            placement="bottomRight"
+            menu={{
+              items: [
+                ...(readOnly
+                  ? []
+                  : [
+                      {
+                        key: 'edit',
+                        icon: <EditOutlined />,
+                        label: t('mail.rules.edit'),
+                        onClick: () => setForm({ ruleId: rule.id, draft: draftFrom(rule, labels) }),
+                      },
+                    ]),
+                {
+                  key: 'up',
+                  icon: <ArrowUpOutlined />,
+                  label: t('mail.rules.moveUp'),
+                  disabled: index === 0,
+                  onClick: () => void move(index, index - 1),
+                },
+                {
+                  key: 'down',
+                  icon: <ArrowDownOutlined />,
+                  label: t('mail.rules.moveDown'),
+                  disabled: index === rules!.length - 1,
+                  onClick: () => void move(index, index + 1),
+                },
+                { type: 'divider' as const },
+                {
+                  key: 'delete',
+                  icon: <DeleteOutlined />,
+                  danger: true,
+                  label: t('mail.rules.delete'),
+                  onClick: () => confirmDelete(rule),
+                },
+              ],
+            }}
+          >
+            <Button
+              type="text"
+              size="small"
+              icon={<EllipsisOutlined />}
+              aria-label={t('mail.rules.moreActions', { name: rule.name })}
+            />
+          </Dropdown>
+        </Space>
       </div>
     )
   }
 
+  function renderSummary(rule: MailRule) {
+    return rule.status === 'read-only' ? (
+      <>
+        <Typography.Text type="secondary" className="text-xs">
+          {t('mail.rules.readOnlyHint')}
+        </Typography.Text>
+        {rule.providerFilterRaw && (
+          <details>
+            <summary className="cursor-pointer text-xs">{t('mail.rules.rawFilter')}</summary>
+            <pre className="mt-1 overflow-x-auto text-xs">{rule.providerFilterRaw}</pre>
+          </details>
+        )}
+      </>
+    ) : (
+      <Typography.Text type="secondary" className="text-xs">
+        {rule.conditions
+          .map((c) => (c.kind === 'has-attachment' ? t('mail.rules.condition.has-attachment') : `${t(`mail.rules.condition.${c.kind}`)} "${c.value}"`))
+          .join(' · ')}
+        {' → '}
+        {rule.actions.map(actionText).join(' · ')}
+      </Typography.Text>
+    )
+  }
+
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
+    <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PageHeading title={t('mail.rules.title')} description={t('mail.rules.description')} />
         {mailbox && (
@@ -271,31 +307,18 @@ export function MailRulesPage() {
       {isLoading ? (
         <Spin />
       ) : !mailbox ? (
-        <Empty description={t('mail.rules.noMailboxes')} />
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('mail.rules.noMailboxes')} />
       ) : (
         <>
-          {mailboxes!.length > 1 && (
-            <Select
-              className="w-72 max-w-full"
-              aria-label={t('mail.rules.mailbox')}
-              value={mailbox.id}
-              options={mailboxes!.map((m) => ({ value: m.id, label: m.displayName ?? m.address }))}
-              onChange={(id: string) => {
-                setChosenId(id)
-                setNeedsConsent(false)
-              }}
-            />
-          )}
-
           {mailbox.filterSyncError && (
-            <Alert type="warning" showIcon message={t('mail.rules.filterSyncError')} description={mailbox.filterSyncError} />
+            <Alert type="warning" showIcon title={t('mail.rules.filterSyncError')} description={mailbox.filterSyncError} />
           )}
 
           {needsConsent && !form && (
             <Alert
               type="warning"
               showIcon
-              message={t('mail.rules.consentTitle')}
+              title={t('mail.rules.consentTitle')}
               action={
                 <Button size="small" type="primary" loading={startConnection.isPending} onClick={() => grantAccess(null)}>
                   {t('mail.rules.consentGrant')}
@@ -304,13 +327,31 @@ export function MailRulesPage() {
             />
           )}
 
-          {loadingRules ? (
-            <Spin />
-          ) : (rules ?? []).length === 0 ? (
-            <Empty description={t('mail.rules.none')} />
-          ) : (
-            <div className="flex flex-col gap-3">{rules!.map(renderRule)}</div>
-          )}
+          <SettingsSection
+            title={mailboxes!.length > 1 ? undefined : (mailbox.displayName ?? mailbox.address)}
+            extra={
+              mailboxes!.length > 1 && (
+                <Select
+                  className="w-72 max-w-full"
+                  aria-label={t('mail.rules.mailbox')}
+                  value={mailbox.id}
+                  options={mailboxes!.map((m) => ({ value: m.id, label: m.displayName ?? m.address }))}
+                  onChange={(id: string) => {
+                    setChosenId(id)
+                    setNeedsConsent(false)
+                  }}
+                />
+              )
+            }
+          >
+            {loadingRules ? (
+              <Spin className="m-4" />
+            ) : (rules ?? []).length === 0 ? (
+              <Empty className="my-6" image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('mail.rules.none')} />
+            ) : (
+              rules!.map(renderRule)
+            )}
+          </SettingsSection>
 
           {form && (
             <RuleFormModal
