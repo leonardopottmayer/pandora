@@ -21,6 +21,7 @@ describe('visual editor markdown', () => {
     ['tags', 'Filed under #trabalho and #ideias/novas'],
     ['a library image with its options', `![Beach|300|right](${IMAGE})`],
     ['an image with a title', `![a](${IMAGE} "Title")`],
+    ['inline html', 'Press <kbd>Ctrl</kbd>+<kbd>K</kbd> or <span style="color: red">**not bold** here</span>.'],
     ['a library file, next to an image', `Ver [relatório_final*v2.pdf](${IMAGE}) e ![a](${IMAGE})`],
     ['a callout', '> [!tip] Title\n> body **b**\n> more'],
     ['a folding callout', '> [!warning]- Closed\n> hidden'],
@@ -164,6 +165,14 @@ describe('visual editor markdown', () => {
     const editor = new Editor({ extensions: visualExtensions(), content: manager.parse(`[a.pdf](${IMAGE})`) })
     editor.commands.setContent(editor.getHTML())
     expect(serializeMarkdown(manager, editor.getJSON())).toBe(`[a.pdf](${IMAGE})`)
+    editor.destroy()
+  })
+
+  it('keeps inline html through a copy and paste', () => {
+    const md = 'Press <kbd>Ctrl</kbd> now'
+    const editor = new Editor({ extensions: visualExtensions(), content: manager.parse(md) })
+    editor.commands.setContent(editor.getHTML())
+    expect(serializeMarkdown(manager, editor.getJSON())).toBe(md)
     editor.destroy()
   })
 

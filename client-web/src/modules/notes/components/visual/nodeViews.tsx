@@ -12,6 +12,7 @@ import { App } from 'antd'
 import { formatBytes } from '@/lib/formatBytes'
 import { useMediaLookup } from '../../hooks/useMedia'
 import { useMediaPathUrls } from '../../hooks/useMediaUrls'
+import { sanitizeNoteHtml } from '../../lib/embeds'
 import { isMediaUrl, mediaFileName } from '../../lib/media'
 import { fileGlyph, formatImageAlt, mediaIdOf, parseImageAlt, type ImageAlign } from '../../lib/mediaMarkdown'
 import { downloadMedia } from '../../services/media.service'
@@ -110,6 +111,13 @@ export function MediaFileView({ node }: NodeViewProps) {
         <span className="notes-file-meta">{meta}</span>
       </span>
     </NodeViewWrapper>
+  )
+}
+
+/** Inline HTML, drawn through the preview's sanitizer; its source is edited in Markdown mode. */
+export function InlineHtmlView({ node }: NodeViewProps) {
+  return (
+    <NodeViewWrapper as="span" className="notes-inline-html" dangerouslySetInnerHTML={{ __html: sanitizeNoteHtml(String(node.attrs.source)) }} />
   )
 }
 

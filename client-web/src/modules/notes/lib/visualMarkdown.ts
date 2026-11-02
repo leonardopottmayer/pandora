@@ -145,6 +145,47 @@ export const MediaFile = Node.create({
   renderMarkdown: (node) => `[${node.attrs?.label ?? ''}](${node.attrs?.href ?? ''})`,
 })
 
+/** A whole inline element, `<kbd>Ctrl</kbd>` or `<span style="…">…</span>`, from its tag to its own closing one. */
+const INLINE_HTML = /^<([a-z][a-z0-9-]*)\b[^<>]*>[\s\S]*?<\/\1\s*>/i
+
+/**
+ * Inline HTML, kept as written. The bridge would read it into the schema, which has no place for a
+ * <kbd> or a styled <span>, and the text would be all that came back. Void tags have no closing one and
+ * are not taken: an <img> becomes an image, a <br> a line break.
+ */
+export const InlineHtml = Node.create({
+  name: 'inlineHtml',
+  group: 'inline',
+  inline: true,
+  atom: true,
+
+  addAttributes() {
+    return { source: { default: '' } }
+  },
+
+  parseHTML() {
+    return [{ tag: 'span[data-inline-html]', getAttrs: (el) => ({ source: el.getAttribute('data-inline-html') }) }]
+  },
+
+  renderHTML({ node }) {
+    return ['span', { 'data-inline-html': node.attrs.source }]
+  },
+
+  markdownTokenizer: {
+    name: 'inlineHtml',
+    level: 'inline',
+    start: (src: string) => src.search(/<[a-z]/i),
+    tokenize(src: string) {
+      const match = INLINE_HTML.exec(src)
+      return match ? { type: 'inlineHtml', raw: match[0] } : undefined
+    },
+  },
+
+  parseMarkdown: (token) => ({ type: 'inlineHtml', attrs: { source: token.raw } }),
+
+  renderMarkdown: (node) => node.attrs?.source ?? '',
+})
+
 /**
  * A paragraph holding only an image stays a paragraph. TipTap's own lifts the image out, its image being
  * a block; ours sits inline, as markdown has it, and a bare image at the top would be an invalid
@@ -249,6 +290,7 @@ export interface VisualNodeViews {
   wikilink?: NodeViewRenderer
   image?: NodeViewRenderer
   mediaFile?: NodeViewRenderer
+  inlineHtml?: NodeViewRenderer
   rawBlock?: NodeViewRenderer
   callout?: NodeViewRenderer
   details?: NodeViewRenderer
@@ -272,6 +314,7 @@ export function visualExtensions(views: VisualNodeViews = {}): AnyExtension[] {
     withView(Wikilink, views.wikilink),
     withView(MediaImage, views.image),
     withView(MediaFile, views.mediaFile),
+    withView(InlineHtml, views.inlineHtml),
     withView(RawBlock, views.rawBlock),
     withView(CalloutBlock, views.callout),
     withView(DetailsBlock, views.details),

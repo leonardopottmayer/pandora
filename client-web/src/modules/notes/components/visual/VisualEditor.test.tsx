@@ -145,6 +145,14 @@ describe('VisualEditor', () => {
     expect(props.onChange).not.toHaveBeenCalled()
   })
 
+  it('draws inline html as the preview does, sanitized', async () => {
+    const { container, props } = renderEditor('Press <kbd>Ctrl</kbd> and <span onclick="alert(1)">this</span>')
+
+    await waitFor(() => expect(container.querySelector('.notes-inline-html kbd')).toHaveTextContent('Ctrl'))
+    expect(container.querySelector('[onclick]')).toBeNull()
+    expect(props.onChange).not.toHaveBeenCalled()
+  })
+
   it('does not rewrite a page that was only opened', async () => {
     const { props } = renderEditor('* a\n* b')
     await screen.findByText('a')

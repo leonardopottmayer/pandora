@@ -124,8 +124,8 @@ Callout e toggle nativos já foram feitos (`8644bc1`). O usuário decidiu (2026-
   (`components/visual/videoPreview.ts`, decoração do ProseMirror).
 - ~~Link de arquivo da biblioteca aparece como link comum no editor.~~ Feito: nó `mediaFile`
   (`lib/visualMarkdown.ts`) desenhado como o cartão (`MediaFileView` em `nodeViews.tsx`).
-- HTML inline (`<kbd>`, `<span style>`) é reduzido ao texto se o parágrafo for editado no visual; `<img>`
-  inline vira `![|largura](…)`.
+- ~~HTML inline reduzido ao texto no visual.~~ Feito: nó `inlineHtml` (`lib/visualMarkdown.ts`) guarda o
+  elemento como foi escrito; `<img>` inline continua virando `![|largura](…)`.
 - ~~Total de espaço ocupado na biblioteca.~~ Feito: `TotalBytes`/`UnusedBytes` no `GET /media-folders`,
   mostrados abaixo das pastas.
 - ~~Bundle do front num chunk só (3,9 MB).~~ Feito: as telas autenticadas usam o `lazy` das rotas do

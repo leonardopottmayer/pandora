@@ -145,6 +145,9 @@ defines the schema and the markdown rules; the component only adds the views.
 - **Library file**: `[name](/api/v1/notes/media/{id})` is one node, drawn as the preview's card (glyph,
   name, size, "removed"); a click downloads it. The name goes back into the markdown as it was written;
   to change it, use Markdown mode.
+- **Inline HTML**: a whole element (`<kbd>Ctrl</kbd>`, `<span style="…">…</span>`) is one node, kept as
+  written and drawn through the preview's sanitizer. It is edited in Markdown mode. Void tags are left
+  out: an `<img>` becomes an image (`![|width](…)`) and a `<br>` a line break.
 - **Video**: a YouTube or Vimeo link alone on its line shows the player under it, with the preview's
   sandbox (`components/visual/videoPreview.ts`). The player is a decoration: the link stays editable and
   is all that goes into the markdown.

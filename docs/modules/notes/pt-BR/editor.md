@@ -145,6 +145,9 @@ schema e as regras de markdown; o componente só acrescenta as views.
 - **Arquivo da biblioteca**: `[nome](/api/v1/notes/media/{id})` é um nó só, desenhado como o cartão do
   preview (ícone, nome, tamanho, "removido"); o clique baixa o arquivo. O nome volta ao markdown como
   foi escrito; para trocá-lo, use o modo Markdown.
+- **HTML inline**: um elemento inteiro (`<kbd>Ctrl</kbd>`, `<span style="…">…</span>`) é um nó só,
+  guardado como foi escrito e desenhado pelo mesmo sanitizador do preview. Edita-se no modo Markdown.
+  Tags sem fechamento ficam de fora: `<img>` vira imagem (`![|largura](…)`) e `<br>` quebra de linha.
 - **Vídeo**: um link do YouTube ou do Vimeo sozinho na linha mostra o player embaixo dele, com o mesmo
   sandbox do preview (`components/visual/videoPreview.ts`). O player é decoração: o link continua
   editável e é só ele que vai para o markdown.
