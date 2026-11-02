@@ -228,6 +228,12 @@
     "name": "Nome",
     "email": "Email",
     "username": "Usuario",
+    "groupData": "Seus dados",
+    "groupAccount": "Conta",
+    "open": "Abrir",
+    "securityDesc": "Autenticação em duas etapas e códigos de recuperação.",
+    "passwordDesc": "Troque a senha que você usa para entrar.",
+    "devicesDesc": "Os dispositivos conectados à sua conta.",
     "unavailableTitle": "Dados do perfil indisponiveis",
     "unavailableDesc": "O backend ainda nao expoe os dados do usuario. Exibindo o identificador usado no login: {{label}}."
   },

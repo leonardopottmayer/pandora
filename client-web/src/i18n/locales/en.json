@@ -228,6 +228,12 @@
     "name": "Name",
     "email": "Email",
     "username": "Username",
+    "groupData": "Your data",
+    "groupAccount": "Account",
+    "open": "Open",
+    "securityDesc": "Two-factor authentication and recovery codes.",
+    "passwordDesc": "Change the password you sign in with.",
+    "devicesDesc": "The devices connected to your account.",
     "unavailableTitle": "Profile data unavailable",
     "unavailableDesc": "The backend does not expose user data yet. Showing the identifier used at login: {{label}}."
   },
