@@ -59,7 +59,7 @@ mão, e é isso que mantém o documento round-trippable.
 
 | Grupo | Entradas |
 |---|---|
-| Blocos | `h1`, `h2`, `h3`, lista com marcador, lista numerada, todo (`- [ ] `), citação, bloco de código, divisor, tabela, wikilink (`[[]]` com o cursor no meio) |
+| Blocos | `h1`, `h2`, `h3`, lista com marcador, lista numerada, todo (`- [ ] `), citação, bloco de código, divisor, recolher (`<details>` com o cursor no resumo, linhas em branco em volta do corpo para o markdown dentro continuar renderizando), tabela, imagem, arquivo, wikilink (`[[]]` com o cursor no meio) |
 | Callouts | um por tipo de callout — `note`, `tip`, `info`, `warning`, `danger`, `quote` |
 
 Cada comando declara o texto que insere e o deslocamento do cursor dentro dele.
@@ -81,7 +81,9 @@ e `**negrito**` dentro dele funciona.
 - O ícone é emoji embutido no HTML; a cor vem de um `--notes-callout-accent` por tipo, que serve de
   borda e, via `color-mix`, de fundo. Um token só por tipo.
 
-**Callouts colapsáveis** (`> [!note]-`) estão fora de escopo. Se entrarem, o lugar é o `callouts.ts`.
+**Callouts recolhíveis** usam o sinal do Obsidian depois do marcador: `> [!tip]- Título` começa
+fechado, `> [!tip]+ Título` começa aberto. Viram `<details>`/`<summary>`, então quem recolhe é o
+navegador, sem script, e em qualquer outro lugar degradam para blockquote.
 
 ## 7. Tabelas markdown
 
@@ -118,3 +120,11 @@ O `MarkdownPreview` renderiza com `marked`, sanitiza com DOMPurify, e então pó
    [Biblioteca de mídia](media-library.md#7-servir-os-bytes).
 
 Cliques em wikilinks, chips de tag e links de arquivo são todos interceptados pelo mesmo handler.
+
+**Vídeos e frames** (`lib/embeds.ts`). Um link do YouTube ou do Vimeo **sozinho numa linha** vira o
+player (`youtube-nocookie.com` / `player.vimeo.com`, com o `?t=` virando o início); no meio de uma
+frase continua link. Um `<iframe>` escrito à mão só sobrevive apontando para o caminho de embed do
+YouTube, do Vimeo ou do Google Maps em https — qualquer outro é removido. Todo frame que sobrevive
+ganha um `sandbox`, `allow`, `referrerpolicy` e `loading="lazy"` fixos, seja lá com o que foi escrito.
+Esse hook fica numa instância do DOMPurify só do módulo, então não alcança os outros lugares que
+sanitizam HTML (email).

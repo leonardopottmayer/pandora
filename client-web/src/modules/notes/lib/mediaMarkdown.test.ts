@@ -13,20 +13,35 @@ const render = (md: string, files = new Map<string, MediaItemDto>()) =>
 
 describe('parseImageAlt', () => {
   it('reads a width after the bar and keeps the text as a caption', () => {
-    expect(parseImageAlt('Jurerê beach|400')).toEqual({ text: 'Jurerê beach', width: 400, caption: 'Jurerê beach' })
+    expect(parseImageAlt('Jurerê beach|400')).toEqual({ text: 'Jurerê beach', width: 400, align: null, caption: 'Jurerê beach' })
   })
 
   it('shows no caption for a bare file name, the way pasting writes it', () => {
-    expect(parseImageAlt('IMG_2034.jpg')).toEqual({ text: 'IMG_2034.jpg', width: null, caption: null })
+    expect(parseImageAlt('IMG_2034.jpg')).toEqual({ text: 'IMG_2034.jpg', width: null, align: null, caption: null })
     expect(parseImageAlt('IMG_2034.jpg|300').caption).toBeNull()
+  })
+
+  it('reads an alignment in either language, before or after the width', () => {
+    expect(parseImageAlt('Beach|400|direita')).toMatchObject({ text: 'Beach', width: 400, align: 'right' })
+    expect(parseImageAlt('Beach|center|300')).toMatchObject({ text: 'Beach', width: 300, align: 'center' })
+    expect(parseImageAlt('Beach|esquerda')).toMatchObject({ text: 'Beach', width: null, align: 'left' })
+  })
+
+  it('keeps a bar that is part of the text', () => {
+    expect(parseImageAlt('before | after|200')).toMatchObject({ text: 'before | after', width: 200, align: null })
   })
 })
 
 describe('mediaRenderer', () => {
-  it('draws a library image at its width with a caption, ready to zoom', () => {
+  it('draws a library image at its width with a caption', () => {
     const html = render(`![Beach|400](${PATH})`)
-    expect(html).toContain(`<img src="${PATH}" alt="Beach" loading="lazy" data-zoom="true" width="400">`)
+    expect(html).toContain('<span class="notes-figure">')
+    expect(html).toContain(`<img src="${PATH}" alt="Beach" loading="lazy" width="400">`)
     expect(html).toContain('<span class="notes-caption">Beach</span>')
+  })
+
+  it('marks an aligned image with its side', () => {
+    expect(render(`![Beach|300|direita](${PATH})`)).toContain('<span class="notes-figure notes-figure-right">')
   })
 
   it('leaves images from elsewhere to marked', () => {

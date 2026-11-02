@@ -42,6 +42,13 @@ describe('MarkdownPreview — embedded images', () => {
     await waitFor(() => expect(image(container).getAttribute('src')).toMatch(/^blob:/))
   })
 
+  it('renders a library image written as html through an object url too', async () => {
+    const { container } = renderWithProviders(<MarkdownPreview markdown={`<img src="${PATH}" width="200">`} />)
+
+    await waitFor(() => expect(image(container).getAttribute('src')).toMatch(/^blob:/))
+    expect(image(container).getAttribute('width')).toBe('200')
+  })
+
   // Regression: the object url used to be written straight onto the DOM node, so any re-render that
   // did not change the markdown restored the API path and the image broke — which is what made it
   // vanish on a theme switch, a language switch, or any refetch that rebuilt a prop identity.

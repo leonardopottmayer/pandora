@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { filterCommands, SLASH_COMMANDS, slashTriggerAt } from './slashCommands'
+import { Marked } from 'marked'
+import { filterCommands, SLASH_COMMANDS, slashTriggerAt, type InsertCommand } from './slashCommands'
 
 describe('slashTriggerAt', () => {
   it('triggers at the start of a line', () => {
@@ -71,5 +72,17 @@ describe('SLASH_COMMANDS', () => {
   it('has unique ids', () => {
     const ids = SLASH_COMMANDS.map((c) => c.id)
     expect(new Set(ids).size).toBe(ids.length)
+  })
+})
+
+describe('the toggle block', () => {
+  it('lands the cursor in the summary and keeps markdown working inside', () => {
+    const toggle = SLASH_COMMANDS.find((command) => command.id === 'toggle') as InsertCommand
+    expect(toggle.text.slice(0, toggle.cursor)).toBe('<details>\n<summary>')
+
+    const written = toggle.text.replace('<summary></summary>\n\n\n', '<summary>More</summary>\n\nSome **bold**\n')
+    const html = new Marked().parse(written, { async: false })
+    expect(html).toContain('<summary>More</summary>')
+    expect(html).toContain('<p>Some <strong>bold</strong></p>')
   })
 })

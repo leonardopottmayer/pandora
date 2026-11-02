@@ -61,6 +61,21 @@ describe('calloutExtension', () => {
     expect(render('> [!WARNING] Shout')).toContain('notes-callout-warning')
   })
 
+  it('folds closed with a minus and open with a plus, the Obsidian way', () => {
+    const closed = render('> [!tip]- Spoiler\n> hidden')
+    expect(closed).toContain('<details class="notes-callout notes-callout-tip">')
+    expect(closed).toContain('<summary class="notes-callout-title">')
+    expect(closed).toContain('Spoiler')
+    expect(render('> [!tip]+ Shown\n> body')).toContain('<details class="notes-callout notes-callout-tip" open>')
+    expect(render('> [!tip] Plain')).toContain('<div class="notes-callout notes-callout-tip">')
+  })
+
+  it('keeps a folding callout openable through the sanitizer', () => {
+    const html = DOMPurify.sanitize(render('> [!note]+ Title\n> body'))
+    expect(html).toContain('<details class="notes-callout notes-callout-note" open="">')
+    expect(html).toContain('<summary class="notes-callout-title">')
+  })
+
   it('keeps its classes through the sanitizer the preview runs', () => {
     const html = DOMPurify.sanitize(render('> [!danger] Boom\n> body'))
     expect(html).toContain('notes-callout notes-callout-danger')

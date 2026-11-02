@@ -5,10 +5,10 @@
 
 export const MEDIA_PREFIX = '/api/v1/notes/media/'
 
-/** The path of an image embed: `![alt](/api/v1/notes/media/{id})`. */
+/** The path of an image embed: `![alt](/api/v1/notes/media/{id})` or `<img src="/api/v1/notes/media/{id}">`. */
 const IMAGE_EMBED_PATTERN = new RegExp(
-  String.raw`!\[[^\]]*\]\((${MEDIA_PREFIX}[^)\s]+)\)`,
-  'g',
+  String.raw`!\[[^\]]*\]\((${MEDIA_PREFIX}[^)\s]+)\)|<img\b[^>]*?\bsrc\s*=\s*["']?(${MEDIA_PREFIX}[^"'\s>]+)`,
+  'gi',
 )
 
 /**
@@ -19,14 +19,13 @@ const IMAGE_EMBED_PATTERN = new RegExp(
 export function parseMediaImagePaths(markdown: string): string[] {
   const paths: string[] = []
   for (const match of markdown.matchAll(IMAGE_EMBED_PATTERN)) {
-    if (!paths.includes(match[1])) paths.push(match[1])
+    const path = match[1] ?? match[2]
+    if (!paths.includes(path)) paths.push(path)
   }
   return paths
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
+const MEDIA_SRC = new RegExp(`src="(${MEDIA_PREFIX}[^"]*)"`, 'g')
 
 /**
  * Points every `<img>` at the object URL fetched for it. This runs on the sanitized HTML, on purpose:
@@ -34,15 +33,17 @@ function escapeRegExp(value: string): string {
  * went through it. Substituting afterwards is safe because it only replaces a path this module
  * produced with a URL this module created.
  *
+ * An image whose URL is not there yet (still loading, or an id the library does not have) loses its
+ * `src` until it is: left on the API path, the browser would fetch it with no token and log a 401.
+ *
  * Only `src` is rewritten — a link's `href` keeps the API path, which the preview's click handler
  * needs to turn into a download.
  */
 export function withMediaUrls(html: string, urls: ReadonlyMap<string, string>): string {
-  let result = html
-  for (const [path, url] of urls) {
-    result = result.replace(new RegExp(`src="${escapeRegExp(path)}"`, 'g'), `src="${url}"`)
-  }
-  return result
+  return html.replace(MEDIA_SRC, (_, path: string) => {
+    const url = urls.get(path)
+    return url ? `src="${url}"` : `data-media-src="${path}"`
+  })
 }
 
 /** Whether a URL points at the media endpoint. */

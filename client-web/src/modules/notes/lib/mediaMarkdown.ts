@@ -31,15 +31,42 @@ export function parseMediaFileIds(markdown: string): string[] {
 /** A name like `IMG_2034.jpg`: what pasting writes, and not worth showing as a caption. */
 const looksLikeFileName = (text: string) => /\.[a-z0-9]{2,5}$/i.test(text.trim())
 
+export type ImageAlign = 'left' | 'center' | 'right'
+
+/** The words an alignment is written with, in either language the app speaks. */
+const ALIGN_WORDS: Record<string, ImageAlign> = {
+  left: 'left',
+  esquerda: 'left',
+  center: 'center',
+  centro: 'center',
+  right: 'right',
+  direita: 'right',
+}
+
 /**
- * Splits an image's alt text into what it says and how wide it is: `Beach|400` is "Beach" at 400px.
- * The text becomes a caption unless it is just the file name.
+ * Splits an image's alt text into what it says, how wide it is and where it sits: `Beach|400|right`
+ * is "Beach" at 400px on the right. Width and alignment come after bars, in any order; the text
+ * becomes a caption unless it is just the file name.
  */
-export function parseImageAlt(alt: string): { text: string; width: number | null; caption: string | null } {
-  const sized = alt.match(/^(.*)\|\s*(\d{1,4})\s*$/)
-  const text = (sized ? sized[1] : alt).trim()
-  const width = sized ? Number(sized[2]) : null
-  return { text, width: width && width > 0 ? width : null, caption: text && !looksLikeFileName(text) ? text : null }
+export function parseImageAlt(alt: string): {
+  text: string
+  width: number | null
+  align: ImageAlign | null
+  caption: string | null
+} {
+  const parts = alt.split('|')
+  let width: number | null = null
+  let align: ImageAlign | null = null
+  // Only trailing parts that read as a width or an alignment are options; a bar inside the text stays.
+  while (parts.length > 1) {
+    const option = parts[parts.length - 1].trim().toLowerCase()
+    if (width === null && /^\d{1,4}$/.test(option) && Number(option) > 0) width = Number(option)
+    else if (align === null && option in ALIGN_WORDS) align = ALIGN_WORDS[option]
+    else break
+    parts.pop()
+  }
+  const text = parts.join('|').trim()
+  return { text, width, align, caption: text && !looksLikeFileName(text) ? text : null }
 }
 
 /** An emoji for a file card: no icon font in sanitized HTML, and these read at any size. */
@@ -62,10 +89,10 @@ export function mediaRenderer(files: ReadonlyMap<string, MediaItemDto>, removedL
   return {
     image({ href, text }: Tokens.Image) {
       if (!isMediaUrl(href)) return false
-      const { text: alt, width, caption } = parseImageAlt(text)
-      const img = `<img src="${escapeHtml(href)}" alt="${escapeHtml(alt)}" loading="lazy" data-zoom="true"${width ? ` width="${width}"` : ''}>`
+      const { text: alt, width, align, caption } = parseImageAlt(text)
+      const img = `<img src="${escapeHtml(href)}" alt="${escapeHtml(alt)}" loading="lazy"${width ? ` width="${width}"` : ''}>`
       // Spans, not <figure>: the image sits inside the paragraph marked makes, where a block would not.
-      return `<span class="notes-figure">${img}${caption ? `<span class="notes-caption">${escapeHtml(caption)}</span>` : ''}</span>`
+      return `<span class="notes-figure${align ? ` notes-figure-${align}` : ''}">${img}${caption ? `<span class="notes-caption">${escapeHtml(caption)}</span>` : ''}</span>`
     },
     link(token: Tokens.Link) {
       const id = mediaIdOf(token.href)

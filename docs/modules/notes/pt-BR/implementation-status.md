@@ -20,9 +20,9 @@ não o log das fases.
 | **Espaços** | Aggregate `Space`, um padrão por usuário (criado na hora quando não há), pages num espaço, mover entre espaços levando a subárvore, wikilinks preferindo o próprio espaço, filtro de espaço na árvore / busca / grafo, tela de espaços e seletor na sidebar, `create_note` aceitando espaço (`nte007`). |
 | **Ícone emoji** | Picker ao lado do título, reduzido ao primeiro grafema via `Intl.Segmenter`, salvo pelo autosave da própria page. |
 | **Biblioteca de mídia** | Itens (imagem / arquivo; vídeo no schema, recusado no upload) em pastas virtuais, miniaturas WebP com ImageSharp e rotação EXIF, mover pastas sem ciclo, pasta excluída subindo o conteúdo, soft delete mantendo os bytes servidos, cache imutável, a tela da biblioteca, colar/arrastar no editor para "Não organizadas" (`nte002`, `nte003`, `nte008`, `nte009`). |
-| **Mídia dentro das notas** | Seletor da biblioteca por `/imagem`, `/arquivo` e pela barra, largura e legenda pelo texto alternativo (`![texto|400]`), zoom em tela cheia, cartões de arquivo com tamanho, quais notas usam cada item derivado no save (`nte010`), "Usado em" na biblioteca, lugar "Sem uso", aviso antes de excluir um item em uso. |
+| **Mídia dentro das notas** | Seletor da biblioteca por `/imagem`, `/arquivo` e pela barra, largura, alinhamento e legenda pelo texto alternativo (`![texto|400|direita]`), `<img>` da biblioteca em HTML, zoom em tela cheia, cartões de arquivo com tamanho, quais notas usam cada item derivado no save (`nte010`), "Usado em" na biblioteca, lugar "Sem uso", aviso antes de excluir um item em uso. |
 | **Editor** | CodeMirror 6, markdown cru + preview + modo split, autosave de 800 ms, sanitização com DOMPurify. |
-| **Blocos ricos** | Slash commands (11 blocos + 6 callouts), callouts Obsidian como extensão do `marked`, tabelas markdown assistidas com Tab/Shift+Tab e reformatação idempotente. |
+| **Blocos ricos** | Slash commands (14 blocos + 6 callouts), callouts Obsidian como extensão do `marked` (recolhíveis com `-`/`+`), blocos recolhíveis (`<details>`), player de YouTube/Vimeo a partir do link sozinho e allowlist de iframe (YouTube, Vimeo, Google Maps) com sandbox fixo, tabelas markdown assistidas com Tab/Shift+Tab e reformatação idempotente. |
 | **Autocomplete** | Três menus — `[[` (pages por título e slug), `#` (tags existentes), `/` (comandos) — compartilhando `filter: false`, entradas por ref e tooltip pendurada no body. |
 | **Wikilinks e backlinks** | `WikilinkParser`, resolução título-depois-slug, tipos `wikilink`/`embed`, reconstrução por diff no create e no update, endpoint e painel de backlinks, create-on-click (`nte004`). |
 | **Busca** | Coluna gerada `tsvector` + índice GIN, configuração `simple`, tradução para `tsquery` com pontuação descartada, excerpt de 160 chars, command palette no Ctrl+K **e** botão na sidebar. |
@@ -37,16 +37,18 @@ não o log das fases.
 |---|---|
 | **Ranking e realce da busca** | Previsto como v2 no plano de produto. Os resultados são ordenados por título, não por `ts_rank`, e o `PageSearchResultDto.Excerpt` é uma fatia crua — sem `ts_headline`. |
 | **Preview ao vivo dos blocos dentro do CodeMirror** | Não implementado. O editor continua markdown cru; o resultado se vê no painel de preview. Widget decorations dentro do editor seriam uma fase inteira. |
-| **Renderização inline de `![[embeds]]`** | Não implementado. O tipo de aresta `embed` existe de ponta a ponta (guardado, tracejado no grafo, listado nos backlinks), mas o preview renderiza embed como link comum. |
 | **Filtros de tag na URL** | Não implementado. Os filtros são estado de componente, então "as pages com #x" não é um link compartilhável. O lugar seria um search param na `NotesPage`. |
 | **Toggle de arquivadas no grafo** | Não implementado. O `includeArchived` da `NotesGraphPage` só afeta a sidebar; o grafo sempre inclui as arquivadas (com a flag). |
-| **Callouts colapsáveis** (`> [!note]-`) | Deliberadamente fora do escopo de blocos ricos. Se entrar, o lugar é a variante `-`/`+` em `lib/callouts.ts`. |
 | **Alinhamento de coluna pela UI** | Deliberadamente fora. O lugar seria a linha separadora em `lib/markdownTables.ts`. |
 | **Editor visual de tabela** (widget WYSIWYG) | Rejeitado: trocaria o markdown por um widget renderizado como texto editável, o oposto da premissa do módulo. |
 | **Backend de bucket e vídeo** | Só a abstração existe. `storage_backend` + `storage_key` em cada linha de mídia fazem com que plugar um bucket não exija migration; vídeo pede também download por pedaços e a versão de capa. Ver [Biblioteca de mídia](media-library.md#3-tipos-e-o-que-fica-pronto-para-vídeo). |
-| **Histórico de versões, templates de page, share/colaboração** | Futuro no plano de produto; nada iniciado. |
+| **Histórico de versões** | Planejado, depois da reforma atual — ver [Planejado: histórico de versões](#planejado-histórico-de-versões). |
+| **Templates de page, share/colaboração** | Futuro no plano de produto; nada iniciado. |
 
 ## Deliberadamente fora (não é dívida)
+
+- **Renderizar `![[embeds]]` inline** — decidido contra em 2026-11-02: uma page nunca é desenhada dentro
+  de outra. `![[x]]` continua link; o tipo de aresta `embed` continua existindo (menções, tracejado no grafo).
 
 - **Rename global de tag** — exigiria reescrever o markdown de toda page que a menciona; é find &
   replace, não operação de banco.
@@ -55,6 +57,27 @@ não o log das fases.
 - **Endpoints de criar/deletar tag** — o texto cria a tag, a varredura remove.
 - **`ON DELETE CASCADE` na árvore de pages** — o comando de delete percorre a subárvore por conta
   própria para o soft delete manter a história.
+
+## Planejado: histórico de versões
+
+Pedido em 2026-11-02, para depois da rodada atual de trabalho (a reforma Confluence/Notion). O objetivo
+é segurança: nenhuma alteração deve ficar impossível de desfazer.
+
+- **Toda alteração é registrada.** Cada save de uma page guarda uma versão com o que a page era: título,
+  corpo, ícone e os outros campos que um save pode mudar (espaço, page mãe, arquivada, favorita…). O
+  autosave roda a cada 800 ms enquanto se digita, então uma versão é um *ponto estável*, não uma tecla —
+  a regra de agrupamento (por pausa, por sessão ou por janela de tempo) é decisão para quando a feature
+  começar.
+- **Diff entre quaisquer duas versões.** Com as versões A, B e C, dá para comparar A→B, A→C e B→C —
+  qualquer par, não só vizinhas. O diff cobre todos os campos: título, ícone e os outros metadados como
+  antes/depois, o corpo como diff de linhas do markdown.
+- **Restaurar uma versão anterior.** Restaurar deixa a page igual àquela versão e é registrado como uma
+  versão nova, então um restore também pode ser desfeito.
+- **Onde aparece.** Uma entrada "Histórico" na page (o painel de informações é o lugar natural), listando
+  as versões com quando e por quê (edição, restore, assistente).
+
+Perguntas em aberto para lá: retenção (guardar tudo ou rarear as antigas), se a versão guarda o texto
+inteiro ou um delta, e se excluir a page mantém o histórico dela.
 
 ## Pontos em aberto conhecidos
 

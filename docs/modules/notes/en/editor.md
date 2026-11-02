@@ -58,7 +58,7 @@ which is what keeps the document round-trippable.
 
 | Group | Entries |
 |---|---|
-| Blocks | `h1`, `h2`, `h3`, bullet list, numbered list, todo (`- [ ] `), quote, code block, divider, table, wikilink (`[[]]` with the cursor in the middle) |
+| Blocks | `h1`, `h2`, `h3`, bullet list, numbered list, todo (`- [ ] `), quote, code block, divider, toggle (`<details>` with the cursor in the summary, blank lines around the body so markdown inside still renders), table, image, file, wikilink (`[[]]` with the cursor in the middle) |
 | Callouts | one per callout type — `note`, `tip`, `info`, `warning`, `danger`, `quote` |
 
 Each command declares the text it inserts and the cursor offset within it.
@@ -80,7 +80,9 @@ inside it still works.
 - The icon is an emoji embedded in the HTML; the color comes from one `--notes-callout-accent` per
   type, serving as the border and, through `color-mix`, as the background. One token per type.
 
-**Collapsible callouts** (`> [!note]-`) are out of scope. If they land, the place is `callouts.ts`.
+**Collapsible callouts** take Obsidian's sign after the marker: `> [!tip]- Title` starts closed,
+`> [!tip]+ Title` starts open. They render as `<details>`/`<summary>`, so the browser does the folding
+with no script, and degrade into a blockquote anywhere else.
 
 ## 7. Markdown tables
 
@@ -117,3 +119,11 @@ editor instead of only testing the arithmetic.
    [Media Library](media-library.md#7-serving-the-bytes).
 
 Clicks on wikilinks, tag chips and file links are all intercepted by the same handler.
+
+**Videos and frames** (`lib/embeds.ts`). A YouTube or Vimeo link **alone on a line** draws as the
+player (`youtube-nocookie.com` / `player.vimeo.com`, with `?t=` turned into a start time); inside a
+sentence it stays a link. An `<iframe>` written by hand survives only when it points at the embed path
+of YouTube, Vimeo or Google Maps over https — anything else is dropped. Every frame that survives is
+re-stamped with a fixed `sandbox`, `allow`, `referrerpolicy` and `loading="lazy"`, whatever it was
+written with. That hook lives on a DOMPurify instance of the module's own, so it never reaches the
+other places that sanitize HTML (email).

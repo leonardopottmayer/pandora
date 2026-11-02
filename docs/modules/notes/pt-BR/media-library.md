@@ -115,9 +115,14 @@ comum — `![nome](…)` para imagem, `[nome](…)` para arquivo — no cursor.
 ```
 
 - O número depois da `|` é a largura em pixels; sem ele, a imagem vai até a largura da coluna.
+- Um alinhamento também pode vir, em qualquer ordem com a largura: `esquerda`/`left` e
+  `direita`/`right` flutuam a imagem com o texto correndo ao lado (no celular não), `centro`/`center`
+  centraliza — `![Praia de Jurerê|360|direita](…)`.
 - O texto antes vira legenda, **exceto quando parece um nome de arquivo** (`IMG_2034.jpg`) — o que
   colar escreve —, para as imagens antigas não ganharem uma legenda que ninguém escolheu.
 - Clicar na imagem abre em tela cheia (o preview do `Image` do antd).
+- Um `<img src="/api/v1/notes/media/…">` escrito em HTML carrega do mesmo jeito, para quando precisa
+  de um atributo que o texto alternativo não diz; ele também conta como uso do item.
 
 **Arquivos** viram um cartão com ícone, nome e tamanho; clicar baixa com o nome original. O tamanho
 vem de `GET /notes/media/lookup`, que responde vários ids de uma vez, excluídos incluídos (marcados

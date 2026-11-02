@@ -1045,6 +1045,7 @@
       "quote": "Quote",
       "codeBlock": "Code block",
       "divider": "Divider",
+      "toggle": "Toggle",
       "table": "Table",
       "wikilink": "Link to a page",
       "image": "Image",

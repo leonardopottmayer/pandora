@@ -2,13 +2,13 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { App, Image } from 'antd'
 import { Marked } from 'marked'
-import DOMPurify from 'dompurify'
 import { downloadMedia } from '../services/media.service'
 import { useMediaUrls } from '../hooks/useMediaUrls'
 import { useMediaLookup } from '../hooks/useMedia'
 import { mediaFileName, isMediaUrl, withMediaUrls } from '../lib/media'
 import { calloutExtension, CALLOUT_TYPES, type CalloutLabels } from '../lib/callouts'
 import { codeRenderer } from '../lib/codeBlock'
+import { embedRenderer, sanitizeNoteHtml } from '../lib/embeds'
 import { mediaRenderer, parseMediaFileIds } from '../lib/mediaMarkdown'
 import { renderTags, type TagIndex } from '../lib/tags'
 import { renderWikilinks, type PageIndex } from '../lib/wikilinks'
@@ -42,7 +42,7 @@ function renderHtml(
 
   // The object URLs go in after the sanitizer, and they are part of the rendered HTML: an image
   // whose src is only set on the DOM node is lost on the next re-render.
-  return withMediaUrls(DOMPurify.sanitize(raw), mediaUrls)
+  return withMediaUrls(sanitizeNoteHtml(raw), mediaUrls)
 }
 
 /**
@@ -74,7 +74,7 @@ export function MarkdownPreview({
     ) as CalloutLabels
     return new Marked({
       extensions: [calloutExtension(labels)],
-      renderer: { ...codeRenderer, ...mediaRenderer(files, t('notes.media.removed')) },
+      renderer: { ...codeRenderer, ...embedRenderer, ...mediaRenderer(files, t('notes.media.removed')) },
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i18n.language, files])
@@ -87,8 +87,9 @@ export function MarkdownPreview({
   // Wikilinks are anchors with no real href; a delegated handler turns a click into navigation (or
   // into creating the page that is still missing).
   function handleClick(event: React.MouseEvent<HTMLDivElement>) {
-    // A library image opens full screen; its src is already the object URL.
-    const image = (event.target as HTMLElement).closest<HTMLImageElement>('img[data-zoom]')
+    // A library image opens full screen — markdown or hand-written <img> — its src is already the
+    // object URL.
+    const image = (event.target as HTMLElement).closest<HTMLImageElement>('img')
     if (image?.src.startsWith('blob:')) {
       setZoomed(image.src)
       return

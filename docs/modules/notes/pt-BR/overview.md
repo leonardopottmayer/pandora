@@ -74,10 +74,10 @@ filtros por interseção em três superfícies; busca full-text com command pale
 |---|---|
 | **Ranking e realce da busca** | Planejado (v2). Os resultados vêm ordenados por título e o excerpt é uma fatia crua — sem `ts_rank`, sem `ts_headline`. |
 | **Preview ao vivo dos blocos dentro do CodeMirror** | Não implementado. O editor continua markdown cru; a renderização acontece no painel de preview. Seria uma fase inteira (widget decorations). |
-| **Renderização inline de `![[embeds]]`** | Não implementado. O tipo de aresta existe e é desenhado tracejado no grafo, mas o preview renderiza embed como link comum. |
+| **Renderização inline de `![[embeds]]`** | Deliberadamente fora (decidido em 2026-11-02): uma page nunca é desenhada dentro de outra; `![[x]]` continua link. |
 | **Filtros na URL** | Não implementado. Os filtros de tag são estado de componente, então não existe link compartilhável de "as pages com #x". |
 | **Esconder arquivadas no grafo** | Não implementado. O toggle de arquivadas só afeta a sidebar; o grafo sempre inclui as arquivadas (com a flag). |
-| **Callout colapsável** (`> [!note]-`) e **alinhamento de coluna pela UI** | Deliberadamente fora. |
+| **Alinhamento de coluna pela UI** | Deliberadamente fora. |
 | **Rename global de tag** | Deliberadamente fora — exigiria reescrever o markdown de toda page que a menciona. |
 | **Rollup de tag aninhada** (`#projeto` incluindo `#projeto/pandora`) | Fora. A barra é mantida como parte do texto da tag, nada além disso. |
 | **Backend S3/MinIO** | Previsto, não implementado. `IFileStorage` + as colunas auto-descritivas `storage_backend`/`storage_key` fazem com que ligá-lo não exija migration. |

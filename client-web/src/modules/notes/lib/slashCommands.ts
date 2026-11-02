@@ -53,6 +53,8 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   block('quote', '> '),
   block('codeBlock', '```\n\n```\n', 4),
   block('divider', '---\n\n'),
+  // The blank lines around the body are what let markdown inside a <details> still render.
+  block('toggle', '<details>\n<summary></summary>\n\n\n\n</details>\n', '<details>\n<summary>'.length),
   { id: 'table', labelKey: 'notes.slash.table', group: 'block', kind: 'prompt', prompt: 'table' },
   { id: 'image', labelKey: 'notes.slash.image', group: 'block', kind: 'prompt', prompt: 'image' },
   { id: 'file', labelKey: 'notes.slash.file', group: 'block', kind: 'prompt', prompt: 'file' },

@@ -111,9 +111,14 @@ insert", which files the upload in the open folder and inserts it. What goes in 
 ```
 
 - The number after the `|` is the width in pixels; without it the image goes to the column's width.
+- An alignment can follow too, in any order with the width: `left`/`esquerda` and `right`/`direita`
+  float the image with the text running beside it (dropped on a phone), `center`/`centro` centres it —
+  `![Jurerê beach|360|right](…)`.
 - The text before it becomes a caption, **unless it looks like a file name** (`IMG_2034.jpg`) — what
   pasting writes —, so older images get no caption nobody chose.
 - Clicking an image opens it full screen (antd's `Image` preview).
+- An `<img src="/api/v1/notes/media/…">` written as HTML loads the same way, for when a width or
+  attribute the alt text cannot say is needed; it also counts as a use of the item.
 
 **Files** draw as a card with icon, name and size; a click downloads under the original name. The size
 comes from `GET /notes/media/lookup`, which answers many ids at once, deleted ones included (marked

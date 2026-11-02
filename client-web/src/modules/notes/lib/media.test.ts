@@ -22,6 +22,10 @@ describe('parseMediaImagePaths', () => {
     expect(parseMediaImagePaths(`[manual.pdf](${PATH})`)).toEqual([])
   })
 
+  it('finds an image written as html', () => {
+    expect(parseMediaImagePaths(`<img src="${PATH}" width="200"> <IMG alt='x' src='${OTHER}'>`)).toEqual([PATH, OTHER])
+  })
+
   it('ignores images that are not attachments', () => {
     expect(parseMediaImagePaths('![externa](https://exemplo.com/a.png)')).toEqual([])
   })
@@ -39,8 +43,8 @@ describe('withMediaUrls', () => {
     expect(withMediaUrls(html, urls)).toBe(html)
   })
 
-  it('leaves an image with no url yet pointing at its path', () => {
-    expect(withMediaUrls(`<img src="${OTHER}">`, urls)).toBe(`<img src="${OTHER}">`)
+  it('holds back the src of an image with no url yet, so the browser never fetches it without a token', () => {
+    expect(withMediaUrls(`<img src="${OTHER}">`, urls)).toBe(`<img data-media-src="${OTHER}">`)
   })
 })
 

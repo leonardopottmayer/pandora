@@ -140,6 +140,32 @@
 .notes-callout-body > :first-child { margin-top: 0.3em; }
 .notes-callout-body > :last-child { margin-bottom: 0; }
 
+/* What folds — a collapsible callout or a hand-written <details> — opens on its heading, with a
+   chevron that turns. The flex heading of a callout drops the native marker, so both draw their own. */
+.notes-preview details > summary { cursor: pointer; list-style: none; }
+.notes-preview details > summary::-webkit-details-marker { display: none; }
+.notes-preview details > summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 6px;
+  font-size: 0.85em;
+  transition: transform 0.15s;
+}
+.notes-preview details[open] > summary::before { transform: rotate(90deg); }
+.notes-preview details:not(.notes-callout) {
+  margin: 0.8em 0;
+  padding: 6px 12px;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 8px;
+}
+.notes-preview details:not(.notes-callout) > summary { font-weight: 600; }
+.notes-preview details:not(.notes-callout)[open] > summary { margin-bottom: 0.4em; }
+.notes-preview details > :last-child { margin-bottom: 0.2em; }
+
+/* Players and maps: full column width; a video keeps 16:9, a map keeps the height it was written with. */
+.notes-preview iframe { display: block; width: 100%; max-width: 100%; margin: 0.8em 0; border: 0; border-radius: 8px; }
+.notes-preview .notes-video iframe { aspect-ratio: 16 / 9; height: auto; }
+
 .notes-preview table {
   border-collapse: collapse;
   margin: 0.6em 0;
@@ -152,7 +178,30 @@
 
 /* Library media in a note: an image at its own width with an optional caption, a file as a card. */
 .notes-preview .notes-figure { display: block; margin: 0.8em 0; }
-.notes-preview .notes-figure img { display: block; max-width: 100%; height: auto; cursor: zoom-in; }
+.notes-preview .notes-figure img { display: block; max-width: 100%; height: auto; }
+/* A library image has been swapped for its object URL by the time it shows; those open full screen. */
+.notes-preview img[src^="blob:"] { cursor: zoom-in; }
+/* Still loading, or an id the library does not have: a grey box where it goes, not nothing. */
+.notes-preview img[data-media-src] {
+  display: inline-block;
+  min-width: 160px;
+  min-height: 100px;
+  border-radius: 6px;
+  background: rgba(128, 128, 128, 0.15);
+}
+/* Aligned: centred in the column, or floated with the text running beside it — until the phone is
+   too narrow for two things side by side. A heading never wraps around a float. */
+.notes-preview .notes-figure-center { width: fit-content; max-width: 100%; margin-left: auto; margin-right: auto; }
+.notes-preview .notes-figure-left,
+.notes-preview .notes-figure-right { max-width: 50%; margin-top: 0.3em; margin-bottom: 0.6em; }
+.notes-preview .notes-figure-left { float: left; margin-right: 1.2em; }
+.notes-preview .notes-figure-right { float: right; margin-left: 1.2em; }
+.notes-preview :is(h1, h2, h3, h4, hr) { clear: both; }
+.notes-preview::after { content: ''; display: table; clear: both; }
+@media (max-width: 640px) {
+  .notes-preview .notes-figure-left,
+  .notes-preview .notes-figure-right { float: none; max-width: 100%; margin-left: 0; margin-right: 0; }
+}
 .notes-preview .notes-caption {
   display: block;
   margin-top: 0.35em;

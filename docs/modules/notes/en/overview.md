@@ -75,10 +75,10 @@ and local graph views.
 |---|---|
 | **Search ranking & highlighting** | Planned (v2). Results are ordered by title and the excerpt is a plain slice — no `ts_rank`, no `ts_headline`. |
 | **Live block preview inside CodeMirror** | Not implemented. The editor stays raw markdown; rendering happens in the preview pane. Would be a phase of its own (widget decorations). |
-| **Inline rendering of `![[embeds]]`** | Not implemented. The edge kind exists and is drawn dashed in the graph, but the preview renders an embed as an ordinary link. |
+| **Inline rendering of `![[embeds]]`** | Deliberately out (decided 2026-11-02): a page is never drawn inside another; `![[x]]` stays a link. |
 | **Filters in the URL** | Not implemented. Tag filters are component state, so there is no shareable "pages with #x" link. |
 | **Hiding archived pages in the graph** | Not implemented. The archived toggle only narrows the sidebar; the graph always includes archived pages (flagged). |
-| **Collapsible callouts** (`> [!note]-`) and **column alignment from the UI** | Deliberately out. |
+| **Column alignment from the UI** | Deliberately out. |
 | **Global tag rename** | Deliberately out — it would mean rewriting the markdown of every page that mentions it. |
 | **Nested-tag rollup** (`#projeto` including `#projeto/pandora`) | Out. The slash is kept as part of the tag's text, nothing more. |
 | **S3/MinIO storage backend** | Designed for, not implemented. `IFileStorage` + the self-describing `storage_backend`/`storage_key` columns mean adding it needs no migration. |
