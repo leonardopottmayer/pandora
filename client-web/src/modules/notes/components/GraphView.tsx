@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Flex, Typography, theme } from 'antd'
+import { MinusSquareOutlined, PlusSquareOutlined } from '@ant-design/icons'
 import ForceGraph2D, { type ForceGraphMethods } from 'react-force-graph-2d'
-import { buildAdjacency, endpointId, nodeLabel, toForceData, type ForceLink, type ForceNode } from '../lib/graphData'
+import { buildAdjacency, endpointId, nodeLabel, type ForceLink, type ForceNode } from '../lib/graphData'
+import { collapsedGraph } from '../lib/collapsedGraph'
 import { familyForce, familyForNode, type GraphFamily, type PositionedNode } from '../lib/graphGroups'
 import { drawGraphRegions } from '../lib/graphRegions'
 import type { PageGraphDto } from '../models'
@@ -17,9 +19,12 @@ interface GraphViewProps {
   onSelect: (id: string) => void
   /** Absent is the original free graph; an empty array is grouped mode without configured families. */
   families?: GraphFamily[]
+  collapsedFamilyIds?: string[]
+  onToggleFamily?: (id: string) => void
 }
 
 const NO_FAMILIES: GraphFamily[] = []
+const NO_COLLAPSED: string[] = []
 
 /**
  * The wiki graph on a canvas (d3-force under the hood). Nodes are pages sized by how many edges
@@ -29,7 +34,7 @@ const NO_FAMILIES: GraphFamily[] = []
  * The component fills whatever box it is given — `react-force-graph` needs pixel dimensions, so the
  * container is measured rather than sized in CSS.
  */
-export function GraphView({ graph, currentId, focusedId, onSelect, families }: GraphViewProps) {
+export function GraphView({ graph, currentId, focusedId, onSelect, families, collapsedFamilyIds = NO_COLLAPSED, onToggleFamily }: GraphViewProps) {
   const { t } = useTranslation()
   const { token } = theme.useToken()
   const graphRef = useRef<ForceGraphMethods<ForceNode, ForceLink> | undefined>(undefined)
@@ -48,12 +53,15 @@ export function GraphView({ graph, currentId, focusedId, onSelect, families }: G
     return () => observer.disconnect()
   }, [])
 
-  // Rebuilt only when the payload changes: handing the simulation a new array restarts it, so
-  // doing this per render would leave the layout permanently reheating.
-  const data = useMemo(() => toForceData(graph), [graph])
-  const adjacency = useMemo(() => buildAdjacency(graph), [graph])
+  // Rebuild only for graph/group changes; a new array restarts the force simulation.
+  const activeFamilies = families ?? NO_FAMILIES
+  const data = useMemo(() => collapsedGraph(graph, activeFamilies, collapsedFamilyIds), [graph, activeFamilies, collapsedFamilyIds])
+  const adjacency = useMemo(() => buildAdjacency({ nodes: [], edges: data.links.map((link) => ({
+    sourceId: endpointId(link.source), targetId: endpointId(link.target), kind: link.kind,
+  })) }), [data])
   const locatedId = data.nodes.some((node) => node.id === focusedId) ? focusedId : null
-  const highlightedId = hoveredId ?? locatedId
+  const hoveredNode = data.nodes.find((node) => node.id === hoveredId)
+  const highlightedId = hoveredNode?.id ?? locatedId
   const centerLocatedNode = useCallback(() => {
     const view = graphRef.current
     const node: PositionedNode | undefined = data.nodes.find((candidate) => candidate.id === locatedId)
@@ -65,20 +73,21 @@ export function GraphView({ graph, currentId, focusedId, onSelect, families }: G
   useEffect(() => {
     if (size.width > 0) centerLocatedNode()
   }, [centerLocatedNode, data, size.width])
-  const activeFamilies = families ?? NO_FAMILIES
   const membership = useMemo(() => new Map(data.nodes.map((node) =>
     [node.id, familyForNode(node, activeFamilies)])), [data, activeFamilies])
+  const visibleFamilies = useMemo(() => activeFamilies.map((family) => ({
+    family, count: graph?.nodes.filter((node) => familyForNode(node, activeFamilies)?.id === family.id).length ?? 0,
+  })).filter((entry) => entry.count > 0), [activeFamilies, graph])
   const regions = useMemo(() => activeFamilies.map((family) => ({
-    family, nodes: data.nodes.filter((node) => membership.get(node.id)?.id === family.id),
+    family, nodes: data.nodes.filter((node) => !node.familyId && membership.get(node.id)?.id === family.id),
   })).filter((region) => region.nodes.length > 0), [activeFamilies, data, membership])
-  const hoveredNode = data.nodes.find((node) => node.id === hoveredId)
   const hoveredFamilies = hoveredNode
-    ? activeFamilies.filter((family) => family.tagIds.some((id) => hoveredNode.tagIds.includes(id)))
+    ? activeFamilies.filter((family) => family.id === hoveredNode.familyId || family.tagIds.some((id) => hoveredNode.tagIds.includes(id)))
     : []
 
   useEffect(() => {
     const view = graphRef.current
-    if (!view || size.width === 0 || regions.length === 0) return
+    if (!view || size.width === 0 || visibleFamilies.length === 0) return
     const linkForce = view.d3Force('link')
     const originalStrength = linkForce?.strength()
     // Cross-family links remain visible, but no longer pull different regions into the same knot.
@@ -91,7 +100,7 @@ export function GraphView({ graph, currentId, focusedId, onSelect, families }: G
       if (originalStrength) linkForce?.strength(originalStrength)
       view.d3ReheatSimulation()
     }
-  }, [activeFamilies, membership, data, regions, size.width])
+  }, [activeFamilies, membership, data, visibleFamilies, size.width])
 
   /** Hover temporarily takes priority over the persistent search highlight. */
   function isInFocus(id: string) {
@@ -123,8 +132,14 @@ export function GraphView({ graph, currentId, focusedId, onSelect, families }: G
           }}
           nodeRelSize={4}
           // Degree is capped: one hub page should stand out, not swallow the canvas.
-          nodeVal={(node) => 1 + Math.min(Number(node.degree) || 0, 12) * 0.6}
-          nodeLabel={(node) => nodeLabel(node.icon, node.title)}
+          nodeVal={(node) => node.familyId ? 4 + Math.min(Number(node.memberCount), 40) * 0.4 : 1 + Math.min(Number(node.degree) || 0, 12) * 0.6}
+          nodeLabel={(node) => {
+            if (!node.familyId) return nodeLabel(node.icon, node.title)
+            const label = document.createElement('span')
+            label.textContent = `${node.title} · ${node.memberCount}`
+            return label.innerHTML
+          }}
+          linkLabel={(link) => link.count ? t('notes.graphGroups.linkCount', { count: link.count }) : ''}
           linkColor={(link) => {
             if (!highlightedId) return token.colorBorder
             return endpointId(link.source) === highlightedId || endpointId(link.target) === highlightedId
@@ -133,23 +148,29 @@ export function GraphView({ graph, currentId, focusedId, onSelect, families }: G
           linkLineDash={(link) => (link.kind === 'embed' ? [2, 2] : null)}
           linkDirectionalArrowLength={3}
           linkDirectionalArrowRelPos={1}
-          onNodeClick={(node) => onSelect(String(node.id))}
+          onNodeClick={(node) => node.familyId ? onToggleFamily?.(String(node.familyId)) : onSelect(String(node.id))}
           onNodeHover={(node) => setHoveredId(node ? String(node.id) : null)}
           nodeCanvasObjectMode={() => 'after'}
           nodeCanvasObject={(node, ctx, globalScale) => {
             const id = String(node.id)
 
             // Below this the labels overlap into noise; the tooltip still names every node.
-            if (globalScale < 1.2 && id !== currentId && id !== hoveredId && id !== locatedId) return
+            if (globalScale < 1.2 && !node.familyId && id !== currentId && id !== hoveredId && id !== locatedId) return
 
             const focused = isInFocus(id)
-            const label = nodeLabel(node.icon, node.title)
+            let label = node.familyId ? `${node.title} · ${node.memberCount}` : nodeLabel(node.icon, node.title)
 
             ctx.font = `${12 / globalScale}px sans-serif`
+            if (node.familyId) {
+              let name = String(node.title)
+              const maxWidth = Math.min(240, size.width - 24) / globalScale
+              while (name.length > 1 && ctx.measureText(`${name}… · ${node.memberCount}`).width > maxWidth) name = name.slice(0, -1)
+              if (name !== node.title) label = `${name}… · ${node.memberCount}`
+            }
             ctx.textAlign = 'center'
             ctx.textBaseline = 'top'
             ctx.fillStyle = focused ? token.colorText : token.colorTextQuaternary
-            ctx.fillText(label, node.x ?? 0, (node.y ?? 0) + 6)
+            ctx.fillText(label, node.x ?? 0, (node.y ?? 0) + (node.familyId ? 20 : 6))
           }}
           nodeColor={(node) =>
             isInFocus(String(node.id))
@@ -159,7 +180,7 @@ export function GraphView({ graph, currentId, focusedId, onSelect, families }: G
           cooldownTicks={100}
           onEngineStop={() => {
             if (locatedId) centerLocatedNode()
-            else if (regions.length > 0) graphRef.current?.zoomToFit(300, 55)
+            else if (visibleFamilies.length > 0) graphRef.current?.zoomToFit(300, 55)
           }}
         />
       )}
@@ -172,16 +193,24 @@ export function GraphView({ graph, currentId, focusedId, onSelect, families }: G
             </Typography.Paragraph>
           )}
           <Flex gap={6} wrap>
-            {regions.map(({ family, nodes }) => (
-              <Button
-                key={family.id}
-                size="small"
-                style={{ pointerEvents: 'auto', borderColor: family.color, maxWidth: '100%' }}
-                title={family.name}
-                onClick={() => graphRef.current?.zoomToFit(300, 40, (node) => membership.get(String(node.id))?.id === family.id)}
-              >
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{family.name} ({nodes.length})</span>
-              </Button>
+            {visibleFamilies.map(({ family, count }) => (
+              <Flex key={family.id} gap={2} style={{ pointerEvents: 'auto', maxWidth: '100%' }}>
+                <Button
+                  size="small"
+                  style={{ borderColor: family.color, minWidth: 0, flex: 1 }}
+                  title={family.name}
+                  onClick={() => graphRef.current?.zoomToFit(300, 40, (node) => membership.get(String(node.id))?.id === family.id)}
+                >
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{family.name} ({count})</span>
+                </Button>
+                {onToggleFamily && <Button
+                  size="small"
+                  icon={collapsedFamilyIds.includes(family.id) ? <PlusSquareOutlined /> : <MinusSquareOutlined />}
+                  aria-label={t(collapsedFamilyIds.includes(family.id) ? 'notes.graphGroups.expand' : 'notes.graphGroups.collapse', { name: family.name })}
+                  title={t(collapsedFamilyIds.includes(family.id) ? 'notes.graphGroups.expand' : 'notes.graphGroups.collapse', { name: family.name })}
+                  onClick={() => onToggleFamily(family.id)}
+                />}
+              </Flex>
             ))}
           </Flex>
         </div>

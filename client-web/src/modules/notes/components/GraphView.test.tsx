@@ -1,6 +1,7 @@
 import { forwardRef, useImperativeHandle } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act } from '@testing-library/react'
+import { act, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '@/test/utils'
 import { GraphView } from './GraphView'
 import type { PageGraphDto } from '../models'
@@ -16,12 +17,15 @@ interface CanvasProps {
   onEngineStop: () => void
 }
 
-const canvas = vi.hoisted(() => ({ centerAt: vi.fn(), zoom: vi.fn(), render: vi.fn() }))
+const canvas = vi.hoisted(() => ({ centerAt: vi.fn(), zoom: vi.fn(), render: vi.fn(), zoomToFit: vi.fn(), strength: vi.fn(() => 0.1) }))
 vi.mock('react-force-graph-2d', () => ({
   default: forwardRef(function Canvas(props: CanvasProps, ref) {
     props.graphData.nodes.forEach((node, index) => { node.x = index * 100; node.y = index * 50 })
     canvas.render(props)
-    useImperativeHandle(ref, () => ({ centerAt: canvas.centerAt, zoom: canvas.zoom }))
+    useImperativeHandle(ref, () => ({
+      centerAt: canvas.centerAt, zoom: canvas.zoom, zoomToFit: canvas.zoomToFit,
+      d3Force: () => ({ strength: canvas.strength }), d3ReheatSimulation: () => {},
+    }))
     return null
   }),
 }))
@@ -47,6 +51,27 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('GraphView search focus', () => {
+  it('shows collapsed family counts and expands synthetic nodes without inspecting them as pages', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    const onToggleFamily = vi.fn()
+    const groupedGraph = { ...graph, nodes: graph.nodes.map((node) => ({ ...node, tagIds: node.id === 'c' ? [] : ['work'] })) }
+    const families = [{ id: 'work', name: 'Work', tagIds: ['work'], color: '#1677ff' }]
+    const view = renderWithProviders(<GraphView graph={groupedGraph} families={families} collapsedFamilyIds={['work']} onToggleFamily={onToggleFamily} onSelect={onSelect} />)
+    expect(screen.getByRole('button', { name: 'Work (2)' })).toBeInTheDocument()
+    expect(latest().graphData.nodes.map((node) => node.id)).toEqual(['c', 'family:work'])
+    act(() => latest().onNodeClick(latest().graphData.nodes[1]))
+    expect(onToggleFamily).toHaveBeenCalledWith('work')
+    expect(onSelect).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Expand Work' }))
+    expect(onToggleFamily).toHaveBeenCalledTimes(2)
+    act(() => latest().onEngineStop())
+    expect(canvas.zoomToFit).toHaveBeenCalled()
+    view.rerender(<GraphView graph={groupedGraph} collapsedFamilyIds={['work']} onSelect={onSelect} />)
+    expect(latest().graphData.nodes).toHaveLength(3)
+    expect(screen.queryByRole('button', { name: 'Expand Work' })).not.toBeInTheDocument()
+  })
+
   it('centers without navigating, keeps neighbors highlighted and restores search focus after hover', () => {
     const onSelect = vi.fn()
     const view = renderWithProviders(<GraphView graph={graph} focusedId="a" onSelect={onSelect} />)

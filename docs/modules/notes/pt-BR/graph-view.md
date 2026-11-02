@@ -102,17 +102,17 @@ Mudar os filtros de espaço ou tags limpa a seleção e fecha os detalhes.
 
 ## 8. Ideias de melhorias (2026-11-02)
 
-São ideias, sem compromisso de implementação. A busca por título e o painel de detalhes estão entregues.
+São ideias, sem compromisso de implementação. Busca por título, detalhes e recolhimento de famílias estão entregues.
 
 - **Painel de detalhes (implementado):** ver o comportamento de inspeção abaixo.
-- **Recolher famílias:** substituir uma região por um vértice como "Trabalho · 25 notas" e expandir depois.
+- **Recolher famílias (implementado):** ver a projeção visual abaixo.
 - **Controles de navegação:** botões visíveis de aumentar/diminuir zoom e enquadrar tudo, úteis no celular.
 - **Filtros de visibilidade:** ocultar arquivadas e vértices isolados separadamente; o toggle atual de
   arquivadas afeta apenas a sidebar.
 - **Ligações entre famílias:** resumir pontes e contagens de links entre regiões temáticas.
 - **Depois:** fixar posições dos vértices, lembrar o enquadramento e explorar comunidades automáticas.
 
-Próxima prioridade sugerida: recolher famílias quando o grafo crescer.
+Próxima prioridade sugerida: controles visíveis de zoom e enquadramento geral.
 
 ## 9. Inspecionar uma nota sem sair do grafo
 
@@ -131,3 +131,26 @@ No desktop, o painel fica ao lado do canvas, permitindo selecionar outro vértic
 Em telas pequenas, usa uma gaveta com rolagem. Os metadados vêm dos payloads existentes do grafo e
 das tags; não há consulta do conteúdo da página, alteração de backend ou persistência nova. O grafo
 local da página mantém o comportamento original de abrir a nota ao clicar.
+
+## 10. Recolher e expandir famílias
+
+Com **Mostrar grupos** ligado, cada família não vazia na legenda tem um botão **Recolher/Expandir**.
+Recolher substitui seus membros visíveis por um vértice colorido com o rótulo `Família · quantidade`.
+Clicar nesse resumo expande a família; o nome na legenda continua enquadrando seus membros.
+As famílias começam expandidas. Páginas sem família continuam visíveis e a prioridade mantém cada
+página em uma única família.
+
+A projeção visual oculta os links internos de uma família recolhida e direciona seus links externos
+ao resumo. Links paralelos são combinados por origem, destino e tipo visíveis; direção e tracejado
+dos embeds são preservados. O hover de uma ligação agregada mostra a quantidade real de links.
+Contagens e membros respeitam os filtros atuais de espaço/tags; famílias vazias não geram resumo
+nem entrada na legenda.
+
+Buscar uma página escondida ou selecioná-la nas conexões do painel expande sua família antes de
+localizá-la. Recolher a família da página selecionada limpa a seleção e fecha os detalhes. Vértices
+de resumo expandem a família em vez de abrir detalhes de página. Busca e detalhes usam o grafo original.
+
+O estado de recolhimento vale durante a visita atual e não é persistido. Desligar os grupos restaura
+todas as páginas e links reais; ligar novamente reaplica os recolhimentos da visita. Salvar a
+configuração expande todas as famílias. `lib/collapsedGraph.ts` cria dados novos para a simulação;
+nenhuma API, schema, nota ou link real é alterado. O grafo local permanece igual.

@@ -8,7 +8,7 @@ import type { PageGraphDto } from '../models'
 
 const fixture: PageGraphDto = {
   nodes: [
-    { id: 'p1', title: 'Reunião de trabalho', slug: 'meeting', icon: null, isArchived: false, degree: 0, tagIds: [] },
+    { id: 'p1', title: 'Reunião de trabalho', slug: 'meeting', icon: null, isArchived: false, degree: 0, tagIds: ['work'] },
     { id: 'p2', title: 'Receitas', slug: 'recipes', icon: null, isArchived: false, degree: 0, tagIds: [] },
   ],
   edges: [{ sourceId: 'p1', targetId: 'p2', kind: 'wikilink' }],
@@ -27,8 +27,14 @@ vi.mock('../hooks/usePages', () => ({ useGraph: () => graphQuery() }))
 vi.mock('../components/NotesSidebar', () => ({ NotesSidebar: () => null }))
 vi.mock('../components/SearchPalette', () => ({ SearchPalette: () => null }))
 vi.mock('../components/TagFilter', () => ({ TagFilter: () => null }))
-vi.mock('../components/GraphView', () => ({ GraphView: ({ families, focusedId, onSelect }: { families?: unknown[]; focusedId?: string; onSelect: (id: string) => void }) =>
-  <div><div data-testid="graph-mode">{families ? 'grouped' : 'free'}</div><div data-testid="focused-node">{focusedId}</div><button onClick={() => onSelect('p1')}>Inspect p1</button></div> }))
+vi.mock('../components/GraphView', () => ({ GraphView: ({ families, focusedId, onSelect, collapsedFamilyIds, onToggleFamily }: { families?: unknown[]; focusedId?: string; onSelect: (id: string) => void; collapsedFamilyIds: string[]; onToggleFamily: (id: string) => void }) =>
+  <div>
+    <div data-testid="graph-mode">{families ? 'grouped' : 'free'}</div>
+    <div data-testid="focused-node">{focusedId}</div>
+    <div data-testid="collapsed-families">{collapsedFamilyIds.join(',')}</div>
+    <button onClick={() => onSelect('p1')}>Inspect p1</button>
+    {families && <button onClick={() => onToggleFamily('work')}>Toggle Work</button>}
+  </div> }))
 
 beforeEach(() => {
   localStorage.clear()
@@ -37,6 +43,24 @@ beforeEach(() => {
 })
 
 describe('NotesGraphPage', () => {
+  it('closes selected member details on collapse and expands the family when searching for that page', async () => {
+    localStorage.setItem(graphPreferencesKey('graph-user'), JSON.stringify({
+      showGroups: true, families: [{ id: 'work', name: 'Work', color: '#1677ff', tagIds: ['work'] }],
+    }))
+    const user = userEvent.setup()
+    renderWithProviders(<NotesGraphPage />)
+    await user.click(screen.getByRole('button', { name: 'Inspect p1' }))
+    await user.click(screen.getByRole('button', { name: 'Toggle Work' }))
+    expect(screen.getByTestId('collapsed-families')).toHaveTextContent('work')
+    expect(screen.getByTestId('focused-node')).toBeEmptyDOMElement()
+    expect(screen.queryByText('Note details')).not.toBeInTheDocument()
+    await user.type(screen.getByRole('combobox', { name: 'Locate a note in the graph' }), 'REUNIAO')
+    await user.click(await screen.findByText('Reunião de trabalho'))
+    expect(screen.getByTestId('collapsed-families')).toBeEmptyDOMElement()
+    expect(screen.getByTestId('focused-node')).toHaveTextContent('p1')
+    expect(screen.getByText('Note details')).toBeInTheDocument()
+  })
+
   it('inspects nodes and their connections before explicitly navigating to a page', async () => {
     const user = userEvent.setup()
     renderWithProviders(<NotesGraphPage />)

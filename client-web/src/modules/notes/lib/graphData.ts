@@ -8,6 +8,9 @@ export interface ForceNode {
   isArchived: boolean
   degree: number
   tagIds: string[]
+  /** Present only on a collapsed family's synthetic node. */
+  familyId?: string
+  memberCount?: number
 }
 
 /** An edge as the force simulation wants it — endpoints named `source`/`target`. */
@@ -15,6 +18,8 @@ export interface ForceLink {
   source: string
   target: string
   kind: GraphEdgeDto['kind']
+  /** Number of real links represented by an aggregated external edge. */
+  count?: number
 }
 
 export interface ForceData {

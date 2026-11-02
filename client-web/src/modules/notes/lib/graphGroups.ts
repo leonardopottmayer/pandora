@@ -21,6 +21,7 @@ export interface PositionedNode extends ForceNode {
 
 /** Priority is the configured order; any selected tag qualifies, but a page is drawn only once. */
 export function familyForNode(node: ForceNode, families: GraphFamily[]): GraphFamily | undefined {
+  if (node.familyId) return families.find((family) => family.id === node.familyId)
   return families.find((family) => family.tagIds.some((id) => node.tagIds.includes(id)))
 }
 

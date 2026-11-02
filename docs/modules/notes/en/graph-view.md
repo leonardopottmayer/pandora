@@ -101,17 +101,17 @@ This is client-side navigation over the graph payload, separate from full-text p
 
 ## 8. Improvement ideas (2026-11-02)
 
-These are ideas, not implementation commitments. Title search and the details panel are delivered.
+These are ideas, not implementation commitments. Title search, details and collapsing families are delivered.
 
 - **Details panel (implemented):** see the inspection behavior below.
-- **Collapse families:** replace a region with one node such as "Work · 25 notes", then expand it.
+- **Collapse families (implemented):** see the display projection below.
 - **Navigation controls:** visible zoom in/out and fit-all buttons, especially useful on mobile.
 - **Visibility filters:** hide archived pages and isolated nodes independently; the existing archive
   toggle only affects the sidebar.
 - **Connections between families:** summarize bridges and link counts between thematic regions.
 - **Later:** pin node positions, remember the camera viewport and explore automatic communities.
 
-Suggested next priority: collapsing families when the graph grows.
+Suggested next priority: visible zoom and fit-all controls.
 
 ## 9. Inspect a note without leaving the graph
 
@@ -130,3 +130,24 @@ Desktop uses a side panel beside the canvas, allowing another node to be selecte
 Small screens use a scrollable drawer. All metadata comes from the existing graph and tag payloads;
 no page content request, backend change or new persistence is required. The local page graph keeps
 its original click-to-open behavior.
+
+## 10. Collapse and expand families
+
+With **Show groups** enabled, each nonempty family in the legend has a **Collapse/Expand** button.
+Collapse replaces its visible members with one colored node labelled `Family · count`. Clicking
+that summary expands the family; the legend's name still frames it. Families start expanded.
+Unmatched pages stay visible, and priority still assigns each page to one family.
+
+The display projection hides links internal to a collapsed family and remaps its external links
+to the summary. Parallel links combine by displayed source, target and kind; direction and dashed
+embed styling remain intact. Hovering an aggregated link shows its real link count. Counts and
+membership reflect current space/tag filters; empty families produce no summary or legend entry.
+
+Searching for a hidden page or selecting it from the details panel expands its owning family before
+focusing it. Collapsing the family of the selected page clears selection and closes details. Summary
+nodes expand rather than opening page details. Search and details always use the original graph.
+
+Collapse state lasts for the current visit and is not persisted. Turning groups off restores every
+real page and link; turning groups back on reapplies that visit's collapsed choices. Saving family
+configuration expands all families. `lib/collapsedGraph.ts` creates fresh simulation data; no API,
+schema or real note/link is changed. The local page graph remains unchanged.

@@ -1062,6 +1062,10 @@
       "close": "Fechar detalhes da nota"
     },
     "graphGroups": {
+      "collapse": "Recolher {{name}}",
+      "expand": "Expandir {{name}}",
+      "linkCount_one": "{{count}} ligação",
+      "linkCount_other": "{{count}} ligações",
       "show": "Mostrar grupos",
       "configure": "Configurar famílias",
       "hint": "Escolha as tags de cada família. Qualquer tag selecionada serve; a primeira família compatível tem prioridade. Use as setas para mudar a ordem. O agrupamento mantém as notas visíveis e suas conexões.",

@@ -29,6 +29,8 @@ left behind, not the phase log.
 | **Graph** | Global and local graph from one query, in-memory undirected BFS with depth clamped 1..5, backend-computed degree, broken edges filtered out, `react-force-graph-2d` canvas with hover highlighting and zoom-gated labels. |
 | **Tags** | `TagParser` with code stripping, `TagName` normalization, tag creation from the text, diff-based edges, orphan sweep preserving colored tags, hex color validation, intersecting filters on the sidebar / search / graph, chips in the preview (`nte005`, `nte006`). |
 | **Graph families** | Named/color-coded regions by chosen tags, ordered priority without duplicate pages, counts and family framing. Global graph switch off by default; mode and configuration remembered per account/browser. See [Graph View](graph-view.md#6-tag-families-and-thematic-regions). |
+| **Collapsed graph families** | Per-visit collapse/expand controls replace members with a summary node and aggregate external links by direction/kind. Search reveals hidden pages automatically; the original graph is preserved. See [Collapse families](graph-view.md#10-collapse-and-expand-families). |
+| **Graph inspection** | Title lookup and node selection focus the neighborhood and show a responsive details panel with tags, families and distinct connected notes. An explicit Open note action navigates to the editor. See [Locate a note](graph-view.md#7-locate-a-note) and [Inspect a note](graph-view.md#9-inspect-a-note-without-leaving-the-graph). |
 | **Frontend** | React module (`client-web/src/modules/notes`) covering all of the above, i18n EN + PT-BR, unit tests over every `lib/` module. |
 | **Tests** | Domain unit tests (`Modules.Notes.Tests`: page, hierarchy, graph, search, slugger, tag name, tag parser, wikilink parser) + integration tests (`IntegrationTests/Modules/Notes`: pages, attachments, backlinks, search, graph, tags). |
 
@@ -37,8 +39,7 @@ left behind, not the phase log.
 | Area | Status |
 |---|---|
 | **Tag filters in the URL** | Not implemented. Filters are component state, so "the pages with #x" is not a shareable link. The place would be a search param on `NotesPage`. |
-| **Graph inspection** | Title lookup and node selection focus the neighborhood and show a responsive details panel with tags, families and distinct connected notes. An explicit Open note action navigates to the editor. See [Locate a note](graph-view.md#7-locate-a-note) and [Inspect a note](graph-view.md#9-inspect-a-note-without-leaving-the-graph). |
-| **Graph navigation ideas** | Collapsed families, zoom controls, visibility filters, bridges between families and later layout persistence/automatic communities. See [Graph ideas](graph-view.md#8-improvement-ideas-2026-11-02). |
+| **Graph navigation ideas** | Zoom controls, visibility filters, a bridge overview between families and later layout persistence/automatic communities. See [Graph ideas](graph-view.md#8-improvement-ideas-2026-11-02). |
 | **Archived toggle on the graph** | Not implemented. `NotesGraphPage`'s `includeArchived` only narrows the sidebar; the graph always includes archived pages (flagged). |
 | **Column alignment from the UI** | Deliberately out. The place would be the separator line in `lib/markdownTables.ts`. |
 | **Bucket storage backend and video** | Only the abstraction exists. `storage_backend` + `storage_key` on each media row mean plugging a bucket in needs no migration; video also needs ranged downloads and a poster rendition. See [Media Library](media-library.md#3-kinds-and-what-is-ready-for-video). |

@@ -1062,6 +1062,10 @@
       "close": "Close note details"
     },
     "graphGroups": {
+      "collapse": "Collapse {{name}}",
+      "expand": "Expand {{name}}",
+      "linkCount_one": "{{count}} link",
+      "linkCount_other": "{{count}} links",
       "show": "Show groups",
       "configure": "Configure families",
       "hint": "Choose tags for each family. Any selected tag qualifies; the first matching family wins. Move families up or down to change priority. Grouping keeps all visible notes and their links.",

@@ -14,6 +14,7 @@ import { GraphGroupsDrawer } from '../components/GraphGroupsDrawer'
 import { GraphDetailsPanel } from '../components/GraphDetailsPanel'
 import { TagFilter } from '../components/TagFilter'
 import { nodeLabel } from '../lib/graphData'
+import { familyForNode } from '../lib/graphGroups'
 
 const SIDEBAR_WIDTH = 280
 
@@ -35,6 +36,7 @@ export function NotesGraphPage() {
   const [spaceId, setSpaceId] = useState<string | null>(null)
   const [locatedId, setLocatedId] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [collapsedFamilyIds, setCollapsedFamilyIds] = useState<string[]>([])
   const { data: spaces = [] } = useSpaces()
 
   const { data: graph, isLoading } = useGraph(tagIds, spaceId)
@@ -44,6 +46,17 @@ export function NotesGraphPage() {
   function inspectPage(id: string | null) {
     setLocatedId(id)
     setDetailsOpen(id !== null)
+    const node = graph?.nodes.find((candidate) => candidate.id === id)
+    const family = node && familyForNode(node, preferences.families)
+    if (family) setCollapsedFamilyIds((ids) => ids.includes(family.id) ? ids.filter((value) => value !== family.id) : ids)
+  }
+
+  function toggleFamily(id: string) {
+    setCollapsedFamilyIds((ids) => ids.includes(id) ? ids.filter((value) => value !== id) : [...ids, id])
+    if (selectedNode && familyForNode(selectedNode, preferences.families)?.id === id) {
+      setLocatedId(null)
+      setDetailsOpen(false)
+    }
   }
 
   function changeTags(ids: string[]) {
@@ -68,7 +81,10 @@ export function NotesGraphPage() {
           families={preferences.families}
           tags={tags}
           onClose={() => setGroupsOpen(false)}
-          onSave={(families) => update({ ...preferences, families })}
+          onSave={(families) => {
+            update({ ...preferences, families })
+            setCollapsedFamilyIds([])
+          }}
         />
       )}
 
@@ -151,7 +167,14 @@ export function NotesGraphPage() {
             <Spin />
           </Flex>
         ) : graph && graph.nodes.length > 0 ? (
-          <GraphView graph={graph} focusedId={focusedId} onSelect={inspectPage} families={preferences.showGroups ? preferences.families : undefined} />
+          <GraphView
+            graph={graph}
+            focusedId={focusedId}
+            onSelect={inspectPage}
+            families={preferences.showGroups ? preferences.families : undefined}
+            collapsedFamilyIds={collapsedFamilyIds}
+            onToggleFamily={toggleFamily}
+          />
         ) : (
           <Flex align="center" justify="center" style={{ height: '100%' }}>
             <Empty description={tagIds.length > 0 ? t('notes.tagFilterEmpty') : t('notes.graphEmpty')} />
