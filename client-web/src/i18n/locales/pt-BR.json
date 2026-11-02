@@ -1063,7 +1063,17 @@
     },
     "today": {
       "empty": "Nada agendado para hoje.",
-      "allDay": "Dia inteiro"
+      "allDay": "Dia inteiro",
+      "now": "Agora",
+      "reminder": "Lembrete",
+      "count": {
+        "event_one": "{{count}} evento",
+        "event_other": "{{count}} eventos",
+        "task_one": "{{count}} tarefa",
+        "task_other": "{{count}} tarefas",
+        "reminder_one": "{{count}} lembrete",
+        "reminder_other": "{{count}} lembretes"
+      }
     },
     "reminders": {
       "title": "Lembretes",
@@ -1074,21 +1084,30 @@
       "notes": "Notas",
       "remindAt": "Lembrar em",
       "remindAtRequired": "Escolha quando ser lembrado.",
-      "status": "Status",
-      "acknowledge": "Reconhecer",
-      "acknowledged": "Lembrete reconhecido.",
+      "acknowledge": "Ok, visto",
       "rename": "Renomear",
-      "renamed": "Lembrete renomeado.",
       "snooze": "Adiar",
       "snoozeUntil": "Adiar até",
-      "snoozed": "Lembrete adiado.",
-      "cancel": "Cancelar",
       "deleteConfirm": "Cancelar este lembrete?",
       "created": "Lembrete criado.",
-      "deleted": "Lembrete cancelado.",
       "saveError": "Não foi possível salvar o lembrete.",
       "deleteError": "Não foi possível cancelar o lembrete.",
-      "empty": "Nenhum lembrete ainda."
+      "empty": "Nenhum lembrete ainda.",
+      "subtitle": "O que precisa da sua atenção, e quando. Adiar joga para mais tarde.",
+      "waiting": "Aguardando você",
+      "upcoming": "Próximos",
+      "closed": "Vistos e cancelados",
+      "snoozedTo": "Adiado · {{when}}",
+      "recurring": "Repete",
+      "moreActions": "Mais ações de {{title}}",
+      "cancelReminder": "Cancelar lembrete",
+      "keep": "Manter",
+      "snoozeShortcuts": {
+        "in10m": "Em 10 min",
+        "in1h": "Em 1 hora",
+        "in3h": "Em 3 horas",
+        "tomorrow": "Amanhã às 9h"
+      }
     },
     "tasks": {
       "title": "Tarefas",
@@ -1104,8 +1123,6 @@
       "dueAt": "Prazo",
       "dueHasTime": "Incluir horário",
       "status": "Status",
-      "complete": "Concluir",
-      "completed": "Tarefa concluída.",
       "reopen": "Reabrir",
       "alerts": "Alertas",
       "deleteConfirm": "Excluir esta tarefa?",
@@ -1279,11 +1296,6 @@
       "calendarOrigin": {
         "local": "Local",
         "external": "Externo"
-      },
-      "todayKind": {
-        "event": "Evento",
-        "task": "Tarefa",
-        "reminder": "Lembrete"
       }
     }
   },

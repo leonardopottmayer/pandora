@@ -4,7 +4,6 @@ import type {
   ReminderStatus,
   TaskItemStatus,
   TaskPriority,
-  TodayItemKind,
 } from '../models'
 
 // Each enum maps to an i18n key (`agenda.enums.*`) and an antd `Tag` colour.
@@ -46,10 +45,4 @@ export const EVENT_STATUS_META: Record<EventStatus, EnumMeta> = {
 export const CALENDAR_ORIGIN_META: Record<CalendarOrigin, EnumMeta> = {
   Local: { labelKey: 'agenda.enums.calendarOrigin.local' },
   External: { labelKey: 'agenda.enums.calendarOrigin.external', color: 'blue' },
-}
-
-export const TODAY_KIND_META: Record<TodayItemKind, EnumMeta> = {
-  event: { labelKey: 'agenda.enums.todayKind.event', color: 'blue' },
-  task: { labelKey: 'agenda.enums.todayKind.task', color: 'green' },
-  reminder: { labelKey: 'agenda.enums.todayKind.reminder', color: 'purple' },
 }

@@ -1063,7 +1063,17 @@
     },
     "today": {
       "empty": "Nothing scheduled for today.",
-      "allDay": "All day"
+      "allDay": "All day",
+      "now": "Now",
+      "reminder": "Reminder",
+      "count": {
+        "event_one": "{{count}} event",
+        "event_other": "{{count}} events",
+        "task_one": "{{count}} task",
+        "task_other": "{{count}} tasks",
+        "reminder_one": "{{count}} reminder",
+        "reminder_other": "{{count}} reminders"
+      }
     },
     "reminders": {
       "title": "Reminders",
@@ -1074,21 +1084,30 @@
       "notes": "Notes",
       "remindAt": "Remind at",
       "remindAtRequired": "Choose when to be reminded.",
-      "status": "Status",
-      "acknowledge": "Acknowledge",
-      "acknowledged": "Reminder acknowledged.",
+      "acknowledge": "Got it",
       "rename": "Rename",
-      "renamed": "Reminder renamed.",
       "snooze": "Snooze",
       "snoozeUntil": "Snooze until",
-      "snoozed": "Reminder snoozed.",
-      "cancel": "Cancel",
       "deleteConfirm": "Cancel this reminder?",
       "created": "Reminder created.",
-      "deleted": "Reminder cancelled.",
       "saveError": "Could not save the reminder.",
       "deleteError": "Could not cancel the reminder.",
-      "empty": "No reminders yet."
+      "empty": "No reminders yet.",
+      "subtitle": "What should get your attention, and when. Snoozing moves it to later.",
+      "waiting": "Waiting for you",
+      "upcoming": "Upcoming",
+      "closed": "Done and cancelled",
+      "snoozedTo": "Snoozed · {{when}}",
+      "recurring": "Repeats",
+      "moreActions": "More actions for {{title}}",
+      "cancelReminder": "Cancel reminder",
+      "keep": "Keep",
+      "snoozeShortcuts": {
+        "in10m": "In 10 min",
+        "in1h": "In 1 hour",
+        "in3h": "In 3 hours",
+        "tomorrow": "Tomorrow at 9"
+      }
     },
     "tasks": {
       "title": "Tasks",
@@ -1104,8 +1123,6 @@
       "dueAt": "Due date",
       "dueHasTime": "Include time",
       "status": "Status",
-      "complete": "Complete",
-      "completed": "Task completed.",
       "reopen": "Reopen",
       "alerts": "Alerts",
       "deleteConfirm": "Delete this task?",
@@ -1279,11 +1296,6 @@
       "calendarOrigin": {
         "local": "Local",
         "external": "External"
-      },
-      "todayKind": {
-        "event": "Event",
-        "task": "Task",
-        "reminder": "Reminder"
       }
     }
   },

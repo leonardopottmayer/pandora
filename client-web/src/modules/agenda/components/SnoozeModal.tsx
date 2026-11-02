@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { App, DatePicker, Modal } from 'antd'
+import { App, Button, DatePicker, Modal, Typography } from 'antd'
 import dayjs, { type Dayjs } from 'dayjs'
 import { toErrorMessage } from '@/lib/api/envelope'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
+import { formatDue } from '../lib/datetime'
 import { useSnoozeReminder } from '../hooks/useReminders'
 
 interface SnoozeModalProps {
@@ -11,18 +13,30 @@ interface SnoozeModalProps {
   onClose: () => void
 }
 
-/** Picks a "snooze until" instant and calls POST /reminders/{id}/snooze. */
+/** Snoozes a reminder by a shortcut, or until a picked instant. */
 export function SnoozeModal({ open, reminderId, onClose }: SnoozeModalProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { message } = App.useApp()
+  const { timeZone } = usePreferences()
   const [until, setUntil] = useState<Dayjs | null>(() => dayjs().add(1, 'hour'))
   const snoozeMutation = useSnoozeReminder()
 
-  async function handleOk() {
-    if (!reminderId || !until) return
+  const now = dayjs().tz(timeZone)
+  const shortcuts: { key: string; until: Dayjs }[] = [
+    { key: 'in10m', until: now.add(10, 'minute') },
+    { key: 'in1h', until: now.add(1, 'hour') },
+    { key: 'in3h', until: now.add(3, 'hour') },
+    { key: 'tomorrow', until: now.add(1, 'day').hour(9).minute(0).second(0) },
+  ]
+
+  async function snooze(to: Dayjs) {
+    if (!reminderId) return
     try {
-      await snoozeMutation.mutateAsync({ id: reminderId, until: until.toISOString() })
-      message.success(t('agenda.reminders.snoozed'))
+      await snoozeMutation.mutateAsync({ id: reminderId, until: to.toISOString() })
+      // Says when it comes back, since nothing on screen moves to show it.
+      message.success(
+        t('agenda.reminders.snoozedTo', { when: formatDue(to.toISOString(), true, timeZone, i18n.language) }),
+      )
       onClose()
     } catch (err) {
       message.error(toErrorMessage(err, t('agenda.reminders.saveError')))
@@ -34,19 +48,31 @@ export function SnoozeModal({ open, reminderId, onClose }: SnoozeModalProps) {
       open={open}
       title={t('agenda.reminders.snooze')}
       onCancel={onClose}
-      onOk={handleOk}
+      onOk={() => until && snooze(until)}
       okButtonProps={{ loading: snoozeMutation.isPending, disabled: !until }}
       okText={t('agenda.reminders.snooze')}
       cancelText={t('common.cancel')}
       destroyOnHidden
     >
-      <DatePicker
-        showTime
-        value={until}
-        onChange={setUntil}
-        style={{ width: '100%' }}
-        aria-label={t('agenda.reminders.snoozeUntil')}
-      />
+      <div className="flex flex-col gap-4 pt-1">
+        <div className="grid grid-cols-2 gap-2">
+          {shortcuts.map((shortcut) => (
+            <Button key={shortcut.key} disabled={snoozeMutation.isPending} onClick={() => snooze(shortcut.until)}>
+              {t(`agenda.reminders.snoozeShortcuts.${shortcut.key}`)}
+            </Button>
+          ))}
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Typography.Text type="secondary">{t('agenda.reminders.snoozeUntil')}</Typography.Text>
+          <DatePicker
+            showTime={{ format: 'HH:mm' }}
+            value={until}
+            onChange={setUntil}
+            style={{ width: '100%' }}
+            aria-label={t('agenda.reminders.snoozeUntil')}
+          />
+        </div>
+      </div>
     </Modal>
   )
 }

@@ -53,7 +53,7 @@ describe('RemindersListPage', () => {
     let acked = false
     server.use(
       http.get(`${AGENDA_BASE}/reminders`, () =>
-        HttpResponse.json({ success: true, data: [reminder] }),
+        HttpResponse.json({ success: true, data: [{ ...reminder, status: 'Notified' }] }),
       ),
       http.post(`${AGENDA_BASE}/reminders/r1/acknowledge`, () => {
         acked = true
@@ -64,11 +64,11 @@ describe('RemindersListPage', () => {
     renderWithProviders(<RemindersListPage />)
 
     await screen.findByText('Call the dentist')
-    await user.click(screen.getByRole('button', { name: 'Acknowledge' }))
+    await user.click(screen.getByRole('button', { name: 'Got it' }))
     await waitFor(() => expect(acked).toBe(true))
   })
 
-  it('renames a reminder in place', async () => {
+  it('renames a reminder from its menu', async () => {
     let body: unknown
     server.use(
       http.get(`${AGENDA_BASE}/reminders`, () =>
@@ -83,11 +83,53 @@ describe('RemindersListPage', () => {
     renderWithProviders(<RemindersListPage />)
 
     await screen.findByText('Call the dentist')
-    await user.click(screen.getByRole('button', { name: 'Rename' }))
-    const input = screen.getByRole('textbox')
+    await user.click(screen.getByRole('button', { name: 'More actions for Call the dentist' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Rename' }))
+    const input = await screen.findByRole('textbox', { name: 'Title' })
+    expect(input).toHaveValue('Call the dentist')
     await user.clear(input)
-    await user.type(input, 'Call the vet')
-    await user.tab() // leaving the field saves, like Enter
+    await user.type(input, 'Call the vet{Enter}')
     await waitFor(() => expect(body).toEqual({ title: 'Call the vet' }))
+  })
+
+  it('puts fired reminders first and closed ones away', async () => {
+    server.use(
+      http.get(`${AGENDA_BASE}/reminders`, () =>
+        HttpResponse.json({
+          success: true,
+          data: [
+            { ...reminder, id: 'r2', title: 'Later one', remindAt: '2026-09-01T15:00:00Z' },
+            { ...reminder, id: 'r3', title: 'Fired one', status: 'Notified' },
+            { ...reminder, id: 'r4', title: 'Gone one', status: 'Cancelled' },
+          ],
+        }),
+      ),
+    )
+    renderWithProviders(<RemindersListPage />)
+
+    expect(await screen.findByText('Waiting for you · 1')).toBeInTheDocument()
+    expect(screen.getByText('Upcoming · 1')).toBeInTheDocument()
+    expect(screen.getByText('Done and cancelled · 1')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'More actions for Gone one' })).not.toBeInTheDocument()
+  })
+
+  it('cancels with a dialog that says what each button does', async () => {
+    let cancelled = false
+    server.use(
+      http.get(`${AGENDA_BASE}/reminders`, () => HttpResponse.json({ success: true, data: [reminder] })),
+      http.delete(`${AGENDA_BASE}/reminders/r1`, () => {
+        cancelled = true
+        return HttpResponse.json({ success: true, data: null })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<RemindersListPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'More actions for Call the dentist' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Cancel reminder' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByRole('button', { name: 'Keep' })).toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel reminder' }))
+    await waitFor(() => expect(cancelled).toBe(true))
   })
 })
