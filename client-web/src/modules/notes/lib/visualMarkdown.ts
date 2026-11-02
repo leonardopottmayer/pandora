@@ -6,11 +6,12 @@ import { TableKit } from '@tiptap/extension-table'
 import { Paragraph } from '@tiptap/extension-paragraph'
 import { Marked, type marked } from 'marked'
 import { isMediaUrl } from './media'
+import { CalloutBlock, DetailsBlock, tokenizeVisualBlock } from './visualBlocks'
 
 // The visual editor reads and writes the same markdown the code editor does: the text stays the one
 // source of truth. TipTap's markdown bridge knows the CommonMark/GFM blocks; what is ours is taught
-// here. Anything it would not give back as it was — a callout, a <details>, raw HTML — is kept as a
-// *raw block*: its source goes back out untouched, and the editor draws it with the preview.
+// here. Callouts and toggles have editable bodies; unsupported HTML stays a raw block whose source
+// goes back out untouched.
 
 /** `[[target]]`, `[[target|alias]]`, `![[target]]` — the same shape the preview and the backend read. */
 const WIKILINK = /^(!)?\[\[([^[\]|]*)(?:\|([^[\]]*))?\]\]/
@@ -119,27 +120,9 @@ const ImageParagraph = Paragraph.extend({
   },
 })
 
-/** Callouts, foldable or not: a run of `>` lines opening with `[!type]`. */
-const CALLOUT = /^ {0,3}> *\[!\w+\][+-]?[^\n]*(?:\n|$)(?: {0,3}>[^\n]*(?:\n|$))*/
-
-/** Where a `<details>` at the start of `src` closes, nested ones included; -1 when it never does. */
-function detailsEnd(src: string): number {
-  const tag = /<(\/?)details\b[^>]*>/gi
-  let depth = 0
-  for (let match = tag.exec(src); match; match = tag.exec(src)) {
-    depth += match[1] ? -1 : 1
-    if (depth === 0) {
-      const lineEnd = src.indexOf('\n', tag.lastIndex)
-      return lineEnd === -1 ? src.length : lineEnd + 1
-    }
-  }
-  return -1
-}
-
 /**
- * Markdown the visual editor does not edit as blocks, kept verbatim. A `<details>` spans its blank
- * lines whole — marked would cut it into pieces at the first one — and HTML blocks are taken from
- * marked's own `html` token.
+ * One tokenizer consumes whole callouts/details before marked splits their HTML at blank lines.
+ * Supported shapes become native blocks; other shapes keep their source verbatim.
  */
 export const RawBlock = Node.create({
   name: 'rawBlock',
@@ -148,12 +131,15 @@ export const RawBlock = Node.create({
   draggable: true,
 
   addAttributes() {
-    // `autoEdit` only lives in the editor: a block just made from the `/` menu opens on its source.
-    return { source: { default: '' }, autoEdit: { default: false, rendered: false } }
+    return { source: { default: '' } }
   },
 
   parseHTML() {
-    return [{ tag: 'div[data-raw-block]', getAttrs: (el) => ({ source: el.getAttribute('data-raw-block') }) }]
+    return [
+      { tag: 'div[data-raw-block]', getAttrs: (el) => ({ source: el.getAttribute('data-raw-block') }) },
+      // A details copied from elsewhere may not carry our content wrapper. Keep its HTML intact.
+      { tag: 'details', getAttrs: (el) => ({ source: el.outerHTML }) },
+    ]
   },
 
   renderHTML({ node }) {
@@ -164,16 +150,18 @@ export const RawBlock = Node.create({
     name: 'rawBlock',
     level: 'block',
     start: (src: string) => src.search(/^ {0,3}(?:> *\[!|<details\b)/im),
-    tokenize(src: string) {
-      const callout = CALLOUT.exec(src)
-      if (callout) return { type: 'rawBlock', raw: callout[0] }
-      if (!/^ {0,3}<details\b/i.test(src)) return undefined
-      const end = detailsEnd(src)
-      return end === -1 ? undefined : { type: 'rawBlock', raw: src.slice(0, end) }
+    tokenize(src, _tokens, lexer) {
+      return tokenizeVisualBlock(src, lexer)
     },
   },
 
-  parseMarkdown: (token) => ({ type: 'rawBlock', attrs: { source: (token.raw ?? '').replace(/\n+$/, '') } }),
+  parseMarkdown: (token, helpers) => {
+    if (token.blockType) {
+      const content = (helpers.parseBlockChildren ?? helpers.parseChildren)(token.tokens ?? [])
+      return { type: token.blockType, attrs: token.attrs, content: content.length ? content : [{ type: 'paragraph' }] }
+    }
+    return { type: 'rawBlock', attrs: { source: (token.raw ?? '').replace(/\n+$/, '') } }
+  },
 
   renderMarkdown: (node) => node.attrs?.source ?? '',
 })
@@ -211,7 +199,7 @@ function withListBreaks(doc: JSONContent): JSONContent {
     if (marker && marker === lastMarker) blocks.push({ type: 'rawBlock', attrs: { source: LIST_BREAK } })
     // Empty paragraphs are blank lines, which do not end a list either.
     if (!isEmptyParagraph(block)) lastMarker = marker
-    blocks.push(block)
+    blocks.push(block.content ? withListBreaks(block) : block)
   }
   return { ...doc, content: blocks }
 }
@@ -221,6 +209,8 @@ export interface VisualNodeViews {
   wikilink?: NodeViewRenderer
   image?: NodeViewRenderer
   rawBlock?: NodeViewRenderer
+  callout?: NodeViewRenderer
+  details?: NodeViewRenderer
 }
 
 const withView = (node: Node, view?: NodeViewRenderer) => (view ? node.extend({ addNodeView: () => view }) : node)
@@ -241,6 +231,8 @@ export function visualExtensions(views: VisualNodeViews = {}): AnyExtension[] {
     withView(Wikilink, views.wikilink),
     withView(MediaImage, views.image),
     withView(RawBlock, views.rawBlock),
+    withView(CalloutBlock, views.callout),
+    withView(DetailsBlock, views.details),
     RawHtml,
   ]
 }

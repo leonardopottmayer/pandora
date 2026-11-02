@@ -30,6 +30,7 @@ import { TableSizeModal } from '../TableSizeModal'
 import { MediaPickerModal } from '../library/MediaPickerModal'
 import { PagePickerModal } from '../PagePickerModal'
 import { ImageView, RawBlockView, WikilinkView } from './nodeViews'
+import { BlockView } from './BlockView'
 import { SuggestionMenu } from './SuggestionMenu'
 import { menuTrigger, type MenuBridge, type MenuState } from './suggestions'
 import { VisualEditorContext, type VisualEditorContextValue } from './visualContext'
@@ -118,6 +119,8 @@ export function VisualEditor({
         ...visualExtensions({
           wikilink: ReactNodeViewRenderer(WikilinkView, { as: 'span' }),
           image: ReactNodeViewRenderer(ImageView, { as: 'span' }),
+          callout: ReactNodeViewRenderer(BlockView),
+          details: ReactNodeViewRenderer(BlockView),
           // Everything inside a raw block — its textarea, a <summary> to fold, a link — is its own;
           // only dragging it is the editor's.
           rawBlock: ReactNodeViewRenderer(RawBlockView, { stopEvent: ({ event }) => !event.type.startsWith('drag') }),
@@ -262,9 +265,12 @@ export function VisualEditor({
         chain.setHorizontalRule().run()
         return
       default: {
-        // A toggle or a callout has no block of its own here: it is markdown, opened on its source.
-        const source = command.text.replace(/\n+$/, '')
-        chain.insertContent({ type: 'rawBlock', attrs: { source, autoEdit: Math.min(command.cursor, source.length) } }).run()
+        const toggle = command.id === 'toggle'
+        chain.insertContent({
+          type: toggle ? 'details' : 'callout',
+          attrs: toggle ? { open: true, autoFocus: true } : { calloutType: command.id.replace('callout-', ''), autoFocus: true },
+          content: [{ type: 'paragraph' }],
+        }).run()
       }
     }
   }

@@ -21,7 +21,7 @@ left behind, not the phase log.
 | **Emoji icon** | Picker next to the title, reduced to the first grapheme via `Intl.Segmenter`, saved through the page's own autosave. |
 | **Media library** | Items (image / file; video in the schema, refused on upload) in virtual folders, WebP thumbnails with ImageSharp and EXIF rotation, folder moves without cycles, a deleted folder handing its contents up, soft delete keeping the bytes served, immutable caching, the library screen, paste/drop in the editor into "Unsorted" (`nte002`, `nte003`, `nte008`, `nte009`). |
 | **Media inside notes** | Library picker from `/image`, `/file` and the toolbar, width, alignment and caption from the alt text (`![text|400|right]`), library `<img>` in HTML, full-screen zoom, file cards with size, which notes use each item derived on save (`nte010`), "Used in" in the library, an "Unused" place, a warning before deleting an item in use. |
-| **Editor** | A Notion-style visual editor (TipTap 3, saving markdown: `/` `[[` `#` menus, selection bar, table bar, drag handle, callouts/`<details>`/HTML as untouched raw blocks) as the default; CodeMirror 6 with raw markdown, preview and split mode beside it; 800 ms autosave, DOMPurify sanitization. |
+| **Editor** | A Notion-style visual editor (TipTap 3, saving markdown: `/` `[[` `#` menus, selection bar, table bar, drag handle, native callouts/toggles with editable bodies and titles; unsupported HTML kept as raw blocks) as the default; CodeMirror 6 with raw markdown, preview and split mode beside it; 800 ms autosave, DOMPurify sanitization. |
 | **Rich blocks** | Slash commands (14 blocks + 6 callouts), Obsidian callouts as a `marked` extension (collapsible with `-`/`+`), toggles (`<details>`), YouTube/Vimeo players from a bare link and an iframe allowlist (YouTube, Vimeo, Google Maps) with a fixed sandbox, assisted markdown tables with Tab/Shift+Tab and idempotent reformatting. |
 | **Autocomplete** | Three menus — `[[` (pages by title and slug), `#` (existing tags), `/` (commands) — sharing `filter: false`, ref-based inputs and a body-parented tooltip. |
 | **Wikilinks & backlinks** | `WikilinkParser`, title-then-slug resolution, `wikilink`/`embed` kinds, diff-based edge rebuild on create and update, backlinks endpoint and panel, create-on-click (`nte004`). |
@@ -36,7 +36,6 @@ left behind, not the phase log.
 | Area | Status |
 |---|---|
 | **Search ranking & highlighting** | Planned as v2 in the product plan. Results are ordered by title, not by `ts_rank`, and `PageSearchResultDto.Excerpt` is a plain slice — no `ts_headline`. |
-| **Callouts and `<details>` editable as blocks** | In the visual editor they are raw blocks: drawn, but edited as markdown. Making them native nodes (body edited in place) is the natural next step. |
 | **Tag filters in the URL** | Not implemented. Filters are component state, so "the pages with #x" is not a shareable link. The place would be a search param on `NotesPage`. |
 | **Archived toggle on the graph** | Not implemented. `NotesGraphPage`'s `includeArchived` only narrows the sidebar; the graph always includes archived pages (flagged). |
 | **Column alignment from the UI** | Deliberately out. The place would be the separator line in `lib/markdownTables.ts`. |

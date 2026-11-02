@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NodeViewWrapper, type NodeViewProps } from '@tiptap/react'
 import {
@@ -83,33 +83,21 @@ export function ImageView({ node, selected, updateAttributes }: NodeViewProps) {
 }
 
 /**
- * A callout, a `<details>`, raw HTML: drawn by the preview, and edited as the markdown it is. Its
+ * Unsupported HTML: drawn by the preview, and edited as the markdown it is. Its
  * source opens on a double click or the corner button, and goes back in on blur, Esc or Ctrl+Enter.
  */
 export function RawBlockView({ node, updateAttributes, deleteNode, editor }: NodeViewProps) {
   const { t } = useTranslation()
   const context = useVisualEditorContext()
   const source = String(node.attrs.source)
-  const autoEdit = node.attrs.autoEdit as number | false
-  const [editing, setEditing] = useState<string | null>(autoEdit === false ? null : source)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-  // Fresh from the `/` menu, the cursor lands where the command says — inside the <summary>, after
-  // the callout marker.
-  useEffect(() => {
-    if (autoEdit === false || !textareaRef.current) return
-    textareaRef.current.focus()
-    textareaRef.current.setSelectionRange(autoEdit, autoEdit)
-    // Only on mount: later renders must not pull the cursor back.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const [editing, setEditing] = useState<string | null>(null)
 
   function commit() {
     if (editing === null) return
     const value = editing.replace(/\s+$/, '')
     setEditing(null)
     if (value.trim().length === 0) deleteNode()
-    else updateAttributes({ source: value, autoEdit: false })
+    else updateAttributes({ source: value })
     editor.commands.focus()
   }
 
@@ -117,7 +105,7 @@ export function RawBlockView({ node, updateAttributes, deleteNode, editor }: Nod
     <NodeViewWrapper className="notes-raw-block">
       {editing !== null ? (
         <textarea
-          ref={textareaRef}
+          autoFocus
           className="notes-raw-source"
           value={editing}
           spellCheck={false}

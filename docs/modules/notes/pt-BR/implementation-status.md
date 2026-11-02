@@ -21,7 +21,7 @@ não o log das fases.
 | **Ícone emoji** | Picker ao lado do título, reduzido ao primeiro grafema via `Intl.Segmenter`, salvo pelo autosave da própria page. |
 | **Biblioteca de mídia** | Itens (imagem / arquivo; vídeo no schema, recusado no upload) em pastas virtuais, miniaturas WebP com ImageSharp e rotação EXIF, mover pastas sem ciclo, pasta excluída subindo o conteúdo, soft delete mantendo os bytes servidos, cache imutável, a tela da biblioteca, colar/arrastar no editor para "Não organizadas" (`nte002`, `nte003`, `nte008`, `nte009`). |
 | **Mídia dentro das notas** | Seletor da biblioteca por `/imagem`, `/arquivo` e pela barra, largura, alinhamento e legenda pelo texto alternativo (`![texto|400|direita]`), `<img>` da biblioteca em HTML, zoom em tela cheia, cartões de arquivo com tamanho, quais notas usam cada item derivado no save (`nte010`), "Usado em" na biblioteca, lugar "Sem uso", aviso antes de excluir um item em uso. |
-| **Editor** | Editor visual estilo Notion (TipTap 3, salvando markdown: menus `/` `[[` `#`, barra da seleção, barra da tabela, alça de arrastar, callouts/`<details>`/HTML como blocos crus intocados) como padrão; CodeMirror 6 com markdown cru, preview e modo split ao lado; autosave de 800 ms, sanitização com DOMPurify. |
+| **Editor** | Editor visual estilo Notion (TipTap 3, salvando markdown: menus `/` `[[` `#`, barra da seleção, barra da tabela, alça de arrastar, callouts e blocos recolhíveis nativos com corpo e título editáveis; HTML não suportado preservado como bloco cru) como padrão; CodeMirror 6 com markdown cru, preview e modo split ao lado; autosave de 800 ms, sanitização com DOMPurify. |
 | **Blocos ricos** | Slash commands (14 blocos + 6 callouts), callouts Obsidian como extensão do `marked` (recolhíveis com `-`/`+`), blocos recolhíveis (`<details>`), player de YouTube/Vimeo a partir do link sozinho e allowlist de iframe (YouTube, Vimeo, Google Maps) com sandbox fixo, tabelas markdown assistidas com Tab/Shift+Tab e reformatação idempotente. |
 | **Autocomplete** | Três menus — `[[` (pages por título e slug), `#` (tags existentes), `/` (comandos) — compartilhando `filter: false`, entradas por ref e tooltip pendurada no body. |
 | **Wikilinks e backlinks** | `WikilinkParser`, resolução título-depois-slug, tipos `wikilink`/`embed`, reconstrução por diff no create e no update, endpoint e painel de backlinks, create-on-click (`nte004`). |
@@ -36,7 +36,6 @@ não o log das fases.
 | Área | Status |
 |---|---|
 | **Ranking e realce da busca** | Previsto como v2 no plano de produto. Os resultados são ordenados por título, não por `ts_rank`, e o `PageSearchResultDto.Excerpt` é uma fatia crua — sem `ts_headline`. |
-| **Callouts e `<details>` editáveis como blocos** | No editor visual eles são blocos crus: desenhados, mas editados como markdown. Virar nós nativos (corpo editável no lugar) é o próximo passo natural. |
 | **Filtros de tag na URL** | Não implementado. Os filtros são estado de componente, então "as pages com #x" não é um link compartilhável. O lugar seria um search param na `NotesPage`. |
 | **Toggle de arquivadas no grafo** | Não implementado. O `includeArchived` da `NotesGraphPage` só afeta a sidebar; o grafo sempre inclui as arquivadas (com a flag). |
 | **Alinhamento de coluna pela UI** | Deliberadamente fora. O lugar seria a linha separadora em `lib/markdownTables.ts`. |

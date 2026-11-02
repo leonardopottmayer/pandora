@@ -11,7 +11,7 @@ export type CalloutType = (typeof CALLOUT_TYPES)[number]
 /** Default heading shown when the marker carries no title of its own, per type. */
 export type CalloutLabels = Record<CalloutType, string>
 
-const CALLOUT_ICONS: CalloutLabels = {
+export const CALLOUT_ICONS: CalloutLabels = {
   note: '✏️',
   tip: '💡',
   info: 'ℹ️',

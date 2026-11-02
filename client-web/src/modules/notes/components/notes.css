@@ -44,6 +44,29 @@
   background: rgba(22, 119, 255, 0.12);
 }
 .notes-visual .notes-wikilink { cursor: pointer; }
+.notes-native-block { min-width: 0; }
+.notes-native-heading { display: flex; align-items: center; gap: 6px; }
+.notes-native-title.ant-input { flex: 1; min-width: 0; padding: 2px 0; font: inherit; font-weight: 600; color: inherit; }
+.notes-native-title.ant-input::placeholder { color: var(--ant-color-text-tertiary); }
+.notes-fold-button {
+  flex: none;
+  width: 24px;
+  height: 28px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.notes-fold-button:hover { background: var(--ant-color-fill-tertiary); }
+.notes-fold-button:focus-visible { outline: 2px solid var(--ant-color-primary); }
+.notes-native-block[data-collapsed='true'] > .notes-native-body { display: none; }
+.notes-native-toggle {
+  margin: 0.8em 0;
+  padding: 6px 12px;
+  border: 1px solid var(--ant-color-border);
+  border-radius: 8px;
+}
 /* A raw block reads as the preview draws it; its source opens from the corner. */
 .notes-raw-block { position: relative; margin: 0.6em 0; border-radius: 6px; }
 .notes-raw-block:hover { box-shadow: 0 0 0 1px rgba(128, 128, 128, 0.3); }

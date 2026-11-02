@@ -142,10 +142,16 @@ defines the schema and the markdown rules; the component only adds the views.
 - **Our own nodes**: a **wikilink** is one node (`[[target|alias]]`, `![[target]]`), drawn as the preview
   draws it and clickable — it opens the page, or creates the missing one. An **image** keeps width,
   alignment and caption in its alt text, as always; selected, it shows alignment buttons that rewrite it.
-- **Raw block**: what the editor does not edit as blocks — a callout, a `<details>` (whole, across its
-  blank lines) and block HTML (an `<iframe>`, a hand-written `<img>`) — is kept **as it was** and drawn by
-  `MarkdownPreview` itself. A double click, or the corner button, opens its markdown; Esc, Ctrl+Enter or
-  leaving the field puts it back. `/toggle` and the callouts of `/` create a raw block already open.
+- **Callouts and toggles**: `lib/visualBlocks.ts` defines native nodes with a title field and a body
+  edited directly in the same editor (formatting, lists, tables, links, media and nested blocks).
+  Titles save on each change; Enter/ArrowDown moves into the body, Ctrl/Cmd+Enter leaves the block,
+  and undo/redo includes title changes. The arrow folds supported collapsible blocks and saves their
+  open state (`[!type]+`/`[!type]-` or `<details open>`). `/toggle` and callout commands focus the new
+  title. Bodies remain markdown; no backend or schema changes are needed.
+- **Raw block**: unsupported block HTML (an `<iframe>`, a hand-written `<img>`), unknown callout types
+  and custom `<details>` shapes (extra attributes or HTML in the summary) stay **verbatim** and are
+  drawn by `MarkdownPreview`. A double click or the corner button opens the source; Esc, Ctrl+Enter
+  or leaving the field puts it back. Plain summaries escape HTML characters on serialization.
 - **Menus** `/`, `[[` and `#` are TipTap suggestions drawn by one React menu. `[[` also offers the typed
   title when no page has it (the page is made on click, as in the preview).
 - **Selection bar** (bold, italic, strikethrough, code, link), **table bar** (row, column, delete) and a

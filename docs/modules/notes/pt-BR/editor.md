@@ -142,10 +142,16 @@ schema e as regras de markdown; o componente só acrescenta as views.
 - **Nós nossos**: o **wikilink** é um nó só (`[[alvo|alias]]`, `![[alvo]]`), desenhado como no preview e
   clicável — abre a page ou cria a que falta. A **imagem** guarda largura, alinhamento e legenda no texto
   alternativo, como sempre; selecionada, mostra botões de alinhamento que reescrevem esse texto.
-- **Bloco cru**: o que o editor não edita como bloco — callout, `<details>` (inteiro, atravessando as
-  linhas em branco) e HTML de bloco (`<iframe>`, `<img>` escrito à mão) — fica guardado **como estava** e
-  é desenhado pelo próprio `MarkdownPreview`. Duplo clique, ou o botão no canto, abre o markdown dele;
-  Esc, Ctrl+Enter ou sair do campo devolve. `/recolher` e os callouts do `/` criam um bloco cru já aberto.
+- **Callouts e blocos recolhíveis**: `lib/visualBlocks.ts` define nós nativos com campo de título e
+  corpo editado diretamente no mesmo editor (formatação, listas, tabelas, links, mídia e blocos
+  aninhados). O título salva a cada alteração; Enter/Seta para baixo entra no corpo, Ctrl/Cmd+Enter
+  sai do bloco, e desfazer/refazer inclui alterações do título. A seta recolhe os blocos que suportam
+  isso e salva o estado aberto (`[!tipo]+`/`[!tipo]-` ou `<details open>`). `/recolher` e os comandos de
+  callout focam o título novo. O corpo continua markdown; não há mudança de backend ou schema.
+- **Bloco cru**: HTML de bloco não suportado (`<iframe>`, `<img>` escrito à mão), tipos desconhecidos
+  de callout e `<details>` personalizados (atributos extras ou HTML no resumo) ficam **intocados**,
+  desenhados pelo `MarkdownPreview`. Duplo clique ou o botão no canto abre o código-fonte; Esc,
+  Ctrl+Enter ou sair do campo devolve. Resumos simples escapam caracteres HTML ao serializar.
 - **Menus** `/`, `[[` e `#` são sugestões do TipTap desenhadas por um menu React só. O `[[` oferece
   também o título digitado quando nenhuma page tem esse nome (a page nasce no clique, como no preview).
 - **Barra da seleção** (negrito, itálico, tachado, código, link), **barra da tabela** (linha, coluna,

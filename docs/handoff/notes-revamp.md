@@ -5,11 +5,16 @@ de onde parou sem ter a conversa. Tudo aqui é estado e decisão; o *porquê* t�
 docs do módulo, linkados ao longo.
 
 **Atualização da continuação:** o usuário confirmou nesta conversa que a N6 já foi testada e autorizou
-o versionamento. Histórico implementado, ainda sem commit: todos os saves com alterações preservados,
+o versionamento. Histórico implementado e commitado em `706766d`: todos os saves com alterações preservados,
 snapshots completos, sem expiração, agrupamento só visual, diff entre qualquer par e restauração como
 nova versão. Ver [Histórico de versões](../modules/notes/pt-BR/version-history.md). `history_number`
 entrou no CREATE original da page, seguindo a convenção pré-1.0; o banco local não foi recriado.
 As pendências de N6 descritas abaixo são o registro da sessão anterior, já superado por esse retorno.
+
+**Continuação — blocos nativos:** callouts conhecidos e `<details>` simples agora têm título e corpo
+editáveis no visual, inclusive blocos aninhados. A seta salva o estado aberto; Enter no título entra
+no corpo e Ctrl/Cmd+Enter sai do bloco. HTML personalizado continua cru. Ver a seção 9 de
+[Editor](../modules/notes/pt-BR/editor.md).
 
 ---
 

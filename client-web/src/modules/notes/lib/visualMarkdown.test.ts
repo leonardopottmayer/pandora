@@ -41,9 +41,86 @@ describe('visual editor markdown', () => {
     expect(roundTrip(out)).toBe(out)
   })
 
-  it('keeps what follows a raw block as editable blocks', () => {
+  it('keeps what follows a callout as separate editable blocks', () => {
     const json = manager.parse('> [!note] N\n> x\n\nafter')
-    expect(json.content?.map((node) => node.type)).toEqual(['rawBlock', 'paragraph'])
+    expect(json.content?.map((node) => node.type)).toEqual(['callout', 'paragraph'])
+  })
+
+  it('parses a rich callout body as editable nodes, including nested callouts', () => {
+    const json = manager.parse('> [!tip]+ Title\n> **bold** [[Page]]\n>\n> - [ ] task\n>\n> > [!note] Inside\n> > nested')
+    expect(json.content?.[0]).toMatchObject({
+      type: 'callout', attrs: { calloutType: 'tip', title: 'Title', fold: '+' },
+      content: [
+        { type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }] }, { type: 'text' }, { type: 'wikilink' }] },
+        { type: 'taskList' },
+        { type: 'callout', attrs: { title: 'Inside' } },
+      ],
+    })
+    const md = serializeMarkdown(manager, json)
+    expect(roundTrip(md)).toBe(md)
+  })
+
+  it.each([
+    '> [!note]',
+    '> [!tip]+ Title\n> a\n>\n> b',
+    '<details open>\n<summary>A &amp; B &lt; C</summary>\n\ntext\n\n</details>',
+    '<details>\n<summary>Code</summary>\n\n```html\n</details>\n```\n\nafter code\n\n</details>',
+    '<details>\n<summary>Inline</summary>\n\nUse `</details>` here.\n\n</details>',
+    '<details>\n<summary>Outer</summary>\n\n> [!info] Inner\n> body\n\n</details>',
+  ])('preserves editable block syntax: %s', (md) => {
+    expect(roundTrip(md)).toBe(md)
+  })
+
+  it('accepts a longer code fence without closing details at a tag inside the code', () => {
+    const json = manager.parse('<details>\n<summary>Code</summary>\n\n```html\n</details>\n`````\n\nafter code\n\n</details>')
+    expect(json.content?.[0]).toMatchObject({
+      type: 'details',
+      content: [
+        { type: 'codeBlock', content: [{ type: 'text', text: '</details>' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'after code' }] },
+      ],
+    })
+    const md = serializeMarkdown(manager, json)
+    expect(roundTrip(md)).toBe(md)
+  })
+
+  it.each([
+    '> [!unknown] Custom\n> body',
+    '<details class="custom">\n<summary>S</summary>\n\nbody\n\n</details>',
+    '<details>\n<summary><strong>Rich summary</strong></summary>\n\nbody\n\n</details>',
+  ])('keeps unsupported blocks verbatim: %s', (md) => {
+    expect(manager.parse(md).content?.[0].type).toBe('rawBlock')
+    expect(roundTrip(md)).toBe(md)
+  })
+
+  it('keeps empty bodies valid and supports typing, undo and leaving a block', () => {
+    const editor = new Editor({ extensions: visualExtensions(), content: manager.parse('> [!note]') })
+    editor.commands.setTextSelection(2)
+    editor.commands.insertContent('body')
+    expect(serializeMarkdown(manager, editor.getJSON())).toBe('> [!note]\n> body')
+    editor.commands.keyboardShortcut('Mod-Enter')
+    expect(editor.getJSON().content?.map((node) => node.type)).toEqual(['callout', 'paragraph'])
+    editor.commands.undo()
+    expect(serializeMarkdown(manager, editor.getJSON())).toBe('> [!note]')
+    editor.destroy()
+  })
+
+  it.each([
+    '> [!warning]- Closed\n> **body**',
+    '<details open>\n<summary>A &amp; B</summary>\n\nbody\n\n</details>',
+  ])('keeps a block when copied and pasted as HTML: %s', (md) => {
+    const editor = new Editor({ extensions: visualExtensions(), content: manager.parse(md) })
+    editor.commands.setContent(editor.getHTML())
+    expect(serializeMarkdown(manager, editor.getJSON())).toBe(md)
+    editor.destroy()
+  })
+
+  it('keeps details pasted from another HTML renderer without our body wrapper', () => {
+    const html = '<details open=""><summary>Title</summary><p>Body</p></details>'
+    const editor = new Editor({ extensions: visualExtensions(), content: html })
+    expect(editor.getJSON().content?.[0]).toMatchObject({ type: 'rawBlock', attrs: { source: html } })
+    expect(serializeMarkdown(manager, editor.getJSON())).toBe(html)
+    editor.destroy()
   })
 
   it('keeps two lists in a row apart, which markdown would merge into one', () => {

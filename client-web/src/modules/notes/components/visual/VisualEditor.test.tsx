@@ -11,6 +11,7 @@ vi.mock('../../services/media.service', () => ({
   downloadMedia: vi.fn(async () => {}),
   lookupMedia: vi.fn(async () => []),
 }))
+vi.mock('../../hooks/useSpaces', () => ({ useSpaces: () => ({ data: [] }) }))
 
 const PATH = '/api/v1/notes/media/aaaaaaaa-0000-0000-0000-000000000001'
 const page = { id: 'p1', spaceId: 's1', parentId: null, title: 'Roadmap', slug: 'roadmap', icon: null } as PageSummaryDto
@@ -49,7 +50,9 @@ describe('VisualEditor', () => {
     expect(screen.getByText('Roadmap')).toHaveClass('notes-wikilink')
     expect(screen.getByText('Nada')).toHaveClass('notes-wikilink-missing')
     await waitFor(() => expect(container.querySelector('.notes-figure-right img')?.getAttribute('src')).toBe('blob:fake'))
-    expect(container.querySelector('.notes-raw-block .notes-callout-tip')).not.toBeNull()
+    expect(container.querySelector('.notes-native-block.notes-callout-tip')).not.toBeNull()
+    expect(screen.getByRole('textbox', { name: 'Callout title' })).toHaveValue('Dica')
+    expect(container.querySelector('.notes-raw-source')).toBeNull()
   })
 
   it('opens the page a wikilink points at, or creates the missing one', async () => {
@@ -62,16 +65,57 @@ describe('VisualEditor', () => {
   })
 
   it('writes a raw block back as markdown once its source is edited', async () => {
-    const { container, props } = renderEditor('> [!note] Antes\n> x')
+    const { container, props } = renderEditor('<div>Antes</div>')
 
     await waitFor(() => expect(container.querySelector('.notes-raw-edit')).not.toBeNull())
     await userEvent.click(container.querySelector('.notes-raw-edit')!)
     const source = container.querySelector<HTMLTextAreaElement>('.notes-raw-source')!
-    fireEvent.change(source, { target: { value: '> [!note] Depois\n' } })
+    fireEvent.change(source, { target: { value: '<div>Depois</div>\n' } })
     // React's onBlur listens to focusout.
     fireEvent.focusOut(source)
 
-    await waitFor(() => expect(props.onChange).toHaveBeenLastCalledWith('> [!note] Depois'))
+    await waitFor(() => expect(props.onChange).toHaveBeenLastCalledWith('<div>Depois</div>'))
+  })
+
+  it('saves the title immediately while preserving the formatted editable body', async () => {
+    const { container, props } = renderEditor('> [!note] Antes\n> **body**')
+    const title = await screen.findByRole('textbox', { name: 'Callout title' })
+    fireEvent.change(title, { target: { value: 'Depois' } })
+    await waitFor(() => expect(props.onChange).toHaveBeenLastCalledWith('> [!note] Depois\n> **body**'))
+    expect(container.querySelector('.notes-native-body strong')).toHaveTextContent('body')
+    expect(container.querySelector('.notes-raw-source')).toBeNull()
+  })
+
+  it('undoes and redoes title changes through the editor history', async () => {
+    const { props } = renderEditor('> [!note] Antes\n> body')
+    const title = await screen.findByRole('textbox', { name: 'Callout title' })
+    fireEvent.change(title, { target: { value: 'Depois' } })
+    await waitFor(() => expect(title).toHaveValue('Depois'))
+    fireEvent.keyDown(title, { key: 'z', ctrlKey: true })
+    await waitFor(() => expect(title).toHaveValue('Antes'))
+    expect(props.onChange).toHaveBeenLastCalledWith('> [!note] Antes\n> body')
+    fireEvent.keyDown(title, { key: 'y', ctrlKey: true })
+    await waitFor(() => expect(title).toHaveValue('Depois'))
+    expect(props.onChange).toHaveBeenLastCalledWith('> [!note] Depois\n> body')
+  })
+
+  it.each([
+    ['> [!tip]- Title\n> body', '> [!tip]+ Title\n> body'],
+    ['<details>\n<summary>Title</summary>\n\nbody\n\n</details>', '<details open>\n<summary>Title</summary>\n\nbody\n\n</details>'],
+  ])('expands and collapses without discarding the body: %s', async (closed, open) => {
+    const { container, props } = renderEditor(closed)
+    await userEvent.click(await screen.findByRole('button', { name: 'Expand block' }))
+    await waitFor(() => expect(props.onChange).toHaveBeenLastCalledWith(open))
+    expect(container.querySelector('.notes-native-block')).toHaveAttribute('data-collapsed', 'false')
+    await userEvent.click(screen.getByRole('button', { name: 'Collapse block' }))
+    await waitFor(() => expect(props.onChange).toHaveBeenLastCalledWith(closed))
+    expect(container.querySelector('.notes-native-body')).toHaveTextContent('body')
+  })
+
+  it('does not save when opening native blocks', async () => {
+    const { props } = renderEditor('> [!note] Title\n> body\n\n<details>\n<summary>S</summary>\n\nx\n\n</details>')
+    await screen.findByRole('textbox', { name: 'Callout title' })
+    expect(props.onChange).not.toHaveBeenCalled()
   })
 
   it('does not rewrite a page that was only opened', async () => {
