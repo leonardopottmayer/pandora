@@ -1,12 +1,17 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { Card, Empty, Flex, Select, Spin, Typography } from 'antd'
+import { Button, Card, Empty, Flex, Grid, Select, Spin, Switch, Typography } from 'antd'
+import { useAuth } from '@/modules/identity/context/auth-context'
 import { NotesSidebar } from '../components/NotesSidebar'
 import { GraphView } from '../components/GraphView'
 import { SearchPalette } from '../components/SearchPalette'
 import { useGraph } from '../hooks/usePages'
 import { useSpaces } from '../hooks/useSpaces'
+import { useTags } from '../hooks/useTags'
+import { useGraphPreferences } from '../hooks/useGraphPreferences'
+import { GraphGroupsDrawer } from '../components/GraphGroupsDrawer'
+import { TagFilter } from '../components/TagFilter'
 
 const SIDEBAR_WIDTH = 280
 
@@ -14,6 +19,11 @@ const SIDEBAR_WIDTH = 280
 export function NotesGraphPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const screens = Grid.useBreakpoint()
+  const { preferences, update } = useGraphPreferences(user?.id ?? null)
+  const { tags } = useTags()
+  const [groupsOpen, setGroupsOpen] = useState(false)
   const [includeArchived, setIncludeArchived] = useState(false)
   // The sidebar here is the same one the editor page shows, search button included.
   const [searchOpen, setSearchOpen] = useState(false)
@@ -30,50 +40,77 @@ export function NotesGraphPage() {
   }
 
   return (
-    <Flex gap={16} align="stretch" style={{ height: 'calc(100vh - 112px)' }}>
+    <Flex gap={16} align="stretch" style={{ height: 'calc(100vh - 112px)', minWidth: 0 }}>
       <SearchPalette open={searchOpen} onOpenChange={setSearchOpen} onSelect={openPage} spaceId={spaceId} />
-
-      <Card
-        styles={{ body: { padding: 12, height: '100%', overflow: 'hidden' } }}
-        style={{ width: SIDEBAR_WIDTH, flexShrink: 0, height: '100%' }}
-      >
-        <NotesSidebar
-          spaceId={spaceId}
-          onSpaceChange={setSpaceId}
-          selectedId={null}
-          onSelect={openPage}
-          includeArchived={includeArchived}
-          onToggleArchived={setIncludeArchived}
-          tagIds={tagIds}
-          onTagIdsChange={setTagIds}
-          onSearch={() => setSearchOpen(true)}
+      {groupsOpen && (
+        <GraphGroupsDrawer
+          families={preferences.families}
+          tags={tags}
+          onClose={() => setGroupsOpen(false)}
+          onSave={(families) => update({ ...preferences, families })}
         />
-      </Card>
+      )}
+
+      {screens.lg && (
+        <Card
+          styles={{ body: { padding: 12, height: '100%', overflow: 'hidden' } }}
+          style={{ width: SIDEBAR_WIDTH, flexShrink: 0, height: '100%' }}
+        >
+          <NotesSidebar
+            spaceId={spaceId}
+            onSpaceChange={setSpaceId}
+            selectedId={null}
+            onSelect={openPage}
+            includeArchived={includeArchived}
+            onToggleArchived={setIncludeArchived}
+            tagIds={tagIds}
+            onTagIdsChange={setTagIds}
+            onSearch={() => setSearchOpen(true)}
+          />
+        </Card>
+      )}
 
       <Card
-        title={<Typography.Text strong>{t('notes.graph')}</Typography.Text>}
-        extra={
-          <Select
-            size="small"
-            className="min-w-44"
-            value={spaceId ?? ''}
-            onChange={(value) => setSpaceId(value || null)}
-            aria-label={t('notes.spaces.title')}
-            options={[
-              { value: '', label: t('notes.spaces.all') },
-              ...spaces.map((candidate) => ({ value: candidate.id, label: candidate.name })),
-            ]}
-          />
+        title={
+          <Flex wrap gap={8} align="center" style={{ padding: '10px 0' }}>
+            <Typography.Text strong>{t('notes.graph')}</Typography.Text>
+            <label className="flex items-center gap-2">
+              <Switch
+                size="small"
+                checked={preferences.showGroups}
+                aria-label={t('notes.graphGroups.show')}
+                onChange={(showGroups) => update({ ...preferences, showGroups })}
+              />
+              <Typography.Text>{t('notes.graphGroups.show')}</Typography.Text>
+            </label>
+            <Button size="small" onClick={() => setGroupsOpen(true)}>{t('notes.graphGroups.configure')}</Button>
+            {!screens.lg && (
+              <div style={{ minWidth: 160, flex: 1 }}>
+                <TagFilter value={tagIds} onChange={setTagIds} />
+              </div>
+            )}
+            <Select
+              size="small"
+              className="min-w-44"
+              value={spaceId ?? ''}
+              onChange={(value) => setSpaceId(value || null)}
+              aria-label={t('notes.spaces.title')}
+              options={[
+                { value: '', label: t('notes.spaces.all') },
+                ...spaces.map((candidate) => ({ value: candidate.id, label: candidate.name })),
+              ]}
+            />
+          </Flex>
         }
-        styles={{ body: { padding: 0, height: 'calc(100% - 56px)' } }}
-        style={{ flex: 1, height: '100%', overflow: 'hidden' }}
+        styles={{ body: { padding: 0, flex: 1, minHeight: 0 } }}
+        style={{ flex: 1, minWidth: 0, height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
       >
         {isLoading ? (
           <Flex align="center" justify="center" style={{ height: '100%' }}>
             <Spin />
           </Flex>
         ) : graph && graph.nodes.length > 0 ? (
-          <GraphView graph={graph} onSelect={openPage} />
+          <GraphView graph={graph} onSelect={openPage} families={preferences.showGroups ? preferences.families : undefined} />
         ) : (
           <Flex align="center" justify="center" style={{ height: '100%' }}>
             <Empty description={tagIds.length > 0 ? t('notes.tagFilterEmpty') : t('notes.graphEmpty')} />

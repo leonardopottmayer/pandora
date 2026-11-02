@@ -28,6 +28,7 @@ left behind, not the phase log.
 | **Search** | Generated `tsvector` + GIN, `simple` configuration, safe prefix `tsquery`, title priority and `ts_rank_cd` relevance with stable ties, filters before the 20-result cap, 160-char plain-text excerpt with safe title/excerpt highlighting, Ctrl+K palette and sidebar button. |
 | **Graph** | Global and local graph from one query, in-memory undirected BFS with depth clamped 1..5, backend-computed degree, broken edges filtered out, `react-force-graph-2d` canvas with hover highlighting and zoom-gated labels. |
 | **Tags** | `TagParser` with code stripping, `TagName` normalization, tag creation from the text, diff-based edges, orphan sweep preserving colored tags, hex color validation, intersecting filters on the sidebar / search / graph, chips in the preview (`nte005`, `nte006`). |
+| **Graph families** | Named/color-coded regions by chosen tags, ordered priority without duplicate pages, counts and family framing. Global graph switch off by default; mode and configuration remembered per account/browser. See [Graph View](graph-view.md#6-tag-families-and-thematic-regions). |
 | **Frontend** | React module (`client-web/src/modules/notes`) covering all of the above, i18n EN + PT-BR, unit tests over every `lib/` module. |
 | **Tests** | Domain unit tests (`Modules.Notes.Tests`: page, hierarchy, graph, search, slugger, tag name, tag parser, wikilink parser) + integration tests (`IntegrationTests/Modules/Notes`: pages, attachments, backlinks, search, graph, tags). |
 
@@ -37,7 +38,6 @@ left behind, not the phase log.
 |---|---|
 | **Tag filters in the URL** | Not implemented. Filters are component state, so "the pages with #x" is not a shareable link. The place would be a search param on `NotesPage`. |
 | **Archived toggle on the graph** | Not implemented. `NotesGraphPage`'s `includeArchived` only narrows the sidebar; the graph always includes archived pages (flagged). |
-| **Graph families / thematic regions** | Idea recorded on 2026-11-02: labelled regions grouping related pages, such as Work. Membership (spaces, tags, manual or inferred) and visual treatment remain open. See [Graph View](graph-view.md#6-idea-thematic-families-and-regions). |
 | **Column alignment from the UI** | Deliberately out. The place would be the separator line in `lib/markdownTables.ts`. |
 | **Bucket storage backend and video** | Only the abstraction exists. `storage_backend` + `storage_key` on each media row mean plugging a bucket in needs no migration; video also needs ranged downloads and a poster rendition. See [Media Library](media-library.md#3-kinds-and-what-is-ready-for-video). |
 | **Version history** | Implemented — see [Version history](version-history.md). |

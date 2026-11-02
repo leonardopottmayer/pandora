@@ -109,7 +109,7 @@ cliente busca o blob e entrega um object URL. Ver [Biblioteca de mídia](media-l
 | `PageSearchResultDto` | `Id, SpaceId, Title, Slug, Icon, IsArchived, Excerpt` |
 | `BacklinkDto` | `PageId, Title, Slug, Icon, IsArchived, Kind` |
 | `PageGraphDto` | `Nodes[]`, `Edges[]` |
-| `GraphNodeDto` | `Id, Title, Slug, Icon, IsArchived, Degree` |
+| `GraphNodeDto` | `Id, Title, Slug, Icon, IsArchived, Degree, TagIds[]` |
 | `GraphEdgeDto` | `SourceId, TargetId, Kind` |
 | `MediaItemDto` | `Id, FolderId, Kind, Name, OriginalFileName, ContentType, SizeBytes, Width, Height, Url, ThumbnailUrl, UsageCount, IsDeleted, CreatedAt` |
 | `MediaUsageDto` | `PageId, SpaceId, Title, Icon, IsArchived` |

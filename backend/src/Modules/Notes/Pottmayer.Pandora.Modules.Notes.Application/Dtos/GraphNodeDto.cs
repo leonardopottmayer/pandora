@@ -11,4 +11,5 @@ public sealed record GraphNodeDto(
     string Slug,
     string? Icon,
     bool IsArchived,
-    int Degree);
+    int Degree,
+    IReadOnlyList<Guid> TagIds);

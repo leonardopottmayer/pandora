@@ -7,6 +7,7 @@ export interface ForceNode {
   icon: string | null
   isArchived: boolean
   degree: number
+  tagIds: string[]
 }
 
 /** An edge as the force simulation wants it — endpoints named `source`/`target`. */
@@ -36,6 +37,7 @@ export function toForceData(graph: PageGraphDto | undefined): ForceData {
       icon: node.icon,
       isArchived: node.isArchived,
       degree: node.degree,
+      tagIds: [...(node.tagIds ?? [])],
     })),
     links: graph.edges.map((edge) => ({
       source: edge.sourceId,

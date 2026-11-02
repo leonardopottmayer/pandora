@@ -170,6 +170,21 @@ public sealed class GraphTests : IAsyncLifetime
             HttpStatusCode.NotFound, (await _client.GetAsync($"{Url}/{page}/graph")).StatusCode);
     }
 
+    [Fact]
+    public async Task Graph_nodes_carry_their_tags_for_families_without_duplicating_pages()
+    {
+        await AuthAsync("graph-families");
+        var tagged = await CreateAsync("Both", "#work #travel");
+        var plain = await CreateAsync("Plain", "[[Both]]");
+        var graph = await GraphAsync();
+        Assert.Equal(2, graph.Nodes.Count);
+        Assert.Equal(2, graph.Nodes.Single(node => node.Id == tagged).TagIds.Count);
+        Assert.Empty(graph.Nodes.Single(node => node.Id == plain).TagIds);
+        var local = await GraphAsync($"{Url}/{plain}/graph?depth=1");
+        Assert.Equal(graph.Nodes.Single(node => node.Id == tagged).TagIds,
+            local.Nodes.Single(node => node.Id == tagged).TagIds);
+    }
+
     private Task AuthAsync(string username) =>
         IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, $"{username}@example.com", username);
 
@@ -191,7 +206,7 @@ public sealed class GraphTests : IAsyncLifetime
         IReadOnlyList<NodeDto> Nodes, IReadOnlyList<EdgeDto> Edges);
 
     private sealed record NodeDto(
-        Guid Id, string Title, string Slug, string? Icon, bool IsArchived, int Degree);
+        Guid Id, string Title, string Slug, string? Icon, bool IsArchived, int Degree, IReadOnlyList<Guid> TagIds);
 
     private sealed record EdgeDto(Guid SourceId, Guid TargetId, string Kind);
 }

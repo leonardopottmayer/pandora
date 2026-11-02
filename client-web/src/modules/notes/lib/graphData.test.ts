@@ -3,7 +3,7 @@ import { buildAdjacency, endpointId, nodeLabel, toForceData } from './graphData'
 import type { GraphNodeDto, PageGraphDto } from '../models'
 
 function node(id: string, degree = 0): GraphNodeDto {
-  return { id, title: id.toUpperCase(), slug: id, icon: null, isArchived: false, degree }
+  return { id, title: id.toUpperCase(), slug: id, icon: null, isArchived: false, degree, tagIds: [] }
 }
 
 const graph: PageGraphDto = {
@@ -28,6 +28,7 @@ describe('toForceData', () => {
     const { nodes } = toForceData(graph)
 
     expect(nodes[0]).not.toBe(graph.nodes[0])
+    expect(nodes[0].tagIds).not.toBe(graph.nodes[0].tagIds)
     expect(nodes[0].title).toBe('A')
   })
 

@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { theme } from 'antd'
-import ForceGraph2D from 'react-force-graph-2d'
-import { buildAdjacency, endpointId, nodeLabel, toForceData } from '../lib/graphData'
+import { useTranslation } from 'react-i18next'
+import { Button, Flex, Typography, theme } from 'antd'
+import ForceGraph2D, { type ForceGraphMethods } from 'react-force-graph-2d'
+import { buildAdjacency, endpointId, nodeLabel, toForceData, type ForceLink, type ForceNode } from '../lib/graphData'
+import { familyForce, familyForNode, type GraphFamily } from '../lib/graphGroups'
+import { drawGraphRegions } from '../lib/graphRegions'
 import type { PageGraphDto } from '../models'
 
 interface GraphViewProps {
@@ -10,7 +13,11 @@ interface GraphViewProps {
   currentId?: string | null
   /** Clicking a node opens that page. */
   onSelect: (id: string) => void
+  /** Absent is the original free graph; an empty array is grouped mode without configured families. */
+  families?: GraphFamily[]
 }
+
+const NO_FAMILIES: GraphFamily[] = []
 
 /**
  * The wiki graph on a canvas (d3-force under the hood). Nodes are pages sized by how many edges
@@ -20,8 +27,10 @@ interface GraphViewProps {
  * The component fills whatever box it is given — `react-force-graph` needs pixel dimensions, so the
  * container is measured rather than sized in CSS.
  */
-export function GraphView({ graph, currentId, onSelect }: GraphViewProps) {
+export function GraphView({ graph, currentId, onSelect, families }: GraphViewProps) {
+  const { t } = useTranslation()
   const { token } = theme.useToken()
+  const graphRef = useRef<ForceGraphMethods<ForceNode, ForceLink> | undefined>(undefined)
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
   const [hoveredId, setHoveredId] = useState<string | null>(null)
@@ -41,6 +50,33 @@ export function GraphView({ graph, currentId, onSelect }: GraphViewProps) {
   // doing this per render would leave the layout permanently reheating.
   const data = useMemo(() => toForceData(graph), [graph])
   const adjacency = useMemo(() => buildAdjacency(graph), [graph])
+  const activeFamilies = families ?? NO_FAMILIES
+  const membership = useMemo(() => new Map(data.nodes.map((node) =>
+    [node.id, familyForNode(node, activeFamilies)])), [data, activeFamilies])
+  const regions = useMemo(() => activeFamilies.map((family) => ({
+    family, nodes: data.nodes.filter((node) => membership.get(node.id)?.id === family.id),
+  })).filter((region) => region.nodes.length > 0), [activeFamilies, data, membership])
+  const hoveredNode = data.nodes.find((node) => node.id === hoveredId)
+  const hoveredFamilies = hoveredNode
+    ? activeFamilies.filter((family) => family.tagIds.some((id) => hoveredNode.tagIds.includes(id)))
+    : []
+
+  useEffect(() => {
+    const view = graphRef.current
+    if (!view || size.width === 0 || regions.length === 0) return
+    const linkForce = view.d3Force('link')
+    const originalStrength = linkForce?.strength()
+    // Cross-family links remain visible, but no longer pull different regions into the same knot.
+    linkForce?.strength((link: ForceLink) =>
+      membership.get(endpointId(link.source))?.id === membership.get(endpointId(link.target))?.id ? 0.5 : 0.025)
+    view.d3Force('families', familyForce(activeFamilies))
+    view.d3ReheatSimulation()
+    return () => {
+      view.d3Force('families', null)
+      if (originalStrength) linkForce?.strength(originalStrength)
+      view.d3ReheatSimulation()
+    }
+  }, [activeFamilies, membership, data, regions, size.width])
 
   /** With nothing hovered every node is "in focus"; hovering narrows it to the node and its neighbors. */
   function isInFocus(id: string) {
@@ -50,17 +86,26 @@ export function GraphView({ graph, currentId, onSelect }: GraphViewProps) {
 
   function nodeColor(id: string, isArchived: boolean) {
     if (id === currentId) return token.colorPrimary
-    return isArchived ? token.colorTextQuaternary : token.colorTextSecondary
+    return isArchived ? token.colorTextQuaternary : membership.get(id)?.color ?? token.colorTextSecondary
   }
 
   return (
-    <div ref={containerRef} style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
+    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
       {size.width > 0 && (
         <ForceGraph2D
+          ref={graphRef}
           width={size.width}
           height={size.height}
           graphData={data}
           backgroundColor="rgba(0,0,0,0)"
+          onRenderFramePre={(ctx, scale) => {
+            const view = graphRef.current
+            if (!view || regions.length === 0) return
+            drawGraphRegions(ctx, scale, regions, token.colorText, {
+              left: view.screen2GraphCoords(12, 0).x,
+              right: view.screen2GraphCoords(size.width - 12, 0).x,
+            })
+          }}
           nodeRelSize={4}
           // Degree is capped: one hub page should stand out, not swallow the canvas.
           nodeVal={(node) => 1 + Math.min(Number(node.degree) || 0, 12) * 0.6}
@@ -95,7 +140,33 @@ export function GraphView({ graph, currentId, onSelect }: GraphViewProps) {
               : token.colorTextQuaternary
           }
           cooldownTicks={100}
+          onEngineStop={() => {
+            if (regions.length > 0) graphRef.current?.zoomToFit(300, 55)
+          }}
         />
+      )}
+      {families && (
+        <div style={{ position: 'absolute', bottom: 12, left: 12, right: 12, pointerEvents: 'none' }}>
+          {families.length === 0 && <Typography.Text type="secondary">{t('notes.graphGroups.empty')}</Typography.Text>}
+          {hoveredId && (
+            <Typography.Paragraph style={{ marginBottom: 4 }}>
+              {hoveredFamilies.map((family) => family.name).join(' · ') || t('notes.graphGroups.ungrouped')}
+            </Typography.Paragraph>
+          )}
+          <Flex gap={6} wrap>
+            {regions.map(({ family, nodes }) => (
+              <Button
+                key={family.id}
+                size="small"
+                style={{ pointerEvents: 'auto', borderColor: family.color, maxWidth: '100%' }}
+                title={family.name}
+                onClick={() => graphRef.current?.zoomToFit(300, 40, (node) => membership.get(String(node.id))?.id === family.id)}
+              >
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{family.name} ({nodes.length})</span>
+              </Button>
+            ))}
+          </Flex>
+        </div>
       )}
     </div>
   )

@@ -190,6 +190,7 @@ export interface GraphNodeDto {
   icon: string | null
   isArchived: boolean
   degree: number
+  tagIds: string[]
 }
 
 /** One link between two pages. A page that both links and embeds another yields two edges. */

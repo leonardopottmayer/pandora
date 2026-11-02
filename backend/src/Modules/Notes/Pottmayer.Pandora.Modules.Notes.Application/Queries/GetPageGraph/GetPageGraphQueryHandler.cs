@@ -79,12 +79,17 @@ public sealed class GetPageGraphQueryHandler(IUnitOfWorkFactory factory)
                 degrees[edge.TargetPageId]++;
             }
 
+            var pageTags = await ctx.AcquireRepository<IPageTagRepository>()
+                .GetByPagesAsync([.. byId.Keys], token);
+            var tagsByPage = pageTags.ToLookup(row => row.PageId, row => row.TagId);
+
             IReadOnlyList<GraphNodeDto> nodes =
             [
                 .. byId.Values
                     .OrderBy(p => p.Title)
                     .Select(p => new GraphNodeDto(
-                        p.Id, p.Title, p.Slug, p.Icon, p.IsArchived, degrees[p.Id]))
+                        p.Id, p.Title, p.Slug, p.Icon, p.IsArchived, degrees[p.Id],
+                        [.. tagsByPage[p.Id].Order()]))
             ];
 
             IReadOnlyList<GraphEdgeDto> edgeDtos =

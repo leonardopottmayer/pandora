@@ -1045,6 +1045,23 @@
     "graphDepth": "Profundidade",
     "openGraph": "Abrir a visão em grafo",
     "graphEmpty": "Nenhuma página para desenhar ainda.",
+    "graphGroups": {
+      "show": "Mostrar grupos",
+      "configure": "Configurar famílias",
+      "hint": "Escolha as tags de cada família. Qualquer tag selecionada serve; a primeira família compatível tem prioridade. Use as setas para mudar a ordem. O agrupamento mantém as notas visíveis e suas conexões.",
+      "device": "As famílias e a escolha de visualização são lembradas para esta conta neste navegador.",
+      "empty": "Nenhuma família configurada ainda.",
+      "name": "Nome da família",
+      "tags": "Tags da família",
+      "color": "Cor de {{name}}",
+      "required": "Informe um nome e pelo menos uma tag para cada família.",
+      "missingTag": "Tag indisponível",
+      "up": "Aumentar prioridade",
+      "down": "Diminuir prioridade",
+      "remove": "Remover família",
+      "add": "Adicionar família",
+      "ungrouped": "Sem família"
+    },
     "tableSize": {
       "title": "Inserir tabela",
       "rows": "Linhas",

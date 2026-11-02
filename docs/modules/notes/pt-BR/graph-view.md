@@ -61,14 +61,29 @@ O grafo global **não tem toggle de arquivadas próprio**. O estado `includeArch
 desenhadas. Se começar a incomodar, o lugar é a `NotesGraphPage` mais um parâmetro em
 `GetPageGraphInput`. Ver [Status de implementação](implementation-status.md).
 
-## 6. Ideia: famílias e regiões temáticas
+## 6. Famílias por tags e regiões temáticas
 
-Registrada em 2026-11-02; ideia exploratória, ainda sem implementação ou algoritmo escolhido.
-Agrupar visualmente vértices relacionados em regiões com rótulos, por exemplo **Trabalho**, **Viagens**
-ou **Estudos**. Fundos suaves ou contornos poderiam indicar quais páginas pertencem ao mesmo conjunto,
-mantendo suas conexões visíveis.
+No **grafo global**, abra **Configurar famílias** para criar grupos com nome, cor e uma ou mais tags
+existentes. Qualquer tag selecionada serve. A primeira família compatível recebe a página; as setas
+mudam a prioridade. Cada página aparece uma vez; páginas sem família ficam fora das regiões. O hover
+mostra todas as famílias compatíveis, mesmo quando a prioridade define uma só região.
 
-As regiões poderiam vir de espaços/tags existentes, famílias definidas manualmente ou comunidades
-inferidas pelos links. Falta decidir como atribuir membros, se uma página pode participar de regiões
-sobrepostas e como rótulos e regiões se comportam no zoom e nos filtros. A intenção é reconhecer os
-temas do grafo de relance, além de enxergar páginas e conexões individuais.
+**Mostrar grupos** começa **desligado**. Ao ligar, aproxima as famílias em regiões com fundo suave,
+contorno arredondado e rótulo, mantendo os links reais entre famílias. A legenda mostra contagens
+visíveis; clicar numa família enquadra seus membros. Famílias vazias não desenham região. Os filtros
+de espaço/tags estreitam o grafo antes do agrupamento. Em telas pequenas, a barra quebra linhas e
+inclui o filtro de tags; rótulos ficam dentro da área visível.
+
+A flag e a configuração ordenada persistem **por conta neste navegador**, na chave
+`pandora.notes_graph.<userId>`, como o modo local de edição. Não sincronizam entre dispositivos.
+Armazenamento bloqueado mantém a escolha durante a visita atual. A edição usa rascunho: Salvar aplica
+e Cancelar descarta. Tags excluídas aparecem como indisponíveis e não correspondem a páginas.
+
+O backend acrescenta `TagIds` com uma leitura em lote das tags das páginas retornadas. `lib/graphGroups.ts`
+atribui famílias e fornece uma força de atração; `lib/graphRegions.ts` desenha atrás dos vértices/links
+reais. Desligar o agrupamento restaura a força original dos links. Vértices e arrays de tags do cache
+são copiados antes da simulação. Não há mudança de schema ou dependência nova. O grafo local da página
+mantém sua apresentação.
+
+Isso implementa por tags a ideia registrada em 2026-11-02. Comunidades automáticas e regiões
+sobrepostas continuam como ideias futuras.

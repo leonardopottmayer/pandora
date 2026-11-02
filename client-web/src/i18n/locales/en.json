@@ -1045,6 +1045,23 @@
     "graphDepth": "Depth",
     "openGraph": "Open the graph view",
     "graphEmpty": "No pages to draw yet.",
+    "graphGroups": {
+      "show": "Show groups",
+      "configure": "Configure families",
+      "hint": "Choose tags for each family. Any selected tag qualifies; the first matching family wins. Move families up or down to change priority. Grouping keeps all visible notes and their links.",
+      "device": "Families and the display choice are remembered for this account in this browser.",
+      "empty": "No families configured yet.",
+      "name": "Family name",
+      "tags": "Family tags",
+      "color": "Color of {{name}}",
+      "required": "Give each family a name and at least one tag.",
+      "missingTag": "Unavailable tag",
+      "up": "Higher priority",
+      "down": "Lower priority",
+      "remove": "Remove family",
+      "add": "Add family",
+      "ungrouped": "No family"
+    },
     "tableSize": {
       "title": "Insert table",
       "rows": "Rows",

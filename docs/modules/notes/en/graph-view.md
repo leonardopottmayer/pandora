@@ -62,13 +62,27 @@ The global graph has **no archived toggle of its own**. The `includeArchived` st
 always drawn. If it starts to bother, the place is `NotesGraphPage` plus a parameter on
 `GetPageGraphInput`. See [Implementation Status](implementation-status.md).
 
-## 6. Idea: thematic families and regions
+## 6. Tag families and thematic regions
 
-Recorded on 2026-11-02; an exploratory idea, with no implementation or chosen algorithm yet.
-Visually group related vertices into labelled regions, for example **Work**, **Travel** or **Study**.
-Soft backgrounds or outlines could show which pages belong together while keeping their links visible.
+On the **global graph**, open **Configure families** to add groups with a name, color and one or more
+existing tags. Any selected tag qualifies. The first matching family owns the page; arrows change
+priority. Each page appears once, and unmatched pages stay outside the regions. Hover shows all
+matching families, even when priority places the page in just one region.
 
-Possible sources are existing spaces/tags, manually defined families, or communities inferred from
-links. Still to decide: how membership is assigned, whether a page can belong to overlapping regions,
-and how labels and regions behave when zooming or filtering. The goal is to make the graph's themes
-recognizable at a glance, rather than only showing individual pages and connections.
+**Show groups** is **off by default**. Turning it on gathers families into regions with a faint fill,
+rounded outline and label, retaining real links between families. The legend shows visible counts;
+clicking a family frames its members. Empty families draw no region. Space/tag filters narrow the
+graph before grouping. Small screens use a wrapping toolbar with a tag filter; labels stay in the viewport.
+
+The flag and ordered family configuration persist **per account in this browser**, under
+`pandora.notes_graph.<userId>`, like the device-local editor mode. They do not sync across devices.
+Blocked storage leaves the choice active for the current visit. Family editing uses a draft: Save
+applies it and Cancel discards it. Deleted tags appear as unavailable and match no pages.
+
+The backend adds `TagIds` with one batch read of the returned pages' tags. `lib/graphGroups.ts` assigns
+membership and provides an anchor force; `lib/graphRegions.ts` draws behind real nodes/links. Turning
+grouping off restores the original link force. Cached nodes and tag arrays are copied before simulation.
+No schema change or new dependency is required. The local page graph keeps its original presentation.
+
+This implements the idea recorded on 2026-11-02 using tags. Automatic communities and overlapping
+regions remain future ideas.
