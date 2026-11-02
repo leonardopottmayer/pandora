@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import i18n from '@/i18n'
 import { server } from '@/test/msw/server'
@@ -51,7 +51,69 @@ describe('TasksListPage', () => {
     renderWithProviders(<TasksListPage />)
     expect(await screen.findByText('Write report')).toBeInTheDocument()
     // No due date → "No date" bucket.
-    expect(screen.getByText('No date')).toBeInTheDocument()
+    expect(screen.getByText('No date · 1')).toBeInTheDocument()
+  })
+
+  it('keeps a done task out of overdue, under the completed tasks', async () => {
+    mockLists()
+    server.use(
+      http.get(`${AGENDA_BASE}/tasks`, () =>
+        HttpResponse.json({
+          success: true,
+          data: [
+            task({ id: 'late', title: 'Pay the bill', dueAt: '2020-01-01T12:00:00Z' }),
+            task({ id: 'done', title: 'Old chore', dueAt: '2020-01-01T12:00:00Z', status: 'Done' }),
+          ],
+        }),
+      ),
+    )
+    renderWithProviders(<TasksListPage />)
+
+    expect(await screen.findByText('Overdue · 1')).toBeInTheDocument()
+    expect(screen.getByText('Completed · 1')).toBeInTheDocument()
+  })
+
+  it('adds a task to the default list from the quick add field', async () => {
+    mockLists()
+    const bodies: unknown[] = []
+    server.use(
+      http.get(`${AGENDA_BASE}/tasks`, () => HttpResponse.json({ success: true, data: [] })),
+      http.post(`${AGENDA_BASE}/tasks`, async ({ request }) => {
+        bodies.push(await request.json())
+        return HttpResponse.json({ success: true, data: task({}) })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<TasksListPage />)
+
+    const input = await screen.findByRole('textbox', { name: 'Add a task and press Enter' })
+    await waitFor(() => expect(input).toBeEnabled())
+    await user.type(input, 'Buy milk{Enter}')
+
+    await waitFor(() => expect(bodies).toEqual([expect.objectContaining({ listId: 'l1', title: 'Buy milk' })]))
+    await waitFor(() => expect(input).toHaveValue(''))
+  })
+
+  it('deletes from the menu after confirming', async () => {
+    mockLists()
+    let deleted = false
+    server.use(
+      http.get(`${AGENDA_BASE}/tasks`, () => HttpResponse.json({ success: true, data: [task({})] })),
+      http.delete(`${AGENDA_BASE}/tasks/task-1`, () => {
+        deleted = true
+        return HttpResponse.json({ success: true, data: null })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<TasksListPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'More actions for Write report' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete' }))
+    expect(deleted).toBe(false)
+
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }))
+    await waitFor(() => expect(deleted).toBe(true))
   })
 
   it('nests subtasks under their parent', async () => {

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { App, Button, Dropdown, Flex, Menu, Tag, Typography } from 'antd'
 import { EditOutlined, EllipsisOutlined, InboxOutlined, PlusOutlined } from '@ant-design/icons'
+import { SettingsSection } from '@/components/settings/SettingsSection'
 import { toErrorMessage } from '@/lib/api/envelope'
 import type { TaskListDto } from '../../models'
 import { useDeleteTaskList, useTaskLists, useUpdateTaskList } from '../../hooks/useTaskLists'
@@ -11,9 +12,19 @@ interface TaskListSidebarProps {
   /** Currently selected list id, or null for "all tasks". */
   selectedId: string | null
   onSelect: (id: string | null) => void
+  /** Open tasks per list id. */
+  openCounts: Map<string, number>
 }
 
-export function TaskListSidebar({ selectedId, onSelect }: TaskListSidebarProps) {
+function Count({ value }: { value: number | undefined }) {
+  return value ? (
+    <Typography.Text type="secondary" className="text-xs tabular-nums">
+      {value}
+    </Typography.Text>
+  ) : null
+}
+
+export function TaskListSidebar({ selectedId, onSelect, openCounts }: TaskListSidebarProps) {
   const { t } = useTranslation()
   const { message } = App.useApp()
   const { data } = useTaskLists()
@@ -55,18 +66,31 @@ export function TaskListSidebar({ selectedId, onSelect }: TaskListSidebarProps) 
 
   const activeLists = (data ?? []).filter((l) => !l.archivedAt)
 
+  const allCount = [...openCounts.values()].reduce((sum, n) => sum + n, 0)
+
   const items = [
-    { key: '__all__', label: t('agenda.taskLists.allTasks') },
+    {
+      key: '__all__',
+      label: (
+        <Flex justify="space-between" align="center" gap="small">
+          <span>{t('agenda.taskLists.allTasks')}</span>
+          <span className="pe-1">
+            <Count value={allCount} />
+          </span>
+        </Flex>
+      ),
+    },
     ...activeLists.map((l) => ({
       key: l.id,
       label: (
         <Flex justify="space-between" align="center" gap="small">
-          <span>
+          <span className="truncate">
             {l.name}
             {l.isDefault && (
               <Tag style={{ marginInlineStart: 8 }}>{t('agenda.taskLists.default')}</Tag>
             )}
           </span>
+          <Count value={openCounts.get(l.id)} />
           <Dropdown
             trigger={['click']}
             menu={{
@@ -106,25 +130,29 @@ export function TaskListSidebar({ selectedId, onSelect }: TaskListSidebarProps) 
   ]
 
   return (
-    <div>
-      <Flex justify="space-between" align="center" className="mb-2">
-        <Typography.Text strong>{t('agenda.taskLists.title')}</Typography.Text>
+    <SettingsSection
+      title={t('agenda.taskLists.title')}
+      extra={
         <Button
           size="small"
           type="text"
           icon={<PlusOutlined />}
+          title={t('agenda.taskLists.new')}
           aria-label={t('agenda.taskLists.new')}
           onClick={openCreate}
         />
-      </Flex>
+      }
+      bodyClassName="py-1"
+    >
       <Menu
         mode="inline"
         selectedKeys={[selectedId ?? '__all__']}
         items={items}
+        style={{ borderInlineEnd: 0, background: 'transparent' }}
         onClick={({ key }) => onSelect(key === '__all__' ? null : key)}
       />
 
       <TaskListFormModal open={modalOpen} list={editing} onClose={() => setModalOpen(false)} />
-    </div>
+    </SettingsSection>
   )
 }

@@ -1107,7 +1107,6 @@
       "complete": "Complete",
       "completed": "Task completed.",
       "reopen": "Reopen",
-      "reopened": "Task reopened.",
       "alerts": "Alerts",
       "deleteConfirm": "Delete this task?",
       "created": "Task created.",
@@ -1116,10 +1115,19 @@
       "saveError": "Could not save the task.",
       "deleteError": "Could not delete the task.",
       "empty": "No tasks here.",
+      "subtitle": "Group what needs doing in lists. Tasks are sorted by when they are due.",
+      "quickAdd": "Add a task and press Enter",
+      "addSubtask": "Add subtask",
+      "moreActions": "More actions for {{title}}",
+      "done": "Completed",
+      "allDone": "Nothing pending here.",
+      "recurring": "Repeats",
+      "hasNotes": "Has notes",
+      "subtasks": "Subtasks",
       "buckets": {
         "overdue": "Overdue",
         "today": "Today",
-        "week": "This week",
+        "week": "Next 7 days",
         "later": "Later",
         "none": "No date"
       }

@@ -42,6 +42,7 @@ export function TaskFormModal({
   const { message } = App.useApp()
   const { timeZone } = usePreferences()
   const [form] = Form.useForm<TaskFormValues>()
+  const dueHasTime = Form.useWatch('dueHasTime', form)
   const [rrule, setRrule] = useState<string | null>(null)
   const [wasOpen, setWasOpen] = useState(open)
   const isEdit = !!task
@@ -155,7 +156,7 @@ export function TaskFormModal({
 
         <Form.Item name="dueAt" label={t('agenda.tasks.dueAt')}>
           <DatePicker
-            showTime={form.getFieldValue('dueHasTime')}
+            showTime={dueHasTime ? { format: 'HH:mm' } : false}
             style={{ width: '100%' }}
           />
         </Form.Item>

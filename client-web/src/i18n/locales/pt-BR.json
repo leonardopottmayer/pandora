@@ -1107,7 +1107,6 @@
       "complete": "Concluir",
       "completed": "Tarefa concluída.",
       "reopen": "Reabrir",
-      "reopened": "Tarefa reaberta.",
       "alerts": "Alertas",
       "deleteConfirm": "Excluir esta tarefa?",
       "created": "Tarefa criada.",
@@ -1116,10 +1115,19 @@
       "saveError": "Não foi possível salvar a tarefa.",
       "deleteError": "Não foi possível excluir a tarefa.",
       "empty": "Nenhuma tarefa aqui.",
+      "subtitle": "Organize o que precisa ser feito em listas. As tarefas ficam agrupadas pelo prazo.",
+      "quickAdd": "Adicione uma tarefa e tecle Enter",
+      "addSubtask": "Adicionar subtarefa",
+      "moreActions": "Mais ações de {{title}}",
+      "done": "Concluídas",
+      "allDone": "Nada pendente aqui.",
+      "recurring": "Repete",
+      "hasNotes": "Tem notas",
+      "subtasks": "Subtarefas",
       "buckets": {
         "overdue": "Atrasadas",
         "today": "Hoje",
-        "week": "Esta semana",
+        "week": "Próximos 7 dias",
         "later": "Depois",
         "none": "Sem data"
       }
