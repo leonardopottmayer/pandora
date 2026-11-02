@@ -31,6 +31,7 @@ não o log das fases.
 | **Famílias no grafo** | Regiões com nome/cor por tags escolhidas, prioridade ordenada sem duplicar páginas, contagens e enquadramento por família. Flag global desligada por padrão; modo e configuração lembrados por conta/navegador. Ver [Visão em grafo](graph-view.md#6-famílias-por-tags-e-regiões-temáticas). |
 | **Famílias recolhidas no grafo** | Controles por visita substituem os membros por um resumo e agregam links externos por direção/tipo. A busca revela páginas escondidas automaticamente e o grafo original é preservado. Ver [Recolher famílias](graph-view.md#10-recolher-e-expandir-famílias). |
 | **Controles da câmera do grafo** | Botões acessíveis de aumentar/diminuir zoom e enquadrar tudo nos grafos global/local, inclusive no celular; enquadramento manual tem prioridade ao terminar a simulação. Ver [Controles da câmera](graph-view.md#11-controles-da-câmera). |
+| **Visibilidade do grafo** | Mostrar arquivadas controla sidebar e grafo global (desligado por padrão); Ocultar isoladas remove vértices sem links restantes. Busca, detalhes, contagens e enquadramento usam a mesma projeção filtrada, com graus recalculados. Escolhas por visita; sem alteração de API. Ver [Filtros de visibilidade](graph-view.md#5-filtros-de-visibilidade). |
 | **Inspeção no grafo** | Busca por título e seleção de vértices destacam a vizinhança e mostram um painel responsivo com tags, famílias e notas conectadas sem duplicação. A ação Abrir nota navega para o editor. Ver [Localizar uma nota](graph-view.md#7-localizar-uma-nota) e [Inspecionar uma nota](graph-view.md#9-inspecionar-uma-nota-sem-sair-do-grafo). |
 | **Frontend** | Módulo React (`client-web/src/modules/notes`) cobrindo tudo acima, i18n EN + PT-BR, testes unitários em todo módulo de `lib/`. |
 | **Testes** | Unitários de domínio (`Modules.Notes.Tests`: page, hierarquia, grafo, busca, slugger, tag name, tag parser, wikilink parser) + integração (`IntegrationTests/Modules/Notes`: pages, anexos, backlinks, busca, grafo, tags). |
@@ -40,8 +41,7 @@ não o log das fases.
 | Área | Status |
 |---|---|
 | **Filtros de tag na URL** | Não implementado. Os filtros são estado de componente, então "as pages com #x" não é um link compartilhável. O lugar seria um search param na `NotesPage`. |
-| **Ideias de navegação no grafo** | Filtros de visibilidade, visão geral das pontes entre famílias e, depois, persistência do layout/comunidades automáticas. Ver [Ideias para o grafo](graph-view.md#8-ideias-de-melhorias-2026-11-02). |
-| **Toggle de arquivadas no grafo** | Não implementado. O `includeArchived` da `NotesGraphPage` só afeta a sidebar; o grafo sempre inclui as arquivadas (com a flag). |
+| **Ideias de navegação no grafo** | Visão geral das pontes entre famílias e, depois, persistência do layout/comunidades automáticas. Ver [Ideias para o grafo](graph-view.md#8-ideias-de-melhorias-2026-11-02). |
 | **Alinhamento de coluna pela UI** | Deliberadamente fora. O lugar seria a linha separadora em `lib/markdownTables.ts`. |
 | **Backend de bucket e vídeo** | Só a abstração existe. `storage_backend` + `storage_key` em cada linha de mídia fazem com que plugar um bucket não exija migration; vídeo pede também download por pedaços e a versão de capa. Ver [Biblioteca de mídia](media-library.md#3-tipos-e-o-que-fica-pronto-para-vídeo). |
 | **Histórico de versões** | Implementado — ver [Histórico de versões](version-history.md). |

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, Empty, Flex, Grid, Select, Spin, Switch, Typography } from 'antd'
@@ -15,6 +15,7 @@ import { GraphDetailsPanel } from '../components/GraphDetailsPanel'
 import { TagFilter } from '../components/TagFilter'
 import { nodeLabel } from '../lib/graphData'
 import { familyForNode } from '../lib/graphGroups'
+import { graphVisibility } from '../lib/graphVisibility'
 
 const SIDEBAR_WIDTH = 280
 
@@ -28,6 +29,7 @@ export function NotesGraphPage() {
   const { tags } = useTags()
   const [groupsOpen, setGroupsOpen] = useState(false)
   const [includeArchived, setIncludeArchived] = useState(false)
+  const [hideIsolated, setHideIsolated] = useState(false)
   // The sidebar here is the same one the editor page shows, search button included.
   const [searchOpen, setSearchOpen] = useState(false)
   // One filter for both panes: picking a tag narrows the graph and the sidebar at once.
@@ -39,7 +41,11 @@ export function NotesGraphPage() {
   const [collapsedFamilyIds, setCollapsedFamilyIds] = useState<string[]>([])
   const { data: spaces = [] } = useSpaces()
 
-  const { data: graph, isLoading } = useGraph(tagIds, spaceId)
+  const { data: sourceGraph, isLoading } = useGraph(tagIds, spaceId)
+  const graph = useMemo(() => graphVisibility(sourceGraph, includeArchived, hideIsolated), [sourceGraph, includeArchived, hideIsolated])
+  let emptyDescription = t('notes.graphEmpty')
+  if (sourceGraph && sourceGraph.nodes.length > 0) emptyDescription = t('notes.graphVisibility.empty')
+  else if (tagIds.length > 0) emptyDescription = t('notes.tagFilterEmpty')
   const focusedId = graph?.nodes.some((node) => node.id === locatedId) ? locatedId : null
   const selectedNode = graph?.nodes.find((node) => node.id === focusedId)
 
@@ -61,6 +67,11 @@ export function NotesGraphPage() {
 
   function changeTags(ids: string[]) {
     setTagIds(ids)
+    inspectPage(null)
+  }
+
+  function changeArchived(value: boolean) {
+    setIncludeArchived(value)
     inspectPage(null)
   }
 
@@ -99,7 +110,7 @@ export function NotesGraphPage() {
             selectedId={null}
             onSelect={openPage}
             includeArchived={includeArchived}
-            onToggleArchived={setIncludeArchived}
+            onToggleArchived={changeArchived}
             tagIds={tagIds}
             onTagIdsChange={changeTags}
             onSearch={() => setSearchOpen(true)}
@@ -141,6 +152,27 @@ export function NotesGraphPage() {
               <Typography.Text>{t('notes.graphGroups.show')}</Typography.Text>
             </label>
             <Button size="small" onClick={() => setGroupsOpen(true)}>{t('notes.graphGroups.configure')}</Button>
+            {!screens.lg && <label className="flex items-center gap-2">
+              <Switch
+                size="small"
+                checked={includeArchived}
+                aria-label={t('notes.showArchived')}
+                onChange={changeArchived}
+              />
+              <Typography.Text>{t('notes.showArchived')}</Typography.Text>
+            </label>}
+            <label className="flex items-center gap-2">
+              <Switch
+                size="small"
+                checked={hideIsolated}
+                aria-label={t('notes.graphVisibility.hideIsolated')}
+                onChange={(value) => {
+                  setHideIsolated(value)
+                  inspectPage(null)
+                }}
+              />
+              <Typography.Text>{t('notes.graphVisibility.hideIsolated')}</Typography.Text>
+            </label>
             {!screens.lg && (
               <div style={{ minWidth: 160, flex: 1 }}>
                 <TagFilter value={tagIds} onChange={changeTags} />
@@ -177,7 +209,7 @@ export function NotesGraphPage() {
           />
         ) : (
           <Flex align="center" justify="center" style={{ height: '100%' }}>
-            <Empty description={tagIds.length > 0 ? t('notes.tagFilterEmpty') : t('notes.graphEmpty')} />
+            <Empty description={emptyDescription} />
           </Flex>
         )}
       </Card>

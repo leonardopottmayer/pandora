@@ -1061,6 +1061,10 @@
       "open": "Abrir nota",
       "close": "Fechar detalhes da nota"
     },
+    "graphVisibility": {
+      "hideIsolated": "Ocultar notas isoladas",
+      "empty": "Nenhuma nota corresponde aos filtros de visibilidade do grafo."
+    },
     "graphControls": {
       "label": "Navegação do grafo",
       "zoomIn": "Aumentar zoom",

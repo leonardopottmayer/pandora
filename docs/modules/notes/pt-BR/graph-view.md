@@ -31,9 +31,10 @@ aponta. É o que o grafo local do Obsidian mostra.
 - Aresta cujo alvo não resolve mais (page deletada) é **descartada na leitura**, igual ao painel de
   backlinks. Toda ponta de aresta em `Edges` tem garantia de estar em `Nodes`, então o frontend nunca
   desenha aresta para o nada.
-- **Pages arquivadas continuam no grafo**, com a flag: arquivar tira da sidebar, não desliga o link.
+- **Pages arquivadas continuam no payload da API**, com a flag; a tela global aplica sua escolha de
+  visibilidade localmente. O grafo local continua incluindo vizinhas arquivadas.
 - **O `Degree` vem calculado do backend**, contado **dentro do grafo devolvido** — é o que dimensiona o
-  nó no desenho, então tem que respeitar o mesmo corte do resto do payload.
+  nó no desenho. A tela global recalcula esse valor após os filtros de visibilidade.
 - Uma page que linka e embeda outra rende duas arestas, uma por tipo.
 - `tagIds` corta os nós **antes** do passeio pela vizinhança, então a profundidade é contada sobre o
   que sobrou.
@@ -54,12 +55,24 @@ aponta. É o que o grafo local do Obsidian mostra.
   — sem isso um grafo de qualquer tamanho vira borrão. Embed é desenhado tracejado.
 - Clicar num nó global abre os detalhes; o grafo local continua navegando diretamente para a página.
 
-## 5. Não implementado
+## 5. Filtros de visibilidade
 
-O grafo global **não tem toggle de arquivadas próprio**. O estado `includeArchived` da
-`NotesGraphPage` só afeta a sidebar; a query do grafo nunca o recebe, então as arquivadas são sempre
-desenhadas. Se começar a incomodar, o lugar é a `NotesGraphPage` mais um parâmetro em
-`GetPageGraphInput`. Ver [Status de implementação](implementation-status.md).
+O grafo global usa **Mostrar arquivadas** da sidebar no desktop; em telas pequenas, o mesmo controle
+fica na barra do grafo. Começa **desligado** e agora afeta a sidebar e o grafo. **Ocultar notas
+isoladas** fica na barra em todos os tamanhos de tela e começa **desligado**. As duas escolhas valem
+durante a visita atual, independentemente da preferência salva de Mostrar grupos.
+
+A visibilidade é aplicada após os filtros de espaço/tags da API e antes das famílias e recolhimentos.
+`lib/graphVisibility.ts` remove arquivadas e seus links quando solicitado, recalcula os graus e,
+opcionalmente, remove vértices sem ligações restantes. Uma nota ligada apenas a uma arquivada oculta
+pode ficar isolada. Links da nota para ela mesma contam como conexão, com grau dois, igual ao backend.
+Ocultar isoladas afeta o grafo, sem retirar páginas da sidebar.
+
+O localizador por título, os detalhes, as contagens das famílias, os resumos e o enquadramento usam
+esse mesmo grafo filtrado. Mudar qualquer switch limpa a seleção e fecha os detalhes. O resultado
+vazio explica os filtros de visibilidade; os controles continuam disponíveis para restaurar a visão.
+A busca textual compartilhada e o grafo local mantêm o comportamento anterior. É uma projeção local
+imutável, sem parâmetro de API, alteração de backend ou mudança nas notas e links salvos.
 
 ## 6. Famílias por tags e regiões temáticas
 
@@ -102,17 +115,16 @@ Mudar os filtros de espaço ou tags limpa a seleção e fecha os detalhes.
 
 ## 8. Ideias de melhorias (2026-11-02)
 
-São ideias, sem compromisso de implementação. Busca por título, detalhes, recolhimento de famílias e controles de navegação estão entregues.
+São ideias, sem compromisso de implementação. Busca por título, detalhes, recolhimento de famílias, controles de navegação e filtros de visibilidade estão entregues.
 
 - **Painel de detalhes (implementado):** ver o comportamento de inspeção abaixo.
 - **Recolher famílias (implementado):** ver a projeção visual abaixo.
 - **Controles de navegação (implementado):** ver os controles da câmera abaixo.
-- **Filtros de visibilidade:** ocultar arquivadas e vértices isolados separadamente; o toggle atual de
-  arquivadas afeta apenas a sidebar.
+- **Filtros de visibilidade (implementado):** ver a escolha compartilhada de arquivadas e o filtro de isoladas acima.
 - **Ligações entre famílias:** resumir pontes e contagens de links entre regiões temáticas.
 - **Depois:** fixar posições dos vértices, lembrar o enquadramento e explorar comunidades automáticas.
 
-Próxima prioridade sugerida: filtros de visibilidade para arquivadas e vértices isolados.
+Próxima prioridade sugerida: uma visão geral das pontes entre famílias.
 
 ## 9. Inspecionar uma nota sem sair do grafo
 

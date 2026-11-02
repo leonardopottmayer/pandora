@@ -1061,6 +1061,10 @@
       "open": "Open note",
       "close": "Close note details"
     },
+    "graphVisibility": {
+      "hideIsolated": "Hide isolated notes",
+      "empty": "No notes match the graph visibility filters."
+    },
     "graphControls": {
       "label": "Graph navigation",
       "zoomIn": "Zoom in",

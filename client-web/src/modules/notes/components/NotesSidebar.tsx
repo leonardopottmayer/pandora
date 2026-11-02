@@ -335,7 +335,7 @@ export function NotesSidebar({
       </div>
 
       <Flex align="center" gap={8} className="mt-2 px-2 pt-2" style={{ borderTop: '1px solid rgba(128,128,128,0.2)' }}>
-        <Switch size="small" checked={includeArchived} onChange={onToggleArchived} />
+        <Switch size="small" checked={includeArchived} onChange={onToggleArchived} aria-label={t('notes.showArchived')} />
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
           {t('notes.showArchived')}
         </Typography.Text>

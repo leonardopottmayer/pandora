@@ -69,6 +69,9 @@ inline upload, slash commands, callouts and table editing; wikilinks, embeds and
 colors and intersection filters on three surfaces; full-text search with a command palette; global
 and local graph views.
 
+The global graph also has shared archive visibility and a graph-only isolation filter; see
+[Visibility filters](graph-view.md#5-visibility-filters).
+
 ### Out of scope / future
 
 | Feature | Status |
@@ -76,7 +79,6 @@ and local graph views.
 | **Live block preview inside CodeMirror** | Not implemented. The editor stays raw markdown; rendering happens in the preview pane. Would be a phase of its own (widget decorations). |
 | **Inline rendering of `![[embeds]]`** | Deliberately out (decided 2026-11-02): a page is never drawn inside another; `![[x]]` stays a link. |
 | **Filters in the URL** | Not implemented. Tag filters are component state, so there is no shareable "pages with #x" link. |
-| **Hiding archived pages in the graph** | Not implemented. The archived toggle only narrows the sidebar; the graph always includes archived pages (flagged). |
 | **Column alignment from the UI** | Deliberately out. |
 | **Global tag rename** | Deliberately out — it would mean rewriting the markdown of every page that mentions it. |
 | **Nested-tag rollup** (`#projeto` including `#projeto/pandora`) | Out. The slash is kept as part of the tag's text, nothing more. |

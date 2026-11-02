@@ -27,8 +27,9 @@ vi.mock('../hooks/usePages', () => ({ useGraph: () => graphQuery() }))
 vi.mock('../components/NotesSidebar', () => ({ NotesSidebar: () => null }))
 vi.mock('../components/SearchPalette', () => ({ SearchPalette: () => null }))
 vi.mock('../components/TagFilter', () => ({ TagFilter: () => null }))
-vi.mock('../components/GraphView', () => ({ GraphView: ({ families, focusedId, onSelect, collapsedFamilyIds, onToggleFamily }: { families?: unknown[]; focusedId?: string; onSelect: (id: string) => void; collapsedFamilyIds: string[]; onToggleFamily: (id: string) => void }) =>
+vi.mock('../components/GraphView', () => ({ GraphView: ({ graph, families, focusedId, onSelect, collapsedFamilyIds, onToggleFamily }: { graph: PageGraphDto; families?: unknown[]; focusedId?: string; onSelect: (id: string) => void; collapsedFamilyIds: string[]; onToggleFamily: (id: string) => void }) =>
   <div>
+    <div data-testid="visible-nodes">{graph.nodes.map((node) => node.id).join(',')}</div>
     <div data-testid="graph-mode">{families ? 'grouped' : 'free'}</div>
     <div data-testid="focused-node">{focusedId}</div>
     <div data-testid="collapsed-families">{collapsedFamilyIds.join(',')}</div>
@@ -43,6 +44,41 @@ beforeEach(() => {
 })
 
 describe('NotesGraphPage', () => {
+  it('filters graph nodes and title lookup together and clears details when visibility changes', async () => {
+    const user = userEvent.setup()
+    graphQuery.mockReturnValue({ data: { ...fixture, nodes: [
+      ...fixture.nodes,
+      { ...fixture.nodes[0], id: 'old', title: 'Old note', isArchived: true },
+      { ...fixture.nodes[0], id: 'solo', title: 'Isolated note' },
+    ] }, isLoading: false })
+    renderWithProviders(<NotesGraphPage />)
+    expect(screen.getByTestId('visible-nodes')).toHaveTextContent('p1,p2,solo')
+    expect(screen.getByRole('switch', { name: 'Show archived' })).not.toBeChecked()
+    await user.click(screen.getByRole('switch', { name: 'Show archived' }))
+    expect(screen.getByTestId('visible-nodes')).toHaveTextContent('p1,p2,old,solo')
+    await user.type(screen.getByRole('combobox', { name: 'Locate a note in the graph' }), 'Old note')
+    await user.click(await screen.findByText('Old note'))
+    expect(screen.getByTestId('focused-node')).toHaveTextContent('old')
+    await user.click(screen.getByRole('switch', { name: 'Show archived' }))
+    expect(screen.getByTestId('focused-node')).toBeEmptyDOMElement()
+    expect(screen.queryByText('Note details')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('switch', { name: 'Hide isolated notes' }))
+    expect(screen.getByTestId('visible-nodes')).toHaveTextContent(/^p1,p2$/)
+    await user.type(screen.getByRole('combobox', { name: 'Locate a note in the graph' }), 'Old note')
+    expect(await screen.findByText('No matching notes in this graph.')).toBeInTheDocument()
+  })
+
+  it('shows a visibility-specific empty result and lets the user restore isolated pages', async () => {
+    const user = userEvent.setup()
+    graphQuery.mockReturnValue({ data: { nodes: [fixture.nodes[0]], edges: [] }, isLoading: false })
+    renderWithProviders(<NotesGraphPage />)
+    await user.click(screen.getByRole('switch', { name: 'Hide isolated notes' }))
+    expect(screen.getByText('No notes match the graph visibility filters.')).toBeInTheDocument()
+    expect(screen.queryByTestId('visible-nodes')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('switch', { name: 'Hide isolated notes' }))
+    expect(screen.getByTestId('visible-nodes')).toHaveTextContent('p1')
+  })
+
   it('closes selected member details on collapse and expands the family when searching for that page', async () => {
     localStorage.setItem(graphPreferencesKey('graph-user'), JSON.stringify({
       showGroups: true, families: [{ id: 'work', name: 'Work', color: '#1677ff', tagIds: ['work'] }],

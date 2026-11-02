@@ -68,6 +68,9 @@ pastas, miniaturas, a abstração `IFileStorage` e backend em banco; o editor Co
 inline, slash commands, callouts e edição de tabelas; wikilinks, embeds e backlinks; tags com cores e
 filtros por interseção em três superfícies; busca full-text com command palette; grafo global e local.
 
+O grafo global também tem visibilidade compartilhada de arquivadas e um filtro próprio de notas
+isoladas; ver [Filtros de visibilidade](graph-view.md#5-filtros-de-visibilidade).
+
 ### Fora / futuro
 
 | Capacidade | Status |
@@ -75,7 +78,6 @@ filtros por interseção em três superfícies; busca full-text com command pale
 | **Preview ao vivo dos blocos dentro do CodeMirror** | Não implementado. O editor continua markdown cru; a renderização acontece no painel de preview. Seria uma fase inteira (widget decorations). |
 | **Renderização inline de `![[embeds]]`** | Deliberadamente fora (decidido em 2026-11-02): uma page nunca é desenhada dentro de outra; `![[x]]` continua link. |
 | **Filtros na URL** | Não implementado. Os filtros de tag são estado de componente, então não existe link compartilhável de "as pages com #x". |
-| **Esconder arquivadas no grafo** | Não implementado. O toggle de arquivadas só afeta a sidebar; o grafo sempre inclui as arquivadas (com a flag). |
 | **Alinhamento de coluna pela UI** | Deliberadamente fora. |
 | **Rename global de tag** | Deliberadamente fora — exigiria reescrever o markdown de toda page que a menciona. |
 | **Rollup de tag aninhada** (`#projeto` incluindo `#projeto/pandora`) | Fora. A barra é mantida como parte do texto da tag, nada além disso. |

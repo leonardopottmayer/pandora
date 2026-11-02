@@ -31,10 +31,10 @@ points to. That is what Obsidian's local graph shows.
 - An edge whose target no longer resolves (deleted page) is **discarded on read**, the same as in the
   backlinks panel. Every endpoint of an edge in `Edges` is guaranteed to be in `Nodes`, so the
   frontend never draws an edge into nothing.
-- **Archived pages stay in the graph**, carrying the flag: archiving removes a page from the sidebar,
-  it does not switch off its links.
+- **Archived pages stay in the API graph payload**, carrying the flag; the global screen applies
+  its visibility choice locally. The local graph continues to include archived neighbors.
 - **`Degree` is computed in the backend**, counted **within the returned graph** — it is what sizes
-  the node when drawn, so it has to respect the same cut as the rest of the payload.
+  the node when drawn. The global screen recomputes it after applying visibility filters.
 - A page that both links and embeds another yields two edges, one per kind.
 - `tagIds` cuts the nodes **before** the neighborhood walk, so depth is counted over what is left.
 
@@ -55,12 +55,24 @@ points to. That is what Obsidian's local graph shows.
   zoom — without that a graph of any size becomes a smear. Embeds are drawn dashed.
 - Clicking a global node opens its details panel; the local graph still navigates directly to its page.
 
-## 5. Not implemented
+## 5. Visibility filters
 
-The global graph has **no archived toggle of its own**. The `includeArchived` state on
-`NotesGraphPage` only narrows the sidebar; the graph query never receives it, so archived pages are
-always drawn. If it starts to bother, the place is `NotesGraphPage` plus a parameter on
-`GetPageGraphInput`. See [Implementation Status](implementation-status.md).
+The global graph uses **Show archived** from the sidebar on desktop; small screens put the same
+control in the graph toolbar. It starts **off** and now applies to both the sidebar and graph.
+**Hide isolated notes** is in the toolbar on all screen sizes and starts **off**. Both choices
+last for the current visit, independently of the saved Show groups preference.
+
+Visibility applies after the API's space/tag filters and before family grouping or collapsing.
+`lib/graphVisibility.ts` removes archived nodes and their links when requested, recalculates node
+degrees, then optionally removes nodes with no remaining links. A page linked only to a hidden
+archive can therefore become isolated. Self-links count as connections, with degree two, matching
+the backend rule. Hide isolated affects the graph, not the sidebar page list.
+
+The graph's title locator, details, family counts, summary nodes and camera framing all use this
+same filtered graph. Changing either switch clears selection and details. An empty result explains
+the visibility filters; switches stay available to restore the view. Shared full-text page search
+and the local page graph retain their existing behavior. This is an immutable client-side projection;
+no API parameter, backend change, saved note or link is altered.
 
 ## 6. Tag families and thematic regions
 
@@ -101,17 +113,16 @@ This is client-side navigation over the graph payload, separate from full-text p
 
 ## 8. Improvement ideas (2026-11-02)
 
-These are ideas, not implementation commitments. Title search, details, collapsing families and navigation controls are delivered.
+These are ideas, not implementation commitments. Title search, details, collapsing families, navigation controls and visibility filters are delivered.
 
 - **Details panel (implemented):** see the inspection behavior below.
 - **Collapse families (implemented):** see the display projection below.
 - **Navigation controls (implemented):** see the camera controls below.
-- **Visibility filters:** hide archived pages and isolated nodes independently; the existing archive
-  toggle only affects the sidebar.
+- **Visibility filters (implemented):** see the shared archive choice and graph-only isolation filter above.
 - **Connections between families:** summarize bridges and link counts between thematic regions.
 - **Later:** pin node positions, remember the camera viewport and explore automatic communities.
 
-Suggested next priority: visibility filters for archived pages and isolated nodes.
+Suggested next priority: an overview of bridges between families.
 
 ## 9. Inspect a note without leaving the graph
 
