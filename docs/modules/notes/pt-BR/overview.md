@@ -75,13 +75,13 @@ isoladas; ver [Filtros de visibilidade](graph-view.md#5-filtros-de-visibilidade)
 
 | Capacidade | Status |
 |---|---|
-| **Preview ao vivo dos blocos dentro do CodeMirror** | Não implementado. O editor continua markdown cru; a renderização acontece no painel de preview. Seria uma fase inteira (widget decorations). |
+| **Preview ao vivo dos blocos dentro do CodeMirror** | Substituído pelo editor visual (TipTap), que é o padrão; o CodeMirror fica como modo Markdown cru. |
 | **Renderização inline de `![[embeds]]`** | Deliberadamente fora (decidido em 2026-11-02): uma page nunca é desenhada dentro de outra; `![[x]]` continua link. |
 | **Filtros na URL** | Não implementado. Os filtros de tag são estado de componente, então não existe link compartilhável de "as pages com #x". |
 | **Alinhamento de coluna pela UI** | Deliberadamente fora. |
 | **Rename global de tag** | Deliberadamente fora — exigiria reescrever o markdown de toda page que a menciona. |
 | **Rollup de tag aninhada** (`#projeto` incluindo `#projeto/pandora`) | Fora. A barra é mantida como parte do texto da tag, nada além disso. |
-| **Backend S3/MinIO** | Previsto, não implementado. `IFileStorage` + as colunas auto-descritivas `storage_backend`/`storage_key` fazem com que ligá-lo não exija migration. |
+| **Backend S3/MinIO** | Previsto, sem data. `IFileStorage` + as colunas auto-descritivas `storage_backend`/`storage_key` fazem com que ligá-lo não exija migration. |
 | **Histórico de versões** | Implementado — [snapshots completos, comparação e restauração](version-history.md). |
-| **Templates de page, share/colaboração** | Futuro. |
+| **Capa, sumário, templates de page, link público/colaboração** | Fora por enquanto (decidido em 2026-11-02). |
 | **Event log de auditoria** | Não faz parte deste módulo. Pages e tags têm `created_by/at` + `updated_by/at`; não existe um event log como o `fin016` do Finances. |

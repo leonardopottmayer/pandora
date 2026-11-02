@@ -47,7 +47,10 @@ O usuário quer o módulo Notes como um Confluence/Notion pessoal, em fases, **u
 | N4 | Mídia dentro das notas | `a4321dd` |
 | N5 | Players de vídeo, alinhamento de imagem, callout recolhível, `/recolher` | `56d1987` |
 | **N6** | **Editor visual estilo Notion** | commitada logo depois de `56d1987` (ver `git log`); falta o teste do usuário no navegador |
-| depois | Histórico de versões (spec em [implementation-status](../modules/notes/pt-BR/implementation-status.md#planejado-histórico-de-versões)), templates, capa, sumário, link público | — |
+| depois | Histórico de versões (`706766d`), callouts/toggles nativos (`8644bc1`), busca ranqueada e grafo (`bd1fc8e`..`664b71d`) | feitos |
+| fila | As lacunas do editor visual e o total da biblioteca (seção 3, "Lacunas") | — |
+
+Fora por enquanto (decidido em 2026-11-02): capa, sumário, templates e link público.
 
 Decisões fechadas que não se reabrem:
 - **Página embutida (`![[página]]` desenhando outra página) foi descartada** — continua link.
@@ -114,13 +117,17 @@ Nada foi enviado ao remoto (sem push).
 
 ### Lacunas conhecidas / próximos passos naturais
 
-- **Callout e toggle como nós nativos** (corpo editável no lugar), em vez de bloco cru. Está em
-  implementation-status como próximo passo.
-- Link de arquivo da biblioteca no editor visual aparece como link comum (o cartão só no modo leitura).
+Callout e toggle nativos já foram feitos (`8644bc1`). O usuário decidiu (2026-11-02) corrigir o resto,
+**um item por commit**:
+
 - Link de vídeo sozinho na linha aparece como link no editor (player só no modo leitura).
+- Link de arquivo da biblioteca no editor visual aparece como link comum (o cartão só no modo leitura).
 - HTML inline (`<kbd>`, `<span style>`) é reduzido ao texto se o parágrafo for editado no visual; `<img>`
   inline vira `![|largura](…)`.
-- Bundle do front é um chunk só (~3,8 MB); o TipTap somou. Não foi tratado.
+- Total de espaço ocupado na tela da biblioteca (o tamanho por item já existe).
+- Bundle do front é um chunk só (3,9 MB, 1,2 MB gzip, sem nenhum `lazy`); o TipTap somou. Aprovado:
+  carregar as telas sob demanda (`React.lazy` nas rotas), num commit próprio. Vale para o app inteiro.
+- Mídia sem uso continua guardada de propósito; bucket e vídeo seguem previstos, sem data.
 
 ## 4. Como rodar e verificar
 

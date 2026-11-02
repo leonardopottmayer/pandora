@@ -43,14 +43,21 @@ não o log das fases.
 | **Filtros de tag na URL** | Não implementado. Os filtros são estado de componente, então "as pages com #x" não é um link compartilhável. O lugar seria um search param na `NotesPage`. |
 | **Ideias de navegação no grafo** | Visão geral das pontes entre famílias e, depois, persistência do layout/comunidades automáticas. Ver [Ideias para o grafo](graph-view.md#8-ideias-de-melhorias-2026-11-02). |
 | **Alinhamento de coluna pela UI** | Deliberadamente fora. O lugar seria a linha separadora em `lib/markdownTables.ts`. |
-| **Backend de bucket e vídeo** | Só a abstração existe. `storage_backend` + `storage_key` em cada linha de mídia fazem com que plugar um bucket não exija migration; vídeo pede também download por pedaços e a versão de capa. Ver [Biblioteca de mídia](media-library.md#3-tipos-e-o-que-fica-pronto-para-vídeo). |
+| **Player de vídeo no editor visual** | Planejado. Um link do YouTube/Vimeo sozinho na linha aparece como link comum no visual; o player só aparece no modo leitura. |
+| **Cartão de arquivo no editor visual** | Planejado. Um arquivo da biblioteca aparece como link comum no visual; o cartão com nome e tamanho só aparece no modo leitura. |
+| **HTML inline no editor visual** | Planejado. `<kbd>`, `<span style>` e afins viram texto puro quando o parágrafo é editado no visual (`<img>` inline já vira `![|largura](…)`). |
+| **Espaço ocupado na biblioteca** | Planejado. O tamanho de cada item já é salvo (`size_bytes`) e aparece no cartão e nos detalhes; falta o total na tela da biblioteca. |
+| **Backend de bucket e vídeo** | Previsto, sem data: não entra na fila atual. Só a abstração existe. `storage_backend` + `storage_key` em cada linha de mídia fazem com que plugar um bucket não exija migration; vídeo pede também download por pedaços e a versão de capa. Ver [Biblioteca de mídia](media-library.md#3-tipos-e-o-que-fica-pronto-para-vídeo). |
 | **Histórico de versões** | Implementado — ver [Histórico de versões](version-history.md). |
-| **Templates de page, share/colaboração** | Futuro no plano de produto; nada iniciado. |
 
 ## Deliberadamente fora (não é dívida)
 
 - **Renderizar `![[embeds]]` inline** — decidido contra em 2026-11-02: uma page nunca é desenhada dentro
   de outra. `![[x]]` continua link; o tipo de aresta `embed` continua existindo (menções, tracejado no grafo).
+- **Capa, sumário, templates de page e link público/compartilhamento** — fora por enquanto (decidido em
+  2026-11-02). Saíram da lista da reforma; voltam só se o usuário pedir.
+- **Preview ao vivo dentro do CodeMirror** — substituído pelo editor visual; o CodeMirror fica como modo
+  Markdown cru.
 
 - **Rename global de tag** — exigiria reescrever o markdown de toda page que a menciona; é find &
   replace, não operação de banco.
@@ -72,7 +79,8 @@ inicial; soft delete preserva o histórico. Ver [Histórico de versões](version
 1. **Retenção dos blobs.** Os bytes da mídia moram em `bytea`; revisitar mover para object storage
    se o caderno começar a carregar arquivos pesados — é também o gatilho do backend S3.
 2. **Bytes sem uso.** Excluir um item mantém os bytes, porque notas podem ainda mostrá-lo; nada varre os
-   bytes de um item excluído que nenhuma nota usa mais.
+   bytes de um item excluído que nenhuma nota usa mais. Fica assim por decisão (2026-11-02): o lugar
+   "Sem uso" da biblioteca já mostra esses itens, e quem decide apagar é o usuário.
 3. **Passeio do grafo em memória.** Carregar o conjunto inteiro de pages/arestas do usuário é o certo
    para um caderno pessoal; é a primeira coisa a revisitar se o grafo crescer.
 4. **Parsers duplicados.** `lib/wikilinks.ts` e `lib/tags.ts` espelham o backend de propósito, para o

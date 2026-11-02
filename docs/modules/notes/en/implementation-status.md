@@ -43,14 +43,21 @@ left behind, not the phase log.
 | **Tag filters in the URL** | Not implemented. Filters are component state, so "the pages with #x" is not a shareable link. The place would be a search param on `NotesPage`. |
 | **Graph navigation ideas** | A bridge overview between families and later layout persistence/automatic communities. See [Graph ideas](graph-view.md#8-improvement-ideas-2026-11-02). |
 | **Column alignment from the UI** | Deliberately out. The place would be the separator line in `lib/markdownTables.ts`. |
-| **Bucket storage backend and video** | Only the abstraction exists. `storage_backend` + `storage_key` on each media row mean plugging a bucket in needs no migration; video also needs ranged downloads and a poster rendition. See [Media Library](media-library.md#3-kinds-and-what-is-ready-for-video). |
+| **Video player in the visual editor** | Planned. A YouTube/Vimeo link alone on its line shows as a plain link in the visual editor; the player only appears in reading mode. |
+| **File card in the visual editor** | Planned. A library file shows as a plain link in the visual editor; the card with name and size only appears in reading mode. |
+| **Inline HTML in the visual editor** | Planned. `<kbd>`, `<span style>` and the like become plain text when the paragraph is edited visually (an inline `<img>` already becomes `![|width](…)`). |
+| **Space used in the library** | Planned. Each item's size is already stored (`size_bytes`) and shown on its card and details; the library screen still lacks the total. |
+| **Bucket storage backend and video** | Designed for, not scheduled: not in the current queue. Only the abstraction exists. `storage_backend` + `storage_key` on each media row mean plugging a bucket in needs no migration; video also needs ranged downloads and a poster rendition. See [Media Library](media-library.md#3-kinds-and-what-is-ready-for-video). |
 | **Version history** | Implemented — see [Version history](version-history.md). |
-| **Page templates, sharing/collaboration** | Future in the product plan; nothing started. |
 
 ## Deliberately out (not debt)
 
 - **Rendering `![[embeds]]` inline** — decided against on 2026-11-02: a page is never drawn inside
   another. `![[x]]` stays a link; the `embed` edge kind still exists (backlinks, dashed in the graph).
+- **Cover image, table of contents, page templates and public links/sharing** — out for now (decided
+  on 2026-11-02). Dropped from the revamp list; they come back only if the user asks.
+- **Live preview inside CodeMirror** — superseded by the visual editor; CodeMirror stays as the raw
+  Markdown mode.
 
 - **Global tag rename** — it would mean rewriting the markdown of every page mentioning the tag; that
   is find & replace, not a database operation.
@@ -72,7 +79,8 @@ snapshot; soft deletion retains history. See [Version history](version-history.m
 1. **Blob retention.** Media bytes live in `bytea`; revisit moving to object storage if the
    notebook starts carrying heavy files — that is also the trigger for the S3 backend.
 2. **Unused bytes.** Deleting an item keeps its bytes, since notes may still show it; nothing sweeps the
-   bytes of a deleted item that no note uses anymore.
+   bytes of a deleted item that no note uses anymore. It stays that way by decision (2026-11-02): the
+   library's "Unused" place already lists those items, and deleting them is the user's call.
 3. **In-memory graph walk.** Loading the user's whole page/edge set is right for a personal notebook;
    it is the first thing to revisit if the graph ever gets big.
 4. **Duplicated parsers.** `lib/wikilinks.ts` and `lib/tags.ts` mirror the backend on purpose, so the

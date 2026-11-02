@@ -76,13 +76,13 @@ The global graph also has shared archive visibility and a graph-only isolation f
 
 | Feature | Status |
 |---|---|
-| **Live block preview inside CodeMirror** | Not implemented. The editor stays raw markdown; rendering happens in the preview pane. Would be a phase of its own (widget decorations). |
+| **Live block preview inside CodeMirror** | Superseded by the visual editor (TipTap), which is the default; CodeMirror stays as the raw Markdown mode. |
 | **Inline rendering of `![[embeds]]`** | Deliberately out (decided 2026-11-02): a page is never drawn inside another; `![[x]]` stays a link. |
 | **Filters in the URL** | Not implemented. Tag filters are component state, so there is no shareable "pages with #x" link. |
 | **Column alignment from the UI** | Deliberately out. |
 | **Global tag rename** | Deliberately out — it would mean rewriting the markdown of every page that mentions it. |
 | **Nested-tag rollup** (`#projeto` including `#projeto/pandora`) | Out. The slash is kept as part of the tag's text, nothing more. |
-| **S3/MinIO storage backend** | Designed for, not implemented. `IFileStorage` + the self-describing `storage_backend`/`storage_key` columns mean adding it needs no migration. |
+| **S3/MinIO storage backend** | Designed for, not scheduled. `IFileStorage` + the self-describing `storage_backend`/`storage_key` columns mean adding it needs no migration. |
 | **Version history** | Implemented — [complete snapshots, comparison and restoration](version-history.md). |
-| **Page templates, sharing/collaboration** | Future. |
+| **Cover image, table of contents, page templates, public links/collaboration** | Out for now (decided 2026-11-02). |
 | **Audit event log** | Not part of this module. Pages and tags carry `created_by/at` + `updated_by/at`; there is no `nte`-side event log like the Finances `fin016`. |
