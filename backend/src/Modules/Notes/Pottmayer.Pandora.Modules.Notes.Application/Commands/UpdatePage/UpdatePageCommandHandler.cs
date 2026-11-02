@@ -34,6 +34,11 @@ public sealed class UpdatePageCommandHandler(IUnitOfWorkFactory factory, TimePro
             var links = ctx.AcquireRepository<IPageLinkRepository>();
             await PageLinkSynchronizer.RebuildAsync(page, repo, links, timeProvider, token);
 
+            // And the library items it shows, so the library knows which notes use what.
+            await PageMediaSynchronizer.RebuildAsync(
+                page, ctx.AcquireRepository<IMediaItemRepository>(), ctx.AcquireRepository<IPageMediaRepository>(),
+                timeProvider, token);
+
             // Same for the tags the body mentions — derived from the text, rewritten on every save.
             var tags = await PageTagSynchronizer.RebuildAsync(
                 page,

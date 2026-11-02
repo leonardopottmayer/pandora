@@ -20,6 +20,7 @@ left behind, not the phase log.
 | **Spaces** | `Space` aggregate, one default per user (created on the fly when none), pages placed in a space, moving across spaces with the subtree, wikilinks preferring the own space, space filters on tree / search / graph, spaces screen and sidebar switcher, `create_note` taking a space (`nte007`). |
 | **Emoji icon** | Picker next to the title, reduced to the first grapheme via `Intl.Segmenter`, saved through the page's own autosave. |
 | **Media library** | Items (image / file; video in the schema, refused on upload) in virtual folders, WebP thumbnails with ImageSharp and EXIF rotation, folder moves without cycles, a deleted folder handing its contents up, soft delete keeping the bytes served, immutable caching, the library screen, paste/drop in the editor into "Unsorted" (`nte002`, `nte003`, `nte008`, `nte009`). |
+| **Media inside notes** | Library picker from `/image`, `/file` and the toolbar, width and caption from the alt text (`![text|400]`), full-screen zoom, file cards with size, which notes use each item derived on save (`nte010`), "Used in" in the library, an "Unused" place, a warning before deleting an item in use. |
 | **Editor** | CodeMirror 6, raw markdown + preview + split mode, 800 ms autosave, DOMPurify sanitization. |
 | **Rich blocks** | Slash commands (11 blocks + 6 callouts), Obsidian callouts as a `marked` extension, assisted markdown tables with Tab/Shift+Tab and idempotent reformatting. |
 | **Autocomplete** | Three menus — `[[` (pages by title and slug), `#` (existing tags), `/` (commands) — sharing `filter: false`, ref-based inputs and a body-parented tooltip. |
@@ -59,8 +60,8 @@ left behind, not the phase log.
 
 1. **Blob retention.** Media bytes live in `bytea`; revisit moving to object storage if the
    notebook starts carrying heavy files — that is also the trigger for the S3 backend.
-2. **Which notes use a media item.** Nothing records it yet, so deleting an item keeps its bytes and
-   nothing sweeps unused ones. The next phase derives it from the markdown, the way wikilinks are.
+2. **Unused bytes.** Deleting an item keeps its bytes, since notes may still show it; nothing sweeps the
+   bytes of a deleted item that no note uses anymore.
 3. **In-memory graph walk.** Loading the user's whole page/edge set is right for a personal notebook;
    it is the first thing to revisit if the graph ever gets big.
 4. **Duplicated parsers.** `lib/wikilinks.ts` and `lib/tags.ts` mirror the backend on purpose, so the

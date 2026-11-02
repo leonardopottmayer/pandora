@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/api/client'
-import type { MediaFolderDto, MediaFoldersDto, MediaItemDto } from '../models'
+import type { MediaFolderDto, MediaFoldersDto, MediaItemDto, MediaUsageDto } from '../models'
 
 const BASE = '/api/v1/notes/media'
 const FOLDERS = '/api/v1/notes/media-folders'
@@ -22,6 +22,8 @@ export interface MediaFilter {
   unsorted: boolean
   kind: string | null
   q: string
+  /** Only the items no page shows. */
+  unused?: boolean
 }
 
 export async function listMedia(filter: MediaFilter): Promise<MediaItemDto[]> {
@@ -31,8 +33,24 @@ export async function listMedia(filter: MediaFilter): Promise<MediaItemDto[]> {
       unsorted: filter.unsorted || undefined,
       kind: filter.kind ?? undefined,
       q: filter.q.trim() || undefined,
+      unused: filter.unused || undefined,
     },
   })
+  return data
+}
+
+/** The items behind these ids, deleted ones included; ids that are not the user's are left out. */
+export async function lookupMedia(ids: string[]): Promise<MediaItemDto[]> {
+  const { data } = await apiClient.get<MediaItemDto[]>(`${BASE}/lookup`, {
+    params: { ids },
+    paramsSerializer: { indexes: null },
+  })
+  return data
+}
+
+/** The pages that show an item. */
+export async function getMediaUsages(id: string): Promise<MediaUsageDto[]> {
+  const { data } = await apiClient.get<MediaUsageDto[]>(`${BASE}/${id}/usages`)
   return data
 }
 

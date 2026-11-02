@@ -49,7 +49,7 @@ public static partial class TagParser
     /// Blanks out fenced and inline code so what lives in there is never read as a tag. The spans are
     /// replaced by spaces rather than removed, so nothing outside them changes shape.
     /// </summary>
-    private static string StripCode(string markdown)
+    internal static string StripCode(string markdown)
         => InlineCodeRegex().Replace(
             FencedCodeRegex().Replace(markdown, Blank),
             Blank);

@@ -26,6 +26,7 @@ As migrations ficam em `migrations/migrations/notes/`.
 | nte007 | `space` | Espaços que agrupam as pages |
 | nte008 | `media_folder` | Pastas virtuais da biblioteca |
 | nte009 | `media_rendition` | Versões derivadas de um item de mídia (miniaturas) |
+| nte010 | `page_media` | Page → item de mídia, derivada do corpo |
 
 > Os números nomeiam as tabelas; as migrations rodam na ordem das dependências (espaço antes da
 > page, blob store e pastas antes da mídia).
@@ -195,6 +196,19 @@ A linha nunca é criada por tela de CRUD — ela aparece porque o markdown de al
 - `uq_nte007_user_default (user_id) WHERE is_default AND deleted_at IS NULL` — um padrão por usuário.
 - `ix_nte007_user_id`. Ver [Espaços](spaces.md).
 
+## nte010_page_media
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | |
+| `page_id` | uuid NOT NULL → nte001 | |
+| `media_id` | uuid NOT NULL → nte002 | |
+| `created_at` | timestamptz NOT NULL | derivada, nunca editada |
+
+- `uq_nte010_page_media (page_id, media_id)` — um item mostrado cinco vezes numa page é um fato só.
+- `ix_nte010_media_id` — "quais pages usam este item?" é a leitura da biblioteca.
+- Reescrita a partir do markdown a cada save; uma page excluída leva as linhas dela. Ver [Biblioteca de mídia](media-library.md#10-quais-notas-usam-cada-item).
+
 ---
 
 ## Mapa de relacionamentos
@@ -206,7 +220,7 @@ nte001_page ──parent_id──┐ (auto-referência, árvore, sem cascade)
      │
      ├──< nte004_page_link (source_page_id, target_page_id)   o grafo wiki, ciclos permitidos
      ├──< nte006_page_tag (page_id) >── nte005_tag (user_id)  rótulos escritos no corpo
-     └──… embeda mídia pela URL no markdown
+     └──< nte010_page_media (page_id) >── nte002_media     mídia que o corpo mostra
 
 nte008_media_folder ──< nte002_media (folder_id) ──< nte009_media_rendition (media_id)
                          nte002 / nte009 ──storage_key──> nte003_file_blob

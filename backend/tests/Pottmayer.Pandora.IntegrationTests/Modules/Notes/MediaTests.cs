@@ -19,6 +19,7 @@ public sealed class MediaTests : IAsyncLifetime
 {
     private const string Url = "/api/v1/notes/media";
     private const string FoldersUrl = "/api/v1/notes/media-folders";
+    private const string PagesUrl = "/api/v1/notes/pages";
 
     private readonly PandoraWebApplicationFactory _factory;
     private readonly HttpClient _client;
@@ -159,6 +160,61 @@ public sealed class MediaTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_page_using_an_item_counts_as_a_use_until_the_text_or_the_page_goes()
+    {
+        await AuthAsync("media8");
+        var beach = await UploadAsync(Png(10, 10), "beach.png", "image/png");
+        var unused = await UploadAsync(Png(10, 10), "spare.png", "image/png");
+
+        var page = await CreatePageAsync("Trip", $"![Beach|400]({beach.Url})\n\n`![example]({unused.Url})`");
+
+        Assert.Equal(1, (await ListAsync("")).Single(i => i.Id == beach.Id).UsageCount);
+        Assert.Equal([unused.Id], (await ListAsync("?unused=true")).Select(i => i.Id));
+        Assert.Equal(1, (await FoldersAsync()).UnusedCount);
+        var usages = await _client.GetFromJsonAsync<Envelope<IReadOnlyList<UsageNode>>>($"{Url}/{beach.Id}/usages");
+        Assert.Equal([("Trip", page)], usages!.Data.Select(u => (u.Title, u.PageId)));
+
+        // Taking the image out of the text takes the use away.
+        Assert.Equal(HttpStatusCode.OK,
+            (await _client.PutAsJsonAsync($"{PagesUrl}/{page}", new { title = "Trip", contentMarkdown = "No pictures." })).StatusCode);
+        Assert.Equal(2, (await ListAsync("?unused=true")).Count);
+
+        // So does deleting the page.
+        await _client.PutAsJsonAsync($"{PagesUrl}/{page}", new { title = "Trip", contentMarkdown = $"![b]({beach.Url})" });
+        Assert.Equal(HttpStatusCode.OK, (await _client.DeleteAsync($"{PagesUrl}/{page}")).StatusCode);
+        Assert.Equal(0, (await ListAsync("")).Single(i => i.Id == beach.Id).UsageCount);
+    }
+
+    [Fact]
+    public async Task Lookup_answers_the_users_items_by_id_deleted_ones_included()
+    {
+        await AuthAsync("media9");
+        var kept = await UploadAsync(Encoding.UTF8.GetBytes("x"), "a.pdf", "application/pdf");
+        var gone = await UploadAsync(Encoding.UTF8.GetBytes("y"), "b.pdf", "application/pdf");
+        await _client.DeleteAsync($"{Url}/{gone.Id}");
+
+        var found = await _client.GetFromJsonAsync<Envelope<IReadOnlyList<MediaNode>>>(
+            $"{Url}/lookup?ids={kept.Id}&ids={gone.Id}&ids={Guid.NewGuid()}");
+
+        Assert.Equal([(kept.Id, false), (gone.Id, true)], found!.Data.OrderBy(i => i.Name).Select(i => (i.Id, i.IsDeleted)));
+    }
+
+    [Fact]
+    public async Task Another_users_item_in_a_page_is_not_a_use()
+    {
+        await AuthAsync("media-owner2");
+        var theirs = await UploadAsync(Png(10, 10), "theirs.png", "image/png");
+
+        await AuthAsync("media-intruder2");
+        await CreatePageAsync("Copy", $"![x]({theirs.Url})");
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"{Url}/{theirs.Id}/usages")).StatusCode);
+
+        var owner = await IdentityHelper.SignInAsync(_client, "media-owner2");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", owner.AccessToken);
+        Assert.Equal(0, (await ListAsync("")).Single().UsageCount);
+    }
+
+    [Fact]
     public async Task Another_users_media_and_folders_are_not_found()
     {
         await AuthAsync("media-owner");
@@ -211,13 +267,22 @@ public sealed class MediaTests : IAsyncLifetime
         return (await response.Content.ReadFromJsonAsync<Envelope<FolderNode>>())!.Data;
     }
 
+    private async Task<Guid> CreatePageAsync(string title, string contentMarkdown)
+    {
+        var response = await _client.PostAsJsonAsync(PagesUrl, new { title, contentMarkdown });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync<Envelope<PageNode>>())!.Data.Id;
+    }
+
     private async Task<FoldersNode> FoldersAsync()
         => (await _client.GetFromJsonAsync<Envelope<FoldersNode>>(FoldersUrl))!.Data;
 
     private sealed record Envelope<T>(T Data);
     private sealed record MediaNode(
         Guid Id, Guid? FolderId, string Kind, string Name, string OriginalFileName,
-        int? Width, int? Height, string Url, string? ThumbnailUrl);
+        int? Width, int? Height, string Url, string? ThumbnailUrl, int UsageCount, bool IsDeleted);
     private sealed record FolderNode(Guid Id, Guid? ParentId, string Name, int ItemCount);
-    private sealed record FoldersNode(IReadOnlyList<FolderNode> Folders, int UnsortedCount, int TotalCount);
+    private sealed record FoldersNode(IReadOnlyList<FolderNode> Folders, int UnsortedCount, int UnusedCount, int TotalCount);
+    private sealed record PageNode(Guid Id);
+    private sealed record UsageNode(Guid PageId, string Title);
 }

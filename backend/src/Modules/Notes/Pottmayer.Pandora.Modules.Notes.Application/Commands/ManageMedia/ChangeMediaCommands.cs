@@ -61,7 +61,8 @@ public sealed class ChangeMediaCommandHandler(IUnitOfWorkFactory factory, TimePr
 
             var hasThumbnail = await ctx.AcquireRepository<IMediaRenditionRepository>()
                 .FindAsync(item.Id, RenditionPurpose.Thumbnail, token) is not null;
-            return Result<MediaItemDto>.Success(MediaItemDto.From(item, hasThumbnail));
+            var usages = await ctx.AcquireRepository<IPageMediaRepository>().CountByMediaAsync([item.Id], token);
+            return Result<MediaItemDto>.Success(MediaItemDto.From(item, hasThumbnail, usages.GetValueOrDefault(item.Id)));
         }, cancellationToken: ct);
 
         return result.IsFailure ? Fail([.. result.Errors]) : Ok(result.Value!);

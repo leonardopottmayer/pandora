@@ -107,7 +107,20 @@ export interface MediaItemDto {
   height: number | null
   url: string
   thumbnailUrl: string | null
+  /** How many pages show it. */
+  usageCount: number
+  /** Out of the library; notes that show it still do. */
+  isDeleted: boolean
   createdAt: string
+}
+
+/** A page that shows a library item. */
+export interface MediaUsageDto {
+  pageId: string
+  spaceId: string
+  title: string
+  icon: string | null
+  isArchived: boolean
 }
 
 /** A virtual folder, with how many items it holds directly. */
@@ -121,6 +134,7 @@ export interface MediaFolderDto {
 export interface MediaFoldersDto {
   folders: MediaFolderDto[]
   unsortedCount: number
+  unusedCount: number
   totalCount: number
 }
 

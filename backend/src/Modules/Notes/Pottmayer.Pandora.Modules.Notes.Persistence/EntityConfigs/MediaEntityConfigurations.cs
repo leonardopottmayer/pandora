@@ -61,6 +61,27 @@ internal sealed class MediaFolderEntityConfiguration : IEntityTypeConfiguration<
     }
 }
 
+internal sealed class PageMediaEntityConfiguration : IEntityTypeConfiguration<PageMedia>
+{
+    public void Configure(EntityTypeBuilder<PageMedia> builder)
+    {
+        builder.ToTable("nte010_page_media", NotesModule.Schema);
+        builder.HasKey(r => r.Id).HasName("pk_nte010");
+
+        builder.Property(r => r.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(r => r.PageId).HasColumnName("page_id").IsRequired();
+        builder.Property(r => r.MediaId).HasColumnName("media_id").IsRequired();
+        builder.Property(r => r.CreatedAt).HasColumnName("created_at").IsRequired();
+
+        builder.HasIndex(r => new { r.PageId, r.MediaId }).HasDatabaseName("uq_nte010_page_media").IsUnique();
+        builder.HasIndex(r => r.MediaId).HasDatabaseName("ix_nte010_media_id");
+
+        // Declared so a page created with media in its body is inserted before its rows.
+        builder.HasOne<Page>().WithMany().HasForeignKey(r => r.PageId).HasConstraintName("fk_nte010_page");
+        builder.HasOne<MediaItem>().WithMany().HasForeignKey(r => r.MediaId).HasConstraintName("fk_nte010_media");
+    }
+}
+
 internal sealed class MediaRenditionEntityConfiguration : IEntityTypeConfiguration<MediaRendition>
 {
     public void Configure(EntityTypeBuilder<MediaRendition> builder)

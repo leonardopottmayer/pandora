@@ -2,24 +2,27 @@ import { useState, type DragEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Dropdown, Tree, Typography, theme } from 'antd'
 import type { DataNode } from 'antd/es/tree'
-import { AppstoreOutlined, EllipsisOutlined, FolderOutlined, InboxOutlined, PlusOutlined } from '@ant-design/icons'
+import { AppstoreOutlined, DisconnectOutlined, EllipsisOutlined, FolderOutlined, InboxOutlined, PlusOutlined } from '@ant-design/icons'
 import type { MediaFolderDto, MediaFoldersDto } from '../../models'
 import { buildFolderTree, type MediaFolderNode } from '../../lib/mediaFolders'
 import { MEDIA_DRAG_TYPE } from '../../lib/media'
 
-/** Where the grid looks: every item, the unsorted ones, or one folder's (by id). */
-export type LibraryPlace = 'all' | 'unsorted' | string
+/** Where the grid looks: every item, the unsorted ones, the ones no note uses, or one folder's (by id). */
+export type LibraryPlace = 'all' | 'unsorted' | 'unused' | string
 
 interface MediaFolderPanelProps {
   data: MediaFoldersDto | undefined
   place: LibraryPlace
   onPlaceChange: (place: LibraryPlace) => void
-  /** An item dropped on a folder, or on "Unsorted" (null). */
-  onDropItem: (mediaId: string, folderId: string | null) => void
-  onCreateFolder: (parentId: string | null) => void
-  onRenameFolder: (folder: MediaFolderDto) => void
-  onMoveFolder: (folder: MediaFolderDto) => void
-  onDeleteFolder: (folder: MediaFolderDto) => void
+  /** An item dropped on a folder, or on "Unsorted" (null). Left out, nothing takes drops. */
+  onDropItem?: (mediaId: string, folderId: string | null) => void
+  /** Left out, the panel only picks a place: no new folder, no folder menu (the editor's picker). */
+  onCreateFolder?: (parentId: string | null) => void
+  onRenameFolder?: (folder: MediaFolderDto) => void
+  onMoveFolder?: (folder: MediaFolderDto) => void
+  onDeleteFolder?: (folder: MediaFolderDto) => void
+  /** Shows the "Unused" place, for the library's clean-up. */
+  showUnused?: boolean
 }
 
 /** The library's places: everything, the unsorted items, and the folder tree. Items drop onto them. */
@@ -32,6 +35,7 @@ export function MediaFolderPanel({
   onRenameFolder,
   onMoveFolder,
   onDeleteFolder,
+  showUnused = false,
 }: MediaFolderPanelProps) {
   const { t } = useTranslation()
   const { token } = theme.useToken()
@@ -42,6 +46,7 @@ export function MediaFolderPanel({
 
   /** Native drop wiring for a place that takes items: only our own drag type, not files or text. */
   function dropZone(key: string, folderId: string | null) {
+    if (!onDropItem) return {}
     return {
       onDragOver: (e: DragEvent) => {
         if (!e.dataTransfer.types.includes(MEDIA_DRAG_TYPE)) return
@@ -92,6 +97,7 @@ export function MediaFolderPanel({
           <Typography.Text type="secondary" className="text-xs tabular-nums group-hover:hidden">
             {node.itemCount || ''}
           </Typography.Text>
+          {onCreateFolder && onRenameFolder && onMoveFolder && onDeleteFolder && (
           <span className="hidden items-center group-hover:flex [@media(hover:none)]:flex">
             <Button
               type="text"
@@ -100,17 +106,17 @@ export function MediaFolderPanel({
               aria-label={t('notes.library.newSubfolderOf', { name: node.name })}
               onClick={(e) => {
                 e.stopPropagation()
-                onCreateFolder(node.id)
+                onCreateFolder?.(node.id)
               }}
             />
             <Dropdown
               trigger={['click']}
               menu={{
                 items: [
-                  { key: 'rename', label: t('notes.library.rename'), onClick: () => onRenameFolder(node) },
-                  { key: 'move', label: t('notes.library.moveTo'), onClick: () => onMoveFolder(node) },
+                  { key: 'rename', label: t('notes.library.rename'), onClick: () => onRenameFolder?.(node) },
+                  { key: 'move', label: t('notes.library.moveTo'), onClick: () => onMoveFolder?.(node) },
                   { type: 'divider' },
-                  { key: 'delete', danger: true, label: t('common.delete'), onClick: () => onDeleteFolder(node) },
+                  { key: 'delete', danger: true, label: t('common.delete'), onClick: () => onDeleteFolder?.(node) },
                 ],
               }}
             >
@@ -123,6 +129,7 @@ export function MediaFolderPanel({
               />
             </Dropdown>
           </span>
+          )}
         </span>
       ),
       children: node.children.length ? toData(node.children) : undefined,
@@ -133,19 +140,22 @@ export function MediaFolderPanel({
     <div className="flex flex-col gap-1">
       {place_('all', <AppstoreOutlined />, t('notes.library.all'), data?.totalCount)}
       {place_('unsorted', <InboxOutlined />, t('notes.library.unsorted'), data?.unsortedCount, null)}
+      {showUnused && place_('unused', <DisconnectOutlined />, t('notes.library.unused'), data?.unusedCount)}
 
       <div className="mt-3 flex items-center justify-between px-2">
         <Typography.Text type="secondary" className="text-xs font-semibold uppercase tracking-wider">
           {t('notes.library.folders')}
         </Typography.Text>
-        <Button
-          type="text"
-          size="small"
-          icon={<PlusOutlined />}
-          title={t('notes.library.newFolder')}
-          aria-label={t('notes.library.newFolder')}
-          onClick={() => onCreateFolder(null)}
-        />
+        {onCreateFolder && (
+          <Button
+            type="text"
+            size="small"
+            icon={<PlusOutlined />}
+            title={t('notes.library.newFolder')}
+            aria-label={t('notes.library.newFolder')}
+            onClick={() => onCreateFolder(null)}
+          />
+        )}
       </div>
 
       {tree.length === 0 ? (
@@ -158,7 +168,7 @@ export function MediaFolderPanel({
           key={data ? 'loaded' : 'loading'}
           blockNode
           defaultExpandAll
-          selectedKeys={place !== 'all' && place !== 'unsorted' ? [place] : []}
+          selectedKeys={place !== 'all' && place !== 'unsorted' && place !== 'unused' ? [place] : []}
           onSelect={(keys) => keys.length && onPlaceChange(String(keys[0]))}
           treeData={toData(tree)}
           style={{ background: 'transparent' }}

@@ -52,9 +52,11 @@ export function LibraryPage() {
   const folders = folderData?.folders ?? []
   // A search looks through the whole library, wherever the item is.
   const searching = q.trim().length > 0
+  const isFolder = place !== 'all' && place !== 'unsorted' && place !== 'unused'
   const { data: items, isLoading } = useMediaList({
-    folderId: !searching && place !== 'all' && place !== 'unsorted' ? place : null,
+    folderId: !searching && isFolder ? place : null,
     unsorted: !searching && place === 'unsorted',
+    unused: !searching && place === 'unused',
     kind: kind === 'all' ? null : kind,
     q,
   })
@@ -66,9 +68,15 @@ export function LibraryPage() {
   const moveFolder = useMoveMediaFolder()
   const deleteFolder = useDeleteMediaFolder()
 
-  const currentFolderId = place !== 'all' && place !== 'unsorted' ? place : null
+  const currentFolderId = isFolder ? place : null
   const placeName =
-    place === 'all' ? t('notes.library.all') : place === 'unsorted' ? t('notes.library.unsorted') : folderPath(folders, place).map((f) => f.name).join(' / ')
+    place === 'all'
+      ? t('notes.library.all')
+      : place === 'unsorted'
+        ? t('notes.library.unsorted')
+        : place === 'unused'
+          ? t('notes.library.unused')
+          : folderPath(folders, place).map((f) => f.name).join(' / ')
   // The item on the drawer, kept current as the list refreshes after a rename or move.
   const shown = selected && (items?.find((i) => i.id === selected.id) ?? selected)
 
@@ -197,6 +205,7 @@ export function LibraryPage() {
             onRenameFolder={(folder) => openDialog({ mode: 'rename', folder })}
             onMoveFolder={(folder) => openDialog({ mode: 'move', folder })}
             onDeleteFolder={confirmDeleteFolder}
+            showUnused
           />
         </aside>
 
@@ -237,7 +246,13 @@ export function LibraryPage() {
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               className="rounded-xl py-12"
               style={{ border: `1px dashed ${token.colorBorder}` }}
-              description={searching ? t('notes.library.searchEmpty') : t('notes.library.empty')}
+              description={
+                searching
+                  ? t('notes.library.searchEmpty')
+                  : place === 'unused'
+                    ? t('notes.library.unusedEmpty')
+                    : t('notes.library.empty')
+              }
             />
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">

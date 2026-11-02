@@ -27,6 +27,7 @@ public sealed class DeletePageCommandHandler(IUnitOfWorkFactory factory, TimePro
             var links = ctx.AcquireRepository<IPageLinkRepository>();
             var tags = ctx.AcquireRepository<ITagRepository>();
             var pageTags = ctx.AcquireRepository<IPageTagRepository>();
+            var pageMedia = ctx.AcquireRepository<IPageMediaRepository>();
 
             // Soft-delete the whole subtree so no child is left pointing at a deleted parent.
             var all = await repo.GetTreeForUserAsync(input.UserId, includeArchived: true, token);
@@ -38,6 +39,9 @@ public sealed class DeletePageCommandHandler(IUnitOfWorkFactory factory, TimePro
                 // Edges leaving a deleted page are gone for good; edges pointing at it stay and are
                 // filtered out on read, so restoring the row would restore its inbound mentions.
                 await links.RemoveBySourceAsync(descendant.Id, token);
+
+                // A deleted page no longer uses its media: they may now count as unused.
+                await pageMedia.RemoveByPageAsync(descendant.Id, token);
 
                 // A deleted page stops carrying its tags, and a tag nobody carries anymore goes with
                 // it unless it kept a color.

@@ -30,7 +30,8 @@ per pause in typing, not per keystroke.
 Pasting (`Ctrl+V`) or dropping a file uploads it to the media library, unsorted (`POST /notes/media`),
 and inserts `![name](/api/v1/notes/media/{id})` at the cursor — a link `[name](…)` for a file that is not
 an image. The label is the item's name, which is also what the download handler later uses to name
-the saved file. See [Media Library](media-library.md).
+the saved file. `/image` and `/file`, or the toolbar's image button, insert from the library instead —
+see [Media inside notes](media-library.md#9-media-inside-notes).
 
 ## 4. Three autocomplete menus
 

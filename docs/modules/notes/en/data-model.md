@@ -26,6 +26,7 @@ Migrations live in `migrations/migrations/notes/`.
 | nte007 | `space` | Spaces grouping the pages |
 | nte008 | `media_folder` | Virtual folders of the media library |
 | nte009 | `media_rendition` | Versions derived from a media item (thumbnails) |
+| nte010 | `page_media` | Page → media item, derived from the body |
 
 > The numbers name the tables; the migrations run in dependency order instead (space before page,
 > blob store and folders before media).
@@ -196,6 +197,19 @@ it is deleted when the last page stops mentioning it, **unless it carries a colo
 - `uq_nte007_user_default (user_id) WHERE is_default AND deleted_at IS NULL` — one default per user.
 - `ix_nte007_user_id`. See [Spaces](spaces.md).
 
+## nte010_page_media
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `page_id` | uuid NOT NULL → nte001 | |
+| `media_id` | uuid NOT NULL → nte002 | |
+| `created_at` | timestamptz NOT NULL | derived, never edited |
+
+- `uq_nte010_page_media (page_id, media_id)` — an item shown five times on a page is one fact.
+- `ix_nte010_media_id` — "which pages use this item?" is the library's read.
+- Rewritten from the markdown on every save; a deleted page drops its rows. See [Media Library](media-library.md#10-which-notes-use-each-item).
+
 ---
 
 ## Relationship map
@@ -207,7 +221,7 @@ nte001_page ──parent_id──┐ (self, tree, no cascade)
      │
      ├──< nte004_page_link (source_page_id, target_page_id)   the wiki graph, cycles allowed
      ├──< nte006_page_tag (page_id) >── nte005_tag (user_id)  labels written in the body
-     └──… embeds media by URL in the markdown
+     └──< nte010_page_media (page_id) >── nte002_media     media the body shows
 
 nte008_media_folder ──< nte002_media (folder_id) ──< nte009_media_rendition (media_id)
                          nte002 / nte009 ──storage_key──> nte003_file_blob

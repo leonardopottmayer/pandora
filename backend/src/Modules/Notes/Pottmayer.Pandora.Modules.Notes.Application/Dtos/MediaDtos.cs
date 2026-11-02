@@ -19,14 +19,21 @@ public sealed record MediaItemDto(
     int? Height,
     string Url,
     string? ThumbnailUrl,
+    int UsageCount,
+    bool IsDeleted,
     DateTimeOffset CreatedAt)
 {
     public const string BasePath = "/api/v1/notes/media";
 
-    public static MediaItemDto From(MediaItem m, bool hasThumbnail) =>
+    /// <param name="usageCount">How many pages show the item.</param>
+    public static MediaItemDto From(MediaItem m, bool hasThumbnail, int usageCount = 0) =>
         new(m.Id, m.FolderId, m.Kind, m.Name, m.OriginalFileName, m.ContentType, m.SizeBytes, m.Width, m.Height,
-            $"{BasePath}/{m.Id}", hasThumbnail ? $"{BasePath}/{m.Id}/thumbnail" : null, m.CreatedAt);
+            $"{BasePath}/{m.Id}", hasThumbnail ? $"{BasePath}/{m.Id}/thumbnail" : null, usageCount,
+            m.DeletedAt is not null, m.CreatedAt);
 }
+
+/// <summary>A page that shows a library item.</summary>
+public sealed record MediaUsageDto(Guid PageId, Guid SpaceId, string Title, string? Icon, bool IsArchived);
 
 /// <summary>A folder with how many items it holds directly.</summary>
 public sealed record MediaFolderDto(Guid Id, Guid? ParentId, string Name, int ItemCount)
@@ -34,8 +41,8 @@ public sealed record MediaFolderDto(Guid Id, Guid? ParentId, string Name, int It
     public static MediaFolderDto From(MediaFolder f, int itemCount) => new(f.Id, f.ParentId, f.Name, itemCount);
 }
 
-/// <summary>The library's folder tree as a flat list, plus the counts of the two places that are not folders.</summary>
-public sealed record MediaFoldersDto(IReadOnlyList<MediaFolderDto> Folders, int UnsortedCount, int TotalCount);
+/// <summary>The library's folder tree as a flat list, plus the counts of the places that are not folders.</summary>
+public sealed record MediaFoldersDto(IReadOnlyList<MediaFolderDto> Folders, int UnsortedCount, int UnusedCount, int TotalCount);
 
 /// <summary>The bytes and headers needed to serve an item, or one of its renditions.</summary>
 public sealed record MediaContentDto(string FileName, string ContentType, byte[] Content);

@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { App, Button, Drawer, Grid, Input, TreeSelect, Typography, theme } from 'antd'
-import { CopyOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons'
+import { CopyOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons'
 import { formatBytes } from '@/lib/formatBytes'
 import { toErrorMessage } from '@/lib/api/envelope'
 import type { MediaFolderDto, MediaItemDto } from '../../models'
-import { useDeleteMedia, useMoveMedia, useRenameMedia } from '../../hooks/useMedia'
+import { useDeleteMedia, useMediaUsages, useMoveMedia, useRenameMedia } from '../../hooks/useMedia'
 import { embedMarkdown } from '../../lib/media'
 import { folderOptions, fromFolderOption, toFolderOption } from '../../lib/mediaFolders'
 import { downloadMedia } from '../../services/media.service'
@@ -23,6 +24,8 @@ export function MediaDetailDrawer({ item, folders, onClose }: MediaDetailDrawerP
   const { message, modal } = App.useApp()
   const { token } = theme.useToken()
   const isMobile = Grid.useBreakpoint().md === false
+  const navigate = useNavigate()
+  const { data: usages } = useMediaUsages(item?.id ?? null)
   const rename = useRenameMedia()
   const move = useMoveMedia()
   const remove = useDeleteMedia()
@@ -51,9 +54,13 @@ export function MediaDetailDrawer({ item, folders, onClose }: MediaDetailDrawerP
 
   function confirmDelete() {
     if (!item) return
+    // An item in use can still go: the notes keep showing it, so this warns rather than blocks.
+    const usedIn = usages ?? []
     modal.confirm({
       title: t('notes.library.deleteConfirm'),
-      content: t('notes.library.deleteHint'),
+      content: usedIn.length
+        ? t('notes.library.deleteUsedHint', { count: usedIn.length, pages: usedIn.map((u) => u.title).join(', ') })
+        : t('notes.library.deleteHint'),
       okText: t('common.delete'),
       okButtonProps: { danger: true },
       cancelText: t('common.cancel'),
@@ -129,6 +136,24 @@ export function MediaDetailDrawer({ item, folders, onClose }: MediaDetailDrawerP
             <Button danger icon={<DeleteOutlined />} onClick={confirmDelete}>
               {t('common.delete')}
             </Button>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Typography.Text type="secondary" className="text-xs">
+              {usages?.length ? t('notes.library.usedIn', { count: usages.length }) : t('notes.library.notUsed')}
+            </Typography.Text>
+            {usages?.map((usage) => (
+              <button
+                key={usage.pageId}
+                type="button"
+                className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-[var(--ant-color-fill-tertiary)]"
+                style={{ opacity: usage.isArchived ? 0.6 : 1 }}
+                onClick={() => navigate(`/notes/${usage.pageId}`)}
+              >
+                <span className="w-5 text-center">{usage.icon ?? <FileTextOutlined />}</span>
+                <Typography.Text className="truncate">{usage.title || t('notes.untitled')}</Typography.Text>
+              </button>
+            ))}
           </div>
 
           <div className="flex flex-col">

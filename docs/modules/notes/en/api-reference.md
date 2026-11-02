@@ -77,13 +77,15 @@ removed by the sweep that finds it orphaned. Body: `SetTagColorRequest { color }
 
 | Method | Route | Purpose |
 |---|---|---|
-| GET | `/media` | List items: `folderId` (one folder's own), `unsorted=true`, or neither (all); `kind`, `q` (name fragment) narrow |
+| GET | `/media` | List items: `folderId` (one folder's own), `unsorted=true`, or neither (all); `kind`, `q` (name fragment) and `unused=true` narrow. Each item carries `usageCount` |
+| GET | `/media/lookup` | Items by `ids` (repeatable), deleted ones included — for a page's file cards |
+| GET | `/media/{id}/usages` | The pages that show the item |
 | POST | `/media` | Upload (`multipart/form-data`: `file`, optional `folderId`) — up to 25 MB; video answers **422** |
 | PUT | `/media/{id}` | Rename (`{ name }`) |
 | POST | `/media/{id}/move` | Move (`{ folderId }`, null for "Unsorted") |
 | DELETE | `/media/{id}` | Soft-delete; the bytes keep being served |
 | GET | `/media/{id}` · `/media/{id}/thumbnail` | The bytes, or the thumbnail's (404 when there is none) |
-| GET | `/media-folders` | Every folder with its item count, plus `unsortedCount` and `totalCount` |
+| GET | `/media-folders` | Every folder with its item count, plus `unsortedCount`, `unusedCount` and `totalCount` |
 | POST | `/media-folders` | Create (`{ name, parentId? }`) |
 | PUT | `/media-folders/{id}` | Rename (`{ name }`) |
 | POST | `/media-folders/{id}/move` | Move (`{ parentId }`) — into itself or a subfolder answers **409** |
@@ -109,6 +111,7 @@ not a cookie, the client fetches the blob and hands over an object URL. See [Med
 | `PageGraphDto` | `Nodes[]`, `Edges[]` |
 | `GraphNodeDto` | `Id, Title, Slug, Icon, IsArchived, Degree` |
 | `GraphEdgeDto` | `SourceId, TargetId, Kind` |
-| `MediaItemDto` | `Id, FolderId, Kind, Name, OriginalFileName, ContentType, SizeBytes, Width, Height, Url, ThumbnailUrl, CreatedAt` |
+| `MediaItemDto` | `Id, FolderId, Kind, Name, OriginalFileName, ContentType, SizeBytes, Width, Height, Url, ThumbnailUrl, UsageCount, IsDeleted, CreatedAt` |
+| `MediaUsageDto` | `PageId, SpaceId, Title, Icon, IsArchived` |
 | `MediaFolderDto` | `Id, ParentId, Name, ItemCount` |
-| `MediaFoldersDto` | `Folders[], UnsortedCount, TotalCount` |
+| `MediaFoldersDto` | `Folders[], UnsortedCount, UnusedCount, TotalCount` |

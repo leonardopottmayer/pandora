@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '@/test/utils'
 import { MarkdownPreview } from './MarkdownPreview'
@@ -7,6 +7,15 @@ import { MarkdownPreview } from './MarkdownPreview'
 vi.mock('../services/media.service', () => ({
   fetchMediaBlob: vi.fn(async () => new Blob(['x'], { type: 'image/png' })),
   downloadMedia: vi.fn(async () => {}),
+  lookupMedia: vi.fn(async () => [
+    {
+      id: 'aaaaaaaa-0000-0000-0000-000000000001',
+      contentType: 'application/pdf',
+      sizeBytes: 3 * 1024 * 1024,
+      originalFileName: 'manual-original.pdf',
+      isDeleted: false,
+    },
+  ]),
 }))
 
 const { downloadMedia } = await import('../services/media.service')
@@ -63,13 +72,13 @@ describe('MarkdownPreview — embedded images', () => {
 describe('MarkdownPreview — attachment links', () => {
   it('downloads instead of navigating, keeping the original file name', async () => {
     const user = userEvent.setup()
-    const { getByText } = renderWithProviders(
-      <MarkdownPreview markdown={`[manual.pdf](${PATH})`} />,
-    )
+    const { container } = renderWithProviders(<MarkdownPreview markdown={`[manual.pdf](${PATH})`} />)
 
-    await user.click(getByText('manual.pdf'))
+    // The card redraws once the size arrives; click the one that stays.
+    await waitFor(() => expect(container.querySelector('.notes-file-meta')?.textContent).toBe('3.0 MB'))
+    await user.click(screen.getByText('manual.pdf'))
 
-    expect(downloadMedia).toHaveBeenCalledWith(PATH, 'manual.pdf')
+    expect(downloadMedia).toHaveBeenCalledWith(PATH, 'manual-original.pdf')
   })
 
   it('leaves an ordinary link alone', async () => {
@@ -81,5 +90,42 @@ describe('MarkdownPreview — attachment links', () => {
     await user.click(getByText('site'))
 
     expect(downloadMedia).not.toHaveBeenCalled()
+  })
+})
+
+describe('MarkdownPreview — library media', () => {
+  it('draws an image at the width its alt text asks for, with the text as a caption', async () => {
+    const { container } = renderWithProviders(<MarkdownPreview markdown={`![Jurerê beach|400](${PATH})`} />)
+
+    await waitFor(() => expect(image(container).getAttribute('src')).toMatch(/^blob:/))
+    expect(image(container).getAttribute('width')).toBe('400')
+    expect(screen.getByText('Jurerê beach')).toHaveClass('notes-caption')
+  })
+
+  it('shows no caption for an image named after its file', async () => {
+    const { container } = renderWithProviders(<MarkdownPreview markdown={`![IMG_2034.jpg](${PATH})`} />)
+
+    await waitFor(() => expect(image(container).getAttribute('src')).toMatch(/^blob:/))
+    expect(container.querySelector('.notes-caption')).toBeNull()
+  })
+
+  it('opens an image full screen on a click', async () => {
+    const user = userEvent.setup()
+    const { container } = renderWithProviders(<MarkdownPreview markdown={`![foto](${PATH})`} />)
+    await waitFor(() => expect(image(container).getAttribute('src')).toMatch(/^blob:/))
+
+    await user.click(image(container))
+
+    await waitFor(() => expect(document.querySelector('.ant-image-preview')).not.toBeNull())
+  })
+
+  it('draws a file link as a card with its size, saving under its original name', async () => {
+    const user = userEvent.setup()
+    const { container } = renderWithProviders(<MarkdownPreview markdown={`[Manual](${PATH})`} />)
+
+    await waitFor(() => expect(container.querySelector('.notes-file-meta')?.textContent).toBe('3.0 MB'))
+    await user.click(screen.getByText('Manual'))
+
+    expect(downloadMedia).toHaveBeenCalledWith(PATH, 'manual-original.pdf')
   })
 })

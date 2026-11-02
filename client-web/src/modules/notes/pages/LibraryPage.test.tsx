@@ -24,6 +24,8 @@ const item = (over: Partial<MediaItemDto>): MediaItemDto => ({
   height: 600,
   url: '/api/v1/notes/media/m1',
   thumbnailUrl: '/api/v1/notes/media/m1/thumbnail',
+  usageCount: 0,
+  isDeleted: false,
   createdAt: '2026-11-02T10:00:00Z',
   ...over,
 })
@@ -34,6 +36,7 @@ const folders: MediaFoldersDto = {
     { id: 'japan', parentId: 'trips', name: 'Japan', itemCount: 0 },
   ],
   unsortedCount: 2,
+  unusedCount: 1,
   totalCount: 3,
 }
 
@@ -149,5 +152,33 @@ describe('LibraryPage', () => {
     await user.click(await screen.findByRole('menuitem', { name: 'Delete' }))
 
     expect(await screen.findByText('What it holds moves to Trips. Nothing is deleted with it.')).toBeInTheDocument()
+  })
+
+  it('lists the items no note uses under their own place', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<LibraryPage />)
+
+    await user.click(await screen.findByRole('button', { name: /Unused/ }))
+
+    await waitFor(() => expect(listed).toContain('?unused=true'))
+    expect(screen.getByRole('button', { name: /Unused/ })).toHaveTextContent('1')
+  })
+
+  it('says which notes use an item, and warns before deleting one in use', async () => {
+    server.use(
+      http.get(`${NOTES_BASE}/media/:id/usages`, () =>
+        ok([{ pageId: 'p1', spaceId: 's1', title: 'Trip to Floripa', icon: null, isArchived: false }]),
+      ),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<LibraryPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'receipt.pdf' }))
+    const drawer = await screen.findByRole('dialog')
+    expect(await within(drawer).findByText('Used in 1 note')).toBeInTheDocument()
+    expect(within(drawer).getByRole('button', { name: /Trip to Floripa/ })).toBeInTheDocument()
+
+    await user.click(within(drawer).getByRole('button', { name: /Delete/ }))
+    expect(await screen.findByText('It is used in Trip to Floripa. That note keeps showing it.')).toBeInTheDocument()
   })
 })

@@ -66,9 +66,8 @@ are declared to EF so it orders those updates before the delete.
 
 ## 6. Deleting an item
 
-The delete is soft (`deleted_at`): the item leaves the library, but **its bytes keep being served**. A
-note may still embed it, and which ones do is only tracked once notes record the media they use (the
-next phase of the plan). That is why the download does not filter deleted items.
+The delete is soft (`deleted_at`): the item leaves the library, but **its bytes keep being served**,
+since a note may still show it (see §10). That is why the download does not filter deleted items.
 
 ## 7. Serving the bytes
 
@@ -97,3 +96,36 @@ A click on a file link becomes an in-place download, without sending the tab to 
 - **Clicking an item** opens its details: preview, editable name, folder, download, copy markdown,
   delete, plus kind, size, dimensions, original name and date.
 - The open folder is in the URL (`?folder=`), and the app menu and the notes sidebar lead to it.
+
+## 9. Media inside notes
+
+**Inserting.** `/image` and `/file` in the slash menu, or the image button on the page toolbar, open
+the library picker (`components/library/MediaPickerModal.tsx`): folders, search, grid, and "Upload and
+insert", which files the upload in the open folder and inserts it. What goes in is plain markdown —
+`![name](…)` for an image, `[name](…)` for a file — at the cursor.
+
+**Width and caption** come from the alt text, the Obsidian way (`lib/mediaMarkdown.ts`):
+
+```
+![Jurerê beach|360](/api/v1/notes/media/…)
+```
+
+- The number after the `|` is the width in pixels; without it the image goes to the column's width.
+- The text before it becomes a caption, **unless it looks like a file name** (`IMG_2034.jpg`) — what
+  pasting writes —, so older images get no caption nobody chose.
+- Clicking an image opens it full screen (antd's `Image` preview).
+
+**Files** draw as a card with icon, name and size; a click downloads under the original name. The size
+comes from `GET /notes/media/lookup`, which answers many ids at once, deleted ones included (marked
+"removed from the library").
+
+## 10. Which notes use each item
+
+`nte010_page_media` is derived from the markdown on every save, like the wikilink edges
+(`PageMediaSynchronizer`, `MediaReferenceParser`): every `/api/v1/notes/media/{id}` path outside code,
+of an item the user owns, becomes a row. Taking the image out of the text takes the row away; deleting
+the page takes all of its rows.
+
+So the library shows **"Used in N notes"** in an item's details, with links to them; has an
+**"Unused"** place to clear what no note shows; and **deleting an item in use warns** with the notes —
+without blocking, since they keep showing it.

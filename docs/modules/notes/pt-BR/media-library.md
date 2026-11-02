@@ -68,9 +68,8 @@ cima (ou para "Não organizadas"/o topo) antes de a pasta sair. As FKs `fk_nte00
 
 ## 6. Excluir um item
 
-A exclusão é soft (`deleted_at`): o item some da biblioteca, mas **os bytes continuam servidos**. Uma
-nota pode ainda embedá-lo, e quais embedam só vai ser rastreado quando as notas registrarem as mídias
-que usam (fase seguinte do plano). Por isso o download não filtra itens excluídos.
+A exclusão é soft (`deleted_at`): o item some da biblioteca, mas **os bytes continuam servidos**, porque
+uma nota pode ainda mostrá-lo (ver §10). Por isso o download não filtra itens excluídos.
 
 ## 7. Servir os bytes
 
@@ -101,3 +100,36 @@ navegar a aba para a API.
 - **Clicar num item** abre os detalhes: prévia, nome editável, pasta, baixar, copiar o markdown,
   excluir, e tipo, tamanho, dimensões, nome original e data.
 - A pasta aberta fica na URL (`?folder=`), e o menu do app e a barra lateral das notas levam até ela.
+
+## 9. Mídia dentro das notas
+
+**Inserir.** `/imagem` e `/arquivo` no menu de barra, ou o botão de imagem na barra da página, abrem
+o seletor da biblioteca (`components/library/MediaPickerModal.tsx`): pastas, busca, grade e
+"Enviar e inserir", que manda o arquivo para a pasta aberta e já insere. O que entra é markdown
+comum — `![nome](…)` para imagem, `[nome](…)` para arquivo — no cursor.
+
+**Largura e legenda** vêm do texto alternativo, no estilo do Obsidian (`lib/mediaMarkdown.ts`):
+
+```
+![Praia de Jurerê|360](/api/v1/notes/media/…)
+```
+
+- O número depois da `|` é a largura em pixels; sem ele, a imagem vai até a largura da coluna.
+- O texto antes vira legenda, **exceto quando parece um nome de arquivo** (`IMG_2034.jpg`) — o que
+  colar escreve —, para as imagens antigas não ganharem uma legenda que ninguém escolheu.
+- Clicar na imagem abre em tela cheia (o preview do `Image` do antd).
+
+**Arquivos** viram um cartão com ícone, nome e tamanho; clicar baixa com o nome original. O tamanho
+vem de `GET /notes/media/lookup`, que responde vários ids de uma vez, excluídos incluídos (marcados
+"removido da biblioteca").
+
+## 10. Quais notas usam cada item
+
+`nte010_page_media` é derivada do markdown a cada save, como as arestas de wikilink
+(`PageMediaSynchronizer`, `MediaReferenceParser`): todo caminho `/api/v1/notes/media/{id}` fora de
+código, de um item do próprio usuário, vira uma linha. Tirar a imagem do texto tira a linha; excluir a
+página tira todas as dela.
+
+Com isso a biblioteca mostra, nos detalhes, **"Usado em N notas"** com links para elas; tem o lugar
+**"Sem uso"** para limpar o que nenhuma nota mostra; e **excluir um item em uso avisa** listando as
+notas — sem bloquear, porque elas continuam mostrando o item.

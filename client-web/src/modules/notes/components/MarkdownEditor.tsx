@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react'
 import { useTranslation } from 'react-i18next'
 import { minimalSetup } from 'codemirror'
 import { EditorState } from '@codemirror/state'
@@ -16,6 +16,7 @@ import {
 } from '../lib/editorCommands'
 import { embedMarkdown } from '../lib/media'
 import { TableSizeModal } from './TableSizeModal'
+import { MediaPickerModal } from './library/MediaPickerModal'
 import type { MediaItemDto, PageSummaryDto, TagDto } from '../models'
 
 interface MarkdownEditorProps {
@@ -33,6 +34,13 @@ interface MarkdownEditorProps {
   onUpload: (file: File) => Promise<MediaItemDto>
   /** Grows with the text instead of scrolling inside, so the page around it scrolls as one document. */
   autoHeight?: boolean
+  /** Lets the page's toolbar open the media picker on the editor's cursor. */
+  ref?: Ref<MarkdownEditorHandle>
+}
+
+export interface MarkdownEditorHandle {
+  /** Opens the library to pick something to insert at the cursor. */
+  insertMedia: () => void
 }
 
 
@@ -46,12 +54,17 @@ export function MarkdownEditor({
   onChange,
   onUpload,
   autoHeight = false,
+  ref,
 }: MarkdownEditorProps) {
   const { t } = useTranslation()
   const hostRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   // `/table` asked for a size and is waiting on the dialog.
   const [tableSizeOpen, setTableSizeOpen] = useState(false)
+  // `/image`, `/file` or the toolbar asked for an item of the library; the kind narrows the grid.
+  const [picking, setPicking] = useState<{ kind: 'image' | 'file' | null } | null>(null)
+
+  useImperativeHandle(ref, () => ({ insertMedia: () => setPicking({ kind: null }) }), [])
 
   // Keep the latest callbacks in refs so the editor isn't rebuilt when they change.
   const onChangeRef = useRef(onChange)
@@ -92,7 +105,7 @@ export function MarkdownEditor({
     // rebuilds the editor.
     const slashCompletions = slashSource(
       (command) => tRef.current(command.labelKey),
-      () => setTableSizeOpen(true),
+      (prompt) => (prompt === 'table' ? setTableSizeOpen(true) : setPicking({ kind: prompt })),
     )
     const wikilinkCompletions = wikilinkSource(() => pagesRef.current)
     const tagCompletions = tagSource(() => tagsRef.current)
@@ -172,6 +185,18 @@ export function MarkdownEditor({
         ref={hostRef}
         className={autoHeight ? 'notes-editor notes-editor-auto' : 'notes-editor'}
         style={autoHeight ? undefined : { height: '100%', overflow: 'auto' }}
+      />
+      <MediaPickerModal
+        open={!!picking}
+        kind={picking?.kind ?? null}
+        onClose={() => {
+          setPicking(null)
+          viewRef.current?.focus()
+        }}
+        onPick={(item) => {
+          setPicking(null)
+          if (viewRef.current) insertAtCursor(viewRef.current, embedMarkdown(item))
+        }}
       />
       {tableSizeOpen && (
         <TableSizeModal

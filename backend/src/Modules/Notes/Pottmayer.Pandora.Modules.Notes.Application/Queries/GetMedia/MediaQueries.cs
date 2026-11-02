@@ -13,9 +13,11 @@ namespace Pottmayer.Pandora.Modules.Notes.Application.Queries.GetMedia;
 
 /// <summary>
 /// One folder's own items (<paramref name="FolderId"/>), or the unsorted ones, or — with neither —
-/// the whole library; narrowed by <paramref name="Kind"/> and a name fragment.
+/// the whole library; narrowed by <paramref name="Kind"/>, a name fragment, and to the items no page
+/// shows (<paramref name="UnusedOnly"/>).
 /// </summary>
-public sealed record ListMediaInput(Guid UserId, Guid? FolderId, bool UnsortedOnly, string? Kind, string? Search);
+public sealed record ListMediaInput(
+    Guid UserId, Guid? FolderId, bool UnsortedOnly, string? Kind, string? Search, bool UnusedOnly = false);
 
 public sealed class ListMediaQuery(ListMediaInput input) : QueryBase<ListMediaInput, IReadOnlyList<MediaItemDto>>(input);
 
@@ -29,10 +31,17 @@ public sealed class ListMediaQueryHandler(IUnitOfWorkFactory factory)
         {
             var items = await ctx.AcquireRepository<IMediaItemRepository>()
                 .ListAsync(input.UserId, input.FolderId, input.UnsortedOnly, input.Kind, input.Search, token);
+            var ids = items.Select(i => i.Id).ToList();
             var withThumbnail = await ctx.AcquireRepository<IMediaRenditionRepository>()
-                .WithPurposeAsync([.. items.Select(i => i.Id)], RenditionPurpose.Thumbnail, token);
+                .WithPurposeAsync(ids, RenditionPurpose.Thumbnail, token);
+            var usages = await ctx.AcquireRepository<IPageMediaRepository>().CountByMediaAsync(ids, token);
 
-            IReadOnlyList<MediaItemDto> list = [.. items.Select(i => MediaItemDto.From(i, withThumbnail.Contains(i.Id)))];
+            IReadOnlyList<MediaItemDto> list =
+            [
+                .. items
+                    .Where(i => !input.UnusedOnly || !usages.ContainsKey(i.Id))
+                    .Select(i => MediaItemDto.From(i, withThumbnail.Contains(i.Id), usages.GetValueOrDefault(i.Id)))
+            ];
             return list;
         }, cancellationToken: ct);
 
@@ -54,10 +63,17 @@ public sealed class GetMediaFoldersQueryHandler(IUnitOfWorkFactory factory)
         var dto = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
         {
             var folders = await ctx.AcquireRepository<IMediaFolderRepository>().GetForUserAsync(userId, token);
-            var counts = await ctx.AcquireRepository<IMediaItemRepository>().CountAsync(userId, token);
+            var items = ctx.AcquireRepository<IMediaItemRepository>();
+            var counts = await items.CountAsync(userId, token);
+
+            // A personal library is small enough to read whole for this count.
+            var ids = (await items.ListAsync(userId, null, false, null, null, token)).Select(i => i.Id).ToList();
+            var used = await ctx.AcquireRepository<IPageMediaRepository>().CountByMediaAsync(ids, token);
+
             return new MediaFoldersDto(
                 [.. folders.Select(f => MediaFolderDto.From(f, counts.ByFolder.GetValueOrDefault(f.Id)))],
                 counts.Unsorted,
+                ids.Count(id => !used.ContainsKey(id)),
                 counts.Total);
         }, cancellationToken: ct);
 
@@ -101,4 +117,62 @@ public sealed class GetMediaContentQueryHandler(
     }
 
     private sealed record Located(string FileName, string ContentType, string StorageKey);
+}
+
+public sealed record GetMediaUsagesInput(Guid UserId, Guid MediaId);
+
+/// <summary>The pages that show an item — what the library lists as "used in".</summary>
+public sealed class GetMediaUsagesQuery(GetMediaUsagesInput input) : QueryBase<GetMediaUsagesInput, IReadOnlyList<MediaUsageDto>>(input);
+
+public sealed class GetMediaUsagesQueryHandler(IUnitOfWorkFactory factory)
+    : QueryHandlerBase<GetMediaUsagesQuery, IReadOnlyList<MediaUsageDto>>
+{
+    protected override async Task<Result<IReadOnlyList<MediaUsageDto>>> HandleAsync(GetMediaUsagesQuery request, CancellationToken ct)
+    {
+        var input = request.Input;
+        var usages = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
+        {
+            var owned = await ctx.AcquireRepository<IMediaItemRepository>().GetByIdsForUserAsync([input.MediaId], input.UserId, token);
+            if (owned.Count == 0)
+                return null;
+
+            var pageIds = await ctx.AcquireRepository<IPageMediaRepository>().GetPageIdsByMediaAsync(input.MediaId, token);
+            var pages = await ctx.AcquireRepository<IPageRepository>().GetByIdsForUserAsync(pageIds, input.UserId, token);
+            IReadOnlyList<MediaUsageDto> list = [.. pages.Select(p => new MediaUsageDto(p.Id, p.SpaceId, p.Title, p.Icon, p.IsArchived))];
+            return list;
+        }, cancellationToken: ct);
+
+        return usages is null ? Fail(MediaErrors.NotFound) : Ok(usages);
+    }
+}
+
+public sealed record LookupMediaInput(Guid UserId, IReadOnlyCollection<Guid> Ids);
+
+/// <summary>
+/// The items a page shows, by id, deleted ones included — what the preview needs to draw a file as a
+/// card (name, size, kind). Ids that are not the user's are left out.
+/// </summary>
+public sealed class LookupMediaQuery(LookupMediaInput input) : QueryBase<LookupMediaInput, IReadOnlyList<MediaItemDto>>(input);
+
+public sealed class LookupMediaQueryHandler(IUnitOfWorkFactory factory)
+    : QueryHandlerBase<LookupMediaQuery, IReadOnlyList<MediaItemDto>>
+{
+    /// <summary>More than a page would ever embed; caps what one request can ask for.</summary>
+    private const int MaxIds = 200;
+
+    protected override async Task<Result<IReadOnlyList<MediaItemDto>>> HandleAsync(LookupMediaQuery request, CancellationToken ct)
+    {
+        var input = request.Input;
+        var ids = input.Ids.Distinct().Take(MaxIds).ToList();
+        var dtos = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
+        {
+            var items = await ctx.AcquireRepository<IMediaItemRepository>().GetByIdsForUserAsync(ids, input.UserId, token);
+            var withThumbnail = await ctx.AcquireRepository<IMediaRenditionRepository>()
+                .WithPurposeAsync([.. items.Select(i => i.Id)], RenditionPurpose.Thumbnail, token);
+            IReadOnlyList<MediaItemDto> list = [.. items.Select(i => MediaItemDto.From(i, withThumbnail.Contains(i.Id)))];
+            return list;
+        }, cancellationToken: ct);
+
+        return Ok(dtos);
+    }
 }

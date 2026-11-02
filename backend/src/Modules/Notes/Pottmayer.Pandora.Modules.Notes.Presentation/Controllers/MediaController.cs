@@ -27,16 +27,36 @@ public sealed class MediaController(
 {
     private Guid UserId => userContextAccessor.Context.User!.Id;
 
-    /// <summary>A folder's own items with <c>folderId</c>, the unsorted ones with <c>unsorted</c>, else all.</summary>
+    /// <summary>
+    /// A folder's own items with <c>folderId</c>, the unsorted ones with <c>unsorted</c>, else all;
+    /// <c>unused</c> keeps the ones no page shows.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> ListAsync(
         [FromQuery] Guid? folderId,
         [FromQuery] bool unsorted = false,
         [FromQuery] string? kind = null,
         [FromQuery] string? q = null,
+        [FromQuery] bool unused = false,
         CancellationToken ct = default)
     {
-        var result = await sender.Send(new ListMediaQuery(new ListMediaInput(UserId, folderId, unsorted, kind, q)), ct);
+        var result = await sender.Send(new ListMediaQuery(new ListMediaInput(UserId, folderId, unsorted, kind, q, unused)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>The items behind these ids, deleted ones included — for a page drawing what it embeds.</summary>
+    [HttpGet("lookup")]
+    public async Task<IActionResult> LookupAsync([FromQuery] Guid[] ids, CancellationToken ct)
+    {
+        var result = await sender.Send(new LookupMediaQuery(new LookupMediaInput(UserId, ids)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>The pages that show an item.</summary>
+    [HttpGet("{id:guid}/usages")]
+    public async Task<IActionResult> UsagesAsync(Guid id, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetMediaUsagesQuery(new GetMediaUsagesInput(UserId, id)), ct);
         return result.ToActionResult(errorMapper);
     }
 

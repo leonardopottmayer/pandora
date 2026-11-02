@@ -1,13 +1,15 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { App } from 'antd'
+import { App, Image } from 'antd'
 import { Marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { downloadMedia } from '../services/media.service'
 import { useMediaUrls } from '../hooks/useMediaUrls'
+import { useMediaLookup } from '../hooks/useMedia'
 import { mediaFileName, isMediaUrl, withMediaUrls } from '../lib/media'
 import { calloutExtension, CALLOUT_TYPES, type CalloutLabels } from '../lib/callouts'
 import { codeRenderer } from '../lib/codeBlock'
+import { mediaRenderer, parseMediaFileIds } from '../lib/mediaMarkdown'
 import { renderTags, type TagIndex } from '../lib/tags'
 import { renderWikilinks, type PageIndex } from '../lib/wikilinks'
 
@@ -60,16 +62,22 @@ export function MarkdownPreview({
   const { t, i18n } = useTranslation()
   const { message } = App.useApp()
   const mediaUrls = useMediaUrls(md)
+  // The files a page links to, to draw their cards with a size; images need no lookup.
+  const files = useMediaLookup(parseMediaFileIds(md))
+  const [zoomed, setZoomed] = useState<string | null>(null)
 
   // A callout written without a title falls back to the name of its type, so the parser is rebuilt
-  // when the language changes.
+  // when the language changes — and when the file cards learn their sizes.
   const parser = useMemo(() => {
     const labels = Object.fromEntries(
       CALLOUT_TYPES.map((type) => [type, t(`notes.callout.${type}`)]),
     ) as CalloutLabels
-    return new Marked({ extensions: [calloutExtension(labels)], renderer: codeRenderer })
+    return new Marked({
+      extensions: [calloutExtension(labels)],
+      renderer: { ...codeRenderer, ...mediaRenderer(files, t('notes.media.removed')) },
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [i18n.language])
+  }, [i18n.language, files])
 
   const html = useMemo(
     () => renderHtml(parser, md, mediaUrls, pageIndex, tagIndex),
@@ -79,6 +87,13 @@ export function MarkdownPreview({
   // Wikilinks are anchors with no real href; a delegated handler turns a click into navigation (or
   // into creating the page that is still missing).
   function handleClick(event: React.MouseEvent<HTMLDivElement>) {
+    // A library image opens full screen; its src is already the object URL.
+    const image = (event.target as HTMLElement).closest<HTMLImageElement>('img[data-zoom]')
+    if (image?.src.startsWith('blob:')) {
+      setZoomed(image.src)
+      return
+    }
+
     const tag = (event.target as HTMLElement).closest<HTMLElement>('.notes-tag')
     if (tag?.dataset.tagSlug) {
       event.preventDefault()
@@ -94,7 +109,7 @@ export function MarkdownPreview({
     const href = anchor.getAttribute('href') ?? ''
     if (isMediaUrl(href)) {
       event.preventDefault()
-      void downloadMedia(href, mediaFileName(href, anchor.textContent)).catch(() =>
+      void downloadMedia(href, mediaFileName(href, anchor.dataset.fileName ?? anchor.textContent)).catch(() =>
         message.error(t('notes.downloadError')),
       )
       return
@@ -109,11 +124,21 @@ export function MarkdownPreview({
   }
 
   return (
-    <div
-      className="notes-preview"
-      onClick={handleClick}
-      // Sanitized above with DOMPurify.
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+    <>
+      <div
+        className="notes-preview"
+        onClick={handleClick}
+        // Sanitized above with DOMPurify.
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+      {zoomed && (
+        <Image
+          src={zoomed}
+          alt=""
+          className="hidden"
+          preview={{ open: true, src: zoomed, onOpenChange: (open) => !open && setZoomed(null) }}
+        />
+      )}
+    </>
   )
 }

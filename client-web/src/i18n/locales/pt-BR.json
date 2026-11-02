@@ -1046,7 +1046,9 @@
       "codeBlock": "Bloco de código",
       "divider": "Divisor",
       "table": "Tabela",
-      "wikilink": "Link para uma página"
+      "wikilink": "Link para uma página",
+      "image": "Imagem",
+      "file": "Arquivo"
     },
     "pagesTitle": "Páginas",
     "subpageCount_one": "{{count}} subpágina",
@@ -1137,7 +1139,22 @@
         "image": "Imagem",
         "file": "Arquivo",
         "video": "Vídeo"
-      }
+      },
+      "unused": "Sem uso",
+      "unusedEmpty": "Todo item é usado por alguma nota.",
+      "deleteUsedHint_one": "Ele é usado em {{pages}}. Essa nota continua mostrando.",
+      "deleteUsedHint_other": "Ele é usado em {{count}} notas: {{pages}}. Elas continuam mostrando.",
+      "usedIn_one": "Usado em 1 nota",
+      "usedIn_other": "Usado em {{count}} notas",
+      "notUsed": "Nenhuma nota usa."
+    },
+    "media": {
+      "removed": "removido da biblioteca",
+      "pick": "Inserir da biblioteca",
+      "pickImage": "Inserir uma imagem",
+      "pickFile": "Inserir um arquivo",
+      "uploadAndInsert": "Enviar e inserir",
+      "insert": "Inserir da biblioteca"
     }
   },
   "agenda": {

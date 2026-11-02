@@ -20,6 +20,7 @@ não o log das fases.
 | **Espaços** | Aggregate `Space`, um padrão por usuário (criado na hora quando não há), pages num espaço, mover entre espaços levando a subárvore, wikilinks preferindo o próprio espaço, filtro de espaço na árvore / busca / grafo, tela de espaços e seletor na sidebar, `create_note` aceitando espaço (`nte007`). |
 | **Ícone emoji** | Picker ao lado do título, reduzido ao primeiro grafema via `Intl.Segmenter`, salvo pelo autosave da própria page. |
 | **Biblioteca de mídia** | Itens (imagem / arquivo; vídeo no schema, recusado no upload) em pastas virtuais, miniaturas WebP com ImageSharp e rotação EXIF, mover pastas sem ciclo, pasta excluída subindo o conteúdo, soft delete mantendo os bytes servidos, cache imutável, a tela da biblioteca, colar/arrastar no editor para "Não organizadas" (`nte002`, `nte003`, `nte008`, `nte009`). |
+| **Mídia dentro das notas** | Seletor da biblioteca por `/imagem`, `/arquivo` e pela barra, largura e legenda pelo texto alternativo (`![texto|400]`), zoom em tela cheia, cartões de arquivo com tamanho, quais notas usam cada item derivado no save (`nte010`), "Usado em" na biblioteca, lugar "Sem uso", aviso antes de excluir um item em uso. |
 | **Editor** | CodeMirror 6, markdown cru + preview + modo split, autosave de 800 ms, sanitização com DOMPurify. |
 | **Blocos ricos** | Slash commands (11 blocos + 6 callouts), callouts Obsidian como extensão do `marked`, tabelas markdown assistidas com Tab/Shift+Tab e reformatação idempotente. |
 | **Autocomplete** | Três menus — `[[` (pages por título e slug), `#` (tags existentes), `/` (comandos) — compartilhando `filter: false`, entradas por ref e tooltip pendurada no body. |
@@ -59,8 +60,8 @@ não o log das fases.
 
 1. **Retenção dos blobs.** Os bytes da mídia moram em `bytea`; revisitar mover para object storage
    se o caderno começar a carregar arquivos pesados — é também o gatilho do backend S3.
-2. **Quais notas usam um item.** Nada registra isso ainda, então excluir um item mantém os bytes e
-   nada varre os sem uso. A próxima fase deriva isso do markdown, como os wikilinks.
+2. **Bytes sem uso.** Excluir um item mantém os bytes, porque notas podem ainda mostrá-lo; nada varre os
+   bytes de um item excluído que nenhuma nota usa mais.
 3. **Passeio do grafo em memória.** Carregar o conjunto inteiro de pages/arestas do usuário é o certo
    para um caderno pessoal; é a primeira coisa a revisitar se o grafo crescer.
 4. **Parsers duplicados.** `lib/wikilinks.ts` e `lib/tags.ts` espelham o backend de propósito, para o

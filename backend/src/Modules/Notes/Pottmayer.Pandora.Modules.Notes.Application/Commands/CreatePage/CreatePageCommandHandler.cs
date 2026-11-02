@@ -54,6 +54,9 @@ public sealed class CreatePageCommandHandler(IUnitOfWorkFactory factory, TimePro
             // A page may already carry wikilinks and tags in its initial content (e.g. a duplicated note).
             var links = ctx.AcquireRepository<IPageLinkRepository>();
             await PageLinkSynchronizer.RebuildAsync(page, repo, links, timeProvider, token);
+            await PageMediaSynchronizer.RebuildAsync(
+                page, ctx.AcquireRepository<IMediaItemRepository>(), ctx.AcquireRepository<IPageMediaRepository>(),
+                timeProvider, token);
 
             var tags = await PageTagSynchronizer.RebuildAsync(
                 page,

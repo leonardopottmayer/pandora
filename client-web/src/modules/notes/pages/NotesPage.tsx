@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { App, Button, Drawer, Empty, Grid, Segmented, Spin, Tooltip, theme } from 'antd'
@@ -10,13 +10,14 @@ import {
   MenuFoldOutlined,
   MenuOutlined,
   MenuUnfoldOutlined,
+  PictureOutlined,
   SplitCellsOutlined,
 } from '@ant-design/icons'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { BacklinksPanel } from '../components/BacklinksPanel'
 import { LocalGraphPanel } from '../components/LocalGraphPanel'
-import { MarkdownEditor } from '../components/MarkdownEditor'
+import { MarkdownEditor, type MarkdownEditorHandle } from '../components/MarkdownEditor'
 import { MarkdownPreview } from '../components/MarkdownPreview'
 import { NotesSidebar } from '../components/NotesSidebar'
 import { PageBreadcrumb } from '../components/PageBreadcrumb'
@@ -84,6 +85,7 @@ export function NotesPage() {
   const [infoOpen, setInfoOpen] = useState(false)
   // A phone opens a page to read it; editing is a step it takes on purpose.
   const [mobileEditing, setMobileEditing] = useState(false)
+  const editorRef = useRef<MarkdownEditorHandle>(null)
 
   // Local draft of the open page; the source of truth while typing.
   const [draft, setDraft] = useState<PageDraft>({ title: '', icon: null, contentMarkdown: '' })
@@ -266,6 +268,7 @@ export function NotesPage() {
         onChange={(value) => updateDraft({ contentMarkdown: value })}
         onUpload={handleUpload}
         autoHeight={autoHeight}
+        ref={editorRef}
       />
     )
 
@@ -347,6 +350,16 @@ export function NotesPage() {
                 { value: 'preview', icon: <EyeOutlined />, title: t('notes.viewPreview') },
               ]}
             />
+          )}
+          {mode !== 'preview' && (
+            <Tooltip title={t('notes.media.insert')}>
+              <Button
+                type="text"
+                icon={<PictureOutlined />}
+                aria-label={t('notes.media.insert')}
+                onClick={() => editorRef.current?.insertMedia()}
+              />
+            </Tooltip>
           )}
           <Tooltip title={t('notes.info')}>
             <Button

@@ -26,7 +26,7 @@ precisar. Cada arquivo traz o *contexto de produto* (o que significa para o usu�
 |---|---|---|
 | 1 | [Visão geral](overview.md) | Visão, princípios, linguagem ubíqua, escopo (dentro/fora) |
 | 2 | [Arquitetura](architecture.md) | Estrutura dos projetos, blocos de DDD, ports, decisões de design |
-| 3 | [Modelo de dados](data-model.md) | Catálogo completo do schema (`nte001`–`nte009`): colunas, constraints, índices |
+| 3 | [Modelo de dados](data-model.md) | Catálogo completo do schema (`nte001`–`nte010`): colunas, constraints, índices |
 | 4 | [Pages e hierarquia](pages-and-hierarchy.md) | Aggregate `Page`, árvore, slug, mover/reordenar, favoritar, arquivar, soft delete |
 | 4a | [Espaços](spaces.md) | Agrupar pages como espaços do Confluence, o espaço padrão, mover entre espaços |
 | 5 | [Editor e blocos ricos](editor.md) | CodeMirror 6, autosave, preview, slash commands, callouts, tabelas, autocomplete |

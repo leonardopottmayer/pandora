@@ -1046,7 +1046,9 @@
       "codeBlock": "Code block",
       "divider": "Divider",
       "table": "Table",
-      "wikilink": "Link to a page"
+      "wikilink": "Link to a page",
+      "image": "Image",
+      "file": "File"
     },
     "pagesTitle": "Pages",
     "subpageCount_one": "{{count}} subpage",
@@ -1137,7 +1139,22 @@
         "image": "Image",
         "file": "File",
         "video": "Video"
-      }
+      },
+      "unused": "Unused",
+      "unusedEmpty": "Every item is used by some note.",
+      "deleteUsedHint_one": "It is used in {{pages}}. That note keeps showing it.",
+      "deleteUsedHint_other": "It is used in {{count}} notes: {{pages}}. They keep showing it.",
+      "usedIn_one": "Used in 1 note",
+      "usedIn_other": "Used in {{count}} notes",
+      "notUsed": "No note uses it."
+    },
+    "media": {
+      "removed": "removed from the library",
+      "pick": "Insert from the library",
+      "pickImage": "Insert an image",
+      "pickFile": "Insert a file",
+      "uploadAndInsert": "Upload and insert",
+      "insert": "Insert from the library"
     }
   },
   "agenda": {

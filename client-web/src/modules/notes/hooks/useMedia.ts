@@ -1,7 +1,9 @@
+import { useMemo } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { noteKeys } from './queryKeys'
 import * as mediaService from '../services/media.service'
 import type { MediaFilter } from '../services/media.service'
+import type { MediaItemDto } from '../models'
 
 export function useMediaList(filter: MediaFilter) {
   return useQuery({
@@ -28,6 +30,27 @@ export function useMediaBlobUrl(path: string | null) {
     staleTime: Infinity,
     gcTime: Infinity,
     retry: false,
+  })
+}
+
+/** The items behind some ids, as a map — for a page drawing the files it links to. */
+export function useMediaLookup(ids: string[]): ReadonlyMap<string, MediaItemDto> {
+  const sorted = [...ids].sort()
+  const { data } = useQuery({
+    queryKey: [...noteKeys.media(), 'lookup', ...sorted],
+    queryFn: () => mediaService.lookupMedia(sorted),
+    enabled: sorted.length > 0,
+    staleTime: 60_000,
+  })
+  return useMemo(() => new Map((data ?? []).map((item) => [item.id, item])), [data])
+}
+
+/** The pages that show an item. */
+export function useMediaUsages(id: string | null) {
+  return useQuery({
+    queryKey: [...noteKeys.media(), 'usages', id],
+    queryFn: () => mediaService.getMediaUsages(id!),
+    enabled: !!id,
   })
 }
 

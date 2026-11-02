@@ -22,7 +22,8 @@ export interface InsertCommand extends SlashCommandBase {
 /** Asks for something first: the editor opens the matching dialog and inserts what it answers. */
 export interface PromptCommand extends SlashCommandBase {
   kind: 'prompt'
-  prompt: 'table'
+  /** `image` and `file` open the media library to pick from. */
+  prompt: 'table' | 'image' | 'file'
 }
 
 export type SlashCommand = InsertCommand | PromptCommand
@@ -53,6 +54,8 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   block('codeBlock', '```\n\n```\n', 4),
   block('divider', '---\n\n'),
   { id: 'table', labelKey: 'notes.slash.table', group: 'block', kind: 'prompt', prompt: 'table' },
+  { id: 'image', labelKey: 'notes.slash.image', group: 'block', kind: 'prompt', prompt: 'image' },
+  { id: 'file', labelKey: 'notes.slash.file', group: 'block', kind: 'prompt', prompt: 'file' },
   block('wikilink', '[[]]', 2),
   ...CALLOUT_TYPES.map((type) => callout(type)),
 ]

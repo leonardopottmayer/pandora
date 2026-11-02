@@ -31,7 +31,8 @@ por pausa na digitação, não por tecla.
 Colar (`Ctrl+V`) ou arrastar um arquivo envia ele para a biblioteca de mídia, em "Não organizadas"
 (`POST /notes/media`), e insere `![nome](/api/v1/notes/media/{id})` no cursor — um link `[nome](…)` para
 um arquivo que não é imagem. O rótulo é o nome do item, que é também o que o handler de download usa
-depois para nomear o arquivo salvo. Ver [Biblioteca de mídia](media-library.md).
+depois para nomear o arquivo salvo. `/imagem` e `/arquivo`, ou o botão de imagem da barra, inserem da
+biblioteca — ver [Mídia dentro das notas](media-library.md#9-mídia-dentro-das-notas).
 
 ## 4. Três menus de autocomplete
 

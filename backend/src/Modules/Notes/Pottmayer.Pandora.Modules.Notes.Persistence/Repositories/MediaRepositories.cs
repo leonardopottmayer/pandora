@@ -50,6 +50,45 @@ public sealed class MediaItemRepository(IDataContextAccessor accessor)
 
     public async Task<IReadOnlyList<MediaItem>> GetInFolderAsync(Guid userId, Guid folderId, CancellationToken ct = default)
         => await Live(userId).Where(m => m.FolderId == folderId).ToListAsync(ct);
+
+    public async Task<IReadOnlyList<MediaItem>> GetByIdsForUserAsync(
+        IReadOnlyCollection<Guid> ids, Guid userId, CancellationToken ct = default)
+    {
+        if (ids.Count == 0)
+            return [];
+        return await Queryable().Where(m => m.UserId == userId && ids.Contains(m.Id)).ToListAsync(ct);
+    }
+}
+
+public sealed class PageMediaRepository(IDataContextAccessor accessor)
+    : StandardRepository<PageMedia, Guid>(accessor), IPageMediaRepository
+{
+    public async Task<IReadOnlyList<PageMedia>> GetByPageAsync(Guid pageId, CancellationToken ct = default)
+        => await Queryable().Where(r => r.PageId == pageId).ToListAsync(ct);
+
+    public async Task<IReadOnlyList<Guid>> GetPageIdsByMediaAsync(Guid mediaId, CancellationToken ct = default)
+        => await Queryable().Where(r => r.MediaId == mediaId).Select(r => r.PageId).ToListAsync(ct);
+
+    public async Task<IReadOnlyDictionary<Guid, int>> CountByMediaAsync(
+        IReadOnlyCollection<Guid> mediaIds, CancellationToken ct = default)
+    {
+        if (mediaIds.Count == 0)
+            return new Dictionary<Guid, int>();
+
+        var rows = await Queryable()
+            .Where(r => mediaIds.Contains(r.MediaId))
+            .GroupBy(r => r.MediaId)
+            .Select(g => new { g.Key, Count = g.Count() })
+            .ToListAsync(ct);
+        return rows.ToDictionary(r => r.Key, r => r.Count);
+    }
+
+    public async Task RemoveByPageAsync(Guid pageId, CancellationToken ct = default)
+    {
+        var rows = await Queryable().Where(r => r.PageId == pageId).ToListAsync(ct);
+        if (rows.Count > 0)
+            await RemoveRangeAsync(rows, ct);
+    }
 }
 
 public sealed class MediaFolderRepository(IDataContextAccessor accessor)
