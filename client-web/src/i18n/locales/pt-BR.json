@@ -324,8 +324,13 @@
     "category": {
       "agenda.reminder": "Lembretes",
       "agenda.task": "Tarefas",
-      "agenda.event": "Eventos"
+      "agenda.event": "Eventos",
+      "communications.mailbox": "Caixas de email"
     },
+    "tabSettings": "Configurar",
+    "today": "Hoje {{time}}",
+    "yesterday": "Ontem {{time}}",
+    "attempts": "{{count}} tentativas",
     "historyTitle": "Historico de envios",
     "historyDesc": "O que saiu, por canal, e como terminou.",
     "colWhen": "Quando",
@@ -358,8 +363,6 @@
       "deliver-anyway": "Enviar mesmo assim"
     },
     "quietHoursZoneHint": "Os horarios sao no seu proprio fuso.",
-    "quietHoursSave": "Salvar horario silencioso",
-    "quietHoursSaved": "Horario silencioso salvo.",
     "quietHoursInvalid": "Defina inicio e fim — nao podem ser iguais."
   },
   "connections": {

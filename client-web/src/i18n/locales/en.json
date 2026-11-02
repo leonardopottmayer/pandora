@@ -324,8 +324,13 @@
     "category": {
       "agenda.reminder": "Reminders",
       "agenda.task": "Tasks",
-      "agenda.event": "Events"
+      "agenda.event": "Events",
+      "communications.mailbox": "Mailboxes"
     },
+    "tabSettings": "Settings",
+    "today": "Today {{time}}",
+    "yesterday": "Yesterday {{time}}",
+    "attempts": "{{count}} attempts",
     "historyTitle": "Delivery history",
     "historyDesc": "What went out, by channel, and how it ended.",
     "colWhen": "When",
@@ -358,8 +363,6 @@
       "deliver-anyway": "Deliver anyway"
     },
     "quietHoursZoneHint": "Times are in your own time zone.",
-    "quietHoursSave": "Save quiet hours",
-    "quietHoursSaved": "Quiet hours saved.",
     "quietHoursInvalid": "Set a start and end time — they cannot be the same."
   },
   "connections": {

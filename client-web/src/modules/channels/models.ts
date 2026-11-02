@@ -3,8 +3,12 @@ export type ChannelId = 'email' | 'telegram'
 /** All channels the settings screen can present, in display order. */
 export const ALL_CHANNELS: ChannelId[] = ['email', 'telegram']
 
+export function channelLabel(channel: ChannelId): string {
+  return channel === 'email' ? 'E-mail' : 'Telegram'
+}
+
 /** Categories the user can configure. Security categories are mandatory and not shown. */
-export const NOTIFICATION_CATEGORIES = ['agenda.reminder', 'agenda.task', 'agenda.event'] as const
+export const NOTIFICATION_CATEGORIES = ['agenda.reminder', 'agenda.task', 'agenda.event', 'communications.mailbox'] as const
 export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number]
 
 export interface UserChannel {
