@@ -32,6 +32,9 @@ internal sealed class PageEntityConfiguration : IEntityTypeConfiguration<Page>
         builder.Property(p => p.IsFavorite).HasColumnName("is_favorite").IsRequired();
         builder.Property(p => p.ArchivedAt).HasColumnName("archived_at");
         builder.Property(p => p.DeletedAt).HasColumnName("deleted_at");
+        builder.Property(p => p.HistoryNumber).HasColumnName("history_number").IsConcurrencyToken();
+        builder.Ignore(p => p.HistorySource);
+        builder.Ignore(p => p.RestoredFrom);
 
         builder.Property(p => p.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(p => p.CreatedBy).HasColumnName("created_by");

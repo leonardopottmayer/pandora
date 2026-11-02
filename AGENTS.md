@@ -1,3 +1,16 @@
+## Required project references
+
+Before implementing or reviewing code, read [Project and code standards](docs/architecture/en/coding-standards.md)
+([pt-BR](docs/architecture/pt-BR/coding-standards.md)) and inspect an equivalent use case in the affected module.
+Check the final diff against these standards before declaring the work complete.
+
+Consult the existing documentation relevant to the task:
+
+- [Documentation index](docs/README.md): module architecture, data models, APIs, implementation status and deployment.
+- [Tars wiring](docs/architecture/en/tars-wiring.md) and [Messaging](docs/architecture/en/messaging.md): shared infrastructure and module boundaries.
+- [Frontend design](client-web/DESIGN.md): themes, tokens, components and layout.
+- [Known issues](docs/known-issues.md): understood problems and previous decisions.
+
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**

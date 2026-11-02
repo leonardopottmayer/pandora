@@ -16,6 +16,7 @@ export function useAutosave<T>({ onSave, delayMs = 800 }: UseAutosaveOptions<T>)
   const [status, setStatus] = useState<SaveStatus>('idle')
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingRef = useRef<T | null>(null)
+  const runningRef = useRef<Promise<void> | null>(null)
   const onSaveRef = useRef(onSave)
   // Kept current after every render so timers and the unmount flush call the latest closure.
   useEffect(() => {
@@ -23,6 +24,8 @@ export function useAutosave<T>({ onSave, delayMs = 800 }: UseAutosaveOptions<T>)
   })
 
   const runSave = useCallback(async () => {
+    // Serialize saves so a slow response cannot let an older draft overwrite a newer one.
+    while (runningRef.current) await runningRef.current
     if (timerRef.current) {
       clearTimeout(timerRef.current)
       timerRef.current = null
@@ -31,12 +34,24 @@ export function useAutosave<T>({ onSave, delayMs = 800 }: UseAutosaveOptions<T>)
     if (value === null) return
     pendingRef.current = null
 
-    setStatus('saving')
+    const save = onSaveRef.current
+    const running = (async () => {
+      setStatus('saving')
+      try {
+        await save(value)
+        setStatus(pendingRef.current === null ? 'saved' : 'pending')
+      } catch (error) {
+        // Keep the unsaved draft for retry. A failed flush must block opening/restoring history.
+        if (pendingRef.current === null) pendingRef.current = value
+        setStatus('error')
+        throw error
+      }
+    })()
+    runningRef.current = running
     try {
-      await onSaveRef.current(value)
-      setStatus('saved')
-    } catch {
-      setStatus('error')
+      await running
+    } finally {
+      if (runningRef.current === running) runningRef.current = null
     }
   }, [])
 
@@ -45,14 +60,15 @@ export function useAutosave<T>({ onSave, delayMs = 800 }: UseAutosaveOptions<T>)
       pendingRef.current = value
       setStatus('pending')
       if (timerRef.current) clearTimeout(timerRef.current)
-      timerRef.current = setTimeout(() => void runSave(), delayMs)
+      timerRef.current = setTimeout(() => { void runSave().catch(() => {}) }, delayMs)
     },
     [delayMs, runSave],
   )
 
   /** Saves whatever is pending right now (page switch, unmount, Ctrl+S). */
   const flush = useCallback(async () => {
-    if (pendingRef.current !== null) await runSave()
+    await runSave()
+    while (pendingRef.current !== null) await runSave()
   }, [runSave])
 
   /** Drops any pending save without writing it (the target page is gone). */
@@ -66,10 +82,10 @@ export function useAutosave<T>({ onSave, delayMs = 800 }: UseAutosaveOptions<T>)
   // Save on unmount rather than dropping the last edits.
   useEffect(() => {
     return () => {
-      if (pendingRef.current !== null) void onSaveRef.current(pendingRef.current)
+      void runSave().catch(() => {})
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [])
+  }, [runSave])
 
   return { status, schedule, flush, reset }
 }

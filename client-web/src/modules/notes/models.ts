@@ -40,6 +40,29 @@ export interface PageTagDto {
   color: string | null
 }
 
+export interface PageSnapshot {
+  title: string
+  contentMarkdown: string
+  icon: string | null
+  spaceId: string
+  parentId: string | null
+  orderIndex: number
+  isFavorite: boolean
+  archivedAt: string | null
+  deletedAt: string | null
+}
+
+export interface PageVersionSummaryDto {
+  number: number
+  createdAt: string
+  source: string
+  restoredFrom: number | null
+}
+
+export interface PageVersionDto extends PageVersionSummaryDto {
+  snapshot: PageSnapshot
+}
+
 /** A tag as the filters list it; `pageCount` counts the live pages carrying it. */
 export interface TagDto extends PageTagDto {
   pageCount: number

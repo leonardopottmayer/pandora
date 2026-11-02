@@ -26,7 +26,7 @@ precisar. Cada arquivo traz o *contexto de produto* (o que significa para o usu�
 |---|---|---|
 | 1 | [Visão geral](overview.md) | Visão, princípios, linguagem ubíqua, escopo (dentro/fora) |
 | 2 | [Arquitetura](architecture.md) | Estrutura dos projetos, blocos de DDD, ports, decisões de design |
-| 3 | [Modelo de dados](data-model.md) | Catálogo completo do schema (`nte001`–`nte010`): colunas, constraints, índices |
+| 3 | [Modelo de dados](data-model.md) | Catálogo completo do schema (`nte001`–`nte011`): colunas, constraints, índices |
 | 4 | [Pages e hierarquia](pages-and-hierarchy.md) | Aggregate `Page`, árvore, slug, mover/reordenar, favoritar, arquivar, soft delete |
 | 4a | [Espaços](spaces.md) | Agrupar pages como espaços do Confluence, o espaço padrão, mover entre espaços |
 | 5 | [Editor e blocos ricos](editor.md) | CodeMirror 6, autosave, preview, slash commands, callouts, tabelas, autocomplete |
@@ -35,6 +35,7 @@ precisar. Cada arquivo traz o *contexto de produto* (o que significa para o usu�
 | 8 | [Tags](tags.md) | Parse de `#tag`, normalização, arestas derivadas, varredura de órfãs, cores, filtros |
 | 9 | [Busca](search.md) | Coluna gerada `tsvector`, tradução para `tsquery`, excerpt, command palette |
 | 10 | [Visão em grafo](graph-view.md) | Grafo global e local, passeio pela vizinhança, grau, renderização |
+| 10a | [Histórico de versões](version-history.md) | Snapshots completos, comparação e restauração reversível |
 | 11 | [Referência de API](api-reference.md) | Todos os endpoints em `/api/v{n}/notes` |
 | 12 | [Status de implementação](implementation-status.md) | O que está pronto vs. planejado |
 

@@ -21,6 +21,7 @@ CREATE TABLE notes.nte001_page (
 	is_favorite BOOLEAN NOT NULL DEFAULT false,
 	archived_at TIMESTAMPTZ NULL,
 	deleted_at TIMESTAMPTZ NULL,
+	history_number bigint NOT NULL DEFAULT 1,
 	created_by UUID NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
 	updated_by UUID NULL,

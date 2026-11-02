@@ -4,6 +4,12 @@ namespace Pottmayer.Pandora.Modules.Notes.Domain.Errors;
 
 public static class PageErrors
 {
+    public static Error HistoryConflict =>
+        Error.Conflict("Pages.HistoryConflict", "The page changed. Reload it before saving or restoring.");
+
+    public static Error InvalidRestore =>
+        Error.Conflict("Pages.InvalidRestore", "This version cannot be restored to its original location.");
+
     public static Error NotFound =>
         Error.NotFound("Pages.NotFound", "Page not found.");
 

@@ -41,7 +41,7 @@ não o log das fases.
 | **Toggle de arquivadas no grafo** | Não implementado. O `includeArchived` da `NotesGraphPage` só afeta a sidebar; o grafo sempre inclui as arquivadas (com a flag). |
 | **Alinhamento de coluna pela UI** | Deliberadamente fora. O lugar seria a linha separadora em `lib/markdownTables.ts`. |
 | **Backend de bucket e vídeo** | Só a abstração existe. `storage_backend` + `storage_key` em cada linha de mídia fazem com que plugar um bucket não exija migration; vídeo pede também download por pedaços e a versão de capa. Ver [Biblioteca de mídia](media-library.md#3-tipos-e-o-que-fica-pronto-para-vídeo). |
-| **Histórico de versões** | Planejado, depois da reforma atual — ver [Planejado: histórico de versões](#planejado-histórico-de-versões). |
+| **Histórico de versões** | Implementado — ver [Histórico de versões](version-history.md). |
 | **Templates de page, share/colaboração** | Futuro no plano de produto; nada iniciado. |
 
 ## Deliberadamente fora (não é dívida)
@@ -57,26 +57,12 @@ não o log das fases.
 - **`ON DELETE CASCADE` na árvore de pages** — o comando de delete percorre a subárvore por conta
   própria para o soft delete manter a história.
 
-## Planejado: histórico de versões
+## Histórico de versões
 
-Pedido em 2026-11-02, para depois da rodada atual de trabalho (a reforma Confluence/Notion). O objetivo
-é segurança: nenhuma alteração deve ficar impossível de desfazer.
-
-- **Toda alteração é registrada.** Cada save de uma page guarda uma versão com o que a page era: título,
-  corpo, ícone e os outros campos que um save pode mudar (espaço, page mãe, arquivada, favorita…). O
-  autosave roda a cada 800 ms enquanto se digita, então uma versão é um *ponto estável*, não uma tecla —
-  a regra de agrupamento (por pausa, por sessão ou por janela de tempo) é decisão para quando a feature
-  começar.
-- **Diff entre quaisquer duas versões.** Com as versões A, B e C, dá para comparar A→B, A→C e B→C —
-  qualquer par, não só vizinhas. O diff cobre todos os campos: título, ícone e os outros metadados como
-  antes/depois, o corpo como diff de linhas do markdown.
-- **Restaurar uma versão anterior.** Restaurar deixa a page igual àquela versão e é registrado como uma
-  versão nova, então um restore também pode ser desfeito.
-- **Onde aparece.** Uma entrada "Histórico" na page (o painel de informações é o lugar natural), listando
-  as versões com quando e por quê (edição, restore, assistente).
-
-Perguntas em aberto para lá: retenção (guardar tudo ou rarear as antigas), se a versão guarda o texto
-inteiro ou um delta, e se excluir a page mantém o histórico dela.
+Implementado: snapshots completos e imutáveis de cada save com alterações, sem expiração.
+Agrupamento apenas visual, comparação de qualquer par (Markdown e metadados), prévia e restauração
+reversível com validação de dono, hierarquia e concorrência. Páginas existentes recebem uma versão
+inicial; soft delete preserva o histórico. Ver [Histórico de versões](version-history.md).
 
 ## Pontos em aberto conhecidos
 

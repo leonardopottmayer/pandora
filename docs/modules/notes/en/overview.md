@@ -82,5 +82,6 @@ and local graph views.
 | **Global tag rename** | Deliberately out — it would mean rewriting the markdown of every page that mentions it. |
 | **Nested-tag rollup** (`#projeto` including `#projeto/pandora`) | Out. The slash is kept as part of the tag's text, nothing more. |
 | **S3/MinIO storage backend** | Designed for, not implemented. `IFileStorage` + the self-describing `storage_backend`/`storage_key` columns mean adding it needs no migration. |
-| **Version history, page templates, sharing/collaboration** | Future. |
+| **Version history** | Implemented — [complete snapshots, comparison and restoration](version-history.md). |
+| **Page templates, sharing/collaboration** | Future. |
 | **Audit event log** | Not part of this module. Pages and tags carry `created_by/at` + `updated_by/at`; there is no `nte`-side event log like the Finances `fin016`. |

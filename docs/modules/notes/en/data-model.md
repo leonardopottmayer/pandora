@@ -27,6 +27,7 @@ Migrations live in `migrations/migrations/notes/`.
 | nte008 | `media_folder` | Virtual folders of the media library |
 | nte009 | `media_rendition` | Versions derived from a media item (thumbnails) |
 | nte010 | `page_media` | Page → media item, derived from the body |
+| nte011 | `page_version` | Complete immutable page snapshots; see [Version history](version-history.md) |
 
 > The numbers name the tables; the migrations run in dependency order instead (space before page,
 > blob store and folders before media).
@@ -49,6 +50,7 @@ Migrations live in `migrations/migrations/notes/`.
 | `is_favorite` | boolean NOT NULL DEFAULT false | |
 | `archived_at` | timestamptz NULL | archived = hidden from the default tree, still editable |
 | `deleted_at` | timestamptz NULL | soft delete |
+| `history_number` | bigint NOT NULL | Latest snapshot number; optimistic concurrency token |
 | `search_vector` | tsvector GENERATED ALWAYS … STORED | `to_tsvector('simple', title || ' ' || content_markdown)` |
 | audit | `created_by/at`, `updated_by/at` | |
 

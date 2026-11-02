@@ -27,6 +27,7 @@ As migrations ficam em `migrations/migrations/notes/`.
 | nte008 | `media_folder` | Pastas virtuais da biblioteca |
 | nte009 | `media_rendition` | Versões derivadas de um item de mídia (miniaturas) |
 | nte010 | `page_media` | Page → item de mídia, derivada do corpo |
+| nte011 | `page_version` | Snapshots completos e imutáveis; ver [Histórico de versões](version-history.md) |
 
 > Os números nomeiam as tabelas; as migrations rodam na ordem das dependências (espaço antes da
 > page, blob store e pastas antes da mídia).
@@ -49,6 +50,7 @@ As migrations ficam em `migrations/migrations/notes/`.
 | `is_favorite` | boolean NOT NULL DEFAULT false | |
 | `archived_at` | timestamptz NULL | arquivada = fora da árvore padrão, ainda editável |
 | `deleted_at` | timestamptz NULL | soft delete |
+| `history_number` | bigint NOT NULL | Número do último snapshot; token de concorrência otimista |
 | `search_vector` | tsvector GENERATED ALWAYS … STORED | `to_tsvector('simple', title || ' ' || content_markdown)` |
 | auditoria | `created_by/at`, `updated_by/at` | |
 

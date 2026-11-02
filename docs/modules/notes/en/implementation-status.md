@@ -41,7 +41,7 @@ left behind, not the phase log.
 | **Archived toggle on the graph** | Not implemented. `NotesGraphPage`'s `includeArchived` only narrows the sidebar; the graph always includes archived pages (flagged). |
 | **Column alignment from the UI** | Deliberately out. The place would be the separator line in `lib/markdownTables.ts`. |
 | **Bucket storage backend and video** | Only the abstraction exists. `storage_backend` + `storage_key` on each media row mean plugging a bucket in needs no migration; video also needs ranged downloads and a poster rendition. See [Media Library](media-library.md#3-kinds-and-what-is-ready-for-video). |
-| **Version history** | Planned, after the current revamp — see [Planned: version history](#planned-version-history). |
+| **Version history** | Implemented — see [Version history](version-history.md). |
 | **Page templates, sharing/collaboration** | Future in the product plan; nothing started. |
 
 ## Deliberately out (not debt)
@@ -57,25 +57,12 @@ left behind, not the phase log.
 - **`ON DELETE CASCADE` on the page tree** — the delete command walks the subtree itself so the soft
   delete keeps its history.
 
-## Planned: version history
+## Version history
 
-Asked for on 2026-11-02, to come after the current round of work (the Confluence/Notion revamp). It is
-about safety: no edit should be impossible to undo.
-
-- **Every change is recorded.** Each save of a page keeps a version with what the page was: title,
-  body, icon, and the other fields a save can change (space, parent, archived, favorite…). Autosave runs
-  every 800 ms while typing, so a version is a *stable point*, not a keystroke — the grouping rule (by
-  pause, by session, or by time window) is a decision for when the feature starts.
-- **Diff between any two versions.** Given versions A, B and C, the user can compare A→B, A→C and B→C —
-  any pair, not just neighbours. The diff covers every field: title, icon and the other metadata as
-  before/after, the body as a line diff of the markdown.
-- **Restore an older version.** Restoring makes the page match that version and is itself recorded as a
-  new version, so a restore can be undone too.
-- **Where it shows.** A "History" entry on the page (the info panel is the natural place), listing the
-  versions with when and by what (an edit, a restore, the assistant).
-
-Open questions for then: retention (keep all, or thin out old ones), whether a version stores the full
-text or a delta, and whether deleting a page keeps its history.
+Implemented: complete immutable snapshots for every changed save, retained indefinitely.
+Display-only grouping, arbitrary-pair Markdown and metadata comparison, preview and reversible
+restore with ownership, hierarchy and concurrency validation. Existing pages receive an initial
+snapshot; soft deletion retains history. See [Version history](version-history.md).
 
 ## Known open points
 

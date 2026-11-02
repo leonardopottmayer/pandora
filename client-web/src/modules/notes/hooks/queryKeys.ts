@@ -6,6 +6,8 @@ export const noteKeys = {
   pageTree: (includeArchived: boolean, tagIds: string[], spaceId: string | null) =>
     [...noteKeys.pages(), 'tree', spaceId, includeArchived, ...tagIds] as const,
   page: (id: string) => [...noteKeys.pages(), 'detail', id] as const,
+  pageVersions: (id: string) => [...noteKeys.pages(), 'versions', id] as const,
+  pageVersion: (id: string, number: number | undefined) => [...noteKeys.pages(), 'version', id, number] as const,
   allBacklinks: () => [...noteKeys.pages(), 'backlinks'] as const,
   backlinks: (id: string) => [...noteKeys.allBacklinks(), id] as const,
   search: (term: string, tagIds: string[], spaceId: string | null) =>

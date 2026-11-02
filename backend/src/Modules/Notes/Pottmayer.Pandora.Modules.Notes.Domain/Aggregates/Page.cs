@@ -1,3 +1,4 @@
+using Pottmayer.Pandora.Modules.Notes.Domain.ValueObjects;
 using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Core.Ddd;
 
@@ -25,6 +26,11 @@ public sealed class Page : AggregateRoot<Guid>, IAuditable
     public DateTimeOffset? ArchivedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
 
+    /// <summary>Latest immutable version number, also used for optimistic concurrency.</summary>
+    public long HistoryNumber { get; private set; }
+    public string HistorySource { get; private set; } = PageVersionSource.Edit;
+    public long? RestoredFrom { get; private set; }
+
     public Guid? CreatedBy { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public Guid? UpdatedBy { get; set; }
@@ -34,6 +40,36 @@ public sealed class Page : AggregateRoot<Guid>, IAuditable
     public bool IsDeleted => DeletedAt is not null;
 
     private Page() { }
+
+    public void SetHistorySource(string source) => HistorySource = source;
+    public void ClearHistorySource()
+    {
+        HistorySource = PageVersionSource.Edit;
+        RestoredFrom = null;
+    }
+
+    public PageVersion RecordVersion(TimeProvider timeProvider, bool isNew)
+    {
+        HistoryNumber++;
+        return PageVersion.Capture(this, HistoryNumber, timeProvider,
+            isNew && HistorySource == PageVersionSource.Edit ? PageVersionSource.Create : HistorySource, RestoredFrom);
+    }
+
+    /// <summary>The application validates the destination and moves descendants before this runs.</summary>
+    public void Restore(PageSnapshot snapshot, long version)
+    {
+        Title = snapshot.Title;
+        ContentMarkdown = snapshot.ContentMarkdown;
+        Icon = snapshot.Icon;
+        SpaceId = snapshot.SpaceId;
+        ParentId = snapshot.ParentId;
+        OrderIndex = snapshot.OrderIndex;
+        IsFavorite = snapshot.IsFavorite;
+        ArchivedAt = snapshot.ArchivedAt;
+        // Deletion is a separate lifecycle operation, never replayed by restoring content.
+        HistorySource = PageVersionSource.Restore;
+        RestoredFrom = version;
+    }
 
     /// <summary>
     /// Creates a page. The caller resolves a per-user-unique <paramref name="slug"/> (usually via

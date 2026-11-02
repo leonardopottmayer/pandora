@@ -4,6 +4,13 @@ Escrito em 2026-11-02 ao fim de uma sessão do Claude Code, para que outro agent
 de onde parou sem ter a conversa. Tudo aqui é estado e decisão; o *porquê* técnico de cada peça está nos
 docs do módulo, linkados ao longo.
 
+**Atualização da continuação:** o usuário confirmou nesta conversa que a N6 já foi testada e autorizou
+o versionamento. Histórico implementado, ainda sem commit: todos os saves com alterações preservados,
+snapshots completos, sem expiração, agrupamento só visual, diff entre qualquer par e restauração como
+nova versão. Ver [Histórico de versões](../modules/notes/pt-BR/version-history.md). `history_number`
+entrou no CREATE original da page, seguindo a convenção pré-1.0; o banco local não foi recriado.
+As pendências de N6 descritas abaixo são o registro da sessão anterior, já superado por esse retorno.
+
 ---
 
 ## 1. Regras do usuário (valem sempre)

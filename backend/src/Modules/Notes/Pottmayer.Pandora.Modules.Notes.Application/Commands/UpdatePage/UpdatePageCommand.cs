@@ -1,4 +1,5 @@
 using Pottmayer.Pandora.Modules.Notes.Application.Dtos;
+using Pottmayer.Pandora.Modules.Notes.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 
 namespace Pottmayer.Pandora.Modules.Notes.Application.Commands.UpdatePage;
@@ -8,7 +9,8 @@ public sealed record UpdatePageInput(
     Guid PageId,
     string Title,
     string? Icon,
-    string ContentMarkdown);
+    string ContentMarkdown,
+    string Source = PageVersionSource.Edit);
 
 /// <summary>
 /// Edits a page's title, icon, and markdown body — the autosave path. The slug is intentionally not

@@ -81,5 +81,6 @@ filtros por interseção em três superfícies; busca full-text com command pale
 | **Rename global de tag** | Deliberadamente fora — exigiria reescrever o markdown de toda page que a menciona. |
 | **Rollup de tag aninhada** (`#projeto` incluindo `#projeto/pandora`) | Fora. A barra é mantida como parte do texto da tag, nada além disso. |
 | **Backend S3/MinIO** | Previsto, não implementado. `IFileStorage` + as colunas auto-descritivas `storage_backend`/`storage_key` fazem com que ligá-lo não exija migration. |
-| **Histórico de versões, templates de page, share/colaboração** | Futuro. |
+| **Histórico de versões** | Implementado — [snapshots completos, comparação e restauração](version-history.md). |
+| **Templates de page, share/colaboração** | Futuro. |
 | **Event log de auditoria** | Não faz parte deste módulo. Pages e tags têm `created_by/at` + `updated_by/at`; não existe um event log como o `fin016` do Finances. |

@@ -6,6 +6,10 @@ organized by module plus a few cross-cutting concerns.
 
 ## How to navigate
 
+- **Before implementing or reviewing code:** read [Project and code standards](architecture/en/coding-standards.md)
+  ([pt-BR](architecture/pt-BR/coding-standards.md)) for file placement, layer responsibilities, naming,
+  persistence, frontend conventions and verification.
+
 - **A specific module** ("how does Finances handle a reversal", "what does the Identity API look
   like"): go straight to the module's own `README.md` — it is the index for everything about that
   module.

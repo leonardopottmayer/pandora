@@ -26,7 +26,7 @@ the *technical rules* (aggregates, invariants, schema, endpoints).
 |---|---|---|
 | 1 | [Overview](en/overview.md) | Vision, principles, ubiquitous language, scope (in/out) |
 | 2 | [Architecture](en/architecture.md) | Project layout, DDD building blocks, ports, key design decisions |
-| 3 | [Data Model](en/data-model.md) | Full schema catalog (`nte001`–`nte010`): columns, constraints, indexes |
+| 3 | [Data Model](en/data-model.md) | Full schema catalog (`nte001`–`nte011`): columns, constraints, indexes |
 | 4 | [Pages & Hierarchy](en/pages-and-hierarchy.md) | `Page` aggregate, tree, slug, move/reorder, favorite, archive, soft delete |
 | 4a | [Spaces](en/spaces.md) | Grouping pages like Confluence spaces, the default space, moving across spaces |
 | 5 | [Editor & Rich Blocks](en/editor.md) | CodeMirror 6, autosave, preview, slash commands, callouts, tables, autocomplete |
@@ -35,6 +35,7 @@ the *technical rules* (aggregates, invariants, schema, endpoints).
 | 8 | [Tags](en/tags.md) | `#tag` parsing, normalization, derived edges, orphan sweep, colors, filters |
 | 9 | [Search](en/search.md) | `tsvector` generated column, `tsquery` translation, excerpt, command palette |
 | 10 | [Graph View](en/graph-view.md) | Global and local graph, neighborhood walk, degree, rendering |
+| 10a | [Version history](en/version-history.md) | Complete snapshots, comparison and reversible restoration |
 | 11 | [API Reference](en/api-reference.md) | Every endpoint under `/api/v{n}/notes` |
 | 12 | [Implementation Status](en/implementation-status.md) | What is built vs. planned |
 

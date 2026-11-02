@@ -2,6 +2,7 @@ using System.Text.Json;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.CreatePage;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetSpaces;
+using Pottmayer.Pandora.Modules.Notes.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using static Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands.ToolArguments;
 
@@ -71,7 +72,7 @@ public sealed class CreateNoteTool(ISender sender) : IAssistantTool
         }
 
         var result = await sender.Send(new CreatePageCommand(new CreatePageInput(
-            context.UserId, title, ParentId: null, Icon: null, content, spaceId)), ct);
+            context.UserId, title, ParentId: null, Icon: null, content, spaceId, Source: PageVersionSource.Assistant)), ct);
 
         if (!result.IsSuccess)
             return AssistantCommandOutcome.Failed(string.Join("; ", result.Errors.Select(e => e.Message)));

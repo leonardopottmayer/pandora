@@ -49,6 +49,7 @@ public sealed class CreatePageCommandHandler(IUnitOfWorkFactory factory, TimePro
             var page = Page.Create(
                 input.UserId, spaceId, input.Title, slug, input.ParentId, input.Icon,
                 orderIndex: 0, input.ContentMarkdown ?? string.Empty, timeProvider);
+            page.SetHistorySource(input.Source);
             await repo.AddAsync(page, token);
 
             // A page may already carry wikilinks and tags in its initial content (e.g. a duplicated note).

@@ -28,6 +28,7 @@ public sealed class UpdatePageCommandHandler(IUnitOfWorkFactory factory, TimePro
                 return Result<PageDto>.Failure([PageErrors.NotFound]);
 
             page.Update(input.Title, input.Icon, input.ContentMarkdown);
+            page.SetHistorySource(input.Source);
             await repo.UpdateAsync(page, token);
 
             // The save is where the wiki graph is materialized: rewrite this page's outgoing edges.

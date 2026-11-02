@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.CreatePage;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.DeletePage;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.MovePage;
+using Pottmayer.Pandora.Modules.Notes.Application.Commands.RestorePageVersion;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.SetPageArchived;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.SetPageFavorite;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.UpdatePage;
@@ -11,7 +12,10 @@ using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetBacklinks;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPage;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPageGraph;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPageTree;
+using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPageVersion;
+using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPageVersions;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.SearchPages;
+using Pottmayer.Pandora.Modules.Notes.Presentation.Filters;
 using Pottmayer.Pandora.Modules.Notes.Presentation.Requests;
 using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
@@ -23,6 +27,7 @@ namespace Pottmayer.Pandora.Modules.Notes.Presentation.Controllers;
 
 [ApiController]
 [Authorize]
+[TypeFilter(typeof(PageHistoryConflictFilter))]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/notes/pages")]
 public sealed class PagesController(
@@ -31,6 +36,28 @@ public sealed class PagesController(
     IUserContextAccessor<UserData> userContextAccessor) : ControllerBase
 {
     private Guid UserId => userContextAccessor.Context.User!.Id;
+
+    [HttpGet("{id:guid}/versions")]
+    public async Task<IActionResult> VersionsAsync(Guid id, [FromQuery] long? before, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetPageVersionsQuery(new GetPageVersionsInput(UserId, id, before)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpGet("{id:guid}/versions/{number:long}")]
+    public async Task<IActionResult> VersionAsync(Guid id, long number, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetPageVersionQuery(new GetPageVersionInput(UserId, id, number)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpPost("{id:guid}/versions/{number:long}/restore")]
+    public async Task<IActionResult> RestoreVersionAsync(Guid id, long number, RestorePageVersionRequest request, CancellationToken ct)
+    {
+        var command = new RestorePageVersionCommand(new RestorePageVersionInput(UserId, id, number, request.ExpectedVersion));
+        var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
 
     [HttpGet]
     public async Task<IActionResult> ListAsync(

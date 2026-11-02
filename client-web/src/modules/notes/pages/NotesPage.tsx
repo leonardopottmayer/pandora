@@ -8,6 +8,7 @@ import {
   EditOutlined,
   EyeOutlined,
   InfoCircleOutlined,
+  HistoryOutlined,
   MenuFoldOutlined,
   MenuOutlined,
   MenuUnfoldOutlined,
@@ -23,6 +24,7 @@ import { MarkdownPreview } from '../components/MarkdownPreview'
 import { NotesSidebar } from '../components/NotesSidebar'
 import { PageBreadcrumb } from '../components/PageBreadcrumb'
 import { PageHeader } from '../components/PageHeader'
+import { PageHistoryDrawer } from '../components/PageHistoryDrawer'
 import { SearchPalette } from '../components/SearchPalette'
 import { SpaceOverview } from '../components/SpaceOverview'
 import { VisualEditor } from '../components/visual/VisualEditor'
@@ -31,6 +33,7 @@ import { useCreatePage, usePage, usePageTree, useUpdatePage } from '../hooks/use
 import { useSpaces } from '../hooks/useSpaces'
 import { useUploadMedia } from '../hooks/useMedia'
 import { useTags } from '../hooks/useTags'
+import type { PageDto } from '../models'
 import { buildPageIndex } from '../lib/wikilinks'
 import '../components/notes.css'
 
@@ -86,6 +89,8 @@ export function NotesPage() {
   const [sidebarClosed, setSidebarClosed] = useState(() => readStored(SIDEBAR_KEY, ['1', '0'], '0') === '1')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [infoOpen, setInfoOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [editorGeneration, setEditorGeneration] = useState(0)
   // A phone opens a page to read it; editing is a step it takes on purpose.
   const [mobileEditing, setMobileEditing] = useState(false)
   const editorRef = useRef<MarkdownEditorHandle>(null)
@@ -171,12 +176,33 @@ export function NotesPage() {
 
   const { status, schedule, flush, reset } = useAutosave<PageDraft>({ onSave: handleSave })
 
+  async function openHistory() {
+    try {
+      await flush()
+      setHistoryOpen(true)
+    } catch (err) {
+      message.error(toErrorMessage(err, t('notes.saveError')))
+    }
+  }
+
+  function handleRestored(restored: PageDto) {
+    reset()
+    setDraft({ title: restored.title, icon: restored.icon, contentMarkdown: restored.contentMarkdown })
+    setEditorGeneration((generation) => generation + 1)
+    setHistoryOpen(false)
+  }
+
   // Selecting another page: write pending edits to the page being left, then navigate.
   async function handleSelect(id: string | null) {
     setDrawerOpen(false)
     setInfoOpen(false)
     if (id === selectedId) return
-    await flush()
+    try {
+      await flush()
+    } catch (err) {
+      message.error(toErrorMessage(err, t('notes.saveError')))
+      return
+    }
     if (id) navigate(`/notes/${id}`)
     else {
       reset()
@@ -187,7 +213,12 @@ export function NotesPage() {
 
   async function handleSpaceChange(id: string) {
     setDrawerOpen(false)
-    await flush()
+    try {
+      await flush()
+    } catch (err) {
+      message.error(toErrorMessage(err, t('notes.saveError')))
+      return
+    }
     reset()
     setDraftPageId(null)
     navigate(`/notes/s/${id}`)
@@ -263,6 +294,7 @@ export function NotesPage() {
   const editor = (autoHeight: boolean) =>
     selectedId && (
       <MarkdownEditor
+        key={`${selectedId}-${editorGeneration}`}
         docId={selectedId}
         initialValue={draft.contentMarkdown}
         placeholder={t('notes.contentPlaceholder')}
@@ -278,6 +310,7 @@ export function NotesPage() {
 
   const visualEditor = selectedId && (
     <VisualEditor
+      key={`${selectedId}-${editorGeneration}`}
       docId={selectedId}
       initialValue={draft.contentMarkdown}
       pages={allPages ?? []}
@@ -353,7 +386,7 @@ export function NotesPage() {
               size="small"
               icon={mobileEditing ? <CheckOutlined /> : <EditOutlined />}
               onClick={() => {
-                if (mobileEditing) void flush()
+                if (mobileEditing) void flush().catch((err) => message.error(toErrorMessage(err, t('notes.saveError'))))
                 setMobileEditing(!mobileEditing)
               }}
             >
@@ -389,6 +422,14 @@ export function NotesPage() {
               icon={<InfoCircleOutlined />}
               aria-label={t('notes.info')}
               onClick={() => setInfoOpen(!infoOpen)}
+            />
+          </Tooltip>
+          <Tooltip title={t('notes.history.title')}>
+            <Button
+              type="text"
+              icon={<HistoryOutlined />}
+              aria-label={t('notes.history.title')}
+              onClick={() => void openHistory()}
             />
           </Tooltip>
         </>
@@ -482,6 +523,14 @@ export function NotesPage() {
           <BacklinksPanel pageId={selectedId} onSelect={handleSelect} />
           <LocalGraphPanel pageId={selectedId} onSelect={handleSelect} />
         </Drawer>
+      )}
+      {selectedId && historyOpen && (
+        <PageHistoryDrawer
+          key={selectedId}
+          pageId={selectedId}
+          onClose={() => setHistoryOpen(false)}
+          onRestored={handleRestored}
+        />
       )}
     </div>
   )

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.UpdatePage;
+using Pottmayer.Pandora.Modules.Notes.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using static Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands.ToolArguments;
 
@@ -56,7 +57,7 @@ public sealed class AppendToNoteTool(ISender sender) : IAssistantTargetedTool
         var content = body.Length == 0 ? text : $"{body}\n\n{text}";
 
         var result = await sender.Send(new UpdatePageCommand(new UpdatePageInput(
-            context.UserId, page.Id, page.Title, page.Icon, content)), ct);
+            context.UserId, page.Id, page.Title, page.Icon, content, Source: PageVersionSource.Assistant)), ct);
         if (!result.IsSuccess)
             return AssistantCommandOutcome.Failed(string.Join("; ", result.Errors.Select(e => e.Message)));
 

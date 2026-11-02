@@ -7,10 +7,27 @@ import type {
   PageGraphDto,
   PageSearchResultDto,
   PageSummaryDto,
+  PageVersionDto,
+  PageVersionSummaryDto,
   UpdatePageRequest,
 } from '../models'
 
 const BASE = '/api/v1/notes/pages'
+
+export async function listPageVersions(id: string, before?: number): Promise<PageVersionSummaryDto[]> {
+  const { data } = await apiClient.get<PageVersionSummaryDto[]>(`${BASE}/${id}/versions`, { params: { before } })
+  return data
+}
+
+export async function getPageVersion(id: string, number: number): Promise<PageVersionDto> {
+  const { data } = await apiClient.get<PageVersionDto>(`${BASE}/${id}/versions/${number}`)
+  return data
+}
+
+export async function restorePageVersion(id: string, number: number, expectedVersion: number): Promise<PageDto> {
+  const { data } = await apiClient.post<PageDto>(`${BASE}/${id}/versions/${number}/restore`, { expectedVersion })
+  return data
+}
 
 /** The user's pages, one space's when `spaceId` is set, every space's otherwise. */
 export async function listPages(
