@@ -51,9 +51,11 @@ interface TransactionFormValues {
 interface TransactionFormModalProps {
   open: boolean
   onClose: () => void
+  /** Opened from an account: the form starts on it. */
+  defaultAccountId?: string
 }
 
-export function TransactionFormModal({ open, onClose }: TransactionFormModalProps) {
+export function TransactionFormModal({ open, onClose, defaultAccountId }: TransactionFormModalProps) {
   const { t } = useTranslation()
   const { message } = App.useApp()
   const [form] = Form.useForm<TransactionFormValues>()
@@ -65,8 +67,8 @@ export function TransactionFormModal({ open, onClose }: TransactionFormModalProp
   useEffect(() => {
     if (!open) return
     form.resetFields()
-    form.setFieldsValue({ target: 'account', kind: 'expense', installments: 1 })
-  }, [open, form])
+    form.setFieldsValue({ target: 'account', kind: 'expense', installments: 1, accountId: defaultAccountId })
+  }, [open, form, defaultAccountId])
 
   const kindOptions = (target === 'account' ? ACCOUNT_KINDS : CARD_KINDS).map((k) => ({
     value: k,

@@ -31,6 +31,15 @@ export function formatDate(isoDate: string | null | undefined): string {
   return new Intl.DateTimeFormat(currentLocale()).format(new Date(year, month - 1, day))
 }
 
+/** A `DateOnly` date as a day heading, with the weekday ("Fri, Jun 13"). */
+export function formatDay(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-').map(Number)
+  if (!year || !month || !day) return isoDate
+  return new Intl.DateTimeFormat(currentLocale(), { weekday: 'short', day: 'numeric', month: 'short' }).format(
+    new Date(year, month - 1, day),
+  )
+}
+
 /** Formats a `DateTimeOffset` (ISO 8601) as date+time in the current locale. */
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return ''

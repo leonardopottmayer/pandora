@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import dayjs from 'dayjs'
 import { Route, Routes } from 'react-router-dom'
 import i18n from '@/i18n'
 import { server } from '@/test/msw/server'
@@ -40,16 +42,60 @@ function handlers() {
   ]
 }
 
+function renderPage() {
+  return renderWithProviders(
+    <Routes>
+      <Route path="/finances/accounts/:id" element={<AccountDetailPage />} />
+    </Routes>,
+    { route: '/finances/accounts/a1' },
+  )
+}
+
 describe('AccountDetailPage', () => {
   it('renders the account, its balance and statement transactions', async () => {
     server.use(...handlers())
-    renderWithProviders(
-      <Routes>
-        <Route path="/finances/accounts/:id" element={<AccountDetailPage />} />
-      </Routes>,
-      { route: '/finances/accounts/a1' },
-    )
+    renderPage()
     expect(await screen.findAllByText('Conta Corrente')).not.toHaveLength(0)
     expect(await screen.findByText('Mercado')).toBeInTheDocument()
+    // What the projected balance still waits for.
+    expect(screen.getByText(/R\$\s?49\.50 still to come in/)).toBeInTheDocument()
+  })
+
+  it('tags only pending transactions', async () => {
+    // The first handler that matches answers, so the statement goes before the defaults.
+    server.use(
+      http.get(`${FINANCES_BASE}/accounts/a1/transactions`, () =>
+        HttpResponse.json({
+          success: true,
+          data: [transaction, { ...transaction, id: 'x2', status: 'pending', description: 'Aluguel' }],
+        }),
+      ),
+      ...handlers(),
+    )
+    renderPage()
+
+    await screen.findByText('Aluguel')
+    expect(screen.getAllByText('Pending')).toHaveLength(1)
+    expect(screen.queryByText('Posted')).not.toBeInTheDocument()
+  })
+
+  it('asks for one month at a time, starting with this one', async () => {
+    const asked: (string | null)[] = []
+    server.use(
+      http.get(`${FINANCES_BASE}/accounts/a1/transactions`, ({ request }) => {
+        asked.push(new URL(request.url).searchParams.get('from'))
+        return HttpResponse.json({ success: true, data: [] })
+      }),
+      ...handlers(),
+    )
+    const user = userEvent.setup()
+    renderPage()
+
+    const thisMonth = dayjs().startOf('month')
+    await waitFor(() => expect(asked).toContain(thisMonth.format('YYYY-MM-DD')))
+    expect(await screen.findByText('Nothing in this account this month.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Previous month' }))
+    await waitFor(() => expect(asked).toContain(thisMonth.subtract(1, 'month').format('YYYY-MM-DD')))
   })
 })

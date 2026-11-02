@@ -11,6 +11,7 @@ import type { AccountBalanceDto, AccountDto } from '../../models'
 import { ACCOUNT_TYPE_META } from '../../lib/enums'
 import { formatMoney } from '../../lib/format'
 import { EnumTag } from '../../components/EnumTag'
+import { StatTile } from '../../components/StatTile'
 import { useAccountBalances, useAccounts, useDeleteAccount, useSetAccountArchived } from '../../hooks/useAccounts'
 import { AccountFormModal } from './AccountFormModal'
 
@@ -172,16 +173,7 @@ export function AccountsListPage() {
       {totals.size > 0 && (
         <div className="flex flex-wrap gap-3">
           {[...totals].map(([currency, total]) => (
-            <div
-              key={currency}
-              className="flex min-w-48 flex-col gap-0.5 rounded-xl px-4 py-3"
-              style={{ border: `1px solid ${token.colorBorderSecondary}`, background: token.colorBgContainer }}
-            >
-              <Typography.Text type="secondary" className="text-xs uppercase tracking-wider">
-                {t('finances.accounts.total', { currency })}
-              </Typography.Text>
-              <span className="text-2xl font-semibold">{money(total, currency)}</span>
-            </div>
+            <StatTile key={currency} label={t('finances.accounts.total', { currency })} value={money(total, currency)} />
           ))}
         </div>
       )}
