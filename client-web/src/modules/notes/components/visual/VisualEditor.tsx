@@ -32,6 +32,7 @@ import { PagePickerModal } from '../PagePickerModal'
 import { ImageView, RawBlockView, WikilinkView } from './nodeViews'
 import { BlockView } from './BlockView'
 import { SuggestionMenu } from './SuggestionMenu'
+import { VideoPreview } from './videoPreview'
 import { menuTrigger, type MenuBridge, type MenuState } from './suggestions'
 import { VisualEditorContext, type VisualEditorContextValue } from './visualContext'
 
@@ -127,6 +128,7 @@ export function VisualEditor({
         }),
         Markdown.configure({ marked: newMarked() }),
         Placeholder.configure({ placeholder: t('notes.visual.placeholder') }),
+        VideoPreview,
         /* eslint-disable react-hooks/refs -- the menus read `latest` when they open, never while rendering */
         menuTrigger<SlashCommand>(bridge, {
           name: 'slashMenu',

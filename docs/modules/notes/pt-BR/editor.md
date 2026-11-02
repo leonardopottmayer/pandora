@@ -142,6 +142,9 @@ schema e as regras de markdown; o componente só acrescenta as views.
 - **Nós nossos**: o **wikilink** é um nó só (`[[alvo|alias]]`, `![[alvo]]`), desenhado como no preview e
   clicável — abre a page ou cria a que falta. A **imagem** guarda largura, alinhamento e legenda no texto
   alternativo, como sempre; selecionada, mostra botões de alinhamento que reescrevem esse texto.
+- **Vídeo**: um link do YouTube ou do Vimeo sozinho na linha mostra o player embaixo dele, com o mesmo
+  sandbox do preview (`components/visual/videoPreview.ts`). O player é decoração: o link continua
+  editável e é só ele que vai para o markdown.
 - **Callouts e blocos recolhíveis**: `lib/visualBlocks.ts` define nós nativos com campo de título e
   corpo editado diretamente no mesmo editor (formatação, listas, tabelas, links, mídia e blocos
   aninhados). O título salva a cada alteração; Enter/Seta para baixo entra no corpo, Ctrl/Cmd+Enter

@@ -118,6 +118,18 @@ describe('VisualEditor', () => {
     expect(props.onChange).not.toHaveBeenCalled()
   })
 
+  it('draws the player under a video link alone on its line, and only there', async () => {
+    const { container, props } = renderEditor('https://youtu.be/dQw4w9WgXcQ\n\nVer https://youtu.be/dQw4w9WgXcQ depois')
+    await screen.findByText('depois', { exact: false })
+
+    const frames = container.querySelectorAll('.notes-video iframe')
+    expect(frames).toHaveLength(1)
+    expect(frames[0]).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ')
+    expect(frames[0].getAttribute('sandbox')).toContain('allow-scripts')
+    expect(screen.getAllByRole('link', { name: 'https://youtu.be/dQw4w9WgXcQ' })).toHaveLength(2)
+    expect(props.onChange).not.toHaveBeenCalled()
+  })
+
   it('does not rewrite a page that was only opened', async () => {
     const { props } = renderEditor('* a\n* b')
     await screen.findByText('a')

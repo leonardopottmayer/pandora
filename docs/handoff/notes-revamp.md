@@ -120,7 +120,8 @@ Nada foi enviado ao remoto (sem push).
 Callout e toggle nativos já foram feitos (`8644bc1`). O usuário decidiu (2026-11-02) corrigir o resto,
 **um item por commit**:
 
-- Link de vídeo sozinho na linha aparece como link no editor (player só no modo leitura).
+- ~~Link de vídeo sozinho na linha aparece como link no editor.~~ Feito: o player aparece embaixo do link
+  (`components/visual/videoPreview.ts`, decoração do ProseMirror).
 - Link de arquivo da biblioteca no editor visual aparece como link comum (o cartão só no modo leitura).
 - HTML inline (`<kbd>`, `<span style>`) é reduzido ao texto se o parágrafo for editado no visual; `<img>`
   inline vira `![|largura](…)`.

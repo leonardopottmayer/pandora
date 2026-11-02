@@ -142,6 +142,9 @@ defines the schema and the markdown rules; the component only adds the views.
 - **Our own nodes**: a **wikilink** is one node (`[[target|alias]]`, `![[target]]`), drawn as the preview
   draws it and clickable — it opens the page, or creates the missing one. An **image** keeps width,
   alignment and caption in its alt text, as always; selected, it shows alignment buttons that rewrite it.
+- **Video**: a YouTube or Vimeo link alone on its line shows the player under it, with the preview's
+  sandbox (`components/visual/videoPreview.ts`). The player is a decoration: the link stays editable and
+  is all that goes into the markdown.
 - **Callouts and toggles**: `lib/visualBlocks.ts` defines native nodes with a title field and a body
   edited directly in the same editor (formatting, lists, tables, links, media and nested blocks).
   Titles save on each change; Enter/ArrowDown moves into the body, Ctrl/Cmd+Enter leaves the block,

@@ -70,6 +70,18 @@ export const embedRenderer: RendererObject = {
   },
 }
 
+/** The attributes every frame of a note carries, whatever it was written with. */
+export function lockFrame(frame: Element) {
+  // Scripts and same-origin are what the players need to run; the frame is another origin, so
+  // together they still give it no reach into this page. Popups let "watch on YouTube" open a tab.
+  frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox')
+  frame.setAttribute('allow', 'encrypted-media; picture-in-picture; fullscreen')
+  frame.setAttribute('allowfullscreen', '')
+  // YouTube refuses to play for a page that sends no referrer.
+  frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin')
+  frame.setAttribute('loading', 'lazy')
+}
+
 // A purifier of its own: the hook below must not reach the other places that sanitize HTML (email).
 const purifier = DOMPurify(window)
 purifier.addHook('afterSanitizeAttributes', (node) => {
@@ -78,14 +90,7 @@ purifier.addHook('afterSanitizeAttributes', (node) => {
     node.remove()
     return
   }
-  // Scripts and same-origin are what the players need to run; the frame is another origin, so
-  // together they still give it no reach into this page. Popups let "watch on YouTube" open a tab.
-  node.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox')
-  node.setAttribute('allow', 'encrypted-media; picture-in-picture; fullscreen')
-  node.setAttribute('allowfullscreen', '')
-  // YouTube refuses to play for a page that sends no referrer.
-  node.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin')
-  node.setAttribute('loading', 'lazy')
+  lockFrame(node)
 })
 
 /** Sanitizes a note's rendered HTML, keeping only the frames the allowlist accepts. */
