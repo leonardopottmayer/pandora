@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { Outlet, useNavigate, useLocation, useNavigation } from 'react-router-dom'
 import { Layout, Menu, Dropdown, Avatar, Button, Drawer, Tooltip, theme, type MenuProps } from 'antd'
 import {
   MenuFoldOutlined,
@@ -32,6 +32,8 @@ export function AppLayout() {
   const { isDark, setTheme } = usePreferences()
   const navigate = useNavigate()
   const location = useLocation()
+  // Uma tela aberta pela primeira vez baixa o próprio pedaço do app; a tela atual fica enquanto isso.
+  const loadingScreen = useNavigation().state === 'loading'
   const { token } = theme.useToken()
 
   const [siderCollapsed, setSiderCollapsed] = useState(loadCollapsed)
@@ -257,6 +259,13 @@ export function AppLayout() {
             overflow: 'auto',
           }}
         >
+          {loadingScreen && (
+            <div
+              aria-hidden
+              className="fixed left-0 top-0 z-[1100] h-0.5 w-full animate-pulse"
+              style={{ background: token.colorPrimary }}
+            />
+          )}
           <Outlet />
         </Content>
       </Layout>

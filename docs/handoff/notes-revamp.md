@@ -125,8 +125,9 @@ Callout e toggle nativos já foram feitos (`8644bc1`). O usuário decidiu (2026-
 - HTML inline (`<kbd>`, `<span style>`) é reduzido ao texto se o parágrafo for editado no visual; `<img>`
   inline vira `![|largura](…)`.
 - Total de espaço ocupado na tela da biblioteca (o tamanho por item já existe).
-- Bundle do front é um chunk só (3,9 MB, 1,2 MB gzip, sem nenhum `lazy`); o TipTap somou. Aprovado:
-  carregar as telas sob demanda (`React.lazy` nas rotas), num commit próprio. Vale para o app inteiro.
+- ~~Bundle do front num chunk só (3,9 MB).~~ Feito: as telas autenticadas usam o `lazy` das rotas do
+  React Router (`src/app/router.tsx`); a entrada caiu para ~1,2 MB e o Notes (TipTap) virou um pedaço
+  próprio de 1,3 MB, baixado só ao abrir o Notes. Uma barra fina no topo (`AppLayout`) indica a espera.
 - Mídia sem uso continua guardada de propósito; bucket e vídeo seguem previstos, sem data.
 
 ## 4. Como rodar e verificar

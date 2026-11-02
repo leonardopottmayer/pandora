@@ -1,3 +1,4 @@
+import type { ComponentType } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
 import { ProtectedRoute, PublicOnlyRoute } from '@/modules/identity/components/RouteGuards'
 import { LoginPage } from '@/modules/identity/pages/LoginPage'
@@ -6,48 +7,13 @@ import { MfaChallengePage } from '@/modules/identity/pages/MfaChallengePage'
 import { ForgotPasswordPage } from '@/modules/identity/pages/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/modules/identity/pages/ResetPasswordPage'
 import { ActivateAccountPage } from '@/modules/identity/pages/ActivateAccountPage'
-import { ProfilePage } from '@/modules/identity/pages/ProfilePage'
-import { ChangePasswordPage } from '@/modules/identity/pages/ChangePasswordPage'
-import { SecurityPage } from '@/modules/identity/pages/SecurityPage'
-import { DevicesPage } from '@/modules/identity/pages/DevicesPage'
-import { SettingsPage } from '@/modules/identity/pages/SettingsPage'
-import { NotificationsPage } from '@/modules/channels/pages/NotificationsPage'
-import { ConnectionsPage } from '@/modules/integrations/pages/ConnectionsPage'
-import { AssistantSettingsPage } from '@/modules/assistant/pages/AssistantSettingsPage'
-import { AssistantPage } from '@/modules/assistant/pages/AssistantPage'
-import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
-import { AccountsListPage } from '@/modules/finances/pages/accounts/AccountsListPage'
-import { AccountDetailPage } from '@/modules/finances/pages/accounts/AccountDetailPage'
-import { CategoriesListPage } from '@/modules/finances/pages/categories/CategoriesListPage'
-import { TagsListPage } from '@/modules/finances/pages/tags/TagsListPage'
-import { TransactionsListPage } from '@/modules/finances/pages/transactions/TransactionsListPage'
-import { RecurringTransactionsListPage } from '@/modules/finances/pages/recurring/RecurringTransactionsListPage'
-import { InboxPage } from '@/modules/finances/pages/inbox/InboxPage'
-import { CardsListPage } from '@/modules/finances/pages/cards/CardsListPage'
-import { CardDetailPage } from '@/modules/finances/pages/cards/CardDetailPage'
-import { StatementDetailPage } from '@/modules/finances/pages/statements/StatementDetailPage'
-import { AuditPage } from '@/modules/finances/pages/audit/AuditPage'
-import { ImportsListPage } from '@/modules/finances/pages/imports/ImportsListPage'
-import { ImportDetailPage } from '@/modules/finances/pages/imports/ImportDetailPage'
-import { ImportLayoutsPage } from '@/modules/finances/pages/imports/ImportLayoutsPage'
-import { NotesPage } from '@/modules/notes/pages/NotesPage'
-import { NotesGraphPage } from '@/modules/notes/pages/NotesGraphPage'
-import { SpacesPage } from '@/modules/notes/pages/SpacesPage'
-import { LibraryPage } from '@/modules/notes/pages/LibraryPage'
-import { TodayPage } from '@/modules/agenda/pages/today/TodayPage'
-import { RemindersListPage } from '@/modules/agenda/pages/reminders/RemindersListPage'
-import { TasksListPage } from '@/modules/agenda/pages/tasks/TasksListPage'
-import { CalendarPage } from '@/modules/agenda/pages/calendar/CalendarPage'
-import { AgendaSettingsPage } from '@/modules/agenda/pages/settings/AgendaSettingsPage'
-import { CatalogPage } from '@/modules/files/pages/CatalogPage'
-import { RootsPage } from '@/modules/files/pages/RootsPage'
-import { FiltersPage } from '@/modules/files/pages/FiltersPage'
-import { ReviewPage } from '@/modules/files/pages/ReviewPage'
-import { FilesSettingsPage } from '@/modules/files/pages/FilesSettingsPage'
-import { MailPage } from '@/modules/communications/pages/MailPage'
-import { MailAccountsPage } from '@/modules/communications/pages/MailAccountsPage'
-import { MailRulesPage } from '@/modules/communications/pages/MailRulesPage'
+
+// Each screen downloads when it is first opened, not with the app: one bundle with every module was
+// 3.9 MB. The router waits for the chunk before it navigates, so the current screen stays meanwhile.
+const page = <M,>(load: () => Promise<M>, name: keyof M) => async () => ({
+  Component: (await load())[name] as ComponentType,
+})
 
 export const router = createBrowserRouter([
   // Public (redirect if already authenticated)
@@ -64,63 +30,63 @@ export const router = createBrowserRouter([
   {
     element: <ProtectedRoute />,
     children: [
-      { index: true, element: <HomePage /> },
-      { path: 'account', element: <ProfilePage /> },
-      { path: 'account/security', element: <SecurityPage /> },
-      { path: 'account/password', element: <ChangePasswordPage /> },
-      { path: 'account/devices', element: <DevicesPage /> },
-      { path: 'settings', element: <SettingsPage /> },
-      { path: 'settings/assistant', element: <AssistantSettingsPage /> },
-      { path: 'assistant', element: <AssistantPage /> },
+      { index: true, lazy: page(() => import('@/pages/HomePage'), 'HomePage') },
+      { path: 'account', lazy: page(() => import('@/modules/identity/pages/ProfilePage'), 'ProfilePage') },
+      { path: 'account/security', lazy: page(() => import('@/modules/identity/pages/SecurityPage'), 'SecurityPage') },
+      { path: 'account/password', lazy: page(() => import('@/modules/identity/pages/ChangePasswordPage'), 'ChangePasswordPage') },
+      { path: 'account/devices', lazy: page(() => import('@/modules/identity/pages/DevicesPage'), 'DevicesPage') },
+      { path: 'settings', lazy: page(() => import('@/modules/identity/pages/SettingsPage'), 'SettingsPage') },
+      { path: 'settings/assistant', lazy: page(() => import('@/modules/assistant/pages/AssistantSettingsPage'), 'AssistantSettingsPage') },
+      { path: 'assistant', lazy: page(() => import('@/modules/assistant/pages/AssistantPage'), 'AssistantPage') },
 
       // Integrations
-      { path: 'integrations/connections', element: <ConnectionsPage /> },
+      { path: 'integrations/connections', lazy: page(() => import('@/modules/integrations/pages/ConnectionsPage'), 'ConnectionsPage') },
 
       // Channels
-      { path: 'channels/notifications', element: <NotificationsPage /> },
+      { path: 'channels/notifications', lazy: page(() => import('@/modules/channels/pages/NotificationsPage'), 'NotificationsPage') },
 
       // Finances (telas reais substituem o placeholder conforme cada area e implementada)
-      { path: 'finances/accounts', element: <AccountsListPage /> },
-      { path: 'finances/accounts/:id', element: <AccountDetailPage /> },
-      { path: 'finances/transactions', element: <TransactionsListPage /> },
-      { path: 'finances/recurring', element: <RecurringTransactionsListPage /> },
-      { path: 'finances/inbox', element: <InboxPage /> },
-      { path: 'finances/cards', element: <CardsListPage /> },
-      { path: 'finances/cards/:id', element: <CardDetailPage /> },
-      { path: 'finances/statements/:id', element: <StatementDetailPage /> },
-      { path: 'finances/categories', element: <CategoriesListPage /> },
-      { path: 'finances/tags', element: <TagsListPage /> },
-      { path: 'finances/audit', element: <AuditPage /> },
-      { path: 'finances/imports', element: <ImportsListPage /> },
-      { path: 'finances/imports/:id', element: <ImportDetailPage /> },
-      { path: 'finances/import-layouts', element: <ImportLayoutsPage /> },
+      { path: 'finances/accounts', lazy: page(() => import('@/modules/finances/pages/accounts/AccountsListPage'), 'AccountsListPage') },
+      { path: 'finances/accounts/:id', lazy: page(() => import('@/modules/finances/pages/accounts/AccountDetailPage'), 'AccountDetailPage') },
+      { path: 'finances/transactions', lazy: page(() => import('@/modules/finances/pages/transactions/TransactionsListPage'), 'TransactionsListPage') },
+      { path: 'finances/recurring', lazy: page(() => import('@/modules/finances/pages/recurring/RecurringTransactionsListPage'), 'RecurringTransactionsListPage') },
+      { path: 'finances/inbox', lazy: page(() => import('@/modules/finances/pages/inbox/InboxPage'), 'InboxPage') },
+      { path: 'finances/cards', lazy: page(() => import('@/modules/finances/pages/cards/CardsListPage'), 'CardsListPage') },
+      { path: 'finances/cards/:id', lazy: page(() => import('@/modules/finances/pages/cards/CardDetailPage'), 'CardDetailPage') },
+      { path: 'finances/statements/:id', lazy: page(() => import('@/modules/finances/pages/statements/StatementDetailPage'), 'StatementDetailPage') },
+      { path: 'finances/categories', lazy: page(() => import('@/modules/finances/pages/categories/CategoriesListPage'), 'CategoriesListPage') },
+      { path: 'finances/tags', lazy: page(() => import('@/modules/finances/pages/tags/TagsListPage'), 'TagsListPage') },
+      { path: 'finances/audit', lazy: page(() => import('@/modules/finances/pages/audit/AuditPage'), 'AuditPage') },
+      { path: 'finances/imports', lazy: page(() => import('@/modules/finances/pages/imports/ImportsListPage'), 'ImportsListPage') },
+      { path: 'finances/imports/:id', lazy: page(() => import('@/modules/finances/pages/imports/ImportDetailPage'), 'ImportDetailPage') },
+      { path: 'finances/import-layouts', lazy: page(() => import('@/modules/finances/pages/imports/ImportLayoutsPage'), 'ImportLayoutsPage') },
 
       // Notes
       // Agenda
-      { path: 'agenda', element: <TodayPage /> },
-      { path: 'agenda/reminders', element: <RemindersListPage /> },
-      { path: 'agenda/tasks', element: <TasksListPage /> },
-      { path: 'agenda/calendar', element: <CalendarPage /> },
-      { path: 'agenda/settings', element: <AgendaSettingsPage /> },
+      { path: 'agenda', lazy: page(() => import('@/modules/agenda/pages/today/TodayPage'), 'TodayPage') },
+      { path: 'agenda/reminders', lazy: page(() => import('@/modules/agenda/pages/reminders/RemindersListPage'), 'RemindersListPage') },
+      { path: 'agenda/tasks', lazy: page(() => import('@/modules/agenda/pages/tasks/TasksListPage'), 'TasksListPage') },
+      { path: 'agenda/calendar', lazy: page(() => import('@/modules/agenda/pages/calendar/CalendarPage'), 'CalendarPage') },
+      { path: 'agenda/settings', lazy: page(() => import('@/modules/agenda/pages/settings/AgendaSettingsPage'), 'AgendaSettingsPage') },
 
-      { path: 'notes', element: <SpacesPage /> },
+      { path: 'notes', lazy: page(() => import('@/modules/notes/pages/SpacesPage'), 'SpacesPage') },
       // Before the :id route, so "graph" is read as the view and not as a page id.
-      { path: 'notes/graph', element: <NotesGraphPage /> },
-      { path: 'notes/library', element: <LibraryPage /> },
-      { path: 'notes/s/:spaceId', element: <NotesPage /> },
-      { path: 'notes/:id', element: <NotesPage /> },
+      { path: 'notes/graph', lazy: page(() => import('@/modules/notes/pages/NotesGraphPage'), 'NotesGraphPage') },
+      { path: 'notes/library', lazy: page(() => import('@/modules/notes/pages/LibraryPage'), 'LibraryPage') },
+      { path: 'notes/s/:spaceId', lazy: page(() => import('@/modules/notes/pages/NotesPage'), 'NotesPage') },
+      { path: 'notes/:id', lazy: page(() => import('@/modules/notes/pages/NotesPage'), 'NotesPage') },
 
       // Files
-      { path: 'files', element: <CatalogPage /> },
-      { path: 'files/roots', element: <RootsPage /> },
-      { path: 'files/filters', element: <FiltersPage /> },
-      { path: 'files/review', element: <ReviewPage /> },
-      { path: 'files/settings', element: <FilesSettingsPage /> },
+      { path: 'files', lazy: page(() => import('@/modules/files/pages/CatalogPage'), 'CatalogPage') },
+      { path: 'files/roots', lazy: page(() => import('@/modules/files/pages/RootsPage'), 'RootsPage') },
+      { path: 'files/filters', lazy: page(() => import('@/modules/files/pages/FiltersPage'), 'FiltersPage') },
+      { path: 'files/review', lazy: page(() => import('@/modules/files/pages/ReviewPage'), 'ReviewPage') },
+      { path: 'files/settings', lazy: page(() => import('@/modules/files/pages/FilesSettingsPage'), 'FilesSettingsPage') },
 
       // Communications
-      { path: 'mail', element: <MailPage /> },
-      { path: 'mail/accounts', element: <MailAccountsPage /> },
-      { path: 'mail/rules', element: <MailRulesPage /> },
+      { path: 'mail', lazy: page(() => import('@/modules/communications/pages/MailPage'), 'MailPage') },
+      { path: 'mail/accounts', lazy: page(() => import('@/modules/communications/pages/MailAccountsPage'), 'MailAccountsPage') },
+      { path: 'mail/rules', lazy: page(() => import('@/modules/communications/pages/MailRulesPage'), 'MailRulesPage') },
     ],
   },
 
