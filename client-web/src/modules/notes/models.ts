@@ -159,6 +159,9 @@ export interface MediaFoldersDto {
   unsortedCount: number
   unusedCount: number
   totalCount: number
+  /** The space the items take (thumbnails not counted), and the part no page shows. */
+  totalBytes: number
+  unusedBytes: number
 }
 
 /** A page that mentions the one being read ("linked mention"), and how it mentions it. */

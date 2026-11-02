@@ -134,3 +134,8 @@ the page takes all of its rows.
 So the library shows **"Used in N notes"** in an item's details, with links to them; has an
 **"Unused"** place to clear what no note shows; and **deleting an item in use warns** with the notes —
 without blocking, since they keep showing it.
+
+Under the folders, the library shows **the space it takes** — "12.3 MB in use · 1.1 MB unused" — from
+`TotalBytes` and `UnusedBytes` on `GET /media-folders`: the sum of the items' `size_bytes`, the second
+only over the ones no note shows, which is what clearing "Unused" would give back. Thumbnails are not
+counted; deleted items neither, though their bytes stay (see the known open points).

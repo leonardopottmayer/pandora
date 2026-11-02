@@ -138,3 +138,8 @@ página tira todas as dela.
 Com isso a biblioteca mostra, nos detalhes, **"Usado em N notas"** com links para elas; tem o lugar
 **"Sem uso"** para limpar o que nenhuma nota mostra; e **excluir um item em uso avisa** listando as
 notas — sem bloquear, porque elas continuam mostrando o item.
+
+Abaixo das pastas, a biblioteca mostra **o espaço que ocupa** — "12.3 MB ocupados · 1.1 MB sem uso" —
+pelo `TotalBytes` e `UnusedBytes` do `GET /media-folders`: a soma do `size_bytes` dos itens, o segundo
+só dos que nenhuma nota mostra, que é o que limpar o "Sem uso" devolveria. Miniaturas não entram; itens
+excluídos também não, embora os bytes deles fiquem (ver os pontos em aberto).

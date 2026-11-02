@@ -114,4 +114,4 @@ cliente busca o blob e entrega um object URL. Ver [Biblioteca de mídia](media-l
 | `MediaItemDto` | `Id, FolderId, Kind, Name, OriginalFileName, ContentType, SizeBytes, Width, Height, Url, ThumbnailUrl, UsageCount, IsDeleted, CreatedAt` |
 | `MediaUsageDto` | `PageId, SpaceId, Title, Icon, IsArchived` |
 | `MediaFolderDto` | `Id, ParentId, Name, ItemCount` |
-| `MediaFoldersDto` | `Folders[], UnsortedCount, UnusedCount, TotalCount` |
+| `MediaFoldersDto` | `Folders[], UnsortedCount, UnusedCount, TotalCount, TotalBytes, UnusedBytes` |

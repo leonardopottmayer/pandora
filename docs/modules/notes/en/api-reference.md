@@ -114,4 +114,4 @@ not a cookie, the client fetches the blob and hands over an object URL. See [Med
 | `MediaItemDto` | `Id, FolderId, Kind, Name, OriginalFileName, ContentType, SizeBytes, Width, Height, Url, ThumbnailUrl, UsageCount, IsDeleted, CreatedAt` |
 | `MediaUsageDto` | `PageId, SpaceId, Title, Icon, IsArchived` |
 | `MediaFolderDto` | `Id, ParentId, Name, ItemCount` |
-| `MediaFoldersDto` | `Folders[], UnsortedCount, UnusedCount, TotalCount` |
+| `MediaFoldersDto` | `Folders[], UnsortedCount, UnusedCount, TotalCount, TotalBytes, UnusedBytes` |

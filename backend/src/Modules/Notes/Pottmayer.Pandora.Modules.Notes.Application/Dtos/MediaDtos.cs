@@ -41,8 +41,12 @@ public sealed record MediaFolderDto(Guid Id, Guid? ParentId, string Name, int It
     public static MediaFolderDto From(MediaFolder f, int itemCount) => new(f.Id, f.ParentId, f.Name, itemCount);
 }
 
-/// <summary>The library's folder tree as a flat list, plus the counts of the places that are not folders.</summary>
-public sealed record MediaFoldersDto(IReadOnlyList<MediaFolderDto> Folders, int UnsortedCount, int UnusedCount, int TotalCount);
+/// <summary>
+/// The library's folder tree as a flat list, plus the counts of the places that are not folders and the
+/// space the items take — all of them, and the ones no page shows. Thumbnails are not counted.
+/// </summary>
+public sealed record MediaFoldersDto(
+    IReadOnlyList<MediaFolderDto> Folders, int UnsortedCount, int UnusedCount, int TotalCount, long TotalBytes, long UnusedBytes);
 
 /// <summary>The bytes and headers needed to serve an item, or one of its renditions.</summary>
 public sealed record MediaContentDto(string FileName, string ContentType, byte[] Content);

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Button, Dropdown, Tree, Typography, theme } from 'antd'
 import type { DataNode } from 'antd/es/tree'
 import { AppstoreOutlined, DisconnectOutlined, EllipsisOutlined, FolderOutlined, InboxOutlined, PlusOutlined } from '@ant-design/icons'
+import { formatBytes } from '@/lib/formatBytes'
 import type { MediaFolderDto, MediaFoldersDto } from '../../models'
 import { buildFolderTree, type MediaFolderNode } from '../../lib/mediaFolders'
 import { MEDIA_DRAG_TYPE } from '../../lib/media'
@@ -173,6 +174,14 @@ export function MediaFolderPanel({
           treeData={toData(tree)}
           style={{ background: 'transparent' }}
         />
+      )}
+
+      {/* The space the library takes; only where it is cleaned up, not in the editor's picker. */}
+      {showUnused && data && (
+        <Typography.Text type="secondary" className="mt-3 px-2 text-xs tabular-nums">
+          {t('notes.library.spaceUsed', { total: formatBytes(data.totalBytes) })}
+          {data.unusedBytes > 0 && ` · ${t('notes.library.spaceUnused', { unused: formatBytes(data.unusedBytes) })}`}
+        </Typography.Text>
       )}
     </div>
   )

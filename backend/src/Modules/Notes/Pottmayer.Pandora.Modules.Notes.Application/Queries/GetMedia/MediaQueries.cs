@@ -66,15 +66,18 @@ public sealed class GetMediaFoldersQueryHandler(IUnitOfWorkFactory factory)
             var items = ctx.AcquireRepository<IMediaItemRepository>();
             var counts = await items.CountAsync(userId, token);
 
-            // A personal library is small enough to read whole for this count.
-            var ids = (await items.ListAsync(userId, null, false, null, null, token)).Select(i => i.Id).ToList();
-            var used = await ctx.AcquireRepository<IPageMediaRepository>().CountByMediaAsync(ids, token);
+            // A personal library is small enough to read whole for these counts and sizes.
+            var all = await items.ListAsync(userId, null, false, null, null, token);
+            var used = await ctx.AcquireRepository<IPageMediaRepository>().CountByMediaAsync([.. all.Select(i => i.Id)], token);
+            var unused = all.Where(i => !used.ContainsKey(i.Id)).ToList();
 
             return new MediaFoldersDto(
                 [.. folders.Select(f => MediaFolderDto.From(f, counts.ByFolder.GetValueOrDefault(f.Id)))],
                 counts.Unsorted,
-                ids.Count(id => !used.ContainsKey(id)),
-                counts.Total);
+                unused.Count,
+                counts.Total,
+                all.Sum(i => i.SizeBytes),
+                unused.Sum(i => i.SizeBytes));
         }, cancellationToken: ct);
 
         return Ok(dto);

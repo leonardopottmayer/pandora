@@ -126,7 +126,8 @@ Callout e toggle nativos já foram feitos (`8644bc1`). O usuário decidiu (2026-
   (`lib/visualMarkdown.ts`) desenhado como o cartão (`MediaFileView` em `nodeViews.tsx`).
 - HTML inline (`<kbd>`, `<span style>`) é reduzido ao texto se o parágrafo for editado no visual; `<img>`
   inline vira `![|largura](…)`.
-- Total de espaço ocupado na tela da biblioteca (o tamanho por item já existe).
+- ~~Total de espaço ocupado na biblioteca.~~ Feito: `TotalBytes`/`UnusedBytes` no `GET /media-folders`,
+  mostrados abaixo das pastas.
 - ~~Bundle do front num chunk só (3,9 MB).~~ Feito: as telas autenticadas usam o `lazy` das rotas do
   React Router (`src/app/router.tsx`); a entrada caiu para ~1,2 MB e o Notes (TipTap) virou um pedaço
   próprio de 1,3 MB, baixado só ao abrir o Notes. Uma barra fina no topo (`AppLayout`) indica a espera.

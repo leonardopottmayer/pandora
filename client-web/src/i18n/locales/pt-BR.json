@@ -1204,6 +1204,8 @@
       "unsorted": "Não organizadas",
       "folders": "Pastas",
       "noFolders": "Nenhuma pasta ainda.",
+      "spaceUsed": "{{total}} ocupados",
+      "spaceUnused": "{{unused}} sem uso",
       "newFolder": "Nova pasta",
       "newSubfolderOf": "Nova pasta em {{name}}",
       "folderActions": "Ações de {{name}}",

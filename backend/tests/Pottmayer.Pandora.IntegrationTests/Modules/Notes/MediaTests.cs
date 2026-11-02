@@ -170,7 +170,9 @@ public sealed class MediaTests : IAsyncLifetime
 
         Assert.Equal(1, (await ListAsync("")).Single(i => i.Id == beach.Id).UsageCount);
         Assert.Equal([unused.Id], (await ListAsync("?unused=true")).Select(i => i.Id));
-        Assert.Equal(1, (await FoldersAsync()).UnusedCount);
+        var folders = await FoldersAsync();
+        Assert.Equal(1, folders.UnusedCount);
+        Assert.Equal((beach.SizeBytes + unused.SizeBytes, unused.SizeBytes), (folders.TotalBytes, folders.UnusedBytes));
         var usages = await _client.GetFromJsonAsync<Envelope<IReadOnlyList<UsageNode>>>($"{Url}/{beach.Id}/usages");
         Assert.Equal([("Trip", page)], usages!.Data.Select(u => (u.Title, u.PageId)));
 
@@ -279,10 +281,11 @@ public sealed class MediaTests : IAsyncLifetime
 
     private sealed record Envelope<T>(T Data);
     private sealed record MediaNode(
-        Guid Id, Guid? FolderId, string Kind, string Name, string OriginalFileName,
+        Guid Id, Guid? FolderId, string Kind, string Name, string OriginalFileName, long SizeBytes,
         int? Width, int? Height, string Url, string? ThumbnailUrl, int UsageCount, bool IsDeleted);
     private sealed record FolderNode(Guid Id, Guid? ParentId, string Name, int ItemCount);
-    private sealed record FoldersNode(IReadOnlyList<FolderNode> Folders, int UnsortedCount, int UnusedCount, int TotalCount);
+    private sealed record FoldersNode(
+        IReadOnlyList<FolderNode> Folders, int UnsortedCount, int UnusedCount, int TotalCount, long TotalBytes, long UnusedBytes);
     private sealed record PageNode(Guid Id);
     private sealed record UsageNode(Guid PageId, string Title);
 }

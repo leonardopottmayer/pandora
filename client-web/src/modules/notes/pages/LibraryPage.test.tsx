@@ -38,6 +38,8 @@ const folders: MediaFoldersDto = {
   unsortedCount: 2,
   unusedCount: 1,
   totalCount: 3,
+  totalBytes: 3 * 1024 * 1024,
+  unusedBytes: 512 * 1024,
 }
 
 beforeAll(async () => {
@@ -68,6 +70,7 @@ describe('LibraryPage', () => {
     expect(screen.getByRole('button', { name: /Everything/ })).toHaveTextContent('3')
     expect(screen.getByRole('button', { name: /Unsorted/ })).toHaveTextContent('2')
     expect(screen.getByText('Japan')).toBeInTheDocument()
+    expect(screen.getByText('3.0 MB in use · 512.0 KB unused')).toBeInTheDocument()
   })
 
   it('asks for one folder once it is picked, and for every folder while searching', async () => {

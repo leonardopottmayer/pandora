@@ -1204,6 +1204,8 @@
       "unsorted": "Unsorted",
       "folders": "Folders",
       "noFolders": "No folders yet.",
+      "spaceUsed": "{{total}} in use",
+      "spaceUnused": "{{unused}} unused",
       "newFolder": "New folder",
       "newSubfolderOf": "New folder in {{name}}",
       "folderActions": "Actions for {{name}}",
