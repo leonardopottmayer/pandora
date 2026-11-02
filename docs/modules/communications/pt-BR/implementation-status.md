@@ -7,10 +7,11 @@ frente está em [product-plan.md](product-plan.md).
 
 ---
 
-## Implementado (M1 — conectar e ler; M2 — organizar; M3 — enviar)
+## Implementado (M1 — conectar e ler; M2 — organizar; M3 — enviar; M4 — regras)
 
 | Área | Notas |
 |---|---|
+| **Regras (M4)** | `com006`, `mail/rules`. No Gmail uma regra é um filtro, nos dois sentidos: todo ciclo lista os filtros e traz o que é novo, sumiu ou mudou. Nos outros, o `RunMailRulesHandler` as roda no `MailMessageReceived`. Um filtro que não cabe fica somente leitura, nunca reescrito |
 | **Estrutura do módulo** | Sete projetos em camadas; schema `communications`; `com001`–`com005`; o outbox e o relay do módulo. |
 | **Domínio** | `Mailbox`, `MailLabel`, `MailMessage`, `MailContent`; `MailProvider`, `MailboxStatus`, `LabelKind`, `LabelRole`, `ThreadKey`; `IMailboxProvider`; `MailErrors`. |
 | **Adaptador Gmail** | REST sem o SDK do Google; `history.list` para as mudanças; dois gets em paralelo; novas tentativas com espera crescente quando há limite de taxa. |
@@ -83,12 +84,34 @@ Nas mesmas contas, entre os endereços do próprio usuário. Encerrada pelo usu�
 
 A verificação achou um bug que os testes não tinham pegado: o envio esperava a trava de ação enquanto o job lia um acúmulo grande do Gmail, com o email já enviado e a tela carregando. Ele não roda mais o passo de sincronização.
 
+### Verificação real da M4 (2026-11-01)
+
+Nas mesmas contas. Só foram escritos uma regra, um marcador e uma pasta `pandora-test`, todos removidos depois; nenhum filtro existente foi editado ou apagado.
+
+| Verificação | Resultado |
+|---|---|
+| Filtros existentes aparecem como regras | ✅ 112: 102 editáveis, 10 somente leitura. Essas 10 usam "nunca enviar para spam" (`removeLabelIds: SPAM`), que uma regra não guarda |
+| `Label_` como marca de marcador do usuário | ✅ Como a documentação dava a entender |
+| Salvar sem o escopo, depois conceder | ✅ O aviso aparece, o consentimento é dado, o formulário volta preenchido |
+| Uma regra vira filtro no Gmail | ✅ Um ciclo depois continua uma regra só |
+| Uma edição no Pandora | ✅ Cria + apaga; nenhum filtro antigo voltou como regra |
+| Uma mensagem recebe o marcador do filtro | ✅ Visto no Gmail. **Não com o backend parado:** ele estava rodando e o email saiu pelo Pandora. O log mostra que a única outra escrita no Gmail foi marcar como lida, e o motor não roda regras de filtro, então o marcador é do Gmail |
+| Um filtro editado no Gmail | ✅ Depois de uma correção, abaixo: mesma regra, mesmo nome e posição. **A API do Gmail levou minutos para mostrar:** na segunda tentativa, o `filters.list` ainda trazia o assunto antigo às 23:57, e o novo às 23:59, pelo menos 9 minutos depois de o usuário relatar a edição |
+| Desabilitar, habilitar, apagar no Pandora | ✅ Um ciclo depois de cada um mostra o filtro sumido ou de volta. Feito pela API, não pela tela, para não arriscar uma regra real |
+| Titan: mensagem nova é movida, anterior fica | ✅ Enviadas da caixa para ela mesma |
+| Titan: a pasta é apagada | ✅ A regra fica `broken`, em destaque |
+| Arrastar | ✅ Moveu uma regra, uma linha acima do alvo. Pode ser a ferramenta; **vale conferir uma vez à mão** |
+| As confirmações de uma regra do Gmail, na tela | Só em testes; na tela, a de uma regra do Titan |
+
+A verificação achou duas coisas que os testes não tinham pegado. **As telas do próprio Gmail mantêm o id do filtro ao editar**, o que a documentação não diz e o plano supunha o contrário, então a edição nunca chegava: o diff agora compara também o que um filtro conhecido faz. Com cerca de 100 marcadores, a lista do formulário precisava de busca. E a tela nunca recarregava as regras sozinha: agora recarrega a cada 30 segundos e ao receber foco.
+
 ### Desvios relevantes em relação ao plano original
 
 - **Sem `Google.Apis.Gmail.v1`.** REST com `HttpClient`, como faz o `GoogleOAuthProvider`.
 - **Sem o endpoint de batch do Gmail.** Um `messages.get` por mensagem, dois por vez.
-- **Só `gmail.modify` é pedido.** O plano pedia também `gmail.send` e `gmail.settings.basic`. Enviar não precisa de mais que o `gmail.modify`; a M4 vai
-  precisar de um novo consentimento para os filtros.
+- **Só `gmail.modify` é pedido.** O plano pedia também `gmail.send` e `gmail.settings.basic`. Enviar não precisa de mais que o `gmail.modify`. Escrever filtros
+  precisa do `gmail.settings.basic`, pedido só quando uma regra é salva.
+- **Uma edição no Gmail pode manter o id do filtro.** O plano esperava um sumido + um novo, que continua tratado, para o que recria o filtro.
 - **Um ciclo lê lotes da carga inicial até o orçamento acabar**, não um lote por ciclo: um lote a cada 2 minutos levava
   mais de 3 horas em 50 mil mensagens.
 - **`POST /mailboxes` não começa a carga inicial.** O primeiro ciclo começa.
@@ -101,7 +124,6 @@ A verificação achou um bug que os testes não tinham pegado: o envio esperava 
 
 | Área | Status | Fase |
 |---|---|---|
-| **Regras, filtros do Gmail nos dois sentidos, `com006`** | Planejado | M4 |
 | **Push do Gmail, Radar, mais provedores** | Futuro | Depois |
 
 ## Pontos em aberto
@@ -121,3 +143,6 @@ A verificação achou um bug que os testes não tinham pegado: o envio esperava 
 11. **Um servidor que salva a cópia mais de 3 segundos depois** fica com duas. O Titan não ficou.
 12. **O limite de 25 MB não está confirmado:** as páginas da API do Google não informam nenhum. Um email acima do limite real volta como recusa.
 13. **Sem nome de remetente, sem imagens inline, texto citado puro.**
+14. **Os erros das regras estão em inglês,** como as outras mensagens do servidor, e uma regra cujo marcador sumiu mostra "Mover para ?" até ser editada.
+15. **As regras leem condições e ações de volta como o Gmail as dá,** então uma regra salva como arquivar + adicionar marcador volta como mover. Significam o mesmo.
+16. **Uma edição nas telas do Gmail pode levar minutos para chegar ao `filters.list`,** além do ciclo de 2 minutos. O Pandora mostra o que a API responde. É uma medição só, não um número para confiar.

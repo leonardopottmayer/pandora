@@ -24,6 +24,11 @@ returns the account id a mailbox needs. A Google account comes from `POST /api/v
 | POST | `/mailboxes/{id}/labels` | Create a label |
 | PATCH | `/labels/{id}` | Rename a label |
 | DELETE | `/labels/{id}` | Delete a label |
+| GET | `/mailboxes/{id}/rules` | The rules, in order |
+| POST | `/mailboxes/{id}/rules` | Create a rule |
+| PUT | `/mailboxes/{id}/rules/order` | Reorder the rules |
+| PUT | `/rules/{id}` | Edit, enable or disable a rule |
+| DELETE | `/rules/{id}` | Delete a rule |
 | GET | `/messages` | List messages, newest first |
 | GET | `/messages/{id}` | One message with its body, fetched and cached on the first open |
 | GET | `/messages/{id}/attachments/{attachmentId}` | The attachment's bytes |
@@ -86,6 +91,25 @@ deleted. On Gmail a deleted label only leaves its messages; on IMAP only an empt
 | 404 | The mailbox or label does not exist or is someone else's |
 | 409 | The folder has messages or subfolders (`LabelNotEmpty`) |
 | 422 | A system label (`SystemLabel`), a bad name (`LabelNameInvalid`), or the provider's refusal |
+
+### GET `/mailboxes/{id}/rules`, POST `/mailboxes/{id}/rules`, PUT `/rules/{id}`, DELETE `/rules/{id}`, PUT `/mailboxes/{id}/rules/order`
+
+Every one answers with the mailbox's rules as they are now, in order: `id`, `name`, `position`, `conditions`, `actions`, `execution`, `isEnabled`, `status`, `lastError`, `providerFilterRaw`. Someone else's is a 404.
+
+```json
+{ "name": "Bills", "conditions": [{ "kind": "from", "value": "bank" }], "actions": [{ "kind": "move", "labelId": "…" }] }
+```
+
+`PUT /rules/{id}` takes the same plus `isEnabled`. `PUT …/order` takes `{ "ruleIds": [] }`: those, then any other.
+
+On a mailbox with filters, the provider goes first and its refusal changes nothing (a 422 with its message, such as over 1,000 filters).
+
+- **A new name alone** does not reach Gmail. **An edit** is create, save, delete; if only the delete fails, this is a 200 with `lastError` saying so, and the old filter comes back as a rule of its own on the next cycle.
+- **Disabling** deletes the filter and keeps the rule; **enabling** makes it again. **Deleting** deletes the filter, for good.
+- **A read-only rule** answers `RuleReadOnly` to a `PUT`. It can be deleted.
+- **Without `gmail.settings.basic`**, writes answer `MissingFilterScope`. The mailbox goes on.
+
+The mailboxes carry `filterSyncError`: why the last read of Gmail's filters failed.
 
 ### POST `/messages/actions`
 

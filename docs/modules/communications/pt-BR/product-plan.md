@@ -197,7 +197,9 @@ posição e `is_enabled` são do próprio Pandora.
   `provider_filter_id`:
   - filtro desconhecido pelo Pandora → regra nova (nome gerado a partir dos critérios);
   - filtro conhecido que sumiu → a regra é apagada (regras desligadas ficam fora da comparação);
-  - uma edição no Gmail chega como "um sumiu + um novo" (o Gmail recria filtros). Quando exatamente
+  - um filtro conhecido cujo conteúdo mudou atualiza a regra no lugar: as telas do próprio Gmail mantêm
+    o id ao editar (visto em 2026-11-01);
+  - o que recria um filtro chega como "um sumiu + um novo". Quando exatamente
     um some e exatamente um aparece no mesmo ciclo, trata-se como edição e mantém nome e posição;
     senão, apagar + importar. *(heurística, marcada `ponytail:` no código — cobre editar um filtro por
     vez)*
@@ -233,11 +235,7 @@ Pandora, e filtros criados no webmail não são vistos. Se o Titan oferecer **Ma
 
 ## 12. API (`/api/v1/communications`)
 
-O que existe está na [Referência da API](api-reference.md). Falta:
-
-| Recurso | Endpoints |
-|---|---|
-| Regras | `GET/POST mailboxes/{id}/rules`, `PUT/DELETE rules/{id}`, `PUT mailboxes/{id}/rules/order` |
+O que existe está na [Referência da API](api-reference.md).
 
 ---
 
@@ -269,15 +267,9 @@ Pronta em 2026-10-31: veja o [Status de implementação](implementation-status.m
 
 Pronta em 2026-10-31: veja o [Status de implementação](implementation-status.md).
 
-### M4 — Regras
+### M4 — Regras ✅
 
-Lista de trabalho: [execution-plan-m4.md](execution-plan-m4.md).
-
-- Modelo de regra, motor do Pandora (IMAP), filtros do Gmail nos dois sentidos, status `broken`,
-  `mail/rules`.
-- **Pronto quando:** os filtros existentes do Gmail aparecem como regras ao conectar; uma regra criada
-  no Pandora aparece como filtro no Gmail e é aplicada na chegada com o Pandora parado; um filtro
-  editado no Gmail atualiza a regra no lugar; uma regra do Titan move uma mensagem nova em um ciclo.
+Pronta em 2026-11-01: veja o [Status de implementação](implementation-status.md).
 
 ### Depois (sem data)
 

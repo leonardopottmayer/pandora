@@ -150,6 +150,9 @@ export function useRules(mailboxId: string | null) {
     queryKey: mailKeys.rules(mailboxId ?? ''),
     queryFn: () => mailService.listRules(mailboxId!),
     enabled: mailboxId !== null,
+    // Gmail can change them while this screen is open, and a cycle brings that in with no action here.
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: 'always',
   })
 }
 

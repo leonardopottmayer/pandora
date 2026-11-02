@@ -1,6 +1,6 @@
 # Communications — Plano de Execução, M4 (Regras)
 
-> **Status:** Em andamento: decisões aprovadas, passos 1–7 construídos. É a fase **M4** do [product-plan](product-plan.md), cuja §10 tem o modelo; o que existe hoje está no
+> **Status:** Pronta (2026-11-01); este é o histórico de como foi construída. Foi a fase **M4** do [product-plan](product-plan.md), cuja §10 tem o modelo; o que existe hoje está no
 > [Status de implementação](implementation-status.md).
 > 🇺🇸 [English version](../en/execution-plan-m4.md)
 
@@ -114,7 +114,9 @@ Cada passo termina verde antes do próximo. Pontos de commit sugeridos: **M4a** 
 - i18n `mail.rules.*`.
 - **Testes:** a validação do formulário; a confirmação; só leitura sem edição; o pedido de consentimento.
 
-### Passo 8 — Verificação real e docs
+### Passo 8 — Verificação real e docs ✅
+
+> **Construído (2026-11-01).** Os resultados, inclusive o que não foi comprovado literalmente, estão no [Status de implementação](implementation-status.md#verificação-real-da-m4-2026-11-01). Achou que as telas do próprio Gmail mantêm o id do filtro ao editar, contra o que este plano supunha, então filtros conhecidos agora também são comparados pelo conteúdo; e que a lista de marcadores do formulário precisava de busca. Testes: `FilterSyncTests` +3.
 
 Primeiro a sua parte no Google Cloud: declarar `gmail.settings.basic` na tela de consentimento e reconectar a conta do Gmail.
 
@@ -130,5 +132,6 @@ Primeiro a sua parte no Google Cloud: declarar `gmail.settings.basic` na tela de
 - **Regras valem para email que chega depois de salvas** (§10.1).
 - **Os filtros do webmail do Titan não são vistos,** e ele não tem ManageSieve: lá, as regras só rodam com o Pandora ligado.
 - **Atraso no IMAP:** até um ciclo, 2 minutos.
-- **A heurística de edição** pode ler duas edições num ciclo como exclusão + importação, perdendo o nome.
+- **Uma edição nas telas do Gmail pode levar minutos para chegar,** porque o próprio `filters.list` fica atrás delas.
+- **A heurística de edição** vale para o que recria um filtro: duas dessas edições num ciclo são lidas como exclusão + importação, perdendo o nome. Uma edição nas telas do próprio Gmail mantém o id e não é afetada.
 - **Uma regra `has-words` numa caixa movimentada** custa uma chamada ao provedor por mensagem que chegar até ela.

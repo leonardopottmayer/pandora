@@ -142,6 +142,7 @@ export function RuleFormModal({
                   className="min-w-0 flex-1"
                   aria-label={t(provider === 'gmail' ? 'mail.rules.form.label' : 'mail.rules.form.folder')}
                   placeholder={t(provider === 'gmail' ? 'mail.rules.form.label' : 'mail.rules.form.folder')}
+                  showSearch={{ optionFilterProp: 'label' }}
                   value={action.labelId ?? undefined}
                   options={labelOptions}
                   onChange={(labelId) => setAction(index, { labelId })}

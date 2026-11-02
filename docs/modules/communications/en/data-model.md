@@ -17,9 +17,10 @@ Migrations live in `migrations/migrations/communications/`.
 | com003 | `mail_message` | The mirrored header of one message |
 | com004 | `mail_message_label` | Which labels a message carries |
 | com005 | `mail_content` | The cached body of an opened message |
+| com006 | `mail_rule` | A rule of a mailbox: a Gmail filter, or one for Pandora's engine |
 | — | `tars_outbox_message` | The module's outbox (`MailMessageReceived`, the auth-failure notice) |
 
-`com006_mail_rule` arrives with M4. M2 added no tables: on IMAP, a move rewrites `provider_message_id` and keeps the row.
+M2 added no tables: on IMAP, a move rewrites `provider_message_id` and keeps the row.
 
 ---
 
@@ -117,3 +118,28 @@ next open. There is no size cap. Measured on 2026-10-30, with one Gmail and one 
 
 At that size, opening 1,000 messages within 30 days costs about 20 MB, so a cap would add code for nothing.
 The sample is small: add a cap if `com005` ever grows past what the mirror itself takes.
+
+---
+
+## com006_mail_rule
+
+One rule of a mailbox.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `mailbox_id` | uuid NOT NULL, FK → com001, cascade | Removing a mailbox from Pandora deletes its rules, and no Gmail filter |
+| `name` | varchar(100) NOT NULL | Pandora's own: never sent to Gmail |
+| `position` | int NOT NULL | Pandora's own |
+| `conditions` | jsonb NOT NULL DEFAULT `[]` | `[{ "Kind", "Value" }]`, all must match. Kinds: `from`, `to`, `subject`, `has-words`, `has-attachment`, `provider-query` |
+| `actions` | jsonb NOT NULL DEFAULT `[]` | `[{ "Kind", "LabelId" }]`. Kinds: `add-label`, `move`, `archive`, `mark-read`, `star`, `trash` |
+| `execution` | varchar(20) NOT NULL | `provider-filter` \| `pandora` |
+| `provider_filter_id` | text NULL | Null while disabled, since Gmail has no disabled filters |
+| `provider_filter_raw` | jsonb NULL | The filter as Gmail sent it, on a read-only rule |
+| `is_enabled` | boolean NOT NULL | |
+| `status` | varchar(20) NOT NULL | `ok` \| `broken` \| `read-only` |
+| `last_error` | text NULL | |
+
+**Constraints:** `uq_com006_mailbox_provider_filter (mailbox_id, provider_filter_id)` where not null: one rule per filter. **Indexes:** `(mailbox_id, position)`.
+
+EF 10 cannot save a `Remove` of an entity with a JSON complex collection, so rules are deleted with `DeleteByIdsAsync`.

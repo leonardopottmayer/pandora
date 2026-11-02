@@ -7,10 +7,11 @@ lives in [product-plan.md](product-plan.md).
 
 ---
 
-## Implemented (M1 — connect and read; M2 — organize; M3 — send)
+## Implemented (M1 — connect and read; M2 — organize; M3 — send; M4 — rules)
 
 | Area | Notes |
 |---|---|
+| **Rules (M4)** | `com006`, `mail/rules`. On Gmail a rule is a filter, both ways: every cycle lists them and brings in what is new, gone or changed. Elsewhere `RunMailRulesHandler` runs them on `MailMessageReceived`. A filter that does not fit is read-only, never rewritten |
 | **Module scaffold** | Seven layered projects; `communications` schema; `com001`–`com005`; the module's outbox and relay. |
 | **Domain** | `Mailbox`, `MailLabel`, `MailMessage`, `MailContent`; `MailProvider`, `MailboxStatus`, `LabelKind`, `LabelRole`, `ThreadKey`; `IMailboxProvider`; `MailErrors`. |
 | **Gmail adapter** | REST without the Google SDK; `history.list` for changes; two parallel gets; retries with backoff on throttling. |
@@ -83,12 +84,34 @@ On the same accounts, between the user's own addresses. Closed by the user; the 
 
 The check found a bug the tests had not caught: a send waited on the action gate while the job read a long Gmail backlog, with the mail already gone and the screen loading. It no longer runs the sync step.
 
+### Real-world check of M4 (2026-11-01)
+
+On the same accounts. Only a `pandora-test` rule, label and folder were written, and all of them were removed afterwards; no existing filter was edited or deleted.
+
+| Check | Result |
+|---|---|
+| Existing filters show up as rules | ✅ 112: 102 editable, 10 read-only. Those 10 use "never send to spam" (`removeLabelIds: SPAM`), which a rule does not hold |
+| `Label_` as the mark of a user label | ✅ As the documentation implied |
+| Saving without the scope, then granting | ✅ The prompt appears, consent is granted, the form comes back filled in |
+| A rule becomes a Gmail filter | ✅ A cycle afterwards there is still one rule |
+| An edit in Pandora | ✅ Create + delete; no old filter came back as a rule |
+| A message gets the label from the filter | ✅ Seen in Gmail. **Not with the backend stopped:** it was running and the mail was sent through Pandora. The log shows the only other Gmail write was marking it read, and the engine does not run filter rules, so the label is Gmail's |
+| A filter edited in Gmail | ✅ After a fix, below: same rule, same name and position. **Gmail's API took minutes to show it:** on the second try, `filters.list` still gave the old subject at 23:57, and the new one at 23:59, at least 9 minutes after the user reported the edit |
+| Disable, enable, delete in Pandora | ✅ A cycle after each shows the filter gone or back. Done through the API, not the screen, so as not to risk a real rule |
+| Titan: a new message moves, an earlier one stays | ✅ Sent between the mailbox and itself |
+| Titan: the folder is deleted | ✅ The rule goes `broken`, highlighted |
+| Dragging | ✅ Moved a rule, one row above the aim. May be the tool; **worth one check by hand** |
+| The confirmations for a Gmail rule, on screen | Only in tests; on screen, the one for a Titan rule |
+
+The check found two things the tests had not caught. **Gmail's own screens keep a filter's id when editing it**, which the documentation does not say and the plan assumed otherwise, so the edit never arrived: the diff now compares what a known filter does too. With about 100 labels, the form's list needed a search. And the screen never reloaded the rules by itself: it now does every 30 seconds and on focus.
+
 ### Notable deviations from the original plan
 
 - **No `Google.Apis.Gmail.v1`.** REST with `HttpClient`, as `GoogleOAuthProvider` does.
 - **No Gmail batch endpoint.** One `messages.get` per message, two at a time.
 - **Only `gmail.modify` is requested.** The plan asked for `gmail.send` and `gmail.settings.basic` as well. Sending needs no more
-  than `gmail.modify`; M4 will need a new consent for filters.
+  than `gmail.modify`. Writing filters needs `gmail.settings.basic`, asked for only when a rule is saved.
+- **An edit in Gmail can keep the filter's id.** The plan expected one gone + one new, which is still handled, for what recreates a filter.
 - **A send does not bring its sent copy at once.** It shows up on the next cycle, within 2 minutes.
 - **A cycle reads backfill batches until a budget runs out**, not one batch per cycle: one batch per 2 minutes took
   over 3 hours on 50,000 messages.
@@ -102,7 +125,6 @@ The check found a bug the tests had not caught: a send waited on the action gate
 
 | Area | Status | Phase |
 |---|---|---|
-| **Rules, Gmail filters both ways, `com006`** | Planned | M4 |
 | **Gmail push, Radar, more providers** | Future | Later |
 
 ## Known open points
@@ -122,3 +144,6 @@ The check found a bug the tests had not caught: a send waited on the action gate
 11. **A server that saves its sent copy more than 3 seconds later** gets two copies. Titan did not.
 12. **The 25 MB limit is unconfirmed:** Google's API pages state none. A mail over the real limit comes back as a refusal.
 13. **No sender name, no inline images, quoted text is plain.**
+14. **Rules' errors are in English,** like the server's other messages, and a rule whose label is gone reads "Move to ?" until it is edited.
+15. **Rules read their conditions and actions back as Gmail gives them,** so a rule saved as archive + add label comes back as a move. They mean the same.
+16. **An edit in Gmail's screens can take minutes to reach `filters.list`,** on top of the 2-minute cycle. Pandora shows what the API answers. One measure, not a figure to rely on.

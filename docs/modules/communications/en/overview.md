@@ -23,9 +23,9 @@ Built today (M1, connect and read; M2, organize; M3, send):
   provider first, and what is changed in the webmail comes back to Pandora.
 - **Send**: compose, reply, reply all and forward, with attachments. A send is never repeated when the mail may have gone.
 - **Publish `MailMessageReceived`** through the outbox for each new message, so other modules can
-  process mail. Nothing consumes it yet.
+  process mail. The rule engine consumes it.
 
-Rules (M4) are a plan: see the [product plan](product-plan.md).
+- **Rules**: conditions and actions kept in one screen, `mail/rules`. On Gmail they are native filters, both ways; on Titan and IMAP they run in Pandora's engine, on mail that arrives.
 
 ## 2. What it is not
 
@@ -75,11 +75,10 @@ Rules (M4) are a plan: see the [product plan](product-plan.md).
 
 The `communications` schema (`com001`–`com005` + outbox); the Gmail and IMAP adapters; backfill and
 incremental sync; the content cache and attachments; the mailbox, label and message endpoints; labels both ways and batch actions; sending;
-`MailMessageReceived`; the `mail` and `mail/accounts` screens.
+`MailMessageReceived`; rules; the `mail`, `mail/accounts` and `mail/rules` screens.
 
 ### Out of scope / future (see [product-plan.md](product-plan.md))
 
 | Feature | Phase |
 |---|---|
-| Rules, with Gmail filters both ways | M4 |
 | Gmail push instead of polling, Radar consuming the event, more providers | Later |

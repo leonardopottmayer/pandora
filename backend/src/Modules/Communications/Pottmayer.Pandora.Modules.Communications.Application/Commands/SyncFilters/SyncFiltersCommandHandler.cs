@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Pottmayer.Pandora.Modules.Communications.Abstractions;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.SyncMailbox;
@@ -13,8 +14,8 @@ using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 namespace Pottmayer.Pandora.Modules.Communications.Application.Commands.SyncFilters;
 
 /// <summary>
-/// The diff of §10.3, by filter id. A disabled rule has no filter id, so it is not in it. A filter id does not change
-/// while the filter lives (Gmail has no update), so a filter already known has nothing to bring.
+/// The diff of §10.3, by filter id. A disabled rule has no filter id, so it is not in it. A filter already known can still
+/// bring news: editing one in Gmail's own screens can keep its id, so what it does is compared too.
 /// </summary>
 public sealed class SyncFiltersCommandHandler(IUnitOfWorkFactory factory, IServiceProvider services, MailboxGates gates)
     : CommandHandlerBase<SyncFiltersCommand, bool>
@@ -53,21 +54,25 @@ public sealed class SyncFiltersCommandHandler(IUnitOfWorkFactory factory, IServi
 
         var gone = bound.Where(r => filters.All(f => f.ProviderFilterId != r.ProviderFilterId)).ToList();
         var fresh = filters.Where(f => bound.All(r => r.ProviderFilterId != f.ProviderFilterId)).ToList();
-        if (gone.Count == 0 && fresh.Count == 0)
-            return;
 
         var labels = (await context.AcquireRepository<IMailLabelRepository>().ListByMailboxAsync(mailboxId, ct))
             .ToDictionary(l => l.ProviderLabelId, l => l.Id);
 
-        // ponytail: one gone + one new in a cycle is read as an edit, since Gmail recreates a filter to edit it. Two edits in
-        // one cycle lose their names, and an unrelated delete + create is taken for an edit. Gmail gives nothing better to go on.
+        foreach (var rule in bound.Except(gone))
+        {
+            var filter = filters.First(f => f.ProviderFilterId == rule.ProviderFilterId);
+            if (IsInStep(rule, filter, labels))
+                continue;
+
+            Follow(rule, filter, labels);
+            await repository.UpdateAsync(rule, ct);
+        }
+
+        // ponytail: one gone + one new in a cycle is read as an edit, for what recreates a filter to edit it, as the API
+        // has to. Two such edits in one cycle lose their names, and an unrelated delete + create is taken for an edit.
         if (gone.Count == 1 && fresh.Count == 1)
         {
-            var filter = fresh[0];
-            if (ToRuleActions(filter, labels) is { } actions)
-                gone[0].FollowFilter(filter.ProviderFilterId, filter.Conditions, actions);
-            else
-                gone[0].FollowReadOnlyFilter(filter.ProviderFilterId, filter.Raw);
+            Follow(gone[0], fresh[0], labels);
             await repository.UpdateAsync(gone[0], ct);
             return;
         }
@@ -78,6 +83,31 @@ public sealed class SyncFiltersCommandHandler(IUnitOfWorkFactory factory, IServi
         foreach (var filter in fresh)
             await repository.AddAsync(Import(mailboxId, filter, position++, labels), ct);
     }
+
+    private static void Follow(MailRule rule, RemoteFilter filter, Dictionary<string, Guid> labels)
+    {
+        if (ToRuleActions(filter, labels) is { } actions)
+            rule.FollowFilter(filter.ProviderFilterId, filter.Conditions, actions);
+        else
+            rule.FollowReadOnlyFilter(filter.ProviderFilterId, filter.Raw);
+    }
+
+    /// <summary>
+    /// Whether a rule already says what its filter does, in any order: Gmail reads a rule's actions back in its own. A broken
+    /// rule stays broken while its filter still points at the label that is gone, rather than turning read-only.
+    /// </summary>
+    private static bool IsInStep(MailRule rule, RemoteFilter filter, Dictionary<string, Guid> labels)
+    {
+        if (ToRuleActions(filter, labels) is { } actions)
+            return !rule.IsReadOnly && SameItems(rule.Conditions, filter.Conditions) && SameItems(rule.Actions, actions);
+
+        return rule.IsReadOnly
+            ? JsonElement.DeepEquals(JsonDocument.Parse(rule.ProviderFilterRaw!).RootElement, JsonDocument.Parse(filter.Raw).RootElement)
+            : rule.Status == RuleStatus.Broken && !filter.IsReadOnly;
+    }
+
+    private static bool SameItems<T>(IReadOnlyCollection<T> one, IReadOnlyCollection<T> other) =>
+        one.Count == other.Count && one.All(other.Contains);
 
     private static MailRule Import(Guid mailboxId, RemoteFilter filter, int position, Dictionary<string, Guid> labels)
     {

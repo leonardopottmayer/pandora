@@ -17,9 +17,10 @@ As migrations ficam em `migrations/migrations/communications/`.
 | com003 | `mail_message` | O cabeçalho espelhado de uma mensagem |
 | com004 | `mail_message_label` | Quais etiquetas a mensagem tem |
 | com005 | `mail_content` | O corpo em cache de uma mensagem aberta |
+| com006 | `mail_rule` | Uma regra da caixa: um filtro do Gmail, ou uma do motor do Pandora |
 | — | `tars_outbox_message` | O outbox do módulo (`MailMessageReceived`, o aviso de senha recusada) |
 
-A `com006_mail_rule` chega com a M4. A M2 não criou tabelas: no IMAP, mover reescreve o `provider_message_id` e mantém a linha.
+A M2 não criou tabelas: no IMAP, mover reescreve o `provider_message_id` e mantém a linha.
 
 ---
 
@@ -117,3 +118,28 @@ abertura. Não há teto de tamanho. Medido em 2026-10-30, com uma caixa Gmail e 
 
 Nesse tamanho, abrir 1.000 mensagens em 30 dias custa uns 20 MB, então um teto seria código sem uso. A amostra é
 pequena: vale criar um teto se a `com005` passar do que o próprio espelho ocupa.
+
+---
+
+## com006_mail_rule
+
+Uma regra de uma caixa.
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | |
+| `mailbox_id` | uuid NOT NULL, FK → com001, cascade | Remover uma caixa do Pandora apaga as regras dela, e nenhum filtro do Gmail |
+| `name` | varchar(100) NOT NULL | Do Pandora: nunca vai para o Gmail |
+| `position` | int NOT NULL | Do Pandora |
+| `conditions` | jsonb NOT NULL DEFAULT `[]` | `[{ "Kind", "Value" }]`, todas precisam combinar. Tipos: `from`, `to`, `subject`, `has-words`, `has-attachment`, `provider-query` |
+| `actions` | jsonb NOT NULL DEFAULT `[]` | `[{ "Kind", "LabelId" }]`. Tipos: `add-label`, `move`, `archive`, `mark-read`, `star`, `trash` |
+| `execution` | varchar(20) NOT NULL | `provider-filter` \| `pandora` |
+| `provider_filter_id` | text NULL | Nulo enquanto desabilitada, porque o Gmail não tem filtro desabilitado |
+| `provider_filter_raw` | jsonb NULL | O filtro como o Gmail enviou, numa regra somente leitura |
+| `is_enabled` | boolean NOT NULL | |
+| `status` | varchar(20) NOT NULL | `ok` \| `broken` \| `read-only` |
+| `last_error` | text NULL | |
+
+**Constraints:** `uq_com006_mailbox_provider_filter (mailbox_id, provider_filter_id)` quando não nulo: uma regra por filtro. **Índices:** `(mailbox_id, position)`.
+
+O EF 10 não consegue salvar um `Remove` de entidade com coleção complexa em JSON, então regras são apagadas com `DeleteByIdsAsync`.

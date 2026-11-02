@@ -131,6 +131,60 @@ public sealed class FilterSyncTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_filter_edited_under_the_same_id_updates_its_rule_in_place()
+    {
+        _provider.Filters.Add(Star("f1"));
+        var mailbox = await ConnectAsync();
+        var before = Assert.Single(await RulesAsync(mailbox));
+        await RenameAsync(before.Id, "My name");
+
+        _provider.Filters[0] = new RemoteFilter("f1", "from: bo", [new(RuleConditionKinds.From, "bo")],
+            [new(RuleActionKinds.Move, "Label_1")], "{}", IsReadOnly: false);
+        await SyncAsync(mailbox);
+
+        var rule = Assert.Single(await RulesAsync(mailbox));
+        Assert.Equal(before.Id, rule.Id);
+        Assert.Equal("My name", rule.Name);
+        Assert.Equal("bo", Assert.Single(rule.Conditions).Value);
+        Assert.Equal(await LabelIdAsync(mailbox, "Work"), Assert.Single(rule.Actions).LabelId);
+    }
+
+    [Fact]
+    public async Task A_filter_edited_under_the_same_id_can_turn_read_only_and_a_new_raw_is_kept()
+    {
+        _provider.Filters.Add(Star("f1"));
+        var mailbox = await ConnectAsync();
+
+        _provider.Filters[0] = new RemoteFilter("f1", "size: 100", [], [], """{"id": "f1", "size": 100}""", IsReadOnly: true);
+        await SyncAsync(mailbox);
+        Assert.Equal(RuleStatus.ReadOnly, Assert.Single(await RulesAsync(mailbox)).Status);
+
+        _provider.Filters[0] = new RemoteFilter("f1", "size: 200", [], [], """{"id": "f1", "size": 200}""", IsReadOnly: true);
+        await SyncAsync(mailbox);
+        Assert.Contains("200", Assert.Single(await RulesAsync(mailbox)).ProviderFilterRaw);
+    }
+
+    [Fact]
+    public async Task Actions_in_another_order_are_not_an_edit_and_a_broken_rule_stays_broken()
+    {
+        _provider.Filters.Add(new RemoteFilter("f1", "from: f1", [new(RuleConditionKinds.From, "f1")],
+            [new(RuleActionKinds.Star, null), new(RuleActionKinds.MarkRead, null)], "{}", IsReadOnly: false));
+        _provider.Filters.Add(new RemoteFilter("f2", "from: f2", [new(RuleConditionKinds.From, "f2")],
+            [new(RuleActionKinds.AddLabel, "Label_1")], "{}", IsReadOnly: false));
+        var mailbox = await ConnectAsync();
+        var kept = (await RulesAsync(mailbox)).Single(r => r.ProviderFilterId == "f1");
+        await RenameAsync(kept.Id, "Kept");
+
+        _provider.Filters[0] = _provider.Filters[0] with { Actions = [new(RuleActionKinds.MarkRead, null), new(RuleActionKinds.Star, null)] };
+        _provider.Labels.RemoveAll(l => l.ProviderLabelId == "Label_1");
+        await SyncAsync(mailbox);
+
+        var rules = await RulesAsync(mailbox);
+        Assert.Equal([RuleActionKinds.Star, RuleActionKinds.MarkRead], rules.Single(r => r.Id == kept.Id).Actions.Select(a => a.Kind));
+        Assert.Equal(RuleStatus.Broken, rules.Single(r => r.ProviderFilterId == "f2").Status);
+    }
+
+    [Fact]
     public async Task An_edit_can_turn_a_rule_read_only_and_back()
     {
         _provider.Filters.Add(Star("f1"));

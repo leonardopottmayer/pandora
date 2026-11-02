@@ -158,6 +158,16 @@ hora, então se o passo falhar a operação continua valendo: vai para o log, e 
 
 O `MessageComposer` monta a mensagem de saída e calcula a resposta ou o encaminhamento a partir da original crua: `Reply-To` vence `From`, responder a todos tira o endereço da própria caixa, e uma quebra de linha num campo não adiciona cabeçalho. O Gmail troca o Message-ID do que envia, então a chave não sobrevive como id lá; a checagem é no servidor, então isso não importa.
 
+### Regras
+
+Uma regra roda em um de dois lugares, conforme a capacidade `ServerFilters` do provedor.
+
+**Filtros do Gmail.** O `SyncFiltersCommand` roda uma vez por ciclo, depois das mudanças, para o filtro achar seus marcadores, e fora da trava de ação. Compara por id de filtro: um filtro novo vira regra, um que sumiu leva a regra, um sumido + um novo é edição. Um filtro conhecido também é comparado, porque as telas do próprio Gmail mantêm o id ao editar. Uma falha nunca derruba o ciclo: vai para o log e para `filter_sync_error`.
+
+`MailboxGates.Rules` separa a escrita de uma regra deste diff. Entre a resposta do Gmail e o save da regra, o diff tomaria o filtro novo por um criado no Gmail e o importaria.
+
+**Motor do Pandora.** O `RunMailRulesHandler` assina o `MailMessageReceived`, pelo outbox, então uma queda não perde uma execução e uma regra lenta não segura o sync. A entrega é pelo menos uma vez, então ele pula o que já está feito, pela linha. Só busca a mensagem crua quando uma regra ainda precisa do texto. `ProviderFailed` e `MailboxAuthFailed` lançam para nova tentativa; o resto só se repetiria, então fica na regra.
+
 ## 7. Frontend
 
 - **`/mail` (`MailPage`):** `MailSidebar` (caixas, etiquetas, não lidas), `MessageList` (páginas de 50 com "Carregar

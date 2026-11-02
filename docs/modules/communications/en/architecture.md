@@ -158,6 +158,16 @@ then, so if the step fails the operation still succeeded: it is logged, and the 
 
 `MessageComposer` builds the outgoing message and works out a reply or forward from the raw original: `Reply-To` wins over `From`, reply all leaves out the mailbox's own address, and a line break in a field cannot add a header. Gmail replaces the Message-ID on what it sends, so the key does not survive as the id there; the check is on the server, so that does not matter.
 
+### Rules
+
+A rule runs in one of two places, by the provider's `ServerFilters` capability.
+
+**Gmail filters.** `SyncFiltersCommand` runs once per cycle, after the changes, so a filter finds its labels, and outside the action gate. It diffs by filter id: a new filter becomes a rule, one gone takes its rule, one gone + one new is an edit. A known filter is compared too, since Gmail's own screens keep the id when editing. A failure never fails the cycle: it goes to the log and to `filter_sync_error`.
+
+`MailboxGates.Rules` keeps a rule's write apart from this diff. Between Gmail's answer and the rule's save, the diff would take the new filter for one made in Gmail and import it.
+
+**Pandora's engine.** `RunMailRulesHandler` subscribes to `MailMessageReceived`, through the outbox, so a crash does not lose a run and a slow rule does not hold the sync. Delivery is at least once, so it skips what is already done, by the row. It fetches the raw message only when a rule still needs the text. `ProviderFailed` and `MailboxAuthFailed` throw for a retry; anything else would only repeat, so it stays on the rule.
+
 ## 7. Frontend
 
 - **`/mail` (`MailPage`):** `MailSidebar` (mailboxes, labels, unread counts), `MessageList` (pages of 50

@@ -5,8 +5,8 @@
 > 🇺🇸 [English version](../README.md).
 >
 > **Status: M1 (conectar e ler), M2 (organizar) e M3 (enviar) prontas, verificadas com contas reais.** Gmail, Titan e qualquer servidor IMAP conectam,
-> sincronizam os cabeçalhos do mais novo para o mais antigo, abrem as mensagens num leitor em sandbox, organizam o email nos dois sentidos e enviam. Regras (M4) estão
-> planejadas.
+> sincronizam os cabeçalhos do mais novo para o mais antigo, abrem as mensagens num leitor em sandbox, organizam o email nos dois sentidos, enviam e mantêm regras: filtros do
+> Gmail nos dois sentidos, motor do Pandora nos outros.
 
 O **Communications** conecta quantas caixas de email o usuário quiser (Gmail pela Gmail API; Titan
 Email e qualquer servidor IMAP/SMTP pelo MailKit) e permite ler, organizar e enviar pelo Pandora, com
@@ -27,11 +27,11 @@ Comece pela **Visão geral** para a fronteira e o vocabulário, depois leia o t�
 | 3 | [Modelo de dados](data-model.md) | `com001`–`com005`, e o cache de conteúdo em números reais |
 | 4 | [Referência da API](api-reference.md) | Endpoints, payloads, erros, o evento |
 | 5 | [Status de implementação](implementation-status.md) | O que está construído, a verificação real, desvios do plano, pontos em aberto |
-| 6 | [Plano de Produto](product-plan.md) | O que falta: regras (M4) |
+| 6 | [Plano de Produto](product-plan.md) | O que falta: fases futuras |
 | 7 | [Plano de execução](execution-plan.md) | Como a M1 foi construída, passo a passo (histórico) |
 | 8 | [Plano de execução da M2](execution-plan-m2.md) | Como a M2 foi construída, passo a passo (histórico) |
 | 9 | [Plano de execução da M3](execution-plan-m3.md) | Como a M3 foi construída, passo a passo (histórico) |
-| 10 | [Plano de execução da M4](execution-plan-m4.md) | A próxima fase, regras: decisões e passos (plano) |
+| 10 | [Plano de execução da M4](execution-plan-m4.md) | Como a M4 foi construída, passo a passo (histórico) |
 
 🇺🇸 Todo documento também existe em inglês, em [`en/`](../README.md).
 
@@ -41,8 +41,8 @@ Comece pela **Visão geral** para a fronteira e o vocabulário, depois leia o t�
 
 - **Backend:** `Pottmayer.Pandora.Modules.Communications.*` (7 projetos). IMAP pelo MailKit, Gmail
   pela API REST (sem o SDK do Google), corpo das mensagens lido com MimeKit.
-- **Schema:** schema PostgreSQL `communications`, tabelas `com001_mailbox`…`com005_mail_content`
-  (`com006_mail_rule` é da M4), migrations em `migrations/migrations/communications/`.
+- **Schema:** schema PostgreSQL `communications`, tabelas `com001_mailbox`…`com006_mail_rule`,
+  migrations em `migrations/migrations/communications/`.
 - **Sincronização:** um job em segundo plano roda um ciclo por caixa a cada 2 minutos (etiquetas,
   mudanças, lotes da carga inicial dentro de um orçamento de 5 minutos); "Sincronizar agora" roda um na
   hora. O `MailMessageReceived`
@@ -52,6 +52,6 @@ Comece pela **Visão geral** para a fronteira e o vocabulário, depois leia o t�
   guarda o id da conta em que roda.
 - **Armazenamento:** cabeçalhos, etiquetas e snippet são espelhados; corpo e anexos são buscados sob
   demanda, com cache.
-- **Frontend:** `mail` e `mail/accounts` em `client-web/src/modules/communications` (`mail/rules` é
-  da M4). O HTML das mensagens é limpo pelo `lib/prepareMailHtml` e mostrado num iframe em sandbox com
+- **Frontend:** `mail`, `mail/accounts` e `mail/rules` em `client-web/src/modules/communications`.
+  O HTML das mensagens é limpo pelo `lib/prepareMailHtml` e mostrado num iframe em sandbox com
   CSP; imagens externas ficam bloqueadas até "Mostrar imagens".

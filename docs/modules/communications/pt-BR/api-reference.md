@@ -24,6 +24,11 @@ conta que a caixa precisa. Uma conta Google vem de `POST /api/v1/integrations/go
 | POST | `/mailboxes/{id}/labels` | Cria uma etiqueta |
 | PATCH | `/labels/{id}` | Renomeia uma etiqueta |
 | DELETE | `/labels/{id}` | Apaga uma etiqueta |
+| GET | `/mailboxes/{id}/rules` | As regras, em ordem |
+| POST | `/mailboxes/{id}/rules` | Cria uma regra |
+| PUT | `/mailboxes/{id}/rules/order` | Reordena as regras |
+| PUT | `/rules/{id}` | Edita, habilita ou desabilita uma regra |
+| DELETE | `/rules/{id}` | Apaga uma regra |
 | GET | `/messages` | Lista mensagens, da mais nova para a mais antiga |
 | GET | `/messages/{id}` | Uma mensagem com o corpo, buscado e guardado em cache na primeira abertura |
 | GET | `/messages/{id}/attachments/{attachmentId}` | Os bytes do anexo |
@@ -85,6 +90,25 @@ renomeada ou apagada. No Gmail, apagar uma etiqueta só a tira das mensagens; no
 | 404 | A caixa ou a etiqueta não existe ou é de outro usuário |
 | 409 | A pasta tem mensagens ou subpastas (`LabelNotEmpty`) |
 | 422 | Etiqueta do sistema (`SystemLabel`), nome inválido (`LabelNameInvalid`), ou recusa do provedor |
+
+### GET `/mailboxes/{id}/rules`, POST `/mailboxes/{id}/rules`, PUT `/rules/{id}`, DELETE `/rules/{id}`, PUT `/mailboxes/{id}/rules/order`
+
+Todas respondem com as regras da caixa como estão agora, em ordem: `id`, `name`, `position`, `conditions`, `actions`, `execution`, `isEnabled`, `status`, `lastError`, `providerFilterRaw`. A de outro usuário é 404.
+
+```json
+{ "name": "Contas", "conditions": [{ "kind": "from", "value": "bank" }], "actions": [{ "kind": "move", "labelId": "…" }] }
+```
+
+`PUT /rules/{id}` recebe o mesmo mais `isEnabled`. `PUT …/order` recebe `{ "ruleIds": [] }`: essas, depois as outras.
+
+Numa caixa com filtros, o provedor vai primeiro e a recusa dele não muda nada (um 422 com a mensagem dele, como passar de 1.000 filtros).
+
+- **Só um nome novo** não chega ao Gmail. **Uma edição** é criar, salvar, apagar; se só o apagar falhar, é um 200 com `lastError` dizendo isso, e o filtro antigo volta como regra própria no próximo ciclo.
+- **Desabilitar** apaga o filtro e mantém a regra; **habilitar** cria de novo. **Apagar** apaga o filtro, para sempre.
+- **Uma regra somente leitura** responde `RuleReadOnly` a um `PUT`. Pode ser apagada.
+- **Sem `gmail.settings.basic`**, as escritas respondem `MissingFilterScope`. A caixa continua.
+
+As caixas trazem `filterSyncError`: por que a última leitura dos filtros do Gmail falhou.
 
 ### POST `/messages/actions`
 

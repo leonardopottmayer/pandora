@@ -192,7 +192,9 @@ name, position and `is_enabled` are Pandora's own.
   `provider_filter_id`:
   - a filter unknown to Pandora → a new rule (name generated from its criteria);
   - a known filter that disappeared → the rule is deleted (disabled rules are skipped by the diff);
-  - an edit in Gmail arrives as "one gone + one new" (Gmail recreates filters). When exactly one
+  - a known filter whose content changed updates its rule in place: Gmail's own screens keep the id
+    when editing (seen on 2026-11-01);
+  - what recreates a filter arrives as "one gone + one new". When exactly one
     disappears and exactly one appears in the same cycle, it is treated as an edit and keeps name and
     position; otherwise delete + import. *(heuristic, marked `ponytail:` in code — covers editing one
     filter at a time)*
@@ -225,11 +227,7 @@ created in the webmail are not seen. If Titan offers **ManageSieve** (§14), a S
 
 ## 12. API (`/api/v1/communications`)
 
-What exists is in the [API Reference](api-reference.md). Left:
-
-| Resource | Endpoints |
-|---|---|
-| Rules | `GET/POST mailboxes/{id}/rules`, `PUT/DELETE rules/{id}`, `PUT mailboxes/{id}/rules/order` |
+What exists is in the [API Reference](api-reference.md).
 
 ---
 
@@ -261,14 +259,9 @@ Done on 2026-10-31: see [Implementation Status](implementation-status.md).
 
 Done on 2026-10-31: see [Implementation Status](implementation-status.md).
 
-### M4 — Rules
+### M4 — Rules ✅
 
-Work list: [execution-plan-m4.md](execution-plan-m4.md).
-
-- Rule model, Pandora's engine (IMAP), Gmail filters both directions, `broken` status, `mail/rules`.
-- **Done when:** existing Gmail filters show up as rules on connect; a rule created in Pandora
-  appears as a Gmail filter and applies on arrival with Pandora stopped; a filter edited in Gmail
-  updates its rule in place; a Titan rule moves a new message within one cycle.
+Done on 2026-11-01: see [Implementation Status](implementation-status.md).
 
 ### Later (not scheduled)
 

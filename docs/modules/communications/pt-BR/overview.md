@@ -23,9 +23,9 @@ Construído hoje (M1, conectar e ler; M2, organizar; M3, enviar):
   provedor, e o que muda no webmail volta para o Pandora.
 - **Enviar**: escrever, responder, responder a todos e encaminhar, com anexos. Um envio nunca é repetido quando o email pode ter saído.
 - **Publicar `MailMessageReceived`** pelo outbox a cada mensagem nova, para outros módulos processarem
-  email. Nada consome esse evento ainda.
+  email. O motor de regras consome esse evento.
 
-Regras (M4) são um plano: veja o [plano de produto](product-plan.md).
+- **Regras**: condições e ações numa só tela, `mail/rules`. No Gmail são filtros nativos, nos dois sentidos; no Titan e no IMAP rodam no motor do Pandora, no email que chega.
 
 ## 2. O que ele não é
 
@@ -75,11 +75,10 @@ Regras (M4) são um plano: veja o [plano de produto](product-plan.md).
 
 O schema `communications` (`com001`–`com005` + outbox); os adaptadores Gmail e IMAP; carga inicial e
 sincronização incremental; o cache de conteúdo e os anexos; os endpoints de caixas, etiquetas e mensagens; etiquetas nos dois sentidos e ações em
-lote; envio; `MailMessageReceived`; as telas `mail` e `mail/accounts`.
+lote; envio; `MailMessageReceived`; regras; as telas `mail`, `mail/accounts` e `mail/rules`.
 
 ### Fora do escopo / futuro (veja [product-plan.md](product-plan.md))
 
 | Funcionalidade | Fase |
 |---|---|
-| Regras, com filtros do Gmail nos dois sentidos | M4 |
 | Push do Gmail no lugar do polling, Radar consumindo o evento, mais provedores | Depois |

@@ -1,6 +1,6 @@
 # Communications — Execution Plan, M4 (Rules)
 
-> **Status:** In progress: decisions approved, steps 1–7 built. It is phase **M4** of the [product-plan](product-plan.md), whose §10 has the model; what exists today is in
+> **Status:** Done (2026-11-01); this is the history of how it was built. It was phase **M4** of the [product-plan](product-plan.md), whose §10 has the model; what exists today is in
 > [Implementation Status](implementation-status.md).
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan-m4.md)
 
@@ -114,7 +114,9 @@ Each step ends green before the next one. Suggested commit points: **M4a** = ste
 - i18n `mail.rules.*`.
 - **Tests:** the form's validation; the confirmation; read-only has no edit; the consent prompt.
 
-### Step 8 — Real-world check and docs
+### Step 8 — Real-world check and docs ✅
+
+> **Built (2026-11-01).** Results, including what was not shown literally, are in [Implementation Status](implementation-status.md#real-world-check-of-m4-2026-11-01). It found that Gmail's own screens keep a filter's id when editing, against what this plan assumed, so known filters are now compared by content too; and that the form's label list needed a search. Tests: `FilterSyncTests` +3.
 
 Your part in Google Cloud first: declare `gmail.settings.basic` on the consent screen, then reconnect the Gmail account.
 
@@ -130,5 +132,6 @@ Your part in Google Cloud first: declare `gmail.settings.basic` on the consent s
 - **Rules apply to mail that arrives after they are saved** (§10.1).
 - **Titan's webmail filters are not seen,** and it has no ManageSieve: rules there run only while Pandora does.
 - **Delay on IMAP:** up to one cycle, 2 minutes.
-- **The edit heuristic** can read two edits in one cycle as delete + import, losing the name.
+- **An edit in Gmail's screens can take minutes to arrive,** since `filters.list` itself lags behind them.
+- **The edit heuristic** applies to what recreates a filter: two such edits in one cycle read as delete + import, losing the name. An edit in Gmail's own screens keeps the id and is not affected.
 - **A `has-words` rule on a busy mailbox** costs one provider call per message that reaches it.
