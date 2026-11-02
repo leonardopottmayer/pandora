@@ -253,10 +253,9 @@
   },
   "settings": {
     "title": "Preferencias",
-    "subtitle": "Preferencias que valem para todo o Pandora: aparencia, idioma e o fuso/semana usados pelos modulos.",
+    "subtitle": "Preferencias que valem para todo o Pandora: aparencia, idioma e o fuso usado pelos modulos.",
     "groupAppearance": "Aparencia",
     "groupRegion": "Regiao e tempo",
-    "sharedHint": "Fuso, inicio da semana e alerta padrao sao compartilhados com a Agenda.",
     "groupDesktop": "Pandora Desktop",
     "desktopAutostartLabel": "Iniciar com o Windows",
     "desktopAutostartDesc": "Abre o Pandora na bandeja quando voce entra no Windows. Vale so para este computador.",
@@ -271,7 +270,7 @@
     "languageLabel": "Idioma",
     "languageDesc": "Escolha o idioma da interface. A preferencia e salva na sua conta.",
     "timeZoneLabel": "Fuso horario",
-    "timeZoneDesc": "Seu relogio de referencia. A Agenda agenda lembretes, tarefas e eventos neste fuso.",
+    "timeZoneDesc": "Seu relógio de referência, para todos os módulos: os horários da Agenda, as datas das Finanças, o silêncio das notificações.",
     "weekStartsOnLabel": "Semana comeca em",
     "weekStartsOnDesc": "O primeiro dia da semana no calendario.",
     "weekSunday": "Domingo",
@@ -1022,14 +1021,15 @@
   "agenda": {
     "settings": {
       "title": "Configurações da Agenda",
-      "intro": "Padrões para novos itens da agenda. São preferências da sua conta, compartilhadas com o resto do Pandora.",
+      "intro": "Padrões para novos itens da agenda.",
       "defaultCalendarLabel": "Calendário padrão",
       "defaultCalendarDesc": "Novos eventos caem neste calendário, a menos que você escolha outro.",
       "noCalendars": "Nenhum calendário ainda",
       "groupAgenda": "Agenda",
       "groupInherited": "Herdado de Preferências",
       "inheritedDesc": "Definido em Preferências.",
-      "editInGeneral": "Editar em Preferências"
+      "editInGeneral": "Editar em Preferências",
+      "saveError": "Não foi possível salvar o alerta padrão."
     },
     "today": {
       "empty": "Nada agendado para hoje.",

@@ -34,15 +34,15 @@ adiante fica em [product-plan.md](product-plan.md).
   no fuso do próprio item. Quando o caller não o informa, a Agenda agora usa como padrão o
   `UserPreferences` do Identity (via porta `IUserPreferencesReader`), caindo em UTC só quando o usuário
   não tem preferência. As forms do web também enviam a preferência salva, e o editor de alertas usa
-  `DefaultAlertOffsetMinutes` como offset padrão.
+  `DefaultAlertOffsetMinutes`, na `agd013_preferences` da própria Agenda, como offset padrão.
 - **As visões de semana e dia são uma grade de tempo feita à mão** (`WeekDayGrid`), não uma
   biblioteca de calendário: grade de horas com empacotamento guloso em faixas para eventos que se
   sobrepõem, tira de dia-inteiro, indicador de "agora" e clique-para-criar. A visão de mês mantém o
   `<Calendar>` do antd. As três honram `WeekStartsOn` (a matemática da semana via um `startOfWeek`
   manual; o grid de mês via o `weekStart` do locale do dayjs).
-- **Tela de Configurações da Agenda** (`AgendaSettingsPage`, `/agenda/settings`): expõe os padrões de
-  agendamento (fuso, início da semana, offset de alerta padrão) via o contexto de preferências
-  compartilhado — uma fonte de verdade com o Identity, não uma cópia — mais um seletor de
+- **Tela de Configurações da Agenda** (`AgendaSettingsPage`, `/agenda/settings`): edita o início da
+  semana (preferência do Identity, mostrada aqui porque só o calendário a usa) e o offset de alerta
+  padrão (`agd013_preferences`), mostra o fuso como herdado do Identity, mais um seletor de
   **calendário padrão**. Promover um calendário a padrão demove o anterior (o `UpdateCalendar` o
   limpa antes, para o índice único parcial nunca ver dois).
 

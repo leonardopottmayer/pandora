@@ -64,7 +64,6 @@ Backing store do `IRefreshTokenService` do Tars. O token é guardado **hasheado*
 | `language` | varchar(10) DEFAULT 'en' | `pt-BR \| en` (`chk_idt003_language`) |
 | `time_zone` | varchar(64) DEFAULT 'America/Sao_Paulo' | IANA |
 | `week_starts_on` | varchar(10) DEFAULT 'sunday' | `sunday…saturday` (`chk_idt003_week_starts_on`) |
-| `default_alert_offset_minutes` | int DEFAULT -15 | consumido pela Agenda como offset de alerta padrão |
 
 ## idt004_account_activation_token / idt005_password_reset_token
 

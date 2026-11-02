@@ -69,6 +69,13 @@ Per-occurrence acknowledge/snooze for recurring reminders are `AcknowledgeOccurr
 
 `subjectType` is `task` or `event` (case-insensitive); `reminder` is rejected — reminders keep their own `agd006x` ledger instead of `Alert`.
 
+## Preferences — `/agenda/preferences`
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/agenda/preferences` | The user's Agenda preferences; the defaults when never saved. |
+| PUT | `/agenda/preferences` | Save them: `{ "defaultAlertOffsetMinutes": -15 }`. |
+
 ## Today — `/agenda/today`
 
 | Method | Path | Purpose |

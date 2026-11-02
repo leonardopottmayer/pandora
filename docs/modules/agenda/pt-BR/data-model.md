@@ -24,6 +24,7 @@ As migrations ficam em `migrations/migrations/agenda/`.
 | agd007 | `alert` | Primitivo polimórfico "me avise sobre *sujeito*" |
 | agd008 | `alert_dispatch` | Ledger de idempotência do disparo de alerta |
 | agd009–agd012 | *(reservadas)* | Calendar binding / sync link / cursor / conflict — **não implementadas** (fases 5–6) |
+| agd013 | `preferences` | O que o usuário prefere na própria Agenda |
 
 ---
 
@@ -184,6 +185,16 @@ sujeito.
 
 Constraint: `uq_agd008_alert_occurrence (alert_id, occurrence_starts_at)`. Sem ack/soneca — o botão de
 um alerta de tarefa conclui a própria tarefa.
+
+## agd013_preferences
+
+O que o usuário prefere na própria Agenda, uma linha por usuário. Sem linha, valem os padrões.
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `user_id` | uuid PK | |
+| `default_alert_offset_minutes` | int NOT NULL DEFAULT -15 | com sinal, relativo ao item; é de onde o editor de alertas parte |
+| `created_by`, `created_at`, `updated_by`, `updated_at` | | auditoria |
 
 ## agd009–agd012 *(reservadas — não implementadas)*
 

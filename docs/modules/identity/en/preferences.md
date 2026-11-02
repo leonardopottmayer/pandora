@@ -13,7 +13,6 @@ other modules read.
 | `language` | `pt-BR` \| `en` | The web client; the locale carried into notifications. |
 | `time_zone` | IANA (default `America/Sao_Paulo`) | The **user-level default** time zone. |
 | `week_starts_on` | `sunday`…`saturday` | Calendar week rendering. |
-| `default_alert_offset_minutes` | signed int (default `-15`) | [Agenda](../../agenda/en/overview.md) as the default alert offset for new items. |
 
 ## API
 
@@ -31,8 +30,9 @@ all, not one holding these defaults.
 
 ## Cross-module note
 
-Identity **does** carry the user's IANA time zone, week start and default alert offset — the trio the
-Agenda plan called a "phase 0" prerequisite. Two consuming pieces remain in other modules:
+Identity **does** carry the user's IANA time zone and week start, which the Agenda plan called a
+"phase 0" prerequisite. A preference only one module uses lives in that module: the default alert
+offset is in the Agenda's `agd013_preferences`. Two consuming pieces remain in other modules:
 
 - **Agenda** stores a `time_zone` on each item because recurrence must expand in the *item's own* zone
   (which can differ from the user default); wiring the Identity preference in as the default for new

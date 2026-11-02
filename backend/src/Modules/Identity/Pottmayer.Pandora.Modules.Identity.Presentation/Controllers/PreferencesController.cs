@@ -36,7 +36,7 @@ public sealed class PreferencesController(
         var userId = userContextAccessor.Context.User!.Id;
         var command = new UpsertPreferencesCommand(new UpsertPreferencesInput(
             userId, request.Theme, request.Language,
-            request.TimeZone, request.WeekStartsOn, request.DefaultAlertOffsetMinutes));
+            request.TimeZone, request.WeekStartsOn));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }

@@ -34,14 +34,14 @@ in [product-plan.md](product-plan.md).
   item's own zone. When the caller omits it, Agenda now defaults it from Identity's `UserPreferences`
   (via the `IUserPreferencesReader` port), falling back to UTC only when the user has no preference.
   The web forms send the saved preference too, and the alert editor defaults its offset from
-  `DefaultAlertOffsetMinutes`.
+  `DefaultAlertOffsetMinutes`, in the Agenda's own `agd013_preferences`.
 - **Week and day views are a hand-rolled time grid** (`WeekDayGrid`), not a calendar library: an
   hour grid with greedy lane packing for overlapping events, an all-day strip, a now-indicator, and
   click-to-create. The month view keeps antd's `<Calendar>`. All three honour `WeekStartsOn` (the
   week math via a manual `startOfWeek`, the month grid via the dayjs locale's `weekStart`).
-- **Agenda settings screen** (`AgendaSettingsPage`, `/agenda/settings`): surfaces the scheduling
-  defaults (time zone, week start, default alert offset) via the shared preferences context — one
-  source of truth with Identity, not a copy — plus a **default-calendar** picker. Promoting a
+- **Agenda settings screen** (`AgendaSettingsPage`, `/agenda/settings`): edits the week start
+  (Identity's preference, shown here because only the calendar uses it) and the default alert offset
+  (`agd013_preferences`), shows the time zone as inherited from Identity, plus a **default-calendar** picker. Promoting a
   calendar to default demotes the previous one (`UpdateCalendar` clears it first, so the partial
   unique index never sees two).
 

@@ -14,8 +14,7 @@
 - **Password management** — forgot/reset (via emailed token) and authenticated change.
 - **Multi-factor authentication** — TOTP enrolment, a step-up **challenge** at sign-in, and single-use
   **recovery codes**.
-- **Preferences** — theme, language, IANA time zone, week start, and the default alert offset used by
-  Agenda.
+- **Preferences** — theme, language, IANA time zone and week start.
 
 Security-relevant events (activation, password reset/change, MFA enable/disable) are published as
 **contracts** that [Channels](../../channels/en/overview.md) turns into email. Identity itself never
@@ -49,7 +48,7 @@ knows a template exists.
 | **MFA credential** (`idt006`) | The user's TOTP secret, **encrypted**; `confirmed_at` marks a completed enrolment. |
 | **Recovery code** (`idt007`) | A single-use hashed backup code for when the authenticator is unavailable. |
 | **MFA challenge** (`idt008`) | A short-lived hashed token issued after password success when MFA is on; exchanged for the access token by a valid TOTP/recovery code. |
-| **Preferences** (`idt003`) | Per-user UI + scheduling defaults: theme, language, time zone, week start, default alert offset. |
+| **Preferences** (`idt003`) | Per-user UI + scheduling defaults: theme, language, time zone, week start. |
 
 ## 4. Scope
 
@@ -58,7 +57,7 @@ knows a template exists.
 The `identity` schema (`idt001`–`idt008`); sign-up + email activation; sign-in with JWT access +
 rotating refresh tokens; refresh; sign-out; forgot/reset and authenticated change of password; TOTP
 MFA (setup/enable/disable, status, recovery codes, sign-in challenge); user preferences
-(theme/language/time zone/week start/default alert offset); the security-event contracts consumed by
+(theme/language/time zone/week start); the security-event contracts consumed by
 Channels; a background purge of expired/consumed refresh tokens; and the frontend.
 
 ### Out of scope / future

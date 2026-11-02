@@ -4,5 +4,4 @@ public sealed record UserPreferencesDto(
     string Theme,
     string Language,
     string TimeZone,
-    string WeekStartsOn,
-    int DefaultAlertOffsetMinutes);
+    string WeekStartsOn);

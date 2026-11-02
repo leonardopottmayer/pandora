@@ -55,8 +55,6 @@ export interface UserPreferences {
   /** IANA time zone (e.g. "America/Sao_Paulo"). */
   timeZone: string
   weekStartsOn: WeekStartsOn
-  /** Signed minutes, relative to the item's anchor (e.g. -15 = fifteen minutes before). */
-  defaultAlertOffsetMinutes: number
 }
 
 /** A paired device (Pandora Desktop, a headless agent, a phone) — calls the API with its own key. */

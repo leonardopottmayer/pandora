@@ -18,8 +18,6 @@ const testPreferences: PreferencesContextValue = {
   setTimeZone: () => {},
   weekStartsOn: 'sunday',
   setWeekStartsOn: () => {},
-  defaultAlertOffsetMinutes: -15,
-  setDefaultAlertOffsetMinutes: () => {},
 }
 
 /** Fresh client per test: no retries, no caching across tests. */

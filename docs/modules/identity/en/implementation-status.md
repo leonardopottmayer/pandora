@@ -17,17 +17,18 @@ A snapshot of what is built in the codebase versus what is designed but not yet 
 | **Refresh + sign-out** | `refresh` rotates single-use tokens (`consumed_at`); `signout` consumes; `RefreshTokenPurgeBackgroundService` cleans up. |
 | **Password reset/change** | `forgot` (uniform) → `PasswordResetRequested`; `reset` consumes `idt005`; authenticated `change`; `PasswordChanged`. |
 | **MFA (TOTP)** | `setup`/`enable`/`disable`/`status`; secret encrypted (`idt006`, `ISecretProtector`); recovery codes hashed single-use (`idt007`); sign-in challenge (`idt008`); `MfaEnabled`/`MfaDisabled`. |
-| **Preferences** | `idt003` — theme, language, **time zone, week start, default alert offset**; `GET`/`PUT` with validation. |
+| **Preferences** | `idt003` — theme, language, **time zone, week start**; `GET`/`PUT` with validation. |
 | **Devices** | `idt009`; pair/list/revoke + `devices/me`; keys hashed, `X-Api-Key` scheme (Tars) beside JWT; `DeviceAuthorization` + on-demand scope policies for other modules. See [Devices](devices.md). |
 | **Contracts** | Six security events consumed by Channels' subscribers. |
 | **Frontend** | `client-web/src/modules/identity` — sign-in, sign-up, MFA, preferences, connected devices (pairs this computer inside Pandora Desktop). |
 
 ## Notable facts for other modules
 
-- **Identity carries the IANA time zone, week start and default alert offset** (`idt003`) — the trio
+- **Identity carries the IANA time zone and week start** (`idt003`), the pair
   the Agenda plan listed as a "phase 0" prerequisite. It is **built and exposed** via
   `PUT /identity/preferences`. Consuming it fully (Agenda item defaults, Channels quiet hours) is
-  follow-up work in *those* modules, not here. See [Preferences](preferences.md).
+  follow-up work in *those* modules, not here. See [Preferences](preferences.md). The default alert
+  offset moved to the Agenda's own `agd013_preferences` on 2026-11-01.
 - **Security emails** flow entirely through Channels' fact→template path; Identity names no template.
 
 ## Not yet implemented (future)

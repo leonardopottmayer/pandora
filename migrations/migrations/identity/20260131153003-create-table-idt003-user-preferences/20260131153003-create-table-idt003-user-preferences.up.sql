@@ -7,7 +7,6 @@ CREATE TABLE identity.idt003_user_preferences (
 	language VARCHAR(10) NOT NULL DEFAULT 'en',
 	time_zone VARCHAR(64) NOT NULL DEFAULT 'America/Sao_Paulo',
 	week_starts_on VARCHAR(10) NOT NULL DEFAULT 'sunday',
-	default_alert_offset_minutes INTEGER NOT NULL DEFAULT -15,
 	created_by UUID NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
 	updated_by UUID NULL,

@@ -5,8 +5,7 @@
 
 The **Identity** module owns *who the user is*: sign-up and account activation, sign-in with JWT
 access tokens and rotating refresh tokens, password reset and change, TOTP-based multi-factor
-authentication with recovery codes, and per-user preferences (theme, language, time zone, week start,
-default alert offset).
+authentication with recovery codes, and per-user preferences (theme, language, time zone, week start).
 
 The guiding rule: **Identity issues and validates tokens; it never stores a reusable secret in the
 clear.** Passwords are hashed with **Argon2id**, refresh tokens and every one-time token are stored as
@@ -26,7 +25,7 @@ Start with the **Overview** for the vocabulary and scope, then read the topic yo
 | 3 | [Data Model](en/data-model.md) | Schema catalog (`idt001`–`idt009`): columns, constraints, indexes |
 | 4 | [Authentication](en/authentication.md) | Sign-up, activation, sign-in, JWT + refresh rotation, sign-out, password reset/change |
 | 5 | [MFA](en/mfa.md) | TOTP setup/enable/disable, recovery codes, the sign-in challenge |
-| 6 | [Preferences](en/preferences.md) | Theme, language, time zone, week start, default alert offset |
+| 6 | [Preferences](en/preferences.md) | Theme, language, time zone, week start |
 | 6a | [Devices](en/devices.md) | Paired devices with their own scoped, revocable keys (`X-Api-Key`) |
 | 7 | [API Reference](en/api-reference.md) | Every endpoint under `/api/v{n}/identity` |
 | 8 | [Implementation Status](en/implementation-status.md) | What is built vs. planned |

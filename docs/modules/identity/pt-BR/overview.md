@@ -14,8 +14,7 @@
 - **Gestão de senha** — esqueci/reset (via token por e-mail) e troca autenticada.
 - **Autenticação multifator** — enrolamento TOTP, um **challenge** de step-up no login, e **códigos de
   recuperação** de uso único.
-- **Preferências** — tema, idioma, fuso IANA, início da semana, e o offset de alerta padrão usado pela
-  Agenda.
+- **Preferências** — tema, idioma, fuso IANA e início da semana.
 
 Eventos relevantes de segurança (ativação, reset/troca de senha, MFA on/off) são publicados como
 **contratos** que o [Channels](../../channels/pt-BR/overview.md) transforma em e-mail. O próprio
@@ -49,7 +48,7 @@ Identity nunca sabe que um template existe.
 | **Credencial MFA** (`idt006`) | O segredo TOTP do usuário, **encriptado**; `confirmed_at` marca um enrolamento concluído. |
 | **Código de recuperação** (`idt007`) | Um código de backup hasheado de uso único para quando o autenticador não está disponível. |
 | **Challenge MFA** (`idt008`) | Um token hasheado de curta duração emitido após o sucesso da senha quando o MFA está ligado; trocado pelo access token por um TOTP/código de recuperação válido. |
-| **Preferências** (`idt003`) | Padrões de UI + agendamento por usuário: tema, idioma, fuso, início da semana, offset de alerta padrão. |
+| **Preferências** (`idt003`) | Padrões de UI + agendamento por usuário: tema, idioma, fuso, início da semana. |
 
 ## 4. Escopo
 
@@ -58,7 +57,7 @@ Identity nunca sabe que um template existe.
 O schema `identity` (`idt001`–`idt008`); cadastro + ativação por e-mail; login com JWT access + refresh
 rotativo; refresh; logout; esqueci/reset e troca autenticada de senha; MFA TOTP (setup/enable/disable,
 status, códigos de recuperação, challenge de login); preferências (tema/idioma/fuso/início da
-semana/offset de alerta); os contratos de eventos de segurança consumidos pelo Channels; uma purga de
+semana); os contratos de eventos de segurança consumidos pelo Channels; uma purga de
 background de refresh tokens expirados/consumidos; e o frontend.
 
 ### Fora do escopo / futuro

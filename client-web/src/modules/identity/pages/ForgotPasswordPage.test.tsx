@@ -21,8 +21,6 @@ const prefs: PreferencesContextValue = {
   setTimeZone: () => {},
   weekStartsOn: 'sunday',
   setWeekStartsOn: () => {},
-  defaultAlertOffsetMinutes: -15,
-  setDefaultAlertOffsetMinutes: () => {},
 }
 
 function renderPage() {

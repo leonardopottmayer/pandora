@@ -30,7 +30,7 @@ Pottmayer.Pandora.Modules.Identity.
 | Type | Role |
 |---|---|
 | **User** (aggregate root, `idt001`) | Name, unique username + email, Argon2id `password_hash`, `email_confirmed_at`, `disabled_at`, `mfa_enabled`, sign-in/password timestamps. |
-| **UserPreferences** (`idt003`) | Theme, language, `TimeZone` (IANA), `WeekStartsOn` (`DayOfWeek`), `DefaultAlertOffsetMinutes`. One per user. |
+| **UserPreferences** (`idt003`) | Theme, language, `TimeZone` (IANA), `WeekStartsOn` (`DayOfWeek`). One per user. |
 | **StoredRefreshToken** (`idt002`) | Hashed, single-use refresh token with claims snapshot, expiry and `consumed_at`. |
 | **AccountActivationToken** (`idt004`) | Single-use hashed email-activation token. |
 | **PasswordResetToken** (`idt005`) | Single-use hashed reset token. |

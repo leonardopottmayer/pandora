@@ -12,8 +12,6 @@ export interface PreferencesContextValue {
   setTimeZone: (timeZone: string) => void
   weekStartsOn: WeekStartsOn
   setWeekStartsOn: (weekStartsOn: WeekStartsOn) => void
-  defaultAlertOffsetMinutes: number
-  setDefaultAlertOffsetMinutes: (minutes: number) => void
 }
 
 export const PreferencesContext = createContext<PreferencesContextValue | null>(null)

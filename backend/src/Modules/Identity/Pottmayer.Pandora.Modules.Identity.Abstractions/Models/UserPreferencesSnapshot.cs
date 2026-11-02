@@ -8,6 +8,4 @@ public sealed record UserPreferencesSnapshot(
     /// <summary>IANA time zone (e.g. "America/Sao_Paulo"). The reference clock for the Agenda.</summary>
     string TimeZone,
     /// <summary>First day of the week, for calendar rendering.</summary>
-    DayOfWeek WeekStartsOn,
-    /// <summary>Default signed offset, in minutes, for alerts on events and tasks (e.g. -15 = fifteen minutes before).</summary>
-    int DefaultAlertOffsetMinutes);
+    DayOfWeek WeekStartsOn);

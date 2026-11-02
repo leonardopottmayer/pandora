@@ -4,5 +4,4 @@ public sealed record UpsertPreferencesRequest(
     string Theme,
     string Language,
     string TimeZone,
-    string WeekStartsOn,
-    int DefaultAlertOffsetMinutes);
+    string WeekStartsOn);

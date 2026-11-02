@@ -17,7 +17,6 @@ describe('preferences.service', () => {
             language: 'pt-BR',
             timeZone: 'America/Sao_Paulo',
             weekStartsOn: 'monday',
-            defaultAlertOffsetMinutes: -30,
           },
         }),
       ),
@@ -27,7 +26,6 @@ describe('preferences.service', () => {
     expect(prefs.language).toBe('pt-BR')
     expect(prefs.timeZone).toBe('America/Sao_Paulo')
     expect(prefs.weekStartsOn).toBe('monday')
-    expect(prefs.defaultAlertOffsetMinutes).toBe(-30)
   })
 
   it('upserts the full preferences object via PUT', async () => {
@@ -43,14 +41,12 @@ describe('preferences.service', () => {
       language: 'en',
       timeZone: 'UTC',
       weekStartsOn: 'sunday',
-      defaultAlertOffsetMinutes: -15,
     })
     expect(body).toEqual({
       theme: 'light',
       language: 'en',
       timeZone: 'UTC',
       weekStartsOn: 'sunday',
-      defaultAlertOffsetMinutes: -15,
     })
   })
 })

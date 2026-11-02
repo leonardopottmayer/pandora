@@ -53,15 +53,15 @@ are **built**. What remains is external sync and the Assistant catalog.
   (recurrence expands in the item's own zone), but when the caller omits it, the create handlers
   default it from Identity's `UserPreferences` through the `IUserPreferencesReader` port, falling back
   to UTC only when there is no preference. The web forms send the saved preference and the alert
-  editor defaults its offset from `DefaultAlertOffsetMinutes`. `WeekStartsOn` is now honoured too, in
+  editor defaults its offset from `DefaultAlertOffsetMinutes`, moved to the Agenda's own `agd013_preferences` on 2026-11-01. `WeekStartsOn` is now honoured too, in
   all three calendar views (see below).
 - **Week and day calendar views.** **Done.** A hand-rolled time grid (`WeekDayGrid`) replaced the
   placeholder: hour grid, greedy lane packing for overlapping events, all-day strip, now-indicator,
   click-to-create, and unified prev/next/today navigation. `WeekStartsOn` is honoured via a manual
   `startOfWeek` (week math) and the dayjs locale's `weekStart` (the antd month grid).
-- **Agenda settings screen.** **Done.** `AgendaSettingsPage` (`/agenda/settings`) surfaces the
-  scheduling defaults (time zone, week start, default alert offset) through the shared preferences
-  context and adds a default-calendar picker; promoting a calendar to default demotes the previous
+- **Agenda settings screen.** **Done.** `AgendaSettingsPage` (`/agenda/settings`) edits the week
+  start and the default alert offset, shows the time zone as inherited from Identity, and adds a
+  default-calendar picker; promoting a calendar to default demotes the previous
   one so the partial unique index holds.
 
 ## Beyond *(not scheduled)*

@@ -1,4 +1,4 @@
-import { Segmented, Select, Typography } from 'antd'
+import { Segmented, Select } from 'antd'
 import { BulbOutlined, BulbFilled, DesktopOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { PageHeading } from '@/components/settings/PageHeading'
@@ -6,7 +6,7 @@ import { SettingsSection } from '@/components/settings/SettingsSection'
 import { SettingRow } from '@/components/settings/SettingRow'
 import { DesktopSettingsSection } from '@/components/settings/DesktopSettingsSection'
 import { usePreferences } from '../context/preferences-context'
-import type { AppLanguage, AppTheme, WeekStartsOn } from '../models'
+import type { AppLanguage, AppTheme } from '../models'
 
 function timeZoneOptions(current: string): { label: string; value: string }[] {
   const intl = Intl as typeof Intl & { supportedValuesOf?: (key: string) => string[] }
@@ -19,28 +19,7 @@ function timeZoneOptions(current: string): { label: string; value: string }[] {
 
 export function SettingsPage() {
   const { t } = useTranslation()
-  const {
-    theme,
-    setTheme,
-    language,
-    setLanguage,
-    timeZone,
-    setTimeZone,
-    weekStartsOn,
-    setWeekStartsOn,
-    defaultAlertOffsetMinutes,
-    setDefaultAlertOffsetMinutes,
-  } = usePreferences()
-
-  const offsetOptions = [
-    { label: t('settings.alertOffsetAtTime'), value: 0 },
-    { label: t('settings.alertOffsetMinutes', { count: 5 }), value: -5 },
-    { label: t('settings.alertOffsetMinutes', { count: 10 }), value: -10 },
-    { label: t('settings.alertOffsetMinutes', { count: 15 }), value: -15 },
-    { label: t('settings.alertOffsetMinutes', { count: 30 }), value: -30 },
-    { label: t('settings.alertOffsetHours', { count: 1 }), value: -60 },
-    { label: t('settings.alertOffsetDays', { count: 1 }), value: -1440 },
-  ]
+  const { theme, setTheme, language, setLanguage, timeZone, setTimeZone } = usePreferences()
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
@@ -92,39 +71,9 @@ export function SettingsPage() {
             />
           }
         />
-        <SettingRow
-          label={t('settings.weekStartsOnLabel')}
-          description={t('settings.weekStartsOnDesc')}
-          control={
-            <Segmented<WeekStartsOn>
-              value={weekStartsOn}
-              onChange={setWeekStartsOn}
-              options={[
-                { label: t('settings.weekSunday'), value: 'sunday' },
-                { label: t('settings.weekMonday'), value: 'monday' },
-              ]}
-            />
-          }
-        />
-        <SettingRow
-          label={t('settings.alertOffsetLabel')}
-          description={t('settings.alertOffsetDesc')}
-          control={
-            <Select
-              className="w-full min-w-56 sm:w-64"
-              value={defaultAlertOffsetMinutes}
-              onChange={setDefaultAlertOffsetMinutes}
-              options={offsetOptions}
-            />
-          }
-        />
       </SettingsSection>
 
       <DesktopSettingsSection />
-
-      <Typography.Text type="secondary" className="text-xs">
-        {t('settings.sharedHint')}
-      </Typography.Text>
     </div>
   )
 }

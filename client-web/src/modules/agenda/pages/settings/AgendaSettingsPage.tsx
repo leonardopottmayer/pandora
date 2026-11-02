@@ -1,17 +1,21 @@
-import { App, Select, Typography } from 'antd'
+import { App, Segmented, Select, Typography } from 'antd'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { PageHeading } from '@/components/settings/PageHeading'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { SettingRow } from '@/components/settings/SettingRow'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
+import type { WeekStartsOn } from '@/modules/identity/models'
 import { toErrorMessage } from '@/lib/api/envelope'
+import { useAgendaPreferences, useSaveAgendaPreferences } from '../../hooks/useAgendaPreferences'
 import { useCalendars, useUpdateCalendar } from '../../hooks/useCalendars'
 
 export function AgendaSettingsPage() {
   const { t } = useTranslation()
   const { message } = App.useApp()
-  const { timeZone, weekStartsOn, defaultAlertOffsetMinutes } = usePreferences()
+  const { timeZone, weekStartsOn, setWeekStartsOn } = usePreferences()
+  const { data: preferences } = useAgendaPreferences()
+  const savePreferences = useSaveAgendaPreferences()
 
   const { data: calendarList } = useCalendars()
   const calendars = (calendarList ?? []).filter((c) => !c.archivedAt)
@@ -27,6 +31,14 @@ export function AgendaSettingsPage() {
     }
   }
 
+  async function chooseDefaultAlert(defaultAlertOffsetMinutes: number) {
+    try {
+      await savePreferences.mutateAsync({ defaultAlertOffsetMinutes })
+    } catch (err) {
+      message.error(toErrorMessage(err, t('agenda.settings.saveError')))
+    }
+  }
+
   const offsetOptions = [
     { label: t('settings.alertOffsetAtTime'), value: 0 },
     { label: t('settings.alertOffsetMinutes', { count: 5 }), value: -5 },
@@ -36,24 +48,6 @@ export function AgendaSettingsPage() {
     { label: t('settings.alertOffsetHours', { count: 1 }), value: -60 },
     { label: t('settings.alertOffsetDays', { count: 1 }), value: -1440 },
   ]
-
-  const weekLabel =
-    weekStartsOn === 'sunday' ? t('settings.weekSunday') : t('settings.weekMonday')
-  const offsetLabel =
-    offsetOptions.find((o) => o.value === defaultAlertOffsetMinutes)?.label ??
-    String(defaultAlertOffsetMinutes)
-
-  const editLink = (
-    <Link to="/settings" className="whitespace-nowrap text-sm font-medium">
-      {t('agenda.settings.editInGeneral')}
-    </Link>
-  )
-  const inherited = (value: string) => (
-    <div className="flex items-center gap-3">
-      <Typography.Text type="secondary">{value}</Typography.Text>
-      {editLink}
-    </div>
-  )
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
@@ -74,23 +68,47 @@ export function AgendaSettingsPage() {
             />
           }
         />
+        <SettingRow
+          label={t('settings.weekStartsOnLabel')}
+          description={t('settings.weekStartsOnDesc')}
+          control={
+            <Segmented<WeekStartsOn>
+              value={weekStartsOn}
+              onChange={setWeekStartsOn}
+              options={[
+                { label: t('settings.weekSunday'), value: 'sunday' },
+                { label: t('settings.weekMonday'), value: 'monday' },
+              ]}
+            />
+          }
+        />
+        <SettingRow
+          label={t('settings.alertOffsetLabel')}
+          description={t('settings.alertOffsetDesc')}
+          control={
+            <Select
+              className="w-full min-w-56 sm:w-64"
+              value={preferences?.defaultAlertOffsetMinutes}
+              disabled={!preferences}
+              onChange={chooseDefaultAlert}
+              options={offsetOptions}
+            />
+          }
+        />
       </SettingsSection>
 
       <SettingsSection title={t('agenda.settings.groupInherited')}>
         <SettingRow
           label={t('settings.timeZoneLabel')}
           description={t('agenda.settings.inheritedDesc')}
-          control={inherited(timeZone)}
-        />
-        <SettingRow
-          label={t('settings.weekStartsOnLabel')}
-          description={t('agenda.settings.inheritedDesc')}
-          control={inherited(weekLabel)}
-        />
-        <SettingRow
-          label={t('settings.alertOffsetLabel')}
-          description={t('agenda.settings.inheritedDesc')}
-          control={inherited(offsetLabel)}
+          control={
+            <div className="flex items-center gap-3">
+              <Typography.Text type="secondary">{timeZone}</Typography.Text>
+              <Link to="/settings" className="whitespace-nowrap text-sm font-medium">
+                {t('agenda.settings.editInGeneral')}
+              </Link>
+            </div>
+          }
         />
       </SettingsSection>
     </div>

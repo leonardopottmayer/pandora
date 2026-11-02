@@ -24,6 +24,7 @@ Migrations live in `migrations/migrations/agenda/`.
 | agd007 | `alert` | Polymorphic "notify me about *subject*" primitive |
 | agd008 | `alert_dispatch` | Idempotency ledger for alert firing |
 | agd009–agd012 | *(reserved)* | Calendar binding / sync link / cursor / conflict — **not yet implemented** (phases 5–6) |
+| agd013 | `preferences` | What a user prefers about the Agenda itself |
 
 ---
 
@@ -181,6 +182,16 @@ The alert dispatch ledger. One row the first time an alert fires for a subject a
 
 Constraint: `uq_agd008_alert_occurrence (alert_id, occurrence_starts_at)`. No ack/snooze — a task
 alert's button completes the task itself.
+
+## agd013_preferences
+
+What a user prefers about the Agenda itself, one row per user. No row means the defaults.
+
+| Column | Type | Notes |
+|---|---|---|
+| `user_id` | uuid PK | |
+| `default_alert_offset_minutes` | int NOT NULL DEFAULT -15 | signed, relative to the item; what the alert editor starts from |
+| `created_by`, `created_at`, `updated_by`, `updated_at` | | audit |
 
 ## agd009–agd012 *(reserved — not implemented)*
 

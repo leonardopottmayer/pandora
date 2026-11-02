@@ -88,11 +88,11 @@ public sealed class User : AggregateRoot<Guid>, IAuditable
 
     public void UpdatePreferences(
         AppTheme theme, AppLanguage language,
-        string timeZone, DayOfWeek weekStartsOn, int defaultAlertOffsetMinutes)
+        string timeZone, DayOfWeek weekStartsOn)
     {
         if (Preferences is null)
-            Preferences = UserPreferences.Create(theme, language, timeZone, weekStartsOn, defaultAlertOffsetMinutes);
+            Preferences = UserPreferences.Create(theme, language, timeZone, weekStartsOn);
         else
-            Preferences.Update(theme, language, timeZone, weekStartsOn, defaultAlertOffsetMinutes);
+            Preferences.Update(theme, language, timeZone, weekStartsOn);
     }
 }

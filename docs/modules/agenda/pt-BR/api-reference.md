@@ -69,6 +69,13 @@ Reconhecer/soneca por ocorrência para lembretes recorrentes são os comandos `A
 
 `subjectType` é `task` ou `event` (sem diferenciar maiúsculas); `reminder` é rejeitado — lembretes mantêm seu próprio ledger `agd006x` em vez de `Alert`.
 
+## Preferências — `/agenda/preferences`
+
+| Método | Caminho | Propósito |
+|---|---|---|
+| GET | `/agenda/preferences` | As preferências da Agenda do usuário; os padrões quando nunca salvas. |
+| PUT | `/agenda/preferences` | Salva: `{ "defaultAlertOffsetMinutes": -15 }`. |
+
 ## Hoje — `/agenda/today`
 
 | Método | Caminho | Propósito |

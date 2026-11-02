@@ -7,6 +7,8 @@ export const agendaKeys = {
 
   today: () => [...agendaKeys.all, 'today'] as const,
 
+  preferences: () => [...agendaKeys.all, 'preferences'] as const,
+
   calendars: () => [...agendaKeys.all, 'calendars'] as const,
   calendarList: () => [...agendaKeys.calendars(), 'list'] as const,
 

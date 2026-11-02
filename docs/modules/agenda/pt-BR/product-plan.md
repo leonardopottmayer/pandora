@@ -53,16 +53,16 @@ acima e estão **construídos**. O que resta é sync externo e o catálogo do As
   (recorrência expande no fuso do próprio item), mas quando o caller não o informa, os create handlers
   o usam como padrão a partir do `UserPreferences` do Identity via porta `IUserPreferencesReader`,
   caindo em UTC só quando não há preferência. As forms do web enviam a preferência salva e o editor de
-  alertas usa `DefaultAlertOffsetMinutes` como offset padrão. `WeekStartsOn` também já é honrado, nas
+  alertas usa `DefaultAlertOffsetMinutes` como offset padrão, movido para a `agd013_preferences` da própria Agenda em 2026-11-01. `WeekStartsOn` também já é honrado, nas
   três visões do calendário (ver abaixo).
 - **Visões de semana e dia do calendário.** **Feito.** Uma grade de tempo feita à mão (`WeekDayGrid`)
   substituiu o placeholder: grade de horas, empacotamento guloso em faixas para eventos sobrepostos,
   tira de dia-inteiro, indicador de "agora", clique-para-criar e navegação unificada anterior/próximo/
   hoje. `WeekStartsOn` é honrado via um `startOfWeek` manual (matemática da semana) e o `weekStart` do
   locale do dayjs (o grid de mês do antd).
-- **Tela de Configurações da Agenda.** **Feito.** A `AgendaSettingsPage` (`/agenda/settings`) expõe os
-  padrões de agendamento (fuso, início da semana, offset de alerta padrão) via o contexto de
-  preferências compartilhado e adiciona um seletor de calendário padrão; promover um calendário a
+- **Tela de Configurações da Agenda.** **Feito.** A `AgendaSettingsPage` (`/agenda/settings`) edita o início da
+  semana e o offset de alerta padrão, mostra o fuso como herdado do Identity e adiciona um seletor de
+  calendário padrão; promover um calendário a
   padrão demove o anterior para o índice único parcial se manter.
 
 ## Além *(não agendado)*

@@ -8,8 +8,7 @@ public sealed record UpsertPreferencesInput(
     string Theme,
     string Language,
     string TimeZone,
-    string WeekStartsOn,
-    int DefaultAlertOffsetMinutes);
+    string WeekStartsOn);
 
 public sealed class UpsertPreferencesCommand(UpsertPreferencesInput input)
     : CommandBase<UpsertPreferencesInput, UserPreferencesDto>(input);

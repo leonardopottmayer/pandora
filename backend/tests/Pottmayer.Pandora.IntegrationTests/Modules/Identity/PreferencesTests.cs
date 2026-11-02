@@ -51,7 +51,7 @@ public sealed class PreferencesTests : IAsyncLifetime
 
         var upsert = await _client.PutAsJsonAsync(PreferencesUrl, Body(
             theme: "dark", language: "en",
-            timeZone: "America/Sao_Paulo", weekStartsOn: "monday", defaultAlertOffsetMinutes: -30));
+            timeZone: "America/Sao_Paulo", weekStartsOn: "monday"));
         Assert.Equal(HttpStatusCode.OK, upsert.StatusCode);
 
         var get = await _client.GetAsync(PreferencesUrl);
@@ -61,7 +61,6 @@ public sealed class PreferencesTests : IAsyncLifetime
         Assert.Equal("en", prefs.Language);
         Assert.Equal("America/Sao_Paulo", prefs.TimeZone);
         Assert.Equal("monday", prefs.WeekStartsOn);
-        Assert.Equal(-30, prefs.DefaultAlertOffsetMinutes);
     }
 
     [Fact]
@@ -71,17 +70,16 @@ public sealed class PreferencesTests : IAsyncLifetime
 
         await _client.PutAsJsonAsync(PreferencesUrl, Body(
             theme: "dark", language: "en",
-            timeZone: "America/Sao_Paulo", weekStartsOn: "sunday", defaultAlertOffsetMinutes: -15));
+            timeZone: "America/Sao_Paulo", weekStartsOn: "sunday"));
         await _client.PutAsJsonAsync(PreferencesUrl, Body(
             theme: "light", language: "pt-BR",
-            timeZone: "UTC", weekStartsOn: "monday", defaultAlertOffsetMinutes: 0));
+            timeZone: "UTC", weekStartsOn: "monday"));
 
         var prefs = await ReadPreferencesAsync(await _client.GetAsync(PreferencesUrl));
         Assert.Equal("light", prefs.Theme);
         Assert.Equal("pt-BR", prefs.Language);
         Assert.Equal("UTC", prefs.TimeZone);
         Assert.Equal("monday", prefs.WeekStartsOn);
-        Assert.Equal(0, prefs.DefaultAlertOffsetMinutes);
     }
 
     [Fact]
@@ -128,9 +126,8 @@ public sealed class PreferencesTests : IAsyncLifetime
 
     private static object Body(
         string theme, string language,
-        string timeZone = "America/Sao_Paulo", string weekStartsOn = "sunday",
-        int defaultAlertOffsetMinutes = -15)
-        => new { theme, language, timeZone, weekStartsOn, defaultAlertOffsetMinutes };
+        string timeZone = "America/Sao_Paulo", string weekStartsOn = "sunday")
+        => new { theme, language, timeZone, weekStartsOn };
 
     private static async Task<PreferencesData> ReadPreferencesAsync(HttpResponseMessage response)
     {
@@ -140,5 +137,5 @@ public sealed class PreferencesTests : IAsyncLifetime
 
     private sealed record Envelope(PreferencesData Data);
     private sealed record PreferencesData(
-        string Theme, string Language, string TimeZone, string WeekStartsOn, int DefaultAlertOffsetMinutes);
+        string Theme, string Language, string TimeZone, string WeekStartsOn);
 }

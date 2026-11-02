@@ -21,6 +21,6 @@ public sealed class UserPreferencesReader(IUnitOfWorkFactory factory) : IUserPre
             return null;
 
         var prefs = user.Preferences;
-        return new UserPreferencesSnapshot(prefs.TimeZone, prefs.WeekStartsOn, prefs.DefaultAlertOffsetMinutes);
+        return new UserPreferencesSnapshot(prefs.TimeZone, prefs.WeekStartsOn);
     }
 }

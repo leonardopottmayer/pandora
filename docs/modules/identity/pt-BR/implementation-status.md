@@ -17,17 +17,18 @@ Um retrato do que está construído no código versus o que está desenhado mas 
 | **Refresh + logout** | `refresh` rotaciona tokens de uso único (`consumed_at`); `signout` consome; `RefreshTokenPurgeBackgroundService` limpa. |
 | **Reset/troca de senha** | `forgot` (uniforme) → `PasswordResetRequested`; `reset` consome `idt005`; `change` autenticado; `PasswordChanged`. |
 | **MFA (TOTP)** | `setup`/`enable`/`disable`/`status`; segredo encriptado (`idt006`, `ISecretProtector`); códigos de recuperação hasheados de uso único (`idt007`); challenge de login (`idt008`); `MfaEnabled`/`MfaDisabled`. |
-| **Preferências** | `idt003` — tema, idioma, **fuso, início da semana, offset de alerta padrão**; `GET`/`PUT` com validação. |
+| **Preferências** | `idt003` — tema, idioma, **fuso, início da semana**; `GET`/`PUT` com validação. |
 | **Contratos** | Seis eventos de segurança consumidos pelos subscribers do Channels. |
 | **Dispositivos** | `idt009`; parear/listar/revogar + `devices/me`; chaves hasheadas, esquema `X-Api-Key` (Tars) ao lado do JWT; `DeviceAuthorization` + políticas de escopo sob demanda para outros módulos. Ver [Dispositivos](devices.md). |
 | **Frontend** | `client-web/src/modules/identity` — login, cadastro, MFA, preferências, dispositivos conectados (pareia este computador dentro do Pandora Desktop). |
 
 ## Fatos notáveis para outros módulos
 
-- **O Identity carrega o fuso IANA, o início da semana e o offset de alerta padrão** (`idt003`) — o
-  trio que o plano da Agenda listava como pré-requisito de "fase 0". Está **construído e exposto** via
+- **O Identity carrega o fuso IANA e o início da semana** (`idt003`) — o par
+  que o plano da Agenda listava como pré-requisito de "fase 0". Está **construído e exposto** via
   `PUT /identity/preferences`. Consumi-lo por completo (padrões de item na Agenda, quiet hours do
-  Channels) é trabalho de follow-up *naqueles* módulos, não aqui. Ver [Preferências](preferences.md).
+  Channels) é trabalho de follow-up *naqueles* módulos, não aqui. Ver [Preferências](preferences.md). O offset de alerta
+  padrão foi para a `agd013_preferences`, da própria Agenda, em 2026-11-01.
 - **E-mails de segurança** fluem inteiramente pelo caminho fato→template do Channels; o Identity não
   nomeia template.
 

@@ -41,7 +41,7 @@ public sealed class UpsertPreferencesCommandHandler(IUnitOfWorkFactory factory)
             if (user is null)
                 return null;
 
-            user.UpdatePreferences(theme, language, input.TimeZone, weekStartsOn, input.DefaultAlertOffsetMinutes);
+            user.UpdatePreferences(theme, language, input.TimeZone, weekStartsOn);
             await repo.UpdateAsync(user, token);
             return user;
         }, cancellationToken: ct);
@@ -54,7 +54,6 @@ public sealed class UpsertPreferencesCommandHandler(IUnitOfWorkFactory factory)
             prefs.Theme.Value,
             prefs.Language.Value,
             prefs.TimeZone,
-            prefs.WeekStartsOn.ToString().ToLowerInvariant(),
-            prefs.DefaultAlertOffsetMinutes));
+            prefs.WeekStartsOn.ToString().ToLowerInvariant()));
     }
 }

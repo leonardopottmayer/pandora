@@ -7,7 +7,7 @@ namespace Pottmayer.Pandora.Modules.Assistant.Tests.Fakes;
 internal sealed class FakeUserPreferencesReader(UserPreferencesSnapshot? snapshot) : IUserPreferencesReader
 {
     public static FakeUserPreferencesReader With(string timeZone) =>
-        new(new UserPreferencesSnapshot(timeZone, DayOfWeek.Monday, -15));
+        new(new UserPreferencesSnapshot(timeZone, DayOfWeek.Monday));
 
     public static FakeUserPreferencesReader None() => new((UserPreferencesSnapshot?)null);
 

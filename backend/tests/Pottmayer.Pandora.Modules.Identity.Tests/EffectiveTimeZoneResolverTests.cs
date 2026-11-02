@@ -61,6 +61,6 @@ public sealed class EffectiveTimeZoneResolverTests
     private sealed class StubReader(string? timeZone) : IUserPreferencesReader
     {
         public Task<UserPreferencesSnapshot?> GetAsync(Guid userId, CancellationToken ct = default)
-            => Task.FromResult(timeZone is null ? null : new UserPreferencesSnapshot(timeZone, DayOfWeek.Monday, -15));
+            => Task.FromResult(timeZone is null ? null : new UserPreferencesSnapshot(timeZone, DayOfWeek.Monday));
     }
 }

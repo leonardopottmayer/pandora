@@ -64,10 +64,6 @@ internal sealed class UserPreferencesEntityConfiguration : IEntityTypeConfigurat
                .HasMaxLength(10)
                .IsRequired();
 
-        builder.Property(p => p.DefaultAlertOffsetMinutes)
-               .HasColumnName("default_alert_offset_minutes")
-               .IsRequired();
-
         builder.Property(p => p.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(p => p.CreatedBy).HasColumnName("created_by");
         builder.Property(p => p.UpdatedAt).HasColumnName("updated_at");

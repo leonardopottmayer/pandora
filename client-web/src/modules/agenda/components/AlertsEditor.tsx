@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { App, Button, InputNumber, List, Space, Typography } from 'antd'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { toErrorMessage } from '@/lib/api/envelope'
-import { usePreferences } from '@/modules/identity/context/preferences-context'
 import type { AlertSubjectType } from '../models'
 import { useAlerts, useCreateAlert, useDeleteAlert } from '../hooks/useAlerts'
+import { useAgendaPreferences } from '../hooks/useAgendaPreferences'
 
 interface AlertsEditorProps {
   subjectType: AlertSubjectType
@@ -17,8 +17,10 @@ interface AlertsEditorProps {
 export function AlertsEditor({ subjectType, subjectId }: AlertsEditorProps) {
   const { t } = useTranslation()
   const { message } = App.useApp()
-  const { defaultAlertOffsetMinutes } = usePreferences()
-  const [offset, setOffset] = useState<number>(defaultAlertOffsetMinutes)
+  const { data: preferences } = useAgendaPreferences()
+  // The default arrives after the first render, so what is typed is kept apart from it.
+  const [chosenOffset, setChosenOffset] = useState<number | null>(null)
+  const offset = chosenOffset ?? preferences?.defaultAlertOffsetMinutes ?? -15
   const { data } = useAlerts(subjectType, subjectId)
   const createAlert = useCreateAlert(subjectType, subjectId)
   const deleteAlert = useDeleteAlert(subjectType, subjectId)
@@ -74,7 +76,7 @@ export function AlertsEditor({ subjectType, subjectId }: AlertsEditorProps) {
       <Space>
         <InputNumber
           value={offset}
-          onChange={(v) => setOffset(v ?? 0)}
+          onChange={(v) => setChosenOffset(v ?? 0)}
           aria-label={t('agenda.alerts.offset')}
         />
         <Button

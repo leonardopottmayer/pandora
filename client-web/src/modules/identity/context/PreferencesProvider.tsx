@@ -26,7 +26,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<AppLanguage>(getStoredLanguage)
   const [timeZone, setTimeZoneState] = useState<string>(browserTimeZone)
   const [weekStartsOn, setWeekStartsOnState] = useState<WeekStartsOn>('sunday')
-  const [defaultAlertOffsetMinutes, setDefaultAlertOffsetMinutesState] = useState<number>(-15)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Mirrors the latest values so the debounced persist always sends a complete,
@@ -36,7 +35,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     language,
     timeZone,
     weekStartsOn,
-    defaultAlertOffsetMinutes,
   })
 
   const applyLanguage = useCallback((next: AppLanguage) => {
@@ -66,10 +64,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         if (prefs.weekStartsOn) {
           setWeekStartsOnState(prefs.weekStartsOn)
           latest.current.weekStartsOn = prefs.weekStartsOn
-        }
-        if (typeof prefs.defaultAlertOffsetMinutes === 'number') {
-          setDefaultAlertOffsetMinutesState(prefs.defaultAlertOffsetMinutes)
-          latest.current.defaultAlertOffsetMinutes = prefs.defaultAlertOffsetMinutes
         }
       })
       .catch((err) => {
@@ -136,15 +130,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     [persist],
   )
 
-  const setDefaultAlertOffsetMinutes = useCallback(
-    (next: number) => {
-      setDefaultAlertOffsetMinutesState(next)
-      latest.current.defaultAlertOffsetMinutes = next
-      persist()
-    },
-    [persist],
-  )
-
   const isDark = theme === 'dark' || (theme === 'system' && prefersDark())
 
   return (
@@ -159,8 +144,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         setTimeZone,
         weekStartsOn,
         setWeekStartsOn,
-        defaultAlertOffsetMinutes,
-        setDefaultAlertOffsetMinutes,
       }}
     >
       {children}

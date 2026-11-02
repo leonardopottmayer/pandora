@@ -43,7 +43,7 @@ mensagens **uniformes** onde a existência da conta não pode vazar.
 | Método | Caminho | Auth | Propósito |
 |---|---|---|---|
 | GET | `/preferences` | usuário | Lê as preferências do usuário. |
-| PUT | `/preferences` | usuário | Upsert de tema / idioma / fuso / início da semana / offset de alerta padrão. |
+| PUT | `/preferences` | usuário | Upsert de tema / idioma / fuso / início da semana. |
 
 ## Dispositivos — `/identity/devices`
 

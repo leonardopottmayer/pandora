@@ -5,7 +5,7 @@
 
 O módulo **Identity** é dono de *quem o usuário é*: cadastro e ativação de conta, login com JWT access
 tokens e refresh tokens rotativos, reset e troca de senha, MFA baseado em TOTP com códigos de
-recuperação, e preferências por usuário (tema, idioma, fuso, início da semana, offset de alerta padrão).
+recuperação, e preferências por usuário (tema, idioma, fuso, início da semana).
 
 A regra que guia tudo: **o Identity emite e valida tokens; nunca guarda um segredo reutilizável em
 texto puro.** Senhas usam hash **Argon2id**, refresh tokens e todo token de uso único são guardados
@@ -25,7 +25,7 @@ Comece pela **Visão geral** para o vocabulário e o escopo, depois leia o tópi
 | 3 | [Modelo de dados](data-model.md) | Catálogo de schema (`idt001`–`idt009`): colunas, constraints, índices |
 | 4 | [Autenticação](authentication.md) | Cadastro, ativação, login, JWT + rotação de refresh, logout, reset/troca de senha |
 | 5 | [MFA](mfa.md) | Setup/enable/disable TOTP, códigos de recuperação, o challenge de login |
-| 6 | [Preferências](preferences.md) | Tema, idioma, fuso, início da semana, offset de alerta padrão |
+| 6 | [Preferências](preferences.md) | Tema, idioma, fuso, início da semana |
 | 6a | [Dispositivos](devices.md) | Dispositivos pareados com chave própria, limitada e revogável (`X-Api-Key`) |
 | 7 | [Referência de API](api-reference.md) | Todos os endpoints sob `/api/v{n}/identity` |
 | 8 | [Status de implementação](implementation-status.md) | O que está pronto vs. planejado |
