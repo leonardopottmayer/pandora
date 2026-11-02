@@ -127,7 +127,8 @@ export function AppLayout() {
   )
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    // dvh, not vh: on a phone 100vh counts the address bar too, and the page always scrolls by its height.
+    <Layout style={{ minHeight: '100dvh' }}>
       <Header
         style={{
           position: 'sticky',
@@ -212,7 +213,7 @@ export function AppLayout() {
             style={{
               position: 'sticky',
               top: HEADER_HEIGHT,
-              height: `calc(100vh - ${HEADER_HEIGHT}px)`,
+              height: `calc(100dvh - ${HEADER_HEIGHT}px)`,
               overflow: 'auto',
               flexShrink: 0,
               background: token.colorBgContainer,
@@ -255,7 +256,7 @@ export function AppLayout() {
           style={{
             padding: 24,
             background: token.colorBgLayout,
-            minHeight: `calc(100vh - ${HEADER_HEIGHT}px)`,
+            minHeight: `calc(100dvh - ${HEADER_HEIGHT}px)`,
             overflow: 'auto',
           }}
         >

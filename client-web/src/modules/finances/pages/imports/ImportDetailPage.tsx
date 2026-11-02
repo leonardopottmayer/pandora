@@ -24,7 +24,7 @@ import {
   useRetryImportFile,
 } from '../../hooks/useImports'
 import { useLinkPendingTransaction } from '../../hooks/usePendingTransactions'
-import { TransactionDetailModal } from '../../components/TransactionDetailModal'
+import { TransactionDetailDrawer } from '../../components/TransactionDetailDrawer'
 import { LinkTransactionModal } from '../../components/LinkTransactionModal'
 
 const { Text } = Typography
@@ -274,11 +274,7 @@ export function ImportDetailPage() {
         />
       </Card>
 
-      <TransactionDetailModal
-        transactionId={viewTxId}
-        open={!!viewTxId}
-        onClose={() => setViewTxId(null)}
-      />
+      <TransactionDetailDrawer transactionId={viewTxId} onClose={() => setViewTxId(null)} />
 
       <LinkTransactionModal
         open={!!linkingRow}

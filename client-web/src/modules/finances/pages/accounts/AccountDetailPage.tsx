@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { App, Breadcrumb, Button, DatePicker, Dropdown, Empty, Skeleton, Spin, Tag, Typography, theme } from 'antd'
-import { EllipsisOutlined, LeftOutlined, PlusOutlined, RightOutlined } from '@ant-design/icons'
+import { App, Breadcrumb, Button, Dropdown, Empty, Skeleton, Spin, Tag, Typography, theme } from 'antd'
+import { EllipsisOutlined, PlusOutlined } from '@ant-design/icons'
 import dayjs, { type Dayjs } from 'dayjs'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { toErrorMessage } from '@/lib/api/envelope'
@@ -11,21 +11,19 @@ import { ACCOUNT_TYPE_META, kindDirection, transactionKindLabelKey } from '../..
 import { formatDay, formatMoney } from '../../lib/format'
 import { CurrencyAmount } from '../../components/CurrencyAmount'
 import { EnumTag } from '../../components/EnumTag'
+import { MonthNavigator } from '../../components/MonthNavigator'
 import { StatTile } from '../../components/StatTile'
-import { TransactionDetailModal } from '../../components/TransactionDetailModal'
+import { TransactionDetailDrawer } from '../../components/TransactionDetailDrawer'
 import {
   useAccount,
   useAccountBalance,
-  useAccountTransactions,
+  useAllAccountTransactions,
   useDeleteAccount,
   useSetAccountArchived,
 } from '../../hooks/useAccounts'
 import { useCategoryNames } from '../../hooks/useCategories'
 import { TransactionFormModal } from '../transactions/TransactionFormModal'
 import { AccountFormModal } from './AccountFormModal'
-
-/** The most a month of the statement asks for, which is the endpoint's own cap. */
-const MONTH_TAKE = 200
 
 export function AccountDetailPage() {
   const { t } = useTranslation()
@@ -41,10 +39,9 @@ export function AccountDetailPage() {
 
   const { data: account, isLoading: loadingAccount } = useAccount(id)
   const { data: balance } = useAccountBalance(id)
-  const { data: transactions, isLoading: loadingTx } = useAccountTransactions(id, {
+  const { data: transactions, isLoading: loadingTx } = useAllAccountTransactions(id, {
     from: month.format('YYYY-MM-DD'),
     to: month.endOf('month').format('YYYY-MM-DD'),
-    take: MONTH_TAKE,
   })
   const categoryNames = useCategoryNames()
   const deleteMutation = useDeleteAccount()
@@ -199,32 +196,7 @@ export function AccountDetailPage() {
           <Typography.Text strong type="secondary" className="text-xs uppercase tracking-wider">
             {t('finances.accounts.statement')}
           </Typography.Text>
-          <span className="flex items-center gap-1">
-            <Button
-              type="text"
-              size="small"
-              icon={<LeftOutlined />}
-              aria-label={t('finances.accounts.previousMonth')}
-              onClick={() => setMonth(month.subtract(1, 'month'))}
-            />
-            <DatePicker
-              picker="month"
-              size="small"
-              variant="borderless"
-              allowClear={false}
-              format="MMMM YYYY"
-              value={month}
-              onChange={(value) => value && setMonth(value.startOf('month'))}
-              aria-label={t('finances.accounts.month')}
-            />
-            <Button
-              type="text"
-              size="small"
-              icon={<RightOutlined />}
-              aria-label={t('finances.accounts.nextMonth')}
-              onClick={() => setMonth(month.add(1, 'month'))}
-            />
-          </span>
+          <MonthNavigator value={month} onChange={setMonth} />
         </div>
 
         {loadingTx ? (
@@ -240,16 +212,11 @@ export function AccountDetailPage() {
             </SettingsSection>
           ))
         )}
-        {(transactions?.length ?? 0) >= MONTH_TAKE && (
-          <Typography.Text type="secondary" className="px-0.5 text-xs">
-            {t('finances.accounts.monthCapped', { count: MONTH_TAKE })}
-          </Typography.Text>
-        )}
       </section>
 
       <AccountFormModal open={editing} account={account} onClose={() => setEditing(false)} />
       <TransactionFormModal open={adding} defaultAccountId={account.id} onClose={() => setAdding(false)} />
-      <TransactionDetailModal transactionId={detailId} open={!!detailId} onClose={() => setDetailId(null)} />
+      <TransactionDetailDrawer transactionId={detailId} onClose={() => setDetailId(null)} />
     </div>
   )
 }

@@ -16,6 +16,14 @@ export function useTransactions(filters: TransactionFilters = {}) {
   })
 }
 
+/** Every transaction of a period, across as many pages as it takes. */
+export function useAllTransactions(filters: Omit<TransactionFilters, 'skip' | 'take'>) {
+  return useQuery({
+    queryKey: financeKeys.transactionList({ ...filters, take: -1 }),
+    queryFn: () => transactionsService.listAllTransactions(filters),
+  })
+}
+
 /** Fetches a single transaction; disabled until an id is provided (e.g. a modal that's closed). */
 export function useTransaction(id: string | null | undefined) {
   return useQuery({
@@ -77,6 +85,14 @@ export function useVoidTransaction() {
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body?: VoidTransactionRequest }) =>
       transactionsService.voidTransaction(id, body),
+    onSuccess: invalidate,
+  })
+}
+
+export function useUnvoidTransaction() {
+  const invalidate = useInvalidateTransactionEffects()
+  return useMutation({
+    mutationFn: (id: string) => transactionsService.unvoidTransaction(id),
     onSuccess: invalidate,
   })
 }

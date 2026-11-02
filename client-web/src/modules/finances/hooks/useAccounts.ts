@@ -4,6 +4,7 @@ import { financeKeys } from './queryKeys'
 import type { CreateAccountRequest, TransactionFilters, UpdateAccountRequest } from '../models'
 import * as accountsService from '../services/accounts.service'
 import type { ListAccountsParams } from '../services/accounts.service'
+import { fetchAllPages } from '../services/transactions.service'
 
 export function useAccounts(params: ListAccountsParams = {}) {
   return useQuery({
@@ -53,6 +54,15 @@ export function useAccountTransactions(id: string, filters: TransactionFilters =
   return useQuery({
     queryKey: financeKeys.accountTransactions(id, filters),
     queryFn: () => accountsService.getAccountTransactions(id, filters),
+    enabled: !!id,
+  })
+}
+
+/** Every transaction of an account in a period, across as many pages as it takes. */
+export function useAllAccountTransactions(id: string, filters: Omit<TransactionFilters, 'skip' | 'take'>) {
+  return useQuery({
+    queryKey: financeKeys.accountTransactions(id, { ...filters, take: -1 }),
+    queryFn: () => fetchAllPages((skip, take) => accountsService.getAccountTransactions(id, { ...filters, skip, take })),
     enabled: !!id,
   })
 }

@@ -10,7 +10,7 @@ import { formatDate } from '../../lib/format'
 import { CurrencyAmount } from '../../components/CurrencyAmount'
 import { AttachmentsModal } from '../../components/AttachmentsModal'
 import { AttachmentsPanel } from '../../components/AttachmentsPanel'
-import { TransactionDetailModal } from '../../components/TransactionDetailModal'
+import { TransactionDetailDrawer } from '../../components/TransactionDetailDrawer'
 import { LinkTransactionModal } from '../../components/LinkTransactionModal'
 import { useAccountNames } from '../../hooks/useAccounts'
 import { useAttachments } from '../../hooks/useAttachments'
@@ -279,11 +279,7 @@ export function InboxPage() {
         owner={attachmentsFor ? { pendingTransactionId: attachmentsFor } : null}
         onClose={() => setAttachmentsFor(null)}
       />
-      <TransactionDetailModal
-        transactionId={viewTxId}
-        open={!!viewTxId}
-        onClose={() => setViewTxId(null)}
-      />
+      <TransactionDetailDrawer transactionId={viewTxId} onClose={() => setViewTxId(null)} />
 
       <LinkTransactionModal
         open={!!linking}
