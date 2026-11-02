@@ -607,6 +607,7 @@
       "descriptionRequired": "Enter the description.",
       "category": "Category",
       "installments": "Installments",
+      "moreOptions": "Payee and notes",
       "payee": "Payee",
       "notes": "Notes",
       "post": "Post",

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { App, DatePicker, Form, Input, InputNumber, Modal, Radio, Select } from 'antd'
-import type { Dayjs } from 'dayjs'
+import dayjs, { type Dayjs } from 'dayjs'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { type TransactionKind } from '../../models'
 import { transactionKindLabelKey } from '../../lib/enums'
@@ -9,6 +9,8 @@ import { AccountSelect } from '../../components/AccountSelect'
 import { CardSelect } from '../../components/CardSelect'
 import { CategorySelect, type CategorySelection } from '../../components/CategorySelect'
 import { useCreateTransaction } from '../../hooks/useTransactions'
+import { useAccounts } from '../../hooks/useAccounts'
+import { useCards } from '../../hooks/useCards'
 
 type Target = 'account' | 'card'
 
@@ -61,13 +63,26 @@ export function TransactionFormModal({ open, onClose, defaultAccountId }: Transa
   const [form] = Form.useForm<TransactionFormValues>()
   const target: Target = Form.useWatch('target', form) ?? 'account'
   const kind = Form.useWatch('kind', form)
+  const accountId = Form.useWatch('accountId', form)
+  const cardId = Form.useWatch('cardId', form)
+
+  const { data: accounts } = useAccounts()
+  const { data: cards } = useCards()
+  const currency =
+    target === 'card' ? cards?.find((c) => c.id === cardId)?.currency : accounts?.find((a) => a.id === accountId)?.currency
 
   const createMutation = useCreateTransaction()
 
   useEffect(() => {
     if (!open) return
     form.resetFields()
-    form.setFieldsValue({ target: 'account', kind: 'expense', installments: 1, accountId: defaultAccountId })
+    form.setFieldsValue({
+      target: 'account',
+      kind: 'expense',
+      installments: 1,
+      accountId: defaultAccountId,
+      occurredOn: dayjs(),
+    })
   }, [open, form, defaultAccountId])
 
   const kindOptions = (target === 'account' ? ACCOUNT_KINDS : CARD_KINDS).map((k) => ({
@@ -107,91 +122,96 @@ export function TransactionFormModal({ open, onClose, defaultAccountId }: Transa
       okText={t('common.save')}
       cancelText={t('common.cancel')}
       destroyOnHidden
-      width={560}
-      styles={{ body: { maxHeight: 'calc(100vh - 260px)', overflowY: 'auto', paddingRight: 8 } }}
+      width={640}
+      styles={{ body: { maxHeight: 'calc(100dvh - 260px)', overflowY: 'auto', paddingRight: 8 } }}
     >
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
-        <Form.Item name="target" label={t('finances.transactions.target')}>
-          <Radio.Group
-            onChange={() => {
-              // The kind set changes with the target; reset to a valid default.
-              form.setFieldValue('kind', 'expense')
-            }}
-            options={[
-              { value: 'account', label: t('finances.transactions.targetAccount') },
-              { value: 'card', label: t('finances.transactions.targetCard') },
-            ]}
-            optionType="button"
-          />
-        </Form.Item>
-
-        {target === 'account' ? (
-          <Form.Item
-            name="accountId"
-            label={t('finances.transactions.account')}
-            rules={[{ required: true, message: t('finances.transactions.accountRequired') }]}
-          >
-            <AccountSelect />
+        <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-[auto_1fr]">
+          <Form.Item name="target" label={t('finances.transactions.target')}>
+            <Radio.Group
+              onChange={() => {
+                // The kind set changes with the target; reset to a valid default.
+                form.setFieldValue('kind', 'expense')
+              }}
+              options={[
+                { value: 'account', label: t('finances.transactions.targetAccount') },
+                { value: 'card', label: t('finances.transactions.targetCard') },
+              ]}
+              optionType="button"
+            />
           </Form.Item>
-        ) : (
-          <Form.Item
-            name="cardId"
-            label={t('finances.transactions.card')}
-            rules={[{ required: true, message: t('finances.transactions.cardRequired') }]}
-          >
-            <CardSelect />
-          </Form.Item>
-        )}
 
-        <Form.Item name="kind" label={t('finances.transactions.kind')} rules={[{ required: true }]}>
-          <Select options={kindOptions} />
-        </Form.Item>
-
-        <Form.Item
-          name="amount"
-          label={t('finances.transactions.amount')}
-          rules={[{ required: true, message: t('finances.transactions.amountRequired') }]}
-        >
-          <InputNumber style={{ width: '100%' }} min={0.01} step={0.01} />
-        </Form.Item>
-
-        <Form.Item
-          name="occurredOn"
-          label={t('finances.transactions.occurredOn')}
-          rules={[{ required: true, message: t('finances.transactions.occurredOnRequired') }]}
-        >
-          <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
-        </Form.Item>
+          {target === 'account' ? (
+            <Form.Item
+              name="accountId"
+              label={t('finances.transactions.account')}
+              rules={[{ required: true, message: t('finances.transactions.accountRequired') }]}
+            >
+              <AccountSelect />
+            </Form.Item>
+          ) : (
+            <Form.Item
+              name="cardId"
+              label={t('finances.transactions.card')}
+              rules={[{ required: true, message: t('finances.transactions.cardRequired') }]}
+            >
+              <CardSelect />
+            </Form.Item>
+          )}
+        </div>
 
         <Form.Item
           name="description"
           label={t('finances.transactions.description')}
           rules={[{ required: true, message: t('finances.transactions.descriptionRequired') }]}
         >
-          <Input maxLength={200} />
+          <Input maxLength={200} autoFocus />
         </Form.Item>
 
-        <Form.Item name="category" label={t('finances.transactions.category')}>
-          <CategorySelect nature={kind ? natureForKind(kind) : undefined} />
-        </Form.Item>
-
-        {target === 'card' && (
+        <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
           <Form.Item
-            name="installments"
-            label={t('finances.transactions.installments')}
-            initialValue={1}
+            name="amount"
+            label={t('finances.transactions.amount')}
+            rules={[{ required: true, message: t('finances.transactions.amountRequired') }]}
           >
-            <InputNumber style={{ width: '100%' }} min={1} max={48} />
+            <InputNumber style={{ width: '100%' }} min={0.01} step={0.01} prefix={currency} />
           </Form.Item>
-        )}
 
-        <Form.Item name="payee" label={t('finances.transactions.payee')}>
-          <Input maxLength={120} />
-        </Form.Item>
+          <Form.Item
+            name="occurredOn"
+            label={t('finances.transactions.occurredOn')}
+            rules={[{ required: true, message: t('finances.transactions.occurredOnRequired') }]}
+          >
+            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+          </Form.Item>
 
-        <Form.Item name="notes" label={t('finances.transactions.notes')}>
-          <Input.TextArea rows={2} maxLength={500} />
-        </Form.Item>
+          <Form.Item name="kind" label={t('finances.transactions.kind')} rules={[{ required: true }]}>
+            <Select options={kindOptions} />
+          </Form.Item>
+
+          <Form.Item name="category" label={t('finances.transactions.category')}>
+            <CategorySelect nature={kind ? natureForKind(kind) : undefined} />
+          </Form.Item>
+
+          {target === 'card' && (
+            <Form.Item name="installments" label={t('finances.transactions.installments')} initialValue={1}>
+              <InputNumber style={{ width: '100%' }} min={1} max={48} suffix="x" />
+            </Form.Item>
+          )}
+        </div>
+
+        <details>
+          <summary className="mb-3 w-fit cursor-pointer select-none text-sm">
+            {t('finances.transactions.moreOptions')}
+          </summary>
+          <Form.Item name="payee" label={t('finances.transactions.payee')}>
+            <Input maxLength={120} />
+          </Form.Item>
+
+          <Form.Item name="notes" label={t('finances.transactions.notes')}>
+            <Input.TextArea rows={2} maxLength={500} />
+          </Form.Item>
+        </details>
       </Form>
     </Modal>
   )

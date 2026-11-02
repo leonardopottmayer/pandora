@@ -607,6 +607,7 @@
       "descriptionRequired": "Informe a descricao.",
       "category": "Categoria",
       "installments": "Parcelas",
+      "moreOptions": "Favorecido e observações",
       "payee": "Beneficiario",
       "notes": "Observacoes",
       "post": "Efetivar",
