@@ -61,3 +61,14 @@ The global graph has **no archived toggle of its own**. The `includeArchived` st
 `NotesGraphPage` only narrows the sidebar; the graph query never receives it, so archived pages are
 always drawn. If it starts to bother, the place is `NotesGraphPage` plus a parameter on
 `GetPageGraphInput`. See [Implementation Status](implementation-status.md).
+
+## 6. Idea: thematic families and regions
+
+Recorded on 2026-11-02; an exploratory idea, with no implementation or chosen algorithm yet.
+Visually group related vertices into labelled regions, for example **Work**, **Travel** or **Study**.
+Soft backgrounds or outlines could show which pages belong together while keeping their links visible.
+
+Possible sources are existing spaces/tags, manually defined families, or communities inferred from
+links. Still to decide: how membership is assigned, whether a page can belong to overlapping regions,
+and how labels and regions behave when zooming or filtering. The goal is to make the graph's themes
+recognizable at a glance, rather than only showing individual pages and connections.

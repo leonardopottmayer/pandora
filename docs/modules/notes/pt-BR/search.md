@@ -27,28 +27,29 @@ vetor existe. A query chega nele por `EF.Property<NpgsqlTsVector>(…).Matches(�
 ## 2. Traduzindo o que o usuário digitou
 
 O `PageSearch` (Domain) transforma o termo num `tsquery`: cada palavra vira `palavra:*`, unidas por
-`&`. Ou seja, toda palavra tem que estar presente, e a última é prefixo — um palette casa enquanto
+`&`. Ou seja, toda palavra tem que estar presente, e cada uma é prefixo — um palette casa enquanto
 ainda está sendo digitado.
 
 Pontuação é **descartada, não escapada**: nada digitado pode virar sintaxe de `tsquery`. Quando não
 sobra nada pesquisável, o resultado é string vazia e o chamador responde sem resultados em vez de
 consultar.
 
-O mesmo tipo corta o **excerpt**: 160 caracteres em volta da primeira palavra do termo, guardando ~30
+O mesmo tipo corta o **excerpt**: 160 caracteres em volta do primeiro prefixo de palavra encontrado, guardando ~30
 caracteres de contexto antes do match, com reticências marcando o corte. Um hit só de título cai no
 começo do corpo.
 
 ## 3. O endpoint
 
-`GET /notes/pages/search?q=…&tagIds=…`
+`GET /notes/pages/search?q=…&tagIds=…&spaceId=…`
 
-- Teto de **20 resultados**, ordenados por **título**.
+- Teto de **20 resultados**: correspondências no título primeiro, depois `ts_rank_cd` decrescente no
+  vetor salvo (considera repetições e proximidade), e título e id para desempates estáveis.
 - Pages **arquivadas** aparecem, com a flag; soft-deletadas nunca.
-- Com filtro de tag, a query lê `20 × 10` hits e intersecta depois — cortar antes deixaria de fora uma
-  page que satisfaz os dois critérios.
+- Filtros de dono, espaço e interseção de tags entram **antes** do ranking e do limite. Não há mais
+  uma janela intermediária de 200 resultados que possa esconder uma página com a tag procurada.
 - Com tags e **`q` vazio**, lista as pages daquelas tags: é assim que se navega uma tag.
 
-`PageSearchResultDto(Id, Title, Slug, Icon, IsArchived, Excerpt)` é o mínimo que o palette precisa
+`PageSearchResultDto(Id, SpaceId, Title, Slug, Icon, IsArchived, Excerpt)` é o mínimo que o palette precisa
 para desenhar uma linha e abri-la.
 
 ## 4. O command palette
@@ -66,8 +67,13 @@ para desenhar uma linha e abri-la.
   monta o palette também; senão o botão ficaria morto numa das duas rotas. De brinde, Ctrl+K funciona
   na rota do grafo.
 
-## 5. Não implementado
+## 5. Realce
 
-**Ranking e realce** estão previstos para v2 e não estão aqui: sem ordenação por `ts_rank`, sem
-`ts_headline` — o excerpt é uma fatia crua e a ordenação é alfabética por título. Ver
-[Status de implementação](implementation-status.md).
+`SearchHighlight` destaca palavras inteiras que começam com um prefixo da consulta no título e no
+trecho, sem diferenciar maiúsculas, usando letras/números Unicode e pontuação como separador.
+Acentos continuam significativos, como na busca `simple` existente; não há stemming ou busca aproximada.
+
+A API mantém `Excerpt` como **texto puro**, também utilizável pelo assistente. O palette cria texto
+React e nós `<mark>` com tokens do tema, sem inserir HTML de `ts_headline` ou renderizar o markdown da
+nota. HTML literal continua texto. Enquanto resultados anteriores ficam visíveis durante a próxima
+consulta, o realce é suspenso até chegarem os novos resultados. Não há mudança de schema.

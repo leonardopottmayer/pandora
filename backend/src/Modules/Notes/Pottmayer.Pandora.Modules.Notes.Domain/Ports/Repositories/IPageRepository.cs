@@ -42,12 +42,14 @@ public interface IPageRepository : IStandardRepository<Page, Guid>
 
     /// <summary>
     /// The user's non-deleted pages whose title or body match <paramref name="tsQuery"/> (built by
-    /// <see cref="PageSearch.ToTsQuery"/>), ordered by title and capped at <paramref name="limit"/>.
+    /// <see cref="PageSearch.ToTsQuery"/>), ordered by title match, relevance, title and id,
+    /// capped at <paramref name="limit"/> after an optional <paramref name="pageIds"/> filter.
     /// Archived pages count â€” they are hidden from the sidebar, not from search. A
     /// <paramref name="spaceId"/> keeps the hits to that space.
     /// </summary>
     Task<IReadOnlyList<Page>> SearchAsync(
-        Guid userId, string tsQuery, int limit, Guid? spaceId = null, CancellationToken ct = default);
+        Guid userId, string tsQuery, int limit, Guid? spaceId = null,
+        IReadOnlyCollection<Guid>? pageIds = null, CancellationToken ct = default);
 
     /// <summary>
     /// Per space of the user: how many non-deleted pages it holds (archived included) and when one of

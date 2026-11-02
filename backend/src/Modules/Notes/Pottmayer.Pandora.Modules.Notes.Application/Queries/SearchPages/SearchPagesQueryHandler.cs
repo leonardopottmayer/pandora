@@ -20,9 +20,6 @@ public sealed class SearchPagesQueryHandler(IUnitOfWorkFactory factory)
     /// <summary>A palette shows a short list; more than this is noise the user would not scroll.</summary>
     private const int ResultLimit = 20;
 
-    /// <summary>How much wider the search reads when a tag cut still has to be applied to it.</summary>
-    private const int TagFilterSlack = 10;
-
     protected override async Task<Result<IReadOnlyList<PageSearchResultDto>>> HandleAsync(
         SearchPagesQuery request, CancellationToken ct)
     {
@@ -46,13 +43,7 @@ public sealed class SearchPagesQueryHandler(IUnitOfWorkFactory factory)
                     .Where(p => input.SpaceId is null || p.SpaceId == input.SpaceId)
                     .Take(ResultLimit).ToList();
 
-            if (tagged is null)
-                return [.. await repo.SearchAsync(input.UserId, tsQuery, ResultLimit, input.SpaceId, token)];
-
-            // The tag cut happens after the search, so the cap has to be raised before it: capping
-            // first would let a page that matches both fall outside the window and vanish.
-            var hits = await repo.SearchAsync(input.UserId, tsQuery, ResultLimit * TagFilterSlack, input.SpaceId, token);
-            return hits.Where(p => tagged.Contains(p.Id)).Take(ResultLimit).ToList();
+            return (await repo.SearchAsync(input.UserId, tsQuery, ResultLimit, input.SpaceId, tagged, token)).ToList();
         }, cancellationToken: ct);
 
         IReadOnlyList<PageSearchResultDto> results =

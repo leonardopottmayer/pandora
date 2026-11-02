@@ -7,6 +7,7 @@ import { useSearchPages } from '../hooks/usePages'
 import { useSpaces } from '../hooks/useSpaces'
 import { SpaceIcon } from './SpaceIcon'
 import { TagFilter } from './TagFilter'
+import { SearchHighlight } from './SearchHighlight'
 
 interface SearchPaletteProps {
   open: boolean
@@ -35,11 +36,13 @@ export function SearchPalette({ open, onOpenChange, onSelect, spaceId = null }: 
   const spaceOf = new Map(spaces.map((space) => [space.id, space]))
 
   const debouncedTerm = useDebouncedValue(term)
-  const { data: results = [], isFetching } = useSearchPages(
+  const { data: results = [], isFetching, isPlaceholderData } = useSearchPages(
     debouncedTerm,
     tagIds,
     everySpace ? null : spaceId,
   )
+  // Old results may remain visible while the next query loads. Do not mark them as new matches.
+  const highlightTerm = isPlaceholderData ? '' : debouncedTerm
 
   // Capture phase: the editor below has its own key handling, and the palette wins over it.
   useEffect(() => {
@@ -156,7 +159,7 @@ export function SearchPalette({ open, onOpenChange, onSelect, spaceId = null }: 
               <Flex align="center" gap={8}>
                 {result.icon ? <span>{result.icon}</span> : <FileTextOutlined />}
                 <Typography.Text strong ellipsis className="flex-1">
-                  {result.title || t('notes.untitled')}
+                  <SearchHighlight text={result.title || t('notes.untitled')} term={highlightTerm} />
                 </Typography.Text>
                 {/* Which space a hit is in only matters once the search spans them. */}
                 {(everySpace || !spaceId) && spaceOf.get(result.spaceId) && (
@@ -172,7 +175,7 @@ export function SearchPalette({ open, onOpenChange, onSelect, spaceId = null }: 
                   ellipsis={{ rows: 1 }}
                   style={{ margin: '2px 0 0 24px', fontSize: 12 }}
                 >
-                  {result.excerpt}
+                  <SearchHighlight text={result.excerpt} term={highlightTerm} />
                 </Typography.Paragraph>
               )}
             </div>

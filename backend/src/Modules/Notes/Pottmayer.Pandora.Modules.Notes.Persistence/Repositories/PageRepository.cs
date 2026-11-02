@@ -85,22 +85,33 @@ public sealed class PageRepository(IDataContextAccessor accessor)
     }
 
     public async Task<IReadOnlyList<Page>> SearchAsync(
-        Guid userId, string tsQuery, int limit, Guid? spaceId = null, CancellationToken ct = default)
+        Guid userId, string tsQuery, int limit, Guid? spaceId = null,
+        IReadOnlyCollection<Guid>? pageIds = null, CancellationToken ct = default)
     {
-        if (string.IsNullOrEmpty(tsQuery))
+        if (string.IsNullOrEmpty(tsQuery) || pageIds is { Count: 0 })
             return [];
 
         // Matches against the stored tsvector, so the GIN index does the work. The configuration
         // ('simple') is the one the generated column was built with — they have to agree. Pages whose
         // title matches come first: searching "ideias" means the "Ideias…" page before one that only
         // mentions it.
-        return await Queryable()
+        var query = Queryable()
             .Where(p => p.UserId == userId && p.DeletedAt == null &&
                         (spaceId == null || p.SpaceId == spaceId) &&
                         EF.Property<NpgsqlTsVector>(p, PageColumns.SearchVector)
-                          .Matches(EF.Functions.ToTsQuery("simple", tsQuery)))
+                          .Matches(EF.Functions.ToTsQuery("simple", tsQuery)));
+
+        if (pageIds is not null)
+            query = query.Where(p => pageIds.Contains(p.Id));
+
+        // Cover-density ranking rewards nearby matches as well as repeated occurrences. Filter
+        // before ranking/limiting so a tagged hit cannot disappear behind unrelated top results.
+        return await query
             .OrderByDescending(p => EF.Functions.ToTsVector("simple", p.Title).Matches(EF.Functions.ToTsQuery("simple", tsQuery)))
+            .ThenByDescending(p => EF.Property<NpgsqlTsVector>(p, PageColumns.SearchVector)
+                .RankCoverDensity(EF.Functions.ToTsQuery("simple", tsQuery)))
             .ThenBy(p => p.Title)
+            .ThenBy(p => p.Id)
             .Take(limit)
             .ToListAsync(ct);
     }

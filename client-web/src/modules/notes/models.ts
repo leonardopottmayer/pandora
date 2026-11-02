@@ -171,7 +171,7 @@ export interface BacklinkDto {
   kind: 'wikilink' | 'embed'
 }
 
-/** One hit of the full-text search; `excerpt` is a plain slice of the body, no highlighting. */
+/** One ranked search hit; `excerpt` is plain text, highlighted safely by the palette. */
 export interface PageSearchResultDto {
   id: string
   spaceId: string

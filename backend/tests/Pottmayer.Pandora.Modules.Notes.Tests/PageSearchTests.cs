@@ -57,6 +57,15 @@ public sealed class PageSearchTests
     }
 
     [Fact]
+    public void Excerpt_skips_substrings_inside_unrelated_words()
+    {
+        var content = "destrabalho " + new string('x', 300) + " trabalho " + new string('y', 300);
+        var excerpt = PageSearch.Excerpt(content, "traba");
+        Assert.Contains("trabalho", excerpt);
+        Assert.DoesNotContain("destrabalho", excerpt);
+    }
+
+    [Fact]
     public void Excerpt_collapses_line_breaks_so_it_stays_one_line()
     {
         Assert.Equal("# Titulo corpo", PageSearch.Excerpt("# Titulo\n\n  corpo", "titulo"));

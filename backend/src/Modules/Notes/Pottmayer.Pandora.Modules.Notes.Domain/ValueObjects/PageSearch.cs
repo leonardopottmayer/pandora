@@ -24,7 +24,7 @@ public static partial class PageSearch
     }
 
     /// <summary>
-    /// A one-line excerpt of <paramref name="content"/> around the first word of the term, or the head
+    /// A one-line excerpt of <paramref name="content"/> around the first matching word prefix, or the head
     /// of the content when no word occurs in the body (a title-only hit). Ellipses mark a cut.
     /// </summary>
     public static string Excerpt(string? content, string? term)
@@ -33,17 +33,11 @@ public static partial class PageSearch
         if (text.Length == 0)
             return string.Empty;
 
-        var start = 0;
-        foreach (var word in Words(term))
-        {
-            var at = text.IndexOf(word, StringComparison.OrdinalIgnoreCase);
-            if (at < 0)
-                continue;
-
-            // Keep a little context before the match instead of starting right on it.
-            start = Math.Max(0, at - 30);
-            break;
-        }
+        var words = Words(term);
+        var match = WordRegex().Matches(text).FirstOrDefault(m =>
+            words.Any(word => m.Value.StartsWith(word, StringComparison.OrdinalIgnoreCase)));
+        // Keep context before a matching word, not a substring buried in an unrelated word.
+        var start = match is null ? 0 : Math.Max(0, match.Index - 30);
 
         if (start + ExcerptLength >= text.Length)
             start = Math.Max(0, text.Length - ExcerptLength);

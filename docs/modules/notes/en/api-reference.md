@@ -32,7 +32,7 @@ token's user. A resource owned by another user returns **404** (not 403). Contro
 | `GET /pages` | `includeArchived` | `false` | |
 | `GET /pages` | `spaceId` | — | That space's pages only; without it, every space's (what wikilink resolution needs). |
 | `GET /pages` | `tagIds` | — | Repeatable. Several tags **intersect**. With a filter the sidebar is a flat list. |
-| `GET /pages/search` | `q` | — | Empty + `tagIds` lists that tag's pages. Cap 20, ordered by title. |
+| `GET /pages/search` | `q` | — | Empty + `tagIds` lists that tag's pages by title. Otherwise title matches first, then relevance, title and id. Filters apply before the cap of 20. |
 | `GET /pages/search` | `tagIds` | — | Repeatable, intersecting. |
 | `GET /pages/search` | `spaceId` | — | That space only. |
 | `GET /pages/graph` | `tagIds` | — | Cuts the nodes. |

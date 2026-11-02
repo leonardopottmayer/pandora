@@ -72,7 +72,6 @@ filtros por interseção em três superfícies; busca full-text com command pale
 
 | Capacidade | Status |
 |---|---|
-| **Ranking e realce da busca** | Planejado (v2). Os resultados vêm ordenados por título e o excerpt é uma fatia crua — sem `ts_rank`, sem `ts_headline`. |
 | **Preview ao vivo dos blocos dentro do CodeMirror** | Não implementado. O editor continua markdown cru; a renderização acontece no painel de preview. Seria uma fase inteira (widget decorations). |
 | **Renderização inline de `![[embeds]]`** | Deliberadamente fora (decidido em 2026-11-02): uma page nunca é desenhada dentro de outra; `![[x]]` continua link. |
 | **Filtros na URL** | Não implementado. Os filtros de tag são estado de componente, então não existe link compartilhável de "as pages com #x". |

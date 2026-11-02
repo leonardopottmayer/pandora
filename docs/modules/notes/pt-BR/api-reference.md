@@ -32,7 +32,7 @@ token. Recurso de outro usuário devolve **404** (não 403). Os controllers fica
 | `GET /pages` | `includeArchived` | `false` | |
 | `GET /pages` | `spaceId` | — | Só as pages daquele espaço; sem ele, de todos (o que a resolução de wikilink precisa). |
 | `GET /pages` | `tagIds` | — | Repetível. Várias tags **intersectam**. Com filtro, a sidebar vira lista plana. |
-| `GET /pages/search` | `q` | — | Vazio + `tagIds` lista as pages daquela tag. Teto de 20, ordenado por título. |
+| `GET /pages/search` | `q` | — | Vazio + `tagIds` lista as pages daquela tag por título. Com termo, prioriza título, depois relevância, título e id. Filtros antes do teto de 20. |
 | `GET /pages/search` | `tagIds` | — | Repetível, intersectando. |
 | `GET /pages/search` | `spaceId` | — | Só aquele espaço. |
 | `GET /pages/graph` | `tagIds` | — | Corta os nós. |

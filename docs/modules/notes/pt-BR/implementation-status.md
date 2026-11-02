@@ -25,7 +25,7 @@ não o log das fases.
 | **Blocos ricos** | Slash commands (14 blocos + 6 callouts), callouts Obsidian como extensão do `marked` (recolhíveis com `-`/`+`), blocos recolhíveis (`<details>`), player de YouTube/Vimeo a partir do link sozinho e allowlist de iframe (YouTube, Vimeo, Google Maps) com sandbox fixo, tabelas markdown assistidas com Tab/Shift+Tab e reformatação idempotente. |
 | **Autocomplete** | Três menus — `[[` (pages por título e slug), `#` (tags existentes), `/` (comandos) — compartilhando `filter: false`, entradas por ref e tooltip pendurada no body. |
 | **Wikilinks e backlinks** | `WikilinkParser`, resolução título-depois-slug, tipos `wikilink`/`embed`, reconstrução por diff no create e no update, endpoint e painel de backlinks, create-on-click (`nte004`). |
-| **Busca** | Coluna gerada `tsvector` + índice GIN, configuração `simple`, tradução para `tsquery` com pontuação descartada, excerpt de 160 chars, command palette no Ctrl+K **e** botão na sidebar. |
+| **Busca** | `tsvector` gerado + GIN, configuração `simple`, `tsquery` seguro por prefixos, prioridade de título e relevância por `ts_rank_cd` com desempate estável, filtros antes do limite de 20, trecho de 160 caracteres com destaque seguro no título/trecho, palette no Ctrl+K e botão na sidebar. |
 | **Grafo** | Grafo global e local a partir de uma query, BFS não-direcionada em memória com profundidade clampada em 1..5, grau calculado no backend, arestas quebradas filtradas, canvas `react-force-graph-2d` com destaque no hover e rótulos por zoom. |
 | **Tags** | `TagParser` removendo código, normalização por `TagName`, criação de tag a partir do texto, arestas por diff, varredura de órfãs preservando tags coloridas, validação hex da cor, filtros por interseção na sidebar / busca / grafo, chips no preview (`nte005`, `nte006`). |
 | **Frontend** | Módulo React (`client-web/src/modules/notes`) cobrindo tudo acima, i18n EN + PT-BR, testes unitários em todo módulo de `lib/`. |
@@ -35,9 +35,9 @@ não o log das fases.
 
 | Área | Status |
 |---|---|
-| **Ranking e realce da busca** | Previsto como v2 no plano de produto. Os resultados são ordenados por título, não por `ts_rank`, e o `PageSearchResultDto.Excerpt` é uma fatia crua — sem `ts_headline`. |
 | **Filtros de tag na URL** | Não implementado. Os filtros são estado de componente, então "as pages com #x" não é um link compartilhável. O lugar seria um search param na `NotesPage`. |
 | **Toggle de arquivadas no grafo** | Não implementado. O `includeArchived` da `NotesGraphPage` só afeta a sidebar; o grafo sempre inclui as arquivadas (com a flag). |
+| **Famílias / regiões temáticas no grafo** | Ideia registrada em 2026-11-02: regiões rotuladas agrupando páginas relacionadas, como Trabalho. Origem dos grupos (espaços, tags, manual ou inferida) e apresentação ainda em aberto. Ver [Visão em grafo](graph-view.md#6-ideia-famílias-e-regiões-temáticas). |
 | **Alinhamento de coluna pela UI** | Deliberadamente fora. O lugar seria a linha separadora em `lib/markdownTables.ts`. |
 | **Backend de bucket e vídeo** | Só a abstração existe. `storage_backend` + `storage_key` em cada linha de mídia fazem com que plugar um bucket não exija migration; vídeo pede também download por pedaços e a versão de capa. Ver [Biblioteca de mídia](media-library.md#3-tipos-e-o-que-fica-pronto-para-vídeo). |
 | **Histórico de versões** | Implementado — ver [Histórico de versões](version-history.md). |

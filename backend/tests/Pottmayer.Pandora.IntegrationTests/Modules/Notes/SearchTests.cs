@@ -150,6 +150,48 @@ public sealed class SearchTests : IAsyncLifetime
         Assert.StartsWith("...", hit.Excerpt);
     }
 
+    [Fact]
+    public async Task Title_matches_precede_even_frequently_matching_bodies()
+    {
+        await AuthAsync("search-title-rank");
+        await CreateAsync("A diary", string.Join(' ', Enumerable.Repeat("viagem", 30)));
+        var titleHit = await CreateAsync("Viagem", "roteiro");
+
+        Assert.Equal(titleHit, (await SearchAsync("viag"))[0].Id);
+    }
+
+    [Fact]
+    public async Task Repeated_matches_rank_above_a_single_mention_instead_of_alphabetically()
+    {
+        await AuthAsync("search-body-rank");
+        await CreateAsync("A single mention", "viagem");
+        var frequent = await CreateAsync("Z frequent mentions", "viagem viagem viagem");
+
+        Assert.Equal(frequent, (await SearchAsync("viag"))[0].Id);
+    }
+
+    [Fact]
+    public async Task Nearby_terms_rank_above_distant_terms()
+    {
+        await AuthAsync("search-distance");
+        await CreateAsync("A distant", "viagem " + string.Join(' ', Enumerable.Repeat("outro", 30)) + " hotel");
+        var nearby = await CreateAsync("Z nearby", "viagem hotel");
+
+        Assert.Equal(nearby, (await SearchAsync("viag hot"))[0].Id);
+    }
+
+    [Fact]
+    public async Task Equal_ranks_use_title_then_id_for_stable_results()
+    {
+        await AuthAsync("search-ties");
+        var first = await CreateAsync("Same", "viagem");
+        var second = await CreateAsync("Same", "viagem");
+        var alphabetical = await CreateAsync("Before", "viagem");
+
+        var hits = await SearchAsync("viag");
+        Assert.Equal(new[] { alphabetical, first, second }, hits.Select(hit => hit.Id));
+    }
+
     private Task AuthAsync(string username) =>
         IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, $"{username}@example.com", username);
 

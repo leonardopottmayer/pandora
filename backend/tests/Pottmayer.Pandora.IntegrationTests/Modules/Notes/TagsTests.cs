@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Npgsql;
 using Pottmayer.Pandora.IntegrationTests.Support;
 using Xunit;
 
@@ -140,6 +141,29 @@ public sealed class TagsTests : IAsyncLifetime
 
         Assert.Equal(2, (await SearchAsync("?q=comum")).Count);
         Assert.Equal(tagged, Assert.Single(await SearchAsync($"?q=comum&tagIds={ideias.Id}")).Id);
+    }
+
+    [Fact]
+    public async Task Search_tag_filter_runs_before_the_result_limit()
+    {
+        await AuthAsync("tag-search-limit");
+        var tagged = await CreateAsync("Z tagged", "viagem #ideias");
+        var ideias = (await ListTagsAsync()).Single(t => t.Slug == "ideias");
+
+        // Seed enough untagged title hits to push the tagged body hit past the old 200-hit window.
+        await using var connection = new NpgsqlConnection(_factory.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand("""
+            INSERT INTO notes.nte001_page (user_id, space_id, title, slug, content_markdown)
+            SELECT p.user_id, p.space_id, 'A viagem ' || n, 'search-cut-' || n, 'viagem'
+              FROM notes.nte001_page p CROSS JOIN generate_series(1, 205) n
+             WHERE p.id = @id
+            """, connection);
+        command.Parameters.AddWithValue("id", tagged);
+        await command.ExecuteNonQueryAsync();
+
+        Assert.Equal(20, (await SearchAsync("?q=viagem")).Count);
+        Assert.Equal(tagged, Assert.Single(await SearchAsync($"?q=viagem&tagIds={ideias.Id}")).Id);
     }
 
     [Fact]

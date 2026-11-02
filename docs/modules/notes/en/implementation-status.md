@@ -25,7 +25,7 @@ left behind, not the phase log.
 | **Rich blocks** | Slash commands (14 blocks + 6 callouts), Obsidian callouts as a `marked` extension (collapsible with `-`/`+`), toggles (`<details>`), YouTube/Vimeo players from a bare link and an iframe allowlist (YouTube, Vimeo, Google Maps) with a fixed sandbox, assisted markdown tables with Tab/Shift+Tab and idempotent reformatting. |
 | **Autocomplete** | Three menus — `[[` (pages by title and slug), `#` (existing tags), `/` (commands) — sharing `filter: false`, ref-based inputs and a body-parented tooltip. |
 | **Wikilinks & backlinks** | `WikilinkParser`, title-then-slug resolution, `wikilink`/`embed` kinds, diff-based edge rebuild on create and update, backlinks endpoint and panel, create-on-click (`nte004`). |
-| **Search** | Generated `tsvector` column + GIN index, `simple` configuration, `tsquery` translation with discarded punctuation, 160-char excerpt, command palette on Ctrl+K **and** a sidebar button. |
+| **Search** | Generated `tsvector` + GIN, `simple` configuration, safe prefix `tsquery`, title priority and `ts_rank_cd` relevance with stable ties, filters before the 20-result cap, 160-char plain-text excerpt with safe title/excerpt highlighting, Ctrl+K palette and sidebar button. |
 | **Graph** | Global and local graph from one query, in-memory undirected BFS with depth clamped 1..5, backend-computed degree, broken edges filtered out, `react-force-graph-2d` canvas with hover highlighting and zoom-gated labels. |
 | **Tags** | `TagParser` with code stripping, `TagName` normalization, tag creation from the text, diff-based edges, orphan sweep preserving colored tags, hex color validation, intersecting filters on the sidebar / search / graph, chips in the preview (`nte005`, `nte006`). |
 | **Frontend** | React module (`client-web/src/modules/notes`) covering all of the above, i18n EN + PT-BR, unit tests over every `lib/` module. |
@@ -35,9 +35,9 @@ left behind, not the phase log.
 
 | Area | Status |
 |---|---|
-| **Search ranking & highlighting** | Planned as v2 in the product plan. Results are ordered by title, not by `ts_rank`, and `PageSearchResultDto.Excerpt` is a plain slice — no `ts_headline`. |
 | **Tag filters in the URL** | Not implemented. Filters are component state, so "the pages with #x" is not a shareable link. The place would be a search param on `NotesPage`. |
 | **Archived toggle on the graph** | Not implemented. `NotesGraphPage`'s `includeArchived` only narrows the sidebar; the graph always includes archived pages (flagged). |
+| **Graph families / thematic regions** | Idea recorded on 2026-11-02: labelled regions grouping related pages, such as Work. Membership (spaces, tags, manual or inferred) and visual treatment remain open. See [Graph View](graph-view.md#6-idea-thematic-families-and-regions). |
 | **Column alignment from the UI** | Deliberately out. The place would be the separator line in `lib/markdownTables.ts`. |
 | **Bucket storage backend and video** | Only the abstraction exists. `storage_backend` + `storage_key` on each media row mean plugging a bucket in needs no migration; video also needs ranged downloads and a poster rendition. See [Media Library](media-library.md#3-kinds-and-what-is-ready-for-video). |
 | **Version history** | Implemented — see [Version history](version-history.md). |

@@ -60,3 +60,15 @@ O grafo global **não tem toggle de arquivadas próprio**. O estado `includeArch
 `NotesGraphPage` só afeta a sidebar; a query do grafo nunca o recebe, então as arquivadas são sempre
 desenhadas. Se começar a incomodar, o lugar é a `NotesGraphPage` mais um parâmetro em
 `GetPageGraphInput`. Ver [Status de implementação](implementation-status.md).
+
+## 6. Ideia: famílias e regiões temáticas
+
+Registrada em 2026-11-02; ideia exploratória, ainda sem implementação ou algoritmo escolhido.
+Agrupar visualmente vértices relacionados em regiões com rótulos, por exemplo **Trabalho**, **Viagens**
+ou **Estudos**. Fundos suaves ou contornos poderiam indicar quais páginas pertencem ao mesmo conjunto,
+mantendo suas conexões visíveis.
+
+As regiões poderiam vir de espaços/tags existentes, famílias definidas manualmente ou comunidades
+inferidas pelos links. Falta decidir como atribuir membros, se uma página pode participar de regiões
+sobrepostas e como rótulos e regiões se comportam no zoom e nos filtros. A intenção é reconhecer os
+temas do grafo de relance, além de enxergar páginas e conexões individuais.

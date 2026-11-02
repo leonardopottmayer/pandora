@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
@@ -48,7 +48,7 @@ describe('SearchPalette', () => {
     const input = await screen.findByPlaceholderText('Search pages...')
 
     await user.type(input, 'a')
-    expect(await screen.findByText('Alpha')).toBeInTheDocument()
+    expect(await screen.findByRole('option', { name: /Alpha/ })).toBeInTheDocument()
 
     // First hit is active; one arrow down moves to the second.
     await user.keyboard('{ArrowDown}{Enter}')
@@ -75,7 +75,7 @@ describe('SearchPalette', () => {
     await user.keyboard('{Control>}k{/Control}')
     await user.type(await screen.findByPlaceholderText('Search pages...'), 'a')
 
-    await user.click(await screen.findByText('Beta'))
+    await user.click(await screen.findByRole('option', { name: /Beta/ }))
     expect(onSelect).toHaveBeenCalledWith('p2')
   })
 
@@ -86,5 +86,17 @@ describe('SearchPalette', () => {
 
     await user.click(screen.getByRole('button', { name: 'search' }))
     expect(await screen.findByPlaceholderText('Search pages...')).toBeInTheDocument()
+  })
+
+  it('highlights the title and excerpt while rendering note HTML as literal text', async () => {
+    mockSearch([{ ...hit('p1', 'Viagem anual'), excerpt: '<img src=x onerror=alert(1)> viagem' }])
+    const user = userEvent.setup()
+    renderWithProviders(<Harness onSelect={vi.fn()} />)
+    await user.click(screen.getByRole('button', { name: 'search' }))
+    await user.type(await screen.findByPlaceholderText('Search pages...'), 'viag')
+    const result = await screen.findByRole('option', { name: /Viagem anual/ })
+    expect([...result.querySelectorAll('mark')].map((mark) => mark.textContent)).toEqual(['Viagem', 'viagem'])
+    expect(within(result).getByText(/<img src=x onerror=alert\(1\)>/)).toBeInTheDocument()
+    expect(result.querySelector('img')).toBeNull()
   })
 })
