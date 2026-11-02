@@ -142,6 +142,9 @@ defines the schema and the markdown rules; the component only adds the views.
 - **Our own nodes**: a **wikilink** is one node (`[[target|alias]]`, `![[target]]`), drawn as the preview
   draws it and clickable — it opens the page, or creates the missing one. An **image** keeps width,
   alignment and caption in its alt text, as always; selected, it shows alignment buttons that rewrite it.
+- **Library file**: `[name](/api/v1/notes/media/{id})` is one node, drawn as the preview's card (glyph,
+  name, size, "removed"); a click downloads it. The name goes back into the markdown as it was written;
+  to change it, use Markdown mode.
 - **Video**: a YouTube or Vimeo link alone on its line shows the player under it, with the preview's
   sandbox (`components/visual/videoPreview.ts`). The player is a decoration: the link stays editable and
   is all that goes into the markdown.

@@ -76,7 +76,7 @@ export function formatImageAlt(text: string, width: number | null, align: ImageA
 }
 
 /** An emoji for a file card: no icon font in sanitized HTML, and these read at any size. */
-function fileGlyph(contentType: string): string {
+export function fileGlyph(contentType: string): string {
   const type = contentType.toLowerCase()
   if (type.includes('pdf')) return '📕'
   if (type.includes('zip') || type.includes('compressed')) return '🗜️'

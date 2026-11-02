@@ -142,6 +142,9 @@ schema e as regras de markdown; o componente só acrescenta as views.
 - **Nós nossos**: o **wikilink** é um nó só (`[[alvo|alias]]`, `![[alvo]]`), desenhado como no preview e
   clicável — abre a page ou cria a que falta. A **imagem** guarda largura, alinhamento e legenda no texto
   alternativo, como sempre; selecionada, mostra botões de alinhamento que reescrevem esse texto.
+- **Arquivo da biblioteca**: `[nome](/api/v1/notes/media/{id})` é um nó só, desenhado como o cartão do
+  preview (ícone, nome, tamanho, "removido"); o clique baixa o arquivo. O nome volta ao markdown como
+  foi escrito; para trocá-lo, use o modo Markdown.
 - **Vídeo**: um link do YouTube ou do Vimeo sozinho na linha mostra o player embaixo dele, com o mesmo
   sandbox do preview (`components/visual/videoPreview.ts`). O player é decoração: o link continua
   editável e é só ele que vai para o markdown.

@@ -8,9 +8,13 @@ import {
   CodeOutlined,
   PicCenterOutlined,
 } from '@ant-design/icons'
+import { App } from 'antd'
+import { formatBytes } from '@/lib/formatBytes'
+import { useMediaLookup } from '../../hooks/useMedia'
 import { useMediaPathUrls } from '../../hooks/useMediaUrls'
-import { isMediaUrl } from '../../lib/media'
-import { formatImageAlt, parseImageAlt, type ImageAlign } from '../../lib/mediaMarkdown'
+import { isMediaUrl, mediaFileName } from '../../lib/media'
+import { fileGlyph, formatImageAlt, mediaIdOf, parseImageAlt, type ImageAlign } from '../../lib/mediaMarkdown'
+import { downloadMedia } from '../../services/media.service'
 import { resolveWikilink } from '../../lib/wikilinks'
 import { MarkdownPreview } from '../MarkdownPreview'
 import { useVisualEditorContext } from './visualContext'
@@ -78,6 +82,33 @@ export function ImageView({ node, selected, updateAttributes }: NodeViewProps) {
           ))}
         </span>
       )}
+    </NodeViewWrapper>
+  )
+}
+
+/** A library file, as the preview's card: glyph, name and size. A click saves it, as in reading mode. */
+export function MediaFileView({ node }: NodeViewProps) {
+  const { t } = useTranslation()
+  const { message } = App.useApp()
+  const href = String(node.attrs.href)
+  const label = String(node.attrs.label)
+  const id = mediaIdOf(href)
+  const item = useMediaLookup(id ? [id] : []).get(id ?? '')
+  const meta = item ? [formatBytes(item.sizeBytes), item.isDeleted ? t('notes.media.removed') : null].filter(Boolean).join(' · ') : ''
+
+  return (
+    <NodeViewWrapper
+      as="span"
+      className="notes-file-card"
+      onClick={() =>
+        void downloadMedia(href, mediaFileName(href, item?.originalFileName ?? label)).catch(() => message.error(t('notes.downloadError')))
+      }
+    >
+      <span className="notes-file-glyph">{fileGlyph(item?.contentType ?? '')}</span>
+      <span className="notes-file-body">
+        <span className="notes-file-name">{label}</span>
+        <span className="notes-file-meta">{meta}</span>
+      </span>
     </NodeViewWrapper>
   )
 }

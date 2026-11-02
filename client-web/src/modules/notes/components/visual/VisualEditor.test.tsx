@@ -130,6 +130,21 @@ describe('VisualEditor', () => {
     expect(props.onChange).not.toHaveBeenCalled()
   })
 
+  it('draws a library file as its card, with the size, and saves it on click', async () => {
+    const { lookupMedia, downloadMedia } = await import('../../services/media.service')
+    vi.mocked(lookupMedia).mockResolvedValueOnce([
+      { id: 'aaaaaaaa-0000-0000-0000-000000000001', sizeBytes: 2048, contentType: 'application/pdf', originalFileName: 'r.pdf', isDeleted: false } as never,
+    ])
+    const { container, props } = renderEditor(`Ver [Relatório](${PATH})`)
+
+    await waitFor(() => expect(container.querySelector('.notes-file-card .notes-file-meta')).toHaveTextContent('2.0 KB'))
+    expect(container.querySelector('.notes-file-name')).toHaveTextContent('Relatório')
+    expect(container.querySelector('.notes-file-glyph')).toHaveTextContent('📕')
+    await userEvent.click(screen.getByText('Relatório'))
+    expect(downloadMedia).toHaveBeenCalledWith(PATH, 'r.pdf')
+    expect(props.onChange).not.toHaveBeenCalled()
+  })
+
   it('does not rewrite a page that was only opened', async () => {
     const { props } = renderEditor('* a\n* b')
     await screen.findByText('a')

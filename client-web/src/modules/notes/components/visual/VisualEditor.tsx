@@ -29,7 +29,7 @@ import type { MarkdownEditorHandle } from '../MarkdownEditor'
 import { TableSizeModal } from '../TableSizeModal'
 import { MediaPickerModal } from '../library/MediaPickerModal'
 import { PagePickerModal } from '../PagePickerModal'
-import { ImageView, RawBlockView, WikilinkView } from './nodeViews'
+import { ImageView, MediaFileView, RawBlockView, WikilinkView } from './nodeViews'
 import { BlockView } from './BlockView'
 import { SuggestionMenu } from './SuggestionMenu'
 import { VideoPreview } from './videoPreview'
@@ -120,6 +120,7 @@ export function VisualEditor({
         ...visualExtensions({
           wikilink: ReactNodeViewRenderer(WikilinkView, { as: 'span' }),
           image: ReactNodeViewRenderer(ImageView, { as: 'span' }),
+          mediaFile: ReactNodeViewRenderer(MediaFileView, { as: 'span' }),
           callout: ReactNodeViewRenderer(BlockView),
           details: ReactNodeViewRenderer(BlockView),
           // Everything inside a raw block — its textarea, a <summary> to fold, a link — is its own;

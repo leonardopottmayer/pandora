@@ -351,7 +351,8 @@
   font-size: 0.85em;
   color: rgba(128, 128, 128, 0.95);
 }
-.notes-preview a.notes-file-card {
+.notes-preview .notes-file-card {
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -364,7 +365,7 @@
   text-decoration: none;
   vertical-align: middle;
 }
-.notes-preview a.notes-file-card:hover { background: rgba(128, 128, 128, 0.08); }
+.notes-preview .notes-file-card:hover { background: rgba(128, 128, 128, 0.08); }
 .notes-preview .notes-file-glyph { font-size: 1.5em; line-height: 1; }
 .notes-preview .notes-file-body { display: flex; flex-direction: column; min-width: 0; }
 .notes-preview .notes-file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }

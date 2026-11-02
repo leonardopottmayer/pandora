@@ -122,7 +122,8 @@ Callout e toggle nativos já foram feitos (`8644bc1`). O usuário decidiu (2026-
 
 - ~~Link de vídeo sozinho na linha aparece como link no editor.~~ Feito: o player aparece embaixo do link
   (`components/visual/videoPreview.ts`, decoração do ProseMirror).
-- Link de arquivo da biblioteca no editor visual aparece como link comum (o cartão só no modo leitura).
+- ~~Link de arquivo da biblioteca aparece como link comum no editor.~~ Feito: nó `mediaFile`
+  (`lib/visualMarkdown.ts`) desenhado como o cartão (`MediaFileView` em `nodeViews.tsx`).
 - HTML inline (`<kbd>`, `<span style>`) é reduzido ao texto se o parágrafo for editado no visual; `<img>`
   inline vira `![|largura](…)`.
 - Total de espaço ocupado na tela da biblioteca (o tamanho por item já existe).

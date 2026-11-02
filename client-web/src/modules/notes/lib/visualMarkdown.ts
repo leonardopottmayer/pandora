@@ -5,7 +5,7 @@ import { TaskItem, TaskList } from '@tiptap/extension-list'
 import { TableKit } from '@tiptap/extension-table'
 import { Paragraph } from '@tiptap/extension-paragraph'
 import { Marked, type marked } from 'marked'
-import { isMediaUrl } from './media'
+import { isMediaUrl, MEDIA_PREFIX } from './media'
 import { CalloutBlock, DetailsBlock, tokenizeVisualBlock } from './visualBlocks'
 
 // The visual editor reads and writes the same markdown the code editor does: the text stays the one
@@ -103,6 +103,46 @@ export const MediaImage = Node.create({
     const { src, alt, title } = node.attrs ?? {}
     return `![${alt}](${src}${title ? ` "${title}"` : ''})`
   },
+})
+
+/** `[label](/api/v1/notes/media/{id})` — a library file, which the preview draws as a card. */
+const MEDIA_FILE = new RegExp(String.raw`^\[([^\]]*)\]\((${MEDIA_PREFIX}[0-9a-fA-F-]{36})\)`)
+
+/** A library file link, one node so it can draw as the card; the label goes back out as it was written. */
+export const MediaFile = Node.create({
+  name: 'mediaFile',
+  group: 'inline',
+  inline: true,
+  atom: true,
+  draggable: true,
+
+  addAttributes() {
+    return { href: { default: '' }, label: { default: '' } }
+  },
+
+  parseHTML() {
+    // Before the link mark's own `a[href]`, or a pasted card would come back as a plain link.
+    return [{ tag: 'a[data-media-file]', priority: 60, getAttrs: (el) => ({ href: el.getAttribute('href'), label: el.textContent ?? '' }) }]
+  },
+
+  renderHTML({ node }) {
+    return ['a', { 'data-media-file': '', href: node.attrs.href }, node.attrs.label]
+  },
+
+  markdownTokenizer: {
+    name: 'mediaFile',
+    level: 'inline',
+    // Not the `[` of an image's `![`: that one is marked's.
+    start: (src: string) => src.search(new RegExp(String.raw`(?<!!)\[[^\]]*\]\(${MEDIA_PREFIX}`)),
+    tokenize(src: string) {
+      const match = MEDIA_FILE.exec(src)
+      return match ? { type: 'mediaFile', raw: match[0], label: match[1], href: match[2] } : undefined
+    },
+  },
+
+  parseMarkdown: (token) => ({ type: 'mediaFile', attrs: { href: token.href, label: token.label } }),
+
+  renderMarkdown: (node) => `[${node.attrs?.label ?? ''}](${node.attrs?.href ?? ''})`,
 })
 
 /**
@@ -208,6 +248,7 @@ function withListBreaks(doc: JSONContent): JSONContent {
 export interface VisualNodeViews {
   wikilink?: NodeViewRenderer
   image?: NodeViewRenderer
+  mediaFile?: NodeViewRenderer
   rawBlock?: NodeViewRenderer
   callout?: NodeViewRenderer
   details?: NodeViewRenderer
@@ -230,6 +271,7 @@ export function visualExtensions(views: VisualNodeViews = {}): AnyExtension[] {
     TableKit.configure({ table: { resizable: false } }),
     withView(Wikilink, views.wikilink),
     withView(MediaImage, views.image),
+    withView(MediaFile, views.mediaFile),
     withView(RawBlock, views.rawBlock),
     withView(CalloutBlock, views.callout),
     withView(DetailsBlock, views.details),

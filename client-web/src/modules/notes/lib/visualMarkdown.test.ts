@@ -21,6 +21,7 @@ describe('visual editor markdown', () => {
     ['tags', 'Filed under #trabalho and #ideias/novas'],
     ['a library image with its options', `![Beach|300|right](${IMAGE})`],
     ['an image with a title', `![a](${IMAGE} "Title")`],
+    ['a library file, next to an image', `Ver [relatório_final*v2.pdf](${IMAGE}) e ![a](${IMAGE})`],
     ['a callout', '> [!tip] Title\n> body **b**\n> more'],
     ['a folding callout', '> [!warning]- Closed\n> hidden'],
     ['a details block across blank lines', '<details>\n<summary>S</summary>\n\nbody **b**\n\n</details>'],
@@ -151,6 +152,19 @@ describe('visual editor markdown', () => {
       type: 'wikilink',
       attrs: { target: 'Page', alias: 'alias', embed: false },
     })
+  })
+
+  it('reads a library file link as one node, and any other link as a link', () => {
+    const json = manager.parse(`[a.pdf](${IMAGE}) [site](https://x.com)`)
+    expect(json.content?.[0].content?.[0]).toMatchObject({ type: 'mediaFile', attrs: { href: IMAGE, label: 'a.pdf' } })
+    expect(json.content?.[0].content?.[2]).toMatchObject({ type: 'text', marks: [{ type: 'link' }] })
+  })
+
+  it('copies a library file and pastes it back as the same file', () => {
+    const editor = new Editor({ extensions: visualExtensions(), content: manager.parse(`[a.pdf](${IMAGE})`) })
+    editor.commands.setContent(editor.getHTML())
+    expect(serializeMarkdown(manager, editor.getJSON())).toBe(`[a.pdf](${IMAGE})`)
+    editor.destroy()
   })
 
   it('turns an inline html image into markdown, width and all', () => {
