@@ -22,6 +22,7 @@ internal sealed class PageEntityConfiguration : IEntityTypeConfiguration<Page>
 
         builder.Property(p => p.Id).HasColumnName("id").ValueGeneratedNever();
         builder.Property(p => p.UserId).HasColumnName("user_id").IsRequired();
+        builder.Property(p => p.SpaceId).HasColumnName("space_id").IsRequired();
         builder.Property(p => p.ParentId).HasColumnName("parent_id");
         builder.Property(p => p.Title).HasColumnName("title").HasMaxLength(255).IsRequired();
         builder.Property(p => p.Slug).HasColumnName("slug").HasMaxLength(100).IsRequired();
@@ -48,6 +49,10 @@ internal sealed class PageEntityConfiguration : IEntityTypeConfiguration<Page>
 
         builder.HasIndex(p => p.UserId).HasDatabaseName("ix_nte001_user_id");
         builder.HasIndex(p => p.ParentId).HasDatabaseName("ix_nte001_parent_id");
+        builder.HasIndex(p => p.SpaceId).HasDatabaseName("ix_nte001_space_id");
+
+        // Declared so EF inserts a space created on the fly before the page that goes in it.
+        builder.HasOne<Space>().WithMany().HasForeignKey(p => p.SpaceId).HasConstraintName("fk_nte001_space");
 
         // Slug is unique per user among live pages; the partial filter lets a slug be reused after
         // its page is soft-deleted, matching ExistsWithSlugAsync (which ignores deleted rows).

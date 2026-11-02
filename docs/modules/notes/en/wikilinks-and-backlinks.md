@@ -22,7 +22,8 @@ one page is one fact, but a page that both links and embeds another produces two
 
 `PageLinkSynchronizer` resolves against the owner's pages, **title first (case-insensitive), then
 slug**. Both spellings are looked up in one round trip, so `[[Meeting Notes]]` and `[[meeting-notes]]`
-collapse into the same edge.
+collapse into the same edge. Among pages sharing a title, the one in the linking page's own
+[space](spaces.md) wins; a title found only in another space still resolves there.
 
 A reference matching no page produces **no edge**. A broken link exists only in the text — the graph
 never contains an edge into nothing.

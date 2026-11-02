@@ -33,6 +33,7 @@ import { ImportDetailPage } from '@/modules/finances/pages/imports/ImportDetailP
 import { ImportLayoutsPage } from '@/modules/finances/pages/imports/ImportLayoutsPage'
 import { NotesPage } from '@/modules/notes/pages/NotesPage'
 import { NotesGraphPage } from '@/modules/notes/pages/NotesGraphPage'
+import { SpacesPage } from '@/modules/notes/pages/SpacesPage'
 import { TodayPage } from '@/modules/agenda/pages/today/TodayPage'
 import { RemindersListPage } from '@/modules/agenda/pages/reminders/RemindersListPage'
 import { TasksListPage } from '@/modules/agenda/pages/tasks/TasksListPage'
@@ -101,9 +102,10 @@ export const router = createBrowserRouter([
       { path: 'agenda/calendar', element: <CalendarPage /> },
       { path: 'agenda/settings', element: <AgendaSettingsPage /> },
 
-      { path: 'notes', element: <NotesPage /> },
+      { path: 'notes', element: <SpacesPage /> },
       // Before the :id route, so "graph" is read as the view and not as a page id.
       { path: 'notes/graph', element: <NotesGraphPage /> },
+      { path: 'notes/s/:spaceId', element: <NotesPage /> },
       { path: 'notes/:id', element: <NotesPage /> },
 
       // Files

@@ -28,7 +28,7 @@ public sealed class SearchNotesToolTests
     }
 
     private static PageSearchResultDto Hit(string title, string excerpt = "", bool archived = false) =>
-        new(Guid.NewGuid(), title, "slug", null, archived, excerpt);
+        new(Guid.NewGuid(), Guid.NewGuid(), title, "slug", null, archived, excerpt);
 
     private static JsonElement Args(string json) => JsonDocument.Parse(json).RootElement.Clone();
 

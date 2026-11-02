@@ -13,6 +13,8 @@ namespace Pottmayer.Pandora.Modules.Notes.Domain.Aggregates;
 public sealed class Page : AggregateRoot<Guid>, IAuditable
 {
     public Guid UserId { get; private set; }
+    /// <summary>The <see cref="Space"/> the page lives in. A page and its parent always share one.</summary>
+    public Guid SpaceId { get; private set; }
     public Guid? ParentId { get; private set; }
     public string Title { get; private set; } = string.Empty;
     public string Slug { get; private set; } = string.Empty;
@@ -39,6 +41,7 @@ public sealed class Page : AggregateRoot<Guid>, IAuditable
     /// </summary>
     public static Page Create(
         Guid userId,
+        Guid spaceId,
         string title,
         string slug,
         Guid? parentId,
@@ -50,6 +53,7 @@ public sealed class Page : AggregateRoot<Guid>, IAuditable
         {
             Id = Guid.CreateVersion7(),
             UserId = userId,
+            SpaceId = spaceId,
             ParentId = parentId,
             Title = title.Trim(),
             Slug = slug,
@@ -77,6 +81,12 @@ public sealed class Page : AggregateRoot<Guid>, IAuditable
         ParentId = newParentId == Id ? null : newParentId;
         OrderIndex = orderIndex;
     }
+
+    /// <summary>
+    /// Puts the page in another space. The caller moves the whole subtree, so a page never sits in a
+    /// different space from its parent.
+    /// </summary>
+    public void MoveToSpace(Guid spaceId) => SpaceId = spaceId;
 
     /// <summary>Flags or unflags the page as a favorite.</summary>
     public void SetFavorite(bool isFavorite) => IsFavorite = isFavorite;

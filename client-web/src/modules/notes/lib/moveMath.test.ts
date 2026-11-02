@@ -13,6 +13,7 @@ function page(id: string, parentId: string | null, orderIndex = 0): PageSummaryD
     orderIndex,
     isFavorite: false,
     isArchived: false,
+    spaceId: 's1',
   }
 }
 

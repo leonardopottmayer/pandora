@@ -29,4 +29,24 @@ public static class PageHierarchy
 
         return false;
     }
+
+    /// <summary>The page plus every descendant among <paramref name="all"/>, walking the parent links breadth-first.</summary>
+    public static IEnumerable<Page> Subtree(Guid rootId, IReadOnlyList<Page> all)
+    {
+        var byParent = all.ToLookup(p => p.ParentId);
+        var queue = new Queue<Guid>();
+        queue.Enqueue(rootId);
+
+        while (queue.Count > 0)
+        {
+            var id = queue.Dequeue();
+            var node = all.FirstOrDefault(p => p.Id == id);
+            if (node is null)
+                continue;
+
+            yield return node;
+            foreach (var child in byParent[id])
+                queue.Enqueue(child.Id);
+        }
+    }
 }

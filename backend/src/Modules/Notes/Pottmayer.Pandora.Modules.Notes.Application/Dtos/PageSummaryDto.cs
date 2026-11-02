@@ -8,6 +8,7 @@ namespace Pottmayer.Pandora.Modules.Notes.Application.Dtos;
 /// </summary>
 public sealed record PageSummaryDto(
     Guid Id,
+    Guid SpaceId,
     Guid? ParentId,
     string Title,
     string Slug,
@@ -17,5 +18,5 @@ public sealed record PageSummaryDto(
     bool IsArchived)
 {
     public static PageSummaryDto From(Page p) =>
-        new(p.Id, p.ParentId, p.Title, p.Slug, p.Icon, p.OrderIndex, p.IsFavorite, p.IsArchived);
+        new(p.Id, p.SpaceId, p.ParentId, p.Title, p.Slug, p.Icon, p.OrderIndex, p.IsFavorite, p.IsArchived);
 }

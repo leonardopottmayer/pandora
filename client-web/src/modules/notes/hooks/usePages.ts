@@ -5,10 +5,11 @@ import { buildTree } from '../lib/buildTree'
 import type { CreatePageRequest, MovePageRequest, PageTreeNode, UpdatePageRequest } from '../models'
 import * as pagesService from '../services/pages.service'
 
-export function usePageTree(includeArchived = false, tagIds: string[] = []) {
+/** One space's pages as a tree; with no `spaceId`, every space's. */
+export function usePageTree(includeArchived = false, tagIds: string[] = [], spaceId: string | null = null) {
   const query = useQuery({
-    queryKey: noteKeys.pageTree(includeArchived, tagIds),
-    queryFn: () => pagesService.listPages(includeArchived, tagIds),
+    queryKey: noteKeys.pageTree(includeArchived, tagIds, spaceId),
+    queryFn: () => pagesService.listPages(includeArchived, tagIds, spaceId),
   })
   const tree: PageTreeNode[] = useMemo(() => buildTree(query.data ?? []), [query.data])
   return { ...query, tree }
@@ -31,10 +32,10 @@ export function useBacklinks(id: string | null) {
 }
 
 /** The whole wiki graph — nodes and edges for the global graph view, optionally cut by tag. */
-export function useGraph(tagIds: string[] = []) {
+export function useGraph(tagIds: string[] = [], spaceId: string | null = null) {
   return useQuery({
-    queryKey: noteKeys.graph(tagIds),
-    queryFn: () => pagesService.getGraph(tagIds),
+    queryKey: noteKeys.graph(tagIds, spaceId),
+    queryFn: () => pagesService.getGraph(tagIds, spaceId),
   })
 }
 
@@ -51,20 +52,24 @@ export function useLocalGraph(id: string | null, depth: number) {
  * Full-text search for the command palette. The term is expected to be debounced by the caller;
  * previous results stay on screen while the next ones load, so the list does not blink per keystroke.
  */
-export function useSearchPages(term: string, tagIds: string[] = []) {
+export function useSearchPages(term: string, tagIds: string[] = [], spaceId: string | null = null) {
   return useQuery({
-    queryKey: noteKeys.search(term, tagIds),
-    queryFn: () => pagesService.searchPages(term, tagIds),
+    queryKey: noteKeys.search(term, tagIds, spaceId),
+    queryFn: () => pagesService.searchPages(term, tagIds, spaceId),
     // With tags picked, an empty term is not an empty search: it browses those tags' pages.
     enabled: term.trim().length > 0 || tagIds.length > 0,
     placeholderData: keepPreviousData,
   })
 }
 
-/** Invalidates every notes query after a structural mutation (create/move/archive/delete). */
+/** Invalidates every notes query after a structural mutation (create/move/archive/delete), and the
+ *  spaces, whose page counts it changed. */
 function useInvalidatePages() {
   const queryClient = useQueryClient()
-  return () => queryClient.invalidateQueries({ queryKey: noteKeys.pages() })
+  return () => {
+    queryClient.invalidateQueries({ queryKey: noteKeys.pages() })
+    queryClient.invalidateQueries({ queryKey: noteKeys.spaces() })
+  }
 }
 
 /**

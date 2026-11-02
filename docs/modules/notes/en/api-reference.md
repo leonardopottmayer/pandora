@@ -30,10 +30,13 @@ token's user. A resource owned by another user returns **404** (not 403). Contro
 | Route | Parameter | Default | Notes |
 |---|---|---|---|
 | `GET /pages` | `includeArchived` | `false` | |
+| `GET /pages` | `spaceId` | — | That space's pages only; without it, every space's (what wikilink resolution needs). |
 | `GET /pages` | `tagIds` | — | Repeatable. Several tags **intersect**. With a filter the sidebar is a flat list. |
 | `GET /pages/search` | `q` | — | Empty + `tagIds` lists that tag's pages. Cap 20, ordered by title. |
 | `GET /pages/search` | `tagIds` | — | Repeatable, intersecting. |
+| `GET /pages/search` | `spaceId` | — | That space only. |
 | `GET /pages/graph` | `tagIds` | — | Cuts the nodes. |
+| `GET /pages/graph` | `spaceId` | — | That space's pages only. |
 | `GET /pages/{id}/graph` | `depth` | `1` | Clamped to 1..5. |
 | `GET /pages/{id}/graph` | `tagIds` | — | Cuts the nodes **before** the neighborhood walk. |
 
@@ -41,9 +44,23 @@ token's user. A resource owned by another user returns **404** (not 403). Contro
 
 | Route | Body |
 |---|---|
-| `POST /pages` | `CreatePageRequest { title, parentId?, icon?, contentMarkdown? }` |
+| `POST /pages` | `CreatePageRequest { title, parentId?, icon?, contentMarkdown?, spaceId? }` — a child stays in its parent's space; with none, the default |
 | `PUT /pages/{id}` | `UpdatePageRequest { title, icon?, contentMarkdown }` |
-| `POST /pages/{id}/move` | `MovePageRequest { parentId, orderIndex }` — a move that would create a cycle is rejected |
+| `POST /pages/{id}/move` | `MovePageRequest { parentId, orderIndex, spaceId? }` — a move that would create a cycle is rejected |
+
+## Spaces — `/spaces`
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/spaces` | List (`includeArchived`, default `false`), the default first, with `pageCount` and `lastEditedAt` |
+| POST | `/spaces` | Create — the user's first one becomes the default |
+| PUT | `/spaces/{id}` | Name, icon, color, description |
+| POST | `/spaces/{id}/default` | Make default (unarchiving it if needed) |
+| POST | `/spaces/{id}/archive` · `/unarchive` | Archive / unarchive — the default answers **409** |
+| DELETE | `/spaces/{id}` | Soft-delete — the default or a space with pages answers **409** |
+
+Body of POST and PUT: `SaveSpaceRequest { name, icon?, color?, description? }`; a blank name or a
+color that is not `#rrggbb` answers **422**. See [Spaces](spaces.md).
 
 ## Tags — `/tags`
 
@@ -74,11 +91,12 @@ a bare `<img src>` will not reach it — the client fetches the blob and hands o
 
 | DTO | Shape |
 |---|---|
-| `PageSummaryDto` | `Id, ParentId, Title, Slug, Icon, OrderIndex, IsFavorite, IsArchived` |
+| `PageSummaryDto` | `Id, SpaceId, ParentId, Title, Slug, Icon, OrderIndex, IsFavorite, IsArchived` |
 | `PageDto` | `PageSummaryDto` fields + `ContentMarkdown, CreatedAt, UpdatedAt, Tags[]` |
+| `SpaceDto` | `Id, Name, Icon, Color, Description, IsDefault, IsArchived, PageCount, LastEditedAt, CreatedAt` |
 | `PageTagDto` | `Id, Slug, Name, Color` — one page's tags, no count |
 | `TagDto` | `PageTagDto` + `PageCount` — a colored tag may sit at zero |
-| `PageSearchResultDto` | `Id, Title, Slug, Icon, IsArchived, Excerpt` |
+| `PageSearchResultDto` | `Id, SpaceId, Title, Slug, Icon, IsArchived, Excerpt` |
 | `BacklinkDto` | `PageId, Title, Slug, Icon, IsArchived, Kind` |
 | `PageGraphDto` | `Nodes[]`, `Edges[]` |
 | `GraphNodeDto` | `Id, Title, Slug, Icon, IsArchived, Degree` |

@@ -54,6 +54,10 @@ internal static class PageLinkSynchronizer
         if (candidates.Count == 0)
             return [];
 
+        // Two spaces may each hold a "Meeting notes": the one in the linking page's own space wins, and
+        // only a title no page here has reaches into the other spaces.
+        candidates = [.. candidates.OrderBy(p => p.SpaceId == page.SpaceId ? 0 : 1)];
+
         var byTitle = candidates
             .GroupBy(p => p.Title.ToLowerInvariant())
             .ToDictionary(g => g.Key, g => g.First().Id);

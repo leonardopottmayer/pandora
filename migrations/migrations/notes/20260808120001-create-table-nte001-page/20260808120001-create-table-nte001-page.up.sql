@@ -3,6 +3,9 @@
 CREATE TABLE notes.nte001_page (
 	id uuid NOT NULL DEFAULT uuid_generate_v7(),
 	user_id uuid NOT NULL,
+	-- The space the page lives in (nte007). Its foreign key is declared by the nte007 migration,
+	-- which runs after this one.
+	space_id uuid NOT NULL,
 	parent_id uuid NULL,
 	title VARCHAR(255) NOT NULL,
 	slug VARCHAR(100) NOT NULL,
@@ -44,6 +47,9 @@ ON notes.nte001_page (user_id);
 
 CREATE INDEX ix_nte001_parent_id
 ON notes.nte001_page (parent_id);
+
+CREATE INDEX ix_nte001_space_id
+ON notes.nte001_page (space_id);
 
 CREATE INDEX ix_nte001_search_vector
 ON notes.nte001_page USING GIN (search_vector);

@@ -34,7 +34,9 @@ public sealed class GetPageGraphQueryHandler(IUnitOfWorkFactory factory)
         {
             var pages = await ctx.AcquireRepository<IPageRepository>()
                 .GetTreeForUserAsync(input.UserId, includeArchived: true, token);
-            var byId = pages.ToDictionary(p => p.Id);
+            var byId = pages
+                .Where(p => input.SpaceId is null || p.SpaceId == input.SpaceId)
+                .ToDictionary(p => p.Id);
 
             // The root must exist and be the user's (404-on-foreign-resource rule).
             if (input.RootPageId is { } rootId && !byId.ContainsKey(rootId))

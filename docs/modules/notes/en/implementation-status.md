@@ -17,6 +17,7 @@ left behind, not the phase log.
 |---|---|
 | **Module scaffold** | All layered projects, `notes` schema, registered in the Host. No jobs, no integration events, no audit event log. |
 | **Pages** | `Page` aggregate, tree with cycle rejection on reparent, frozen slugs with collision suffixes, move/reorder, favorite, archive, soft delete of the whole subtree (`nte001`). |
+| **Spaces** | `Space` aggregate, one default per user (created on the fly when none), pages placed in a space, moving across spaces with the subtree, wikilinks preferring the own space, space filters on tree / search / graph, spaces screen and sidebar switcher, `create_note` taking a space (`nte007`). |
 | **Emoji icon** | Picker next to the title, reduced to the first grapheme via `Intl.Segmenter`, saved through the page's own autosave. |
 | **Attachments** | `IFileStorage` + `DatabaseFileStorage`, blob table, authenticated upload/download, inline paste/drop in the editor, object-URL resolution in the preview (`nte002`, `nte003`). |
 | **Editor** | CodeMirror 6, raw markdown + preview + split mode, 800 ms autosave, DOMPurify sanitization. |

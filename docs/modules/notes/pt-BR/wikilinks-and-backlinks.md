@@ -22,7 +22,8 @@ na mesma page é um fato só, mas uma page que linka e embeda outra produz duas 
 
 O `PageLinkSynchronizer` resolve contra as pages do dono, **título primeiro (case-insensitive), depois
 slug**. As duas grafias são consultadas numa ida só ao banco, então `[[Meeting Notes]]` e
-`[[meeting-notes]]` colapsam na mesma aresta.
+`[[meeting-notes]]` colapsam na mesma aresta. Entre pages com o mesmo título, vence a do
+[espaço](spaces.md) da page que linka; um título que só existe em outro espaço ainda resolve para lá.
 
 Uma referência que não casa com page nenhuma **não produz aresta**. Um link quebrado existe só no
 texto — o grafo nunca contém aresta apontando para o nada.

@@ -26,8 +26,9 @@ the *technical rules* (aggregates, invariants, schema, endpoints).
 |---|---|---|
 | 1 | [Overview](en/overview.md) | Vision, principles, ubiquitous language, scope (in/out) |
 | 2 | [Architecture](en/architecture.md) | Project layout, DDD building blocks, ports, key design decisions |
-| 3 | [Data Model](en/data-model.md) | Full schema catalog (`nte001`–`nte006`): columns, constraints, indexes |
+| 3 | [Data Model](en/data-model.md) | Full schema catalog (`nte001`–`nte007`): columns, constraints, indexes |
 | 4 | [Pages & Hierarchy](en/pages-and-hierarchy.md) | `Page` aggregate, tree, slug, move/reorder, favorite, archive, soft delete |
+| 4a | [Spaces](en/spaces.md) | Grouping pages like Confluence spaces, the default space, moving across spaces |
 | 5 | [Editor & Rich Blocks](en/editor.md) | CodeMirror 6, autosave, preview, slash commands, callouts, tables, autocomplete |
 | 6 | [Attachments & Storage](en/attachments.md) | `IFileStorage`, `DatabaseFileStorage`, upload/download, authenticated embedding |
 | 7 | [Wikilinks & Backlinks](en/wikilinks-and-backlinks.md) | `[[target]]` parsing, `PageLink` edges, linked mentions, create-on-click |

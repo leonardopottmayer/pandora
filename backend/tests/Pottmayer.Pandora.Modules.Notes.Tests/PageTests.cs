@@ -10,6 +10,7 @@ public sealed class PageTests
 
     private static Page NewPage(TimeProvider time, Guid? parentId = null) => Page.Create(
         userId: Guid.NewGuid(),
+        spaceId: Guid.NewGuid(),
         title: "  My Note  ",
         slug: "my-note",
         parentId: parentId,

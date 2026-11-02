@@ -9,9 +9,10 @@ import {
 } from './wikilinks'
 import type { PageSummaryDto } from '../models'
 
-function page(id: string, title: string, slug: string): PageSummaryDto {
+function page(id: string, title: string, slug: string, spaceId = 's1'): PageSummaryDto {
   return {
     id,
+    spaceId,
     parentId: null,
     title,
     slug,
@@ -145,5 +146,15 @@ describe('filterPages', () => {
 
   it('returns nothing when no page matches', () => {
     expect(filterPages(pages, 'zzz')).toEqual([])
+  })
+})
+
+describe('buildPageIndex across spaces', () => {
+  it('resolves a title two spaces share to the one in the space asked for', () => {
+    const pages = [page('home', 'Meeting', 'meeting', 'home'), page('work', 'Meeting', 'meeting-2', 'work')]
+
+    expect(resolveWikilink('Meeting', buildPageIndex(pages, 'work'))?.id).toBe('work')
+    expect(resolveWikilink('Meeting', buildPageIndex(pages, 'home'))?.id).toBe('home')
+    expect(resolveWikilink('meeting-2', buildPageIndex(pages, 'home'))?.id).toBe('work')
   })
 })

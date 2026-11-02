@@ -30,7 +30,7 @@ public sealed class DeletePageCommandHandler(IUnitOfWorkFactory factory, TimePro
 
             // Soft-delete the whole subtree so no child is left pointing at a deleted parent.
             var all = await repo.GetTreeForUserAsync(input.UserId, includeArchived: true, token);
-            foreach (var descendant in Subtree(page.Id, all))
+            foreach (var descendant in PageHierarchy.Subtree(page.Id, all))
             {
                 descendant.Delete(timeProvider);
                 await repo.UpdateAsync(descendant, token);
@@ -48,25 +48,5 @@ public sealed class DeletePageCommandHandler(IUnitOfWorkFactory factory, TimePro
         }, cancellationToken: ct);
 
         return result.IsFailure ? Fail([.. result.Errors]) : Ok(true);
-    }
-
-    /// <summary>The page plus every descendant, found by walking the parent links breadth-first.</summary>
-    private static IEnumerable<Page> Subtree(Guid rootId, IReadOnlyList<Page> all)
-    {
-        var byParent = all.ToLookup(p => p.ParentId);
-        var queue = new Queue<Guid>();
-        queue.Enqueue(rootId);
-
-        while (queue.Count > 0)
-        {
-            var id = queue.Dequeue();
-            var node = all.FirstOrDefault(p => p.Id == id);
-            if (node is null)
-                continue;
-
-            yield return node;
-            foreach (var child in byParent[id])
-                queue.Enqueue(child.Id);
-        }
     }
 }

@@ -23,6 +23,7 @@ As migrations ficam em `migrations/migrations/notes/`.
 | nte004 | `page_link` | Arestas do grafo wiki, derivadas do corpo |
 | nte005 | `tag` | Rótulos do usuário, nascidos do corpo |
 | nte006 | `page_tag` | Arestas page ↔ tag, derivadas do corpo |
+| nte007 | `space` | Espaços que agrupam as pages |
 
 > A numeração é ordem de criação, não a ordem em que as tabelas se referenciam: `nte003` veio antes
 > de `nte002` porque o blob store precisava existir antes dos metadados que apontam para ele.
@@ -35,6 +36,7 @@ As migrations ficam em `migrations/migrations/notes/`.
 |---|---|---|
 | `id` | uuid PK | |
 | `user_id` | uuid NOT NULL | dono |
+| `space_id` | uuid NOT NULL → nte007 | o espaço da page; uma filha sempre divide o da mãe |
 | `parent_id` | uuid NULL → nte001 | a árvore da sidebar; `NULL` é raiz |
 | `title` | varchar(255) NOT NULL | |
 | `slug` | varchar(100) NOT NULL | derivado do título na criação, depois congelado |
@@ -54,7 +56,8 @@ Constraints e índices:
   [D5](architecture.md#3-decisões-de-design)).
 - `uq_nte001_user_slug (user_id, slug) WHERE deleted_at IS NULL` — índice único **parcial**, então
   uma page soft-deletada libera o slug para reuso.
-- `ix_nte001_user_id`, `ix_nte001_parent_id`.
+- `ix_nte001_user_id`, `ix_nte001_parent_id`, `ix_nte001_space_id`.
+- `fk_nte001_space (space_id → nte007.id)` — declarada pela migration da nte007, que roda depois da nte001.
 - `ix_nte001_search_vector` — **GIN** sobre a coluna gerada.
 
 O vetor usa a configuração `simple` (só lower-case, sem stemming, sem adivinhar idioma), porque o
@@ -141,11 +144,30 @@ A linha nunca é criada por tela de CRUD — ela aparece porque o markdown de al
   Sem ela, a varredura de órfãs — que apaga a tag e as arestas dela na mesma transação — mandava o
   `DELETE` da tag primeiro e batia na constraint. Foi um teste de integração que pegou isso.
 
+## nte007_space
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | |
+| `user_id` | uuid NOT NULL | dono |
+| `name` | varchar(100) NOT NULL | |
+| `icon` | varchar(50) NULL | um único grafema de emoji |
+| `color` | varchar(20) NULL | hex `#rrggbb`, validado no handler |
+| `description` | varchar(500) NULL | |
+| `is_default` | boolean NOT NULL DEFAULT false | para onde vai uma page criada sem espaço |
+| `archived_at` | timestamptz NULL | fora da lista; as pages continuam alcançáveis |
+| `deleted_at` | timestamptz NULL | soft delete, só de espaço vazio |
+| auditoria | `created_by/at`, `updated_by/at` | |
+
+- `uq_nte007_user_default (user_id) WHERE is_default AND deleted_at IS NULL` — um padrão por usuário.
+- `ix_nte007_user_id`. Ver [Espaços](spaces.md).
+
 ---
 
 ## Mapa de relacionamentos
 
 ```
+nte007_space ──< nte001_page (space_id)                toda page em exatamente um espaço
 nte001_page ──parent_id──┐ (auto-referência, árvore, sem cascade)
      │                   └──> nte001_page
      │

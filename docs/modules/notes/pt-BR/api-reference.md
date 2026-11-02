@@ -30,10 +30,13 @@ token. Recurso de outro usuário devolve **404** (não 403). Os controllers fica
 | Rota | Parâmetro | Padrão | Notas |
 |---|---|---|---|
 | `GET /pages` | `includeArchived` | `false` | |
+| `GET /pages` | `spaceId` | — | Só as pages daquele espaço; sem ele, de todos (o que a resolução de wikilink precisa). |
 | `GET /pages` | `tagIds` | — | Repetível. Várias tags **intersectam**. Com filtro, a sidebar vira lista plana. |
 | `GET /pages/search` | `q` | — | Vazio + `tagIds` lista as pages daquela tag. Teto de 20, ordenado por título. |
 | `GET /pages/search` | `tagIds` | — | Repetível, intersectando. |
+| `GET /pages/search` | `spaceId` | — | Só aquele espaço. |
 | `GET /pages/graph` | `tagIds` | — | Corta os nós. |
+| `GET /pages/graph` | `spaceId` | — | Só as pages daquele espaço. |
 | `GET /pages/{id}/graph` | `depth` | `1` | Clampado em 1..5. |
 | `GET /pages/{id}/graph` | `tagIds` | — | Corta os nós **antes** do passeio pela vizinhança. |
 
@@ -41,9 +44,23 @@ token. Recurso de outro usuário devolve **404** (não 403). Os controllers fica
 
 | Rota | Corpo |
 |---|---|
-| `POST /pages` | `CreatePageRequest { title, parentId?, icon?, contentMarkdown? }` |
+| `POST /pages` | `CreatePageRequest { title, parentId?, icon?, contentMarkdown?, spaceId? }` — uma filha fica no espaço da mãe; sem espaço, o padrão |
 | `PUT /pages/{id}` | `UpdatePageRequest { title, icon?, contentMarkdown }` |
-| `POST /pages/{id}/move` | `MovePageRequest { parentId, orderIndex }` — um move que criaria ciclo é rejeitado |
+| `POST /pages/{id}/move` | `MovePageRequest { parentId, orderIndex, spaceId? }` — um move que criaria ciclo é rejeitado |
+
+## Espaços — `/spaces`
+
+| Método | Rota | Propósito |
+|---|---|---|
+| GET | `/spaces` | Listar (`includeArchived`, padrão `false`), o padrão primeiro, com `pageCount` e `lastEditedAt` |
+| POST | `/spaces` | Criar — o primeiro do usuário vira o padrão |
+| PUT | `/spaces/{id}` | Nome, ícone, cor, descrição |
+| POST | `/spaces/{id}/default` | Tornar padrão (desarquiva se preciso) |
+| POST | `/spaces/{id}/archive` · `/unarchive` | Arquivar / desarquivar — o padrão responde **409** |
+| DELETE | `/spaces/{id}` | Soft-deletar — o padrão ou um espaço com pages responde **409** |
+
+Corpo de POST e PUT: `SaveSpaceRequest { name, icon?, color?, description? }`; nome vazio ou cor que
+não seja `#rrggbb` responde **422**. Ver [Espaços](spaces.md).
 
 ## Tags — `/tags`
 
@@ -74,11 +91,12 @@ não chegam nele — o cliente busca o blob e entrega um object URL. Ver
 
 | DTO | Formato |
 |---|---|
-| `PageSummaryDto` | `Id, ParentId, Title, Slug, Icon, OrderIndex, IsFavorite, IsArchived` |
+| `PageSummaryDto` | `Id, SpaceId, ParentId, Title, Slug, Icon, OrderIndex, IsFavorite, IsArchived` |
 | `PageDto` | Os campos do `PageSummaryDto` + `ContentMarkdown, CreatedAt, UpdatedAt, Tags[]` |
+| `SpaceDto` | `Id, Name, Icon, Color, Description, IsDefault, IsArchived, PageCount, LastEditedAt, CreatedAt` |
 | `PageTagDto` | `Id, Slug, Name, Color` — as tags de uma page, sem contagem |
 | `TagDto` | `PageTagDto` + `PageCount` — uma tag colorida pode ficar em zero |
-| `PageSearchResultDto` | `Id, Title, Slug, Icon, IsArchived, Excerpt` |
+| `PageSearchResultDto` | `Id, SpaceId, Title, Slug, Icon, IsArchived, Excerpt` |
 | `BacklinkDto` | `PageId, Title, Slug, Icon, IsArchived, Kind` |
 | `PageGraphDto` | `Nodes[]`, `Edges[]` |
 | `GraphNodeDto` | `Id, Title, Slug, Icon, IsArchived, Degree` |

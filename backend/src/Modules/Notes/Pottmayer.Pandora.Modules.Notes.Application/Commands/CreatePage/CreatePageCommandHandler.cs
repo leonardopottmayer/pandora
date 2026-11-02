@@ -25,15 +25,29 @@ public sealed class CreatePageCommandHandler(IUnitOfWorkFactory factory, TimePro
         {
             var repo = ctx.AcquireRepository<IPageRepository>();
 
-            // A child page must hang off one the user actually owns (404-on-foreign-resource rule).
-            if (input.ParentId is { } parentId &&
-                await repo.FindByIdForUserAsync(parentId, input.UserId, token) is null)
-                return Result<PageDto>.Failure([PageErrors.ParentNotFound]);
+            // A child page must hang off one the user actually owns (404-on-foreign-resource rule),
+            // and lives in its parent's space whatever space was asked for.
+            Guid spaceId;
+            if (input.ParentId is { } parentId)
+            {
+                var parent = await repo.FindByIdForUserAsync(parentId, input.UserId, token);
+                if (parent is null)
+                    return Result<PageDto>.Failure([PageErrors.ParentNotFound]);
+                spaceId = parent.SpaceId;
+            }
+            else
+            {
+                var space = await SpaceResolver.ResolveAsync(
+                    ctx.AcquireRepository<ISpaceRepository>(), input.UserId, input.SpaceId, timeProvider, token);
+                if (space.IsFailure)
+                    return Result<PageDto>.Failure([.. space.Errors]);
+                spaceId = space.Value!.Id;
+            }
 
             var slug = await ResolveUniqueSlugAsync(repo, input.UserId, Slugger.From(input.Title), token);
 
             var page = Page.Create(
-                input.UserId, input.Title, slug, input.ParentId, input.Icon,
+                input.UserId, spaceId, input.Title, slug, input.ParentId, input.Icon,
                 orderIndex: 0, input.ContentMarkdown ?? string.Empty, timeProvider);
             await repo.AddAsync(page, token);
 

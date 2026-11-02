@@ -23,6 +23,7 @@ Migrations live in `migrations/migrations/notes/`.
 | nte004 | `page_link` | Wiki graph edges, derived from the body |
 | nte005 | `tag` | User labels, born from the body |
 | nte006 | `page_tag` | Page ↔ tag edges, derived from the body |
+| nte007 | `space` | Spaces grouping the pages |
 
 > The numbering is creation order, not the order the tables reference each other: `nte003` was
 > created before `nte002` because the blob store had to exist before the metadata pointing at it.
@@ -35,6 +36,7 @@ Migrations live in `migrations/migrations/notes/`.
 |---|---|---|
 | `id` | uuid PK | |
 | `user_id` | uuid NOT NULL | owner |
+| `space_id` | uuid NOT NULL → nte007 | the space the page lives in; a child always shares its parent's |
 | `parent_id` | uuid NULL → nte001 | the sidebar tree; `NULL` is a root |
 | `title` | varchar(255) NOT NULL | |
 | `slug` | varchar(100) NOT NULL | derived from the title at creation, then frozen |
@@ -53,7 +55,8 @@ Constraints and indexes:
   command soft-deletes the whole subtree itself (see [D5](architecture.md#3-key-design-decisions)).
 - `uq_nte001_user_slug (user_id, slug) WHERE deleted_at IS NULL` — a **partial** unique index, so a
   soft-deleted page frees its slug for reuse.
-- `ix_nte001_user_id`, `ix_nte001_parent_id`.
+- `ix_nte001_user_id`, `ix_nte001_parent_id`, `ix_nte001_space_id`.
+- `fk_nte001_space (space_id → nte007.id)` — declared by the nte007 migration, which runs after nte001's.
 - `ix_nte001_search_vector` — **GIN** over the generated column.
 
 The vector uses the `simple` configuration (lower-casing only, no stemming, no language guess),
@@ -141,11 +144,30 @@ it is deleted when the last page stops mentioning it, **unless it carries a colo
   property. Without it, the orphan sweep — which deletes a tag and its edges in the same transaction
   — emitted the tag's `DELETE` first and hit the constraint. An integration test caught it.
 
+## nte007_space
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `user_id` | uuid NOT NULL | owner |
+| `name` | varchar(100) NOT NULL | |
+| `icon` | varchar(50) NULL | one emoji grapheme |
+| `color` | varchar(20) NULL | hex `#rrggbb`, validated in the handler |
+| `description` | varchar(500) NULL | |
+| `is_default` | boolean NOT NULL DEFAULT false | where a page with no space named goes |
+| `archived_at` | timestamptz NULL | hidden from the list; its pages stay reachable |
+| `deleted_at` | timestamptz NULL | soft delete, only of an empty space |
+| audit | `created_by/at`, `updated_by/at` | |
+
+- `uq_nte007_user_default (user_id) WHERE is_default AND deleted_at IS NULL` — one default per user.
+- `ix_nte007_user_id`. See [Spaces](spaces.md).
+
 ---
 
 ## Relationship map
 
 ```
+nte007_space ──< nte001_page (space_id)                every page in exactly one space
 nte001_page ──parent_id──┐ (self, tree, no cascade)
      │                   └──> nte001_page
      │

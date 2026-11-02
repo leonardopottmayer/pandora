@@ -4,6 +4,7 @@
 /** Lightweight node for the sidebar tree — no markdown body. */
 export interface PageSummaryDto {
   id: string
+  spaceId: string
   parentId: string | null
   title: string
   slug: string
@@ -16,6 +17,7 @@ export interface PageSummaryDto {
 /** Full view of a page, including its markdown body. */
 export interface PageDto {
   id: string
+  spaceId: string
   parentId: string | null
   title: string
   slug: string
@@ -45,6 +47,8 @@ export interface TagDto extends PageTagDto {
 
 export interface CreatePageRequest {
   title: string
+  /** Ignored for a child, which lives in its parent's space; without it, the default space. */
+  spaceId?: string | null
   parentId?: string | null
   icon?: string | null
   contentMarkdown?: string | null
@@ -59,6 +63,29 @@ export interface UpdatePageRequest {
 export interface MovePageRequest {
   parentId: string | null
   orderIndex: number
+  /** With no parent, the space the page goes to the top of. The subtree comes along. */
+  spaceId?: string | null
+}
+
+/** A group of pages, like a Confluence space. The default one takes pages nobody placed. */
+export interface SpaceDto {
+  id: string
+  name: string
+  icon: string | null
+  color: string | null
+  description: string | null
+  isDefault: boolean
+  isArchived: boolean
+  pageCount: number
+  lastEditedAt: string | null
+  createdAt: string
+}
+
+export interface SaveSpaceRequest {
+  name: string
+  icon: string | null
+  color: string | null
+  description: string | null
 }
 
 /** Metadata returned after an upload; `url` is the authenticated download path. */
@@ -85,6 +112,7 @@ export interface BacklinkDto {
 /** One hit of the full-text search; `excerpt` is a plain slice of the body, no highlighting. */
 export interface PageSearchResultDto {
   id: string
+  spaceId: string
   title: string
   slug: string
   icon: string | null

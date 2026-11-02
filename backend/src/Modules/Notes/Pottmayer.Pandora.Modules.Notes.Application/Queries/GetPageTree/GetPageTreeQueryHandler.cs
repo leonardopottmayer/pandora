@@ -24,7 +24,9 @@ public sealed class GetPageTreeQueryHandler(IUnitOfWorkFactory factory)
             var tagged = await TagFilter.MatchingPageIdsAsync(
                 input.TagIds, ctx.AcquireRepository<IPageTagRepository>(), token);
 
-            return tagged is null ? all : [.. all.Where(p => tagged.Contains(p.Id))];
+            return all.Where(p =>
+                (input.SpaceId is null || p.SpaceId == input.SpaceId) &&
+                (tagged is null || tagged.Contains(p.Id))).ToList();
         }, cancellationToken: ct);
 
         IReadOnlyList<PageSummaryDto> dtos = [.. pages.Select(PageSummaryDto.From)];

@@ -17,6 +17,7 @@ não o log das fases.
 |---|---|
 | **Scaffold do módulo** | Todos os projetos por camada, schema `notes`, registrado no Host. Sem jobs, sem eventos de integração, sem event log de auditoria. |
 | **Pages** | Aggregate `Page`, árvore com rejeição de ciclo no reparent, slugs congelados com sufixo em colisão, mover/reordenar, favoritar, arquivar, soft delete da subárvore inteira (`nte001`). |
+| **Espaços** | Aggregate `Space`, um padrão por usuário (criado na hora quando não há), pages num espaço, mover entre espaços levando a subárvore, wikilinks preferindo o próprio espaço, filtro de espaço na árvore / busca / grafo, tela de espaços e seletor na sidebar, `create_note` aceitando espaço (`nte007`). |
 | **Ícone emoji** | Picker ao lado do título, reduzido ao primeiro grafema via `Intl.Segmenter`, salvo pelo autosave da própria page. |
 | **Anexos** | `IFileStorage` + `DatabaseFileStorage`, tabela de blob, upload/download autenticados, colar/arrastar inline no editor, resolução por object URL no preview (`nte002`, `nte003`). |
 | **Editor** | CodeMirror 6, markdown cru + preview + modo split, autosave de 800 ms, sanitização com DOMPurify. |

@@ -4,6 +4,9 @@ import { App, Button, Dropdown, Flex, Switch, Tree, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import type { DataNode } from 'antd/es/tree'
 import {
+  AppstoreOutlined,
+  CheckOutlined,
+  DownOutlined,
   EllipsisOutlined,
   FileTextOutlined,
   PartitionOutlined,
@@ -21,10 +24,15 @@ import {
   useSetPageArchived,
   useSetPageFavorite,
 } from '../hooks/usePages'
+import { useSpaces } from '../hooks/useSpaces'
 import { computeReorder, isSelfOrDescendant } from '../lib/moveMath'
+import { SpaceIcon } from './SpaceIcon'
 import { TagFilter } from './TagFilter'
 
 interface NotesSidebarProps {
+  /** The space whose tree is shown; null shows every space's pages (the graph's "all spaces"). */
+  spaceId: string | null
+  onSpaceChange: (spaceId: string) => void
   selectedId: string | null
   onSelect: (id: string | null) => void
   includeArchived: boolean
@@ -37,6 +45,8 @@ interface NotesSidebarProps {
 }
 
 export function NotesSidebar({
+  spaceId,
+  onSpaceChange,
   selectedId,
   onSelect,
   includeArchived,
@@ -48,7 +58,9 @@ export function NotesSidebar({
   const { t } = useTranslation()
   const { message, modal } = App.useApp()
   const navigate = useNavigate()
-  const { tree, isLoading } = usePageTree(includeArchived, tagIds)
+  const { tree, isLoading } = usePageTree(includeArchived, tagIds, spaceId)
+  const { data: spaces = [] } = useSpaces()
+  const space = spaces.find((candidate) => candidate.id === spaceId)
   // Filtering by tag leaves matching children with no matching parent, so the backend answers with
   // the matches alone and buildTree lays them out flat — which is what "who carries this tag?" asks.
   const isFiltered = tagIds.length > 0
@@ -61,7 +73,7 @@ export function NotesSidebar({
 
   async function handleCreate(parentId: string | null) {
     try {
-      const page = await createMutation.mutateAsync({ title: t('notes.untitled'), parentId })
+      const page = await createMutation.mutateAsync({ title: t('notes.untitled'), parentId, spaceId })
       onSelect(page.id)
     } catch (err) {
       message.error(toErrorMessage(err, t('notes.saveError')))
@@ -102,9 +114,37 @@ export function NotesSidebar({
     })
   }
 
+  // To the top of another space; the subpages come along.
+  async function handleMoveToSpace(node: PageTreeNode, target: string) {
+    try {
+      await reorderMutation.mutateAsync([{ id: node.id, body: { parentId: null, orderIndex: 0, spaceId: target } }])
+    } catch (err) {
+      message.error(toErrorMessage(err, t('notes.actionError')))
+    }
+  }
+
   function nodeMenu(node: PageTreeNode): MenuProps['items'] {
+    const otherSpaces = spaces.filter((candidate) => candidate.id !== node.spaceId)
     return [
       { key: 'new-child', label: t('notes.newChild'), onClick: () => handleCreate(node.id) },
+      ...(otherSpaces.length > 0
+        ? [
+            {
+              key: 'move',
+              label: t('notes.spaces.moveTo'),
+              children: otherSpaces.map((candidate) => ({
+                key: `move-${candidate.id}`,
+                label: (
+                  <span className="flex items-center gap-2">
+                    <SpaceIcon space={candidate} size={18} />
+                    {candidate.name}
+                  </span>
+                ),
+                onClick: () => handleMoveToSpace(node, candidate.id),
+              })),
+            },
+          ]
+        : []),
       {
         key: 'favorite',
         label: node.isFavorite ? t('notes.unfavorite') : t('notes.favorite'),
@@ -183,8 +223,43 @@ export function NotesSidebar({
 
   return (
     <Flex vertical style={{ height: '100%' }}>
+      <Dropdown
+        trigger={['click']}
+        menu={{
+          items: [
+            ...spaces.map((candidate) => ({
+              key: candidate.id,
+              label: (
+                <span className="flex items-center gap-2">
+                  <SpaceIcon space={candidate} size={20} />
+                  <span className="flex-1 truncate">{candidate.name}</span>
+                  {candidate.id === spaceId && <CheckOutlined />}
+                </span>
+              ),
+              onClick: () => onSpaceChange(candidate.id),
+            })),
+            { type: 'divider' as const },
+            { key: 'all', icon: <AppstoreOutlined />, label: t('notes.spaces.all'), onClick: () => navigate('/notes') },
+          ],
+        }}
+      >
+        <button
+          type="button"
+          className="mb-2 flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-[var(--ant-color-fill-tertiary)]"
+          aria-label={t('notes.spaces.switch')}
+        >
+          {space ? <SpaceIcon space={space} size={28} /> : <AppstoreOutlined className="text-lg" />}
+          <Typography.Text strong className="flex-1 truncate">
+            {space?.name ?? t('notes.spaces.all')}
+          </Typography.Text>
+          <DownOutlined className="text-xs opacity-60" />
+        </button>
+      </Dropdown>
+
       <Flex align="center" justify="space-between" className="mb-2 px-2">
-        <Typography.Text strong>{t('nav.notes')}</Typography.Text>
+        <Typography.Text type="secondary" className="text-xs font-semibold uppercase tracking-wider">
+          {t('notes.pagesTitle')}
+        </Typography.Text>
         <Flex align="center" gap={2}>
           <Button
             type="text"
@@ -205,6 +280,7 @@ export function NotesSidebar({
             size="small"
             icon={<PlusOutlined />}
             title={t('notes.newPage')}
+            aria-label={t('notes.newPage')}
             onClick={() => handleCreate(null)}
           />
         </Flex>

@@ -25,17 +25,40 @@ public sealed class MovePageCommandHandler(IUnitOfWorkFactory factory)
             if (page is null)
                 return Result<PageDto>.Failure([PageErrors.NotFound]);
 
+            var spaceId = page.SpaceId;
             if (input.ParentId is { } parentId)
             {
-                if (await repo.FindByIdForUserAsync(parentId, input.UserId, token) is null)
+                var parent = await repo.FindByIdForUserAsync(parentId, input.UserId, token);
+                if (parent is null)
                     return Result<PageDto>.Failure([PageErrors.ParentNotFound]);
 
                 var parents = await repo.GetParentMapForUserAsync(input.UserId, token);
                 if (PageHierarchy.WouldCreateCycle(page.Id, parentId, parents))
                     return Result<PageDto>.Failure([PageErrors.CycleDetected]);
+
+                spaceId = parent.SpaceId;
+            }
+            else if (input.SpaceId is { } targetSpaceId)
+            {
+                if (await ctx.AcquireRepository<ISpaceRepository>().FindByIdForUserAsync(targetSpaceId, input.UserId, token) is null)
+                    return Result<PageDto>.Failure([SpaceErrors.NotFound]);
+                spaceId = targetSpaceId;
             }
 
             page.Move(input.ParentId, input.OrderIndex);
+
+            // A page never sits in a different space from its parent, so its descendants come along.
+            if (spaceId != page.SpaceId)
+            {
+                var all = await repo.GetTreeForUserAsync(input.UserId, includeArchived: true, token);
+                foreach (var descendant in PageHierarchy.Subtree(page.Id, all).Where(p => p.Id != page.Id))
+                {
+                    descendant.MoveToSpace(spaceId);
+                    await repo.UpdateAsync(descendant, token);
+                }
+                page.MoveToSpace(spaceId);
+            }
+
             await repo.UpdateAsync(page, token);
 
             // The tags did not change here, but the page view carries them.

@@ -4,4 +4,5 @@ public sealed record CreatePageRequest(
     string Title,
     Guid? ParentId,
     string? Icon,
-    string? ContentMarkdown);
+    string? ContentMarkdown,
+    Guid? SpaceId = null);

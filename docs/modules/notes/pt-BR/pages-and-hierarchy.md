@@ -70,11 +70,11 @@ delete da história que o soft delete existe para preservar.
 |---|---|---|
 | `CreatePage` | Command | Resolve um slug único; parseia o corpo em busca de links e tags (uma page pode nascer com conteúdo). |
 | `UpdatePage` | Command | Título + ícone + corpo — o caminho do autosave. Reconstrói arestas e tags. |
-| `MovePage` | Command | Reparent + reorder, rejeitando ciclos. |
+| `MovePage` | Command | Reparent + reorder, rejeitando ciclos. Mudar de espaço leva a subárvore junto ([Espaços](spaces.md)). |
 | `SetPageFavorite` / `SetPageArchived` | Commands | Duas rotas cada (`/favorite` ↔ `/unfavorite`, `/archive` ↔ `/unarchive`) sobre um comando com flag. |
 | `DeletePage` | Command | O passeio pela subárvore acima. |
 | `GetPage` | Query | `PageDto` completo, com o corpo e as tags da page. |
-| `GetPageTree` | Query | Lista plana de `PageSummaryDto` (sem corpo), filtrada por `includeArchived` e `tagIds`. |
+| `GetPageTree` | Query | Lista plana de `PageSummaryDto` (sem corpo), filtrada por `includeArchived`, `tagIds` e `spaceId`. |
 
 O `PageDto` carrega as tags da page. No caminho de save elas vêm direto do `PageTagSynchronizer`, que
 acabou de escrevê-las; nos caminhos de leitura que não tocaram no corpo (abrir, mover, favoritar,

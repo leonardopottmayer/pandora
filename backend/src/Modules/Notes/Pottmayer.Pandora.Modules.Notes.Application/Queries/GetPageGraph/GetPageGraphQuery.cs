@@ -7,10 +7,10 @@ namespace Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPageGraph;
 /// <paramref name="RootPageId"/> null asks for the whole graph; set, it asks for the neighborhood of
 /// that page within <paramref name="Depth"/> hops (the local graph). <paramref name="TagIds"/> cuts
 /// the nodes down to the pages carrying all of them — before the neighborhood walk, so the depth is
-/// counted over what is left.
+/// counted over what is left. <paramref name="SpaceId"/> keeps one space's pages, the same way.
 /// </summary>
 public sealed record GetPageGraphInput(
-    Guid UserId, Guid? RootPageId, int Depth, IReadOnlyCollection<Guid>? TagIds = null);
+    Guid UserId, Guid? RootPageId, int Depth, IReadOnlyCollection<Guid>? TagIds = null, Guid? SpaceId = null);
 
 public sealed class GetPageGraphQuery(GetPageGraphInput input)
     : QueryBase<GetPageGraphInput, PageGraphDto>(input);

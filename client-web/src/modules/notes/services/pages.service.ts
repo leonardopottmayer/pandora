@@ -12,12 +12,14 @@ import type {
 
 const BASE = '/api/v1/notes/pages'
 
+/** The user's pages, one space's when `spaceId` is set, every space's otherwise. */
 export async function listPages(
   includeArchived = false,
   tagIds: string[] = [],
+  spaceId: string | null = null,
 ): Promise<PageSummaryDto[]> {
   const { data } = await apiClient.get<PageSummaryDto[]>(BASE, {
-    params: { includeArchived, tagIds },
+    params: { includeArchived, tagIds, spaceId: spaceId ?? undefined },
     paramsSerializer: { indexes: null },
   })
   return data
@@ -36,18 +38,19 @@ export async function getBacklinks(id: string): Promise<BacklinkDto[]> {
 export async function searchPages(
   term: string,
   tagIds: string[] = [],
+  spaceId: string | null = null,
 ): Promise<PageSearchResultDto[]> {
   const { data } = await apiClient.get<PageSearchResultDto[]>(`${BASE}/search`, {
-    params: { q: term, tagIds },
+    params: { q: term, tagIds, spaceId: spaceId ?? undefined },
     paramsSerializer: { indexes: null },
   })
   return data
 }
 
-/** The whole wiki graph of the user, cut down to the pages carrying every tag in `tagIds`. */
-export async function getGraph(tagIds: string[] = []): Promise<PageGraphDto> {
+/** The whole wiki graph of the user, cut down to one space and to the pages carrying every tag in `tagIds`. */
+export async function getGraph(tagIds: string[] = [], spaceId: string | null = null): Promise<PageGraphDto> {
   const { data } = await apiClient.get<PageGraphDto>(`${BASE}/graph`, {
-    params: { tagIds },
+    params: { tagIds, spaceId: spaceId ?? undefined },
     paramsSerializer: { indexes: null },
   })
   return data

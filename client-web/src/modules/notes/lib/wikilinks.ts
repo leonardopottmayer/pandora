@@ -23,14 +23,18 @@ export function slugify(title: string): string {
   return slug.length === 0 ? 'untitled' : slug
 }
 
-export function buildPageIndex(pages: PageSummaryDto[]): PageIndex {
+export function buildPageIndex(pages: PageSummaryDto[], preferSpaceId: string | null = null): PageIndex {
   const index: PageIndex = new Map()
-  // Slugs are unique; titles are not, so the first page wins — same as the backend's resolution.
-  for (const page of pages) if (!index.has(page.slug)) index.set(page.slug, page)
-  for (const page of pages) {
+  // Same order as the backend's resolution: titles before slugs, and among pages sharing a title,
+  // the one in the linking page's own space. The first entry for a key wins.
+  const ordered = preferSpaceId
+    ? [...pages].sort((a, b) => Number(b.spaceId === preferSpaceId) - Number(a.spaceId === preferSpaceId))
+    : pages
+  for (const page of ordered) {
     const title = page.title.trim().toLowerCase()
     if (!index.has(title)) index.set(title, page)
   }
+  for (const page of ordered) if (!index.has(page.slug)) index.set(page.slug, page)
   return index
 }
 

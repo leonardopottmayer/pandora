@@ -72,8 +72,20 @@ public sealed class PageRepository(IDataContextAccessor accessor)
             .ToListAsync(ct);
     }
 
+    public async Task<IReadOnlyDictionary<Guid, SpacePageStats>> GetSpaceStatsAsync(
+        Guid userId, CancellationToken ct = default)
+    {
+        var rows = await Queryable()
+            .Where(p => p.UserId == userId && p.DeletedAt == null)
+            .GroupBy(p => p.SpaceId)
+            .Select(g => new { g.Key, Count = g.Count(), Last = g.Max(p => p.UpdatedAt ?? p.CreatedAt) })
+            .ToListAsync(ct);
+
+        return rows.ToDictionary(r => r.Key, r => new SpacePageStats(r.Count, r.Last));
+    }
+
     public async Task<IReadOnlyList<Page>> SearchAsync(
-        Guid userId, string tsQuery, int limit, CancellationToken ct = default)
+        Guid userId, string tsQuery, int limit, Guid? spaceId = null, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(tsQuery))
             return [];
@@ -84,6 +96,7 @@ public sealed class PageRepository(IDataContextAccessor accessor)
         // mentions it.
         return await Queryable()
             .Where(p => p.UserId == userId && p.DeletedAt == null &&
+                        (spaceId == null || p.SpaceId == spaceId) &&
                         EF.Property<NpgsqlTsVector>(p, PageColumns.SearchVector)
                           .Matches(EF.Functions.ToTsQuery("simple", tsQuery)))
             .OrderByDescending(p => EF.Functions.ToTsVector("simple", p.Title).Matches(EF.Functions.ToTsQuery("simple", tsQuery)))

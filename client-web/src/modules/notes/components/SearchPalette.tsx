@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Empty, Flex, Input, Modal, Spin, Typography, theme } from 'antd'
+import { Empty, Flex, Input, Modal, Segmented, Spin, Typography, theme } from 'antd'
 import { FileTextOutlined, SearchOutlined } from '@ant-design/icons'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { useSearchPages } from '../hooks/usePages'
+import { useSpaces } from '../hooks/useSpaces'
+import { SpaceIcon } from './SpaceIcon'
 import { TagFilter } from './TagFilter'
 
 interface SearchPaletteProps {
@@ -12,6 +14,8 @@ interface SearchPaletteProps {
   onOpenChange: (open: boolean) => void
   /** Opens the chosen page. */
   onSelect: (id: string) => void
+  /** The space on screen: the search starts there, and can widen to every space. */
+  spaceId?: string | null
 }
 
 /**
@@ -19,16 +23,23 @@ interface SearchPaletteProps {
  * keyboard end to end — type, arrow through the hits, Enter to open, Esc to close. The shortcut
  * lives here; whether the palette is open is the page's state, so the sidebar can raise it too.
  */
-export function SearchPalette({ open, onOpenChange, onSelect }: SearchPaletteProps) {
+export function SearchPalette({ open, onOpenChange, onSelect, spaceId = null }: SearchPaletteProps) {
   const { t } = useTranslation()
   const { token } = theme.useToken()
 
   const [term, setTerm] = useState('')
   const [tagIds, setTagIds] = useState<string[]>([])
   const [activeIndex, setActiveIndex] = useState(0)
+  const [everySpace, setEverySpace] = useState(false)
+  const { data: spaces = [] } = useSpaces(true)
+  const spaceOf = new Map(spaces.map((space) => [space.id, space]))
 
   const debouncedTerm = useDebouncedValue(term)
-  const { data: results = [], isFetching } = useSearchPages(debouncedTerm, tagIds)
+  const { data: results = [], isFetching } = useSearchPages(
+    debouncedTerm,
+    tagIds,
+    everySpace ? null : spaceId,
+  )
 
   // Capture phase: the editor below has its own key handling, and the palette wins over it.
   useEffect(() => {
@@ -50,6 +61,7 @@ export function SearchPalette({ open, onOpenChange, onSelect }: SearchPalettePro
     setTerm('')
     setTagIds([])
     setActiveIndex(0)
+    setEverySpace(false)
   }
 
   function choose(id: string) {
@@ -96,8 +108,24 @@ export function SearchPalette({ open, onOpenChange, onSelect }: SearchPalettePro
         style={{ borderBottom: `1px solid ${token.colorBorderSecondary}`, borderRadius: 0 }}
       />
 
-      <div style={{ padding: 8, borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
-        <TagFilter value={tagIds} onChange={setTagIds} placeholder={t('notes.searchByTag')} />
+      <div
+        className="flex flex-wrap items-center gap-2"
+        style={{ padding: 8, borderBottom: `1px solid ${token.colorBorderSecondary}` }}
+      >
+        <div className="min-w-48 flex-1">
+          <TagFilter value={tagIds} onChange={setTagIds} placeholder={t('notes.searchByTag')} />
+        </div>
+        {spaceId && (
+          <Segmented
+            size="small"
+            value={everySpace ? 'all' : 'here'}
+            onChange={(value) => setEverySpace(value === 'all')}
+            options={[
+              { value: 'here', label: t('notes.spaces.thisSpace') },
+              { value: 'all', label: t('notes.spaces.all') },
+            ]}
+          />
+        )}
       </div>
 
       <div style={{ maxHeight: 360, overflowY: 'auto', padding: 4 }}>
@@ -127,9 +155,16 @@ export function SearchPalette({ open, onOpenChange, onSelect }: SearchPalettePro
             >
               <Flex align="center" gap={8}>
                 {result.icon ? <span>{result.icon}</span> : <FileTextOutlined />}
-                <Typography.Text strong ellipsis>
+                <Typography.Text strong ellipsis className="flex-1">
                   {result.title || t('notes.untitled')}
                 </Typography.Text>
+                {/* Which space a hit is in only matters once the search spans them. */}
+                {(everySpace || !spaceId) && spaceOf.get(result.spaceId) && (
+                  <span className="flex shrink-0 items-center gap-1 text-xs" style={{ color: token.colorTextTertiary }}>
+                    <SpaceIcon space={spaceOf.get(result.spaceId)!} size={16} />
+                    {spaceOf.get(result.spaceId)!.name}
+                  </span>
+                )}
               </Flex>
               {result.excerpt && (
                 <Typography.Paragraph

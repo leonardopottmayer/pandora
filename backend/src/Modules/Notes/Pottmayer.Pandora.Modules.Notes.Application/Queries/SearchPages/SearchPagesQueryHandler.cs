@@ -43,21 +43,22 @@ public sealed class SearchPagesQueryHandler(IUnitOfWorkFactory factory)
             // Tags alone: the hits are that tag's pages, by title, capped like any other search.
             if (tsQuery.Length == 0)
                 return (await repo.GetByIdsForUserAsync([.. tagged!], input.UserId, token))
+                    .Where(p => input.SpaceId is null || p.SpaceId == input.SpaceId)
                     .Take(ResultLimit).ToList();
 
             if (tagged is null)
-                return [.. await repo.SearchAsync(input.UserId, tsQuery, ResultLimit, token)];
+                return [.. await repo.SearchAsync(input.UserId, tsQuery, ResultLimit, input.SpaceId, token)];
 
             // The tag cut happens after the search, so the cap has to be raised before it: capping
             // first would let a page that matches both fall outside the window and vanish.
-            var hits = await repo.SearchAsync(input.UserId, tsQuery, ResultLimit * TagFilterSlack, token);
+            var hits = await repo.SearchAsync(input.UserId, tsQuery, ResultLimit * TagFilterSlack, input.SpaceId, token);
             return hits.Where(p => tagged.Contains(p.Id)).Take(ResultLimit).ToList();
         }, cancellationToken: ct);
 
         IReadOnlyList<PageSearchResultDto> results =
         [
             .. pages.Select(p => new PageSearchResultDto(
-                p.Id, p.Title, p.Slug, p.Icon, p.IsArchived,
+                p.Id, p.SpaceId, p.Title, p.Slug, p.Icon, p.IsArchived,
                 PageSearch.Excerpt(p.ContentMarkdown, input.Term)))
         ];
 

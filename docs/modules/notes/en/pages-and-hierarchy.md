@@ -71,11 +71,11 @@ hard delete of the history the soft delete exists to keep.
 |---|---|---|
 | `CreatePage` | Command | Resolves a unique slug; parses the body for links and tags (a page can be born with content). |
 | `UpdatePage` | Command | Title + icon + body — the autosave path. Rebuilds edges and tags. |
-| `MovePage` | Command | Reparent + reorder, rejecting cycles. |
+| `MovePage` | Command | Reparent + reorder, rejecting cycles. Changing space takes the subtree along ([Spaces](spaces.md)). |
 | `SetPageFavorite` / `SetPageArchived` | Commands | Two routes each (`/favorite` ↔ `/unfavorite`, `/archive` ↔ `/unarchive`) over one flag-carrying command. |
 | `DeletePage` | Command | The subtree walk above. |
 | `GetPage` | Query | Full `PageDto` including the body and the page's tags. |
-| `GetPageTree` | Query | Flat `PageSummaryDto` list (no body), filtered by `includeArchived` and `tagIds`. |
+| `GetPageTree` | Query | Flat `PageSummaryDto` list (no body), filtered by `includeArchived`, `tagIds` and `spaceId`. |
 
 `PageDto` carries the page's tags. On the save path they come straight from `PageTagSynchronizer`,
 which just wrote them; on the read paths that never touched the body (open, move, favorite, archive)

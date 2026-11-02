@@ -164,6 +164,7 @@ const pages: PageSummaryDto[] = [
     orderIndex: 0,
     isFavorite: false,
     isArchived: false,
+    spaceId: 's1',
   },
 ]
 const wikilinks = wikilinkSource(() => pages)

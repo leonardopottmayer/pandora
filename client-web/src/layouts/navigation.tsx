@@ -89,7 +89,7 @@ export const navigationModules: NavModule[] = [
     labelKey: 'nav.notes',
     icon: <BookOutlined />,
     screens: [
-      { key: 'notes-pages', labelKey: 'nav.notesPages', path: '/notes', icon: <FileTextOutlined /> },
+      { key: 'notes-spaces', labelKey: 'nav.notesSpaces', path: '/notes', icon: <FileTextOutlined /> },
     ],
   },
   {

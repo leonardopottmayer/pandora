@@ -30,11 +30,11 @@ public sealed class NoteAssistantToolsTests
     private static JsonElement Args(string json) => JsonDocument.Parse(json).RootElement.Clone();
 
     private static PageDto Page(string title, string content) =>
-        new(Guid.NewGuid(), null, title, "slug", content, "💡", 0, false, false, DateTimeOffset.UtcNow, null, []);
+        new(Guid.NewGuid(), Guid.NewGuid(), null, title, "slug", content, "💡", 0, false, false, DateTimeOffset.UtcNow, null, []);
 
     private static ScriptedSender Sending(PageDto page, params PageDto[] others) => new(
         Result<IReadOnlyList<PageSummaryDto>>.Success(
-            [.. others.Prepend(page).Select(p => new PageSummaryDto(p.Id, null, p.Title, p.Slug, p.Icon, 0, false, false))]),
+            [.. others.Prepend(page).Select(p => new PageSummaryDto(p.Id, p.SpaceId, null, p.Title, p.Slug, p.Icon, 0, false, false))]),
         Result<PageDto>.Success(page));
 
     [Fact]

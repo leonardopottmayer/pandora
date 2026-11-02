@@ -36,10 +36,11 @@ public sealed class PagesController(
     public async Task<IActionResult> ListAsync(
         [FromQuery] bool includeArchived = false,
         [FromQuery] Guid[]? tagIds = null,
+        [FromQuery] Guid? spaceId = null,
         CancellationToken ct = default)
     {
         var result = await sender.Send(
-            new GetPageTreeQuery(new GetPageTreeInput(UserId, includeArchived, tagIds)), ct);
+            new GetPageTreeQuery(new GetPageTreeInput(UserId, includeArchived, tagIds, spaceId)), ct);
         return result.ToActionResult(errorMapper);
     }
 
@@ -47,17 +48,21 @@ public sealed class PagesController(
     public async Task<IActionResult> SearchAsync(
         [FromQuery] string? q,
         [FromQuery] Guid[]? tagIds = null,
+        [FromQuery] Guid? spaceId = null,
         CancellationToken ct = default)
     {
-        var result = await sender.Send(new SearchPagesQuery(new SearchPagesInput(UserId, q, tagIds)), ct);
+        var result = await sender.Send(new SearchPagesQuery(new SearchPagesInput(UserId, q, tagIds, spaceId)), ct);
         return result.ToActionResult(errorMapper);
     }
 
     [HttpGet("graph")]
-    public async Task<IActionResult> GraphAsync([FromQuery] Guid[]? tagIds = null, CancellationToken ct = default)
+    public async Task<IActionResult> GraphAsync(
+        [FromQuery] Guid[]? tagIds = null,
+        [FromQuery] Guid? spaceId = null,
+        CancellationToken ct = default)
     {
         var result = await sender.Send(
-            new GetPageGraphQuery(new GetPageGraphInput(UserId, RootPageId: null, Depth: 1, tagIds)), ct);
+            new GetPageGraphQuery(new GetPageGraphInput(UserId, RootPageId: null, Depth: 1, tagIds, spaceId)), ct);
         return result.ToActionResult(errorMapper);
     }
 
@@ -90,7 +95,7 @@ public sealed class PagesController(
     public async Task<IActionResult> CreateAsync(CreatePageRequest request, CancellationToken ct)
     {
         var command = new CreatePageCommand(new CreatePageInput(
-            UserId, request.Title, request.ParentId, request.Icon, request.ContentMarkdown));
+            UserId, request.Title, request.ParentId, request.Icon, request.ContentMarkdown, request.SpaceId));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
@@ -107,7 +112,7 @@ public sealed class PagesController(
     [HttpPost("{id:guid}/move")]
     public async Task<IActionResult> MoveAsync(Guid id, MovePageRequest request, CancellationToken ct)
     {
-        var command = new MovePageCommand(new MovePageInput(UserId, id, request.ParentId, request.OrderIndex));
+        var command = new MovePageCommand(new MovePageInput(UserId, id, request.ParentId, request.OrderIndex, request.SpaceId));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }

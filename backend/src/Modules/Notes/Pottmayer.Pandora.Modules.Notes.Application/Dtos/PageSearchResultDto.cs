@@ -6,6 +6,7 @@ namespace Pottmayer.Pandora.Modules.Notes.Application.Dtos;
 /// </summary>
 public sealed record PageSearchResultDto(
     Guid Id,
+    Guid SpaceId,
     string Title,
     string Slug,
     string? Icon,

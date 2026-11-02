@@ -12,8 +12,10 @@ import { MarkdownPreview } from '../components/MarkdownPreview'
 import { NotesSidebar } from '../components/NotesSidebar'
 import { PageIconPicker } from '../components/PageIconPicker'
 import { SearchPalette } from '../components/SearchPalette'
+import { SpaceOverview } from '../components/SpaceOverview'
 import { useAutosave } from '../hooks/useAutosave'
 import { useCreatePage, usePage, usePageTree, useUpdatePage } from '../hooks/usePages'
+import { useSpaces } from '../hooks/useSpaces'
 import { useTags } from '../hooks/useTags'
 import { buildPageIndex } from '../lib/wikilinks'
 import { uploadAttachment } from '../services/attachments.service'
@@ -36,7 +38,7 @@ export function NotesPage() {
   const { token } = theme.useToken()
   const { isDark } = usePreferences()
   const navigate = useNavigate()
-  const { id: routeId } = useParams<{ id: string }>()
+  const { id: routeId, spaceId: routeSpaceId } = useParams<{ id: string; spaceId: string }>()
 
   const selectedId = routeId ?? null
   const [includeArchived, setIncludeArchived] = useState(false)
@@ -48,13 +50,18 @@ export function NotesPage() {
   const [draft, setDraft] = useState<PageDraft>({ title: '', icon: null, contentMarkdown: '' })
 
   const { data: page, isLoading } = usePage(selectedId)
+
+  // The space comes from the URL on its own page, and from the open page otherwise.
+  const spaceId = routeSpaceId ?? page?.spaceId ?? null
+  const { data: spaces } = useSpaces(true)
+  const space = spaces?.find((candidate) => candidate.id === spaceId)
   const updateMutation = useUpdatePage()
   const createMutation = useCreatePage()
 
   // Wikilinks resolve against every page, archived included: archiving hides a page from the
   // sidebar but does not break links to it (and the backend resolves it the same way).
   const { data: allPages } = usePageTree(true)
-  const pageIndex = useMemo(() => buildPageIndex(allPages ?? []), [allPages])
+  const pageIndex = useMemo(() => buildPageIndex(allPages ?? [], spaceId), [allPages, spaceId])
 
   // The tags exist module-wide: the preview paints the `#tag` chips with them, and clicking one
   // (in the body or in the header) is what fills the sidebar filter.
@@ -96,7 +103,23 @@ export function NotesPage() {
     else {
       reset()
       setDraftPageId(null)
-      navigate('/notes')
+      navigate(spaceId ? `/notes/s/${spaceId}` : '/notes')
+    }
+  }
+
+  async function handleSpaceChange(id: string) {
+    await flush()
+    reset()
+    setDraftPageId(null)
+    navigate(`/notes/s/${id}`)
+  }
+
+  async function handleCreateInSpace() {
+    try {
+      const created = await createMutation.mutateAsync({ title: t('notes.untitled'), spaceId })
+      await handleSelect(created.id)
+    } catch (err) {
+      message.error(toErrorMessage(err, t('notes.saveError')))
     }
   }
 
@@ -111,7 +134,7 @@ export function NotesPage() {
   // Clicking a `[[link]]` that resolves to nothing: create that page, then open it.
   async function handleCreateFromLink(title: string) {
     try {
-      const created = await createMutation.mutateAsync({ title })
+      const created = await createMutation.mutateAsync({ title, spaceId })
       await handleSelect(created.id)
     } catch (err) {
       message.error(toErrorMessage(err, t('notes.saveError')))
@@ -150,13 +173,15 @@ export function NotesPage() {
 
   return (
     <Flex gap={16} align="stretch" style={{ height: 'calc(100vh - 112px)' }}>
-      <SearchPalette open={searchOpen} onOpenChange={setSearchOpen} onSelect={handleSelect} />
+      <SearchPalette open={searchOpen} onOpenChange={setSearchOpen} onSelect={handleSelect} spaceId={spaceId} />
 
       <Card
         styles={{ body: { padding: 12, height: '100%', overflow: 'hidden' } }}
         style={{ width: SIDEBAR_WIDTH, flexShrink: 0, height: '100%' }}
       >
         <NotesSidebar
+          spaceId={spaceId}
+          onSpaceChange={handleSpaceChange}
           selectedId={selectedId}
           onSelect={handleSelect}
           includeArchived={includeArchived}
@@ -171,7 +196,9 @@ export function NotesPage() {
         styles={{ body: { padding: 0, height: '100%', display: 'flex', flexDirection: 'column' } }}
         style={{ flex: 1, height: '100%', overflow: 'hidden' }}
       >
-        {!selectedId ? (
+        {!selectedId && space ? (
+          <SpaceOverview space={space} onOpenPage={handleSelect} onCreatePage={handleCreateInSpace} />
+        ) : !selectedId ? (
           <Flex align="center" justify="center" style={{ height: '100%' }}>
             <Empty description={t('notes.noSelection')} />
           </Flex>
