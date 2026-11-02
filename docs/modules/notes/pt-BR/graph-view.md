@@ -87,3 +87,29 @@ mantém sua apresentação.
 
 Isso implementa por tags a ideia registrada em 2026-11-02. Comunidades automáticas e regiões
 sobrepostas continuam como ideias futuras.
+
+## 7. Localizar uma nota
+
+O seletor **Localizar nota no grafo** do grafo global busca títulos entre os vértices carregados,
+ignorando maiúsculas e acentos. Os filtros de espaço e tags também limitam os resultados.
+Selecionar um resultado centraliza a câmera nesse vértice no zoom 2 e destaca suas conexões
+imediatas sem sair do mapa ou esconder outros vértices. O título selecionado permanece visível.
+O hover destaca temporariamente outra vizinhança; ao sair do vértice, volta o destaque da busca.
+Limpar o seletor remove o destaque persistente e mantém a posição da câmera.
+Mudar os filtros de espaço ou tags limpa a seleção. Clicar num vértice continua abrindo a página.
+É uma navegação local sobre o payload do grafo, separada da busca textual de páginas.
+
+## 8. Ideias de melhorias (2026-11-02)
+
+São ideias, sem compromisso de implementação. A busca por título acima é o primeiro item entregue.
+
+- **Painel de detalhes:** selecionar um vértice para ver título, tags, famílias e conexões, com uma
+  ação explícita para abrir a página. Mudaria o comportamento atual de abrir ao clicar.
+- **Recolher famílias:** substituir uma região por um vértice como "Trabalho · 25 notas" e expandir depois.
+- **Controles de navegação:** botões visíveis de aumentar/diminuir zoom e enquadrar tudo, úteis no celular.
+- **Filtros de visibilidade:** ocultar arquivadas e vértices isolados separadamente; o toggle atual de
+  arquivadas afeta apenas a sidebar.
+- **Ligações entre famílias:** resumir pontes e contagens de links entre regiões temáticas.
+- **Depois:** fixar posições dos vértices, lembrar o enquadramento e explorar comunidades automáticas.
+
+Próxima prioridade sugerida: painel de detalhes; depois, recolher famílias quando o grafo crescer.

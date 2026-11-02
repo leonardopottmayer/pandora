@@ -1045,6 +1045,10 @@
     "graphDepth": "Depth",
     "openGraph": "Open the graph view",
     "graphEmpty": "No pages to draw yet.",
+    "graphSearch": {
+      "placeholder": "Locate a note in the graph",
+      "empty": "No matching notes in this graph."
+    },
     "graphGroups": {
       "show": "Show groups",
       "configure": "Configure families",

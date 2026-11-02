@@ -4,20 +4,63 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '@/test/utils'
 import { NotesGraphPage } from './NotesGraphPage'
 import { graphPreferencesKey } from '../hooks/useGraphPreferences'
+import type { PageGraphDto } from '../models'
+
+const fixture: PageGraphDto = {
+  nodes: [
+    { id: 'p1', title: 'Reunião de trabalho', slug: 'meeting', icon: null, isArchived: false, degree: 0, tagIds: [] },
+    { id: 'p2', title: 'Receitas', slug: 'recipes', icon: null, isArchived: false, degree: 0, tagIds: [] },
+  ],
+  edges: [],
+}
+const graphQuery = vi.hoisted(() => vi.fn())
 
 vi.mock('@/modules/identity/context/auth-context', () => ({ useAuth: () => ({ user: { id: 'graph-user' } }) }))
 vi.mock('../hooks/useSpaces', () => ({ useSpaces: () => ({ data: [] }) }))
 vi.mock('../hooks/useTags', () => ({ useTags: () => ({ tags: [] }) }))
-vi.mock('../hooks/usePages', () => ({ useGraph: () => ({ data: { nodes: [{ id: 'p1' }], edges: [] }, isLoading: false }) }))
+vi.mock('../hooks/usePages', () => ({ useGraph: () => graphQuery() }))
 vi.mock('../components/NotesSidebar', () => ({ NotesSidebar: () => null }))
 vi.mock('../components/SearchPalette', () => ({ SearchPalette: () => null }))
 vi.mock('../components/TagFilter', () => ({ TagFilter: () => null }))
-vi.mock('../components/GraphView', () => ({ GraphView: ({ families }: { families?: unknown[] }) =>
-  <div data-testid="graph-mode">{families ? 'grouped' : 'free'}</div> }))
+vi.mock('../components/GraphView', () => ({ GraphView: ({ families, focusedId }: { families?: unknown[]; focusedId?: string }) =>
+  <div><div data-testid="graph-mode">{families ? 'grouped' : 'free'}</div><div data-testid="focused-node">{focusedId}</div></div> }))
 
-beforeEach(() => localStorage.clear())
+beforeEach(() => {
+  localStorage.clear()
+  graphQuery.mockReturnValue({ data: fixture, isLoading: false })
+})
 
 describe('NotesGraphPage', () => {
+  it('locates a title ignoring accents and case, and clears the persistent selection', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<NotesGraphPage />)
+    const search = screen.getByRole('combobox', { name: 'Locate a note in the graph' })
+    await user.type(search, 'REUNIAO')
+    await user.click(await screen.findByText('Reunião de trabalho'))
+    expect(screen.getByTestId('focused-node')).toHaveTextContent('p1')
+    await user.click(screen.getByRole('img', { name: 'close-circle' }))
+    expect(screen.getByTestId('focused-node')).toBeEmptyDOMElement()
+  })
+
+  it('reports when no visible title matches', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<NotesGraphPage />)
+    await user.type(screen.getByRole('combobox', { name: 'Locate a note in the graph' }), 'missing')
+    expect(await screen.findByText('No matching notes in this graph.')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Locate a note in the graph' })).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('drops the highlight when the selected node is absent from the returned graph', async () => {
+    const user = userEvent.setup()
+    const view = renderWithProviders(<NotesGraphPage />)
+    await user.type(screen.getByRole('combobox', { name: 'Locate a note in the graph' }), 'Receitas')
+    await user.click(await screen.findByText('Receitas'))
+    expect(screen.getByTestId('focused-node')).toHaveTextContent('p2')
+    graphQuery.mockReturnValue({ data: { nodes: [fixture.nodes[0]], edges: [] }, isLoading: false })
+    view.rerender(<NotesGraphPage />)
+    expect(screen.getByTestId('focused-node')).toBeEmptyDOMElement()
+  })
+
   it('starts in free mode and remembers both switching on and switching off across visits', async () => {
     const user = userEvent.setup()
     const first = renderWithProviders(<NotesGraphPage />)

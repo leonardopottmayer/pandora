@@ -1045,6 +1045,10 @@
     "graphDepth": "Profundidade",
     "openGraph": "Abrir a visão em grafo",
     "graphEmpty": "Nenhuma página para desenhar ainda.",
+    "graphSearch": {
+      "placeholder": "Localizar nota no grafo",
+      "empty": "Nenhuma nota correspondente neste grafo."
+    },
     "graphGroups": {
       "show": "Mostrar grupos",
       "configure": "Configurar famílias",

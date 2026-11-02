@@ -37,6 +37,7 @@ não o log das fases.
 | Área | Status |
 |---|---|
 | **Filtros de tag na URL** | Não implementado. Os filtros são estado de componente, então "as pages com #x" não é um link compartilhável. O lugar seria um search param na `NotesPage`. |
+| **Ideias de navegação no grafo** | Painel de detalhes, famílias recolhidas, controles de zoom, filtros de visibilidade, pontes entre famílias e, depois, persistência do layout/comunidades automáticas. Ver [Ideias para o grafo](graph-view.md#8-ideias-de-melhorias-2026-11-02). Busca por título com centralização e destaque persistente das conexões já implementada; ver [Localizar uma nota](graph-view.md#7-localizar-uma-nota). |
 | **Toggle de arquivadas no grafo** | Não implementado. O `includeArchived` da `NotesGraphPage` só afeta a sidebar; o grafo sempre inclui as arquivadas (com a flag). |
 | **Alinhamento de coluna pela UI** | Deliberadamente fora. O lugar seria a linha separadora em `lib/markdownTables.ts`. |
 | **Backend de bucket e vídeo** | Só a abstração existe. `storage_backend` + `storage_key` em cada linha de mídia fazem com que plugar um bucket não exija migration; vídeo pede também download por pedaços e a versão de capa. Ver [Biblioteca de mídia](media-library.md#3-tipos-e-o-que-fica-pronto-para-vídeo). |

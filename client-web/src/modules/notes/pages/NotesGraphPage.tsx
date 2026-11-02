@@ -12,6 +12,7 @@ import { useTags } from '../hooks/useTags'
 import { useGraphPreferences } from '../hooks/useGraphPreferences'
 import { GraphGroupsDrawer } from '../components/GraphGroupsDrawer'
 import { TagFilter } from '../components/TagFilter'
+import { nodeLabel } from '../lib/graphData'
 
 const SIDEBAR_WIDTH = 280
 
@@ -31,9 +32,21 @@ export function NotesGraphPage() {
   const [tagIds, setTagIds] = useState<string[]>([])
   // The graph spans every space unless one is picked; the sidebar follows the same choice.
   const [spaceId, setSpaceId] = useState<string | null>(null)
+  const [locatedId, setLocatedId] = useState<string | null>(null)
   const { data: spaces = [] } = useSpaces()
 
   const { data: graph, isLoading } = useGraph(tagIds, spaceId)
+  const focusedId = graph?.nodes.some((node) => node.id === locatedId) ? locatedId : null
+
+  function changeTags(ids: string[]) {
+    setTagIds(ids)
+    setLocatedId(null)
+  }
+
+  function changeSpace(id: string | null) {
+    setSpaceId(id)
+    setLocatedId(null)
+  }
 
   function openPage(id: string | null) {
     navigate(id ? `/notes/${id}` : '/notes')
@@ -58,13 +71,13 @@ export function NotesGraphPage() {
         >
           <NotesSidebar
             spaceId={spaceId}
-            onSpaceChange={setSpaceId}
+            onSpaceChange={changeSpace}
             selectedId={null}
             onSelect={openPage}
             includeArchived={includeArchived}
             onToggleArchived={setIncludeArchived}
             tagIds={tagIds}
-            onTagIdsChange={setTagIds}
+            onTagIdsChange={changeTags}
             onSearch={() => setSearchOpen(true)}
           />
         </Card>
@@ -74,6 +87,25 @@ export function NotesGraphPage() {
         title={
           <Flex wrap gap={8} align="center" style={{ padding: '10px 0' }}>
             <Typography.Text strong>{t('notes.graph')}</Typography.Text>
+            <Select
+              size="small"
+              allowClear
+              style={{ width: 240, maxWidth: '100%' }}
+              value={focusedId ?? undefined}
+              placeholder={t('notes.graphSearch.placeholder')}
+              aria-label={t('notes.graphSearch.placeholder')}
+              notFoundContent={t('notes.graphSearch.empty')}
+              showSearch={{
+                filterOption: (input, option) => {
+                  const normalize = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase()
+                  return normalize(option?.title ?? '').includes(normalize(input.trim()))
+                },
+              }}
+              options={(graph?.nodes ?? []).map((node) => ({
+                value: node.id, label: nodeLabel(node.icon, node.title), title: node.title,
+              }))}
+              onChange={(id) => setLocatedId(id ?? null)}
+            />
             <label className="flex items-center gap-2">
               <Switch
                 size="small"
@@ -86,14 +118,14 @@ export function NotesGraphPage() {
             <Button size="small" onClick={() => setGroupsOpen(true)}>{t('notes.graphGroups.configure')}</Button>
             {!screens.lg && (
               <div style={{ minWidth: 160, flex: 1 }}>
-                <TagFilter value={tagIds} onChange={setTagIds} />
+                <TagFilter value={tagIds} onChange={changeTags} />
               </div>
             )}
             <Select
               size="small"
               className="min-w-44"
               value={spaceId ?? ''}
-              onChange={(value) => setSpaceId(value || null)}
+              onChange={(value) => changeSpace(value || null)}
               aria-label={t('notes.spaces.title')}
               options={[
                 { value: '', label: t('notes.spaces.all') },
@@ -110,7 +142,7 @@ export function NotesGraphPage() {
             <Spin />
           </Flex>
         ) : graph && graph.nodes.length > 0 ? (
-          <GraphView graph={graph} onSelect={openPage} families={preferences.showGroups ? preferences.families : undefined} />
+          <GraphView graph={graph} focusedId={focusedId} onSelect={openPage} families={preferences.showGroups ? preferences.families : undefined} />
         ) : (
           <Flex align="center" justify="center" style={{ height: '100%' }}>
             <Empty description={tagIds.length > 0 ? t('notes.tagFilterEmpty') : t('notes.graphEmpty')} />

@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Flex, Typography, theme } from 'antd'
 import ForceGraph2D, { type ForceGraphMethods } from 'react-force-graph-2d'
 import { buildAdjacency, endpointId, nodeLabel, toForceData, type ForceLink, type ForceNode } from '../lib/graphData'
-import { familyForce, familyForNode, type GraphFamily } from '../lib/graphGroups'
+import { familyForce, familyForNode, type GraphFamily, type PositionedNode } from '../lib/graphGroups'
 import { drawGraphRegions } from '../lib/graphRegions'
 import type { PageGraphDto } from '../models'
 
@@ -11,6 +11,8 @@ interface GraphViewProps {
   graph: PageGraphDto | undefined
   /** The page the graph is centered on, drawn as the accent node. */
   currentId?: string | null
+  /** A search result to center and keep highlighted without opening the page. */
+  focusedId?: string | null
   /** Clicking a node opens that page. */
   onSelect: (id: string) => void
   /** Absent is the original free graph; an empty array is grouped mode without configured families. */
@@ -27,7 +29,7 @@ const NO_FAMILIES: GraphFamily[] = []
  * The component fills whatever box it is given — `react-force-graph` needs pixel dimensions, so the
  * container is measured rather than sized in CSS.
  */
-export function GraphView({ graph, currentId, onSelect, families }: GraphViewProps) {
+export function GraphView({ graph, currentId, focusedId, onSelect, families }: GraphViewProps) {
   const { t } = useTranslation()
   const { token } = theme.useToken()
   const graphRef = useRef<ForceGraphMethods<ForceNode, ForceLink> | undefined>(undefined)
@@ -50,6 +52,19 @@ export function GraphView({ graph, currentId, onSelect, families }: GraphViewPro
   // doing this per render would leave the layout permanently reheating.
   const data = useMemo(() => toForceData(graph), [graph])
   const adjacency = useMemo(() => buildAdjacency(graph), [graph])
+  const locatedId = data.nodes.some((node) => node.id === focusedId) ? focusedId : null
+  const highlightedId = hoveredId ?? locatedId
+  const centerLocatedNode = useCallback(() => {
+    const view = graphRef.current
+    const node: PositionedNode | undefined = data.nodes.find((candidate) => candidate.id === locatedId)
+    if (!view || !node || !Number.isFinite(node.x) || !Number.isFinite(node.y)) return
+    view.centerAt(node.x, node.y, 300)
+    view.zoom(2, 300)
+  }, [locatedId, data])
+
+  useEffect(() => {
+    if (size.width > 0) centerLocatedNode()
+  }, [centerLocatedNode, data, size.width])
   const activeFamilies = families ?? NO_FAMILIES
   const membership = useMemo(() => new Map(data.nodes.map((node) =>
     [node.id, familyForNode(node, activeFamilies)])), [data, activeFamilies])
@@ -78,14 +93,14 @@ export function GraphView({ graph, currentId, onSelect, families }: GraphViewPro
     }
   }, [activeFamilies, membership, data, regions, size.width])
 
-  /** With nothing hovered every node is "in focus"; hovering narrows it to the node and its neighbors. */
+  /** Hover temporarily takes priority over the persistent search highlight. */
   function isInFocus(id: string) {
-    if (!hoveredId) return true
-    return id === hoveredId || (adjacency.get(hoveredId)?.has(id) ?? false)
+    if (!highlightedId) return true
+    return id === highlightedId || (adjacency.get(highlightedId)?.has(id) ?? false)
   }
 
   function nodeColor(id: string, isArchived: boolean) {
-    if (id === currentId) return token.colorPrimary
+    if (id === currentId || id === locatedId) return token.colorPrimary
     return isArchived ? token.colorTextQuaternary : membership.get(id)?.color ?? token.colorTextSecondary
   }
 
@@ -110,9 +125,11 @@ export function GraphView({ graph, currentId, onSelect, families }: GraphViewPro
           // Degree is capped: one hub page should stand out, not swallow the canvas.
           nodeVal={(node) => 1 + Math.min(Number(node.degree) || 0, 12) * 0.6}
           nodeLabel={(node) => nodeLabel(node.icon, node.title)}
-          linkColor={(link) => (isInFocus(endpointId(link.source)) && isInFocus(endpointId(link.target))
-            ? token.colorBorder
-            : token.colorBorderSecondary)}
+          linkColor={(link) => {
+            if (!highlightedId) return token.colorBorder
+            return endpointId(link.source) === highlightedId || endpointId(link.target) === highlightedId
+              ? token.colorPrimary : token.colorBorderSecondary
+          }}
           linkLineDash={(link) => (link.kind === 'embed' ? [2, 2] : null)}
           linkDirectionalArrowLength={3}
           linkDirectionalArrowRelPos={1}
@@ -123,7 +140,7 @@ export function GraphView({ graph, currentId, onSelect, families }: GraphViewPro
             const id = String(node.id)
 
             // Below this the labels overlap into noise; the tooltip still names every node.
-            if (globalScale < 1.2 && id !== currentId && id !== hoveredId) return
+            if (globalScale < 1.2 && id !== currentId && id !== hoveredId && id !== locatedId) return
 
             const focused = isInFocus(id)
             const label = nodeLabel(node.icon, node.title)
@@ -141,7 +158,8 @@ export function GraphView({ graph, currentId, onSelect, families }: GraphViewPro
           }
           cooldownTicks={100}
           onEngineStop={() => {
-            if (regions.length > 0) graphRef.current?.zoomToFit(300, 55)
+            if (locatedId) centerLocatedNode()
+            else if (regions.length > 0) graphRef.current?.zoomToFit(300, 55)
           }}
         />
       )}

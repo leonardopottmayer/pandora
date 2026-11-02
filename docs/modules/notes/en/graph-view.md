@@ -86,3 +86,29 @@ No schema change or new dependency is required. The local page graph keeps its o
 
 This implements the idea recorded on 2026-11-02 using tags. Automatic communities and overlapping
 regions remain future ideas.
+
+## 7. Locate a note
+
+The global graph's **Locate a note in the graph** selector searches titles among the currently
+loaded nodes, ignoring case and accents. Space and tag filters therefore also limit the results.
+Selecting a result centers the camera on that node at zoom 2 and highlights its immediate
+connections without leaving the map or hiding other nodes. The selected label stays visible.
+Hover temporarily highlights another neighborhood; leaving the node restores the search highlight.
+Clearing the selector removes the persistent highlight and leaves the camera where it is.
+Changing space or tag filters clears the selection. Clicking a canvas node still opens its page.
+This is client-side navigation over the graph payload, separate from full-text page search.
+
+## 8. Improvement ideas (2026-11-02)
+
+These are ideas, not implementation commitments. Title search above is the first delivered item.
+
+- **Details panel:** select a node to inspect its title, tags, families and connections, with an
+  explicit action to open the page. This would change the current click-to-open behavior.
+- **Collapse families:** replace a region with one node such as "Work · 25 notes", then expand it.
+- **Navigation controls:** visible zoom in/out and fit-all buttons, especially useful on mobile.
+- **Visibility filters:** hide archived pages and isolated nodes independently; the existing archive
+  toggle only affects the sidebar.
+- **Connections between families:** summarize bridges and link counts between thematic regions.
+- **Later:** pin node positions, remember the camera viewport and explore automatic communities.
+
+Suggested next priority: the details panel, followed by collapsing families when the graph grows.
