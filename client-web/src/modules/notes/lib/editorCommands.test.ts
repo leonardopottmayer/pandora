@@ -219,7 +219,7 @@ describe('wikilinkSource', () => {
   })
 
   it('reuses brackets that are already closed instead of doubling them', () => {
-    // What `/wikilink` leaves behind: `[[]]` with the cursor between the pairs.
+    // `[[]]` typed first, the cursor then put back between the pairs.
     const doc = '[[]]'
     const view = editor(doc, 2)
     applyOption(view, completeLink(doc, 2)!, 2)

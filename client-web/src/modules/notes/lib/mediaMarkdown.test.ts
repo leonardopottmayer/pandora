@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Marked } from 'marked'
 import type { MediaItemDto } from '../models'
-import { mediaRenderer, parseImageAlt, parseMediaFileIds } from './mediaMarkdown'
+import { formatImageAlt, mediaRenderer, parseImageAlt, parseMediaFileIds } from './mediaMarkdown'
 
 const ID = '0193f000-0000-7000-8000-00000000a001'
 const PATH = `/api/v1/notes/media/${ID}`
@@ -29,6 +29,14 @@ describe('parseImageAlt', () => {
 
   it('keeps a bar that is part of the text', () => {
     expect(parseImageAlt('before | after|200')).toMatchObject({ text: 'before | after', width: 200, align: null })
+  })
+})
+
+describe('formatImageAlt', () => {
+  it('writes back what parseImageAlt reads, even with no text', () => {
+    for (const [text, width, align] of [['Beach', 300, 'right'], ['', 300, null], ['', null, 'center'], ['Beach', null, null]] as const) {
+      expect(parseImageAlt(formatImageAlt(text, width, align))).toMatchObject({ text, width, align })
+    }
   })
 })
 

@@ -17,6 +17,7 @@ import {
 import { embedMarkdown } from '../lib/media'
 import { TableSizeModal } from './TableSizeModal'
 import { MediaPickerModal } from './library/MediaPickerModal'
+import { PagePickerModal } from './PagePickerModal'
 import type { MediaItemDto, PageSummaryDto, TagDto } from '../models'
 
 interface MarkdownEditorProps {
@@ -63,6 +64,8 @@ export function MarkdownEditor({
   const [tableSizeOpen, setTableSizeOpen] = useState(false)
   // `/image`, `/file` or the toolbar asked for an item of the library; the kind narrows the grid.
   const [picking, setPicking] = useState<{ kind: 'image' | 'file' | null } | null>(null)
+  // `/wikilink` asked for a page to link to.
+  const [pagePickerOpen, setPagePickerOpen] = useState(false)
 
   useImperativeHandle(ref, () => ({ insertMedia: () => setPicking({ kind: null }) }), [])
 
@@ -105,7 +108,8 @@ export function MarkdownEditor({
     // rebuilds the editor.
     const slashCompletions = slashSource(
       (command) => tRef.current(command.labelKey),
-      (prompt) => (prompt === 'table' ? setTableSizeOpen(true) : setPicking({ kind: prompt })),
+      (prompt) =>
+        prompt === 'table' ? setTableSizeOpen(true) : prompt === 'page' ? setPagePickerOpen(true) : setPicking({ kind: prompt }),
     )
     const wikilinkCompletions = wikilinkSource(() => pagesRef.current)
     const tagCompletions = tagSource(() => tagsRef.current)
@@ -196,6 +200,18 @@ export function MarkdownEditor({
         onPick={(item) => {
           setPicking(null)
           if (viewRef.current) insertAtCursor(viewRef.current, embedMarkdown(item))
+        }}
+      />
+      <PagePickerModal
+        open={pagePickerOpen}
+        pages={pages}
+        onClose={() => {
+          setPagePickerOpen(false)
+          viewRef.current?.focus()
+        }}
+        onPick={(page) => {
+          setPagePickerOpen(false)
+          if (viewRef.current) insertAtCursor(viewRef.current, `[[${page.title}]]`)
         }}
       />
       {tableSizeOpen && (

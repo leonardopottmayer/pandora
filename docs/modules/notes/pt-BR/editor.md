@@ -9,13 +9,15 @@ guardava — nada aqui exigiu mudança de backend.
 
 ## 1. A superfície
 
+Dois editores sobre o mesmo texto. `components/visual/VisualEditor.tsx` é o **editor visual** (TipTap),
+em que se escreve na página já desenhada, estilo Notion — ver [§9](#9-editor-visual).
 `components/MarkdownEditor.tsx` é o CodeMirror 6 sobre o markdown cru; `components/MarkdownPreview.tsx`
-renderiza com `marked` + DOMPurify. A `NotesPage` mostra os dois em um de três modos de visualização —
-`edit`, `split` (o padrão) e `preview`.
+renderiza com `marked` + DOMPurify. A `NotesPage` tem quatro modos — `visual` (o padrão, e o do
+celular ao tocar em Editar), `edit` (markdown), `split` (markdown e leitura lado a lado) e `preview`.
 
-O editor continua **markdown cru**: não há renderização de widget ao vivo dentro do CodeMirror. O
-resultado renderizado é o que o painel de preview mostra. Ver
-[Status de implementação](implementation-status.md).
+O que se salva é sempre o markdown: os dois editores leem e escrevem o mesmo `content_markdown`, e
+trocar de modo leva junto o que ainda não foi salvo (os dois começam do rascunho, não da page salva).
+As seções 4 a 7 descrevem o editor de markdown; o visual reaproveita as mesmas listas e filtros.
 
 ## 2. Autosave
 
@@ -48,7 +50,7 @@ Os três são registrados no `@codemirror/autocomplete` e compartilham as mesmas
 
 | Gatilho | Fonte | Regras |
 |---|---|---|
-| `[[` | `wikilinkTriggerAt` em `lib/wikilinks.ts` | Abre depois de `[[` e de `![[`, que escreve o alvo igual. **Recusa** depois de `]` ou de `\|` — link fechado ou metade do alias não são mais o alvo sendo digitado. `filterPages` casa por **título e slug**, então `cafe` acha `Café com Pão`; teto de 10 opções. Ao aplicar, um `]]` já existente logo depois do cursor é **reaproveitado** em vez de duplicado — que é exatamente o estado que o comando `/wikilink` deixa. |
+| `[[` | `wikilinkTriggerAt` em `lib/wikilinks.ts` | Abre depois de `[[` e de `![[`, que escreve o alvo igual. **Recusa** depois de `]` ou de `\|` — link fechado ou metade do alias não são mais o alvo sendo digitado. `filterPages` casa por **título e slug**, então `cafe` acha `Café com Pão`; teto de 10 opções. Ao aplicar, um `]]` já existente logo depois do cursor é **reaproveitado** em vez de duplicado. |
 | `#` | `lib/tags.ts` | Completa **só tags existentes** — tag nova se digita, que é justamente o ponto de ela morar no texto. |
 | `/` | `slashTriggerAt` em `lib/slashCommands.ts` | Só abre com a `/` no início da linha ou depois de espaço (então `src/lib` no meio do texto nunca dispara), e fecha ao primeiro espaço digitado. `filterCommands` casa por **id e label traduzido**. |
 
@@ -59,7 +61,7 @@ mão, e é isso que mantém o documento round-trippable.
 
 | Grupo | Entradas |
 |---|---|
-| Blocos | `h1`, `h2`, `h3`, lista com marcador, lista numerada, todo (`- [ ] `), citação, bloco de código, divisor, recolher (`<details>` com o cursor no resumo, linhas em branco em volta do corpo para o markdown dentro continuar renderizando), tabela, imagem, arquivo, wikilink (`[[]]` com o cursor no meio) |
+| Blocos | `h1`, `h2`, `h3`, lista com marcador, lista numerada, todo (`- [ ] `), citação, bloco de código, divisor, recolher (`<details>` com o cursor no resumo, linhas em branco em volta do corpo para o markdown dentro continuar renderizando), tabela, imagem, arquivo, link para página (abre o `PagePickerModal`: a árvore de cada espaço com os ícones, e uma busca que mostra o caminho de cada página; escolhida, entra `[[Título]]`) |
 | Callouts | um por tipo de callout — `note`, `tip`, `info`, `warning`, `danger`, `quote` |
 
 Cada comando declara o texto que insere e o deslocamento do cursor dentro dele.
@@ -128,3 +130,34 @@ YouTube, do Vimeo ou do Google Maps em https — qualquer outro é removido. Tod
 ganha um `sandbox`, `allow`, `referrerpolicy` e `loading="lazy"` fixos, seja lá com o que foi escrito.
 Esse hook fica numa instância do DOMPurify só do módulo, então não alcança os outros lugares que
 sanitizam HTML (email).
+
+## 9. Editor visual
+
+TipTap 3 com o `@tiptap/markdown`, que lê e escreve markdown pelo mesmo `marked` do preview (uma
+instância própria, para os tokenizers dele não vazarem para o preview). `lib/visualMarkdown.ts` define o
+schema e as regras de markdown; o componente só acrescenta as views.
+
+- **Blocos nativos**: parágrafo, títulos, listas (inclusive de tarefas e aninhadas), citação, bloco de
+  código, divisor, tabela (com o alinhamento das colunas), negrito, itálico, tachado, código e link.
+- **Nós nossos**: o **wikilink** é um nó só (`[[alvo|alias]]`, `![[alvo]]`), desenhado como no preview e
+  clicável — abre a page ou cria a que falta. A **imagem** guarda largura, alinhamento e legenda no texto
+  alternativo, como sempre; selecionada, mostra botões de alinhamento que reescrevem esse texto.
+- **Bloco cru**: o que o editor não edita como bloco — callout, `<details>` (inteiro, atravessando as
+  linhas em branco) e HTML de bloco (`<iframe>`, `<img>` escrito à mão) — fica guardado **como estava** e
+  é desenhado pelo próprio `MarkdownPreview`. Duplo clique, ou o botão no canto, abre o markdown dele;
+  Esc, Ctrl+Enter ou sair do campo devolve. `/recolher` e os callouts do `/` criam um bloco cru já aberto.
+- **Menus** `/`, `[[` e `#` são sugestões do TipTap desenhadas por um menu React só. O `[[` oferece
+  também o título digitado quando nenhuma page tem esse nome (a page nasce no clique, como no preview).
+- **Barra da seleção** (negrito, itálico, tachado, código, link), **barra da tabela** (linha, coluna,
+  excluir) e **alça de arrastar** para mover blocos.
+- **Colar** um arquivo envia para a biblioteca, como no outro editor; colar texto puro (de um `.md`, do
+  editor de markdown) entra como os blocos que ele descreve.
+
+**Ida e volta.** Abrir uma page no editor visual não muda nada: só uma edição dispara o save. Ao
+salvar, o markdown é reescrito na forma do editor — `*` vira `-` nas listas, `_itálico_` vira
+`*itálico*`, `<` e `&` no texto viram `&lt;` e `&amp;`, colchetes soltos ganham `\` — o que **renderiza
+igual**. Um link cujo texto é o próprio endereço volta a ser URL pura (senão o link de vídeo deixaria de
+virar player), e o parágrafo vazio que o editor mantém no fim não é escrito. `visualMarkdown.test.ts`
+prende a ida e volta de cada construção que uma nota pode ter.
+
+Sublinhado fica desligado: não há markdown para ele, e voltaria como `++texto++`, que nada renderiza.

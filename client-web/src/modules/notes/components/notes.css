@@ -16,6 +16,124 @@
 .notes-editor-auto .cm-editor { height: auto; min-height: 50vh; }
 .notes-editor-auto .cm-scroller { overflow: visible; }
 
+/* The visual editor: the page as the preview draws it, written in place. */
+.notes-visual-host { position: relative; }
+.notes-visual { outline: none; min-height: 50vh; }
+.notes-visual p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: rgba(128, 128, 128, 0.7);
+}
+.notes-visual .ProseMirror-selectednode { outline: 2px solid var(--ant-color-primary); outline-offset: 2px; border-radius: 6px; }
+.notes-visual ul[data-type='taskList'] { list-style: none; padding-left: 0.2em; }
+.notes-visual ul[data-type='taskList'] li { display: flex; gap: 0.5em; align-items: flex-start; }
+/* The box is centred on the first line of text, whatever the item wraps to. */
+.notes-visual ul[data-type='taskList'] li > label { display: flex; align-items: center; height: 1.65em; user-select: none; }
+.notes-visual ul[data-type='taskList'] li > div { flex: 1; min-width: 0; }
+.notes-visual ul[data-type='taskList'] li > div > p { margin: 0; }
+.notes-visual ul[data-type='taskList'] li[data-checked='true'] > div { opacity: 0.6; text-decoration: line-through; }
+.notes-visual td, .notes-visual th { position: relative; min-width: 60px; vertical-align: top; }
+.notes-visual td > p, .notes-visual th > p { margin: 0; }
+.notes-visual .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(22, 119, 255, 0.12);
+}
+.notes-visual .notes-wikilink { cursor: pointer; }
+/* A raw block reads as the preview draws it; its source opens from the corner. */
+.notes-raw-block { position: relative; margin: 0.6em 0; border-radius: 6px; }
+.notes-raw-block:hover { box-shadow: 0 0 0 1px rgba(128, 128, 128, 0.3); }
+.notes-raw-block .notes-preview { padding: 0 !important; }
+.notes-raw-edit {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(128, 128, 128, 0.15);
+  color: inherit;
+  cursor: pointer;
+  opacity: 0;
+}
+.notes-raw-block:hover .notes-raw-edit { opacity: 1; }
+.notes-raw-source {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--ant-color-primary);
+  border-radius: 6px;
+  background: rgba(128, 128, 128, 0.08);
+  color: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+}
+.notes-image-tools {
+  display: inline-flex;
+  gap: 2px;
+  margin-top: 4px;
+  padding: 2px;
+  border-radius: 6px;
+  background: rgba(128, 128, 128, 0.15);
+}
+.notes-image-tools button,
+.notes-bubble-button {
+  padding: 3px 7px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.notes-image-tools button[aria-pressed='true'],
+.notes-bubble-button[aria-pressed='true'] { background: rgba(22, 119, 255, 0.18); }
+.notes-image-tools button:hover,
+.notes-bubble-button:hover { background: rgba(128, 128, 128, 0.2); }
+.notes-bubble {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--ant-color-border-secondary);
+  border-radius: 8px;
+  background: var(--ant-color-bg-elevated);
+  color: var(--ant-color-text);
+  box-shadow: var(--ant-box-shadow-secondary);
+}
+.notes-drag-handle {
+  padding: 2px;
+  border-radius: 4px;
+  color: rgba(128, 128, 128, 0.8);
+  cursor: grab;
+}
+.notes-drag-handle:hover { background: rgba(128, 128, 128, 0.15); }
+.notes-suggestion-menu {
+  position: fixed;
+  z-index: 1100;
+  width: 300px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 4px;
+  color: var(--ant-color-text);
+}
+.notes-suggestion-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.notes-suggestion-label { display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notes-suggestion-icon { flex-shrink: 0; width: 1.3em; text-align: center; }
+.notes-suggestion-hint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: rgba(128, 128, 128, 0.9); font-size: 0.85em; }
+
 /* In the reading column the text starts where the title does. */
 .notes-doc .notes-preview { padding: 0; }
 .notes-doc .notes-editor .cm-content { padding-top: 0; }
@@ -45,8 +163,10 @@
 .notes-preview ol { list-style: decimal; }
 .notes-preview ul ul { list-style: circle; }
 .notes-preview ul ul ul { list-style: square; }
-/* Task list items carry their own marker. */
-.notes-preview li:has(> input[type='checkbox']) { list-style: none; }
+/* Task list items carry their own marker — also in a loose list, where the box sits inside a <p>
+   (a task list and a bullet list one blank line apart are one list to markdown). */
+.notes-preview li:has(> input[type='checkbox']),
+.notes-preview li:has(> p:first-child > input[type='checkbox']) { list-style: none; }
 .notes-preview img { max-width: 100%; height: auto; border-radius: 6px; }
 .notes-preview pre {
   position: relative;

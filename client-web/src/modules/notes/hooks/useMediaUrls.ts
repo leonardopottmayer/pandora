@@ -17,8 +17,11 @@ import { fetchMediaBlob } from '../services/media.service'
  * item exists per session, and the reload that ends the session releases them.
  */
 export function useMediaUrls(markdown: string): ReadonlyMap<string, string> {
-  const paths = parseMediaImagePaths(markdown)
+  return useMediaPathUrls(parseMediaImagePaths(markdown))
+}
 
+/** The same, for paths already in hand — an image node of the visual editor knows its own. */
+export function useMediaPathUrls(paths: string[]): ReadonlyMap<string, string> {
   return useQueries({
     queries: paths.map((path) => ({
       queryKey: noteKeys.mediaBlob(path),

@@ -9,12 +9,15 @@ The editor is **100% frontend**. Every block it produces is ordinary markdown, w
 
 ## 1. The surface
 
+Two editors over the same text. `components/visual/VisualEditor.tsx` is the **visual editor** (TipTap),
+where one writes on the page as it is drawn, Notion-style — see [§9](#9-visual-editor).
 `components/MarkdownEditor.tsx` is CodeMirror 6 over the raw markdown; `components/MarkdownPreview.tsx`
-renders it with `marked` + DOMPurify. `NotesPage` shows them in one of three view modes — `edit`,
-`split` (the default) and `preview`.
+renders it with `marked` + DOMPurify. `NotesPage` has four modes — `visual` (the default, and the one a
+phone opens on Edit), `edit` (markdown), `split` (markdown and reading side by side) and `preview`.
 
-The editor stays **raw markdown**: there is no live widget rendering inside CodeMirror. The rendered
-result is what the preview pane shows. See [Implementation Status](implementation-status.md).
+What is saved is always the markdown: both editors read and write the same `content_markdown`, and
+switching modes carries what is not saved yet (both start from the draft, not from the saved page).
+Sections 4 to 7 describe the markdown editor; the visual one reuses the same lists and filters.
 
 ## 2. Autosave
 
@@ -47,7 +50,7 @@ All three are registered on `@codemirror/autocomplete` and share the same three 
 
 | Trigger | Source | Rules |
 |---|---|---|
-| `[[` | `wikilinkTriggerAt` in `lib/wikilinks.ts` | Opens after `[[` and after `![[`, which writes the target the same way. **Refuses** after a `]` or a `\|` — a closed link or half an alias is no longer the target being typed. `filterPages` matches **title and slug**, so `cafe` finds `Café com Pão`; capped at 10 options. On apply, an existing `]]` right after the cursor is **reused** rather than duplicated — which is exactly the state the `/wikilink` command leaves behind. |
+| `[[` | `wikilinkTriggerAt` in `lib/wikilinks.ts` | Opens after `[[` and after `![[`, which writes the target the same way. **Refuses** after a `]` or a `\|` — a closed link or half an alias is no longer the target being typed. `filterPages` matches **title and slug**, so `cafe` finds `Café com Pão`; capped at 10 options. On apply, an existing `]]` right after the cursor is **reused** rather than duplicated. |
 | `#` | `lib/tags.ts` | Completes **existing tags only** — a new tag is simply typed, which is the whole point of it living in the text. |
 | `/` | `slashTriggerAt` in `lib/slashCommands.ts` | Only opens with the `/` at the start of a line or after whitespace (so `src/lib` mid-sentence never fires), and closes at the first space typed. `filterCommands` matches by **id and translated label**. |
 
@@ -58,7 +61,7 @@ which is what keeps the document round-trippable.
 
 | Group | Entries |
 |---|---|
-| Blocks | `h1`, `h2`, `h3`, bullet list, numbered list, todo (`- [ ] `), quote, code block, divider, toggle (`<details>` with the cursor in the summary, blank lines around the body so markdown inside still renders), table, image, file, wikilink (`[[]]` with the cursor in the middle) |
+| Blocks | `h1`, `h2`, `h3`, bullet list, numbered list, todo (`- [ ] `), quote, code block, divider, toggle (`<details>` with the cursor in the summary, blank lines around the body so markdown inside still renders), table, image, file, link to a page (opens `PagePickerModal`: each space's tree with its icons, and a search showing the path to each page; picked, it writes `[[Title]]`) |
 | Callouts | one per callout type — `note`, `tip`, `info`, `warning`, `danger`, `quote` |
 
 Each command declares the text it inserts and the cursor offset within it.
@@ -127,3 +130,34 @@ of YouTube, Vimeo or Google Maps over https — anything else is dropped. Every 
 re-stamped with a fixed `sandbox`, `allow`, `referrerpolicy` and `loading="lazy"`, whatever it was
 written with. That hook lives on a DOMPurify instance of the module's own, so it never reaches the
 other places that sanitize HTML (email).
+
+## 9. Visual editor
+
+TipTap 3 with `@tiptap/markdown`, which reads and writes markdown through the same `marked` the preview
+uses (an instance of its own, so its tokenizers never leak into the preview). `lib/visualMarkdown.ts`
+defines the schema and the markdown rules; the component only adds the views.
+
+- **Native blocks**: paragraph, headings, lists (task and nested ones included), quote, code block,
+  divider, table (column alignment kept), bold, italic, strikethrough, code and link.
+- **Our own nodes**: a **wikilink** is one node (`[[target|alias]]`, `![[target]]`), drawn as the preview
+  draws it and clickable — it opens the page, or creates the missing one. An **image** keeps width,
+  alignment and caption in its alt text, as always; selected, it shows alignment buttons that rewrite it.
+- **Raw block**: what the editor does not edit as blocks — a callout, a `<details>` (whole, across its
+  blank lines) and block HTML (an `<iframe>`, a hand-written `<img>`) — is kept **as it was** and drawn by
+  `MarkdownPreview` itself. A double click, or the corner button, opens its markdown; Esc, Ctrl+Enter or
+  leaving the field puts it back. `/toggle` and the callouts of `/` create a raw block already open.
+- **Menus** `/`, `[[` and `#` are TipTap suggestions drawn by one React menu. `[[` also offers the typed
+  title when no page has it (the page is made on click, as in the preview).
+- **Selection bar** (bold, italic, strikethrough, code, link), **table bar** (row, column, delete) and a
+  **drag handle** to move blocks.
+- **Pasting** a file sends it to the library, as in the other editor; pasting plain text (from a `.md`,
+  from the markdown editor) comes in as the blocks it describes.
+
+**Round trip.** Opening a page in the visual editor changes nothing: only an edit triggers a save. On
+save, the markdown is rewritten the editor's way — `*` bullets become `-`, `_italic_` becomes `*italic*`,
+`<` and `&` in text become `&lt;` and `&amp;`, stray brackets get a `\` — all of which **render the
+same**. A link whose text is its own URL goes back to a bare URL (or a video link would stop drawing as
+the player), and the empty paragraph the editor keeps at the end is not written. `visualMarkdown.test.ts`
+pins the round trip of every construct a note can hold.
+
+Underline stays off: markdown has none, and it would come back as `++text++`, which nothing renders.

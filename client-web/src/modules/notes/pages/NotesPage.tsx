@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { App, Button, Drawer, Empty, Grid, Segmented, Spin, Tooltip, theme } from 'antd'
 import {
   CheckOutlined,
+  CodeOutlined,
   EditOutlined,
   EyeOutlined,
   InfoCircleOutlined,
@@ -24,6 +25,7 @@ import { PageBreadcrumb } from '../components/PageBreadcrumb'
 import { PageHeader } from '../components/PageHeader'
 import { SearchPalette } from '../components/SearchPalette'
 import { SpaceOverview } from '../components/SpaceOverview'
+import { VisualEditor } from '../components/visual/VisualEditor'
 import { useAutosave } from '../hooks/useAutosave'
 import { useCreatePage, usePage, usePageTree, useUpdatePage } from '../hooks/usePages'
 import { useSpaces } from '../hooks/useSpaces'
@@ -32,10 +34,11 @@ import { useTags } from '../hooks/useTags'
 import { buildPageIndex } from '../lib/wikilinks'
 import '../components/notes.css'
 
-type ViewMode = 'edit' | 'split' | 'preview'
+/** `visual` writes on the page itself; `edit` and `split` write the markdown, the latter beside the reading. */
+type ViewMode = 'visual' | 'edit' | 'split' | 'preview'
 
 const SIDEBAR_WIDTH = 272
-const VIEW_MODES: ViewMode[] = ['edit', 'split', 'preview']
+const VIEW_MODES: ViewMode[] = ['visual', 'edit', 'split', 'preview']
 const VIEW_MODE_KEY = 'pandora.notes_view_mode'
 const SIDEBAR_KEY = 'pandora.notes_sidebar_closed'
 
@@ -79,7 +82,7 @@ export function NotesPage() {
   const [includeArchived, setIncludeArchived] = useState(false)
   const [tagIds, setTagIds] = useState<string[]>([])
   const [searchOpen, setSearchOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(VIEW_MODE_KEY, VIEW_MODES, 'split'))
+  const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(VIEW_MODE_KEY, VIEW_MODES, 'visual'))
   const [sidebarClosed, setSidebarClosed] = useState(() => readStored(SIDEBAR_KEY, ['1', '0'], '0') === '1')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [infoOpen, setInfoOpen] = useState(false)
@@ -236,7 +239,7 @@ export function NotesPage() {
   }
 
   // A phone has no room for two panes: it reads, or it edits.
-  const mode: ViewMode = isMobile ? (mobileEditing ? 'edit' : 'preview') : viewMode
+  const mode: ViewMode = isMobile ? (mobileEditing ? 'visual' : 'preview') : viewMode
   const border = `1px solid ${token.colorBorderSecondary}`
 
   const sidebar = (
@@ -256,11 +259,12 @@ export function NotesPage() {
     />
   )
 
+  // Both editors start from the draft, not the saved page: switching modes carries what is not saved yet.
   const editor = (autoHeight: boolean) =>
     selectedId && (
       <MarkdownEditor
         docId={selectedId}
-        initialValue={page?.contentMarkdown ?? ''}
+        initialValue={draft.contentMarkdown}
         placeholder={t('notes.contentPlaceholder')}
         isDark={isDark}
         pages={allPages ?? []}
@@ -271,6 +275,23 @@ export function NotesPage() {
         ref={editorRef}
       />
     )
+
+  const visualEditor = selectedId && (
+    <VisualEditor
+      docId={selectedId}
+      initialValue={draft.contentMarkdown}
+      pages={allPages ?? []}
+      tags={tags}
+      pageIndex={pageIndex}
+      tagIndex={tagIndex}
+      onChange={(value) => updateDraft({ contentMarkdown: value })}
+      onUpload={handleUpload}
+      onOpenPage={handleSelect}
+      onCreatePage={handleCreateFromLink}
+      onSelectTag={filterByTagSlug}
+      ref={editorRef}
+    />
+  )
 
   const preview = (
     <MarkdownPreview
@@ -345,7 +366,8 @@ export function NotesPage() {
               onChange={(value) => changeViewMode(value as ViewMode)}
               aria-label={t('notes.viewMode')}
               options={[
-                { value: 'edit', icon: <EditOutlined />, title: t('notes.viewEdit') },
+                { value: 'visual', icon: <EditOutlined />, title: t('notes.viewVisual') },
+                { value: 'edit', icon: <CodeOutlined />, title: t('notes.viewEdit') },
                 { value: 'split', icon: <SplitCellsOutlined />, title: t('notes.viewSplit') },
                 { value: 'preview', icon: <EyeOutlined />, title: t('notes.viewPreview') },
               ]}
@@ -408,7 +430,7 @@ export function NotesPage() {
       <div className="h-full overflow-auto">
         <div className="notes-doc mx-auto w-full max-w-[760px] px-5 py-8 md:px-10 md:py-12">
           {header}
-          {mode === 'edit' ? editor(true) : preview}
+          {mode === 'edit' ? editor(true) : mode === 'visual' ? visualEditor : preview}
         </div>
       </div>
     )

@@ -69,6 +69,12 @@ export function parseImageAlt(alt: string): {
   return { text, width, align, caption: text && !looksLikeFileName(text) ? text : null }
 }
 
+/** The alt text back from its parts — what the visual editor writes when an image is realigned. */
+export function formatImageAlt(text: string, width: number | null, align: ImageAlign | null): string {
+  // The text goes first even when empty: `|300` is a width, a bare `300` would be the text.
+  return [text, ...[width, align].filter((part) => part !== null)].join('|')
+}
+
 /** An emoji for a file card: no icon font in sanitized HTML, and these read at any size. */
 function fileGlyph(contentType: string): string {
   const type = contentType.toLowerCase()
