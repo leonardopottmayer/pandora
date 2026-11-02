@@ -11,12 +11,13 @@ import { useSpaces } from '../hooks/useSpaces'
 import { useTags } from '../hooks/useTags'
 import { useGraphPreferences } from '../hooks/useGraphPreferences'
 import { GraphGroupsDrawer } from '../components/GraphGroupsDrawer'
+import { GraphDetailsPanel } from '../components/GraphDetailsPanel'
 import { TagFilter } from '../components/TagFilter'
 import { nodeLabel } from '../lib/graphData'
 
 const SIDEBAR_WIDTH = 280
 
-/** The whole wiki graph. Clicking a node leaves for that page, which is the point of the view. */
+/** The whole wiki graph, with in-place inspection before opening a page. */
 export function NotesGraphPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -33,19 +34,26 @@ export function NotesGraphPage() {
   // The graph spans every space unless one is picked; the sidebar follows the same choice.
   const [spaceId, setSpaceId] = useState<string | null>(null)
   const [locatedId, setLocatedId] = useState<string | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const { data: spaces = [] } = useSpaces()
 
   const { data: graph, isLoading } = useGraph(tagIds, spaceId)
   const focusedId = graph?.nodes.some((node) => node.id === locatedId) ? locatedId : null
+  const selectedNode = graph?.nodes.find((node) => node.id === focusedId)
+
+  function inspectPage(id: string | null) {
+    setLocatedId(id)
+    setDetailsOpen(id !== null)
+  }
 
   function changeTags(ids: string[]) {
     setTagIds(ids)
-    setLocatedId(null)
+    inspectPage(null)
   }
 
   function changeSpace(id: string | null) {
     setSpaceId(id)
-    setLocatedId(null)
+    inspectPage(null)
   }
 
   function openPage(id: string | null) {
@@ -104,7 +112,8 @@ export function NotesGraphPage() {
               options={(graph?.nodes ?? []).map((node) => ({
                 value: node.id, label: nodeLabel(node.icon, node.title), title: node.title,
               }))}
-              onChange={(id) => setLocatedId(id ?? null)}
+              onSelect={(id) => inspectPage(id)}
+              onClear={() => inspectPage(null)}
             />
             <label className="flex items-center gap-2">
               <Switch
@@ -142,13 +151,25 @@ export function NotesGraphPage() {
             <Spin />
           </Flex>
         ) : graph && graph.nodes.length > 0 ? (
-          <GraphView graph={graph} focusedId={focusedId} onSelect={openPage} families={preferences.showGroups ? preferences.families : undefined} />
+          <GraphView graph={graph} focusedId={focusedId} onSelect={inspectPage} families={preferences.showGroups ? preferences.families : undefined} />
         ) : (
           <Flex align="center" justify="center" style={{ height: '100%' }}>
             <Empty description={tagIds.length > 0 ? t('notes.tagFilterEmpty') : t('notes.graphEmpty')} />
           </Flex>
         )}
       </Card>
+      {detailsOpen && selectedNode && graph && (
+        <GraphDetailsPanel
+          node={selectedNode}
+          graph={graph}
+          tags={tags}
+          families={preferences.families}
+          compact={!screens.lg}
+          onSelect={inspectPage}
+          onOpen={openPage}
+          onClose={() => setDetailsOpen(false)}
+        />
+      )}
     </Flex>
   )
 }

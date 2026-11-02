@@ -13,7 +13,7 @@ interface GraphViewProps {
   currentId?: string | null
   /** A search result to center and keep highlighted without opening the page. */
   focusedId?: string | null
-  /** Clicking a node opens that page. */
+  /** The parent decides whether clicking inspects or opens the page. */
   onSelect: (id: string) => void
   /** Absent is the original free graph; an empty array is grouped mode without configured families. */
   families?: GraphFamily[]

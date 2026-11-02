@@ -53,7 +53,7 @@ points to. That is what Obsidian's local graph shows.
   cache.
 - Hover highlights the immediate neighborhood and fades the rest; labels only appear past a certain
   zoom — without that a graph of any size becomes a smear. Embeds are drawn dashed.
-- Clicking a node navigates to its page.
+- Clicking a global node opens its details panel; the local graph still navigates directly to its page.
 
 ## 5. Not implemented
 
@@ -93,17 +93,17 @@ The global graph's **Locate a note in the graph** selector searches titles among
 loaded nodes, ignoring case and accents. Space and tag filters therefore also limit the results.
 Selecting a result centers the camera on that node at zoom 2 and highlights its immediate
 connections without leaving the map or hiding other nodes. The selected label stays visible.
-Hover temporarily highlights another neighborhood; leaving the node restores the search highlight.
+The selection also opens the details panel. Hover temporarily highlights another neighborhood;
+leaving the node restores the search highlight.
 Clearing the selector removes the persistent highlight and leaves the camera where it is.
-Changing space or tag filters clears the selection. Clicking a canvas node still opens its page.
+Changing space or tag filters clears the selection and closes its details.
 This is client-side navigation over the graph payload, separate from full-text page search.
 
 ## 8. Improvement ideas (2026-11-02)
 
-These are ideas, not implementation commitments. Title search above is the first delivered item.
+These are ideas, not implementation commitments. Title search and the details panel are delivered.
 
-- **Details panel:** select a node to inspect its title, tags, families and connections, with an
-  explicit action to open the page. This would change the current click-to-open behavior.
+- **Details panel (implemented):** see the inspection behavior below.
 - **Collapse families:** replace a region with one node such as "Work · 25 notes", then expand it.
 - **Navigation controls:** visible zoom in/out and fit-all buttons, especially useful on mobile.
 - **Visibility filters:** hide archived pages and isolated nodes independently; the existing archive
@@ -111,4 +111,22 @@ These are ideas, not implementation commitments. Title search above is the first
 - **Connections between families:** summarize bridges and link counts between thematic regions.
 - **Later:** pin node positions, remember the camera viewport and explore automatic communities.
 
-Suggested next priority: the details panel, followed by collapsing families when the graph grows.
+Suggested next priority: collapsing families when the graph grows.
+
+## 9. Inspect a note without leaving the graph
+
+Click a global graph node, select a search result or choose a connected note in the panel to inspect
+that note and focus its neighborhood. The panel shows its title/icon, archive status, tags, all
+configured matching families and connected notes within the current graph filters. Family order
+still determines the drawn region, even when several families match. Configured family metadata
+is visible with Show groups off as well.
+
+Connections include incoming and outgoing links, listing each other note once regardless of link
+kind or direction. The **Open note** button is the explicit action that navigates to the editor.
+The sidebar still opens pages directly. Closing details keeps the current selection and highlight;
+clearing search or changing space/tag filters closes details and clears selection.
+
+Desktop uses a side panel beside the canvas, allowing another node to be selected immediately.
+Small screens use a scrollable drawer. All metadata comes from the existing graph and tag payloads;
+no page content request, backend change or new persistence is required. The local page graph keeps
+its original click-to-open behavior.

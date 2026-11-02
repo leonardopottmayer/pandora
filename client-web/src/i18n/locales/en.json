@@ -1049,6 +1049,18 @@
       "placeholder": "Locate a note in the graph",
       "empty": "No matching notes in this graph."
     },
+    "graphDetails": {
+      "title": "Note details",
+      "archived": "Archived",
+      "tags": "Tags",
+      "noTags": "No tags.",
+      "families": "Families",
+      "region": "Region when groups are enabled: {{name}}.",
+      "connections": "Connected notes ({{count}})",
+      "noConnections": "No connected notes in this graph.",
+      "open": "Open note",
+      "close": "Close note details"
+    },
     "graphGroups": {
       "show": "Show groups",
       "configure": "Configure families",

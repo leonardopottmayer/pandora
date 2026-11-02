@@ -37,7 +37,8 @@ left behind, not the phase log.
 | Area | Status |
 |---|---|
 | **Tag filters in the URL** | Not implemented. Filters are component state, so "the pages with #x" is not a shareable link. The place would be a search param on `NotesPage`. |
-| **Graph navigation ideas** | Details panel, collapsed families, zoom controls, visibility filters, bridges between families and later layout persistence/automatic communities. See [Graph ideas](graph-view.md#8-improvement-ideas-2026-11-02). Title lookup with camera centering and persistent connection highlighting is implemented; see [Locate a note](graph-view.md#7-locate-a-note). |
+| **Graph inspection** | Title lookup and node selection focus the neighborhood and show a responsive details panel with tags, families and distinct connected notes. An explicit Open note action navigates to the editor. See [Locate a note](graph-view.md#7-locate-a-note) and [Inspect a note](graph-view.md#9-inspect-a-note-without-leaving-the-graph). |
+| **Graph navigation ideas** | Collapsed families, zoom controls, visibility filters, bridges between families and later layout persistence/automatic communities. See [Graph ideas](graph-view.md#8-improvement-ideas-2026-11-02). |
 | **Archived toggle on the graph** | Not implemented. `NotesGraphPage`'s `includeArchived` only narrows the sidebar; the graph always includes archived pages (flagged). |
 | **Column alignment from the UI** | Deliberately out. The place would be the separator line in `lib/markdownTables.ts`. |
 | **Bucket storage backend and video** | Only the abstraction exists. `storage_backend` + `storage_key` on each media row mean plugging a bucket in needs no migration; video also needs ranged downloads and a poster rendition. See [Media Library](media-library.md#3-kinds-and-what-is-ready-for-video). |

@@ -52,7 +52,7 @@ aponta. É o que o grafo local do Obsidian mostra.
   `x`/`y`/velocidades nos objetos que recebe, e esses objetos seriam o cache do react-query.
 - Hover destaca a vizinhança imediata e desbota o resto; os rótulos só aparecem a partir de certo zoom
   — sem isso um grafo de qualquer tamanho vira borrão. Embed é desenhado tracejado.
-- Clicar num nó navega para a page dele.
+- Clicar num nó global abre os detalhes; o grafo local continua navegando diretamente para a página.
 
 ## 5. Não implementado
 
@@ -94,17 +94,17 @@ O seletor **Localizar nota no grafo** do grafo global busca títulos entre os v�
 ignorando maiúsculas e acentos. Os filtros de espaço e tags também limitam os resultados.
 Selecionar um resultado centraliza a câmera nesse vértice no zoom 2 e destaca suas conexões
 imediatas sem sair do mapa ou esconder outros vértices. O título selecionado permanece visível.
-O hover destaca temporariamente outra vizinhança; ao sair do vértice, volta o destaque da busca.
+A seleção também abre o painel de detalhes. O hover destaca temporariamente outra vizinhança;
+ao sair do vértice, volta o destaque da busca.
 Limpar o seletor remove o destaque persistente e mantém a posição da câmera.
-Mudar os filtros de espaço ou tags limpa a seleção. Clicar num vértice continua abrindo a página.
+Mudar os filtros de espaço ou tags limpa a seleção e fecha os detalhes.
 É uma navegação local sobre o payload do grafo, separada da busca textual de páginas.
 
 ## 8. Ideias de melhorias (2026-11-02)
 
-São ideias, sem compromisso de implementação. A busca por título acima é o primeiro item entregue.
+São ideias, sem compromisso de implementação. A busca por título e o painel de detalhes estão entregues.
 
-- **Painel de detalhes:** selecionar um vértice para ver título, tags, famílias e conexões, com uma
-  ação explícita para abrir a página. Mudaria o comportamento atual de abrir ao clicar.
+- **Painel de detalhes (implementado):** ver o comportamento de inspeção abaixo.
 - **Recolher famílias:** substituir uma região por um vértice como "Trabalho · 25 notas" e expandir depois.
 - **Controles de navegação:** botões visíveis de aumentar/diminuir zoom e enquadrar tudo, úteis no celular.
 - **Filtros de visibilidade:** ocultar arquivadas e vértices isolados separadamente; o toggle atual de
@@ -112,4 +112,22 @@ São ideias, sem compromisso de implementação. A busca por título acima é o 
 - **Ligações entre famílias:** resumir pontes e contagens de links entre regiões temáticas.
 - **Depois:** fixar posições dos vértices, lembrar o enquadramento e explorar comunidades automáticas.
 
-Próxima prioridade sugerida: painel de detalhes; depois, recolher famílias quando o grafo crescer.
+Próxima prioridade sugerida: recolher famílias quando o grafo crescer.
+
+## 9. Inspecionar uma nota sem sair do grafo
+
+Clique num vértice global, selecione um resultado da busca ou escolha uma nota conectada no painel
+para inspecionar essa nota e destacar sua vizinhança. O painel mostra título/ícone, estado de
+arquivamento, tags, todas as famílias configuradas compatíveis e notas conectadas dentro dos filtros
+atuais. A ordem das famílias continua definindo a região desenhada quando várias combinam. Os
+metadados das famílias configuradas aparecem mesmo com Mostrar grupos desligado.
+
+As conexões incluem links de entrada e saída, listando cada outra nota uma vez, independentemente
+do tipo ou direção. **Abrir nota** é a ação explícita que navega para o editor. A sidebar continua
+abrindo páginas diretamente. Fechar os detalhes mantém a seleção e o destaque; limpar a busca
+ou mudar os filtros de espaço/tags fecha os detalhes e limpa a seleção.
+
+No desktop, o painel fica ao lado do canvas, permitindo selecionar outro vértice imediatamente.
+Em telas pequenas, usa uma gaveta com rolagem. Os metadados vêm dos payloads existentes do grafo e
+das tags; não há consulta do conteúdo da página, alteração de backend ou persistência nova. O grafo
+local da página mantém o comportamento original de abrir a nota ao clicar.

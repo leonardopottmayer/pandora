@@ -1049,6 +1049,18 @@
       "placeholder": "Localizar nota no grafo",
       "empty": "Nenhuma nota correspondente neste grafo."
     },
+    "graphDetails": {
+      "title": "Detalhes da nota",
+      "archived": "Arquivada",
+      "tags": "Tags",
+      "noTags": "Sem tags.",
+      "families": "Famílias",
+      "region": "Região quando os grupos estão ligados: {{name}}.",
+      "connections": "Notas conectadas ({{count}})",
+      "noConnections": "Nenhuma nota conectada neste grafo.",
+      "open": "Abrir nota",
+      "close": "Fechar detalhes da nota"
+    },
     "graphGroups": {
       "show": "Mostrar grupos",
       "configure": "Configurar famílias",
