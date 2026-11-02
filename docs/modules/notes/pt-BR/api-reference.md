@@ -73,17 +73,25 @@ não seja `#rrggbb` responde **422**. Ver [Espaços](spaces.md).
 varredura que a encontra órfã. Corpo: `SetTagColorRequest { color }` — só hex (`#rgb` / `#rrggbb` /
 `#rrggbbaa`); valor inválido responde **422**.
 
-## Anexos — `/attachments`
+## Mídia — `/media` e `/media-folders`
 
 | Método | Rota | Propósito |
 |---|---|---|
-| POST | `/attachments` | Upload (`multipart/form-data`: `file`, `pageId` opcional) |
-| GET | `/attachments/{id}` | Baixar os bytes |
+| GET | `/media` | Listar itens: `folderId` (os da pasta), `unsorted=true`, ou nenhum (todos); `kind` e `q` (trecho do nome) estreitam |
+| POST | `/media` | Upload (`multipart/form-data`: `file`, `folderId` opcional) — até 25 MB; vídeo responde **422** |
+| PUT | `/media/{id}` | Renomear (`{ name }`) |
+| POST | `/media/{id}/move` | Mover (`{ folderId }`, null para "Não organizadas") |
+| DELETE | `/media/{id}` | Soft delete; os bytes continuam servidos |
+| GET | `/media/{id}` · `/media/{id}/thumbnail` | Os bytes, ou os da miniatura (404 quando não há) |
+| GET | `/media-folders` | Toda pasta com sua contagem, mais `unsortedCount` e `totalCount` |
+| POST | `/media-folders` | Criar (`{ name, parentId? }`) |
+| PUT | `/media-folders/{id}` | Renomear (`{ name }`) |
+| POST | `/media-folders/{id}/move` | Mover (`{ parentId }`) — para dentro de si ou de uma subpasta responde **409** |
+| DELETE | `/media-folders/{id}` | Excluir, subindo o que ela tem um nível |
 
-O download responde com o `Content-Type` guardado e `Content-Disposition: inline` carregando o nome
-original. Como é autenticado e o token não é cookie, uma navegação do browser ou um `<img src>` cru
-não chegam nele — o cliente busca o blob e entrega um object URL. Ver
-[Anexos](attachments.md#4-a-consequência-o-browser-não-alcança-um-anexo-sozinho).
+Os bytes saem com `Content-Disposition: inline` (nome original) e
+`Cache-Control: private, max-age=31536000, immutable`. Como são autenticados e o token não é cookie, o
+cliente busca o blob e entrega um object URL. Ver [Biblioteca de mídia](media-library.md).
 
 ---
 
@@ -101,4 +109,6 @@ não chegam nele — o cliente busca o blob e entrega um object URL. Ver
 | `PageGraphDto` | `Nodes[]`, `Edges[]` |
 | `GraphNodeDto` | `Id, Title, Slug, Icon, IsArchived, Degree` |
 | `GraphEdgeDto` | `SourceId, TargetId, Kind` |
-| `AttachmentDto` | `Id, PageId, FileName, ContentType, SizeBytes, Url, CreatedAt` |
+| `MediaItemDto` | `Id, FolderId, Kind, Name, OriginalFileName, ContentType, SizeBytes, Width, Height, Url, ThumbnailUrl, CreatedAt` |
+| `MediaFolderDto` | `Id, ParentId, Name, ItemCount` |
+| `MediaFoldersDto` | `Folders[], UnsortedCount, TotalCount` |

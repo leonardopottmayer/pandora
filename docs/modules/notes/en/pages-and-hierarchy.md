@@ -8,7 +8,7 @@
 
 A **page** is a markdown document owned by the user and the aggregate root of the module
 (`nte001_page`). Everything else in Notes either derives from its body (edges, tags, the search
-vector) or hangs off it (attachments).
+vector) or is embedded in it (media).
 
 A page carries a `title`, an optional emoji `icon`, the `content_markdown` body, its place in the
 tree (`parent_id` + `order_index`), and three states: favorite, archived, deleted.

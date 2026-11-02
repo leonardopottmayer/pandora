@@ -1,5 +1,5 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchAttachmentBlob } from '@/modules/notes/services/attachments.service'
+import { fetchBlob } from '@/lib/api/blob'
 import * as mailService from '../services/communications.service'
 import type { ConnectMailboxInput, MessageActionInput, RuleInput, SendMessageInput, ServerSettings } from '../services/communications.service'
 import type { ComposeMode, MailAttachment, MessageFilter } from '../models'
@@ -71,7 +71,7 @@ export function useInlineImages(messageId: string | undefined, attachments: Mail
   return useQueries({
     queries: inline.map((a) => ({
       queryKey: mailKeys.inline(messageId ?? '', a.id),
-      queryFn: async () => readAsDataUrl(await fetchAttachmentBlob(mailService.attachmentUrl(messageId!, a.id))),
+      queryFn: async () => readAsDataUrl(await fetchBlob(mailService.attachmentUrl(messageId!, a.id))),
       enabled: messageId !== undefined,
       staleTime: Infinity,
       retry: false,

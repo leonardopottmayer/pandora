@@ -8,8 +8,8 @@ enums guardados como `VARCHAR`. As raízes do usuário têm `user_id NOT NULL` e
 derivadas chegam ao dono pela page delas.
 
 Colunas de auditoria (`created_by/created_at/updated_by/updated_at`) existem só nas tabelas que são
-*editadas* — `nte001_page` e `nte005_tag`. As derivadas (`nte004`, `nte006`) e as write-once
-(`nte002`, `nte003`) carregam só `created_at`, porque nada ali atualiza uma linha.
+*editadas* — pages, tags, espaços, itens de mídia e pastas. As derivadas (`nte004`, `nte006`) e as
+write-once (`nte003`, `nte009`) carregam só `created_at`, porque nada ali atualiza uma linha.
 
 As migrations ficam em `migrations/migrations/notes/`.
 
@@ -18,15 +18,17 @@ As migrations ficam em `migrations/migrations/notes/`.
 | # | Tabela | Conteúdo |
 |---|---|---|
 | nte001 | `page` | Pages (árvore + corpo + vetor de busca) |
-| nte002 | `attachment` | Metadados dos arquivos subidos |
+| nte002 | `media` | Itens da biblioteca de mídia: imagens e arquivos |
 | nte003 | `file_blob` | Os bytes (backend `DatabaseFileStorage`) |
 | nte004 | `page_link` | Arestas do grafo wiki, derivadas do corpo |
 | nte005 | `tag` | Rótulos do usuário, nascidos do corpo |
 | nte006 | `page_tag` | Arestas page ↔ tag, derivadas do corpo |
 | nte007 | `space` | Espaços que agrupam as pages |
+| nte008 | `media_folder` | Pastas virtuais da biblioteca |
+| nte009 | `media_rendition` | Versões derivadas de um item de mídia (miniaturas) |
 
-> A numeração é ordem de criação, não a ordem em que as tabelas se referenciam: `nte003` veio antes
-> de `nte002` porque o blob store precisava existir antes dos metadados que apontam para ele.
+> Os números nomeiam as tabelas; as migrations rodam na ordem das dependências (espaço antes da
+> page, blob store e pastas antes da mídia).
 
 ---
 
@@ -57,43 +59,74 @@ Constraints e índices:
 - `uq_nte001_user_slug (user_id, slug) WHERE deleted_at IS NULL` — índice único **parcial**, então
   uma page soft-deletada libera o slug para reuso.
 - `ix_nte001_user_id`, `ix_nte001_parent_id`, `ix_nte001_space_id`.
-- `fk_nte001_space (space_id → nte007.id)` — declarada pela migration da nte007, que roda depois da nte001.
+- `fk_nte001_space (space_id → nte007.id)`.
 - `ix_nte001_search_vector` — **GIN** sobre a coluna gerada.
 
 O vetor usa a configuração `simple` (só lower-case, sem stemming, sem adivinhar idioma), porque o
 caderno mistura português e inglês e escolher uma língua pioraria a outra. Ver [Busca](search.md).
 
-## nte002_attachment
+## nte002_media
 
 | Coluna | Tipo | Notas |
 |---|---|---|
-| `id` | uuid PK | também o id na URL de download |
-| `user_id` | uuid NOT NULL | quem enviou; download por qualquer outro usuário devolve 404 |
-| `page_id` | uuid NULL | **referência solta, sem FK** — a page pode ser soft-deletada e o anexo continuar ali |
-| `file_name` | varchar(255) NOT NULL | nome original, usado como nome do arquivo no download |
+| `id` | uuid PK | também o id na URL que a nota embeda |
+| `user_id` | uuid NOT NULL | quem enviou; qualquer outro usuário recebe 404 |
+| `folder_id` | uuid NULL → nte008 | `NULL` é "Não organizadas" |
+| `kind` | varchar(20) NOT NULL | `image` \| `file` \| `video` (`chk_nte002_kind`); vídeo ainda não é aceito |
+| `name` | varchar(255) NOT NULL | o que a biblioteca mostra; renomeável |
+| `original_file_name` | varchar(255) NOT NULL | o nome do arquivo baixado |
 | `content_type` | varchar(255) NOT NULL | MIME como enviado; vazio cai em `application/octet-stream` |
 | `size_bytes` | bigint NOT NULL | |
-| `storage_backend` | varchar(50) NOT NULL | qual `IFileStorage` tem os bytes — hoje sempre `Database` |
-| `storage_key` | varchar(1024) NOT NULL | chave opaca dentro daquele backend — hoje o id da linha `nte003` |
-| `created_at` | timestamptz NOT NULL | write-once, então sem `updated_*` |
+| `width`, `height` | int NULL | pixels, já de pé; NULL para arquivo ou imagem que o servidor não lê |
+| `storage_backend` | varchar(50) NOT NULL | qual `IFileStorage` tem os bytes — hoje `Database` |
+| `storage_key` | varchar(1024) NOT NULL | chave opaca dentro daquele backend — hoje o id de uma linha `nte003` |
+| `deleted_at` | timestamptz NULL | soft delete; os bytes continuam servidos |
+| auditoria | `created_by/at`, `updated_by/at` | |
 
-Índices `ix_nte002_user_id`, `ix_nte002_page_id`. O par `storage_backend` + `storage_key` é o que permite um backend S3
-futuro entrar sem migration: a leitura continua auto-descritiva e as linhas antigas seguem
-funcionando.
+Índices `ix_nte002_user_id`, `ix_nte002_folder_id`; `fk_nte002_folder`. O par `storage_backend` +
+`storage_key` é o que permite um backend de bucket entrar sem migration. Ver [Biblioteca de mídia](media-library.md).
 
 ## nte003_file_blob
 
 | Coluna | Tipo | Notas |
 |---|---|---|
-| `id` | uuid PK | o valor guardado como `storage_key` de um anexo |
+| `id` | uuid PK | o valor guardado como `storage_key` de um item ou de uma versão |
 | `file_name` | varchar(255) NOT NULL | |
 | `content_type` | varchar(255) NOT NULL | |
 | `size_bytes` | bigint NOT NULL | |
 | `content` | bytea NOT NULL | os bytes |
 | `created_at` | timestamptz NOT NULL | |
 
-O blob store genérico atrás do `DatabaseFileStorage`. Ele não sabe nada sobre pages nem usuários — é
-endereçado só por uma linha de anexo.
+O blob store genérico atrás do `DatabaseFileStorage`. Ele não sabe nada sobre pages, mídia ou
+usuários — é endereçado só pelas linhas que apontam para ele.
+
+## nte008_media_folder
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | |
+| `user_id` | uuid NOT NULL | |
+| `parent_id` | uuid NULL → nte008 | a árvore; `NULL` é o topo |
+| `name` | varchar(100) NOT NULL | |
+| auditoria | `created_by/at`, `updated_by/at` | |
+
+`fk_nte008_parent`, `ix_nte008_user_id`. Excluir uma pasta sobe o que ela tem antes, então a linha
+sai de vez.
+
+## nte009_media_rendition
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | |
+| `media_id` | uuid NOT NULL → nte002 | |
+| `purpose` | varchar(20) NOT NULL | `thumbnail` (`chk_nte009_purpose`); a capa de vídeo seria a próxima |
+| `width`, `height` | int NOT NULL | |
+| `content_type` | varchar(255) NOT NULL | `image/webp` nas miniaturas |
+| `size_bytes` | bigint NOT NULL | |
+| `storage_backend`, `storage_key` | como na nte002 | bytes próprios no blob store |
+| `created_at` | timestamptz NOT NULL | gravada uma vez no upload |
+
+`uq_nte009_media_purpose (media_id, purpose)` — uma de cada por item.
 
 ## nte004_page_link
 
@@ -173,5 +206,8 @@ nte001_page ──parent_id──┐ (auto-referência, árvore, sem cascade)
      │
      ├──< nte004_page_link (source_page_id, target_page_id)   o grafo wiki, ciclos permitidos
      ├──< nte006_page_tag (page_id) >── nte005_tag (user_id)  rótulos escritos no corpo
-     └──… nte002_attachment (page_id, solto, sem FK) ──storage_key──> nte003_file_blob
+     └──… embeda mídia pela URL no markdown
+
+nte008_media_folder ──< nte002_media (folder_id) ──< nte009_media_rendition (media_id)
+                         nte002 / nte009 ──storage_key──> nte003_file_blob
 ```

@@ -26,9 +26,9 @@ import { SpaceOverview } from '../components/SpaceOverview'
 import { useAutosave } from '../hooks/useAutosave'
 import { useCreatePage, usePage, usePageTree, useUpdatePage } from '../hooks/usePages'
 import { useSpaces } from '../hooks/useSpaces'
+import { useUploadMedia } from '../hooks/useMedia'
 import { useTags } from '../hooks/useTags'
 import { buildPageIndex } from '../lib/wikilinks'
-import { uploadAttachment } from '../services/attachments.service'
 import '../components/notes.css'
 
 type ViewMode = 'edit' | 'split' | 'preview'
@@ -96,6 +96,7 @@ export function NotesPage() {
   const space = spaces?.find((candidate) => candidate.id === spaceId)
   const updateMutation = useUpdatePage()
   const createMutation = useCreatePage()
+  const uploadMedia = useUploadMedia()
 
   // Wikilinks resolve against every page, archived included: archiving hides a page from the
   // sidebar but does not break links to it (and the backend resolves it the same way).
@@ -216,7 +217,8 @@ export function NotesPage() {
 
   async function handleUpload(file: File) {
     try {
-      return await uploadAttachment(file, selectedId ?? undefined)
+      // Pasted or dropped into a note, a file lands in the library unsorted.
+      return await uploadMedia.mutateAsync({ file })
     } catch (err) {
       message.error(toErrorMessage(err, t('notes.uploadError')))
       throw err

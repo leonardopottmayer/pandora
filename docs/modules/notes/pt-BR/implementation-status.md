@@ -19,7 +19,7 @@ não o log das fases.
 | **Pages** | Aggregate `Page`, árvore com rejeição de ciclo no reparent, slugs congelados com sufixo em colisão, mover/reordenar, favoritar, arquivar, soft delete da subárvore inteira (`nte001`). |
 | **Espaços** | Aggregate `Space`, um padrão por usuário (criado na hora quando não há), pages num espaço, mover entre espaços levando a subárvore, wikilinks preferindo o próprio espaço, filtro de espaço na árvore / busca / grafo, tela de espaços e seletor na sidebar, `create_note` aceitando espaço (`nte007`). |
 | **Ícone emoji** | Picker ao lado do título, reduzido ao primeiro grafema via `Intl.Segmenter`, salvo pelo autosave da própria page. |
-| **Anexos** | `IFileStorage` + `DatabaseFileStorage`, tabela de blob, upload/download autenticados, colar/arrastar inline no editor, resolução por object URL no preview (`nte002`, `nte003`). |
+| **Biblioteca de mídia** | Itens (imagem / arquivo; vídeo no schema, recusado no upload) em pastas virtuais, miniaturas WebP com ImageSharp e rotação EXIF, mover pastas sem ciclo, pasta excluída subindo o conteúdo, soft delete mantendo os bytes servidos, cache imutável, a tela da biblioteca, colar/arrastar no editor para "Não organizadas" (`nte002`, `nte003`, `nte008`, `nte009`). |
 | **Editor** | CodeMirror 6, markdown cru + preview + modo split, autosave de 800 ms, sanitização com DOMPurify. |
 | **Blocos ricos** | Slash commands (11 blocos + 6 callouts), callouts Obsidian como extensão do `marked`, tabelas markdown assistidas com Tab/Shift+Tab e reformatação idempotente. |
 | **Autocomplete** | Três menus — `[[` (pages por título e slug), `#` (tags existentes), `/` (comandos) — compartilhando `filter: false`, entradas por ref e tooltip pendurada no body. |
@@ -42,7 +42,7 @@ não o log das fases.
 | **Callouts colapsáveis** (`> [!note]-`) | Deliberadamente fora do escopo de blocos ricos. Se entrar, o lugar é a variante `-`/`+` em `lib/callouts.ts`. |
 | **Alinhamento de coluna pela UI** | Deliberadamente fora. O lugar seria a linha separadora em `lib/markdownTables.ts`. |
 | **Editor visual de tabela** (widget WYSIWYG) | Rejeitado: trocaria o markdown por um widget renderizado como texto editável, o oposto da premissa do módulo. |
-| **Backend S3/MinIO** | Só a abstração existe. `storage_backend` + `storage_key` em cada anexo fazem com que plugá-lo não exija migration; o gatilho natural são uploads grandes. |
+| **Backend de bucket e vídeo** | Só a abstração existe. `storage_backend` + `storage_key` em cada linha de mídia fazem com que plugar um bucket não exija migration; vídeo pede também download por pedaços e a versão de capa. Ver [Biblioteca de mídia](media-library.md#3-tipos-e-o-que-fica-pronto-para-vídeo). |
 | **Histórico de versões, templates de page, share/colaboração** | Futuro no plano de produto; nada iniciado. |
 
 ## Deliberadamente fora (não é dívida)
@@ -57,11 +57,10 @@ não o log das fases.
 
 ## Pontos em aberto conhecidos
 
-1. **Retenção dos blobs.** Os bytes dos anexos moram em `bytea`; revisitar mover para object storage
+1. **Retenção dos blobs.** Os bytes da mídia moram em `bytea`; revisitar mover para object storage
    se o caderno começar a carregar arquivos pesados — é também o gatilho do backend S3.
-2. **Anexos órfãos.** Nada apaga o blob quando a page que o embedava é deletada, e o `page_id` não tem
-   FK por design. Uma varredura precisaria de uma decisão sobre o que significa "sem referência" quando
-   a única referência é uma string de markdown.
+2. **Quais notas usam um item.** Nada registra isso ainda, então excluir um item mantém os bytes e
+   nada varre os sem uso. A próxima fase deriva isso do markdown, como os wikilinks.
 3. **Passeio do grafo em memória.** Carregar o conjunto inteiro de pages/arestas do usuário é o certo
    para um caderno pessoal; é a primeira coisa a revisitar se o grafo crescer.
 4. **Parsers duplicados.** `lib/wikilinks.ts` e `lib/tags.ts` espelham o backend de propósito, para o

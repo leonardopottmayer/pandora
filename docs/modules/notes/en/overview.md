@@ -12,8 +12,8 @@ lets a single user:
 - Write **pages** in markdown, organized as a **tree** (parent/child) shown in a sidebar.
 - Reorder and reparent pages by drag-and-drop; **favorite**, **archive**, and **delete** (soft).
 - Give a page an **emoji icon**, edited next to its title.
-- **Upload attachments** — paste an image, drop a zip or a PDF — served back by an authenticated
-  endpoint and embedded inline in the markdown.
+- **Keep a media library** — paste an image, drop a PDF — organized in folders, with thumbnails, served
+  back by an authenticated endpoint and embedded inline in the markdown.
 - Connect pages with `[[wikilinks]]` and `![[embeds]]`, and read the **backlinks** ("linked
   mentions") of the page being viewed.
 - Label pages with `#tags` written **in the text**, then filter the sidebar, the search and the
@@ -53,7 +53,7 @@ lets a single user:
 | **Tag** | A `#label` written in the body. Its **slug** is its identity per user (`#Café` and `#cafe` are one tag); its **name** is how it was first written; its **color** is the only thing the row adds over the text. |
 | **PageTag (edge)** | The materialized fact that a page carries a tag. Derived from the page's body, exactly like an edge. |
 | **Orphan sweep** | The pass at the end of a save that deletes tags no page mentions anymore — unless they carry a color. |
-| **Attachment** | An uploaded file's metadata plus the `(storage_backend, storage_key)` pair locating its bytes. Write-once. |
+| **Media item** | An image or file in the library, plus the `(storage_backend, storage_key)` pair locating its bytes. |
 | **File blob** | The bytes themselves, in the MVP a `bytea` row in `nte003_file_blob` — the one real `IFileStorage` backend. |
 | **Local graph** | The neighborhood of the open page within N hops, edges followed in both directions. |
 | **Degree** | How many edges touch a node *inside the returned graph* — what sizes the node when drawn. |
@@ -63,8 +63,8 @@ lets a single user:
 
 ### In scope (implemented — see [Implementation Status](implementation-status.md))
 
-Page CRUD with the tree, slugs, move/reorder, favorite, archive and soft delete; attachments with an
-`IFileStorage` abstraction and a database backend; the CodeMirror editor with autosave, live preview,
+Page CRUD with the tree, slugs, move/reorder, favorite, archive and soft delete; a media library with
+folders, thumbnails, an `IFileStorage` abstraction and a database backend; the CodeMirror editor with autosave, live preview,
 inline upload, slash commands, callouts and table editing; wikilinks, embeds and backlinks; tags with
 colors and intersection filters on three surfaces; full-text search with a command palette; global
 and local graph views.

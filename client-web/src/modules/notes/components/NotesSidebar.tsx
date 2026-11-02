@@ -10,6 +10,7 @@ import {
   EllipsisOutlined,
   FileTextOutlined,
   PartitionOutlined,
+  PictureOutlined,
   PlusOutlined,
   SearchOutlined,
   StarFilled,
@@ -289,6 +290,14 @@ export function NotesSidebar({
             icon={<PartitionOutlined />}
             title={t('notes.openGraph')}
             onClick={() => navigate('/notes/graph')}
+          />
+          <Button
+            type="text"
+            size="small"
+            icon={<PictureOutlined />}
+            title={t('notes.library.title')}
+            aria-label={t('notes.library.title')}
+            onClick={() => navigate('/notes/library')}
           />
           <Button
             type="text"

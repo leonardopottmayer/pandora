@@ -14,8 +14,9 @@ import {
   tagSource,
   wikilinkSource,
 } from '../lib/editorCommands'
+import { embedMarkdown } from '../lib/media'
 import { TableSizeModal } from './TableSizeModal'
-import type { AttachmentDto, PageSummaryDto, TagDto } from '../models'
+import type { MediaItemDto, PageSummaryDto, TagDto } from '../models'
 
 interface MarkdownEditorProps {
   /** Changing this resets the document (a different page was opened). */
@@ -28,17 +29,12 @@ interface MarkdownEditorProps {
   /** Tags offered by the `#` autocomplete — the ones that already exist somewhere. */
   tags: TagDto[]
   onChange: (value: string) => void
-  /** Uploads a pasted/dropped file and returns its attachment metadata for embedding. */
-  onUpload: (file: File) => Promise<AttachmentDto>
+  /** Uploads a pasted/dropped file to the media library and returns the item to embed. */
+  onUpload: (file: File) => Promise<MediaItemDto>
   /** Grows with the text instead of scrolling inside, so the page around it scrolls as one document. */
   autoHeight?: boolean
 }
 
-/** Only images embed inline as `![]`; other files embed as a plain markdown link. */
-function embedMarkdown(a: AttachmentDto): string {
-  const isImage = a.contentType.startsWith('image/')
-  return isImage ? `![${a.fileName}](${a.url})` : `[${a.fileName}](${a.url})`
-}
 
 export function MarkdownEditor({
   docId,
@@ -83,8 +79,8 @@ export function MarkdownEditor({
 
   async function handleFiles(view: EditorView, files: FileList) {
     for (const file of Array.from(files)) {
-      const attachment = await onUploadRef.current(file)
-      insertAtCursor(view, embedMarkdown(attachment))
+      const item = await onUploadRef.current(file)
+      insertAtCursor(view, embedMarkdown(item))
     }
   }
 

@@ -4,7 +4,7 @@
 > **Language:** English is the primary documentation. 🇧🇷 [Versão em português](pt-BR/README.md).
 
 The **Notes** module is a markdown knowledge base for a single user: hierarchical **pages** in a
-sidebar tree, inline **image/file attachments**, `[[wikilinks]]` with backlinks, `#tags`, full-text
+sidebar tree, a **media library** of images and files, `[[wikilinks]]` with backlinks, `#tags`, full-text
 search, a force-directed **graph view**, and an Obsidian-like CodeMirror editor with slash commands,
 callouts and markdown tables.
 
@@ -26,11 +26,11 @@ the *technical rules* (aggregates, invariants, schema, endpoints).
 |---|---|---|
 | 1 | [Overview](en/overview.md) | Vision, principles, ubiquitous language, scope (in/out) |
 | 2 | [Architecture](en/architecture.md) | Project layout, DDD building blocks, ports, key design decisions |
-| 3 | [Data Model](en/data-model.md) | Full schema catalog (`nte001`–`nte007`): columns, constraints, indexes |
+| 3 | [Data Model](en/data-model.md) | Full schema catalog (`nte001`–`nte009`): columns, constraints, indexes |
 | 4 | [Pages & Hierarchy](en/pages-and-hierarchy.md) | `Page` aggregate, tree, slug, move/reorder, favorite, archive, soft delete |
 | 4a | [Spaces](en/spaces.md) | Grouping pages like Confluence spaces, the default space, moving across spaces |
 | 5 | [Editor & Rich Blocks](en/editor.md) | CodeMirror 6, autosave, preview, slash commands, callouts, tables, autocomplete |
-| 6 | [Attachments & Storage](en/attachments.md) | `IFileStorage`, `DatabaseFileStorage`, upload/download, authenticated embedding |
+| 6 | [Media Library](en/media-library.md) | Items and folders, thumbnails, storage, authenticated serving, what is ready for video |
 | 7 | [Wikilinks & Backlinks](en/wikilinks-and-backlinks.md) | `[[target]]` parsing, `PageLink` edges, linked mentions, create-on-click |
 | 8 | [Tags](en/tags.md) | `#tag` parsing, normalization, derived edges, orphan sweep, colors, filters |
 | 9 | [Search](en/search.md) | `tsvector` generated column, `tsquery` translation, excerpt, command palette |

@@ -7,7 +7,7 @@
 ## 1. O que é uma page
 
 Uma **page** é um documento markdown do usuário e o aggregate root do módulo (`nte001_page`). Todo o
-resto do Notes ou deriva do corpo dela (arestas, tags, vetor de busca) ou pendura nela (anexos).
+resto do Notes ou deriva do corpo dela (arestas, tags, vetor de busca) ou é embedado nela (mídia).
 
 Uma page carrega um `title`, um `icon` emoji opcional, o corpo `content_markdown`, o lugar na árvore
 (`parent_id` + `order_index`) e três estados: favorita, arquivada, deletada.

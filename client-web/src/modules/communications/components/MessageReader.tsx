@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Alert, App, Button, Empty, Space, Spin, Typography, theme } from 'antd'
 import { PaperClipOutlined, RollbackOutlined, SendOutlined } from '@ant-design/icons'
 import { toErrorMessage } from '@/lib/api/envelope'
-import { downloadAttachment } from '@/modules/notes/services/attachments.service'
+import { downloadBlob } from '@/lib/api/blob'
 import { addressLabel, shortDate, type ComposeMode, type MailAddress, type Mailbox, type MessageAction, type MessageSummary } from '../models'
 import { attachmentUrl } from '../services/communications.service'
 import { useInlineImages, useMessage, useMessageAction, useMessages } from '../hooks/useMail'
@@ -59,7 +59,7 @@ export function MessageReader({
 
   async function download(attachmentId: string, fileName: string | null) {
     try {
-      await downloadAttachment(attachmentUrl(summary.id, attachmentId), fileName ?? 'attachment')
+      await downloadBlob(attachmentUrl(summary.id, attachmentId), fileName ?? 'attachment')
     } catch (err) {
       toast.error(toErrorMessage(err, t('mail.downloadError')))
     }

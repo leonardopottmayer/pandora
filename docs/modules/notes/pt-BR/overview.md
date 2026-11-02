@@ -12,8 +12,8 @@ a um único usuário:
 - Escrever **pages** em markdown, organizadas em **árvore** (pai/filho) exibida numa sidebar.
 - Reordenar e reparentar por drag-and-drop; **favoritar**, **arquivar** e **deletar** (soft).
 - Dar à page um **ícone emoji**, editado ao lado do título.
-- **Subir anexos** — colar uma imagem, arrastar um zip ou um PDF — servidos de volta por um endpoint
-  autenticado e embedados inline no markdown.
+- **Manter uma biblioteca de mídia** — colar uma imagem, arrastar um PDF — em pastas, com miniaturas,
+  servida por um endpoint autenticado e embedada inline no markdown.
 - Conectar pages com `[[wikilinks]]` e `![[embeds]]`, e ler os **backlinks** ("linked mentions") da
   page aberta.
 - Rotular pages com `#tags` escritas **no texto**, e então filtrar a sidebar, a busca e o grafo por
@@ -53,7 +53,7 @@ a um único usuário:
 | **Tag** | Um `#rótulo` escrito no corpo. O **slug** é a identidade por usuário (`#Café` e `#cafe` são uma tag só); o **nome** é como foi escrita primeiro; a **cor** é a única coisa que a linha acrescenta ao texto. |
 | **PageTag (aresta)** | O fato materializado de que uma page carrega uma tag. Derivado do corpo, exatamente como uma aresta. |
 | **Varredura de órfãs** | A passada no fim do save que apaga as tags que nenhuma page menciona mais — a menos que tenham cor. |
-| **Anexo** | Os metadados de um arquivo subido mais o par `(storage_backend, storage_key)` que localiza os bytes. Write-once. |
+| **Item de mídia** | Uma imagem ou arquivo da biblioteca, mais o par `(storage_backend, storage_key)` que localiza os bytes. |
 | **File blob** | Os bytes em si; no MVP uma linha `bytea` em `nte003_file_blob` — o único backend real de `IFileStorage`. |
 | **Grafo local** | A vizinhança da page aberta dentro de N saltos, com as arestas percorridas nos dois sentidos. |
 | **Grau (degree)** | Quantas arestas tocam um nó *dentro do grafo devolvido* — é o que dimensiona o nó no desenho. |
@@ -63,8 +63,8 @@ a um único usuário:
 
 ### Dentro (implementado — ver [Status de implementação](implementation-status.md))
 
-CRUD de pages com árvore, slugs, mover/reordenar, favoritar, arquivar e soft delete; anexos com a
-abstração `IFileStorage` e backend em banco; o editor CodeMirror com autosave, live preview, upload
+CRUD de pages com árvore, slugs, mover/reordenar, favoritar, arquivar e soft delete; biblioteca de mídia com
+pastas, miniaturas, a abstração `IFileStorage` e backend em banco; o editor CodeMirror com autosave, live preview, upload
 inline, slash commands, callouts e edição de tabelas; wikilinks, embeds e backlinks; tags com cores e
 filtros por interseção em três superfícies; busca full-text com command palette; grafo global e local.
 

@@ -4,14 +4,14 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '@/test/utils'
 import { MarkdownPreview } from './MarkdownPreview'
 
-vi.mock('../services/attachments.service', () => ({
-  fetchAttachmentBlob: vi.fn(async () => new Blob(['x'], { type: 'image/png' })),
-  downloadAttachment: vi.fn(async () => {}),
+vi.mock('../services/media.service', () => ({
+  fetchMediaBlob: vi.fn(async () => new Blob(['x'], { type: 'image/png' })),
+  downloadMedia: vi.fn(async () => {}),
 }))
 
-const { downloadAttachment } = await import('../services/attachments.service')
+const { downloadMedia } = await import('../services/media.service')
 
-const PATH = '/api/v1/notes/attachments/aaaaaaaa-0000-0000-0000-000000000001'
+const PATH = '/api/v1/notes/media/aaaaaaaa-0000-0000-0000-000000000001'
 
 let created = 0
 
@@ -69,7 +69,7 @@ describe('MarkdownPreview — attachment links', () => {
 
     await user.click(getByText('manual.pdf'))
 
-    expect(downloadAttachment).toHaveBeenCalledWith(PATH, 'manual.pdf')
+    expect(downloadMedia).toHaveBeenCalledWith(PATH, 'manual.pdf')
   })
 
   it('leaves an ordinary link alone', async () => {
@@ -80,6 +80,6 @@ describe('MarkdownPreview — attachment links', () => {
 
     await user.click(getByText('site'))
 
-    expect(downloadAttachment).not.toHaveBeenCalled()
+    expect(downloadMedia).not.toHaveBeenCalled()
   })
 })

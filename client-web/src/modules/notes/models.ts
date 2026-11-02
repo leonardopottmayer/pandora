@@ -88,15 +88,40 @@ export interface SaveSpaceRequest {
   description: string | null
 }
 
-/** Metadata returned after an upload; `url` is the authenticated download path. */
-export interface AttachmentDto {
+/** What a library item is: how it shows. `video` exists in the schema but is not accepted yet. */
+export type MediaKind = 'image' | 'file' | 'video'
+
+/**
+ * An item of the media library. `url` is the authenticated path a note embeds; `thumbnailUrl` is null
+ * for a file, or for an image already small enough to show as it is.
+ */
+export interface MediaItemDto {
   id: string
-  pageId: string | null
-  fileName: string
+  folderId: string | null
+  kind: MediaKind
+  name: string
+  originalFileName: string
   contentType: string
   sizeBytes: number
+  width: number | null
+  height: number | null
   url: string
+  thumbnailUrl: string | null
   createdAt: string
+}
+
+/** A virtual folder, with how many items it holds directly. */
+export interface MediaFolderDto {
+  id: string
+  parentId: string | null
+  name: string
+  itemCount: number
+}
+
+export interface MediaFoldersDto {
+  folders: MediaFolderDto[]
+  unsortedCount: number
+  totalCount: number
 }
 
 /** A page that mentions the one being read ("linked mention"), and how it mentions it. */

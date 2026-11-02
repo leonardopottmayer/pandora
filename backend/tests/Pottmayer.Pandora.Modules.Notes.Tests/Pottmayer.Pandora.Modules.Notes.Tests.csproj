@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Modules/Notes/Pottmayer.Pandora.Modules.Notes.Application/Pottmayer.Pandora.Modules.Notes.Application.csproj" />
     <ProjectReference Include="../../src/Modules/Notes/Pottmayer.Pandora.Modules.Notes.Domain/Pottmayer.Pandora.Modules.Notes.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/Notes/Pottmayer.Pandora.Modules.Notes.Infrastructure/Pottmayer.Pandora.Modules.Notes.Infrastructure.csproj" />
     <ProjectReference Include="../../src/Modules/Notes/Pottmayer.Pandora.Modules.Notes.Persistence/Pottmayer.Pandora.Modules.Notes.Persistence.csproj" />
   </ItemGroup>
 

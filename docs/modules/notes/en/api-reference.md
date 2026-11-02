@@ -73,17 +73,25 @@ There is **no POST and no DELETE**, by design: a tag is created by the markdown 
 removed by the sweep that finds it orphaned. Body: `SetTagColorRequest { color }` — hex only
 (`#rgb` / `#rrggbb` / `#rrggbbaa`); an invalid value answers **422**.
 
-## Attachments — `/attachments`
+## Media — `/media` and `/media-folders`
 
 | Method | Route | Purpose |
 |---|---|---|
-| POST | `/attachments` | Upload (`multipart/form-data`: `file`, optional `pageId`) |
-| GET | `/attachments/{id}` | Download the bytes |
+| GET | `/media` | List items: `folderId` (one folder's own), `unsorted=true`, or neither (all); `kind`, `q` (name fragment) narrow |
+| POST | `/media` | Upload (`multipart/form-data`: `file`, optional `folderId`) — up to 25 MB; video answers **422** |
+| PUT | `/media/{id}` | Rename (`{ name }`) |
+| POST | `/media/{id}/move` | Move (`{ folderId }`, null for "Unsorted") |
+| DELETE | `/media/{id}` | Soft-delete; the bytes keep being served |
+| GET | `/media/{id}` · `/media/{id}/thumbnail` | The bytes, or the thumbnail's (404 when there is none) |
+| GET | `/media-folders` | Every folder with its item count, plus `unsortedCount` and `totalCount` |
+| POST | `/media-folders` | Create (`{ name, parentId? }`) |
+| PUT | `/media-folders/{id}` | Rename (`{ name }`) |
+| POST | `/media-folders/{id}/move` | Move (`{ parentId }`) — into itself or a subfolder answers **409** |
+| DELETE | `/media-folders/{id}` | Delete, moving what it holds up a level |
 
-The download responds with the stored `Content-Type` and `Content-Disposition: inline` carrying the
-original filename. Because it is authenticated and the token is not a cookie, a browser navigation or
-a bare `<img src>` will not reach it — the client fetches the blob and hands over an object URL. See
-[Attachments](attachments.md#4-the-consequence-the-browser-cannot-fetch-an-attachment-by-itself).
+The bytes come with `Content-Disposition: inline` (original file name) and
+`Cache-Control: private, max-age=31536000, immutable`. Because they are authenticated and the token is
+not a cookie, the client fetches the blob and hands over an object URL. See [Media Library](media-library.md).
 
 ---
 
@@ -101,4 +109,6 @@ a bare `<img src>` will not reach it — the client fetches the blob and hands o
 | `PageGraphDto` | `Nodes[]`, `Edges[]` |
 | `GraphNodeDto` | `Id, Title, Slug, Icon, IsArchived, Degree` |
 | `GraphEdgeDto` | `SourceId, TargetId, Kind` |
-| `AttachmentDto` | `Id, PageId, FileName, ContentType, SizeBytes, Url, CreatedAt` |
+| `MediaItemDto` | `Id, FolderId, Kind, Name, OriginalFileName, ContentType, SizeBytes, Width, Height, Url, ThumbnailUrl, CreatedAt` |
+| `MediaFolderDto` | `Id, ParentId, Name, ItemCount` |
+| `MediaFoldersDto` | `Folders[], UnsortedCount, TotalCount` |

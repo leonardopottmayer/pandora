@@ -1,6 +1,6 @@
 # Editor e blocos ricos
 
-[← Voltar ao índice](README.md) · Relacionados: [Pages e hierarquia](pages-and-hierarchy.md), [Anexos](attachments.md), [Tags](tags.md)
+[← Voltar ao índice](README.md) · Relacionados: [Pages e hierarquia](pages-and-hierarchy.md), [Biblioteca de mídia](media-library.md), [Tags](tags.md)
 
 O editor é **100% frontend**. Tudo que ele produz é markdown comum, que o `content_markdown` já
 guardava — nada aqui exigiu mudança de backend.
@@ -28,9 +28,10 @@ por pausa na digitação, não por tecla.
 
 ## 3. Upload inline
 
-Colar (`Ctrl+V`) ou arrastar um arquivo faz upload para `POST /notes/attachments` e insere
-`![nome](/api/v1/notes/attachments/{id})` no cursor. O rótulo é o nome original do arquivo, que é
-também o que o handler de download usa depois para nomear o arquivo salvo. Ver [Anexos](attachments.md).
+Colar (`Ctrl+V`) ou arrastar um arquivo envia ele para a biblioteca de mídia, em "Não organizadas"
+(`POST /notes/media`), e insere `![nome](/api/v1/notes/media/{id})` no cursor — um link `[nome](…)` para
+um arquivo que não é imagem. O rótulo é o nome do item, que é também o que o handler de download usa
+depois para nomear o arquivo salvo. Ver [Biblioteca de mídia](media-library.md).
 
 ## 4. Três menus de autocomplete
 
@@ -111,8 +112,8 @@ O `MarkdownPreview` renderiza com `marked`, sanitiza com DOMPurify, e então pó
 2. **`#tags`** viram chips coloridos, pintados com a lista de tags do módulo. O chip define `color` e
    `border-color` **inline** em vez de custom property: o HTML passa pelo DOMPurify, e o filtro de CSS
    dele é motivo suficiente para não depender de nada exótico sobreviver.
-3. **URLs de anexo** são trocadas por object URLs **depois** do DOMPurify — a allow-list de URI dele
+3. **URLs de mídia** são trocadas por object URLs **depois** do DOMPurify — a allow-list de URI dele
    não cobre `blob:`, então um object URL embutido antes seria removido. Ver
-   [Anexos](attachments.md#4-a-consequência-o-browser-não-alcança-um-anexo-sozinho).
+   [Biblioteca de mídia](media-library.md#7-servir-os-bytes).
 
-Cliques em wikilinks, chips de tag e links de anexo são todos interceptados pelo mesmo handler.
+Cliques em wikilinks, chips de tag e links de arquivo são todos interceptados pelo mesmo handler.

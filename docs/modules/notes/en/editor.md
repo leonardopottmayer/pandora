@@ -1,6 +1,6 @@
 # Editor & Rich Blocks
 
-[← Back to index](../README.md) · Related: [Pages & Hierarchy](pages-and-hierarchy.md), [Attachments](attachments.md), [Tags](tags.md)
+[← Back to index](../README.md) · Related: [Pages & Hierarchy](pages-and-hierarchy.md), [Media Library](media-library.md), [Tags](tags.md)
 
 The editor is **100% frontend**. Every block it produces is ordinary markdown, which
 `content_markdown` already stored — nothing here required a backend change.
@@ -27,10 +27,10 @@ per pause in typing, not per keystroke.
 
 ## 3. Inline upload
 
-Pasting (`Ctrl+V`) or dropping a file uploads it to `POST /notes/attachments` and inserts
-`![name](/api/v1/notes/attachments/{id})` at the cursor. The label is the original filename, which is
-also what the download handler later uses to name the saved file. See
-[Attachments](attachments.md).
+Pasting (`Ctrl+V`) or dropping a file uploads it to the media library, unsorted (`POST /notes/media`),
+and inserts `![name](/api/v1/notes/media/{id})` at the cursor — a link `[name](…)` for a file that is not
+an image. The label is the item's name, which is also what the download handler later uses to name
+the saved file. See [Media Library](media-library.md).
 
 ## 4. Three autocomplete menus
 
@@ -111,8 +111,8 @@ editor instead of only testing the arithmetic.
 2. **`#tags`** render as colored chips, painted with the module-wide tag list. The chip sets `color`
    and `border-color` **inline** rather than through a custom property: the HTML goes through
    DOMPurify, whose CSS filter is reason enough not to depend on anything exotic surviving.
-3. **Attachment URLs** are swapped for object URLs **after** DOMPurify — its URI allow-list does not
+3. **Media URLs** are swapped for object URLs **after** DOMPurify — its URI allow-list does not
    cover `blob:`, so an object URL embedded earlier would be stripped. See
-   [Attachments](attachments.md#4-the-consequence-the-browser-cannot-fetch-an-attachment-by-itself).
+   [Media Library](media-library.md#7-serving-the-bytes).
 
-Clicks on wikilinks, tag chips and attachment links are all intercepted by the same handler.
+Clicks on wikilinks, tag chips and file links are all intercepted by the same handler.

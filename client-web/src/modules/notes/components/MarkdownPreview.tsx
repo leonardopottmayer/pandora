@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { App } from 'antd'
 import { Marked } from 'marked'
 import DOMPurify from 'dompurify'
-import { downloadAttachment } from '../services/attachments.service'
-import { useAttachmentUrls } from '../hooks/useAttachmentUrls'
-import { attachmentFileName, isAttachmentUrl, withAttachmentUrls } from '../lib/attachments'
+import { downloadMedia } from '../services/media.service'
+import { useMediaUrls } from '../hooks/useMediaUrls'
+import { mediaFileName, isMediaUrl, withMediaUrls } from '../lib/media'
 import { calloutExtension, CALLOUT_TYPES, type CalloutLabels } from '../lib/callouts'
 import { codeRenderer } from '../lib/codeBlock'
 import { renderTags, type TagIndex } from '../lib/tags'
@@ -28,7 +28,7 @@ interface MarkdownPreviewProps {
 function renderHtml(
   parser: Marked,
   md: string,
-  attachmentUrls: ReadonlyMap<string, string>,
+  mediaUrls: ReadonlyMap<string, string>,
   pageIndex?: PageIndex,
   tagIndex?: TagIndex,
 ): string {
@@ -40,7 +40,7 @@ function renderHtml(
 
   // The object URLs go in after the sanitizer, and they are part of the rendered HTML: an image
   // whose src is only set on the DOM node is lost on the next re-render.
-  return withAttachmentUrls(DOMPurify.sanitize(raw), attachmentUrls)
+  return withMediaUrls(DOMPurify.sanitize(raw), mediaUrls)
 }
 
 /**
@@ -59,7 +59,7 @@ export function MarkdownPreview({
 }: MarkdownPreviewProps) {
   const { t, i18n } = useTranslation()
   const { message } = App.useApp()
-  const attachmentUrls = useAttachmentUrls(md)
+  const mediaUrls = useMediaUrls(md)
 
   // A callout written without a title falls back to the name of its type, so the parser is rebuilt
   // when the language changes.
@@ -72,8 +72,8 @@ export function MarkdownPreview({
   }, [i18n.language])
 
   const html = useMemo(
-    () => renderHtml(parser, md, attachmentUrls, pageIndex, tagIndex),
-    [parser, md, attachmentUrls, pageIndex, tagIndex],
+    () => renderHtml(parser, md, mediaUrls, pageIndex, tagIndex),
+    [parser, md, mediaUrls, pageIndex, tagIndex],
   )
 
   // Wikilinks are anchors with no real href; a delegated handler turns a click into navigation (or
@@ -92,9 +92,9 @@ export function MarkdownPreview({
     // An attachment link: the href is an API path, so letting the browser follow it would replace
     // the tab with an unauthenticated request. Fetch it and save it instead.
     const href = anchor.getAttribute('href') ?? ''
-    if (isAttachmentUrl(href)) {
+    if (isMediaUrl(href)) {
       event.preventDefault()
-      void downloadAttachment(href, attachmentFileName(href, anchor.textContent)).catch(() =>
+      void downloadMedia(href, mediaFileName(href, anchor.textContent)).catch(() =>
         message.error(t('notes.downloadError')),
       )
       return

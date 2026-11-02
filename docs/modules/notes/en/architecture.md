@@ -38,7 +38,9 @@ Frontend: `client-web/src/modules/notes`, split into `pages/` (routes), `compone
 | **PageLink** | An edge of the wiki graph. Created and removed, never edited — so it carries only `CreatedAt`. Cycles allowed. |
 | **Tag** | A user label. Identity is the `Slug`; `Name` records the first spelling; `Color` is the only mutable field, and `HasUserMetadata` is what makes an empty tag worth keeping. |
 | **PageTag** | The fact that a page carries a tag. Derived, immutable, like `PageLink`. |
-| **Attachment** | Metadata of an uploaded file + the `(StorageBackend, StorageKey)` pair locating the bytes. Write-once. |
+| **MediaItem** | A library item (image or file) + the `(StorageBackend, StorageKey)` pair locating the bytes. |
+| **MediaFolder** | A virtual folder of the library, in a tree. |
+| **MediaRendition** | A version derived from an item, with bytes of its own (the thumbnail). Write-once. |
 
 Two of these are **pure helpers**, not aggregates — stateless logic that needs the whole set rather
 than one row, kept in the domain so it stays unit-testable:
@@ -61,9 +63,10 @@ than one row, kept in the domain so it stays unit-testable:
 ### Ports (`Domain/Ports/Repositories`)
 
 `IPageRepository`, `IPageLinkRepository`, `ITagRepository`, `IPageTagRepository`,
-`IAttachmentRepository`. Storage is the shared `IFileStorage` port (`Shared.Domain/Storage`), consumed by
+`IMediaItemRepository`, `IMediaFolderRepository`, `IMediaRenditionRepository`, and `IImageProcessor`
+(ImageSharp, in `Infrastructure`). Storage is the shared `IFileStorage` port (`Shared.Domain/Storage`), consumed by
 the application keyed by `NotesModule.DatabaseKey`; its `DatabaseFileStorage` lives in
-`Shared.Persistence/Storage` over the module's `nte003_file_blob` table (see [Attachments](attachments.md)).
+`Shared.Persistence/Storage` over the module's `nte003_file_blob` table (see [Media Library](media-library.md)).
 
 The module declares **no domain services and no jobs** — nothing here runs on a schedule.
 
@@ -86,16 +89,16 @@ The module declares **no domain services and no jobs** — nothing here runs on 
 | **D4** | The slug is frozen at creation. | A rename must not break `[[links]]` or URLs. Rejected re-slugging on rename. |
 | **D5** | Delete is a **soft delete of the whole subtree**, done in the command rather than by a DB cascade. | No child is left pointing at a deleted parent, and the rows survive for history. Rejected `ON DELETE CASCADE` (a hard delete of history). |
 | **D6** | `search_vector` is a **generated STORED column**, not maintained by application code. | Postgres keeps it in sync, so no save path can forget it. Configuration `simple` (lower-case only, no stemming) because the notebook mixes PT-BR and EN. |
-| **D7** | The blob store sits behind `IFileStorage`, with the backend and key recorded **on each attachment**. | Adding S3 later needs no migration and no rewrite of old rows — reads are self-describing. |
+| **D7** | The blob store sits behind `IFileStorage`, with the backend and key recorded **on each media row**. | Adding S3 later needs no migration and no rewrite of old rows — reads are self-describing. |
 | **D8** | The local graph is cut **in memory**, not with a recursive SQL walk. | A personal notebook is small; loading the user's pages and edges and running BFS keeps depth logic out of SQL and unit-testable. |
 | **D9** | A tag row survives losing its last page **only if it has a color**. | Color is the one thing the text cannot recover; without it, an unused tag is just noise in the filters. |
 | **D10** | Multi-tag filters **intersect** (AND), identically on all three surfaces. | "Keep narrowing" is the expected behaviour, and one rule everywhere beats OR here and AND there. |
-| **D11** | Attachments are served by an **authenticated endpoint**, never by a direct path. | The bytes are the user's. The consequence is that the browser cannot fetch them on its own — see [Attachments](attachments.md#4-the-consequence-the-browser-cannot-fetch-an-attachment-by-itself). |
+| **D11** | Media are served by an **authenticated endpoint**, never by a direct path. | The bytes are the user's. The consequence is that the browser cannot fetch them on its own — see [Media Library](media-library.md#7-serving-the-bytes). |
 
 ## 4. Cross-cutting rules
 
-- **Multi-tenant by user.** `nte001_page`, `nte005_tag` and `nte002_attachment` carry
-  `user_id NOT NULL` (an attachment may have no page, so it cannot reach its owner through one); the
+- **Multi-tenant by user.** `nte001_page`, `nte005_tag`, `nte007_space`, `nte002_media` and
+  `nte008_media_folder` carry `user_id NOT NULL` (a media item belongs to no page); the
   derived tables reach the owner through their page. Every endpoint is authenticated and scoped to the
   token's user; another user's resource returns **404** (not 403).
 - **`TimeProvider` everywhere.** No aggregate reads `DateTime.Now` directly, which is what makes the

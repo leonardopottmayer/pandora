@@ -17,6 +17,7 @@ import {
   LayoutOutlined,
   BookOutlined,
   FileTextOutlined,
+  PictureOutlined,
   ScheduleOutlined,
   CalendarOutlined,
   CheckSquareOutlined,
@@ -90,6 +91,7 @@ export const navigationModules: NavModule[] = [
     icon: <BookOutlined />,
     screens: [
       { key: 'notes-spaces', labelKey: 'nav.notesSpaces', path: '/notes', icon: <FileTextOutlined /> },
+      { key: 'notes-library', labelKey: 'nav.notesLibrary', path: '/notes/library', icon: <PictureOutlined /> },
     ],
   },
   {

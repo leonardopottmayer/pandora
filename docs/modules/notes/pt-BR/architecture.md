@@ -38,7 +38,9 @@ Frontend: `client-web/src/modules/notes`, dividido em `pages/` (rotas), `compone
 | **PageLink** | Uma aresta do grafo wiki. Criada e removida, nunca editada — por isso só carrega `CreatedAt`. Ciclos permitidos. |
 | **Tag** | Um rótulo do usuário. A identidade é o `Slug`; `Name` registra a primeira grafia; `Color` é o único campo mutável, e `HasUserMetadata` é o que faz uma tag vazia valer a pena manter. |
 | **PageTag** | O fato de uma page carregar uma tag. Derivado e imutável, como `PageLink`. |
-| **Attachment** | Metadados de um arquivo subido + o par `(StorageBackend, StorageKey)` que localiza os bytes. Write-once. |
+| **MediaItem** | Um item da biblioteca (imagem ou arquivo) + o par `(StorageBackend, StorageKey)` que localiza os bytes. |
+| **MediaFolder** | Uma pasta virtual da biblioteca, numa árvore. |
+| **MediaRendition** | Uma versão derivada de um item, com bytes próprios (a miniatura). Write-once. |
 
 Dois desses são **helpers puros**, não aggregates — lógica sem estado que precisa do conjunto inteiro
 em vez de uma linha, mantida no domínio para continuar testável:
@@ -62,9 +64,10 @@ em vez de uma linha, mantida no domínio para continuar testável:
 ### Ports (`Domain/Ports/Repositories`)
 
 `IPageRepository`, `IPageLinkRepository`, `ITagRepository`, `IPageTagRepository`,
-`IAttachmentRepository`. O storage é o port compartilhado `IFileStorage` (`Shared.Domain/Storage`),
+`IMediaItemRepository`, `IMediaFolderRepository`, `IMediaRenditionRepository`, e `IImageProcessor`
+(ImageSharp, em `Infrastructure`). O storage é o port compartilhado `IFileStorage` (`Shared.Domain/Storage`),
 consumido pela aplicação pela chave `NotesModule.DatabaseKey`; o `DatabaseFileStorage` dele fica em
-`Shared.Persistence/Storage`, sobre a tabela `nte003_file_blob` do módulo (ver [Anexos](attachments.md)).
+`Shared.Persistence/Storage`, sobre a tabela `nte003_file_blob` do módulo (ver [Biblioteca de mídia](media-library.md)).
 
 O módulo **não declara domain services nem jobs** — nada aqui roda em schedule.
 
@@ -87,16 +90,16 @@ O módulo **não declara domain services nem jobs** — nada aqui roda em schedu
 | **D4** | O slug é congelado na criação. | Um rename não pode quebrar `[[links]]` nem URLs. Rejeitado re-sluggar no rename. |
 | **D5** | Deletar é **soft delete da subárvore inteira**, feito no comando e não por cascade do banco. | Nenhum filho fica apontando para um pai deletado, e as linhas sobrevivem para a história. Rejeitado `ON DELETE CASCADE` (que é um hard delete da história). |
 | **D6** | `search_vector` é uma **coluna gerada STORED**, não mantida por código de aplicação. | O Postgres a mantém em dia, então nenhum caminho de save pode esquecê-la. Configuração `simple` (só lower-case, sem stemming) porque o caderno mistura PT-BR e EN. |
-| **D7** | O blob store fica atrás de `IFileStorage`, com o backend e a chave gravados **em cada anexo**. | Ligar o S3 depois não exige migration nem reescrita das linhas antigas — a leitura é auto-descritiva. |
+| **D7** | O blob store fica atrás de `IFileStorage`, com o backend e a chave gravados **em cada linha de mídia**. | Ligar o S3 depois não exige migration nem reescrita das linhas antigas — a leitura é auto-descritiva. |
 | **D8** | O grafo local é cortado **em memória**, não com passeio recursivo em SQL. | Um caderno pessoal é pequeno; carregar as pages e arestas do usuário e rodar BFS mantém a lógica de profundidade fora do SQL e testável. |
 | **D9** | Uma linha de tag sobrevive a perder a última page **só se tiver cor**. | A cor é a única coisa que o texto não recupera; sem ela, uma tag sem uso é só ruído nos filtros. |
 | **D10** | Filtro com várias tags **intersecta** (E), igual nas três superfícies. | "Ir estreitando" é o comportamento esperado, e uma regra só em todo lugar é melhor que OU aqui e E ali. |
-| **D11** | Anexos são servidos por um **endpoint autenticado**, nunca por path direto. | Os bytes são do usuário. A consequência é que o browser não consegue buscá-los sozinho — ver [Anexos](attachments.md#4-a-consequência-o-browser-não-alcança-um-anexo-sozinho). |
+| **D11** | Mídias são servidas por um **endpoint autenticado**, nunca por path direto. | Os bytes são do usuário. A consequência é que o browser não consegue buscá-los sozinho — ver [Biblioteca de mídia](media-library.md#7-servir-os-bytes). |
 
 ## 4. Regras transversais
 
-- **Multi-tenant por usuário.** `nte001_page`, `nte005_tag` e `nte002_attachment` têm
-  `user_id NOT NULL` (um anexo pode não ter page, então não chega ao dono por ela); as tabelas
+- **Multi-tenant por usuário.** `nte001_page`, `nte005_tag`, `nte007_space`, `nte002_media` e
+  `nte008_media_folder` têm `user_id NOT NULL` (um item de mídia não pertence a page nenhuma); as tabelas
   derivadas chegam ao dono pela page delas. Todo endpoint é autenticado e escopado ao usuário do
   token; recurso de outro usuário devolve **404** (não 403).
 - **`TimeProvider` em todo lugar.** Nenhum aggregate lê `DateTime.Now` direto, o que é o que torna os

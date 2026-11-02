@@ -19,7 +19,7 @@ left behind, not the phase log.
 | **Pages** | `Page` aggregate, tree with cycle rejection on reparent, frozen slugs with collision suffixes, move/reorder, favorite, archive, soft delete of the whole subtree (`nte001`). |
 | **Spaces** | `Space` aggregate, one default per user (created on the fly when none), pages placed in a space, moving across spaces with the subtree, wikilinks preferring the own space, space filters on tree / search / graph, spaces screen and sidebar switcher, `create_note` taking a space (`nte007`). |
 | **Emoji icon** | Picker next to the title, reduced to the first grapheme via `Intl.Segmenter`, saved through the page's own autosave. |
-| **Attachments** | `IFileStorage` + `DatabaseFileStorage`, blob table, authenticated upload/download, inline paste/drop in the editor, object-URL resolution in the preview (`nte002`, `nte003`). |
+| **Media library** | Items (image / file; video in the schema, refused on upload) in virtual folders, WebP thumbnails with ImageSharp and EXIF rotation, folder moves without cycles, a deleted folder handing its contents up, soft delete keeping the bytes served, immutable caching, the library screen, paste/drop in the editor into "Unsorted" (`nte002`, `nte003`, `nte008`, `nte009`). |
 | **Editor** | CodeMirror 6, raw markdown + preview + split mode, 800 ms autosave, DOMPurify sanitization. |
 | **Rich blocks** | Slash commands (11 blocks + 6 callouts), Obsidian callouts as a `marked` extension, assisted markdown tables with Tab/Shift+Tab and idempotent reformatting. |
 | **Autocomplete** | Three menus — `[[` (pages by title and slug), `#` (existing tags), `/` (commands) — sharing `filter: false`, ref-based inputs and a body-parented tooltip. |
@@ -42,7 +42,7 @@ left behind, not the phase log.
 | **Collapsible callouts** (`> [!note]-`) | Deliberately out of the rich-blocks scope. If it lands, the place is the `-`/`+` variant in `lib/callouts.ts`. |
 | **Column alignment from the UI** | Deliberately out. The place would be the separator line in `lib/markdownTables.ts`. |
 | **Visual table editor** (WYSIWYG widget) | Rejected: it would swap the markdown for a widget rendered as editable text, which is the opposite of the module's premise. |
-| **S3/MinIO storage backend** | Only the abstraction exists. `storage_backend` + `storage_key` on each attachment mean plugging it in needs no migration; the natural trigger is large uploads. |
+| **Bucket storage backend and video** | Only the abstraction exists. `storage_backend` + `storage_key` on each media row mean plugging a bucket in needs no migration; video also needs ranged downloads and a poster rendition. See [Media Library](media-library.md#3-kinds-and-what-is-ready-for-video). |
 | **Version history, page templates, sharing/collaboration** | Future in the product plan; nothing started. |
 
 ## Deliberately out (not debt)
@@ -57,11 +57,10 @@ left behind, not the phase log.
 
 ## Known open points
 
-1. **Blob retention.** Attachment bytes live in `bytea`; revisit moving to object storage if the
+1. **Blob retention.** Media bytes live in `bytea`; revisit moving to object storage if the
    notebook starts carrying heavy files — that is also the trigger for the S3 backend.
-2. **Orphaned attachments.** Nothing deletes the blob when a page that embedded it is deleted, and
-   `page_id` has no FK by design. A sweep would need a decision on what "unreferenced" means when the
-   only reference is a markdown string.
+2. **Which notes use a media item.** Nothing records it yet, so deleting an item keeps its bytes and
+   nothing sweeps unused ones. The next phase derives it from the markdown, the way wikilinks are.
 3. **In-memory graph walk.** Loading the user's whole page/edge set is right for a personal notebook;
    it is the first thing to revisit if the graph ever gets big.
 4. **Duplicated parsers.** `lib/wikilinks.ts` and `lib/tags.ts` mirror the backend on purpose, so the
