@@ -66,6 +66,52 @@ export function formatDue(iso: string, hasTime: boolean, timeZone: string, local
   return `${day} ${new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone }).format(instant)}`
 }
 
+/** The calendar date of an instant in the account's zone, as YYYY-MM-DD. */
+export function dayKey(instant: string | Dayjs, timeZone: string): string {
+  return dayjs(instant).tz(timeZone).format('YYYY-MM-DD')
+}
+
+/** Minutes since midnight of an instant, in the account's zone. */
+export function minuteOfDay(instant: string, timeZone: string): number {
+  const d = dayjs(instant).tz(timeZone)
+  return d.hour() * 60 + d.minute()
+}
+
+/** Every date an event touches in the account's zone. Ending at midnight does not touch the next day. */
+export function occurrenceDays(startsAt: string, endsAt: string, timeZone: string): string[] {
+  const lastInstant = Math.max(dayjs(startsAt).valueOf(), dayjs(endsAt).valueOf() - 1)
+  const last = dayKey(dayjs(lastInstant), timeZone)
+  const days: string[] = []
+  for (let d = dayjs.utc(dayKey(startsAt, timeZone)); d.format('YYYY-MM-DD') <= last; d = d.add(1, 'day')) {
+    days.push(d.format('YYYY-MM-DD'))
+  }
+  return days
+}
+
+/** A date key at noon UTC: formatted with `timeZone: 'UTC'` it reads as that date anywhere. */
+export const keyToDate = (key: string) => new Date(`${key}T12:00:00Z`)
+
+/** "Mon, Nov 2, 14:00 – 15:00", or the dates alone for an all-day event; the year only when not this one. */
+export function formatEventRange(
+  startsAt: string,
+  endsAt: string,
+  isAllDay: boolean,
+  timeZone: string,
+  locale: string,
+): string {
+  const start = new Date(startsAt)
+  const end = new Date(isAllDay ? Math.max(start.getTime(), new Date(endsAt).getTime() - 1) : endsAt)
+  const thisYear = dayjs().tz(timeZone).year() === dayjs(startsAt).tz(timeZone).year()
+  return new Intl.DateTimeFormat(locale, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: thisYear ? undefined : 'numeric',
+    ...(isAllDay ? {} : { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }),
+    timeZone,
+  }).formatRange(start, end)
+}
+
 /** Formats an ISO instant as a time only, in the account's time zone. */
 export function formatTime(iso: string | null | undefined, timeZone: string): string {
   if (!iso) return '—'

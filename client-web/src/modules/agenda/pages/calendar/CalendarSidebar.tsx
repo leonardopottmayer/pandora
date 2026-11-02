@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { App, Button, Checkbox, Dropdown, Flex, Typography } from 'antd'
+import { App, Button, Checkbox, ConfigProvider, Dropdown, Flex } from 'antd'
 import { EditOutlined, EllipsisOutlined, InboxOutlined, PlusOutlined } from '@ant-design/icons'
+import { onAccent } from '@/app/theme'
+import { SettingsSection } from '@/components/settings/SettingsSection'
 import { toErrorMessage } from '@/lib/api/envelope'
 import type { CalendarDto } from '../../models'
 import { useCalendars, useDeleteCalendar, useUpdateCalendar } from '../../hooks/useCalendars'
@@ -46,41 +48,41 @@ export function CalendarSidebar() {
   }
 
   return (
-    <div>
-      <Flex justify="space-between" align="center" className="mb-2">
-        <Typography.Text strong>{t('agenda.calendars.title')}</Typography.Text>
+    <SettingsSection
+      title={t('agenda.calendars.title')}
+      extra={
         <Button
           size="small"
           type="text"
           icon={<PlusOutlined />}
+          title={t('agenda.calendars.new')}
           aria-label={t('agenda.calendars.new')}
           onClick={() => {
             setEditing(null)
             setModalOpen(true)
           }}
         />
-      </Flex>
-
-      <Flex vertical gap="small">
+      }
+      bodyClassName="py-1.5"
+    >
+      <Flex vertical>
         {calendars.map((calendar) => (
-          <Flex key={calendar.id} align="center" justify="space-between" gap="small">
-            <Checkbox
-              checked={calendar.isVisible}
-              onChange={(e) => toggleVisible(calendar, e.target.checked)}
+          <Flex key={calendar.id} align="center" justify="space-between" gap="small" className="py-1 pe-1.5 ps-3">
+            {/* The box takes the calendar's own color, so the list doubles as the legend. */}
+            <ConfigProvider
+              theme={{
+                token: { colorPrimary: calendar.color ?? '#1677ff' },
+                components: { Checkbox: { colorWhite: onAccent(calendar.color ?? '#1677ff') } },
+              }}
             >
-              <Flex align="center" gap={6} component="span">
-                <span
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 2,
-                    background: calendar.color ?? '#1677ff',
-                    display: 'inline-block',
-                  }}
-                />
-                {calendar.name}
-              </Flex>
-            </Checkbox>
+              <Checkbox
+                checked={calendar.isVisible}
+                onChange={(e) => toggleVisible(calendar, e.target.checked)}
+                className="min-w-0"
+              >
+                <span className="truncate">{calendar.name}</span>
+              </Checkbox>
+            </ConfigProvider>
             <Dropdown
               trigger={['click']}
               menu={{
@@ -121,6 +123,6 @@ export function CalendarSidebar() {
       </Flex>
 
       <CalendarFormModal open={modalOpen} calendar={editing} onClose={() => setModalOpen(false)} />
-    </div>
+    </SettingsSection>
   )
 }

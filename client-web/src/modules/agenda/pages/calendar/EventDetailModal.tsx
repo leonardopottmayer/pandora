@@ -1,26 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { App, Button, Checkbox, DatePicker, Form, Input, Modal, Segmented, Select, Space, Typography, theme } from 'antd'
 import {
-  App,
-  Button,
-  Checkbox,
-  DatePicker,
-  Descriptions,
-  Divider,
-  Form,
-  Input,
-  Modal,
-  Popconfirm,
-  Segmented,
-  Select,
-  Space,
-  Typography,
-} from 'antd'
+  AlignLeftOutlined,
+  BellOutlined,
+  CalendarOutlined,
+  EnvironmentOutlined,
+  LinkOutlined,
+  RetweetOutlined,
+} from '@ant-design/icons'
 import dayjs, { type Dayjs } from 'dayjs'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
 import type { CalendarDto, EventOccurrenceDto, EventScope } from '../../models'
-import { formatDateTime } from '../../lib/datetime'
+import { formatEventRange } from '../../lib/datetime'
 import { AlertsEditor } from '../../components/AlertsEditor'
 import { useDeleteEvent, useEvent, useUpdateEvent } from '../../hooks/useEvents'
 
@@ -42,12 +35,14 @@ interface EditValues {
 }
 
 export function EventDetailModal({ open, occurrence, calendars, onClose }: EventDetailModalProps) {
-  const { t } = useTranslation()
-  const { message } = App.useApp()
+  const { t, i18n } = useTranslation()
+  const { message, modal } = App.useApp()
+  const { token } = theme.useToken()
   const { timeZone } = usePreferences()
   const [form] = Form.useForm<EditValues>()
   const [editing, setEditing] = useState(false)
   const [scope, setScope] = useState<EventScope>('this')
+  const [choosingDeleteScope, setChoosingDeleteScope] = useState(false)
   const [wasOpen, setWasOpen] = useState(open)
 
   // Reset view/scope each time the modal opens — adjusting state on the prop change.
@@ -56,6 +51,7 @@ export function EventDetailModal({ open, occurrence, calendars, onClose }: Event
     if (open) {
       setEditing(false)
       setScope('this')
+      setChoosingDeleteScope(false)
     }
   }
 
@@ -108,12 +104,12 @@ export function EventDetailModal({ open, occurrence, calendars, onClose }: Event
     }
   }
 
-  async function handleDelete() {
+  async function handleDelete(deleteScope: EventScope) {
     if (!occurrence) return
     try {
       await deleteMutation.mutateAsync({
         id: occurrence.eventId,
-        scope: isRecurring ? scope : 'all',
+        scope: deleteScope,
         occurrenceStart: occurrence.originalStartsAt,
       })
       message.success(t('agenda.events.deleted'))
@@ -123,76 +119,109 @@ export function EventDetailModal({ open, occurrence, calendars, onClose }: Event
     }
   }
 
+  // A repeating event asks which occurrences when deleting; a single one just confirms.
+  function startDelete() {
+    if (isRecurring) {
+      setChoosingDeleteScope(true)
+      return
+    }
+    modal.confirm({
+      title: t('agenda.events.deleteConfirm'),
+      content: occurrence?.title,
+      okText: t('common.delete'),
+      okButtonProps: { danger: true },
+      cancelText: t('common.cancel'),
+      onOk: () => handleDelete('all'),
+    })
+  }
+
   const scopeOptions: { value: EventScope; label: string }[] = [
     { value: 'this', label: t('agenda.events.scopeThis') },
     { value: 'this-and-future', label: t('agenda.events.scopeThisAndFuture') },
     { value: 'all', label: t('agenda.events.scopeAll') },
   ]
 
+  const color = calendars.find((c) => c.id === occurrence.calendarId)?.color ?? token.colorPrimary
+  const line = (icon: ReactNode, content: ReactNode) => (
+    <div className="flex items-start gap-3">
+      <span className="w-4 shrink-0 pt-0.5 text-center" style={{ color: token.colorTextTertiary }}>
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1 break-words">{content}</div>
+    </div>
+  )
+
   return (
     <Modal
       open={open}
-      title={editing ? t('agenda.events.editTitle') : t('agenda.events.detailTitle')}
+      title={editing ? t('agenda.events.editTitle') : null}
       onCancel={onClose}
       footer={null}
       destroyOnHidden
     >
-      {isRecurring && (
-        <Space direction="vertical" size={4} className="mb-2" style={{ width: '100%' }}>
-          <Typography.Text type="secondary">{t('agenda.events.scopeTitle')}</Typography.Text>
-          <Segmented<EventScope>
-            value={scope}
-            onChange={setScope}
-            options={scopeOptions}
-          />
-        </Space>
-      )}
-
       {!editing && (
-        <>
-          <Descriptions column={1} size="small" bordered>
-            <Descriptions.Item label={t('agenda.events.titleLabel')}>
-              {occurrence.title}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('agenda.events.calendar')}>{calendarName}</Descriptions.Item>
-            <Descriptions.Item label={t('agenda.events.startsAt')}>
-              {formatDateTime(occurrence.startsAt, timeZone)}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('agenda.events.endsAt')}>
-              {formatDateTime(occurrence.endsAt, timeZone)}
-            </Descriptions.Item>
-            {occurrence.location && (
-              <Descriptions.Item label={t('agenda.events.location')}>
-                {occurrence.location}
-              </Descriptions.Item>
-            )}
-            {occurrence.description && (
-              <Descriptions.Item label={t('agenda.events.description')}>
-                {occurrence.description}
-              </Descriptions.Item>
-            )}
-          </Descriptions>
+        <div className="flex flex-col gap-3 pt-1">
+          <div className="flex items-start gap-3 pe-6">
+            <span className="mt-2 size-3.5 shrink-0 rounded" style={{ background: color }} />
+            <div className="flex min-w-0 flex-col">
+              <Typography.Title level={4} className="!mb-0 break-words">
+                {occurrence.title}
+              </Typography.Title>
+              <Typography.Text type="secondary">
+                {formatEventRange(occurrence.startsAt, occurrence.endsAt, occurrence.isAllDay, timeZone, i18n.language)}
+                {isRecurring && (
+                  <span title={t('agenda.events.repeats')}>
+                    {' · '}
+                    <RetweetOutlined aria-label={t('agenda.events.repeats')} />
+                  </span>
+                )}
+              </Typography.Text>
+            </div>
+          </div>
 
-          <Space className="mt-4">
-            <Button type="primary" onClick={() => setEditing(true)}>
-              {t('common.edit')}
-            </Button>
-            <Popconfirm
-              title={t('agenda.events.deleteConfirm')}
-              okText={t('common.delete')}
-              cancelText={t('common.cancel')}
-              onConfirm={handleDelete}
-            >
-              <Button danger loading={deleteMutation.isPending}>
+          {line(<CalendarOutlined />, calendarName)}
+          {occurrence.location && line(<EnvironmentOutlined />, occurrence.location)}
+          {occurrence.url &&
+            line(
+              <LinkOutlined />,
+              <Typography.Link href={occurrence.url} target="_blank" rel="noreferrer">
+                {occurrence.url}
+              </Typography.Link>,
+            )}
+          {occurrence.description &&
+            line(<AlignLeftOutlined />, <span className="whitespace-pre-wrap">{occurrence.description}</span>)}
+          {line(<BellOutlined />, <AlertsEditor subjectType="event" subjectId={occurrence.eventId} />)}
+
+          {choosingDeleteScope ? (
+            <div className="flex flex-col gap-2 rounded-lg p-3" style={{ background: token.colorFillQuaternary }}>
+              <Typography.Text strong>{t('agenda.events.deleteWhich')}</Typography.Text>
+              <div className="flex flex-wrap gap-2">
+                {scopeOptions.map((option) => (
+                  <Button
+                    key={option.value}
+                    danger
+                    loading={deleteMutation.isPending && deleteMutation.variables?.scope === option.value}
+                    onClick={() => handleDelete(option.value)}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+                <Button type="text" onClick={() => setChoosingDeleteScope(false)}>
+                  {t('common.cancel')}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-end gap-2 pt-1">
+              <Button danger onClick={startDelete}>
                 {t('common.delete')}
               </Button>
-            </Popconfirm>
-          </Space>
-
-          <Divider style={{ margin: '16px 0 8px' }} />
-          <Typography.Text strong>{t('agenda.events.alerts')}</Typography.Text>
-          <AlertsEditor subjectType="event" subjectId={occurrence.eventId} />
-        </>
+              <Button type="primary" onClick={() => setEditing(true)}>
+                {t('common.edit')}
+              </Button>
+            </div>
+          )}
+        </div>
       )}
 
       {editing && (
@@ -222,6 +251,11 @@ export function EventDetailModal({ open, occurrence, calendars, onClose }: Event
           <Form.Item name="description" label={t('agenda.events.description')}>
             <Input.TextArea rows={2} maxLength={2000} />
           </Form.Item>
+          {isRecurring && (
+            <Form.Item label={t('agenda.events.scopeTitle')}>
+              <Segmented<EventScope> value={scope} onChange={setScope} options={scopeOptions} />
+            </Form.Item>
+          )}
           <Space>
             <Button type="primary" htmlType="submit" loading={updateMutation.isPending}>
               {t('common.save')}

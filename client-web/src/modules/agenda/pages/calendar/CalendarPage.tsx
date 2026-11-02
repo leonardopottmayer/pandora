@@ -1,192 +1,186 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Button, Calendar, Card, Flex, Segmented, Tag, Typography } from 'antd'
+import { Button, Calendar, Segmented, Typography } from 'antd'
 import { LeftOutlined, PlusOutlined, RightOutlined } from '@ant-design/icons'
 import dayjs, { type Dayjs } from 'dayjs'
-import updateLocale from 'dayjs/plugin/updateLocale'
 import type { CalendarDto, EventOccurrenceDto } from '../../models'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
-import { startOfWeek, weekDays } from '../../lib/datetime'
+import { SettingsSection } from '@/components/settings/SettingsSection'
+import { dayKey, keyToDate, occurrenceDays, startOfWeek } from '../../lib/datetime'
 import { useCalendars } from '../../hooks/useCalendars'
 import { useEventOccurrences } from '../../hooks/useEvents'
 import { CalendarSidebar } from './CalendarSidebar'
 import { EventFormModal } from './EventFormModal'
 import { EventDetailModal } from './EventDetailModal'
+import { MonthGrid } from './MonthGrid'
 import { WeekDayGrid } from './WeekDayGrid'
 
-dayjs.extend(updateLocale)
-
 type CalendarView = 'month' | 'week' | 'day'
+const VIEWS: CalendarView[] = ['month', 'week', 'day']
+const KEY = 'YYYY-MM-DD'
+
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 export function CalendarPage() {
-  const { t } = useTranslation()
-  const { weekStartsOn } = usePreferences()
-  const [view, setView] = useState<CalendarView>('month')
-  const [cursor, setCursor] = useState<Dayjs>(() => dayjs())
+  const { t, i18n } = useTranslation()
+  const { weekStartsOn, timeZone } = usePreferences()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [createOpen, setCreateOpen] = useState(false)
   const [createStart, setCreateStart] = useState<Dayjs | null>(null)
   const [detail, setDetail] = useState<EventOccurrenceDto | null>(null)
 
-  // The antd month grid derives its first column from the dayjs locale; align it with the preference.
-  useEffect(() => {
-    dayjs.updateLocale(dayjs.locale(), { weekStart: weekStartsOn === 'monday' ? 1 : 0 })
-  }, [weekStartsOn])
+  // View and date live in the URL, so a reload or a shared link opens on the same page.
+  const today = dayKey(dayjs(), timeZone)
+  const view = (VIEWS as string[]).includes(searchParams.get('view') ?? '') ? (searchParams.get('view') as CalendarView) : 'month'
+  const dateParam = searchParams.get('date') ?? ''
+  const cursor = /^\d{4}-\d{2}-\d{2}$/.test(dateParam) && dayjs(dateParam).isValid() ? dateParam : today
+
+  function go(nextView: CalendarView, nextDate: string) {
+    const params: Record<string, string> = {}
+    if (nextView !== 'month') params.view = nextView
+    if (nextDate !== today) params.date = nextDate
+    setSearchParams(params, { replace: true })
+  }
 
   const { data: calendarList } = useCalendars()
-  const calendars = useMemo<CalendarDto[]>(
-    () => (calendarList ?? []).filter((c) => !c.archivedAt),
-    [calendarList],
-  )
-  const visibleIds = useMemo(
-    () => new Set(calendars.filter((c) => c.isVisible).map((c) => c.id)),
-    [calendars],
-  )
-  const colorOf = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const c of calendars) map.set(c.id, c.color ?? '#1677ff')
-    return map
-  }, [calendars])
+  const calendars = useMemo<CalendarDto[]>(() => (calendarList ?? []).filter((c) => !c.archivedAt), [calendarList])
+  const visibleIds = useMemo(() => new Set(calendars.filter((c) => c.isVisible).map((c) => c.id)), [calendars])
+  const colorOf = useMemo(() => new Map(calendars.map((c) => [c.id, c.color ?? '#1677ff'])), [calendars])
 
-  // The visible range depends on the view; the query fetches exactly that window.
-  const range = useMemo(() => {
-    if (view === 'day') {
-      const start = cursor.startOf('day')
-      return { days: [start], from: start, to: cursor.endOf('day') }
-    }
-    if (view === 'week') {
-      const days = weekDays(cursor, weekStartsOn)
-      return { days, from: days[0], to: days[6].endOf('day') }
-    }
-    const from = startOfWeek(cursor.startOf('month'), weekStartsOn)
-    const to = startOfWeek(cursor.endOf('month'), weekStartsOn).add(6, 'day').endOf('day')
-    return { days: [] as Dayjs[], from, to }
+  // The dates on screen: one, a week, or the whole weeks around the month.
+  const days = useMemo(() => {
+    const date = dayjs(cursor)
+    if (view === 'day') return [cursor]
+    const first = startOfWeek(view === 'week' ? date : date.startOf('month'), weekStartsOn)
+    const last = view === 'week' ? first.add(6, 'day') : startOfWeek(date.endOf('month'), weekStartsOn).add(6, 'day')
+    return Array.from({ length: last.diff(first, 'day') + 1 }, (_, i) => first.add(i, 'day').format(KEY))
   }, [view, cursor, weekStartsOn])
 
   const { data: occurrences } = useEventOccurrences({
-    from: range.from.toISOString(),
-    to: range.to.toISOString(),
+    from: dayjs.tz(days[0], timeZone).toISOString(),
+    to: dayjs.tz(days[days.length - 1], timeZone).add(1, 'day').toISOString(),
   })
 
-  const visibleOccurrences = useMemo(
-    () => (occurrences ?? []).filter((occ) => visibleIds.has(occ.calendarId)),
-    [occurrences, visibleIds],
-  )
-
+  // Each occurrence under every date it touches: all-day ones first, then by start.
   const byDay = useMemo(() => {
     const map = new Map<string, EventOccurrenceDto[]>()
-    for (const occ of visibleOccurrences) {
-      const key = dayjs(occ.startsAt).format('YYYY-MM-DD')
-      const arr = map.get(key) ?? []
-      arr.push(occ)
-      map.set(key, arr)
+    const visible = (occurrences ?? [])
+      .filter((occ) => visibleIds.has(occ.calendarId))
+      .sort((a, b) => Number(b.isAllDay) - Number(a.isAllDay) || a.startsAt.localeCompare(b.startsAt))
+    for (const occ of visible) {
+      for (const day of occurrenceDays(occ.startsAt, occ.endsAt, timeZone)) {
+        map.set(day, [...(map.get(day) ?? []), occ])
+      }
     }
     return map
-  }, [visibleOccurrences])
+  }, [occurrences, visibleIds, timeZone])
 
-  function openCreate(start: Dayjs | null) {
-    setCreateStart(start ? (start.hour() === 0 && start.minute() === 0 ? start.hour(9) : start) : null)
+  function openCreate(start: Dayjs) {
+    setCreateStart(start)
     setCreateOpen(true)
   }
 
+  const at = (day: string, hour: number) => dayjs.tz(`${day}T${String(hour).padStart(2, '0')}:00`, timeZone)
+
+  function openNew() {
+    // Today starts at the next full hour; any other day at 9.
+    openCreate(cursor === today ? dayjs().tz(timeZone).add(1, 'hour').startOf('hour') : at(cursor, 9))
+  }
+
   function shift(direction: 1 | -1) {
-    const unit = view === 'day' ? 'day' : view === 'week' ? 'week' : 'month'
-    setCursor((c) => c.add(direction, unit))
+    go(view, dayjs(cursor).add(direction, view).format(KEY))
   }
 
-  const rangeLabel =
-    view === 'day'
-      ? cursor.format('ddd, MMM D, YYYY')
-      : view === 'week'
-        ? `${range.days[0].format('MMM D')} – ${range.days[6].format('MMM D, YYYY')}`
-        : cursor.format('MMMM YYYY')
-
-  function cellRender(current: Dayjs) {
-    const items = byDay.get(current.format('YYYY-MM-DD')) ?? []
-    return (
-      <Flex vertical gap={2}>
-        {items.slice(0, 3).map((occ) => (
-          <Tag
-            key={`${occ.eventId}-${occ.startsAt}`}
-            color={colorOf.get(occ.calendarId)}
-            style={{ margin: 0, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis' }}
-            onClick={(e) => {
-              e.stopPropagation()
-              setDetail(occ)
-            }}
-          >
-            {occ.title}
-          </Tag>
-        ))}
-        {items.length > 3 && (
-          <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-            +{items.length - 3}
-          </Typography.Text>
-        )}
-      </Flex>
-    )
-  }
+  const rangeLabel = (() => {
+    const fmt = (options: Intl.DateTimeFormatOptions) =>
+      new Intl.DateTimeFormat(i18n.language, { ...options, timeZone: 'UTC' })
+    if (view === 'day') {
+      return capitalize(fmt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(keyToDate(cursor)))
+    }
+    if (view === 'week') {
+      return fmt({ day: 'numeric', month: 'short', year: 'numeric' }).formatRange(keyToDate(days[0]), keyToDate(days[6]))
+    }
+    return capitalize(fmt({ month: 'long', year: 'numeric' }).format(keyToDate(cursor)))
+  })()
 
   return (
-    <Flex gap="large" align="flex-start" wrap>
-      <Card style={{ width: 240, flexShrink: 0 }}>
-        <CalendarSidebar />
-      </Card>
+    <div className="mx-auto flex max-w-7xl flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Button onClick={() => go(view, today)} disabled={cursor === today}>
+            {t('agenda.events.today')}
+          </Button>
+          <Button
+            type="text"
+            icon={<LeftOutlined />}
+            title={t('agenda.events.prev')}
+            aria-label={t('agenda.events.prev')}
+            onClick={() => shift(-1)}
+          />
+          <Button
+            type="text"
+            icon={<RightOutlined />}
+            title={t('agenda.events.next')}
+            aria-label={t('agenda.events.next')}
+            onClick={() => shift(1)}
+          />
+          <Typography.Title level={4} className="!mb-0 truncate">
+            {rangeLabel}
+          </Typography.Title>
+        </div>
+        <div className="flex items-center gap-2">
+          <Segmented<CalendarView>
+            value={view}
+            onChange={(next) => go(next, cursor)}
+            options={VIEWS.map((v) => ({ value: v, label: t(`agenda.events.view.${v}`) }))}
+          />
+          <Button type="primary" icon={<PlusOutlined />} disabled={calendars.length === 0} onClick={openNew}>
+            {t('agenda.events.new')}
+          </Button>
+        </div>
+      </div>
 
-      <Card style={{ flex: 1, minWidth: 360 }}>
-        <Flex justify="space-between" align="center" wrap gap="small" className="mb-4">
-          <Flex gap="small" align="center">
-            <Button size="small" onClick={() => setCursor(dayjs())}>
-              {t('agenda.events.today')}
-            </Button>
-            <Button size="small" icon={<LeftOutlined />} aria-label={t('agenda.events.prev')} onClick={() => shift(-1)} />
-            <Button size="small" icon={<RightOutlined />} aria-label={t('agenda.events.next')} onClick={() => shift(1)} />
-            <Typography.Title level={5} style={{ margin: 0 }}>
-              {rangeLabel}
-            </Typography.Title>
-          </Flex>
-          <Flex gap="small" align="center">
-            <Segmented<CalendarView>
-              value={view}
-              onChange={setView}
-              options={[
-                { value: 'month', label: t('agenda.events.view.month') },
-                { value: 'week', label: t('agenda.events.view.week') },
-                { value: 'day', label: t('agenda.events.view.day') },
-              ]}
+      {/* minmax(0, …) on phones too: an implicit column grows to its widest content and pushes the page sideways. */}
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[256px_minmax(0,1fr)]">
+        <div className="flex flex-col gap-6">
+          <SettingsSection bodyClassName="p-1">
+            <Calendar
+              fullscreen={false}
+              value={dayjs(cursor)}
+              onSelect={(date, info) => {
+                if (info.source === 'date') go(view, date.format(KEY))
+              }}
+              onPanelChange={(date) => go(view, date.format(KEY))}
             />
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              disabled={calendars.length === 0}
-              onClick={() => openCreate(cursor)}
-            >
-              {t('agenda.events.new')}
-            </Button>
-          </Flex>
-        </Flex>
+          </SettingsSection>
+          <CalendarSidebar />
+        </div>
 
-        {view === 'month' ? (
-          <Calendar
-            value={cursor}
-            headerRender={() => null}
-            onSelect={(date, info) => {
-              setCursor(date)
-              // A day click (not a panel/month switch) starts a new event on that day.
-              if (info.source === 'date') openCreate(date)
-            }}
-            onPanelChange={(date) => setCursor(date)}
-            cellRender={(current, info) => (info.type === 'date' ? cellRender(current) : null)}
-          />
-        ) : (
-          <WeekDayGrid
-            days={range.days}
-            occurrences={visibleOccurrences}
-            colorOf={colorOf}
-            onSelectOccurrence={setDetail}
-            onCreateAt={openCreate}
-          />
-        )}
-      </Card>
+        <SettingsSection>
+          {view === 'month' ? (
+            <MonthGrid
+              days={days}
+              month={cursor.slice(0, 7)}
+              today={today}
+              byDay={byDay}
+              colorOf={colorOf}
+              onSelectOccurrence={setDetail}
+              onOpenDay={(day) => go('day', day)}
+              onCreateOn={(day) => calendars.length > 0 && openCreate(at(day, 9))}
+            />
+          ) : (
+            <WeekDayGrid
+              days={days}
+              today={today}
+              byDay={byDay}
+              colorOf={colorOf}
+              onSelectOccurrence={setDetail}
+              onCreateAt={(day, hour) => calendars.length > 0 && openCreate(at(day, hour))}
+            />
+          )}
+        </SettingsSection>
+      </div>
 
       <EventFormModal
         open={createOpen}
@@ -200,6 +194,6 @@ export function CalendarPage() {
         calendars={calendars}
         onClose={() => setDetail(null)}
       />
-    </Flex>
+    </div>
   )
 }

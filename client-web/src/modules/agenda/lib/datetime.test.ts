@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import dayjs from 'dayjs'
-import { daysFromToday, formatDue } from './datetime'
+import { daysFromToday, formatDue, occurrenceDays } from './datetime'
 
 const TZ = 'America/Sao_Paulo'
 // Monday, Nov 2 2026, 22:00 in São Paulo — already Tuesday in UTC.
@@ -25,5 +25,20 @@ describe('formatDue', () => {
     expect(formatDue('2026-11-06T15:00:00Z', false, TZ, 'en', now)).toBe('Friday')
     expect(formatDue('2026-11-20T15:00:00Z', false, TZ, 'en', now)).toBe('Nov 20')
     expect(formatDue('2027-01-05T15:00:00Z', false, TZ, 'en', now)).toBe('Jan 5, 2027')
+  })
+})
+
+describe('occurrenceDays', () => {
+  it('lists every date an event touches in the account zone', () => {
+    // Fri 22:00 to Sun 10:00 in São Paulo.
+    expect(occurrenceDays('2026-11-07T01:00:00Z', '2026-11-08T13:00:00Z', TZ)).toEqual([
+      '2026-11-06',
+      '2026-11-07',
+      '2026-11-08',
+    ])
+  })
+
+  it('does not spill into the next day when ending at midnight', () => {
+    expect(occurrenceDays('2026-11-06T03:00:00Z', '2026-11-07T03:00:00Z', TZ)).toEqual(['2026-11-06'])
   })
 })
