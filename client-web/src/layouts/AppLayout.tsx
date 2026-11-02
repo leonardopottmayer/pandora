@@ -16,6 +16,7 @@ import {
 import { useAuth } from '@/modules/identity/context/auth-context'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { navigationModules } from './navigation'
+import { loadCollapsed, loadOpenModules, saveCollapsed, saveOpenModules } from './sidebarState'
 
 const { Header, Sider, Content } = Layout
 
@@ -32,7 +33,9 @@ export function AppLayout() {
   const location = useLocation()
   const { token } = theme.useToken()
 
-  const [siderCollapsed, setSiderCollapsed] = useState(false)
+  const [siderCollapsed, setSiderCollapsed] = useState(loadCollapsed)
+  const [openModules, setOpenModules] = useState(() => loadOpenModules(navigationModules.map((m) => m.key)))
+  const [popupKeys, setPopupKeys] = useState<string[]>([])
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT,
@@ -69,7 +72,25 @@ export function AppLayout() {
     .filter((s) => s.path === location.pathname)
     .map((s) => s.path)
 
-  const defaultOpenKeys = navigationModules.map((m) => m.key)
+  const moduleKeys = navigationModules.map((m) => m.key)
+
+  const isCollapsed = !isMobile && siderCollapsed
+
+  // Collapsed, an open key is a hover popup, not the user's choice of what stays open: they are kept apart.
+  function handleOpenChange(openKeys: string[]) {
+    if (isCollapsed) {
+      setPopupKeys(openKeys)
+      return
+    }
+    setOpenModules(openKeys)
+    saveOpenModules(moduleKeys, openKeys)
+  }
+
+  function toggleCollapsed() {
+    saveCollapsed(!siderCollapsed)
+    setSiderCollapsed(!siderCollapsed)
+    setPopupKeys([])
+  }
 
   const userMenuItems: MenuProps['items'] = [
     { key: 'profile', icon: <ProfileOutlined />, label: t('nav.profile'), onClick: () => navigate('/account') },
@@ -95,7 +116,8 @@ export function AppLayout() {
     <Menu
       mode="inline"
       selectedKeys={selectedKeys}
-      defaultOpenKeys={defaultOpenKeys}
+      openKeys={isCollapsed ? popupKeys : openModules}
+      onOpenChange={handleOpenChange}
       items={menuItems}
       style={{ height: '100%', borderRight: 0, paddingTop: 8 }}
     />
@@ -122,7 +144,7 @@ export function AppLayout() {
           <Button
             type="text"
             icon={!isMobile && !siderCollapsed ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
-            onClick={() => (isMobile ? setMobileDrawerOpen(true) : setSiderCollapsed((c) => !c))}
+            onClick={() => (isMobile ? setMobileDrawerOpen(true) : toggleCollapsed())}
             style={{ fontSize: 16 }}
           />
           <div className="flex items-center gap-2 select-none">
