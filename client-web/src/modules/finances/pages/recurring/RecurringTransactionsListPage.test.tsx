@@ -81,8 +81,37 @@ describe('RecurringTransactionsListPage', () => {
     renderWithProviders(<RecurringTransactionsListPage />)
 
     await screen.findByText('Netflix')
-    await user.click(screen.getByRole('button', { name: 'Pause' }))
+    await user.click(screen.getByRole('button', { name: 'Options for Netflix' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Pause' }))
     await waitFor(() => expect(pauseCalled).toBe(true))
+  })
+
+  it('sums what the active ones come to in a month, and groups them by state', async () => {
+    server.use(
+      http.get(`${FINANCES_BASE}/recurring-transactions`, () =>
+        HttpResponse.json({
+          success: true,
+          data: [
+            recurring,
+            { ...recurring, id: 'r2', name: 'Feira', frequency: 'weekly', amount: 30 },
+            { ...recurring, id: 'r3', name: 'Academia', status: 'paused' },
+            { ...recurring, id: 'r4', name: 'Curso', status: 'finished' },
+          ],
+        }),
+      ),
+      ...auxHandlers(),
+    )
+    renderWithProviders(<RecurringTransactionsListPage />)
+
+    await screen.findByText('Netflix')
+    // 49.90 a month plus 30 a week (×52/12 = 130.00), both out; paused and finished do not count.
+    expect(screen.getByText('Per month · BRL').nextSibling).toHaveTextContent(/-R\$\s?179\.90/)
+    expect(screen.getByText('Active · 2')).toBeInTheDocument()
+    expect(screen.getByText('Paused · 1')).toBeInTheDocument()
+    // Finished ones wait folded under their heading.
+    expect(screen.queryByText('Curso')).not.toBeInTheDocument()
+    await userEvent.setup().click(screen.getByRole('button', { name: /Finished · 1/ }))
+    expect(screen.getByText('Curso')).toBeInTheDocument()
   })
 
   it('opens the generate-occurrence modal', async () => {
@@ -96,7 +125,8 @@ describe('RecurringTransactionsListPage', () => {
     renderWithProviders(<RecurringTransactionsListPage />)
 
     await screen.findByText('Netflix')
-    await user.click(screen.getByRole('button', { name: /Generate/ }))
+    await user.click(screen.getByRole('button', { name: 'Options for Netflix' }))
+    await user.click(await screen.findByRole('menuitem', { name: /Generate/ }))
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
   })
 })
