@@ -257,6 +257,21 @@
     "groupAppearance": "Aparencia",
     "groupRegion": "Regiao e tempo",
     "groupDesktop": "Pandora Desktop",
+    "palette": {
+      "label": "Tema",
+      "desc": "As cores do app inteiro, no modo acima. Fica salvo na sua conta.",
+      "default": "Padrão",
+      "claude": "Claude",
+      "reddit": "Reddit"
+    },
+    "accent": {
+      "label": "Cor de destaque",
+      "desc": "Botões principais, links e o que está selecionado. As cores de sucesso, erro e aviso não mudam.",
+      "palette": "Cor do tema",
+      "blue": "Azul",
+      "green": "Verde",
+      "custom": "Personalizada"
+    },
     "desktopAutostartLabel": "Iniciar com o Windows",
     "desktopAutostartDesc": "Abre o Pandora na bandeja quando voce entra no Windows. Vale so para este computador.",
     "desktopServerLabel": "Servidor",

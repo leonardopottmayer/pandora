@@ -7,6 +7,8 @@ CREATE TABLE identity.idt003_user_preferences (
 	language VARCHAR(10) NOT NULL DEFAULT 'en',
 	time_zone VARCHAR(64) NOT NULL DEFAULT 'America/Sao_Paulo',
 	week_starts_on VARCHAR(10) NOT NULL DEFAULT 'sunday',
+	palette VARCHAR(20) NOT NULL DEFAULT 'default',
+	accent_color VARCHAR(7) NULL,
 	created_by UUID NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
 	updated_by UUID NULL,
@@ -35,6 +37,10 @@ CHECK (theme IN ('light', 'dark', 'system'));
 ALTER TABLE identity.idt003_user_preferences
 ADD CONSTRAINT chk_idt003_language
 CHECK (language IN ('pt-BR', 'en'));
+
+ALTER TABLE identity.idt003_user_preferences
+ADD CONSTRAINT chk_idt003_palette
+CHECK (palette IN ('default', 'claude', 'reddit'));
 
 ALTER TABLE identity.idt003_user_preferences
 ADD CONSTRAINT chk_idt003_week_starts_on

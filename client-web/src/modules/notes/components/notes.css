@@ -77,7 +77,7 @@
   border-left: 3px solid rgba(128, 128, 128, 0.35);
   color: rgba(128, 128, 128, 0.95);
 }
-.notes-preview a { color: #1677ff; }
+.notes-preview a { color: var(--ant-color-link); }
 
 /* Wikilinks: resolved ones read like internal links, broken ones invite creating the page. */
 .notes-preview .notes-wikilink {
@@ -86,7 +86,7 @@
   border-bottom: 1px solid rgba(22, 119, 255, 0.4);
 }
 .notes-preview .notes-wikilink:hover {
-  border-bottom-color: #1677ff;
+  border-bottom-color: var(--ant-color-primary);
 }
 .notes-preview .notes-wikilink-missing {
   color: #d4380d;

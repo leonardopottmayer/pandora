@@ -43,7 +43,7 @@ and MFA management require a valid access token. Errors are mapped from typed `R
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
 | GET | `/preferences` | user | Read the user's preferences. |
-| PUT | `/preferences` | user | Upsert theme / language / time zone / week start. |
+| PUT | `/preferences` | user | Upsert theme / language / time zone / week start / palette / accent color. |
 
 ## Devices — `/identity/devices`
 

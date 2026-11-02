@@ -47,6 +47,7 @@ export interface RecoveryCodes {
 
 export type AppTheme = 'light' | 'dark' | 'system'
 export type AppLanguage = 'pt-BR' | 'en'
+export type AppPalette = 'default' | 'claude' | 'reddit'
 export type WeekStartsOn = 'sunday' | 'monday'
 
 export interface UserPreferences {
@@ -55,6 +56,9 @@ export interface UserPreferences {
   /** IANA time zone (e.g. "America/Sao_Paulo"). */
   timeZone: string
   weekStartsOn: WeekStartsOn
+  palette: AppPalette
+  /** #rrggbb, or null for the palette's own. */
+  accentColor: string | null
 }
 
 /** A paired device (Pandora Desktop, a headless agent, a phone) — calls the API with its own key. */

@@ -11,6 +11,8 @@ de agendamento que outros módulos leem.
 |---|---|---|
 | `theme` | `light` \| `dark` \| `system` | O cliente web. |
 | `language` | `pt-BR` \| `en` | O cliente web; o locale carregado nas notificações. |
+| `palette` | `default` \| `claude` \| `reddit` | As cores do cliente web, em qualquer modo. Ver `client-web/DESIGN.md`. |
+| `accent_color` | `#rrggbb`, ou nulo para a do próprio tema | O cliente web. |
 | `time_zone` | IANA (padrão `America/Sao_Paulo`) | O fuso **padrão a nível de usuário**. |
 | `week_starts_on` | `sunday`…`saturday` | Renderização da semana no calendário. |
 

@@ -11,6 +11,8 @@ other modules read.
 |---|---|---|
 | `theme` | `light` \| `dark` \| `system` | The web client. |
 | `language` | `pt-BR` \| `en` | The web client; the locale carried into notifications. |
+| `palette` | `default` \| `claude` \| `reddit` | The web client's colors, in either mode. See `client-web/DESIGN.md`. |
+| `accent_color` | `#rrggbb`, or null for the palette's own | The web client. |
 | `time_zone` | IANA (default `America/Sao_Paulo`) | The **user-level default** time zone. |
 | `week_starts_on` | `sunday`…`saturday` | Calendar week rendering. |
 

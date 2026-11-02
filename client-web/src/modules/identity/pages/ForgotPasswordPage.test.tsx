@@ -21,6 +21,10 @@ const prefs: PreferencesContextValue = {
   setTimeZone: () => {},
   weekStartsOn: 'sunday',
   setWeekStartsOn: () => {},
+  palette: 'default',
+  setPalette: () => {},
+  accentColor: null,
+  setAccentColor: () => {},
 }
 
 function renderPage() {

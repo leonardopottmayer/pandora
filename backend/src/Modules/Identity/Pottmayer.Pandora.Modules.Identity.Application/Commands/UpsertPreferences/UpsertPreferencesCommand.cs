@@ -8,7 +8,9 @@ public sealed record UpsertPreferencesInput(
     string Theme,
     string Language,
     string TimeZone,
-    string WeekStartsOn);
+    string WeekStartsOn,
+    string Palette,
+    string? AccentColor);
 
 public sealed class UpsertPreferencesCommand(UpsertPreferencesInput input)
     : CommandBase<UpsertPreferencesInput, UserPreferencesDto>(input);

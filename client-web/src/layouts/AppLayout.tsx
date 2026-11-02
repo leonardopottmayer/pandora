@@ -15,6 +15,7 @@ import {
 } from '@ant-design/icons'
 import { useAuth } from '@/modules/identity/context/auth-context'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
+import { onAccent } from '@/app/theme'
 import { navigationModules } from './navigation'
 import { loadCollapsed, loadOpenModules, saveCollapsed, saveOpenModules } from './sidebarState'
 
@@ -149,11 +150,12 @@ export function AppLayout() {
           />
           <div className="flex items-center gap-2 select-none">
             <div
-              className="flex items-center justify-center rounded-lg text-white font-bold text-sm"
+              className="flex items-center justify-center rounded-lg font-bold text-sm"
               style={{
                 width: 32,
                 height: 32,
                 background: `linear-gradient(135deg, ${token.colorPrimary}, ${token.colorPrimaryActive})`,
+                color: onAccent(token.colorPrimary),
                 flexShrink: 0,
               }}
             >
@@ -186,7 +188,7 @@ export function AppLayout() {
               <Avatar
                 size="small"
                 icon={<UserOutlined />}
-                style={{ background: token.colorPrimary, flexShrink: 0 }}
+                style={{ background: token.colorPrimary, color: onAccent(token.colorPrimary), flexShrink: 0 }}
               />
               <span
                 className="hidden sm:block text-sm font-medium max-w-[160px] truncate"
@@ -229,11 +231,12 @@ export function AppLayout() {
             title={
               <div className="flex items-center gap-2">
                 <div
-                  className="flex items-center justify-center rounded-lg text-white font-bold text-sm"
+                  className="flex items-center justify-center rounded-lg font-bold text-sm"
                   style={{
                     width: 28,
                     height: 28,
                     background: `linear-gradient(135deg, ${token.colorPrimary}, ${token.colorPrimaryActive})`,
+                    color: onAccent(token.colorPrimary),
                   }}
                 >
                   P

@@ -17,6 +17,8 @@ describe('preferences.service', () => {
             language: 'pt-BR',
             timeZone: 'America/Sao_Paulo',
             weekStartsOn: 'monday',
+            palette: 'claude',
+            accentColor: null,
           },
         }),
       ),
@@ -26,6 +28,8 @@ describe('preferences.service', () => {
     expect(prefs.language).toBe('pt-BR')
     expect(prefs.timeZone).toBe('America/Sao_Paulo')
     expect(prefs.weekStartsOn).toBe('monday')
+    expect(prefs.palette).toBe('claude')
+    expect(prefs.accentColor).toBeNull()
   })
 
   it('upserts the full preferences object via PUT', async () => {
@@ -41,12 +45,16 @@ describe('preferences.service', () => {
       language: 'en',
       timeZone: 'UTC',
       weekStartsOn: 'sunday',
+      palette: 'reddit',
+      accentColor: '#2dcd88',
     })
     expect(body).toEqual({
       theme: 'light',
       language: 'en',
       timeZone: 'UTC',
       weekStartsOn: 'sunday',
+      palette: 'reddit',
+      accentColor: '#2dcd88',
     })
   })
 })

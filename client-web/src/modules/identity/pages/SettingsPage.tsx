@@ -5,6 +5,7 @@ import { PageHeading } from '@/components/settings/PageHeading'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { SettingRow } from '@/components/settings/SettingRow'
 import { DesktopSettingsSection } from '@/components/settings/DesktopSettingsSection'
+import { AppearanceSettings } from '../components/AppearanceSettings'
 import { usePreferences } from '../context/preferences-context'
 import type { AppLanguage, AppTheme } from '../models'
 
@@ -41,6 +42,7 @@ export function SettingsPage() {
             />
           }
         />
+        <AppearanceSettings />
         <SettingRow
           label={t('settings.languageLabel')}
           description={t('settings.languageDesc')}

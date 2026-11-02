@@ -63,6 +63,8 @@ Backs the Tars `IRefreshTokenService`. The token is stored **hashed** and is sin
 | `theme` | varchar(20) NOT NULL | `light \| dark \| system` (`chk_idt003_theme`) |
 | `language` | varchar(10) DEFAULT 'en' | `pt-BR \| en` (`chk_idt003_language`) |
 | `time_zone` | varchar(64) DEFAULT 'America/Sao_Paulo' | IANA |
+| `palette` | varchar(20) DEFAULT 'default' | `default \| claude \| reddit` (`chk_idt003_palette`) |
+| `accent_color` | varchar(7) NULL | `#rrggbb`; null is the palette's own |
 | `week_starts_on` | varchar(10) DEFAULT 'sunday' | `sunday…saturday` (`chk_idt003_week_starts_on`) |
 
 ## idt004_account_activation_token / idt005_password_reset_token

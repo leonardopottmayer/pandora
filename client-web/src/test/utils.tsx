@@ -18,6 +18,10 @@ const testPreferences: PreferencesContextValue = {
   setTimeZone: () => {},
   weekStartsOn: 'sunday',
   setWeekStartsOn: () => {},
+  palette: 'default',
+  setPalette: () => {},
+  accentColor: null,
+  setAccentColor: () => {},
 }
 
 /** Fresh client per test: no retries, no caching across tests. */

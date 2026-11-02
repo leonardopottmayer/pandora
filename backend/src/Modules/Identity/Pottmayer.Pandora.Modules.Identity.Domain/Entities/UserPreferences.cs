@@ -16,6 +16,11 @@ public sealed class UserPreferences : Entity<Guid>, IAuditable
     /// <summary>First day of the week, for calendar rendering.</summary>
     public DayOfWeek WeekStartsOn { get; private set; }
 
+    public AppPalette Palette { get; private set; } = AppPalette.Default;
+
+    /// <summary>#rrggbb, or null for the palette's own.</summary>
+    public string? AccentColor { get; private set; }
+
     public Guid? CreatedBy { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public Guid? UpdatedBy { get; set; }
@@ -25,7 +30,8 @@ public sealed class UserPreferences : Entity<Guid>, IAuditable
 
     internal static UserPreferences Create(
         AppTheme theme, AppLanguage language,
-        string timeZone, DayOfWeek weekStartsOn) =>
+        string timeZone, DayOfWeek weekStartsOn,
+        AppPalette palette, string? accentColor) =>
         new()
         {
             Id = Guid.CreateVersion7(),
@@ -33,15 +39,20 @@ public sealed class UserPreferences : Entity<Guid>, IAuditable
             Language = language,
             TimeZone = timeZone,
             WeekStartsOn = weekStartsOn,
+            Palette = palette,
+            AccentColor = accentColor,
         };
 
     public void Update(
         AppTheme theme, AppLanguage language,
-        string timeZone, DayOfWeek weekStartsOn)
+        string timeZone, DayOfWeek weekStartsOn,
+        AppPalette palette, string? accentColor)
     {
         Theme = theme;
         Language = language;
         TimeZone = timeZone;
         WeekStartsOn = weekStartsOn;
+        Palette = palette;
+        AccentColor = accentColor;
     }
 }

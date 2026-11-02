@@ -4,4 +4,6 @@ public sealed record UpsertPreferencesRequest(
     string Theme,
     string Language,
     string TimeZone,
-    string WeekStartsOn);
+    string WeekStartsOn,
+    string Palette,
+    string? AccentColor);

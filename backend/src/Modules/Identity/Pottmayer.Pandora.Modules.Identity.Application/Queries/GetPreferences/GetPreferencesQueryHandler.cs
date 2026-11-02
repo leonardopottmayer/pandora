@@ -31,6 +31,8 @@ public sealed class GetPreferencesQueryHandler(IUnitOfWorkFactory factory)
             prefs.Theme.Value,
             prefs.Language.Value,
             prefs.TimeZone,
-            prefs.WeekStartsOn.ToString().ToLowerInvariant()));
+            prefs.WeekStartsOn.ToString().ToLowerInvariant(),
+            prefs.Palette.Value,
+            prefs.AccentColor));
     }
 }

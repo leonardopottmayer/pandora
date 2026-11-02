@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Pottmayer.Pandora.Modules.Identity.Abstractions;
 using Pottmayer.Pandora.Modules.Identity.Application.Dtos;
 using Pottmayer.Pandora.Modules.Identity.Domain.Errors;
@@ -30,7 +31,15 @@ public sealed class UpsertPreferencesCommandHandler(IUnitOfWorkFactory factory)
             || !weekStartsOn.ToString().Equals(input.WeekStartsOn, StringComparison.OrdinalIgnoreCase))
             return Fail(UserErrors.InvalidWeekStartsOn(input.WeekStartsOn));
 
+        if (!AppPalette.IsSupported(input.Palette))
+            return Fail(UserErrors.InvalidPalette(input.Palette));
+
+        if (input.AccentColor is not null && !Regex.IsMatch(input.AccentColor, "^#[0-9a-fA-F]{6}$"))
+            return Fail(UserErrors.InvalidAccentColor(input.AccentColor));
+
         var theme = AppTheme.FromValue(input.Theme);
+        var palette = AppPalette.FromValue(input.Palette);
+        var accentColor = input.AccentColor?.ToLowerInvariant();
         var language = AppLanguage.FromValue(input.Language);
 
         var user = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
@@ -41,7 +50,7 @@ public sealed class UpsertPreferencesCommandHandler(IUnitOfWorkFactory factory)
             if (user is null)
                 return null;
 
-            user.UpdatePreferences(theme, language, input.TimeZone, weekStartsOn);
+            user.UpdatePreferences(theme, language, input.TimeZone, weekStartsOn, palette, accentColor);
             await repo.UpdateAsync(user, token);
             return user;
         }, cancellationToken: ct);
@@ -54,6 +63,8 @@ public sealed class UpsertPreferencesCommandHandler(IUnitOfWorkFactory factory)
             prefs.Theme.Value,
             prefs.Language.Value,
             prefs.TimeZone,
-            prefs.WeekStartsOn.ToString().ToLowerInvariant()));
+            prefs.WeekStartsOn.ToString().ToLowerInvariant(),
+            prefs.Palette.Value,
+            prefs.AccentColor));
     }
 }

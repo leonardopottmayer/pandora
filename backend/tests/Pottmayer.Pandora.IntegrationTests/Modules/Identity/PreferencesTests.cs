@@ -83,6 +83,36 @@ public sealed class PreferencesTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Palette_and_accent_are_saved_and_the_accent_can_go_back_to_the_palettes_own()
+    {
+        await IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, "henry@example.com", "henry");
+
+        await _client.PutAsJsonAsync(PreferencesUrl, Body(theme: "dark", language: "en", palette: "reddit", accentColor: "#2DCD88"));
+        var saved = await ReadPreferencesAsync(await _client.GetAsync(PreferencesUrl));
+        Assert.Equal("reddit", saved.Palette);
+        Assert.Equal("#2dcd88", saved.AccentColor);
+
+        await _client.PutAsJsonAsync(PreferencesUrl, Body(theme: "dark", language: "en", palette: "claude"));
+        var cleared = await ReadPreferencesAsync(await _client.GetAsync(PreferencesUrl));
+        Assert.Equal("claude", cleared.Palette);
+        Assert.Null(cleared.AccentColor);
+    }
+
+    [Theory]
+    [InlineData("neon", null)]
+    [InlineData("default", "green")]
+    [InlineData("default", "#12345")]
+    [InlineData("default", "#12345g")]
+    public async Task Upsert_rejects_an_unsupported_palette_or_accent(string palette, string? accentColor)
+    {
+        await IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, "iris@example.com", "iris");
+
+        var response = await _client.PutAsJsonAsync(PreferencesUrl, Body(theme: "dark", language: "en", palette: palette, accentColor: accentColor));
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Upsert_rejects_an_unsupported_theme()
     {
         await IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, "dave@example.com", "dave");
@@ -126,8 +156,9 @@ public sealed class PreferencesTests : IAsyncLifetime
 
     private static object Body(
         string theme, string language,
-        string timeZone = "America/Sao_Paulo", string weekStartsOn = "sunday")
-        => new { theme, language, timeZone, weekStartsOn };
+        string timeZone = "America/Sao_Paulo", string weekStartsOn = "sunday",
+        string palette = "default", string? accentColor = null)
+        => new { theme, language, timeZone, weekStartsOn, palette, accentColor };
 
     private static async Task<PreferencesData> ReadPreferencesAsync(HttpResponseMessage response)
     {
@@ -137,5 +168,5 @@ public sealed class PreferencesTests : IAsyncLifetime
 
     private sealed record Envelope(PreferencesData Data);
     private sealed record PreferencesData(
-        string Theme, string Language, string TimeZone, string WeekStartsOn);
+        string Theme, string Language, string TimeZone, string WeekStartsOn, string Palette, string? AccentColor);
 }
