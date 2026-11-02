@@ -368,7 +368,12 @@
   "connections": {
     "title": "Connected accounts",
     "description": "Connect the third-party accounts Pandora uses on your behalf. You can connect several per provider; each feature picks the one it uses.",
-    "providersTitle": "Providers",
+    "tabAccounts": "Accounts",
+    "otherProviders": "Other providers",
+    "providers": "Providers",
+    "connect": "Connect",
+    "rename": "Rename",
+    "moreActions": "More actions for {{name}}",
     "reconnect": "Reconnect",
     "reconnectNeeded": "This connection was revoked. Reconnect it to continue.",
     "disconnect": "Disconnect",
@@ -379,7 +384,6 @@
     "noneAvailable": "No provider is configured on this server.",
     "apiKey": {
       "placeholder": "Paste your API key",
-      "save": "Save key",
       "saved": "API key saved.",
       "saveError": "Could not save the API key."
     },
@@ -392,8 +396,9 @@
     "activity": {
       "title": "Recent activity",
       "description": "A log of connects, refresh failures and revocations — the answer to why a sync stopped.",
+      "empty": "No activity yet.",
+      "colAccount": "Account",
       "colEvent": "Event",
-      "colProvider": "Provider",
       "colWhen": "When",
       "colDetail": "Detail",
       "event": {
@@ -407,7 +412,6 @@
     },
     "addAccount": "Add account",
     "addAccountTitle": "Add a {{provider}} account",
-    "noAccounts": "No account yet.",
     "labelField": "Name",
     "labelPlaceholder": "e.g. Personal, Work",
     "renamed": "Account renamed.",

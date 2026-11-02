@@ -1,23 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Alert, App, Button, Form, Input, Modal, Space, Spin, Table, Tag, Typography, theme } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
+import { Alert, App, Button, Dropdown, Form, Input, Modal, Space, Spin, Tabs, Tag, Typography } from 'antd'
+import { EllipsisOutlined, PlusOutlined } from '@ant-design/icons'
 import { PageHeading } from '@/components/settings/PageHeading'
+import { SettingRow } from '@/components/settings/SettingRow'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { toErrorMessage } from '@/lib/api/envelope'
-import {
-  providerLabel,
-  type ExternalAccount,
-  type IntegrationEvent,
-  type IntegrationEventType,
-  type IntegrationStatus,
-  type ProviderCatalogItem,
-} from '../models'
+import { providerLabel, type ExternalAccount, type IntegrationStatus, type ProviderCatalogItem } from '../models'
 import {
   useAccounts,
   useDisconnectAccount,
-  useIntegrationEvents,
   useProviders,
   useRenameAccount,
   useReplaceSecret,
@@ -26,17 +19,11 @@ import {
   useStartConnection,
 } from '../hooks/useIntegrations'
 import { usageLabel } from '../lib/usageLabel'
+import { IntegrationActivity } from '../components/IntegrationActivity'
 
 const REDIRECT_AFTER = '/integrations/connections'
-
-const EVENT_TAG_COLOR: Record<IntegrationEventType, string> = {
-  connected: 'green',
-  reconnected: 'green',
-  'refresh-failed': 'orange',
-  expired: 'orange',
-  revoked: 'red',
-  disconnected: 'default',
-}
+const ACTIVITY_TAB = 'activity'
+const ACCOUNTS_TAB = 'accounts'
 
 function statusTag(status: IntegrationStatus, t: (k: string) => string) {
   switch (status) {
@@ -51,26 +38,24 @@ function statusTag(status: IntegrationStatus, t: (k: string) => string) {
   }
 }
 
-/** The form of the "add account" / "replace secret" modals: which fields depend on the auth kind. */
-interface SecretForm {
+/** The form of the account modals: which fields show depends on the mode and the auth kind. */
+interface AccountForm {
   label?: string
   username?: string
-  secret: string
+  secret?: string
 }
 
-type SecretModal =
+type AccountModal =
   | { mode: 'add'; provider: ProviderCatalogItem }
   | { mode: 'replace'; account: ExternalAccount }
+  | { mode: 'rename'; account: ExternalAccount }
 
-export function ConnectionsPage() {
+function AccountsTab() {
   const { t } = useTranslation()
   const { message, modal } = App.useApp()
-  const { token } = theme.useToken()
-  const [searchParams, setSearchParams] = useSearchParams()
 
   const { data: providers, isLoading: providersLoading } = useProviders()
-  const { data: accounts } = useAccounts()
-  const { data: events } = useIntegrationEvents()
+  const { data: accounts, isLoading: accountsLoading } = useAccounts()
 
   const startConnection = useStartConnection()
   const disconnect = useDisconnectAccount()
@@ -79,21 +64,8 @@ export function ConnectionsPage() {
   const savePassword = useSavePassword()
   const replaceSecret = useReplaceSecret()
 
-  const [secretModal, setSecretModal] = useState<SecretModal | null>(null)
-  const [form] = Form.useForm<SecretForm>()
-
-  // Surface the callback outcome, then drop the query param so a refresh does not repeat it.
-  const outcome = searchParams.get('integration')
-  useEffect(() => {
-    if (outcome) {
-      if (outcome === 'error') message.error(t('connections.connectError'))
-      if (outcome === 'other-account') message.warning(t('connections.otherAccount'), 8)
-      const next = new URLSearchParams(searchParams)
-      next.delete('integration')
-      setSearchParams(next, { replace: true })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [outcome])
+  const [accountModal, setAccountModal] = useState<AccountModal | null>(null)
+  const [form] = Form.useForm<AccountForm>()
 
   async function handleConnect(provider: string, accountId?: string) {
     try {
@@ -101,16 +73,6 @@ export function ConnectionsPage() {
       window.location.assign(url)
     } catch (err) {
       message.error(toErrorMessage(err, t('connections.connectError')))
-    }
-  }
-
-  async function handleRename(account: ExternalAccount, label: string) {
-    if (!label.trim() || label.trim() === account.label) return
-    try {
-      await rename.mutateAsync({ id: account.id, label: label.trim() })
-      message.success(t('connections.renamed'))
-    } catch (err) {
-      message.error(toErrorMessage(err, t('connections.renameError')))
     }
   }
 
@@ -141,246 +103,238 @@ export function ConnectionsPage() {
     })
   }
 
-  function openSecretModal(next: SecretModal) {
+  function openModal(next: AccountModal) {
     form.resetFields()
-    setSecretModal(next)
+    if (next.mode === 'rename') form.setFieldsValue({ label: next.account.label })
+    setAccountModal(next)
   }
 
-  const modalAuthKind =
-    secretModal?.mode === 'add' ? secretModal.provider.authKind : secretModal?.account.authKind
-  const modalProvider = secretModal?.mode === 'add' ? secretModal.provider.provider : secretModal?.account.provider
+  const modalAuthKind = accountModal?.mode === 'add' ? accountModal.provider.authKind : accountModal?.account.authKind
   const isPassword = modalAuthKind === 'password'
 
-  async function handleSecretSubmit(values: SecretForm) {
-    if (!secretModal || !modalProvider) return
+  /** What failed, in the words of the modal that is open. */
+  function saveErrorMessage(current: AccountModal): string {
+    if (current.mode === 'rename') return t('connections.renameError')
+    if (current.mode === 'replace') return t('connections.replaceError')
+    return isPassword ? t('connections.password.saveError') : t('connections.apiKey.saveError')
+  }
+
+  async function handleSubmit(values: AccountForm) {
+    if (!accountModal) return
     try {
-      if (secretModal.mode === 'replace') {
-        await replaceSecret.mutateAsync({ id: secretModal.account.id, secret: values.secret })
+      if (accountModal.mode === 'rename') {
+        const label = values.label?.trim() ?? ''
+        if (label !== accountModal.account.label) {
+          await rename.mutateAsync({ id: accountModal.account.id, label })
+          message.success(t('connections.renamed'))
+        }
+      } else if (accountModal.mode === 'replace') {
+        await replaceSecret.mutateAsync({ id: accountModal.account.id, secret: values.secret ?? '' })
         message.success(t('connections.secretReplaced'))
       } else if (isPassword) {
         await savePassword.mutateAsync({
-          provider: modalProvider,
+          provider: accountModal.provider.provider,
           username: values.username ?? '',
-          password: values.secret,
+          password: values.secret ?? '',
           label: values.label,
         })
         message.success(t('connections.password.saved'))
       } else {
-        await saveApiKey.mutateAsync({ provider: modalProvider, apiKey: values.secret, label: values.label })
+        await saveApiKey.mutateAsync({
+          provider: accountModal.provider.provider,
+          apiKey: values.secret ?? '',
+          label: values.label,
+        })
         message.success(t('connections.apiKey.saved'))
       }
-      setSecretModal(null)
+      setAccountModal(null)
     } catch (err) {
-      message.error(
-        toErrorMessage(
-          err,
-          secretModal.mode === 'replace'
-            ? t('connections.replaceError')
-            : isPassword
-              ? t('connections.password.saveError')
-              : t('connections.apiKey.saveError'),
-        ),
-      )
+      message.error(toErrorMessage(err, saveErrorMessage(accountModal)))
     }
   }
 
-  const cardStyle = {
-    border: `1px solid ${token.colorBorderSecondary}`,
-    background: token.colorBgContainer,
-  }
-
-  const activityColumns: ColumnsType<IntegrationEvent> = [
-    {
-      title: t('connections.activity.colEvent'),
-      dataIndex: 'eventType',
-      render: (type: IntegrationEventType) => (
-        <Tag color={EVENT_TAG_COLOR[type]}>{t(`connections.activity.event.${type}`)}</Tag>
-      ),
-    },
-    {
-      title: t('connections.activity.colProvider'),
-      dataIndex: 'provider',
-      render: (provider: string) => providerLabel(provider),
-    },
-    {
-      title: t('connections.activity.colWhen'),
-      dataIndex: 'occurredAt',
-      render: (value: string) => new Date(value).toLocaleString(),
-    },
-    {
-      title: t('connections.activity.colDetail'),
-      dataIndex: 'detail',
-      ellipsis: true,
-      render: (detail: string | null) =>
-        detail ? detail : <Typography.Text type="secondary">—</Typography.Text>,
-    },
-  ]
-
   function renderAccount(account: ExternalAccount) {
-    const revoked = account.status === 'revoked'
+    const needsAttention = account.status !== 'connected'
+    const refreshLabel =
+      account.authKind === 'oauth'
+        ? t('connections.reconnect')
+        : account.authKind === 'password'
+          ? t('connections.replacePassword')
+          : t('connections.replaceKey')
+    const refresh = () =>
+      account.authKind === 'oauth' ? handleConnect(account.provider, account.id) : openModal({ mode: 'replace', account })
+
+    const usedBy =
+      account.usages.length === 0
+        ? t('connections.notUsed')
+        : `${t('connections.usedBy')}: ${account.usages.map((u) => usageLabel(t, u)).join(', ')}`
+    const hint = account.displayName && account.displayName !== account.label ? `${account.displayName} · ` : ''
+
     return (
-      <div key={account.id} className="flex flex-col gap-2 rounded-lg p-3" style={cardStyle}>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <Typography.Text strong editable={{ onChange: (label) => handleRename(account, label) }}>
-            {account.label}
-          </Typography.Text>
-          {statusTag(account.status, t)}
-        </div>
-        {account.displayName && account.displayName !== account.label && (
-          <Typography.Text type="secondary">{account.displayName}</Typography.Text>
+      <div key={account.id}>
+        <SettingRow
+          label={
+            <Space size={8}>
+              {account.label}
+              {statusTag(account.status, t)}
+            </Space>
+          }
+          description={`${hint}${usedBy}`}
+          control={
+            <Space size={4}>
+              {needsAttention && (
+                <Button type="primary" size="small" loading={startConnection.isPending} onClick={refresh}>
+                  {refreshLabel}
+                </Button>
+              )}
+              <Dropdown
+                trigger={['click']}
+                placement="bottomRight"
+                menu={{
+                  items: [
+                    { key: 'rename', label: t('connections.rename'), onClick: () => openModal({ mode: 'rename', account }) },
+                    ...(needsAttention ? [] : [{ key: 'refresh', label: refreshLabel, onClick: refresh }]),
+                    { type: 'divider' as const },
+                    { key: 'disconnect', danger: true, label: t('connections.disconnect'), onClick: () => confirmDisconnect(account) },
+                  ],
+                }}
+              >
+                <Button type="text" size="small" icon={<EllipsisOutlined />} aria-label={t('connections.moreActions', { name: account.label })} />
+              </Dropdown>
+            </Space>
+          }
+        />
+        {account.status === 'revoked' && (
+          <div className="px-4 pb-4">
+            <Alert type="warning" showIcon title={t('connections.reconnectNeeded')} description={account.lastError ?? undefined} />
+          </div>
         )}
-        {revoked && (
-          <Alert
-            type="warning"
-            showIcon
-            message={t('connections.reconnectNeeded')}
-            description={account.lastError ?? undefined}
-          />
-        )}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Typography.Text type="secondary" className="text-xs">
-            {t('connections.usedBy')}:
-          </Typography.Text>
-          {account.usages.length === 0 ? (
-            <Typography.Text type="secondary" className="text-xs">
-              {t('connections.notUsed')}
-            </Typography.Text>
-          ) : (
-            account.usages.map((u) => (
-              <Tag key={`${u.module}.${u.purpose}.${u.detail ?? ''}`} color="blue">
-                {usageLabel(t, u)}
-              </Tag>
-            ))
-          )}
-        </div>
-        <Space wrap>
-          {account.authKind === 'oauth' ? (
-            <Button
-              size="small"
-              type={revoked ? 'primary' : 'default'}
-              loading={startConnection.isPending}
-              onClick={() => handleConnect(account.provider, account.id)}
-            >
-              {t('connections.reconnect')}
-            </Button>
-          ) : (
-            <Button size="small" onClick={() => openSecretModal({ mode: 'replace', account })}>
-              {account.authKind === 'password' ? t('connections.replacePassword') : t('connections.replaceKey')}
-            </Button>
-          )}
-          <Button size="small" danger onClick={() => confirmDisconnect(account)}>
-            {t('connections.disconnect')}
-          </Button>
-        </Space>
       </div>
     )
   }
 
+  function addAccount(provider: ProviderCatalogItem) {
+    if (provider.authKind === 'oauth') void handleConnect(provider.provider)
+    else openModal({ mode: 'add', provider })
+  }
+
+  const providerName = (provider: ProviderCatalogItem) => provider.displayName ?? providerLabel(provider.provider)
+  const accountsOf = (provider: ProviderCatalogItem) => (accounts ?? []).filter((a) => a.provider === provider.provider)
+  const withAccounts = (providers ?? []).filter((p) => accountsOf(p).length > 0)
+  const withoutAccounts = (providers ?? []).filter((p) => accountsOf(p).length === 0)
+
+  const modalTitle =
+    accountModal?.mode === 'add'
+      ? t('connections.addAccountTitle', { provider: providerName(accountModal.provider) })
+      : accountModal?.account.label
+
+  if (providersLoading || accountsLoading) return <Spin />
+
+  if ((providers ?? []).length === 0) {
+    return <Typography.Text type="secondary">{t('connections.noneAvailable')}</Typography.Text>
+  }
+
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <PageHeading title={t('connections.title')} description={t('connections.description')} />
+    <div className="flex flex-col gap-6">
+      {withAccounts.map((provider) => (
+        <SettingsSection
+          key={provider.provider}
+          title={providerName(provider)}
+          extra={
+            <Button size="small" icon={<PlusOutlined />} onClick={() => addAccount(provider)}>
+              {t('connections.addAccount')}
+            </Button>
+          }
+        >
+          {accountsOf(provider).map(renderAccount)}
+        </SettingsSection>
+      ))}
 
-      <section className="flex flex-col gap-2.5">
-        <div className="px-0.5">
-          <Typography.Text strong type="secondary" className="text-xs uppercase tracking-wider">
-            {t('connections.providersTitle')}
-          </Typography.Text>
-        </div>
-
-        {providersLoading ? (
-          <div className="rounded-xl p-6" style={cardStyle}>
-            <Spin />
-          </div>
-        ) : (providers ?? []).length === 0 ? (
-          <div className="rounded-xl p-4" style={cardStyle}>
-            <Typography.Text type="secondary">{t('connections.noneAvailable')}</Typography.Text>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            {(providers ?? []).map((provider) => {
-              const name = provider.displayName ?? providerLabel(provider.provider)
-              const providerAccounts = (accounts ?? []).filter((a) => a.provider === provider.provider)
-
-              return (
-                <div key={provider.provider} className="flex flex-col gap-3 rounded-xl p-4" style={cardStyle}>
-                  <div className="flex items-center justify-between gap-2">
-                    <Typography.Text strong>{name}</Typography.Text>
-                    <Button
-                      size="small"
-                      type="primary"
-                      loading={provider.authKind === 'oauth' && startConnection.isPending}
-                      onClick={() =>
-                        provider.authKind === 'oauth'
-                          ? handleConnect(provider.provider)
-                          : openSecretModal({ mode: 'add', provider })
-                      }
-                    >
-                      {t('connections.addAccount')}
-                    </Button>
-                  </div>
-                  {providerAccounts.length === 0 ? (
-                    <Typography.Text type="secondary">{t('connections.noAccounts')}</Typography.Text>
-                  ) : (
-                    providerAccounts.map(renderAccount)
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* Recent activity */}
-      {events && events.length > 0 && (
-        <SettingsSection title={t('connections.activity.title')}>
-          <Table<IntegrationEvent>
-            rowKey="id"
-            size="small"
-            columns={activityColumns}
-            dataSource={events}
-            pagination={{ pageSize: 10, hideOnSinglePage: true }}
-            scroll={{ x: true }}
-          />
+      {withoutAccounts.length > 0 && (
+        <SettingsSection title={t(withAccounts.length > 0 ? 'connections.otherProviders' : 'connections.providers')}>
+          {withoutAccounts.map((provider) => (
+            <SettingRow
+              key={provider.provider}
+              label={providerName(provider)}
+              control={
+                <Button size="small" onClick={() => addAccount(provider)}>
+                  {t('connections.connect')}
+                </Button>
+              }
+            />
+          ))}
         </SettingsSection>
       )}
 
       <Modal
-        open={secretModal !== null}
-        title={
-          secretModal?.mode === 'add'
-            ? t('connections.addAccountTitle', {
-                provider: secretModal.provider.displayName ?? providerLabel(secretModal.provider.provider),
-              })
-            : secretModal
-              ? secretModal.account.label
-              : undefined
-        }
-        okText={t('connections.apiKey.save')}
-        confirmLoading={saveApiKey.isPending || savePassword.isPending || replaceSecret.isPending}
+        open={accountModal !== null}
+        title={modalTitle}
+        okText={t('common.save')}
+        confirmLoading={saveApiKey.isPending || savePassword.isPending || replaceSecret.isPending || rename.isPending}
         onOk={() => form.submit()}
-        onCancel={() => setSecretModal(null)}
+        onCancel={() => setAccountModal(null)}
         destroyOnHidden
       >
-        <Form<SecretForm> form={form} layout="vertical" onFinish={handleSecretSubmit} preserve={false}>
-          {secretModal?.mode === 'add' && (
-            <Form.Item name="label" label={t('connections.labelField')}>
+        <Form<AccountForm> form={form} layout="vertical" onFinish={handleSubmit} preserve={false}>
+          {accountModal?.mode !== 'replace' && (
+            <Form.Item
+              name="label"
+              label={t('connections.labelField')}
+              rules={accountModal?.mode === 'rename' ? [{ required: true, whitespace: true }] : undefined}
+            >
               <Input placeholder={t('connections.labelPlaceholder')} maxLength={100} />
             </Form.Item>
           )}
-          {secretModal?.mode === 'add' && isPassword && (
+          {accountModal?.mode === 'add' && isPassword && (
             <Form.Item name="username" label={t('connections.password.username')} rules={[{ required: true }]}>
               <Input autoComplete="username" />
             </Form.Item>
           )}
-          <Form.Item
-            name="secret"
-            label={isPassword ? t('connections.password.password') : t('connections.apiKey.placeholder')}
-            rules={[{ required: true }]}
-          >
-            <Input.Password autoComplete={isPassword ? 'current-password' : 'off'} />
-          </Form.Item>
+          {accountModal?.mode !== 'rename' && (
+            <Form.Item
+              name="secret"
+              label={isPassword ? t('connections.password.password') : t('connections.apiKey.placeholder')}
+              rules={[{ required: true }]}
+            >
+              <Input.Password autoComplete={isPassword ? 'current-password' : 'off'} />
+            </Form.Item>
+          )}
         </Form>
       </Modal>
+    </div>
+  )
+}
+
+export function ConnectionsPage() {
+  const { t } = useTranslation()
+  const { message } = App.useApp()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = searchParams.get('tab') === ACTIVITY_TAB ? ACTIVITY_TAB : ACCOUNTS_TAB
+
+  // Surface the callback outcome, then drop the query param so a refresh does not repeat it.
+  const outcome = searchParams.get('integration')
+  useEffect(() => {
+    if (outcome) {
+      if (outcome === 'error') message.error(t('connections.connectError'))
+      if (outcome === 'other-account') message.warning(t('connections.otherAccount'), 8)
+      const next = new URLSearchParams(searchParams)
+      next.delete('integration')
+      setSearchParams(next, { replace: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [outcome])
+
+  return (
+    <div className="mx-auto flex max-w-3xl flex-col gap-4">
+      <PageHeading title={t('connections.title')} description={t('connections.description')} />
+      <Tabs
+        activeKey={tab}
+        onChange={(next) => setSearchParams(next === ACTIVITY_TAB ? { tab: ACTIVITY_TAB } : {}, { replace: true })}
+        items={[
+          { key: ACCOUNTS_TAB, label: t('connections.tabAccounts'), children: <AccountsTab /> },
+          { key: ACTIVITY_TAB, label: t('connections.activity.title'), children: <IntegrationActivity /> },
+        ]}
+      />
     </div>
   )
 }

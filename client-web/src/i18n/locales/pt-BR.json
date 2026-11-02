@@ -368,7 +368,12 @@
   "connections": {
     "title": "Contas conectadas",
     "description": "Conecte as contas de terceiros que o Pandora usa em seu nome. Dá para conectar várias por provedor; cada funcionalidade escolhe a que usa.",
-    "providersTitle": "Provedores",
+    "tabAccounts": "Contas",
+    "otherProviders": "Outros provedores",
+    "providers": "Provedores",
+    "connect": "Conectar",
+    "rename": "Renomear",
+    "moreActions": "Mais ações de {{name}}",
     "reconnect": "Reconectar",
     "reconnectNeeded": "Esta conexao foi revogada. Reconecte para continuar.",
     "disconnect": "Desconectar",
@@ -379,7 +384,6 @@
     "noneAvailable": "Nenhum provedor esta configurado neste servidor.",
     "apiKey": {
       "placeholder": "Cole sua API key",
-      "save": "Salvar key",
       "saved": "API key salva.",
       "saveError": "Nao foi possivel salvar a API key."
     },
@@ -392,8 +396,9 @@
     "activity": {
       "title": "Atividade recente",
       "description": "Um registro de conexões, falhas de renovação e revogações — a resposta para por que uma sincronização parou.",
+      "empty": "Nenhuma atividade ainda.",
+      "colAccount": "Conta",
       "colEvent": "Evento",
-      "colProvider": "Provedor",
       "colWhen": "Quando",
       "colDetail": "Detalhe",
       "event": {
@@ -407,7 +412,6 @@
     },
     "addAccount": "Adicionar conta",
     "addAccountTitle": "Adicionar conta {{provider}}",
-    "noAccounts": "Nenhuma conta ainda.",
     "labelField": "Nome",
     "labelPlaceholder": "ex.: Pessoal, Trabalho",
     "renamed": "Conta renomeada.",
