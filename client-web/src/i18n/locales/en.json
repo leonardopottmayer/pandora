@@ -1061,6 +1061,12 @@
       "open": "Open note",
       "close": "Close note details"
     },
+    "graphControls": {
+      "label": "Graph navigation",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "fit": "Fit graph to view"
+    },
     "graphGroups": {
       "collapse": "Collapse {{name}}",
       "expand": "Expand {{name}}",

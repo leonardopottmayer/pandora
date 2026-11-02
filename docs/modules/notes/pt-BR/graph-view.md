@@ -83,7 +83,7 @@ O backend acrescenta `TagIds` com uma leitura em lote das tags das páginas reto
 atribui famílias e fornece uma força de atração; `lib/graphRegions.ts` desenha atrás dos vértices/links
 reais. Desligar o agrupamento restaura a força original dos links. Vértices e arrays de tags do cache
 são copiados antes da simulação. Não há mudança de schema ou dependência nova. O grafo local da página
-mantém sua apresentação.
+não usa famílias.
 
 Isso implementa por tags a ideia registrada em 2026-11-02. Comunidades automáticas e regiões
 sobrepostas continuam como ideias futuras.
@@ -102,17 +102,17 @@ Mudar os filtros de espaço ou tags limpa a seleção e fecha os detalhes.
 
 ## 8. Ideias de melhorias (2026-11-02)
 
-São ideias, sem compromisso de implementação. Busca por título, detalhes e recolhimento de famílias estão entregues.
+São ideias, sem compromisso de implementação. Busca por título, detalhes, recolhimento de famílias e controles de navegação estão entregues.
 
 - **Painel de detalhes (implementado):** ver o comportamento de inspeção abaixo.
 - **Recolher famílias (implementado):** ver a projeção visual abaixo.
-- **Controles de navegação:** botões visíveis de aumentar/diminuir zoom e enquadrar tudo, úteis no celular.
+- **Controles de navegação (implementado):** ver os controles da câmera abaixo.
 - **Filtros de visibilidade:** ocultar arquivadas e vértices isolados separadamente; o toggle atual de
   arquivadas afeta apenas a sidebar.
 - **Ligações entre famílias:** resumir pontes e contagens de links entre regiões temáticas.
 - **Depois:** fixar posições dos vértices, lembrar o enquadramento e explorar comunidades automáticas.
 
-Próxima prioridade sugerida: controles visíveis de zoom e enquadramento geral.
+Próxima prioridade sugerida: filtros de visibilidade para arquivadas e vértices isolados.
 
 ## 9. Inspecionar uma nota sem sair do grafo
 
@@ -154,3 +154,18 @@ O estado de recolhimento vale durante a visita atual e não é persistido. Desli
 todas as páginas e links reais; ligar novamente reaplica os recolhimentos da visita. Salvar a
 configuração expande todas as famílias. `lib/collapsedGraph.ts` cria dados novos para a simulação;
 nenhuma API, schema, nota ou link real é alterado. O grafo local permanece igual.
+
+## 11. Controles da câmera
+
+Os grafos global e local têm botões **Aumentar zoom**, **Diminuir zoom** e **Enquadrar todo o grafo**
+no canto superior direito. Os botões têm rótulos acessíveis, ativação pelo teclado e área de toque
+de 40 px, separada da legenda das famílias. Ficam desabilitados quando não há vértices disponíveis.
+
+O zoom altera a escala atual por um fator de 1,25, com animação curta e os limites existentes do
+canvas. Enquadrar mostra todos os vértices desenhados, respeitando os filtros de espaço/tags e as
+famílias recolhidas. Nenhuma dessas ações limpa a seleção, fecha os detalhes, altera as famílias
+ou grava preferências. A navegação por roda do mouse/gestos continua disponível.
+
+Uma ação manual da câmera, incluindo enquadrar uma família, tem prioridade sobre o enquadramento
+automático ao terminar a simulação. Selecionar outra nota ou mudar o grafo/layout retoma o
+posicionamento automático. Os controles usam a API do canvas existente, sem backend ou dependência nova.

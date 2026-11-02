@@ -82,7 +82,7 @@ applies it and Cancel discards it. Deleted tags appear as unavailable and match 
 The backend adds `TagIds` with one batch read of the returned pages' tags. `lib/graphGroups.ts` assigns
 membership and provides an anchor force; `lib/graphRegions.ts` draws behind real nodes/links. Turning
 grouping off restores the original link force. Cached nodes and tag arrays are copied before simulation.
-No schema change or new dependency is required. The local page graph keeps its original presentation.
+No schema change or new dependency is required. The local page graph does not use families.
 
 This implements the idea recorded on 2026-11-02 using tags. Automatic communities and overlapping
 regions remain future ideas.
@@ -101,17 +101,17 @@ This is client-side navigation over the graph payload, separate from full-text p
 
 ## 8. Improvement ideas (2026-11-02)
 
-These are ideas, not implementation commitments. Title search, details and collapsing families are delivered.
+These are ideas, not implementation commitments. Title search, details, collapsing families and navigation controls are delivered.
 
 - **Details panel (implemented):** see the inspection behavior below.
 - **Collapse families (implemented):** see the display projection below.
-- **Navigation controls:** visible zoom in/out and fit-all buttons, especially useful on mobile.
+- **Navigation controls (implemented):** see the camera controls below.
 - **Visibility filters:** hide archived pages and isolated nodes independently; the existing archive
   toggle only affects the sidebar.
 - **Connections between families:** summarize bridges and link counts between thematic regions.
 - **Later:** pin node positions, remember the camera viewport and explore automatic communities.
 
-Suggested next priority: visible zoom and fit-all controls.
+Suggested next priority: visibility filters for archived pages and isolated nodes.
 
 ## 9. Inspect a note without leaving the graph
 
@@ -151,3 +151,18 @@ Collapse state lasts for the current visit and is not persisted. Turning groups 
 real page and link; turning groups back on reapplies that visit's collapsed choices. Saving family
 configuration expands all families. `lib/collapsedGraph.ts` creates fresh simulation data; no API,
 schema or real note/link is changed. The local page graph remains unchanged.
+
+## 11. Camera controls
+
+Both global and local graphs have **Zoom in**, **Zoom out** and **Fit graph to view** buttons in
+the upper-right corner. Buttons have accessible labels, keyboard activation and 40 px touch targets;
+they remain separate from the family legend. They are disabled when no nodes are available.
+
+Zoom changes the current scale by a factor of 1.25 with a short animation and the canvas's existing
+zoom limits. Fit frames all currently drawn nodes, respecting space/tag filters and collapsed
+families. Neither action clears the selection, closes details, changes family state or writes a
+preference. Wheel/pinch navigation remains available.
+
+A manual camera action, including framing a family, takes priority over automatic framing when
+the simulation settles. Selecting another note or changing the graph/layout resumes automatic
+positioning. The controls use the existing canvas API; no backend change or new dependency.

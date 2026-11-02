@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Flex, Typography, theme } from 'antd'
-import { MinusSquareOutlined, PlusSquareOutlined } from '@ant-design/icons'
+import { FullscreenOutlined, MinusSquareOutlined, PlusSquareOutlined, ZoomInOutlined, ZoomOutOutlined } from '@ant-design/icons'
 import ForceGraph2D, { type ForceGraphMethods } from 'react-force-graph-2d'
 import { buildAdjacency, endpointId, nodeLabel, type ForceLink, type ForceNode } from '../lib/graphData'
 import { collapsedGraph } from '../lib/collapsedGraph'
@@ -38,6 +38,7 @@ export function GraphView({ graph, currentId, focusedId, onSelect, families, col
   const { t } = useTranslation()
   const { token } = theme.useToken()
   const graphRef = useRef<ForceGraphMethods<ForceNode, ForceLink> | undefined>(undefined)
+  const manualCameraRef = useRef(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
   const [hoveredId, setHoveredId] = useState<string | null>(null)
@@ -71,6 +72,7 @@ export function GraphView({ graph, currentId, focusedId, onSelect, families, col
   }, [locatedId, data])
 
   useEffect(() => {
+    manualCameraRef.current = false
     if (size.width > 0) centerLocatedNode()
   }, [centerLocatedNode, data, size.width])
   const membership = useMemo(() => new Map(data.nodes.map((node) =>
@@ -111,6 +113,18 @@ export function GraphView({ graph, currentId, focusedId, onSelect, families, col
   function nodeColor(id: string, isArchived: boolean) {
     if (id === currentId || id === locatedId) return token.colorPrimary
     return isArchived ? token.colorTextQuaternary : membership.get(id)?.color ?? token.colorTextSecondary
+  }
+
+  function changeZoom(factor: number) {
+    const view = graphRef.current
+    if (!view) return
+    manualCameraRef.current = true
+    view.zoom(view.zoom() * factor, 300)
+  }
+
+  function fitGraph() {
+    manualCameraRef.current = true
+    graphRef.current?.zoomToFit(300, 55)
   }
 
   return (
@@ -179,11 +193,38 @@ export function GraphView({ graph, currentId, focusedId, onSelect, families, col
           }
           cooldownTicks={100}
           onEngineStop={() => {
+            if (manualCameraRef.current) return
             if (locatedId) centerLocatedNode()
             else if (visibleFamilies.length > 0) graphRef.current?.zoomToFit(300, 55)
           }}
         />
       )}
+      <Flex role="group" aria-label={t('notes.graphControls.label')} gap={4} style={{ position: 'absolute', top: 12, right: 12 }}>
+        <Button
+          size="large"
+          icon={<ZoomInOutlined />}
+          aria-label={t('notes.graphControls.zoomIn')}
+          title={t('notes.graphControls.zoomIn')}
+          disabled={size.width === 0 || data.nodes.length === 0}
+          onClick={() => changeZoom(1.25)}
+        />
+        <Button
+          size="large"
+          icon={<ZoomOutOutlined />}
+          aria-label={t('notes.graphControls.zoomOut')}
+          title={t('notes.graphControls.zoomOut')}
+          disabled={size.width === 0 || data.nodes.length === 0}
+          onClick={() => changeZoom(1 / 1.25)}
+        />
+        <Button
+          size="large"
+          icon={<FullscreenOutlined />}
+          aria-label={t('notes.graphControls.fit')}
+          title={t('notes.graphControls.fit')}
+          disabled={size.width === 0 || data.nodes.length === 0}
+          onClick={fitGraph}
+        />
+      </Flex>
       {families && (
         <div style={{ position: 'absolute', bottom: 12, left: 12, right: 12, pointerEvents: 'none' }}>
           {families.length === 0 && <Typography.Text type="secondary">{t('notes.graphGroups.empty')}</Typography.Text>}
@@ -199,7 +240,10 @@ export function GraphView({ graph, currentId, focusedId, onSelect, families, col
                   size="small"
                   style={{ borderColor: family.color, minWidth: 0, flex: 1 }}
                   title={family.name}
-                  onClick={() => graphRef.current?.zoomToFit(300, 40, (node) => membership.get(String(node.id))?.id === family.id)}
+                  onClick={() => {
+                    manualCameraRef.current = true
+                    graphRef.current?.zoomToFit(300, 40, (node) => membership.get(String(node.id))?.id === family.id)
+                  }}
                 >
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{family.name} ({count})</span>
                 </Button>

@@ -39,6 +39,7 @@ function latest(): CanvasProps { return canvas.render.mock.calls.at(-1)![0] }
 
 beforeEach(() => {
   vi.clearAllMocks()
+  canvas.zoom.mockReturnValue(2)
   vi.stubGlobal('ResizeObserver', class {
     private callback: ResizeObserverCallback
     constructor(callback: ResizeObserverCallback) { this.callback = callback }
@@ -50,7 +51,37 @@ beforeEach(() => {
 })
 afterEach(() => vi.unstubAllGlobals())
 
-describe('GraphView search focus', () => {
+describe('GraphView', () => {
+  it('zooms relative to the current camera and fits the displayed graph without clearing selection', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    const view = renderWithProviders(<GraphView graph={graph} focusedId="a" onSelect={onSelect} />)
+    const [a, , c] = latest().graphData.nodes
+    const selectedColor = latest().nodeColor(a)
+    await user.click(screen.getByRole('button', { name: 'Zoom in' }))
+    expect(canvas.zoom).toHaveBeenLastCalledWith(2.5, 300)
+    canvas.zoom.mockReturnValue(4)
+    await user.click(screen.getByRole('button', { name: 'Zoom out' }))
+    expect(canvas.zoom).toHaveBeenLastCalledWith(3.2, 300)
+    await user.click(screen.getByRole('button', { name: 'Fit graph to view' }))
+    expect(canvas.zoomToFit).toHaveBeenLastCalledWith(300, 55)
+    canvas.centerAt.mockClear()
+    act(() => latest().onEngineStop())
+    expect(canvas.centerAt).not.toHaveBeenCalled()
+    expect(latest().nodeColor(a)).toBe(selectedColor)
+    expect(latest().nodeColor(c)).not.toBe(selectedColor)
+    expect(onSelect).not.toHaveBeenCalled()
+    view.rerender(<GraphView graph={graph} focusedId="b" onSelect={onSelect} />)
+    expect(canvas.centerAt).toHaveBeenLastCalledWith(100, 50, 300)
+  })
+
+  it('disables camera controls when there are no nodes', () => {
+    renderWithProviders(<GraphView graph={{ nodes: [], edges: [] }} onSelect={vi.fn()} />)
+    expect(screen.getByRole('button', { name: 'Zoom in' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Zoom out' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Fit graph to view' })).toBeDisabled()
+  })
+
   it('shows collapsed family counts and expands synthetic nodes without inspecting them as pages', async () => {
     const user = userEvent.setup()
     const onSelect = vi.fn()

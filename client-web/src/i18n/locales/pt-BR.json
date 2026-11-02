@@ -1061,6 +1061,12 @@
       "open": "Abrir nota",
       "close": "Fechar detalhes da nota"
     },
+    "graphControls": {
+      "label": "Navegação do grafo",
+      "zoomIn": "Aumentar zoom",
+      "zoomOut": "Diminuir zoom",
+      "fit": "Enquadrar todo o grafo"
+    },
     "graphGroups": {
       "collapse": "Recolher {{name}}",
       "expand": "Expandir {{name}}",
