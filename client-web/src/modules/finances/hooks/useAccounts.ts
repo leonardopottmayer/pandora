@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { financeKeys } from './queryKeys'
 import type { CreateAccountRequest, TransactionFilters, UpdateAccountRequest } from '../models'
 import * as accountsService from '../services/accounts.service'
@@ -35,6 +35,17 @@ export function useAccountBalance(id: string) {
     queryKey: financeKeys.accountBalance(id),
     queryFn: () => accountsService.getAccountBalance(id),
     enabled: !!id,
+  })
+}
+
+/** The balances of several accounts, one request each, on the same cache as `useAccountBalance`. */
+// ponytail: one request per account; a list endpoint with balances if accounts ever number in the dozens.
+export function useAccountBalances(ids: string[]) {
+  return useQueries({
+    queries: ids.map((id) => ({
+      queryKey: financeKeys.accountBalance(id),
+      queryFn: () => accountsService.getAccountBalance(id),
+    })),
   })
 }
 
