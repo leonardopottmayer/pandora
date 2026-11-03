@@ -1,8 +1,11 @@
 # Assistant — Plano de execução (Gemini)
 
-> **Status:** Plano de execução. Recorta o [product-plan](product-plan.md) para o caminho que está
-> sendo construído primeiro: **provedor único Gemini (hospedado)**, chave por usuário guardada no
-> Integrations. Corta OpenAI e a fase A6 (Notes/Finances/proativo) do escopo imediato.
+> **Status:** Histórico — todas as etapas abaixo (0 → A4) estão feitas, e a A6 (Notes/Finances) veio
+> depois. Fica como registro da ordem de construção e das decisões; o estado atual está em
+> [Status de implementação](implementation-status.md), e alguns detalhes mudaram no caminho (ex.:
+> `credential_ref` virou `chat_account_id`, o Telegram roda no subscriber em vez de um job).
+> Originalmente: recortar o product plan para **um único provedor hospedado, Gemini**, com a chave de
+> cada usuário guardada no Integrations.
 > 🇺🇸 [English version](../en/execution-plan.md)
 
 Este doc é a lista de trabalho. O *porquê* de cada decisão está no [product-plan](product-plan.md); a
@@ -164,7 +167,7 @@ O coração do módulo. Frase em português → tool call validada → comando e
   vale retry. **Nunca alegar sucesso que não houve** — status vem do resultado do comando.
 - **Single-turn aqui, por design.** `messages` é só `[system, user]`; o pipeline persiste a conversa e
   suas mensagens (`ast002`/`ast003`), mas ainda não realimenta o histórico no prompt. Reenviar as
-  mensagens recentes — agnóstico de canal, limitado por tempo — é a [A3](#etapa-a3--entrada-telegram-texto-esboço).
+  mensagens recentes — agnóstico de canal, limitado por tempo — é a [A3](#etapa-a3--entrada-por-telegram-texto-esboço).
 
 ### A2.6 — Confirmação
 - `ConfirmationPolicy` do descritor, ajustada pelo `confirmation_level` do perfil. `create_reminder`

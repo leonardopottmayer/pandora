@@ -5,9 +5,8 @@
 > 🇧🇷 [Versão em português](../pt-BR/messaging.md)
 >
 > Cross-cutting document: it describes a decision no single module owns.
-> Affected modules: [Channels](../../modules/channels/en/product-plan.md) ·
-> [Assistant](../../modules/assistant/en/product-plan.md) ·
-> [Agenda](../../modules/agenda/en/product-plan.md)
+> Affected modules: every one that publishes or handles an event — Identity, Channels, Agenda,
+> Integrations, Assistant, Communications — and every one with a background job (§3).
 > See also: [How Pandora is wired to Tars](tars-wiring.md) for the concrete `AddTars*` calls behind everything below.
 
 ---
@@ -54,14 +53,23 @@ Some work genuinely cannot happen inside the request that triggered it: an HTTP 
 answer quickly, or a task that takes tens of seconds. The answer is a **job in the module that owns
 the work**, over that module's own table — not a queue in front of another process.
 
-The shape is already in the codebase four times over:
+The shape is in every module that has work to do later:
 
 | Module | Table | Job |
 |---|---|---|
+| Identity | `idt002_stored_refresh_token` | `RefreshTokenPurgeBackgroundService` purges old refresh tokens |
 | Channels | `chn006_notification` | `NotificationDispatcherBackgroundService` drains what is due |
-| Finances | `fin011_pending_transaction` | recurrence sweep generates what came due |
+| Channels | `chn004_inbound_update` | `InboundUpdateRetentionBackgroundService` clears aged raw payloads |
+| Finances | `fin011_pending_transaction` | `RecurrenceGenerationBackgroundService` generates what came due |
+| Finances | `fin007_card_statement` | `StatementLifecycleBackgroundService` closes statements on their closing date and marks the overdue ones |
+| Finances | `fin013_import_file` + `fin014_import_row` | `ImportParsingBackgroundService` parses uploaded files |
 | Agenda | `agd006_reminder` + `agd006x_reminder_dispatch` | `ReminderSweepBackgroundService` fires what is due |
 | Agenda | `agd007_alert` + `agd008_alert_dispatch` | `TaskAlertSweepBackgroundService` and `EventAlertSweepBackgroundService` fire what is due |
+| Communications | `com001_mailbox` and the mail tables | `MailboxSyncBackgroundService` syncs each mailbox, then trims the content cache |
+| Files | `fil003_scan` | `ScanExpiryBackgroundService` aborts scans whose agent went quiet |
+
+(Channels' `TelegramLongPollingService` is also a hosted service, but it is the inbound transport, not
+a job over a table.)
 
 The pattern each time: the caller writes a durable row in the same transaction as its state change
 and returns; a `PeriodicTimer` in a `BackgroundService` picks the row up in a fresh scope, does the
@@ -138,7 +146,8 @@ exactly that gap, broker or not: `Pottmayer.Tars.Messaging.EntityFrameworkCore` 
 row in the *same transaction* as the state change, and a `BackgroundService` relay per producing
 database drains it to the local handlers. Pandora adopted this in tars 0.0.8 — see
 [`OutboxRegistration.cs`](../../../backend/src/Host/Pottmayer.Pandora.Host/OutboxRegistration.cs),
-wired into Identity, Channels, Agenda and Integrations. Full mechanism:
+wired into Identity, Channels, Agenda, Integrations, Assistant and Communications (the modules that
+publish). Full mechanism:
 [tars/docs/messaging/outbox.md](../../../../tars/docs/messaging/outbox.md). This does **not**
 reintroduce a broker or a second process — the relay runs in the same deployable and hands off to the
 same in-process handlers as before; only the last-mile dispatch changed.

@@ -22,10 +22,12 @@ chama, nesta ordem:
 
 1. `builder.AddPandoraSharedInfrastructure()` — Observability, UserContext, setup do middleware de correlation-id (ver abaixo).
 2. `builder.AddPandoraSharedPersistence()` — infraestrutura cross-módulo da família Data (resolvedor de conexão, accessor/factory de contexto, factory de unit-of-work).
-3. Por módulo, nesta ordem fixa — **Identity, Channels, Finances, Notes, Agenda, Integrations** — três chamadas cada: `Add<Módulo>Persistence()`, `Add<Módulo>Infrastructure()`, `Add<Módulo>Application()`.
+3. Por módulo, nesta ordem fixa — **Identity, Channels, Finances, Notes, Agenda, Integrations, Assistant, Communications, Files** — três chamadas cada: `Add<Módulo>Persistence()`, `Add<Módulo>Infrastructure()`, `Add<Módulo>Application()`.
 4. `builder.AddPandoraOutbox()` — a família Messaging (outbox in-process). Registrado **depois** de todos os módulos, porque precisa do assembly de contratos e da chave de banco de cada um já conhecidos.
 5. `AddTarsLocalization()` + localização por módulo (`AddPandoraLocalization()`, `AddFinancesLocalization()`) e `AddTarsProblemDetails()` — preocupações da família Web/error-mapping.
-6. Presentation (`AddControllers()...`), API versioning, Swagger, forwarded headers, CORS — não é Tars, mas vem depois dele.
+6. Presentation: `AddControllers()` seguido de um `Add<Módulo>PresentationPart()` por módulo, na mesma ordem; depois API versioning, Swagger, forwarded headers, CORS — não é Tars, mas vem depois dele.
+
+Um módulo novo adiciona as três chamadas no fim do passo 3 e a presentation part no fim do passo 6.
 
 Duas chamadas de middleware (não mostradas acima, na montagem do pipeline): `app.UseTarsCorrelationId()`
 e `app.UseTarsUserContext()`.
@@ -48,14 +50,14 @@ e `app.UseTarsUserContext()`.
 
 ### Data (relacional)
 
-- **Arquivo de infra cross-módulo:** [`Shared/Pottmayer.Pandora.Shared.Persistence/DI/SharedPersistenceDI.cs`](../../../backend/src/Shared/Pottmayer.Pandora.Shared.Persistence/DI/SharedPersistenceDI.cs) — `AddTarsDataContextAccessor`, `AddTarsDataContextFactory`, `AddTarsRelationalConfigurationConnectionResolver`, `AddTarsRelationalUnitOfWorkFactory`. Registrado uma vez para o host inteiro.
-- **Por módulo** (`Modules/<Nome>/Pottmayer.Pandora.Modules.<Nome>.Persistence/DI/PersistenceDI.cs`, um por módulo: Identity, Channels, Finances, Notes, Agenda, Integrations): `AddTarsData<...DbContext>(...)` e `AddTarsDataRepositoriesFromAssemblies(...)`. Cada módulo tem seu próprio `DbContext` e seu próprio schema PostgreSQL — ver `data-model.md` do módulo.
+- **Arquivo de infra cross-módulo:** [`Shared/Pottmayer.Pandora.Shared.Persistence/DI/SharedPersistenceDI.cs`](../../../backend/src/Shared/Pottmayer.Pandora.Shared.Persistence/DI/SharedPersistenceDI.cs) — `AddTarsDataContextAccessor`, `AddTarsDataContextFactory`, `AddTarsRelationalConfigurationConnectionResolver`, `AddTarsUnitOfWorkFactory`. Registrado uma vez para o host inteiro.
+- **Por módulo** (`Modules/<Nome>/Pottmayer.Pandora.Modules.<Nome>.Persistence/DI/PersistenceDI.cs`, um em cada módulo): `AddTarsRelationalData<...DbContext>(...)` e `AddTarsDataRepositoriesFromAssemblies(...)`. Cada módulo tem seu próprio `DbContext` e seu próprio schema PostgreSQL — ver `data-model.md` do módulo.
 
 ### Security / Identity
 
 - **Arquivo:** [`Modules/Identity/Pottmayer.Pandora.Modules.Identity.Infrastructure/DI/InfrastructureDI.cs`](../../../backend/src/Modules/Identity/Pottmayer.Pandora.Modules.Identity.Infrastructure/DI/InfrastructureDI.cs)
-- **Chamadas:** `AddTarsIdentityOptions`, `AddTarsIdentityAspNetCoreOptions`, `AddTarsIdentityJwtTokenIssuer`, `AddTarsIdentityJwtTokenValidator`, `AddTarsIdentityRefreshTokenService`, `AddTarsIdentityInMemoryTokenRevocationStore`, `AddTarsIdentityTokenRevocationService`, `AddTarsIdentityTokenDeliveryPolicy`, `AddTarsIdentityAspNetCoreTokenTransport`, `AddTarsIdentityAspNetCoreJwtBearer`.
-- Só o módulo Identity mexe nessa família — ele é dono da emissão/validação de JWT de ponta a ponta. Ver [docs do módulo Identity](../../modules/identity/pt-BR/README.md).
+- **Chamadas:** `AddTarsIdentityOptions`, `AddTarsIdentityAspNetCoreOptions`, `AddTarsIdentityJwtTokenIssuer`, `AddTarsIdentityJwtTokenValidator`, `AddTarsIdentityRefreshTokenService`, `AddTarsIdentityInMemoryTokenRevocationStore`, `AddTarsIdentityTokenRevocationService`, `AddTarsIdentityTokenDeliveryPolicy`, `AddTarsIdentityAspNetCoreTokenTransport`, `AddTarsIdentityAspNetCoreJwtBearer` e `AddTarsIdentityApiKey(DeviceAuthorization.Scheme)` — as chaves de dispositivo (`X-Api-Key`) do Pandora Desktop, um esquema que só os endpoints que o nomeiam aceitam.
+- Só o módulo Identity mexe nessa família — ele é dono da emissão/validação de JWT e das chaves de dispositivo de ponta a ponta. Ver [docs do módulo Identity](../../modules/identity/pt-BR/README.md).
 
 ### Security / DataProtection
 
@@ -65,7 +67,7 @@ e `app.UseTarsUserContext()`.
 
 ### Core (Mediator/CQRS)
 
-- **Arquivos:** o `Modules/<Nome>/Pottmayer.Pandora.Modules.<Nome>.Application/DI/ApplicationDI.cs` de cada módulo (Identity, Channels, Finances, Notes, Agenda, Integrations) chama `AddTarsMediator(...)`, restrito ao assembly de handlers daquele módulo.
+- **Arquivos:** o `Modules/<Nome>/Pottmayer.Pandora.Modules.<Nome>.Application/DI/ApplicationDI.cs` de cada módulo chama `AddTarsMediator(...)`, restrito ao assembly de handlers daquele módulo.
 - Não existe registro global único de mediator — cada módulo varre o próprio assembly, então um handler de um módulo nunca fica visível para outro por acidente.
 
 ### Localization
@@ -76,14 +78,20 @@ e `app.UseTarsUserContext()`.
 ### Messaging (outbox in-process)
 
 - **Arquivo:** [`Host/Pottmayer.Pandora.Host/OutboxRegistration.cs`](../../../backend/src/Host/Pottmayer.Pandora.Host/OutboxRegistration.cs)
-- **Chamadas:** `AddTarsOutboxOptions`, `AddTarsIntegrationEventTypeRegistry`, `AddTarsIntegrationEventDispatcher`, `AddTarsIntegrationEventSerializer`, `AddTarsOutboxBus`, `AddTarsOutboxStore`, depois `AddTarsOutboxRelay(...)` uma vez por banco produtor (Identity, Channels, Agenda, Integrations).
-- Cada `DbContext` de módulo produtor (`IdentityDbContext`, `ChannelsDbContext`, `AgendaDbContext`, `IntegrationsDbContext`) também chama `AddTarsOutbox(...)` em si mesmo para mapear a tabela de outbox — ver cada arquivo. Nenhum broker é registrado (`AddTarsMassTransitRabbitMq` aparece só num comentário de código em `OutboxRegistration.cs`, documentando como ficaria a troca se um módulo for extraído para um serviço — não é chamado). Mecanismo completo: [Arquitetura de mensageria](messaging.md) e [tars/docs/messaging/outbox.md](../../../../tars/docs/messaging/outbox.md).
+- **Chamadas:** `AddTarsOutboxOptions`, `AddTarsIntegrationEventTypeRegistry` (um evento representativo por assembly de contratos: Identity, Channels, Integrations, Communications), `AddTarsIntegrationEventDispatcher`, `AddTarsIntegrationEventSerializer`, `AddTarsOutboxBus`, `AddTarsOutboxStore`, depois `AddTarsOutboxRelay(...)` uma vez por banco produtor (Identity, Channels, Agenda, Integrations, Assistant, Communications).
+- Cada `DbContext` de módulo produtor (`IdentityDbContext`, `ChannelsDbContext`, `AgendaDbContext`, `IntegrationsDbContext`, `AssistantDbContext`, `CommunicationsDbContext`) também chama `AddTarsOutbox(...)` em si mesmo para mapear a tabela de outbox — ver cada arquivo. Um módulo que passa a publicar precisa dos três: o `AddTarsOutbox` no `DbContext`, um relay, e o assembly de contratos no registry se for novo. Nenhum broker é registrado (`AddTarsMassTransitRabbitMq` aparece só num comentário de código em `OutboxRegistration.cs`, documentando como ficaria a troca se um módulo for extraído para um serviço — não é chamado). Mecanismo completo: [Arquitetura de mensageria](messaging.md) e [tars/docs/messaging/outbox.md](../../../../tars/docs/messaging/outbox.md).
 
 ### Communication
 
 - **Arquivo:** [`Modules/Channels/Pottmayer.Pandora.Modules.Channels.Infrastructure/DI/InfrastructureDI.cs`](../../../backend/src/Modules/Channels/Pottmayer.Pandora.Modules.Channels.Infrastructure/DI/InfrastructureDI.cs)
-- **Chamadas:** `AddTarsMailKitEmailOptions`, `AddTarsMailKitEmailSender`, `AddTarsLoggingEmailSender` (a fake, só dev), `AddTarsTelegramOptions`, `AddTarsTelegramClient`.
-- Só o Channels fala com essa família — é dono do e-mail de saída e do bot do Telegram.
+- **Chamadas:** `AddTarsMailKitEmailOptions`, `AddTarsMailKitEmailSender`, `AddTarsLoggingEmailSender` (a fake, só dev), `AddTarsTelegramOptions`, `AddTarsTelegramHttpClient`, `AddTarsTelegramClientFactory`.
+- Só o Channels fala com essa família — é dono do e-mail de saída e do bot do Telegram. O Communications lê e envia o email do próprio usuário (API do Gmail, IMAP/SMTP via MailKit) por adaptadores próprios, não por essa família.
+
+### AI
+
+- **Arquivo:** [`Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Infrastructure/DI/InfrastructureDI.cs`](../../../backend/src/Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Infrastructure/DI/InfrastructureDI.cs)
+- **Chamadas:** `AddTarsAiChatGeminiOptions`, `AddTarsAiChatGeminiHttpClient`, `AddTarsAiChatCompletionClientGemini`, `AddTarsAiClientFactory`.
+- Só o Assistant usa. Nenhuma API key é configurada: a chave Gemini de cada usuário vem do Integrations e vai na requisição; a seção de options (`Tars:Ai:Chat:Gemini`) só leva a URL base e o timeout.
 
 ### Web / HTTP
 

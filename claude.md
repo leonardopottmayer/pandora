@@ -8,8 +8,16 @@ Consult the existing documentation relevant to the task:
 
 - [Documentation index](docs/README.md): module architecture, data models, APIs, implementation status and deployment.
 - [Tars wiring](docs/architecture/en/tars-wiring.md) and [Messaging](docs/architecture/en/messaging.md): shared infrastructure and module boundaries.
-- [Frontend design](client-web/DESIGN.md): themes, tokens, components and layout.
+- [Frontend architecture](docs/architecture/en/frontend.md): folders, data fetching, query keys, routing, i18n and tests.
+- [Frontend design](client-web/DESIGN.md): themes, tokens and the screen patterns (page anatomy, tables, row menus, forms) every screen follows. A new or redesigned screen copies the reference screen it lists.
 - [Known issues](docs/known-issues.md): understood problems and previous decisions.
+
+## Working with the user
+
+- Talk to the user in Brazilian Portuguese. Code, commits and English docs stay in English.
+- When a decision is the user's, give at least two options with a short trade-off each and mark the recommended one with ⭐.
+- Redesigns go one screen at a time: read the screen, propose the changes, implement after approval, and the user checks it in the browser before the commit.
+- Say what was verified and what was not (for example, "not checked in the browser").
 
 ## 1. Think Before Coding
 

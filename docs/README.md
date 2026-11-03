@@ -8,7 +8,10 @@ organized by module plus a few cross-cutting concerns.
 
 - **Before implementing or reviewing code:** read [Project and code standards](architecture/en/coding-standards.md)
   ([pt-BR](architecture/pt-BR/coding-standards.md)) for file placement, layer responsibilities, naming,
-  persistence, frontend conventions and verification.
+  persistence, verification and commits.
+- **Before touching the frontend:** read [Frontend architecture](architecture/en/frontend.md)
+  ([pt-BR](architecture/pt-BR/frontend.md)) for folders, data, routing, i18n and tests, and
+  [Pandora's look](../client-web/DESIGN.md) for themes, tokens and the screen patterns every screen follows.
 
 - **A specific module** ("how does Finances handle a reversal", "what does the Identity API look
   like"): go straight to the module's own `README.md` — it is the index for everything about that
@@ -22,8 +25,8 @@ organized by module plus a few cross-cutting concerns.
   | [Agenda](modules/agenda/README.md) | Implemented | Reminders, tasks, calendar/events |
   | [Channels](modules/channels/README.md) | Implemented | Telegram/email delivery, quiet hours |
   | [Integrations](modules/integrations/README.md) | Implemented (I1–I3, I5); I5 real-Google check pending | OAuth, API-key and password credentials, encrypted at rest; many accounts per provider |
-  | [Communications](modules/communications/README.md) | M1–M3 (read, organize, send) done | Email inbox (Gmail, Titan/IMAP): read, organize and send now; rules planned |
-  | [Assistant](modules/assistant/README.md) | **Plan only** | Natural-language commands over the other modules |
+  | [Communications](modules/communications/README.md) | M1–M4 (read, organize, send, rules) done | Email inbox (Gmail, Titan/IMAP): read, organize, send and rules |
+  | [Assistant](modules/assistant/README.md) | Implemented (web + Telegram, text + voice, 25 tools) | Natural-language commands over the other modules (Gemini, tools per module) |
   | [Files](modules/files/README.md) | F1 (catalog) and F2 (metadata) implemented; F1 homelab check pending | Catalog of the user's disks, fed by the desktop agent |
 
 - **A cross-cutting decision** that no single module owns:
@@ -51,13 +54,11 @@ Every implemented module follows the same shape — see [Finances](modules/finan
 - `modules/<name>/pt-BR/*.md` — a translation mirror of every `en/` file, same filenames, same section
   structure.
 
-**Assistant and Files are the exceptions**: they do not have the topic set yet — no `overview.md`,
+**Files is the exception**: it does not have the topic set yet — no `overview.md`,
 `architecture.md`, `data-model.md`, `api-reference.md` or `implementation-status.md` — only a product
-plan (en + pt-BR) — plus, for Assistant, a pt-BR-only local-first execution plan. See [Assistant's](modules/assistant/README.md) and
-[Files'](modules/files/README.md) READMEs for the specifics and the known gap (no English mirror yet for
-the local-first plan).
+plan (en + pt-BR). See [Files' README](modules/files/README.md) for the specifics.
 
 ## What is out of scope for this folder
 
 - the Tars framework's own documentation — see [`tars/docs`](../../tars/docs/README.md)
-- frontend implementation details beyond what a module's `overview.md`/`architecture.md` needs to make sense of the API — see [`client-web/README.md`](../client-web/README.md)
+- module-by-module frontend details beyond what a module's `overview.md`/`architecture.md` needs to make sense of the API — the cross-cutting rules are in [Frontend architecture](architecture/en/frontend.md) and [Pandora's look](../client-web/DESIGN.md)

@@ -1,42 +1,41 @@
 # Módulo Assistant
 
 > Execução de comandos em linguagem natural contra os próprios módulos do Pandora, dentro do monolito modular Pandora.
-> 🇺🇸 [English version](../README.md).
->
-> **Status: plano.** O backend do módulo Assistant ainda não existe, mas o building block `Tars.Ai`
-> (Gemini) e o armazenamento da chave no Integrations já existem (uncommitted / feito) — ver
-> [product-plan.md](product-plan.md) para o escopo completo e
-> [execution-plan.md](execution-plan.md) para a lista de trabalho atual (Gemini, hospedado).
+> **Idioma:** o inglês é a documentação principal. 🇺🇸 [English version](../README.md).
 
-O módulo **Assistant** transforma linguagem natural — digitada ou falada, no Telegram ou na barra de
-comando web — em comandos executados contra os módulos já existentes do Pandora (Agenda, Notes,
-Finances, ...). Não é um chatbot com opinião própria nem lugar onde regra de negócio mora: toda ação
-que ele executa é um comando que o web UI também pode chamar diretamente. Se o assistant consegue
-fazer algo que a API não consegue, isso é bug.
+O módulo **Assistant** transforma linguagem natural — digitada ou falada, no console web ou no bot de
+Telegram do assistant — em comandos executados contra os módulos já existentes do Pandora (Agenda, Notes,
+Finances). O modelo (Gemini) só escolhe uma tool e os argumentos; a tool é uma casca fina sobre um caso de
+uso que o módulo dono já tem. Não é um chatbot com opinião nem guarda regra de negócio: se o assistant
+consegue fazer algo que a API não consegue, isso é bug.
 
 ---
 
 ## Como esta documentação está organizada
 
-Diferente dos outros módulos, o Assistant ainda não tem o conjunto completo de tópicos `en/` + `pt-BR/`
-(overview, architecture, data-model, api-reference, implementation-status) — não há nada construído
-para documentar. O que existe hoje:
+Comece pela **Visão geral** para os princípios e o vocabulário, depois vá ao tópico que precisar.
 
-| Documento | Idioma | O que cobre |
+| # | Documento | O que cobre |
 |---|---|---|
-| [Product Plan](product-plan.md) / [en](../en/product-plan.md) | en + pt-BR | Escopo completo: superfícies (Telegram, Web), provedores atrás de uma porta (Gemini agora, OpenAI depois), fases A1–A6 |
-| [Plano de execução](execution-plan.md) / [en](../en/execution-plan.md) | en + pt-BR | A lista de trabalho que está sendo construída primeiro: Gemini hospedado com a chave no Integrations; corta OpenAI e as fases Notes/Finances/proativo do escopo imediato |
+| 1 | [Visão geral](overview.md) | O que faz, princípios, glossário, escopo |
+| 2 | [Arquitetura](architecture.md) | Projetos, o pipeline de interpretação, catálogo de tools, confirmação, privacidade, apontar por número, caminho do Telegram, frontend, testes |
+| 3 | [Modelo de dados](data-model.md) | Catálogo do schema (`ast001`–`ast004` + outbox): colunas, constraints, status |
+| 4 | [Referência da API](api-reference.md) | Todos os endpoints em `/api/v{n}/assistant` |
+| 5 | [Status de implementação](implementation-status.md) | O que está construído, o que mudou em relação ao plano, pontos em aberto |
+| 6 | [Product Plan](product-plan.md) | O que ainda falta (OpenAI, eval set, retenção de áudio, questões em aberto) |
+| 7 | [Plano de execução](execution-plan.md) | Histórico: a ordem em que o módulo foi construído (Etapa 0 → A4) |
 
-Quando o módulo tiver implementação real, deveria migrar para a mesma estrutura `en/` + `pt-BR/` por
-tópico que os outros módulos usam (ver ex. [Identity](../../identity/pt-BR/README.md)), com
-`overview.md`, `architecture.md`, `data-model.md`, `api-reference.md` e `implementation-status.md`.
+A sequência completa do Telegram está em [Fluxo do Telegram](../../../architecture/pt-BR/telegram-assistant-flow.md).
 
 ---
 
 ## Fatos rápidos
 
-- **Backend:** módulo não iniciado. O product plan aponta para uma nova família `Pottmayer.Pandora.Modules.Assistant.*`. O transporte `Tars.Ai` (chat + Gemini) já está implementado (uncommitted).
-- **Superfícies:** Telegram (texto + notas de voz; arquivos com legenda vão para a fila de um módulo), barra de comando web.
-- **Provedor de LLM:** Gemini (hospedado), atrás de uma porta com keyed DI; OpenAI é adição futura. Ollama/local foi abandonado.
-- **Primeira fatia de execução:** Gemini via `Tars.Ai`, chave guardada por usuário no Integrations; primeira superfície é a barra de comando web, primeiro comando é o `create_reminder` da Agenda. Ver [execution-plan.md](execution-plan.md).
-- **Depende de:** [Mensageria](../../../architecture/pt-BR/messaging.md) (assincronia sem broker, §3), [Agenda](../../agenda/pt-BR/README.md), [Integrations](../../integrations/pt-BR/README.md) (a chave da API do Gemini: `ast001.credential_ref` → `int001_external_account`).
+- **Backend:** `Pottmayer.Pandora.Modules.Assistant.*` (.NET 10, commands/queries sobre o mediator do Tars).
+- **Schema:** schema PostgreSQL `assistant`, tabelas `ast001`–`ast004` + `tars_outbox_message`, PK `uuid_generate_v7()`.
+- **Migrations:** `migrations/migrations/assistant/`.
+- **Base da API:** `/api/v{version}/assistant`, autenticada, restrita ao usuário do token.
+- **Frontend:** `client-web/src/modules/assistant` — `/assistant` (chat + histórico) e `/settings/assistant`.
+- **Provedor de LLM:** Gemini via `Tars.Ai.Chat.Gemini`; modelo e chave por chamada; a chave é a conta de API key do usuário no [Integrations](../../integrations/pt-BR/README.md) (`ast001.chat_account_id`).
+- **Tools:** 25, contribuídas por [Agenda](../../agenda/pt-BR/README.md), [Notes](../../notes/pt-BR/README.md) e [Finances](../../finances/pt-BR/README.md) como `IAssistantTool`s nas pastas `Application/Assistant`; o Finances também recebe arquivos compartilhados via `IAssistantFileQueue`.
+- **Superfícies:** web (inline na requisição) e Telegram (subscribers de integration event no inbound do [Channels](../../channels/pt-BR/README.md); respostas pelo outbox do Assistant — [Mensageria](../../../architecture/pt-BR/messaging.md)).

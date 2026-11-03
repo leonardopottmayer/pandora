@@ -1,8 +1,11 @@
 # Assistant — Execution Plan (Gemini)
 
-> **Status:** Execution plan. Cuts the [product-plan](product-plan.md) down to the path being built
-> first: **a single hosted provider, Gemini**, with each user's key held in Integrations. Drops OpenAI
-> and phase A6 (Notes/Finances/proactive) from immediate scope.
+> **Status:** Historical — every step below (0 → A4) is done, and A6 (Notes/Finances) was built after
+> it. Kept as the record of the build order and its decisions; the current state is in
+> [Implementation Status](implementation-status.md), and some details here changed on the way (e.g.
+> `credential_ref` became `chat_account_id`, Telegram runs in the subscriber instead of a job).
+> Originally: cut the product plan down to **a single hosted provider, Gemini**, with each user's key
+> held in Integrations.
 > 🇧🇷 [Versão em português](../pt-BR/execution-plan.md)
 
 This doc is the work list. The *why* behind each decision is in the [product-plan](product-plan.md);

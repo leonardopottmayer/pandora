@@ -5,9 +5,8 @@
 > 🇺🇸 [English version](../en/messaging.md)
 >
 > Documento transversal: descreve uma decisão que nenhum módulo é dono sozinho.
-> Módulos afetados: [Channels](../../modules/channels/pt-BR/product-plan.md) ·
-> [Assistant](../../modules/assistant/pt-BR/product-plan.md) ·
-> [Agenda](../../modules/agenda/pt-BR/product-plan.md)
+> Módulos afetados: todos que publicam ou tratam um evento — Identity, Channels, Agenda,
+> Integrations, Assistant, Communications — e todos com job em segundo plano (§3).
 > Ver também: [Como o Pandora está ligado ao Tars](tars-wiring.md) para as chamadas `AddTars*` concretas por trás de tudo abaixo.
 
 ---
@@ -54,14 +53,23 @@ Algum trabalho genuinamente não pode acontecer dentro da requisição que o dis
 que precisa responder rápido, ou uma tarefa que leva dezenas de segundos. A resposta é um **job no
 módulo dono do trabalho**, sobre a tabela desse módulo — não uma fila na frente de outro processo.
 
-O formato já está no código quatro vezes:
+O formato está em todo módulo que tem trabalho para fazer depois:
 
 | Módulo | Tabela | Job |
 |---|---|---|
+| Identity | `idt002_stored_refresh_token` | `RefreshTokenPurgeBackgroundService` apaga refresh tokens antigos |
 | Channels | `chn006_notification` | `NotificationDispatcherBackgroundService` drena o que venceu |
-| Finances | `fin011_pending_transaction` | varredura de recorrência gera o que venceu |
+| Channels | `chn004_inbound_update` | `InboundUpdateRetentionBackgroundService` limpa payloads brutos antigos |
+| Finances | `fin011_pending_transaction` | `RecurrenceGenerationBackgroundService` gera o que venceu |
+| Finances | `fin007_card_statement` | `StatementLifecycleBackgroundService` fecha faturas na data de fechamento e marca as vencidas |
+| Finances | `fin013_import_file` + `fin014_import_row` | `ImportParsingBackgroundService` processa os arquivos enviados |
 | Agenda | `agd006_reminder` + `agd006x_reminder_dispatch` | `ReminderSweepBackgroundService` dispara o que venceu |
 | Agenda | `agd007_alert` + `agd008_alert_dispatch` | `TaskAlertSweepBackgroundService` e `EventAlertSweepBackgroundService` disparam o que venceu |
+| Communications | `com001_mailbox` e as tabelas de email | `MailboxSyncBackgroundService` sincroniza cada caixa e depois apara o cache de conteúdo |
+| Files | `fil003_scan` | `ScanExpiryBackgroundService` aborta varreduras cujo agente sumiu |
+
+(O `TelegramLongPollingService` do Channels também é um hosted service, mas é o transporte de
+entrada, não um job sobre uma tabela.)
 
 O padrão em todos: quem chama grava uma linha durável na mesma transação da sua mudança de estado e
 retorna; um `PeriodicTimer` num `BackgroundService` pega a linha num escopo novo, faz o trabalho e
@@ -139,7 +147,8 @@ registra que deveria ter sido. O outbox fecha exatamente essa brecha, com ou sem
 mudança de estado, e um relay (`BackgroundService`) por banco produtor drena para os handlers locais.
 O Pandora adotou isso no tars 0.0.8 — ver
 [`OutboxRegistration.cs`](../../../backend/src/Host/Pottmayer.Pandora.Host/OutboxRegistration.cs),
-ligado a Identity, Channels, Agenda e Integrations. Mecanismo completo:
+ligado a Identity, Channels, Agenda, Integrations, Assistant e Communications (os módulos que
+publicam). Mecanismo completo:
 [tars/docs/messaging/outbox.md](../../../../tars/docs/messaging/outbox.md). Isso **não** reintroduz um
 broker nem um segundo processo — o relay roda no mesmo deployable e entrega para os mesmos handlers
 in-process de antes; só o último passo do despacho mudou.
