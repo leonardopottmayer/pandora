@@ -29,6 +29,9 @@ Use para distinguir "documentado porque existe" de "documentado como plano".
 
 ### Adições além do design original
 
+A tela de etiquetas usa lista compacta com busca, menus por linha, exclusão confirmada, amostras
+de cor legíveis nos temas e formulário com prévia e opção de limpar a cor. Veja [Tela de etiquetas](categories-and-tags.md#tela-de-etiquetas).
+
 A tela de categorias segue os padrões compartilhados, com abas pessoais/sistema, busca e filtro
 de natureza independentes, linhas hierárquicas, menus por linha, formulário responsivo e rolagem
 interna no desktop. Veja [Tela de categorias](categories-and-tags.md#tela-de-categorias).

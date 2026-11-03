@@ -934,6 +934,18 @@
       }
     },
     "tags": {
+      "subtitle": "Organize etiquetas para encontrar e agrupar seus registros financeiros.",
+      "search": "Buscar etiquetas",
+      "moreActions": "Mais ações para {{name}}",
+      "empty": "Nenhuma etiqueta cadastrada. Crie sua primeira etiqueta.",
+      "noMatches": "Nenhuma etiqueta corresponde à busca.",
+      "count_one": "{{count}} etiqueta",
+      "count_other": "{{count}} etiquetas",
+      "chooseColor": "Escolher cor",
+      "clearColor": "Limpar cor",
+      "colorHelp": "Opcional. Deixe sem cor para usar a aparência padrão.",
+      "preview": "Prévia",
+      "previewName": "Sua etiqueta",
       "new": "Nova etiqueta",
       "newTitle": "Nova etiqueta",
       "editTitle": "Editar etiqueta",

@@ -934,6 +934,18 @@
       }
     },
     "tags": {
+      "subtitle": "Organize labels to find and group your financial records.",
+      "search": "Search tags",
+      "moreActions": "More actions for {{name}}",
+      "empty": "No tags yet. Create your first tag.",
+      "noMatches": "No tags match this search.",
+      "count_one": "{{count}} tag",
+      "count_other": "{{count}} tags",
+      "chooseColor": "Choose color",
+      "clearColor": "Clear color",
+      "colorHelp": "Optional. Leave it empty to use the default appearance.",
+      "preview": "Preview",
+      "previewName": "Your tag",
       "new": "New tag",
       "newTitle": "New tag",
       "editTitle": "Edit tag",

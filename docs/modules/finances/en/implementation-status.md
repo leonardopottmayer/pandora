@@ -29,6 +29,9 @@ to tell the difference between "documented because it exists" and "documented as
 
 ### Additions beyond the original design
 
+The tags screen uses a compact searchable list with row menus, confirmed deletion, theme-readable
+color swatches and a live form preview with optional color clearing. See [Tags screen](categories-and-tags.md#tags-screen).
+
 The categories screen follows the shared screen patterns, with personal/system tabs, independent
 search and nature filters, hierarchical rows, row menus, a responsive form and desktop scrolling.
 See [Categories screen](categories-and-tags.md#categories-screen).

@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { App, ColorPicker, Form, Input, Modal } from 'antd'
+import { App, Button, ColorPicker, Form, Input, Modal, Tag, Typography } from 'antd'
 import { toErrorMessage } from '@/lib/api/envelope'
 import type { TagDto } from '../../models'
 import { useCreateTag, useUpdateTag } from '../../hooks/useTags'
+import { TagLabel } from './TagLabel'
 
 interface TagFormModalProps {
   open: boolean
@@ -13,7 +14,7 @@ interface TagFormModalProps {
 
 interface TagFormValues {
   name: string
-  color?: string
+  color?: string | null
 }
 
 export function TagFormModal({ open, tag, onClose }: TagFormModalProps) {
@@ -21,6 +22,8 @@ export function TagFormModal({ open, tag, onClose }: TagFormModalProps) {
   const { message } = App.useApp()
   const [form] = Form.useForm<TagFormValues>()
   const isEdit = !!tag
+  const name = Form.useWatch('name', form)
+  const color = Form.useWatch('color', form)
 
   const createMutation = useCreateTag()
   const updateMutation = useUpdateTag()
@@ -28,7 +31,7 @@ export function TagFormModal({ open, tag, onClose }: TagFormModalProps) {
 
   useEffect(() => {
     if (!open) return
-    if (tag) form.setFieldsValue({ name: tag.name, color: tag.color ?? undefined })
+    if (tag) form.setFieldsValue({ name: tag.name, color: tag.color })
     else form.resetFields()
   }, [open, tag, form])
 
@@ -58,8 +61,9 @@ export function TagFormModal({ open, tag, onClose }: TagFormModalProps) {
       okText={t('common.save')}
       cancelText={t('common.cancel')}
       destroyOnHidden
+      styles={{ body: { maxHeight: 'calc(100dvh - 260px)', overflowY: 'auto', paddingRight: 8 } }}
     >
-      <Form form={form} layout="vertical" onFinish={handleSubmit}>
+      <Form form={form} layout="vertical" initialValues={{ color: null }} onFinish={handleSubmit}>
         <Form.Item
           name="name"
           label={t('finances.tags.name')}
@@ -67,13 +71,20 @@ export function TagFormModal({ open, tag, onClose }: TagFormModalProps) {
         >
           <Input maxLength={60} />
         </Form.Item>
-        <Form.Item
-          name="color"
-          label={t('finances.tags.color')}
-          getValueFromEvent={(_, hex: string) => hex}
-        >
-          <ColorPicker format="hex" />
+        <Form.Item label={t('finances.tags.color')} extra={t('finances.tags.colorHelp')}>
+          <div className="flex flex-wrap items-center gap-2">
+            <Form.Item name="color" noStyle getValueFromEvent={(_, hex: string) => hex}>
+              <ColorPicker format="hex">
+                <Button>{t('finances.tags.chooseColor')}</Button>
+              </ColorPicker>
+            </Form.Item>
+            <Button type="link" disabled={!color} onClick={() => form.setFieldValue('color', null)}>{t('finances.tags.clearColor')}</Button>
+          </div>
         </Form.Item>
+        <div className="flex min-w-0 flex-col items-start gap-2">
+          <Typography.Text type="secondary" className="text-xs">{t('finances.tags.preview')}</Typography.Text>
+          <Tag className="max-w-full"><TagLabel name={name?.trim() || t('finances.tags.previewName')} color={color} /></Tag>
+        </div>
       </Form>
     </Modal>
   )

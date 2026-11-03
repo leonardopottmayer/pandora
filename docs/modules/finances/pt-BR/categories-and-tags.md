@@ -67,6 +67,19 @@ cadastro. Contratos de API e regras de hierarquia permanecem iguais.
 - Excluir uma tag **cascateia** seus vínculos (`ON DELETE CASCADE`), auditado.
 - Filtrável em listagens (ex.: `GET /transactions?tags=`).
 
+### Tela de etiquetas
+
+A lista compacta segue os padrões compartilhados: cabeçalho, ação Nova etiqueta, busca por nome
+sem distinguir acentos, menus identificados por linha e contagem no rodapé. Clicar na linha abre
+a edição. Nomes usam as cores de texto do tema; uma amostra com borda mostra a cor escolhida para
+que etiquetas brancas ou amarelas continuem legíveis. Excluir pede confirmação com o nome e avisa
+que os vínculos serão removidos.
+
+O formulário mantém nome e cor opcional visíveis, oferece Escolher cor e Limpar cor e mostra uma
+prévia conforme os valores mudam. Limpar a cor envia `null`. No desktop, o painel tem rolagem
+interna e cabeçalho fixo; no celular, a página rola sem transbordamento horizontal. Lista vazia e
+busca sem resultados têm mensagens diferentes. Contratos de API permanecem iguais.
+
 ### API
 
 | Método | Rota | Propósito |

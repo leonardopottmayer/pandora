@@ -67,6 +67,18 @@ unchanged.
 - Deleting a tag **cascades** its links (`ON DELETE CASCADE`), audited.
 - Filterable in listings (e.g. `GET /transactions?tags=`).
 
+### Tags screen
+
+The compact list follows the shared screen patterns: a heading, New tag action, accent-insensitive
+name search, named row menus and a count footer. Clicking a row opens editing. Names keep theme
+text colors; a bordered swatch carries the selected color so even white or yellow tags stay readable.
+Delete asks for confirmation with the tag name and warns that its links will be removed.
+
+The form keeps name and optional color visible, offers Choose color and Clear color, and previews
+the name and swatch as they change. Clearing a color sends `null`. Desktop uses an internally
+scrolling panel with a sticky header; phones use page scrolling without horizontal overflow.
+Empty lists and searches have distinct messages. API contracts remain unchanged.
+
 ### API
 
 | Method | Route | Purpose |
