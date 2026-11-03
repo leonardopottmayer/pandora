@@ -1,96 +1,60 @@
 import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
-import {
-  App,
-  Button,
-  Card,
-  DatePicker,
-  Flex,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Tooltip,
-  Typography,
-  Upload,
-} from 'antd'
+import { Alert, App, Button, Dropdown, Input, Select, Table, Tag, Typography, theme } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { CloudUploadOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons'
-import type { UploadProps } from 'antd'
-import type { Dayjs } from 'dayjs'
+import { CloudUploadOutlined, EllipsisOutlined, SearchOutlined } from '@ant-design/icons'
+import { PageHeading } from '@/components/settings/PageHeading'
 import { toErrorMessage } from '@/lib/api/envelope'
-import type { ImportFileDto } from '../../models'
+import { IMPORT_STATUSES, type ImportFileDto, type ImportStatus } from '../../models'
+import { formatDateTime } from '../../lib/format'
 import { useAccounts } from '../../hooks/useAccounts'
 import { useCards } from '../../hooks/useCards'
-import { useAbortImportFile, useImportFiles, useRetryImportFile, useUploadImportFile } from '../../hooks/useImports'
+import { useAbortImportFile, useAllImportFiles, useRetryImportFile } from '../../hooks/useImports'
+import { ImportUploadModal } from './ImportUploadModal'
 
-const { Text } = Typography
-
-const STATUS_COLORS: Record<string, string> = {
-  received: 'blue',
-  parsing: 'processing',
-  completed: 'green',
-  failed: 'red',
-  aborted: 'default',
-}
+const STATUS_COLORS: Record<ImportStatus, string> = { received: 'blue', parsing: 'processing', completed: 'green', failed: 'red', aborted: 'default' }
 
 export function ImportsListPage() {
   const { t } = useTranslation()
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
+  const { token } = theme.useToken()
   const navigate = useNavigate()
-
-  const [destinationId, setDestinationId] = useState<string | undefined>()
-  const [destinationType, setDestinationType] = useState<'account' | 'card'>('account')
-  const [cutoffDate, setCutoffDate] = useState<Dayjs | null>(null)
-
-  const { data, isLoading } = useImportFiles({ take: 100 })
-  const { data: accounts } = useAccounts()
-  const { data: cards } = useCards()
-  const uploadMutation = useUploadImportFile()
+  const [uploadOpen, setUploadOpen] = useState(false)
+  const [text, setText] = useState('')
+  const [status, setStatus] = useState<ImportStatus>()
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null)
+  const { data: files = [], isLoading, isError, error } = useAllImportFiles()
+  const { data: accounts = [], isLoading: loadingAccounts } = useAccounts()
+  const { data: cards = [], isLoading: loadingCards } = useCards()
   const abortMutation = useAbortImportFile()
   const retryMutation = useRetryImportFile()
+  const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().trim()
+  const filtered = files.filter((file) => (!status || file.status === status) && normalize(file.fileName).includes(normalize(text)))
+  const accountNames = new Map(accounts.map((account) => [account.id, account.name]))
+  const cardNames = new Map(cards.map((card) => [card.id, card.name]))
+  const destination = (file: ImportFileDto) => file.accountId
+    ? accountNames.get(file.accountId) ?? t('finances.imports.account')
+    : cardNames.get(file.cardId ?? '') ?? t('finances.imports.card')
 
-  const accountOptions = (accounts ?? []).map((a) => ({ value: a.id, label: `${a.name} (${a.currency})` }))
-  const cardOptions = (cards ?? []).map((c) => ({ value: c.id, label: `${c.name} (${c.currency})` }))
-
-  const uploadProps: UploadProps = {
-    accept: '.ofx,.csv',
-    showUploadList: false,
-    beforeUpload: async (file) => {
-      if (!destinationId) {
-        message.warning(t('finances.imports.selectDestinationFirst'))
-        return false
-      }
-      try {
-        const accountId = destinationType === 'account' ? destinationId : undefined
-        const cardId = destinationType === 'card' ? destinationId : undefined
-        await uploadMutation.mutateAsync({
-          file,
-          accountId,
-          cardId,
-          cutoffDate: cutoffDate?.format('YYYY-MM-DD'),
-        })
-        message.success(t('finances.imports.uploaded'))
-      } catch (err) {
-        message.error(toErrorMessage(err, t('finances.imports.uploadError')))
-      }
-      return false
-    },
+  function confirmAbort(file: ImportFileDto) {
+    modal.confirm({
+      title: t('finances.imports.abortConfirm'), content: file.fileName,
+      okText: t('finances.imports.abort'), okButtonProps: { danger: true }, cancelText: t('common.cancel'),
+      onOk: async () => {
+        try {
+          await abortMutation.mutateAsync(file.id)
+          message.success(t('finances.imports.aborted'))
+        } catch (err) {
+          message.error(toErrorMessage(err, t('finances.imports.actionError')))
+          throw err
+        }
+      },
+    })
   }
-
-  async function handleAbort(id: string) {
+  async function retry(file: ImportFileDto) {
     try {
-      await abortMutation.mutateAsync(id)
-      message.success(t('finances.imports.aborted'))
-    } catch (err) {
-      message.error(toErrorMessage(err, t('finances.imports.actionError')))
-    }
-  }
-
-  async function handleRetry(id: string) {
-    try {
-      await retryMutation.mutateAsync(id)
+      await retryMutation.mutateAsync(file.id)
       message.success(t('finances.imports.retried'))
     } catch (err) {
       message.error(toErrorMessage(err, t('finances.imports.actionError')))
@@ -99,130 +63,63 @@ export function ImportsListPage() {
 
   const columns: ColumnsType<ImportFileDto> = [
     {
-      title: t('finances.imports.fileName'),
-      dataIndex: 'fileName',
-      render: (name, row) => (
-        <a onClick={() => navigate(`/finances/imports/${row.id}`)}>{name}</a>
-      ),
+      title: t('finances.imports.fileName'), dataIndex: 'fileName',
+      render: (name: string, file) => <div className="flex min-w-0 flex-col gap-1">
+        <Link to={`/finances/imports/${file.id}`} className="truncate" title={name}>{name}</Link>
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <Tag color={STATUS_COLORS[file.status]}>{t(`finances.imports.statuses.${file.status}`)}</Tag>
+          <Typography.Text type="secondary" className="min-w-0 truncate text-xs" title={destination(file)}>{destination(file)}</Typography.Text>
+        </div>
+        {(file.status === 'completed' || file.totalRows > 0) && <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs tabular-nums">
+          <Typography.Text type="secondary" className="text-xs">{t('finances.imports.parsedSummary', { parsed: file.parsedRows, total: file.totalRows })}</Typography.Text>
+          {file.suggestionRows > 0 && <Typography.Text type="secondary" className="text-xs">{t('finances.imports.suggestionCount', { count: file.suggestionRows })}</Typography.Text>}
+          {file.duplicateRows > 0 && <Tag color="gold">{t('finances.imports.duplicateCount', { count: file.duplicateRows })}</Tag>}
+          {file.errorRows > 0 && <Tag color="red">{t('finances.imports.errorCount', { count: file.errorRows })}</Tag>}
+        </div>}
+        {file.status === 'failed' && file.errorMessage && <Typography.Text className="truncate text-xs" style={{ color: token.colorError }} title={file.errorMessage}>{file.errorMessage}</Typography.Text>}
+        <Typography.Text type="secondary" className="text-xs tabular-nums md:hidden">{formatDateTime(file.createdAt)}</Typography.Text>
+      </div>,
     },
+    { title: t('finances.imports.createdAt'), dataIndex: 'createdAt', width: 180, responsive: ['md'], render: (value: string) => <span className="tabular-nums">{formatDateTime(value)}</span> },
     {
-      title: t('finances.imports.status'),
-      dataIndex: 'status',
-      render: (status) => (
-        <Tag color={STATUS_COLORS[status] ?? 'default'}>
-          {t(`finances.imports.statuses.${status}`)}
-        </Tag>
-      ),
-    },
-    {
-      title: t('finances.imports.rows'),
-      render: (_, row) =>
-        row.status === 'completed' ? (
-          <Text>
-            {row.parsedRows}/{row.totalRows}
-            {row.duplicateRows > 0 && (
-              <Text type="secondary"> ({row.duplicateRows} dup)</Text>
-            )}
-          </Text>
-        ) : (
-          '—'
-        ),
-    },
-    {
-      title: t('finances.imports.createdAt'),
-      dataIndex: 'createdAt',
-      render: (v: string) => new Date(v).toLocaleString(),
-    },
-    {
-      title: t('common.actions'),
-      render: (_, row) => (
-        <Space>
-          {row.status === 'failed' && (
-            <Tooltip title={t('finances.imports.retry')}>
-              <Button
-                size="small"
-                icon={<ReloadOutlined />}
-                onClick={() => handleRetry(row.id)}
-                loading={retryMutation.isPending}
-              />
-            </Tooltip>
-          )}
-          {(row.status === 'received' || row.status === 'parsing' || row.status === 'failed') && (
-            <Tooltip title={t('finances.imports.abort')}>
-              <Button
-                size="small"
-                danger
-                icon={<StopOutlined />}
-                onClick={() => handleAbort(row.id)}
-                loading={abortMutation.isPending}
-              />
-            </Tooltip>
-          )}
-        </Space>
-      ),
+      key: 'actions', width: 48, align: 'right',
+      render: (_, file) => <span onClick={(event) => event.stopPropagation()}>
+        <Dropdown trigger={['click']} placement="bottomRight" menu={{ items: [
+          { key: 'open', label: t('finances.imports.viewDetails'), onClick: () => navigate(`/finances/imports/${file.id}`) },
+          ...(file.status === 'failed' ? [{ key: 'retry', label: t('finances.imports.retry'), disabled: retryMutation.isPending, onClick: () => retry(file) }] : []),
+          ...(['received', 'parsing', 'failed'].includes(file.status) ? [
+            { type: 'divider' as const }, { key: 'abort', danger: true, label: t('finances.imports.abort'), disabled: abortMutation.isPending, onClick: () => confirmAbort(file) },
+          ] : []),
+        ] }}>
+          <Button type="text" size="small" icon={<EllipsisOutlined />} aria-label={t('finances.imports.moreActions', { name: file.fileName })} />
+        </Dropdown>
+      </span>,
     },
   ]
 
-  return (
-    <Card
-      title={t('finances.imports.title')}
-      extra={
-        <Space>
-          <Select
-            style={{ width: 110 }}
-            value={destinationType}
-            options={[
-              { value: 'account', label: t('finances.imports.account') },
-              { value: 'card', label: t('finances.imports.card') },
-            ]}
-            onChange={(v) => {
-              setDestinationType(v)
-              setDestinationId(undefined)
-            }}
-          />
-          <Select
-            style={{ width: 220 }}
-            placeholder={
-              destinationType === 'account'
-                ? t('finances.imports.selectAccount')
-                : t('finances.imports.selectCard')
-            }
-            options={destinationType === 'account' ? accountOptions : cardOptions}
-            value={destinationId}
-            onChange={setDestinationId}
-            allowClear
-          />
-          <Tooltip title={t('finances.imports.cutoffHint')}>
-            <DatePicker
-              style={{ width: 150 }}
-              format="DD/MM/YYYY"
-              placeholder={t('finances.imports.cutoffDate')}
-              value={cutoffDate}
-              onChange={setCutoffDate}
-            />
-          </Tooltip>
-          <Upload {...uploadProps}>
-            <Button
-              type="primary"
-              icon={<CloudUploadOutlined />}
-              loading={uploadMutation.isPending}
-            >
-              {t('finances.imports.upload')}
-            </Button>
-          </Upload>
-        </Space>
-      }
-    >
-      <Flex vertical gap={16}>
-        <Table<ImportFileDto>
-          rowKey="id"
-          columns={columns}
-          dataSource={data}
-          loading={isLoading}
-          pagination={false}
-          size="small"
-        />
-      </Flex>
-    </Card>
-  )
+  return <div className="flex min-w-0 flex-col gap-6 lg:h-[calc(100dvh-112px)]">
+    <div className="flex shrink-0 flex-wrap items-start justify-between gap-3">
+      <PageHeading title={t('finances.imports.title')} description={t('finances.imports.subtitle')} />
+      <Button type="primary" icon={<CloudUploadOutlined />} onClick={() => setUploadOpen(true)}>{t('finances.imports.upload')}</Button>
+    </div>
+    <div className="flex shrink-0 flex-wrap items-center gap-2">
+      <div className="w-full sm:w-64"><Input allowClear prefix={<SearchOutlined />} placeholder={t('finances.imports.search')} value={text} onChange={(event) => setText(event.target.value)} /></div>
+      <Select<ImportStatus> className="w-full sm:w-48" allowClear value={status} onChange={setStatus} aria-label={t('finances.imports.status')} placeholder={t('finances.imports.status')}
+        options={IMPORT_STATUSES.map((value) => ({ value, label: t(`finances.imports.statuses.${value}`) }))} />
+      {(text || status) && <Button type="link" onClick={() => { setText(''); setStatus(undefined) }}>{t('finances.filters.clear')}</Button>}
+    </div>
+    {isError && <Alert type="error" title={error.message} showIcon className="shrink-0" />}
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl" style={{ border: `1px solid ${token.colorBorderSecondary}`, background: token.colorBgContainer }}>
+      <div ref={setScrollEl} className="min-h-0 flex-1 overflow-auto">
+        <Table rowKey="id" loading={isLoading} dataSource={filtered} columns={columns} size="middle" tableLayout="fixed" pagination={false}
+          sticky={scrollEl ? { getContainer: () => scrollEl } : undefined}
+          onRow={(file) => ({ onClick: () => navigate(`/finances/imports/${file.id}`), className: 'cursor-pointer' })}
+          locale={{ emptyText: t(files.length ? 'finances.imports.noMatches' : 'finances.imports.empty') }} />
+      </div>
+      <Typography.Text type="secondary" className="shrink-0 px-4 py-2 text-xs tabular-nums" style={{ borderTop: `1px solid ${token.colorBorderSecondary}` }}>{t('finances.imports.count', { count: filtered.length })}</Typography.Text>
+    </div>
+    {uploadOpen && <ImportUploadModal onClose={() => setUploadOpen(false)} loadingDestinations={loadingAccounts || loadingCards}
+      accountOptions={accounts.map((account) => ({ value: account.id, label: `${account.name} (${account.currency})` }))}
+      cardOptions={cards.map((card) => ({ value: card.id, label: `${card.name} (${card.currency})` }))} />}
+  </div>
 }

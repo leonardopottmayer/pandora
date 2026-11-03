@@ -29,6 +29,10 @@ Use para distinguir "documentado porque existe" de "documentado como plano".
 
 ### Adições além do design original
 
+A tela de importações tem histórico compacto com filtros de nome/situação, destino e contadores,
+aborto confirmado e formulário separado para envio. O histórico é carregado por completo e atualiza
+enquanto há arquivos ativos. Veja [Tela de importações](imports.md#tela-de-importações).
+
 A tela de etiquetas usa lista compacta com busca, menus por linha, exclusão confirmada, amostras
 de cor legíveis nos temas e formulário com prévia e opção de limpar a cor. Veja [Tela de etiquetas](categories-and-tags.md#tela-de-etiquetas).
 

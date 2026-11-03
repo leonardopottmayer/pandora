@@ -29,6 +29,10 @@ to tell the difference between "documented because it exists" and "documented as
 
 ### Additions beyond the original design
 
+The imports screen has a compact history with filename/status filters, destination and counters,
+confirmed abort actions and a separate upload form. History loads in full and polls while files are
+active. See [Imports screen](imports.md#imports-screen).
+
 The tags screen uses a compact searchable list with row menus, confirmed deletion, theme-readable
 color swatches and a live form preview with optional color clearing. See [Tags screen](categories-and-tags.md#tags-screen).
 

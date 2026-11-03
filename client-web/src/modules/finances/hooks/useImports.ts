@@ -10,6 +10,15 @@ export function useImportFiles(filters: ImportFileFilters = {}) {
   })
 }
 
+/** Complete history, refreshed while any file is waiting or being parsed. */
+export function useAllImportFiles() {
+  return useQuery({
+    queryKey: financeKeys.importList({ take: -1 }),
+    queryFn: importsService.listAllImportFiles,
+    refetchInterval: (query) => query.state.data?.some((file) => file.status === 'received' || file.status === 'parsing') ? 5000 : false,
+  })
+}
+
 export function useImportFile(id: string) {
   return useQuery({
     queryKey: financeKeys.import(id),

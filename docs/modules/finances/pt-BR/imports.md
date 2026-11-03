@@ -139,6 +139,24 @@ Nada disso (passos 1-4) está implementado — ver [Parcelamento](installments.m
 `ImportRow`/`PendingTransaction` que dariam suporte a isso (`matched_installment_plan_id`, etc.) já
 existem no schema, sem uso.
 
+## Tela de importações
+
+A lista segue os padrões compartilhados: cabeçalho e ação Enviar arquivo, busca por nome e filtro
+de situação, linhas compactas com destino/situação e contadores, e contagem no rodapé. Cada linha
+abre o detalhe existente. Menus identificados mostram Tentar novamente apenas para arquivos com falha e
+Abortar apenas para recebidos, em processamento ou com falha; abortar confirma com o nome do arquivo.
+Nomes e erros longos são truncados em telas estreitas, com texto completo no atributo title.
+
+Enviar abre um modal com escolha de conta/cartão, destino correspondente obrigatório e um arquivo
+OFX ou CSV. Escolher o arquivo só o mantém localmente; confirmar faz o envio. Trocar o tipo de destino
+limpa a seleção anterior. A data de corte opcional fica recolhida, com orientação abaixo do campo;
+aparece em DD/MM/AAAA e é enviada como data ISO. Falhas no envio preservam a seleção para nova tentativa.
+
+O histórico completo é buscado em lotes pela paginação existente. Enquanto algum arquivo estiver
+recebido ou em processamento, a lista atualiza a cada cinco segundos; para quando todos terminam.
+No desktop, o cabeçalho fica fixo dentro do painel com rolagem; no celular, a página rola sem
+transbordamento horizontal. Regras de leitura, deduplicação e geração de sugestões permanecem iguais.
+
 ## API
 
 | Método | Rota | Propósito |

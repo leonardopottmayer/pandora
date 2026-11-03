@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { Route, Routes } from 'react-router-dom'
 import i18n from '@/i18n'
 import { server } from '@/test/msw/server'
 import { FINANCES_BASE } from '@/test/constants'
@@ -48,6 +49,16 @@ function auxHandlers() {
 }
 
 describe('ImportsListPage', () => {
+  it('opens the existing import detail from a row', async () => {
+    server.use(http.get(`${FINANCES_BASE}/imports`, () => HttpResponse.json({ success: true, data: [importFile({ status: 'completed' })] })), ...auxHandlers())
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    renderWithProviders(<Routes>
+      <Route path="/finances/imports" element={<ImportsListPage />} />
+      <Route path="/finances/imports/:id" element={<h1>Import details</h1>} />
+    </Routes>, { route: '/finances/imports' })
+    await user.click(await screen.findByText('extrato.ofx'))
+    expect(screen.getByRole('heading', { name: 'Import details' })).toBeInTheDocument()
+  })
   it('renders import files from the API', async () => {
     server.use(
       http.get(`${FINANCES_BASE}/imports`, () =>
@@ -71,13 +82,16 @@ describe('ImportsListPage', () => {
       }),
       ...auxHandlers(),
     )
-    const user = userEvent.setup()
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
     renderWithProviders(<ImportsListPage />)
 
     await screen.findByText('extrato.ofx')
-    // The abort action is the only danger button in the row (icon-only).
-    const dangerButton = document.querySelector('.ant-btn-dangerous') as HTMLElement
-    await user.click(dangerButton)
+    await user.click(screen.getByLabelText('More actions for extrato.ofx'))
+    await user.click(screen.getByRole('menuitem', { name: 'Abort' }))
+    const confirmation = within(await screen.findByRole('dialog'))
+    expect(confirmation.getByText('extrato.ofx')).toBeInTheDocument()
+    expect(aborted).toBe(false)
+    await user.click(confirmation.getByRole('button', { name: 'Abort' }))
     await waitFor(() => expect(aborted).toBe(true))
   })
 
@@ -93,13 +107,53 @@ describe('ImportsListPage', () => {
       }),
       ...auxHandlers(),
     )
-    const user = userEvent.setup()
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
     renderWithProviders(<ImportsListPage />)
 
     await screen.findByText('extrato.ofx')
-    // Retry is the first (non-danger) action button in the row.
-    const buttons = document.querySelectorAll('tbody .ant-btn')
-    await user.click(buttons[0] as HTMLElement)
+    await user.click(screen.getByLabelText('More actions for extrato.ofx'))
+    await user.click(screen.getByRole('menuitem', { name: 'Retry' }))
     await waitFor(() => expect(retried).toBe(true))
+  })
+
+  it('filters filenames and status, keeps destinations and counters visible, and hides terminal actions', async () => {
+    server.use(
+      http.get(`${FINANCES_BASE}/imports`, () => HttpResponse.json({ success: true, data: [
+        importFile({ status: 'completed', totalRows: 10, parsedRows: 9, suggestionRows: 7, duplicateRows: 2, errorRows: 1 }),
+        importFile({ id: 'failed', fileName: 'failed.csv', status: 'failed', errorMessage: 'Could not read the header' }),
+      ] })),
+      http.get(`${FINANCES_BASE}/accounts`, () => HttpResponse.json({ success: true, data: [{ id: 'a1', name: 'Checking', currency: 'BRL' }] })),
+      ...auxHandlers(),
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    renderWithProviders(<ImportsListPage />)
+    await screen.findByText('extrato.ofx')
+    expect(screen.getAllByText('Checking').length).toBeGreaterThan(0)
+    expect(screen.getByText('Rows read: 9/10')).toBeInTheDocument()
+    expect(screen.getByText('7 suggestions generated')).toBeInTheDocument()
+    expect(screen.getByText('2 duplicates')).toBeInTheDocument()
+    expect(screen.getByText('1 error')).toBeInTheDocument()
+    await user.type(screen.getByPlaceholderText('Search files'), 'EXTRATO')
+    expect(screen.queryByText('failed.csv')).not.toBeInTheDocument()
+    await user.click(screen.getByLabelText('More actions for extrato.ofx'))
+    expect(screen.queryByRole('menuitem', { name: 'Abort' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Retry' })).not.toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }))
+    await user.click(screen.getByRole('combobox', { name: 'Status' }))
+    await user.click(screen.getByText('Failed', { selector: '.ant-select-item-option-content' }))
+    expect(screen.queryByText('extrato.ofx')).not.toBeInTheDocument()
+    expect(screen.getByText('failed.csv')).toBeInTheDocument()
+    expect(screen.getByText('Could not read the header')).toBeInTheDocument()
+    expect(screen.getByText('1 import')).toBeInTheDocument()
+  })
+
+  it('opens the upload dialog from the heading', async () => {
+    server.use(http.get(`${FINANCES_BASE}/imports`, () => HttpResponse.json({ success: true, data: [] })), ...auxHandlers())
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    renderWithProviders(<ImportsListPage />)
+    await user.click(screen.getByRole('button', { name: /Upload file/ }))
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText('Optional cutoff date')).toBeInTheDocument()
   })
 })

@@ -7,11 +7,13 @@ import {
   getImportFile,
   getImportRows,
   listImportFiles,
+  listAllImportFiles,
   listImportLayouts,
   retryImportFile,
   uploadImportFile,
 } from './imports.service'
 import type { ImportFileDto } from '../models'
+import { PAGE_SIZE } from './transactions.service'
 
 const importFile: ImportFileDto = {
   id: 'imp1',
@@ -38,6 +40,19 @@ const importFile: ImportFileDto = {
 }
 
 describe('imports.service', () => {
+  it('loads the complete import history across API pages', async () => {
+    const files = Array.from({ length: PAGE_SIZE + 1 }, (_, i) => ({ ...importFile, id: `imp${i}` }))
+    const skips: number[] = []
+    server.use(http.get(`${FINANCES_BASE}/imports`, ({ request }) => {
+      const query = new URL(request.url).searchParams
+      const skip = Number(query.get('skip'))
+      expect(query.get('take')).toBe(String(PAGE_SIZE))
+      skips.push(skip)
+      return HttpResponse.json({ success: true, data: files.slice(skip, skip + PAGE_SIZE) })
+    }))
+    expect(await listAllImportFiles()).toEqual(files)
+    expect(skips).toEqual([0, PAGE_SIZE])
+  })
   it('lists import files forwarding skip/take', async () => {
     let seenUrl: URL | undefined
     server.use(

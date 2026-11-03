@@ -135,6 +135,24 @@ None of this (steps 1-4) is implemented — see [Installments](installments.md) 
 `ImportRow`/`PendingTransaction` fields that would support it (`matched_installment_plan_id`, etc.)
 already exist in the schema, unused.
 
+## Imports screen
+
+The list follows the shared screen patterns: heading and Upload file action, filename search and
+status filter, compact rows with destination/status and processing counters, and a count footer.
+Each row opens the existing detail page. Named menus show Retry only for failed files and Abort
+only for received, parsing or failed files; abort asks for confirmation with the filename.
+Names and error messages truncate on narrow screens, with complete text in their title attributes.
+
+Upload opens a modal with account/card choice, the corresponding required destination and one OFX
+or CSV file. Choosing a file only queues it locally; confirming sends it. Changing destination type
+clears the previous selection. An optional cutoff date folds away, with guidance below the field;
+it displays DD/MM/YYYY and is sent as an ISO date. A failed upload keeps the selection for retry.
+
+The complete history is fetched in batches using the existing pagination API. While any file is
+received or parsing, the list refreshes every five seconds; it stops once all files are terminal.
+Desktop keeps the header fixed inside the scrolling panel; phones use page scrolling without
+horizontal overflow. Parsing, deduplication and suggestion-generation rules remain unchanged.
+
 ## API
 
 | Method | Route | Purpose |

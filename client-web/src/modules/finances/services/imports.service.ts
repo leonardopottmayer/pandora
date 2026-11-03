@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api/client'
+import { fetchAllPages } from './transactions.service'
 import type {
   ImportFileDto,
   ImportFileFilters,
@@ -14,6 +15,11 @@ export async function listImportFiles(filters: ImportFileFilters = {}): Promise<
     params: { skip: filters.skip, take: filters.take },
   })
   return data
+}
+
+/** Complete import history, without silently cutting off older files. */
+export function listAllImportFiles(): Promise<ImportFileDto[]> {
+  return fetchAllPages((skip, take) => listImportFiles({ skip, take }))
 }
 
 export async function getImportFile(id: string): Promise<ImportFileDto> {
