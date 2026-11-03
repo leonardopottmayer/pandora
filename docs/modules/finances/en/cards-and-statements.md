@@ -24,6 +24,24 @@ Debit cards are **not** modeled — a debit is a direct account entry.
 - **Archiving** works like accounts: archived card is hidden, rejects business mutations, keeps
   history, is reversible via unarchive.
 
+### Cards screen
+
+The cards list follows the Accounts screen: a heading and New card action above one bordered panel.
+Rows combine the name, brand and last digits; the billing cycle moves beneath the name on small
+screens, and the configured credit limit stays right-aligned. Clicking a row opens its detail page;
+the named ellipsis menu offers Edit, Archive/Unarchive and Delete without navigating. Only archived
+rows carry a status tag. Archiving and deletion ask for confirmation naming the card.
+
+Show archived remains available above the list. Desktop holds the table inside the viewport with
+a sticky header and a count footer; phones scroll the page without horizontal overflow. Empty
+lists explain what is missing. This screen does not calculate available credit or total limits.
+
+The create/edit modal places required identity/account/currency and billing days first, in paired
+fields from `sm` up. Brand, last digits and credit limit fold into additional options, initially open
+when editing a card with any of those values. The limit shows the selected currency; currency stays
+locked when editing. Long forms scroll inside the modal. Defaults, validation and request contracts
+remain unchanged. The card detail and statement screens are outside this redesign.
+
 ### Available limit
 
 `GET /cards/{id}/available-limit` returns `credit_limit − Σ(unpaid statement totals)` when a limit

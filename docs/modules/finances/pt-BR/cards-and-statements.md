@@ -24,6 +24,24 @@ Cartão de débito **não** é modelado — um débito é lançamento direto na 
 - **Arquivamento** funciona como nas contas: cartão arquivado some, rejeita mutações de negócio,
   mantém histórico, é reversível via desarquivar.
 
+### Tela de cartões
+
+A lista segue a tela de Contas: cabeçalho e ação Novo cartão acima de um painel com borda. As linhas
+reúnem nome, bandeira e final; o ciclo aparece abaixo do nome em telas pequenas e o limite cadastrado
+fica alinhado à direita. Clicar na linha abre o detalhe; o menu de reticências identificado pelo nome
+oferece Editar, Arquivar/Desarquivar e Excluir sem navegar. Apenas arquivados recebem tag de status.
+Arquivar e excluir pedem confirmação com o nome do cartão.
+
+Mostrar arquivados continua acima da lista. No desktop, a tabela rola dentro da altura disponível,
+com cabeçalho fixo e contagem no rodapé; no celular, a página rola sem transbordamento horizontal.
+A lista vazia explica o que falta. Esta tela não calcula limite disponível ou soma de limites.
+
+O modal coloca nome/conta/moeda e dias do ciclo primeiro, com campos em pares a partir de `sm`.
+Bandeira, final e limite ficam nas opções adicionais, abertas ao editar quando há algum desses
+valores. O limite mostra a moeda escolhida e a moeda continua bloqueada na edição. Formulários
+longos rolam dentro do modal. Valores padrão, validações e contratos das requisições permanecem
+iguais. O detalhe do cartão e as telas de faturas ficam fora deste redesenho.
+
 ### Limite disponível
 
 `GET /cards/{id}/available-limit` retorna `credit_limit − Σ(totais de faturas não pagas)` quando há

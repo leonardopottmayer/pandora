@@ -818,6 +818,13 @@
       "saveError": "Could not save the category."
     },
     "cards": {
+      "subtitle": "Manage your credit cards, limits and billing cycles.",
+      "empty": "No cards to show. Add your first card.",
+      "moreActions": "More actions for {{name}}",
+      "moreOptions": "Brand, last digits and credit limit",
+      "archiveConfirm": "Archive this card?",
+      "count_one": "{{count}} card",
+      "count_other": "{{count}} cards",
       "new": "New card",
       "newTitle": "New card",
       "editTitle": "Edit card",
@@ -826,7 +833,7 @@
       "brand": "Brand",
       "account": "Account",
       "accountRequired": "Select the card's account.",
-      "accountTooltip": "The account this card belongs to. Its bank routes card-bill imports to the right layout.",
+      "accountTooltip": "Choose the account used to pay this card's statements.",
       "lastFour": "Last 4 digits",
       "lastFourInvalid": "Enter 4 digits.",
       "creditLimit": "Credit limit",

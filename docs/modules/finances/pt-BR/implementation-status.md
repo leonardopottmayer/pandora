@@ -24,6 +24,7 @@ Use para distinguir "documentado porque existe" de "documentado como plano".
 | **Reversibilidade** | Cancelar, desfazer, estornar (todos os casos), proteções de exclusão em conta/cartão. |
 | **Leituras de auditoria** | Timeline `/audit` por entidade ou correlation id. |
 | **Frontend** | Módulo React (`client-web/src/modules/finances`) cobrindo contas, cartões, faturas, lançamentos, transferências, categorias, tags, recorrências, inbox, importações, auditoria. |
+| **Lista e formulário de cartões** | Redesenhados conforme os padrões de tela: linhas compactas e responsivas, menus identificados, confirmação de arquivamento/exclusão, tabela com rolagem e cabeçalho fixo no desktop e modal com campos em pares e opcionais recolhidos. Detalhe e faturas permanecem iguais. Ver [Tela de cartões](cards-and-statements.md#tela-de-cartões). |
 
 ### Adições além do design original
 

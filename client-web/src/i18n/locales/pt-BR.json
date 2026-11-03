@@ -818,6 +818,13 @@
       "saveError": "Nao foi possivel salvar a categoria."
     },
     "cards": {
+      "subtitle": "Gerencie seus cartões de crédito, limites e ciclos de cobrança.",
+      "empty": "Nenhum cartão para mostrar. Cadastre seu primeiro cartão.",
+      "moreActions": "Mais ações para {{name}}",
+      "moreOptions": "Bandeira, últimos dígitos e limite",
+      "archiveConfirm": "Arquivar este cartão?",
+      "count_one": "{{count}} cartão",
+      "count_other": "{{count}} cartões",
       "new": "Novo cartao",
       "newTitle": "Novo cartao",
       "editTitle": "Editar cartao",
@@ -826,7 +833,7 @@
       "brand": "Bandeira",
       "account": "Conta",
       "accountRequired": "Selecione a conta do cartao.",
-      "accountTooltip": "A conta a que este cartao pertence. O banco dela roteia a importacao de faturas para o layout certo.",
+      "accountTooltip": "Escolha a conta usada para pagar as faturas deste cartão.",
       "lastFour": "Ultimos 4 digitos",
       "lastFourInvalid": "Informe 4 digitos.",
       "creditLimit": "Limite de credito",

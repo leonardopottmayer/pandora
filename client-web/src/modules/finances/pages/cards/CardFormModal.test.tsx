@@ -67,10 +67,12 @@ describe('CardFormModal', () => {
 
   it('updates an existing card via PUT', async () => {
     let putCalled = false
+    let body: Record<string, unknown> | undefined
     const onClose = vi.fn()
     server.use(
       accountsHandler(),
-      http.put(`${FINANCES_BASE}/cards/k1`, () => {
+      http.put(`${FINANCES_BASE}/cards/k1`, async ({ request }) => {
+        body = await request.json() as Record<string, unknown>
         putCalled = true
         return HttpResponse.json({ success: true, data: { ...card, name: 'Itau' } })
       }),
@@ -80,11 +82,28 @@ describe('CardFormModal', () => {
 
     const name = screen.getAllByRole('textbox')[0] as HTMLInputElement
     expect(name.value).toBe('Nubank')
+    expect(screen.getByText('Brand, last digits and credit limit').closest('details')).toHaveAttribute('open')
     await user.clear(name)
     await user.type(name, 'Itau')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => expect(putCalled).toBe(true))
     expect(onClose).toHaveBeenCalled()
+    expect(body).toMatchObject({ brand: 'Mastercard', lastFour: '1234', creditLimit: 5000, accountId: 'a1' })
+    expect(body).not.toHaveProperty('currency')
+  })
+
+  it('folds optional fields for a new card and shows the selected currency beside the limit', async () => {
+    server.use(accountsHandler())
+    const user = userEvent.setup()
+    renderWithProviders(<CardFormModal open onClose={vi.fn()} />)
+    const summary = screen.getByText('Brand, last digits and credit limit')
+    expect(summary.closest('details')).not.toHaveAttribute('open')
+    await user.click(summary)
+    expect(summary.closest('details')).toHaveAttribute('open')
+    const currency = screen.getAllByRole('combobox')[1]
+    await user.clear(currency)
+    await user.type(currency, 'USD')
+    expect(screen.getByText('USD', { selector: '.ant-input-number-prefix' })).toBeInTheDocument()
   })
 })
