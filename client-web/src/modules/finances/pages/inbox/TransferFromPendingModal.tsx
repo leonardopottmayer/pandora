@@ -58,7 +58,7 @@ export function TransferFromPendingModal({
       destroyOnHidden
     >
       {!valid ? (
-        <Alert type="warning" showIcon message={t('finances.inbox.transferInvalid')} />
+        <Alert type="warning" showIcon title={t('finances.inbox.transferInvalid')} />
       ) : (
         <>
           <Descriptions column={1} size="small" bordered className="mb-3">

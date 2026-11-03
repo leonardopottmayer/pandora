@@ -1,13 +1,14 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { App, Button, Card, Flex, Input, Modal, Popconfirm, Space, Table, Tag, Typography } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
-import { LinkOutlined, PaperClipOutlined, SwapOutlined } from '@ant-design/icons'
+import { App, Button, Checkbox, Dropdown, Empty, Input, Modal, Popconfirm, Skeleton, Space, Tag, Typography, theme } from 'antd'
+import { CheckOutlined, EllipsisOutlined, PaperClipOutlined, SwapOutlined } from '@ant-design/icons'
+import { PageHeading } from '@/components/settings/PageHeading'
 import { toErrorMessage } from '@/lib/api/envelope'
-import type { PendingTransactionDto } from '../../models'
-import { kindDirection, transactionKindLabelKey } from '../../lib/enums'
-import { formatDate } from '../../lib/format'
+import type { PendingSource, PendingTransactionDto } from '../../models'
+import { kindDirection } from '../../lib/enums'
+import { formatDate, formatMoney } from '../../lib/format'
 import { CurrencyAmount } from '../../components/CurrencyAmount'
+import { StatTile } from '../../components/StatTile'
 import { AttachmentsModal } from '../../components/AttachmentsModal'
 import { AttachmentsPanel } from '../../components/AttachmentsPanel'
 import { TransactionDetailDrawer } from '../../components/TransactionDetailDrawer'
@@ -27,10 +28,14 @@ import {
 import { PendingTransactionEditModal } from './PendingTransactionEditModal'
 import { TransferFromPendingModal } from './TransferFromPendingModal'
 
+// A whole import is usually handled at once, so imports come first.
+const SOURCE_ORDER: PendingSource[] = ['import', 'recurrence', 'manual']
+
 export function InboxPage() {
   const { t } = useTranslation()
   const { message } = App.useApp()
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
+  const { token } = theme.useToken()
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [editing, setEditing] = useState<PendingTransactionDto | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [rejecting, setRejecting] = useState<PendingTransactionDto | null>(null)
@@ -51,8 +56,26 @@ export function InboxPage() {
   const linkMutation = useLinkPendingTransaction()
   const transferMutation = useCreateTransferFromPending()
 
+  const all = data ?? []
+  const groups = SOURCE_ORDER.map((source) => ({
+    source,
+    rows: all.filter((p) => p.source === source).sort((a, b) => a.occurredOn.localeCompare(b.occurredOn)),
+  })).filter((g) => g.rows.length > 0)
+
+  // What approving everything would move, per currency.
+  const comesIn = new Map<string, number>()
+  const goesOut = new Map<string, number>()
+  for (const p of all) {
+    const direction = kindDirection(p.kind)
+    if (p.amount == null || direction === 'neutral') continue
+    const sums = direction === 'in' ? comesIn : goesOut
+    sums.set(p.currency, (sums.get(p.currency) ?? 0) + p.amount)
+  }
+  const sumsText = (sums: Map<string, number>) =>
+    sums.size === 0 ? '—' : [...sums].map(([currency, amount]) => formatMoney(amount, currency)).join(' · ')
+
   // Resolve the two selected suggestions into a transfer's legs (one outflow + one inflow on accounts).
-  const selectedPendings = (data ?? []).filter((p) => selectedRowKeys.includes(p.id))
+  const selectedPendings = all.filter((p) => selectedIds.includes(p.id))
   const outflowLeg =
     selectedPendings.length === 2
       ? selectedPendings.find((p) => p.accountId && !p.cardId && kindDirection(p.kind) === 'out') ?? null
@@ -63,6 +86,10 @@ export function InboxPage() {
       : null
   const canTransfer =
     !!outflowLeg && !!inflowLeg && outflowLeg.accountId !== inflowLeg.accountId
+
+  function toggle(ids: string[], on: boolean) {
+    setSelectedIds((current) => (on ? [...new Set([...current, ...ids])] : current.filter((id) => !ids.includes(id))))
+  }
 
   async function handleLink(transactionId: string) {
     if (!linking) return
@@ -86,7 +113,7 @@ export function InboxPage() {
       })
       message.success(t('finances.inbox.transferDone'))
       setTransferOpen(false)
-      setSelectedRowKeys([])
+      setSelectedIds([])
     } catch (err) {
       message.error(toErrorMessage(err, t('finances.inbox.actionError')))
     }
@@ -101,6 +128,7 @@ export function InboxPage() {
     try {
       await approveMutation.mutateAsync(p.id)
       message.success(t('finances.inbox.approved'))
+      toggle([p.id], false)
     } catch (err) {
       message.error(toErrorMessage(err, t('finances.inbox.actionError')))
     }
@@ -111,6 +139,7 @@ export function InboxPage() {
     try {
       await rejectMutation.mutateAsync({ id: rejecting.id, reason: rejectReason || null })
       message.success(t('finances.inbox.rejected'))
+      toggle([rejecting.id], false)
       setRejecting(null)
       setRejectReason('')
     } catch (err) {
@@ -120,160 +149,200 @@ export function InboxPage() {
 
   async function handleApproveSelected() {
     try {
-      const count = await batchMutation.mutateAsync(selectedRowKeys.map(String))
+      const count = await batchMutation.mutateAsync(selectedIds)
       message.success(t('finances.inbox.batchApproved', { count }))
-      setSelectedRowKeys([])
+      setSelectedIds([])
     } catch (err) {
       message.error(toErrorMessage(err, t('finances.inbox.actionError')))
     }
   }
 
-  const columns: ColumnsType<PendingTransactionDto> = [
-    {
-      title: t('finances.transactions.occurredOn'),
-      dataIndex: 'occurredOn',
-      width: 110,
-      render: (value: string) => formatDate(value),
-      sorter: (a, b) => a.occurredOn.localeCompare(b.occurredOn),
-    },
-    {
-      title: t('finances.transactions.description'),
-      dataIndex: 'description',
-      sorter: (a, b) => a.description.localeCompare(b.description),
-    },
-    {
-      title: t('finances.recurring.destination'),
-      key: 'destination',
-      render: (_, p) =>
-        p.cardId
-          ? cardNames.get(p.cardId) ?? '—'
-          : p.accountId
-            ? accountNames.get(p.accountId) ?? '—'
-            : '—',
-    },
-    {
-      title: t('finances.transactions.category'),
-      key: 'category',
-      render: (_, p) => {
-        const categoryId = p.systemCategoryId ?? p.userCategoryId
-        return categoryId ? categoryNames.get(categoryId) ?? '—' : '—'
-      },
-    },
-    {
-      title: t('finances.inbox.source'),
-      dataIndex: 'source',
-      render: (_, p) => <Tag>{t(`finances.inbox.sources.${p.source}`)}</Tag>,
-    },
-    {
-      title: t('finances.transactions.kind'),
-      dataIndex: 'kind',
-      render: (_, p) => t(transactionKindLabelKey(p.kind)),
-    },
-    {
-      title: t('finances.transactions.amount'),
-      dataIndex: 'amount',
-      align: 'right',
-      render: (_, p) =>
-        p.amount == null ? (
-          '—'
-        ) : (
-          <CurrencyAmount amount={p.amount} currency={p.currency} direction={kindDirection(p.kind)} />
-        ),
-      sorter: (a, b) => (a.amount ?? 0) - (b.amount ?? 0),
-    },
-    {
-      title: t('finances.imports.duplicate'),
-      key: 'duplicate',
-      render: (_, p) =>
-        p.duplicateOfTransactionId ? (
-          <a onClick={() => setViewTxId(p.duplicateOfTransactionId)}>
-            {t('finances.imports.viewTransaction')}
-          </a>
-        ) : (
-          '—'
-        ),
-    },
-    {
-      title: t('common.actions'),
-      key: 'actions',
-      align: 'right',
-      render: (_, p) => (
-        <Space>
-          <Button size="small" type="primary" onClick={() => handleApprove(p)}>
-            {t('finances.inbox.approve')}
-          </Button>
-          <Button size="small" onClick={() => openEdit(p)}>
-            {t('common.edit')}
-          </Button>
+  const divider = `1px solid ${token.colorBorderSecondary}`
+
+  function renderRow(p: PendingTransactionDto, first: boolean) {
+    const categoryId = p.systemCategoryId ?? p.userCategoryId
+    const place = p.cardId ? cardNames.get(p.cardId) : p.accountId ? accountNames.get(p.accountId) : null
+    const details = [categoryId && categoryNames.get(categoryId), place].filter(Boolean)
+    const stop = (e: React.SyntheticEvent) => e.stopPropagation()
+
+    return (
+      <div
+        key={p.id}
+        role="button"
+        tabIndex={0}
+        onClick={() => openEdit(p)}
+        onKeyDown={(e) => e.key === 'Enter' && openEdit(p)}
+        className="flex cursor-pointer items-center gap-3 px-4 py-2.5"
+        style={{ borderTop: first ? undefined : divider }}
+      >
+        <span onClick={stop} onKeyDown={stop}>
+          <Checkbox
+            checked={selectedIds.includes(p.id)}
+            onChange={(e) => toggle([p.id], e.target.checked)}
+            aria-label={t('finances.inbox.select', { name: p.description })}
+          />
+        </span>
+        <span className="hidden w-20 shrink-0 text-sm tabular-nums sm:inline">{formatDate(p.occurredOn)}</span>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex min-w-0 items-center gap-2">
+            <Typography.Text strong className="truncate">
+              {p.description}
+            </Typography.Text>
+            {p.duplicateOfTransactionId && (
+              <Tag
+                color="gold"
+                className="m-0 shrink-0 cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setViewTxId(p.duplicateOfTransactionId)
+                }}
+              >
+                {t('finances.inbox.possibleDuplicate')}
+              </Tag>
+            )}
+          </div>
+          <Typography.Text type="secondary" className="truncate text-xs">
+            <span className="sm:hidden">{formatDate(p.occurredOn)} · </span>
+            {details.join(' · ')}
+            {p.attachmentCount > 0 && (
+              <>
+                {details.length > 0 && ' · '}
+                <PaperClipOutlined /> {p.attachmentCount}
+              </>
+            )}
+          </Typography.Text>
+        </div>
+        <div className="w-28 shrink-0 text-right tabular-nums">
+          {p.amount == null ? (
+            <Typography.Text type="secondary">—</Typography.Text>
+          ) : (
+            <CurrencyAmount amount={p.amount} currency={p.currency} direction={kindDirection(p.kind)} />
+          )}
+        </div>
+        <span className="flex shrink-0 items-center gap-1" onClick={stop} onKeyDown={stop}>
           <Button
             size="small"
-            icon={<PaperClipOutlined />}
-            aria-label={t('finances.attachments.button')}
-            onClick={() => setAttachmentsFor(p.id)}
+            icon={<CheckOutlined />}
+            loading={approveMutation.isPending && approveMutation.variables === p.id}
+            onClick={() => void handleApprove(p)}
+            aria-label={t('finances.inbox.approveItem', { name: p.description })}
           >
-            {p.attachmentCount > 0 ? p.attachmentCount : null}
+            <span className="hidden sm:inline">{t('finances.inbox.approve')}</span>
           </Button>
-          {p.source === 'import' && (
-            <Button size="small" icon={<LinkOutlined />} onClick={() => setLinking(p)}>
-              {t('finances.imports.link')}
-            </Button>
-          )}
-          <Button size="small" danger onClick={() => setRejecting(p)}>
-            {t('finances.inbox.reject')}
-          </Button>
-        </Space>
-      ),
-    },
-  ]
+          <Dropdown
+            trigger={['click']}
+            placement="bottomRight"
+            menu={{
+              items: [
+                { key: 'edit', label: t('common.edit'), onClick: () => openEdit(p) },
+                { key: 'attachments', label: t('finances.attachments.button'), onClick: () => setAttachmentsFor(p.id) },
+                ...(p.source === 'import'
+                  ? [{ key: 'link', label: t('finances.imports.link'), onClick: () => setLinking(p) }]
+                  : []),
+                { type: 'divider' as const },
+                { key: 'reject', danger: true, label: t('finances.inbox.reject'), onClick: () => setRejecting(p) },
+              ],
+            }}
+          >
+            <Button
+              type="text"
+              size="small"
+              icon={<EllipsisOutlined />}
+              aria-label={t('finances.inbox.moreActions', { name: p.description })}
+            />
+          </Dropdown>
+        </span>
+      </div>
+    )
+  }
+
+  const groupHeading = (source: PendingSource, rows: PendingTransactionDto[]): ReactNode => {
+    const ids = rows.map((p) => p.id)
+    const picked = ids.filter((id) => selectedIds.includes(id)).length
+    return (
+      <div
+        className="sticky top-0 z-10 flex items-center gap-3 border-x-0 border-b border-t border-solid px-4 py-1.5 text-xs font-semibold uppercase tracking-wider first:border-t-0"
+        style={{
+          color: token.colorTextSecondary,
+          borderColor: token.colorBorderSecondary,
+          // Opaque, so the rows going under it do not show through; tinted like a table header.
+          background: token.colorBgContainer,
+          boxShadow: `inset 0 0 0 9999px ${token.colorFillAlter}`,
+        }}
+      >
+        <Checkbox
+          checked={picked === ids.length}
+          indeterminate={picked > 0 && picked < ids.length}
+          onChange={(e) => toggle(ids, e.target.checked)}
+          aria-label={t('finances.inbox.selectGroup', { name: t(`finances.inbox.sources.${source}`) })}
+        />
+        {t(`finances.inbox.sources.${source}`)} · {rows.length}
+      </div>
+    )
+  }
 
   return (
-    <Card>
-      <Flex justify="space-between" align="center" wrap gap="small" className="mb-4">
-        <Typography.Title level={4} style={{ margin: 0 }}>
-          {t('nav.inbox')}
-        </Typography.Title>
-        <Space>
-          {canTransfer && (
-            <Button icon={<SwapOutlined />} onClick={() => setTransferOpen(true)}>
-              {t('finances.inbox.makeTransfer')}
-            </Button>
-          )}
-          {selectedRowKeys.length > 0 && (
+    // From lg up the page holds the screen's height and the list scrolls inside, as in Transactions.
+    <div className="flex flex-col gap-6 lg:h-[calc(100dvh-112px)]">
+      <div className="flex shrink-0 flex-wrap items-start justify-between gap-3">
+        <PageHeading title={t('nav.inbox')} description={t('finances.inbox.subtitle')} />
+        {selectedIds.length > 0 && (
+          <Space wrap>
+            {canTransfer && (
+              <Button icon={<SwapOutlined />} onClick={() => setTransferOpen(true)}>
+                {t('finances.inbox.makeTransfer')}
+              </Button>
+            )}
             <Popconfirm
-              title={t('finances.inbox.batchApproveConfirm', { count: selectedRowKeys.length })}
+              title={t('finances.inbox.batchApproveConfirm', { count: selectedIds.length })}
               okText={t('finances.inbox.approve')}
               cancelText={t('common.cancel')}
               onConfirm={handleApproveSelected}
             >
-              <Button type="primary" loading={batchMutation.isPending}>
-                {t('finances.inbox.approveSelected', { count: selectedRowKeys.length })}
+              <Button type="primary" icon={<CheckOutlined />} loading={batchMutation.isPending}>
+                {t('finances.inbox.approveSelected', { count: selectedIds.length })}
               </Button>
             </Popconfirm>
-          )}
-        </Space>
-      </Flex>
+          </Space>
+        )}
+      </div>
+
+      <div className="flex shrink-0 flex-wrap gap-3">
+        <StatTile label={t('finances.inbox.comesIn')} value={sumsText(comesIn)} />
+        <StatTile label={t('finances.inbox.goesOut')} value={sumsText(goesOut)} />
+      </div>
 
       {!!queuedFiles?.length && (
-        <Card type="inner" size="small" className="mb-4">
+        <div className="max-h-48 shrink-0 overflow-auto rounded-xl p-4" style={{ border: divider, background: token.colorBgContainer }}>
           <AttachmentsPanel owner={{ queued: true }} />
-        </Card>
+        </div>
       )}
 
-      <Table
-        rowKey="id"
-        loading={isLoading}
-        dataSource={data}
-        columns={columns}
-        size="middle"
-        rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
-        pagination={{ pageSize: 25, showTotal: (total) => `${total} registros` }}
-      />
+      {/* One panel: only its rows scroll, and each source's heading holds at the top. */}
+      <div
+        className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl"
+        style={{ border: divider, background: token.colorBgContainer }}
+      >
+        <div className="min-h-0 flex-1 overflow-auto">
+          {isLoading ? (
+            <Skeleton active className="p-4" />
+          ) : groups.length === 0 ? (
+            <Empty className="my-8" image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('finances.inbox.empty')} />
+          ) : (
+            groups.map((g) => (
+              <div key={g.source}>
+                {groupHeading(g.source, g.rows)}
+                {g.rows.map((p, index) => renderRow(p, index === 0))}
+              </div>
+            ))
+          )}
+        </div>
+        <div className="shrink-0 px-4 py-2 text-xs" style={{ borderTop: divider, color: token.colorTextSecondary }}>
+          {t('finances.inbox.count', { count: all.length })}
+        </div>
+      </div>
 
-      <PendingTransactionEditModal
-        open={editOpen}
-        pending={editing}
-        onClose={() => setEditOpen(false)}
-      />
+      <PendingTransactionEditModal open={editOpen} pending={editing} onClose={() => setEditOpen(false)} />
 
       <AttachmentsModal
         owner={attachmentsFor ? { pendingTransactionId: attachmentsFor } : null}
@@ -313,6 +382,7 @@ export function InboxPage() {
         cancelText={t('common.cancel')}
         destroyOnHidden
       >
+        <Typography.Paragraph type="secondary">{rejecting?.description}</Typography.Paragraph>
         <Input.TextArea
           rows={3}
           maxLength={500}
@@ -321,6 +391,6 @@ export function InboxPage() {
           placeholder={t('finances.inbox.rejectReasonPlaceholder')}
         />
       </Modal>
-    </Card>
+    </div>
   )
 }

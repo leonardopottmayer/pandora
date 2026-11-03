@@ -85,8 +85,34 @@ describe('InboxPage', () => {
     renderWithProviders(<InboxPage />)
 
     await screen.findByText('Netflix')
-    await user.click(screen.getByRole('button', { name: 'Approve' }))
+    await user.click(screen.getByRole('button', { name: 'Approve Netflix' }))
     await waitFor(() => expect(approved).toBe(true))
+  })
+
+  it('groups by source, imports first, and sums what would come in and go out', async () => {
+    server.use(
+      http.get(`${FINANCES_BASE}/pending-transactions`, () =>
+        HttpResponse.json({
+          success: true,
+          data: [
+            pending(),
+            pending({ id: 'p2', source: 'import', description: 'Salary', kind: 'income', amount: 1000 }),
+          ],
+        }),
+      ),
+      ...auxHandlers(),
+    )
+    renderWithProviders(<InboxPage />)
+
+    await screen.findByText('Netflix')
+    const headings = screen.getAllByRole('checkbox', { name: /^Select all from/ })
+    expect(headings.map((h) => h.getAttribute('aria-label'))).toEqual([
+      'Select all from Import',
+      'Select all from Recurrence',
+    ])
+    expect(screen.getByText('2 suggestions')).toBeInTheDocument()
+    // Once on the row and once in the "comes in" figure.
+    expect(screen.getAllByText(/1[.,]000[.,]00/)).toHaveLength(2)
   })
 
   it('rejects a suggestion through the reject modal', async () => {
@@ -105,7 +131,8 @@ describe('InboxPage', () => {
     renderWithProviders(<InboxPage />)
 
     await screen.findByText('Netflix')
-    await user.click(screen.getByRole('button', { name: 'Reject' }))
+    await user.click(screen.getByRole('button', { name: 'Options for Netflix' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Reject' }))
     const dialog = await screen.findByRole('dialog')
     // The modal's OK button confirms the rejection.
     await user.click(within(dialog).getByRole('button', { name: 'Reject' }))
