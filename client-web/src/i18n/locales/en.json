@@ -910,6 +910,92 @@
       "remaining": "Remaining"
     },
     "audit": {
+      "subtitle": "Review changes to a record or follow a related sequence of events.",
+      "empty": "No audit events for this filter.",
+      "count_one": "{{count}} event",
+      "count_other": "{{count}} events",
+      "details": "Event details",
+      "eventId": "Event ID",
+      "eventCode": "Event code",
+      "actorUserId": "Responsible user ID",
+      "data": "Recorded data",
+      "noData": "No additional data was recorded.",
+      "events": {
+        "account": {
+          "created": "Account created",
+          "updated": "Account updated",
+          "archived": "Account archived",
+          "unarchived": "Account unarchived",
+          "deleted": "Account deleted"
+        },
+        "card": {
+          "created": "Card created",
+          "updated": "Card updated",
+          "archived": "Card archived",
+          "unarchived": "Card unarchived",
+          "deleted": "Card deleted"
+        },
+        "category": {
+          "created": "Category created",
+          "updated": "Category updated",
+          "activated": "Category activated",
+          "deactivated": "Category deactivated"
+        },
+        "tag": {
+          "created": "Tag created",
+          "updated": "Tag updated",
+          "deleted": "Tag deleted",
+          "linked": "Tag linked",
+          "unlinked": "Tag unlinked"
+        },
+        "statement": {
+          "created": "Statement created",
+          "closed": "Statement closed",
+          "reopened": "Statement reopened",
+          "overdue": "Statement overdue",
+          "paid": "Statement paid",
+          "payment-received": "Statement payment received",
+          "settled-without-cash": "Statement settled without cash",
+          "attachment-added": "Statement attachment added",
+          "attachment-removed": "Statement attachment removed"
+        },
+        "transaction": {
+          "created": "Transaction created",
+          "edited": "Transaction edited",
+          "posted": "Transaction posted",
+          "voided": "Transaction voided",
+          "restored": "Transaction restored",
+          "reversed": "Transaction reversed",
+          "opening-balance": "Opening balance recorded",
+          "statement-payment": "Statement payment recorded",
+          "statement-writeoff": "Statement write-off recorded",
+          "attachment-added": "Transaction attachment added",
+          "attachment-removed": "Transaction attachment removed"
+        },
+        "pending": {
+          "created": "Suggestion created",
+          "edited": "Suggestion edited",
+          "approved": "Suggestion approved",
+          "rejected": "Suggestion rejected",
+          "linked": "Suggestion linked",
+          "attachment-added": "Suggestion attachment added",
+          "attachment-removed": "Suggestion attachment removed"
+        },
+        "recurring": {
+          "created": "Recurrence created",
+          "updated": "Recurrence updated",
+          "paused": "Recurrence paused",
+          "resumed": "Recurrence resumed",
+          "finished": "Recurrence finished",
+          "deleted": "Recurrence deleted",
+          "occurrence-generated": "Recurrence occurrence generated"
+        },
+        "installment-plan": {
+          "created": "Installment plan created",
+          "voided": "Installment plan voided",
+          "restored": "Installment plan restored"
+        }
+      },
       "occurredAt": "When",
       "eventType": "Event",
       "entityType": "Entity type",
@@ -917,11 +1003,11 @@
       "correlationId": "Correlation ID",
       "byEntity": "By entity",
       "byCorrelation": "By correlation",
-      "entityIdPlaceholder": "Entity ID (GUID)",
+      "entityIdPlaceholder": "Select a record",
       "selectStatement": "Select a statement",
       "correlationIdPlaceholder": "Correlation ID (GUID)",
       "filterHint": "Audit is queried by entity (type + ID) or by correlation ID.",
-      "emptyFilter": "Provide an entity type and ID, or a correlation ID, to view events.",
+      "emptyFilter": "Select a record, or enter a correlation ID, to view events.",
       "entityTypes": {
         "account": "Account",
         "card": "Card",
@@ -930,7 +1016,8 @@
         "recurring-transaction": "Recurrence",
         "pending-transaction": "Suggestion (inbox)",
         "user-category": "Category",
-        "tag": "Tag"
+        "tag": "Tag",
+        "installment-plan": "Installment plan"
       }
     },
     "tags": {

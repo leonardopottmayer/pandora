@@ -22,7 +22,7 @@ to tell the difference between "documented because it exists" and "documented as
 | **Recurrences & inbox** | Recurring templates + rule engine, staging inbox, approve/reject/link/transfer-from-pending, generation job (`fin010`, `fin011`). |
 | **Imports** | OFX **and** CSV, seeded bank layouts + auto-detection, three-level dedup/reconciliation, installment-marker extraction into `parsed_payload`/`ImportRow` (number/count only — no plan matching), cutoff date, retry (`fin012`–`fin014`). |
 | **Reversibility** | Void, unvoid, reverse (all cases), delete guards on account/card. |
-| **Audit reads** | `/audit` timeline by entity or correlation id. |
+| **Audit reads** | `/audit` timeline by entity or correlation id. Responsive list with localized event descriptions, read-only details drawer, lazy entity options and complete results fetched in batches. See [Audit screen](audit-and-provenance.md#audit-screen). |
 | **Frontend** | React module (`client-web/src/modules/finances`) covering accounts, cards, statements, transactions, transfers, categories, tags, recurring, inbox, imports, audit. |
 | **Cards list and form** | Redesigned to the screen patterns: compact responsive rows, named action menus, archive/delete confirmation, a scrolling table with fixed header on desktop, and a paired-field modal with optional details folded away. See [Cards screen](cards-and-statements.md#cards-screen). |
 | **Card detail** | Header with editing, limit figures, responsive statement/installment tabs with independent preserved filters and sorting, secondary amount filters in an overlay, count footers and internal table scrolling. Statement rows open the existing detail. See [Card detail screen](cards-and-statements.md#card-detail-screen). |

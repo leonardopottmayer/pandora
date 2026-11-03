@@ -910,27 +910,114 @@
       "remaining": "Restante"
     },
     "audit": {
+      "subtitle": "Consulte alterações de um registro ou acompanhe uma sequência de eventos relacionados.",
+      "empty": "Nenhum evento de auditoria para este filtro.",
+      "count_one": "{{count}} evento",
+      "count_other": "{{count}} eventos",
+      "details": "Detalhes do evento",
+      "eventId": "ID do evento",
+      "eventCode": "Código do evento",
+      "actorUserId": "ID do usuário responsável",
+      "data": "Dados registrados",
+      "noData": "Nenhum dado adicional foi registrado.",
+      "events": {
+        "account": {
+          "created": "Conta criada",
+          "updated": "Conta atualizada",
+          "archived": "Conta arquivada",
+          "unarchived": "Conta desarquivada",
+          "deleted": "Conta excluída"
+        },
+        "card": {
+          "created": "Cartão criado",
+          "updated": "Cartão atualizado",
+          "archived": "Cartão arquivado",
+          "unarchived": "Cartão desarquivado",
+          "deleted": "Cartão excluído"
+        },
+        "category": {
+          "created": "Categoria criada",
+          "updated": "Categoria atualizada",
+          "activated": "Categoria ativada",
+          "deactivated": "Categoria desativada"
+        },
+        "tag": {
+          "created": "Etiqueta criada",
+          "updated": "Etiqueta atualizada",
+          "deleted": "Etiqueta excluída",
+          "linked": "Etiqueta vinculada",
+          "unlinked": "Etiqueta desvinculada"
+        },
+        "statement": {
+          "created": "Fatura criada",
+          "closed": "Fatura fechada",
+          "reopened": "Fatura reaberta",
+          "overdue": "Fatura vencida",
+          "paid": "Fatura paga",
+          "payment-received": "Pagamento de fatura recebido",
+          "settled-without-cash": "Fatura quitada sem movimentação",
+          "attachment-added": "Anexo de fatura adicionado",
+          "attachment-removed": "Anexo de fatura removido"
+        },
+        "transaction": {
+          "created": "Lançamento criado",
+          "edited": "Lançamento editado",
+          "posted": "Lançamento efetivado",
+          "voided": "Lançamento anulado",
+          "restored": "Lançamento restaurado",
+          "reversed": "Lançamento estornado",
+          "opening-balance": "Saldo inicial registrado",
+          "statement-payment": "Pagamento de fatura registrado",
+          "statement-writeoff": "Baixa de fatura registrada",
+          "attachment-added": "Anexo de lançamento adicionado",
+          "attachment-removed": "Anexo de lançamento removido"
+        },
+        "pending": {
+          "created": "Sugestão criada",
+          "edited": "Sugestão editada",
+          "approved": "Sugestão aprovada",
+          "rejected": "Sugestão rejeitada",
+          "linked": "Sugestão vinculada",
+          "attachment-added": "Anexo de sugestão adicionado",
+          "attachment-removed": "Anexo de sugestão removido"
+        },
+        "recurring": {
+          "created": "Recorrência criada",
+          "updated": "Recorrência atualizada",
+          "paused": "Recorrência pausada",
+          "resumed": "Recorrência retomada",
+          "finished": "Recorrência finalizada",
+          "deleted": "Recorrência excluída",
+          "occurrence-generated": "Ocorrência de recorrência gerada"
+        },
+        "installment-plan": {
+          "created": "Parcelamento criado",
+          "voided": "Parcelamento anulado",
+          "restored": "Parcelamento restaurado"
+        }
+      },
       "occurredAt": "Quando",
       "eventType": "Evento",
       "entityType": "Tipo de entidade",
       "entityId": "Entidade",
-      "correlationId": "ID de correlacao",
+      "correlationId": "ID de correlação",
       "byEntity": "Por entidade",
-      "byCorrelation": "Por correlacao",
-      "entityIdPlaceholder": "ID da entidade (GUID)",
+      "byCorrelation": "Por correlação",
+      "entityIdPlaceholder": "Selecione um registro",
       "selectStatement": "Selecione uma fatura",
-      "correlationIdPlaceholder": "ID de correlacao (GUID)",
+      "correlationIdPlaceholder": "ID de correlação (GUID)",
       "filterHint": "A auditoria e consultada por entidade (tipo + ID) ou por ID de correlacao.",
-      "emptyFilter": "Informe o tipo e o ID da entidade, ou um ID de correlacao, para ver os eventos.",
+      "emptyFilter": "Selecione um registro ou informe um ID de correlação para ver os eventos.",
       "entityTypes": {
         "account": "Conta",
-        "card": "Cartao",
+        "card": "Cartão",
         "statement": "Fatura",
-        "transaction": "Transacao",
-        "recurring-transaction": "Recorrencia",
-        "pending-transaction": "Sugestao (caixa de entrada)",
+        "transaction": "Transação",
+        "recurring-transaction": "Recorrência",
+        "pending-transaction": "Sugestão (caixa de entrada)",
         "user-category": "Categoria",
-        "tag": "Etiqueta"
+        "tag": "Etiqueta",
+        "installment-plan": "Parcelamento"
       }
     },
     "tags": {

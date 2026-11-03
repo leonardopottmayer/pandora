@@ -73,6 +73,25 @@ sem categoria; o usuário editou a descrição para `Aluguel maio` e definiu a c
 - Jobs gravam com `actor_user_id = user_id` para dado do usuário mas representam ação do sistema; um
   ator NULL denota eventos puramente do sistema.
 
+## Tela de auditoria
+
+A página segue os padrões compartilhados: cabeçalho e filtros responsivos por entidade/correlação
+acima de uma lista cronológica. Só o tipo escolhido monta a consulta de opções; escolher fatura
+carrega os cartões e depois as faturas do cartão selecionado. Trocar o cartão limpa a fatura.
+Os valores de entidade e correlação são preservados separadamente ao alternar os modos.
+
+O resultado completo é buscado em lotes de 200 eventos com `skip`/`take`, numa chave de consulta
+separada das leituras paginadas. A ordem da API é preservada (mais recentes primeiro por entidade,
+mais antigos primeiro por correlação). Falha num lote posterior aparece como erro, sem apresentar
+resultado parcial como completo. A lista tem contagem no rodapé e cabeçalho fixo dentro do painel
+com rolagem no desktop; no celular, a página rola e data/hora ficam abaixo do evento, sem transbordar.
+
+Códigos conhecidos têm descrições em inglês e português; códigos desconhecidos aparecem como vieram.
+Clicar na linha ou no botão do evento abre um drawer apenas de leitura, com IDs completos, responsável,
+correlação, data/hora, código original e JSON formatado. Dados que não são JSON aparecem intactos e
+dados ausentes têm mensagem própria. A interface não deduz diferenças antes/depois a partir do payload.
+Contratos de backend e regras de gravação da auditoria permanecem iguais.
+
 ## API
 
 | Método | Rota | Propósito |

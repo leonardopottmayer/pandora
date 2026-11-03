@@ -1,150 +1,83 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Alert, Card, Empty, Input, Segmented, Select, Space, Table, Tag, Typography } from 'antd'
+import { Alert, Button, Empty, Input, Segmented, Select, Table, Typography, theme } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import { PageHeading } from '@/components/settings/PageHeading'
 import type { AuditEventDto } from '../../models'
 import type { AuditTimelineParams } from '../../services/audit.service'
 import { formatDateTime } from '../../lib/format'
-import { useAuditTimeline } from '../../hooks/useAudit'
+import { useAllAuditTimeline } from '../../hooks/useAudit'
 import { EntityIdSelect } from './EntityIdSelect'
+import { AuditEventDrawer } from './AuditEventDrawer'
 
-// Real values the audit log writes to entity_type (its own vocabulary, distinct from TaggableEntityType).
-const ENTITY_TYPES = [
-  'account',
-  'card',
-  'statement',
-  'transaction',
-  'recurring-transaction',
-  'pending-transaction',
-  'user-category',
-  'tag',
-]
-
+// The audit log has its own entity vocabulary, distinct from TaggableEntityType.
+const ENTITY_TYPES = ['account', 'card', 'statement', 'transaction', 'recurring-transaction', 'pending-transaction', 'user-category', 'tag']
 type Mode = 'entity' | 'correlation'
-
-function prettyJson(data: string | null): string {
-  if (!data) return ''
-  try {
-    return JSON.stringify(JSON.parse(data), null, 2)
-  } catch {
-    return data
-  }
-}
 
 export function AuditPage() {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const [mode, setMode] = useState<Mode>('entity')
-  const [entityType, setEntityType] = useState<string | undefined>('account')
+  const [entityType, setEntityType] = useState('account')
   const [entityId, setEntityId] = useState('')
   const [correlationId, setCorrelationId] = useState('')
-
-  // The backend requires (entityType + entityId) OR correlationId. Build the filter only when valid.
-  const validEntity = mode === 'entity' && !!entityType && entityId.trim().length > 0
-  const validCorrelation = mode === 'correlation' && correlationId.trim().length > 0
+  const [selectedEvent, setSelectedEvent] = useState<AuditEventDto | null>(null)
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null)
+  const validEntity = mode === 'entity' && !!entityType && !!entityId.trim()
+  const validCorrelation = mode === 'correlation' && !!correlationId.trim()
   const enabled = validEntity || validCorrelation
-
-  const params: AuditTimelineParams = validEntity
-    ? { entityType, entityId: entityId.trim(), take: 100 }
-    : validCorrelation
-      ? { correlationId: correlationId.trim(), take: 100 }
-      : { take: 100 }
-
-  const { data, isLoading, isError, error } = useAuditTimeline(params, enabled)
-
-  // Localized label for the entity type; falls back to the raw value if no translation exists.
-  const entityTypeLabel = (value: string) =>
-    t(`finances.audit.entityTypes.${value}`, { defaultValue: value })
-
+  const params: Omit<AuditTimelineParams, 'skip' | 'take'> = validEntity
+    ? { entityType, entityId: entityId.trim() }
+    : validCorrelation ? { correlationId: correlationId.trim() } : {}
+  const { data: events = [], isLoading, isError, error } = useAllAuditTimeline(params, enabled)
+  const entityLabel = (value: string) => t(`finances.audit.entityTypes.${value}`, { defaultValue: value })
   const columns: ColumnsType<AuditEventDto> = [
     {
-      title: t('finances.audit.occurredAt'),
-      dataIndex: 'occurredAt',
-      width: 180,
-      render: (value: string) => formatDateTime(value),
+      title: t('finances.audit.eventType'), dataIndex: 'eventType',
+      render: (value: string, event) => <div className="flex min-w-0 flex-col gap-1">
+        <Button type="link" className="!h-auto !max-w-full !justify-start !p-0" onClick={() => setSelectedEvent(event)}>
+          <span className="truncate">{t(`finances.audit.events.${value}`, { defaultValue: value })}</span>
+        </Button>
+        <Typography.Text type="secondary" className="truncate text-xs" title={event.entityId}>{entityLabel(event.entityType)} · {event.entityId}</Typography.Text>
+        <Typography.Text type="secondary" className="text-xs tabular-nums md:hidden">{formatDateTime(event.occurredAt)}</Typography.Text>
+      </div>,
     },
-    {
-      title: t('finances.audit.eventType'),
-      dataIndex: 'eventType',
-      render: (value: string) => <Tag>{value}</Tag>,
-    },
-    {
-      title: t('finances.audit.entityType'),
-      dataIndex: 'entityType',
-      render: (value: string) => entityTypeLabel(value),
-    },
-    { title: t('finances.audit.entityId'), dataIndex: 'entityId', ellipsis: true },
+    { title: t('finances.audit.occurredAt'), dataIndex: 'occurredAt', width: 180, responsive: ['md'], render: (value: string) => <span className="tabular-nums">{formatDateTime(value)}</span> },
   ]
-
   return (
-    <Card>
-      <Typography.Title level={4} style={{ marginTop: 0 }}>
-        {t('nav.audit')}
-      </Typography.Title>
-
-      <Alert
-        type="info"
-        showIcon
-        className="mb-4"
-        message={t('finances.audit.filterHint')}
-        style={{ marginBottom: 16 }}
-      />
-
-      <Space wrap className="mb-4" style={{ width: '100%' }}>
-        <Segmented
-          value={mode}
-          onChange={(value) => setMode(value as Mode)}
-          options={[
-            { value: 'entity', label: t('finances.audit.byEntity') },
-            { value: 'correlation', label: t('finances.audit.byCorrelation') },
-          ]}
-        />
-        {mode === 'entity' ? (
-          <>
-            <Select
-              style={{ minWidth: 180 }}
-              placeholder={t('finances.audit.entityType')}
-              value={entityType}
-              onChange={(value) => {
-                setEntityType(value)
-                setEntityId('')
-              }}
-              options={ENTITY_TYPES.map((e) => ({ value: e, label: entityTypeLabel(e) }))}
-            />
-            <EntityIdSelect entityType={entityType} value={entityId} onChange={setEntityId} />
-          </>
-        ) : (
-          <Input
-            allowClear
-            style={{ minWidth: 320 }}
-            placeholder={t('finances.audit.correlationIdPlaceholder')}
-            value={correlationId}
-            onChange={(e) => setCorrelationId(e.target.value)}
-          />
-        )}
-      </Space>
-
-      {isError && (
-        <Alert type="error" showIcon className="mb-4" message={String((error as Error)?.message ?? '')} />
-      )}
-
-      {!enabled ? (
-        <Empty description={t('finances.audit.emptyFilter')} />
-      ) : (
-        <Table
-          rowKey="id"
-          loading={isLoading}
-          dataSource={data}
-          columns={columns}
-          size="middle"
-          pagination={{ pageSize: 25 }}
-          expandable={{
-            rowExpandable: (record) => !!record.data,
-            expandedRowRender: (record) => (
-              <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{prettyJson(record.data)}</pre>
-            ),
-          }}
-        />
-      )}
-    </Card>
+    <div className="flex min-w-0 flex-col gap-6 lg:h-[calc(100dvh-112px)]">
+      <div className="shrink-0"><PageHeading title={t('nav.audit')} description={t('finances.audit.subtitle')} /></div>
+      <div className="flex shrink-0 flex-col gap-3">
+        <Segmented<Mode> className="w-fit max-w-full" value={mode} onChange={(value) => { setMode(value); setSelectedEvent(null) }} options={[
+          { value: 'entity', label: t('finances.audit.byEntity') }, { value: 'correlation', label: t('finances.audit.byCorrelation') },
+        ]} />
+        <div className="flex min-w-0 flex-wrap items-start gap-2">
+          {/* Preserve the card/statement selection while using correlation mode. */}
+          <div style={{ display: mode === 'entity' ? 'contents' : 'none' }}>
+            <Select className="w-full sm:w-52" aria-label={t('finances.audit.entityType')} value={entityType}
+              onChange={(value) => { setEntityType(value); setEntityId(''); setSelectedEvent(null) }}
+              options={ENTITY_TYPES.map((value) => ({ value, label: entityLabel(value) }))} />
+            <div className="w-full min-w-0 sm:max-w-xl sm:flex-1">
+              <EntityIdSelect entityType={entityType} value={entityId} onChange={(value) => { setEntityId(value); setSelectedEvent(null) }} />
+            </div>
+          </div>
+          {mode === 'correlation' && <div className="w-full sm:max-w-xl">
+            <Input allowClear aria-label={t('finances.audit.correlationId')} placeholder={t('finances.audit.correlationIdPlaceholder')} value={correlationId}
+              onChange={(event) => { setCorrelationId(event.target.value); setSelectedEvent(null) }} />
+          </div>}
+        </div>
+      </div>
+      {isError && <Alert type="error" showIcon title={error.message} className="shrink-0" />}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl" style={{ border: `1px solid ${token.colorBorderSecondary}`, background: token.colorBgContainer }}>
+        <div ref={setScrollEl} className="min-h-0 flex-1 overflow-auto">
+          {!enabled ? <Empty className="!my-12" description={t('finances.audit.emptyFilter')} /> : <Table rowKey="id" loading={isLoading} dataSource={events} columns={columns} size="middle" tableLayout="fixed" pagination={false}
+            sticky={scrollEl ? { getContainer: () => scrollEl } : undefined}
+            onRow={(event) => ({ onClick: () => setSelectedEvent(event), className: 'cursor-pointer' })}
+            locale={{ emptyText: t('finances.audit.empty') }} />}
+        </div>
+        {enabled && <Typography.Text type="secondary" className="shrink-0 px-4 py-2 text-xs tabular-nums" style={{ borderTop: `1px solid ${token.colorBorderSecondary}` }}>{t('finances.audit.count', { count: events.length })}</Typography.Text>}
+      </div>
+      <AuditEventDrawer event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+    </div>
   )
 }
