@@ -23,6 +23,10 @@ describe('appTheme', () => {
     const menu = components!.Menu!
     expect(contrast(menu.itemSelectedColor!, menu.itemSelectedBg!)).toBeGreaterThanOrEqual(4.5)
     expect(contrast(components!.Button!.primaryColor!, token!.colorPrimary!)).toBeGreaterThanOrEqual(3)
+    const table = components!.Table!
+    expect(table.bodySortBg).toBe(token!.colorBgContainer)
+    expect(table.headerSortActiveBg).toBe(table.headerBg)
+    expect(table.fixedHeaderSortActiveBg).toBe(table.headerBg)
   })
 
   it('uses the palette accent until one is chosen', () => {

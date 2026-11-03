@@ -40,7 +40,31 @@ The create/edit modal places required identity/account/currency and billing days
 fields from `sm` up. Brand, last digits and credit limit fold into additional options, initially open
 when editing a card with any of those values. The limit shows the selected currency; currency stays
 locked when editing. Long forms scroll inside the modal. Defaults, validation and request contracts
-remain unchanged. The card detail and statement screens are outside this redesign.
+remain unchanged.
+
+### Card detail screen
+
+The detail uses the same heading and StatTile figures as account details: card name, brand/final,
+billing days, configured and available limits, and an Edit card action reusing the existing form.
+Archived cards carry a status tag. Limits remain informational; missing values show a dash and
+negative available credit uses the error token.
+
+Statements and installment plans are separate tabs, starting on Statements. Each keeps its filters
+and sorting while switching tabs. Status and due-date range stay visible for statements; description
+and category stay visible for plans. Amount ranges open in an elevated overlay above the table,
+with an active-filter badge and a Clear filters action scoped to that tab. Zero bounds are valid.
+Dates display as DD/MM/YYYY while filtering compares ISO dates.
+
+Statement rows combine month and status; due date and remaining amount move into secondary lines
+on small screens. Clicking the row or its month opens the existing statement page. Installment rows
+combine description/category with paid/total progress, total and remaining amounts. Each tab has
+one bordered table, a count footer and a sticky header with internal scrolling on desktop. On
+phones the page scrolls without horizontal overflow. Empty results and unavailable cards have
+explicit messages. No backend contracts or statement detail/payment flows change.
+
+The statement detail table also adapts to phones: description and amount remain as columns,
+while date, installment, category, kind and status move below the description as their columns
+hide. Long descriptions truncate; header actions wrap and summary figures stack on phones.
 
 ### Available limit
 

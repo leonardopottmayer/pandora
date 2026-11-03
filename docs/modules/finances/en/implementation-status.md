@@ -24,7 +24,8 @@ to tell the difference between "documented because it exists" and "documented as
 | **Reversibility** | Void, unvoid, reverse (all cases), delete guards on account/card. |
 | **Audit reads** | `/audit` timeline by entity or correlation id. |
 | **Frontend** | React module (`client-web/src/modules/finances`) covering accounts, cards, statements, transactions, transfers, categories, tags, recurring, inbox, imports, audit. |
-| **Cards list and form** | Redesigned to the screen patterns: compact responsive rows, named action menus, archive/delete confirmation, a scrolling table with fixed header on desktop, and a paired-field modal with optional details folded away. Existing card detail/statement screens are unchanged. See [Cards screen](cards-and-statements.md#cards-screen). |
+| **Cards list and form** | Redesigned to the screen patterns: compact responsive rows, named action menus, archive/delete confirmation, a scrolling table with fixed header on desktop, and a paired-field modal with optional details folded away. See [Cards screen](cards-and-statements.md#cards-screen). |
+| **Card detail** | Header with editing, limit figures, responsive statement/installment tabs with independent preserved filters and sorting, secondary amount filters in an overlay, count footers and internal table scrolling. Statement rows open the existing detail. See [Card detail screen](cards-and-statements.md#card-detail-screen). |
 
 ### Additions beyond the original design
 

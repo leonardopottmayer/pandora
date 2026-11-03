@@ -103,4 +103,26 @@ describe('StatementDetailPage', () => {
     await user.type(screen.getByPlaceholderText('Search'), 'inexistente')
     await waitFor(() => expect(screen.queryByText('Compra A')).not.toBeInTheDocument())
   })
+
+  it('keeps date, category, installment and state visible on a narrow screen without separate wide columns', async () => {
+    const response = detail('open')
+    response.transactions[0] = {
+      ...response.transactions[0],
+      description: 'A long purchase description that must fit inside the table',
+      installmentPlanId: 'plan1', installmentNumber: 3, systemCategoryId: 'cat1',
+    }
+    server.use(
+      http.get(`${FINANCES_BASE}/statements/s1`, () => HttpResponse.json({ success: true, data: response })),
+      http.get(`${FINANCES_BASE}/categories/system`, () => HttpResponse.json({ success: true, data: [{ id: 'cat1', name: 'Shopping', children: [] }] })),
+      ...auxHandlers(),
+    )
+    renderPage()
+    const description = await screen.findByText(response.transactions[0].description)
+    expect(description).toHaveAttribute('title', response.transactions[0].description)
+    expect(screen.getByText('Installment 3')).toBeInTheDocument()
+    expect(screen.getByText('Shopping')).toBeInTheDocument()
+    expect(screen.getByText('Posted')).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'Date' })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('columnheader')).toHaveLength(2)
+  })
 })

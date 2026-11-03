@@ -142,6 +142,7 @@ From `lg` up, a list screen holds the window's height: the heading, figures and 
 - **Few columns.** A row is the main text, a secondary line under it, and the number that matters, right-aligned. Details join the secondary line with ` · ` (`category · account · 3/12`) instead of getting their own columns.
 - `tableLayout="fixed"` with fixed widths for the narrow columns (date 110, amount 124, menu 48), so the main column truncates instead of widening the table past a phone's width. Text that can be long gets `truncate` inside a `min-w-0` container.
 - Columns that matter less hide on small screens (`responsive: ['md']`), and their value moves into the secondary line there (`<span className="md:hidden">`).
+- Sorted columns keep the same body and header surfaces as their neighbors; the sorter arrow shows the active order. Configure `bodySortBg`, `headerSortActiveBg` and `fixedHeaderSortActiveBg` in `theme.ts`, so antd defaults do not introduce a different surface in custom palettes.
 - **The row opens the item** (`onRow={() => ({ onClick, className: 'cursor-pointer' })}`): the detail drawer, the edit modal or the detail page.
 - **Status tags only when they say something.** No green "Active" on every row. A tag appears for what is unusual: pending in gold, a void row struck through and secondary, late in red.
 - An empty table says what is missing in a sentence (`locale={{ emptyText: t('...empty') }}`).

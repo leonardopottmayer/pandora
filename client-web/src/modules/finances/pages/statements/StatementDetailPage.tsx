@@ -132,18 +132,38 @@ export function StatementDetailPage() {
       title: t('finances.transactions.occurredOn'),
       dataIndex: 'occurredOn',
       width: 110,
+      responsive: ['md'],
       render: (value: string) => formatDate(value),
       sorter: { compare: (a, b) => a.occurredOn.localeCompare(b.occurredOn), multiple: 1 },
     },
     {
       title: t('finances.transactions.description'),
       dataIndex: 'description',
+      render: (description: string, tx) => {
+        const categoryId = tx.systemCategoryId ?? tx.userCategoryId
+        const category = categoryId ? categoryNames.get(categoryId) : undefined
+        return <div className="flex min-w-0 flex-col gap-1">
+          <span className="truncate" title={description}>{description}</span>
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+            <Typography.Text type="secondary" className="tabular-nums md:hidden">{formatDate(tx.occurredOn)}</Typography.Text>
+            {tx.installmentNumber != null && tx.installmentPlanId != null && (
+              <Typography.Text type="secondary" className="lg:hidden">
+                {t('finances.transactions.installment')} {tx.installmentNumber}
+              </Typography.Text>
+            )}
+            {category && <Typography.Text type="secondary" className="max-w-full truncate lg:hidden">{category}</Typography.Text>}
+            <Typography.Text type="secondary" className="xl:hidden">{t(transactionKindLabelKey(tx.kind))}</Typography.Text>
+            <span className="lg:hidden"><EnumTag meta={TRANSACTION_STATUS_META[tx.status]} /></span>
+          </span>
+        </div>
+      },
       sorter: { compare: (a, b) => a.description.localeCompare(b.description), multiple: 2 },
     },
     {
       title: t('finances.transactions.installment'),
       key: 'installmentNumber',
       width: 80,
+      responsive: ['lg'],
       render: (_, tx) =>
         tx.installmentNumber != null && tx.installmentPlanId != null ? tx.installmentNumber : '—',
       sorter: {
@@ -154,6 +174,9 @@ export function StatementDetailPage() {
     {
       title: t('finances.transactions.category'),
       key: 'category',
+      width: 150,
+      responsive: ['lg'],
+      ellipsis: true,
       render: (_, tx) => {
         const categoryId = tx.systemCategoryId ?? tx.userCategoryId
         return categoryId ? categoryNames.get(categoryId) ?? '—' : '—'
@@ -172,18 +195,23 @@ export function StatementDetailPage() {
     {
       title: t('finances.transactions.kind'),
       dataIndex: 'kind',
+      width: 140,
+      responsive: ['xl'],
       render: (_, tx) => t(transactionKindLabelKey(tx.kind)),
       sorter: { compare: (a, b) => a.kind.localeCompare(b.kind), multiple: 5 },
     },
     {
       title: t('finances.transactions.status'),
       dataIndex: 'status',
+      width: 112,
+      responsive: ['lg'],
       render: (_, tx) => <EnumTag meta={TRANSACTION_STATUS_META[tx.status]} />,
       sorter: { compare: (a, b) => a.status.localeCompare(b.status), multiple: 6 },
     },
     {
       title: t('finances.transactions.amount'),
       dataIndex: 'amount',
+      width: 124,
       align: 'right',
       render: (_, tx) => (
         <CurrencyAmount amount={tx.amount} currency={tx.currency} direction={kindDirection(tx.kind)} />
@@ -198,7 +226,7 @@ export function StatementDetailPage() {
   const canSettle = statement != null && statement.remainingAmount > 0
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-w-0 flex-col gap-4">
       <Breadcrumb
         items={[
           { title: <Link to="/finances/cards">{t('nav.cards')}</Link> },
@@ -215,7 +243,7 @@ export function StatementDetailPage() {
         </Typography.Title>
         {statement && (
           <>
-            <Space className="mb-4">
+            <Space className="mb-4" wrap>
               <EnumTag meta={STATEMENT_STATUS_META[statement.status]} />
               {canClose && (
                 <Button onClick={handleClose} loading={closeMutation.isPending}>
@@ -246,20 +274,20 @@ export function StatementDetailPage() {
                 </Popconfirm>
               )}
             </Space>
-            <Row gutter={16}>
-              <Col xs={8}>
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={8}>
                 <Statistic
                   title={t('finances.statements.total')}
                   value={formatMoney(statement.totalAmount, currency)}
                 />
               </Col>
-              <Col xs={8}>
+              <Col xs={24} sm={8}>
                 <Statistic
                   title={t('finances.statements.paidAmount')}
                   value={formatMoney(statement.paidAmount, currency)}
                 />
               </Col>
-              <Col xs={8}>
+              <Col xs={24} sm={8}>
                 <Statistic
                   title={t('finances.statements.remaining')}
                   value={formatMoney(statement.remainingAmount, currency)}
@@ -352,6 +380,7 @@ export function StatementDetailPage() {
           loading={isLoading}
           dataSource={filteredTransactions}
           columns={columns}
+          tableLayout="fixed"
           size="middle"
           pagination={{ pageSize: 20 }}
         />

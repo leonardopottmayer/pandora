@@ -40,7 +40,32 @@ O modal coloca nome/conta/moeda e dias do ciclo primeiro, com campos em pares a 
 Bandeira, final e limite ficam nas opções adicionais, abertas ao editar quando há algum desses
 valores. O limite mostra a moeda escolhida e a moeda continua bloqueada na edição. Formulários
 longos rolam dentro do modal. Valores padrão, validações e contratos das requisições permanecem
-iguais. O detalhe do cartão e as telas de faturas ficam fora deste redesenho.
+iguais.
+
+### Tela de detalhe do cartão
+
+O detalhe usa cabeçalho e indicadores StatTile como no detalhe de Contas: nome, bandeira/final,
+dias do ciclo, limites cadastrado e disponível e ação Editar cartão reutilizando o formulário.
+Cartões arquivados têm tag de status. Os limites continuam informativos; valores ausentes mostram
+um traço e limite disponível negativo usa o token de erro.
+
+Faturas e Parcelamentos ficam em abas, começando em Faturas. Cada uma preserva seus filtros e
+ordenação ao alternar. Situação e período de vencimento ficam visíveis em Faturas; descrição e
+categoria ficam visíveis em Parcelamentos. Faixas de valores abrem sobre a tabela num painel
+elevado, com indicador de filtros ativos e ação Limpar apenas para a aba atual. Limites iguais a
+zero são válidos. Datas aparecem em DD/MM/AAAA e são comparadas internamente como datas ISO.
+
+Linhas de fatura reúnem mês e situação; vencimento e valor restante passam para linhas secundárias
+em telas pequenas. Clicar na linha ou no mês abre o detalhe existente da fatura. Parcelamentos
+reúnem descrição/categoria, progresso pago/total e valores total e restante. Cada aba tem uma tabela
+com borda, contagem no rodapé e cabeçalho fixo com rolagem interna no desktop. No celular, a página
+rola sem transbordamento horizontal. Resultados vazios e cartão indisponível têm mensagens próprias.
+Contratos de backend e fluxos de detalhe/pagamento de fatura permanecem iguais.
+
+A tabela do detalhe da fatura também se adapta ao celular: descrição e valor continuam como
+colunas, enquanto data, parcela, categoria, tipo e situação passam para baixo da descrição conforme
+suas colunas são ocultadas. Descrições longas são truncadas; ações do cabeçalho quebram linha e os
+indicadores ficam empilhados no celular.
 
 ### Limite disponível
 
