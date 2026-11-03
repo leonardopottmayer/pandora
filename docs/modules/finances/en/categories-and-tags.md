@@ -38,6 +38,24 @@ system codes referenced by the app include `credit-card-payment` (used on statem
 
 Audit: `category.created`, `category.updated`, `category.activated`, `category.deactivated`.
 
+### Categories screen
+
+The page follows the shared screen patterns: a heading and New category action, then My categories
+and System categories tabs. Each tab preserves its own search, nature filter and expanded groups.
+Search ignores accents and case, retains the parent of a matching child and opens matching groups;
+a matching parent includes its children. Clear filters applies only to the current tab.
+
+Both tabs use compact hierarchical rows, with nature below the name and a count including children
+in the footer. Personal rows open editing and offer Edit and Activate/Deactivate in a named menu;
+inactive categories appear only when requested and carry an Inactive tag. System rows are read-only.
+The panel scrolls internally with a sticky header on desktop; phones use page scrolling without
+horizontal overflow. Loading and empty states stay inside the panel.
+
+The form puts name first, nature and optional parent side by side on wider screens, and display
+order under More options (open for an existing nonzero order). Changing nature clears the chosen
+parent. Nature and parent remain immutable after creation. API contracts and hierarchy rules stay
+unchanged.
+
 ## Tags (`fin004_tag` / `fin005_tag_link`)
 
 - **Free labels** owned by the user: `name` (unique per user), `color`.

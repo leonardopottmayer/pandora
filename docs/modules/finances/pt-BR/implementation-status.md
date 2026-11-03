@@ -29,6 +29,10 @@ Use para distinguir "documentado porque existe" de "documentado como plano".
 
 ### Adições além do design original
 
+A tela de categorias segue os padrões compartilhados, com abas pessoais/sistema, busca e filtro
+de natureza independentes, linhas hierárquicas, menus por linha, formulário responsivo e rolagem
+interna no desktop. Veja [Tela de categorias](categories-and-tags.md#tela-de-categorias).
+
 A implementação evoluiu além da primeira proposta de design. Adições notáveis:
 
 - **Kind `statement-writeoff`** + `SettleStatement` — quitação sem caixa de faturas pré-Pandora no

@@ -29,6 +29,10 @@ to tell the difference between "documented because it exists" and "documented as
 
 ### Additions beyond the original design
 
+The categories screen follows the shared screen patterns, with personal/system tabs, independent
+search and nature filters, hierarchical rows, row menus, a responsive form and desktop scrolling.
+See [Categories screen](categories-and-tags.md#categories-screen).
+
 The implementation evolved past the first design proposal. Notable additions:
 
 - **`statement-writeoff`** kind + `SettleStatement` — cashless settlement of pre-Pandora statements

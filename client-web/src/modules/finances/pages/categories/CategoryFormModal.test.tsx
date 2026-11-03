@@ -55,6 +55,28 @@ describe('CategoryFormModal', () => {
     expect(posted).toBe(false)
   })
 
+  it('clears an incompatible parent when changing nature before creation', async () => {
+    let body: Record<string, unknown> | undefined
+    server.use(
+      http.get(`${FINANCES_BASE}/categories`, () => HttpResponse.json({ success: true, data: [
+        { id: 'parent', name: 'Hobbies', nature: 'expense', parentCategoryId: null, children: [] },
+      ] })),
+      http.post(`${FINANCES_BASE}/categories`, async ({ request }) => {
+        body = await request.json() as Record<string, unknown>
+        return HttpResponse.json({ success: true, data: { id: 'new' } })
+      }),
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    renderWithProviders(<CategoryFormModal open onClose={vi.fn()} />)
+    await user.type(screen.getByRole('textbox', { name: 'Name' }), 'Freelance')
+    await user.click(screen.getByRole('combobox', { name: 'Parent category' }))
+    await user.click(await screen.findByText('Hobbies', { selector: '.ant-select-item-option-content' }))
+    await user.click(screen.getByRole('combobox', { name: 'Nature' }))
+    await user.click(screen.getByText('Income', { selector: '.ant-select-item-option-content' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(body).toMatchObject({ name: 'Freelance', nature: 'income', parentCategoryId: null, displayOrder: 0 }))
+  })
+
   it('updates an existing category (nature locked) via PUT', async () => {
     const category: UserCategoryDto = {
       id: 'u1',
