@@ -8,12 +8,30 @@ import {
   useAbortImportFile,
   useRetryImportFile,
   useAllImportFiles,
+  useImportRows,
 } from './useImports'
 import * as importsService from '../services/imports.service'
+import type { ImportStatus } from '../models'
 
 vi.mock('../services/imports.service')
 
 beforeEach(() => vi.clearAllMocks())
+
+describe('useImportRows', () => {
+  it('fetches the final rows when processing completes instead of keeping the previous snapshot', async () => {
+    vi.mocked(importsService.getImportRows)
+      .mockResolvedValueOnce([{ id: 'r1', status: 'pending' }] as never)
+      .mockResolvedValueOnce([{ id: 'r1', status: 'suggestion-created' }] as never)
+    const { wrapper } = createHookWrapper()
+    const { result, rerender } = renderHook(({ phase }: { phase: ImportStatus }) => useImportRows('imp1', phase), {
+      wrapper, initialProps: { phase: 'parsing' },
+    })
+    await waitFor(() => expect(result.current.data?.[0].status).toBe('pending'))
+    rerender({ phase: 'completed' })
+    await waitFor(() => expect(result.current.data?.[0].status).toBe('suggestion-created'))
+    expect(importsService.getImportRows).toHaveBeenCalledTimes(2)
+  })
+})
 
 describe('useAllImportFiles', () => {
   it('refreshes active imports and stops polling once processing completes', async () => {

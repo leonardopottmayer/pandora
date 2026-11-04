@@ -60,18 +60,23 @@ export function LinkTransactionModal({
       title: t('finances.transactions.occurredOn'),
       dataIndex: 'occurredOn',
       width: 110,
+      responsive: ['md'],
       render: (v: string) => formatDate(v),
     },
     {
       title: t('finances.transactions.description'),
       dataIndex: 'description',
       ellipsis: true,
+      render: (value: string, row) => <div className="min-w-0">
+        <div className="truncate" title={value}>{value}</div>
+        <div className="text-xs md:hidden">{formatDate(row.occurredOn)}</div>
+      </div>,
     },
     {
       title: t('finances.transactions.amount'),
       dataIndex: 'amount',
       align: 'right',
-      width: 140,
+      width: 124,
       render: (_, r) => (
         <CurrencyAmount amount={r.amount} currency={r.currency} direction={kindDirection(r.kind)} />
       ),
@@ -100,6 +105,7 @@ export function LinkTransactionModal({
       <Table<TransactionDto>
         rowKey="id"
         size="small"
+        tableLayout="fixed"
         columns={columns}
         dataSource={data}
         loading={isLoading}

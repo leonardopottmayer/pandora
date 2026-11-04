@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { financeKeys } from './queryKeys'
-import type { ImportFileFilters } from '../models'
+import type { ImportFileFilters, ImportStatus } from '../models'
 import * as importsService from '../services/imports.service'
 
 export function useImportFiles(filters: ImportFileFilters = {}) {
@@ -31,10 +31,13 @@ export function useImportFile(id: string) {
   })
 }
 
-export function useImportRows(importFileId: string) {
+export function useImportRows(importFileId: string, phase?: ImportStatus) {
   return useQuery({
-    queryKey: financeKeys.importRows(importFileId),
+    // A new processing phase fetches its final rows even when the polling interval stops.
+    queryKey: financeKeys.importRows(importFileId, phase),
     queryFn: () => importsService.getImportRows(importFileId),
+    enabled: !!importFileId,
+    refetchInterval: phase === 'received' || phase === 'parsing' ? 5000 : false,
   })
 }
 

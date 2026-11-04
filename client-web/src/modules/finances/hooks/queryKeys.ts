@@ -1,6 +1,7 @@
 import type {
   AttachmentOwner,
   ImportFileFilters,
+  ImportStatus,
   PendingTransactionFilters,
   TransactionFilters,
 } from '../models'
@@ -66,7 +67,7 @@ export const financeKeys = {
   importList: (filters: ImportFileFilters = {}) =>
     [...financeKeys.imports(), 'list', filters] as const,
   import: (id: string) => [...financeKeys.imports(), 'detail', id] as const,
-  importRows: (id: string) => [...financeKeys.imports(), 'rows', id] as const,
+  importRows: (id: string, phase?: ImportStatus) => [...financeKeys.imports(), 'rows', id, ...(phase ? [phase] : [])] as const,
 
   importLayouts: () => [...financeKeys.all, 'import-layouts'] as const,
 }

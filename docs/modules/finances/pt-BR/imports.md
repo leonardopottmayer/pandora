@@ -157,6 +157,25 @@ recebido ou em processamento, a lista atualiza a cada cinco segundos; para quand
 No desktop, o cabeçalho fica fixo dentro do painel com rolagem; no celular, a página rola sem
 transbordamento horizontal. Regras de leitura, deduplicação e geração de sugestões permanecem iguais.
 
+## Tela de detalhe da importação
+
+O detalhe usa o cabeçalho compartilhado, indicadores de sugestões/duplicatas/erros e lista compacta
+de linhas. Os metadados ficam recolhidos em Detalhes do arquivo. A lista busca descrições, dados
+originais e referências externas e filtra situação e duplicidade. Descrição, data, moeda e direção
+de entrada/saída vêm do snapshot imutável do parser; snapshots ausentes ou inválidos usam os dados
+originais do banco, sem deduzir valores.
+
+Clicar na linha abre um drawer de leitura com dados originais e interpretados completos,
+identificadores, classificação, parcela e erro. Menus e ações do drawer preservam a caixa de entrada,
+o drawer do lançamento existente e o seletor de vínculo. Vincular continua disponível apenas para
+linhas com sugestão que ainda não estejam correspondidas. A busca de vínculos só é montada ao abrir.
+
+A lista não tem paginação, tem contagem no rodapé e rolagem interna com cabeçalho fixo no desktop.
+No celular, data e valor passam para baixo da descrição. As linhas atualizam durante o processamento
+e usam chave de cache por fase, buscando o resultado final ao concluir antes de parar a atualização.
+Abortar confirma o nome do arquivo e Tentar novamente continua disponível em falhas. Regras de
+leitura, duplicidade e vínculo permanecem iguais.
+
 ## API
 
 | Método | Rota | Propósito |

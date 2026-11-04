@@ -29,6 +29,10 @@ Use para distinguir "documentado porque existe" de "documentado como plano".
 
 ### Adições além do design original
 
+O detalhe da importação usa lista responsiva com prévia do parser, filtros por linha, drawer de
+leitura e ações de conciliação preservadas. A conclusão recarrega as linhas finais. Veja
+[Tela de detalhe da importação](imports.md#tela-de-detalhe-da-importação).
+
 A tela de importações tem histórico compacto com filtros de nome/situação, destino e contadores,
 aborto confirmado e formulário separado para envio. O histórico é carregado por completo e atualiza
 enquanto há arquivos ativos. Veja [Tela de importações](imports.md#tela-de-importações).

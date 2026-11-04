@@ -153,6 +153,25 @@ received or parsing, the list refreshes every five seconds; it stops once all fi
 Desktop keeps the header fixed inside the scrolling panel; phones use page scrolling without
 horizontal overflow. Parsing, deduplication and suggestion-generation rules remain unchanged.
 
+## Import detail screen
+
+The detail uses the shared heading, suggestion/duplicate/error figures and a compact row list.
+File metadata folds under File details. The list searches descriptions, original data and external
+references and filters row status and duplicate classification. Parsed descriptions, dates, currency
+and credit/debit direction come from the immutable parser snapshot; missing or invalid snapshots
+fall back to original bank data without inferring values.
+
+Clicking a row opens a read-only drawer with its full original and parsed data, identifiers,
+classification, installment and error information. Menus and drawer actions preserve the inbox,
+existing-transaction drawer and transaction-link picker. Linking remains available only for rows
+with a suggestion that are not already matched. Picker queries mount only when opened.
+
+The list has no pagination, a count footer and internal desktop scrolling with a sticky header.
+On phones, dates and amounts move below the description. Row queries poll during active processing
+and use a phase-specific cache key, so completion fetches the final rows before polling stops.
+Abort confirms the filename, and retry remains available on failed files. Parsing, deduplication
+and linking rules are unchanged.
+
 ## API
 
 | Method | Route | Purpose |

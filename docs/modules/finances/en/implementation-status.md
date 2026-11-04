@@ -29,6 +29,10 @@ to tell the difference between "documented because it exists" and "documented as
 
 ### Additions beyond the original design
 
+Import details use a responsive row list with parser previews, row filters, a read-only data drawer
+and preserved reconciliation actions. Processing completion reloads final rows. See
+[Import detail screen](imports.md#import-detail-screen).
+
 The imports screen has a compact history with filename/status filters, destination and counters,
 confirmed abort actions and a separate upload form. History loads in full and polls while files are
 active. See [Imports screen](imports.md#imports-screen).
