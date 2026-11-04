@@ -27,6 +27,8 @@ Use para distinguir "documentado porque existe" de "documentado como plano".
 | **Lista e formulário de cartões** | Redesenhados conforme os padrões de tela: linhas compactas e responsivas, menus identificados, confirmação de arquivamento/exclusão, tabela com rolagem e cabeçalho fixo no desktop e modal com campos em pares e opcionais recolhidos. Ver [Tela de cartões](cards-and-statements.md#tela-de-cartões). |
 | **Detalhe do cartão** | Cabeçalho com edição, indicadores de limites, abas responsivas de faturas/parcelamentos com filtros e ordenação independentes preservados, filtros secundários de valores sobre a tabela, contagens e rolagem interna. Linhas de fatura abrem o detalhe existente. Ver [Tela de detalhe](cards-and-statements.md#tela-de-detalhe-do-cartão). |
 
+O detalhe da fatura usa cabeçalho e indicadores compartilhados, filtros controlados com painel secundário, tabela responsiva com rolagem e anexos sob demanda. Veja [Detalhe da fatura](cards-and-statements.md#tela-de-detalhe-da-fatura).
+
 ### Adições além do design original
 
 O detalhe da importação usa lista responsiva com prévia do parser, filtros por linha, drawer de

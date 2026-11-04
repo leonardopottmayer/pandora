@@ -901,7 +901,12 @@
       "payAccount": "Payment account",
       "payAmount": "Payment amount",
       "payError": "Could not record the payment.",
-      "saveError": "Could not update the statement."
+      "saveError": "Could not update the statement.",
+      "notFound": "Statement unavailable.",
+      "cycleDates": "Closes on {{closing}} · Due on {{due}}",
+      "noTransactions": "No transactions to show. Adjust the filters if needed.",
+      "transactionCount_one": "{{count}} transaction",
+      "transactionCount_other": "{{count}} transactions"
     },
     "installments": {
       "title": "Installment plans",

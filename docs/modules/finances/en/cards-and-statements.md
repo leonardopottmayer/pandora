@@ -150,6 +150,21 @@ is a `refund` (statement sign −1) that reduces the total. A `closed` statement
 mutation through `StatementAmountSync` and always equals the sum of its transactions. See
 [Transactions](transactions.md) and [Installments](installments.md).
 
+## Statement detail screen
+
+The detail follows the shared screen patterns: reference month, closing/due dates and status in the
+heading, total/paid/remaining figures, and a compact transaction table. Payment remains the primary
+action; closing, reopening and confirmed cashless settlement preserve their existing availability.
+Totals use the card currency, including statements with no transactions.
+
+Search, period and status stay visible. Kind, category and amount bounds fold into an overlay with
+an active-filter count. Filters are controlled, survive closing the overlay and clear together.
+The table retains multi-column sorting, shows all filtered entries with a count footer, and holds
+its header in the desktop scroll panel. Phones scroll the page and show secondary metadata below
+the description. Attachments open in a separate drawer and load only when requested; the existing
+upload, queue-assignment, opening and removal actions remain available there. Attachment controls
+wrap on narrow screens; long filenames and notes truncate while retaining their full title text.
+
 ## API
 
 | Method | Route | Purpose |

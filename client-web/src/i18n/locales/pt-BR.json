@@ -901,7 +901,12 @@
       "payAccount": "Conta de pagamento",
       "payAmount": "Valor do pagamento",
       "payError": "Nao foi possivel registrar o pagamento.",
-      "saveError": "Nao foi possivel atualizar a fatura."
+      "saveError": "Nao foi possivel atualizar a fatura.",
+      "notFound": "Fatura indisponível.",
+      "cycleDates": "Fechamento em {{closing}} · Vencimento em {{due}}",
+      "noTransactions": "Nenhum lançamento para mostrar. Ajuste os filtros se necessário.",
+      "transactionCount_one": "{{count}} lançamento",
+      "transactionCount_other": "{{count}} lançamentos"
     },
     "installments": {
       "title": "Parcelamentos",

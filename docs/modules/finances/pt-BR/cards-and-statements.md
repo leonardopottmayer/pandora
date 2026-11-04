@@ -150,6 +150,22 @@ novas compras (rolam para a próxima). O cache `total_amount` da fatura é recom
 transacionalmente a cada mutação via `StatementAmountSync` e sempre é igual à soma das transações.
 Ver [Lançamentos](transactions.md) e [Parcelamento](installments.md).
 
+## Tela de detalhe da fatura
+
+O detalhe segue os padrões compartilhados: mês de referência, fechamento/vencimento e status no
+cabeçalho, indicadores de total/pago/restante e tabela compacta de lançamentos. Pagar continua como
+ação principal; fechar, reabrir e quitar sem movimentar saldo mantêm a disponibilidade existente,
+com confirmação para quitar. Os totais usam a moeda do cartão, inclusive em faturas sem lançamentos.
+
+Busca, período e status ficam visíveis. Tipo, categoria e limites de valor ficam em um painel
+sobreposto com contagem de filtros ativos. Os campos são controlados, sobrevivem ao fechamento do
+painel e são limpos juntos. A tabela preserva ordenação por várias colunas, exibe todos os itens
+filtrados com contagem no rodapé e cabeçalho fixo na rolagem do desktop. No celular, a página rola
+e os metadados secundários ficam abaixo da descrição. Anexos abrem em drawer separado e só carregam
+quando solicitados; envio, associação da fila, abertura e remoção continuam disponíveis nele.
+Os controles de anexos quebram em telas estreitas; nomes e notas longos são truncados, com
+texto completo preservado no atributo title.
+
 ## API
 
 | Método | Rota | Propósito |

@@ -27,6 +27,8 @@ to tell the difference between "documented because it exists" and "documented as
 | **Cards list and form** | Redesigned to the screen patterns: compact responsive rows, named action menus, archive/delete confirmation, a scrolling table with fixed header on desktop, and a paired-field modal with optional details folded away. See [Cards screen](cards-and-statements.md#cards-screen). |
 | **Card detail** | Header with editing, limit figures, responsive statement/installment tabs with independent preserved filters and sorting, secondary amount filters in an overlay, count footers and internal table scrolling. Statement rows open the existing detail. See [Card detail screen](cards-and-statements.md#card-detail-screen). |
 
+Statement details now use the shared heading and figures, controlled filters with a secondary overlay, a responsive scrolling table and on-demand attachments. See [Statement detail](cards-and-statements.md#statement-detail-screen).
+
 ### Additions beyond the original design
 
 Import details use a responsive row list with parser previews, row filters, a read-only data drawer

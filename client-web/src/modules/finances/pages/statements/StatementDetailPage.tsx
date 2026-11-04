@@ -2,17 +2,13 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import {
-  App, Breadcrumb, Button, Card, Col, DatePicker, Input, InputNumber, Popconfirm, Row, Select, Space, Statistic, Table, Typography,
+  Alert, App, Breadcrumb, Button, Drawer, Empty, Popconfirm, Skeleton, Space, Table, Typography, theme,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import { PaperClipOutlined } from '@ant-design/icons'
+import { PageHeading } from '@/components/settings/PageHeading'
 import { toErrorMessage } from '@/lib/api/envelope'
-import {
-  TRANSACTION_STATUSES,
-  TRANSACTION_KINDS,
-  type TransactionDto,
-  type TransactionKind,
-  type TransactionStatus,
-} from '../../models'
+import type { TransactionDto } from '../../models'
 import {
   STATEMENT_STATUS_META,
   TRANSACTION_STATUS_META,
@@ -23,30 +19,24 @@ import { formatDate, formatMoney, formatReferenceMonth } from '../../lib/format'
 import { CurrencyAmount } from '../../components/CurrencyAmount'
 import { EnumTag } from '../../components/EnumTag'
 import { AttachmentsPanel } from '../../components/AttachmentsPanel'
+import { StatTile } from '../../components/StatTile'
 import { useCard } from '../../hooks/useCards'
 import { useCategoryNames } from '../../hooks/useCategories'
 import { useCloseStatement, useReopenStatement, useSettleStatement, useStatement } from '../../hooks/useStatements'
 import { PayStatementModal } from './PayStatementModal'
-
-interface TxFilters {
-  text?: string
-  statuses?: TransactionStatus[]
-  kinds?: TransactionKind[]
-  categoryIds?: string[]
-  occurredFrom?: string
-  occurredTo?: string
-  amountMin?: number
-  amountMax?: number
-}
+import { StatementTransactionFilters, type StatementFilters } from './StatementTransactionFilters'
 
 export function StatementDetailPage() {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { token } = theme.useToken()
   const { id = '' } = useParams<{ id: string }>()
   const [payOpen, setPayOpen] = useState(false)
-  const [txFilters, setTxFilters] = useState<TxFilters>({})
+  const [txFilters, setTxFilters] = useState<StatementFilters>({})
+  const [attachmentsOpen, setAttachmentsOpen] = useState(false)
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null)
 
-  const { data, isLoading } = useStatement(id)
+  const { data, isLoading, isError, error } = useStatement(id)
   const closeMutation = useCloseStatement()
   const reopenMutation = useReopenStatement()
   const settleMutation = useSettleStatement()
@@ -54,15 +44,7 @@ export function StatementDetailPage() {
 
   const statement = data?.statement
   const { data: card } = useCard(statement?.cardId ?? '')
-  const currency = data?.transactions?.[0]?.currency ?? 'BRL'
-
-  function upd<K extends keyof TxFilters>(key: K, value: TxFilters[K]) {
-    setTxFilters((f) => {
-      const next = { ...f, [key]: value }
-      if (value === undefined || (Array.isArray(value) && value.length === 0)) delete next[key]
-      return next
-    })
-  }
+  const currency = card?.currency ?? data?.transactions?.[0]?.currency ?? 'BRL'
 
   const txCategoryOptions = useMemo(() => {
     const seen = new Set<string>()
@@ -225,179 +207,49 @@ export function StatementDetailPage() {
   const canPay = statement != null && statement.status !== 'paid'
   const canSettle = statement != null && statement.remainingAmount > 0
 
-  return (
-    <div className="flex min-w-0 flex-col gap-4">
-      <Breadcrumb
-        items={[
-          { title: <Link to="/finances/cards">{t('nav.cards')}</Link> },
-          card
-            ? { title: <Link to={`/finances/cards/${card.id}`}>{card.name}</Link> }
-            : { title: '…' },
-          { title: statement ? formatReferenceMonth(statement.referenceMonth) : '…' },
-        ]}
-      />
+  if (isLoading) return <Skeleton active />
+  if (isError) return <Alert type="error" showIcon title={error.message} />
+  if (!statement) return <Empty description={t('finances.statements.notFound')}><Link to="/finances/cards">{t('nav.cards')}</Link></Empty>
 
-      <Card loading={isLoading}>
-        <Typography.Title level={4} style={{ marginTop: 0 }}>
-          {statement ? formatReferenceMonth(statement.referenceMonth) : '…'}
-        </Typography.Title>
-        {statement && (
-          <>
-            <Space className="mb-4" wrap>
-              <EnumTag meta={STATEMENT_STATUS_META[statement.status]} />
-              {canClose && (
-                <Button onClick={handleClose} loading={closeMutation.isPending}>
-                  {t('finances.statements.close')}
-                </Button>
-              )}
-              {canReopen && (
-                <Button onClick={handleReopen} loading={reopenMutation.isPending}>
-                  {t('finances.statements.reopen')}
-                </Button>
-              )}
-              {canPay && (
-                <Button type="primary" onClick={() => setPayOpen(true)}>
-                  {t('finances.statements.pay')}
-                </Button>
-              )}
-              {canSettle && (
-                <Popconfirm
-                  title={t('finances.statements.settle')}
-                  description={t('finances.statements.settleConfirm')}
-                  okText={t('finances.statements.settle')}
-                  cancelText={t('common.cancel')}
-                  onConfirm={handleSettle}
-                >
-                  <Button loading={settleMutation.isPending}>
-                    {t('finances.statements.settle')}
-                  </Button>
-                </Popconfirm>
-              )}
-            </Space>
-            <Row gutter={[16, 16]}>
-              <Col xs={24} sm={8}>
-                <Statistic
-                  title={t('finances.statements.total')}
-                  value={formatMoney(statement.totalAmount, currency)}
-                />
-              </Col>
-              <Col xs={24} sm={8}>
-                <Statistic
-                  title={t('finances.statements.paidAmount')}
-                  value={formatMoney(statement.paidAmount, currency)}
-                />
-              </Col>
-              <Col xs={24} sm={8}>
-                <Statistic
-                  title={t('finances.statements.remaining')}
-                  value={formatMoney(statement.remainingAmount, currency)}
-                />
-              </Col>
-            </Row>
-          </>
-        )}
-      </Card>
-
-      <Card title={t('finances.statements.transactions')}>
-        <Row gutter={[8, 8]} className="mb-4">
-          <Col xs={24} sm={12} lg={8}>
-            <Input
-              allowClear
-              placeholder={t('common.search')}
-              onChange={(e) => upd('text', e.target.value || undefined)}
-            />
-          </Col>
-          <Col xs={24} sm={12} lg={8}>
-            <DatePicker.RangePicker
-              style={{ width: '100%' }}
-              format="YYYY-MM-DD"
-              placeholder={[
-                t('finances.transactions.occurredOn') + ' ' + t('finances.filters.from'),
-                t('finances.transactions.occurredOn') + ' ' + t('finances.filters.to'),
-              ]}
-              onChange={(_, s) => {
-                upd('occurredFrom', s[0] || undefined)
-                upd('occurredTo', s[1] || undefined)
-              }}
-            />
-          </Col>
-          <Col xs={24} sm={12} lg={8}>
-            <Select
-              mode="multiple"
-              allowClear
-              style={{ width: '100%' }}
-              placeholder={t('finances.transactions.status')}
-              onChange={(v: TransactionStatus[]) => upd('statuses', v.length ? v : undefined)}
-              options={TRANSACTION_STATUSES.map((s) => ({
-                value: s,
-                label: t(TRANSACTION_STATUS_META[s].labelKey),
-              }))}
-            />
-          </Col>
-          <Col xs={24} sm={12} lg={8}>
-            <Select
-              mode="multiple"
-              allowClear
-              style={{ width: '100%' }}
-              placeholder={t('finances.transactions.kind')}
-              onChange={(v: TransactionKind[]) => upd('kinds', v.length ? v : undefined)}
-              options={TRANSACTION_KINDS.map((k) => ({
-                value: k,
-                label: t(transactionKindLabelKey(k)),
-              }))}
-            />
-          </Col>
-          {txCategoryOptions.length > 0 && (
-            <Col xs={24} sm={12} lg={8}>
-              <Select
-                mode="multiple"
-                allowClear
-                style={{ width: '100%' }}
-                placeholder={t('finances.transactions.category')}
-                optionFilterProp="label"
-                onChange={(v: string[]) => upd('categoryIds', v.length ? v : undefined)}
-                options={txCategoryOptions}
-              />
-            </Col>
-          )}
-          <Col xs={24} sm={12} lg={8}>
-            <Space.Compact style={{ width: '100%' }}>
-              <InputNumber<number>
-                style={{ width: '50%' }}
-                placeholder={t('finances.transactions.amount') + ' ' + t('finances.filters.from')}
-                onChange={(v) => upd('amountMin', v ?? undefined)}
-              />
-              <InputNumber<number>
-                style={{ width: '50%' }}
-                placeholder={t('finances.transactions.amount') + ' ' + t('finances.filters.to')}
-                onChange={(v) => upd('amountMax', v ?? undefined)}
-              />
-            </Space.Compact>
-          </Col>
-        </Row>
-        <Table
-          rowKey="id"
-          loading={isLoading}
-          dataSource={filteredTransactions}
-          columns={columns}
-          tableLayout="fixed"
-          size="middle"
-          pagination={{ pageSize: 20 }}
-        />
-      </Card>
-
-      {id && (
-        <Card>
-          <AttachmentsPanel owner={{ cardStatementId: id }} />
-        </Card>
-      )}
-
-      <PayStatementModal
-        open={payOpen}
-        statementId={id}
-        remainingAmount={statement?.remainingAmount}
-        onClose={() => setPayOpen(false)}
-      />
+  return <div className="flex min-w-0 flex-col gap-6 lg:h-[calc(100dvh-112px)]">
+    <Breadcrumb className="shrink-0" items={[
+      { title: <Link to="/finances/cards">{t('nav.cards')}</Link> },
+      { title: <Link to={`/finances/cards/${statement.cardId}`} className="inline-block max-w-60 truncate align-bottom">{card?.name ?? t('finances.imports.card')}</Link> },
+      { title: formatReferenceMonth(statement.referenceMonth) },
+    ]} />
+    <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+      <div className="min-w-0 flex-1">
+        <PageHeading title={formatReferenceMonth(statement.referenceMonth)} description={t('finances.statements.cycleDates', { closing: formatDate(statement.closingDate), due: formatDate(statement.dueDate) })} />
+        <div className="mt-2"><EnumTag meta={STATEMENT_STATUS_META[statement.status]} /></div>
+      </div>
+      <Space wrap>
+        {canPay && <Button type="primary" onClick={() => setPayOpen(true)}>{t('finances.statements.pay')}</Button>}
+        {canClose && <Button onClick={handleClose} loading={closeMutation.isPending}>{t('finances.statements.close')}</Button>}
+        {canReopen && <Button onClick={handleReopen} loading={reopenMutation.isPending}>{t('finances.statements.reopen')}</Button>}
+        {canSettle && <Popconfirm title={t('finances.statements.settle')} description={t('finances.statements.settleConfirm')}
+          okText={t('finances.statements.settle')} cancelText={t('common.cancel')} onConfirm={handleSettle}>
+          <Button loading={settleMutation.isPending}>{t('finances.statements.settle')}</Button>
+        </Popconfirm>}
+        <Button icon={<PaperClipOutlined aria-hidden />} onClick={() => setAttachmentsOpen(true)}>{t('finances.attachments.title')}</Button>
+      </Space>
     </div>
-  )
+    <div className="grid shrink-0 grid-cols-2 gap-3 sm:grid-cols-3 [&>div]:min-w-0 [&>div]:px-3 [&>div:first-child]:col-span-2 sm:[&>div:first-child]:col-span-1">
+      <StatTile label={t('finances.statements.total')} value={<span className="tabular-nums text-lg sm:text-2xl">{formatMoney(statement.totalAmount, currency)}</span>} />
+      <StatTile label={t('finances.statements.paidAmount')} value={<span className="tabular-nums text-lg sm:text-2xl">{formatMoney(statement.paidAmount, currency)}</span>} />
+      <StatTile label={t('finances.statements.remaining')} value={<span className="tabular-nums text-lg sm:text-2xl" style={statement.status === 'overdue' ? { color: token.colorError } : undefined}>{formatMoney(statement.remainingAmount, currency)}</span>} />
+    </div>
+    <StatementTransactionFilters value={txFilters} onChange={setTxFilters} categories={txCategoryOptions} currency={currency} />
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl" style={{ border: `1px solid ${token.colorBorderSecondary}`, background: token.colorBgContainer }}>
+      <div ref={setScrollEl} className="min-h-0 flex-1 overflow-auto">
+        <Table rowKey="id" dataSource={filteredTransactions} columns={columns} tableLayout="fixed" size="middle" pagination={false}
+          sticky={scrollEl ? { getContainer: () => scrollEl } : undefined}
+          locale={{ emptyText: t('finances.statements.noTransactions') }} />
+      </div>
+      <Typography.Text type="secondary" className="shrink-0 px-4 py-2 text-xs tabular-nums" style={{ borderTop: `1px solid ${token.colorBorderSecondary}` }}>{t('finances.statements.transactionCount', { count: filteredTransactions.length })}</Typography.Text>
+    </div>
+    <Drawer open={attachmentsOpen} onClose={() => setAttachmentsOpen(false)} title={t('finances.attachments.title')} size={640} destroyOnHidden>
+      {attachmentsOpen && <AttachmentsPanel owner={{ cardStatementId: id }} />}
+    </Drawer>
+    {payOpen && <PayStatementModal open statementId={id} remainingAmount={statement.remainingAmount} onClose={() => setPayOpen(false)} />}
+  </div>
 }

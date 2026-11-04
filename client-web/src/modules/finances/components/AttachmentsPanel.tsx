@@ -98,7 +98,7 @@ export function AttachmentsPanel({ owner }: AttachmentsPanelProps) {
         <Typography.Text strong>
           {t(isQueue ? 'finances.attachments.queueTitle' : 'finances.attachments.title')}
         </Typography.Text>
-        <Flex gap="small">
+        <Flex gap="small" wrap>
           {!isQueue && !!queued?.length && (
             <Dropdown
               menu={{
@@ -152,18 +152,20 @@ export function AttachmentsPanel({ owner }: AttachmentsPanelProps) {
         <Flex vertical gap={4}>
           {data.map((a) => (
             <Flex key={a.id} align="center" justify="space-between" gap="small">
-              <Flex align="center" gap="small" style={{ minWidth: 0 }}>
+              <Flex align="center" gap="small" style={{ minWidth: 0, flex: 1 }}>
                 {a.contentType === 'application/pdf' ? <FilePdfOutlined /> : <FileImageOutlined />}
                 <EnumTag meta={ATTACHMENT_KIND_META[a.kind]} />
-                <Typography.Link onClick={() => handleOpen(a)} ellipsis style={{ maxWidth: 260 }}>
-                  {a.fileName}
-                </Typography.Link>
-                {a.note && (
-                  <Typography.Text type="secondary" ellipsis style={{ maxWidth: 220 }}>
-                    {a.note}
-                  </Typography.Text>
-                )}
-                <Typography.Text type="secondary">{formatSize(a.sizeBytes)}</Typography.Text>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <Typography.Link onClick={() => handleOpen(a)} ellipsis title={a.fileName} style={{ maxWidth: 260 }}>
+                    {a.fileName}
+                  </Typography.Link>
+                  {a.note && (
+                    <Typography.Text type="secondary" ellipsis title={a.note} style={{ maxWidth: 220 }}>
+                      {a.note}
+                    </Typography.Text>
+                  )}
+                </div>
+                <Typography.Text type="secondary" className="shrink-0 whitespace-nowrap">{formatSize(a.sizeBytes)}</Typography.Text>
               </Flex>
               <Flex gap={4}>
                 {isQueue && (

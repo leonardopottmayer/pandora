@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route, Routes } from 'react-router-dom'
 import i18n from '@/i18n'
@@ -64,6 +64,122 @@ function auxHandlers() {
 }
 
 describe('StatementDetailPage', () => {
+  it('uses the card currency for totals even without transactions', async () => {
+    const response = detail('open')
+    response.transactions = []
+    server.use(
+      http.get(`${FINANCES_BASE}/statements/s1`, () => HttpResponse.json({ success: true, data: response })),
+      http.get(`${FINANCES_BASE}/cards/c1`, () => HttpResponse.json({ success: true, data: { id: 'c1', name: 'USD card', currency: 'USD' } })),
+      ...auxHandlers(),
+    )
+    renderPage()
+    expect(await screen.findAllByText('$1,000.00')).toHaveLength(2)
+    expect(screen.getByText('0 transactions')).toBeInTheDocument()
+  })
+
+  it('keeps secondary filters when hidden and clears every controlled field', async () => {
+    const response = detail('open')
+    response.transactions.push({ ...response.transactions[0], id: 'x2', description: 'Compra B', amount: 50 })
+    server.use(http.get(`${FINANCES_BASE}/statements/s1`, () => HttpResponse.json({ success: true, data: response })), ...auxHandlers())
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText('Compra B')
+    expect(screen.queryByLabelText('Amount from')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'More filters' }))
+    await user.type(screen.getByLabelText('Amount from'), '100')
+    expect(screen.queryByText('Compra B')).not.toBeInTheDocument()
+    expect(screen.getByText('1 transaction')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'More filters' }))
+    expect(screen.queryByLabelText('Amount from')).not.toBeInTheDocument()
+    expect(screen.queryByText('Compra B')).not.toBeInTheDocument()
+    await user.type(screen.getByPlaceholderText('Search'), 'Compra A')
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }))
+    expect(screen.getByPlaceholderText('Search')).toHaveValue('')
+    expect(screen.getByText('Compra B')).toBeInTheDocument()
+    expect(screen.getByText('2 transactions')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'More filters' }))
+    expect(screen.getByLabelText('Amount from')).toHaveValue('')
+  })
+
+  it('opens the existing payment form with the remaining amount', async () => {
+    server.use(
+      http.get(`${FINANCES_BASE}/statements/s1`, () => HttpResponse.json({ success: true, data: detail('closed') })),
+      http.get(`${FINANCES_BASE}/accounts`, () => HttpResponse.json({ success: true, data: [] })),
+      ...auxHandlers(),
+    )
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText('Compra A')
+    await user.click(screen.getByRole('button', { name: 'Pay statement' }))
+    const dialog = within(await screen.findByRole('dialog'))
+    expect(Number((dialog.getByRole('spinbutton') as HTMLInputElement).value)).toBe(1000)
+    expect(dialog.getByText('Payment account')).toBeInTheDocument()
+  })
+
+  it('loads statement attachments only after opening their drawer', async () => {
+    const owners: string[] = []
+    server.use(
+      http.get(`${FINANCES_BASE}/statements/s1`, () => HttpResponse.json({ success: true, data: detail('open') })),
+      http.get(`${FINANCES_BASE}/attachments`, ({ request }) => {
+        owners.push(new URL(request.url).searchParams.get('cardStatementId') ?? 'queue')
+        return HttpResponse.json({ success: true, data: [] })
+      }),
+      http.get(`${FINANCES_BASE}/transactions`, () => HttpResponse.json({ success: true, data: [] })),
+      ...auxHandlers(),
+    )
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText('Compra A')
+    expect(owners).toHaveLength(0)
+    await user.click(screen.getByRole('button', { name: 'Attachments' }))
+    expect(await screen.findByRole('dialog')).toHaveTextContent('Attachments')
+    await waitFor(() => expect(owners).toContain('s1'))
+  })
+
+  it('reopens a closed statement', async () => {
+    let reopened = false
+    server.use(
+      http.get(`${FINANCES_BASE}/statements/s1`, () => HttpResponse.json({ success: true, data: detail('closed') })),
+      http.post(`${FINANCES_BASE}/statements/s1/reopen`, () => { reopened = true; return HttpResponse.json({ success: true, data: detail('open').statement }) }),
+      ...auxHandlers(),
+    )
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText('Compra A')
+    expect(screen.queryByRole('button', { name: 'Close statement' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Reopen statement' }))
+    await waitFor(() => expect(reopened).toBe(true))
+  })
+
+  it('requires confirmation before settling without cash', async () => {
+    let settled = false
+    server.use(
+      http.get(`${FINANCES_BASE}/statements/s1`, () => HttpResponse.json({ success: true, data: detail('closed') })),
+      http.post(`${FINANCES_BASE}/statements/s1/settle`, () => { settled = true; return HttpResponse.json({ success: true, data: detail('paid').statement }) }),
+      ...auxHandlers(),
+    )
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText('Compra A')
+    await user.click(screen.getByRole('button', { name: 'Settle without cash' }))
+    expect(settled).toBe(false)
+    const confirmation = within(await screen.findByRole('tooltip'))
+    expect(confirmation.getByText(/without debiting any account/)).toBeInTheDocument()
+    await user.click(confirmation.getByRole('button', { name: 'Settle without cash' }))
+    await waitFor(() => expect(settled).toBe(true))
+  })
+
+  it('hides lifecycle actions on a paid statement with no remaining balance', async () => {
+    const response = detail('paid')
+    response.statement.remainingAmount = 0
+    server.use(http.get(`${FINANCES_BASE}/statements/s1`, () => HttpResponse.json({ success: true, data: response })), ...auxHandlers())
+    renderPage()
+    await screen.findByText('Compra A')
+    for (const name of ['Pay statement', 'Close statement', 'Reopen statement', 'Settle without cash']) {
+      expect(screen.queryByRole('button', { name })).not.toBeInTheDocument()
+    }
+  })
+
   it('renders the statement and its transactions', async () => {
     server.use(
       http.get(`${FINANCES_BASE}/statements/s1`, () => HttpResponse.json({ success: true, data: detail('open') })),
