@@ -176,6 +176,14 @@ e usam chave de cache por fase, buscando o resultado final ao concluir antes de 
 Abortar confirma o nome do arquivo e Tentar novamente continua disponível em falhas. Regras de
 leitura, duplicidade e vínculo permanecem iguais.
 
+## Tela de layouts de importação
+
+O catálogo de sistema, somente leitura, segue o padrão de lista compacta: cabeçalho, busca por nome,
+banco e código do layout, filtros de formato/destino, contagem e cabeçalho fixo no desktop.
+O código do banco fica visível; no celular, banco, formato e destino passam para baixo do nome,
+junto do código do layout. Os metadados permanecem acessíveis sem rolagem horizontal da página.
+Catálogo vazio, busca sem resultados e falhas têm mensagens distintas. A tela não cria nem edita layouts.
+
 ## API
 
 | Método | Rota | Propósito |

@@ -172,6 +172,14 @@ and use a phase-specific cache key, so completion fetches the final rows before 
 Abort confirms the filename, and retry remains available on failed files. Parsing, deduplication
 and linking rules are unchanged.
 
+## Import layouts screen
+
+The read-only system catalog follows the compact list pattern: page heading, search across names,
+banks and layout codes, format/destination filters, a count footer and a sticky desktop header.
+Bank codes remain visible; on phones, bank, format and destination move below the name alongside
+the layout code. All metadata remains available without horizontal page scrolling. Empty catalogs,
+no matches and request failures have distinct messages. This screen does not create or edit layouts.
+
 ## API
 
 | Method | Route | Purpose |

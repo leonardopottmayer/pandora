@@ -57,6 +57,8 @@ The implementation evolved past the first design proposal. Notable additions:
 - **`auto_generate`** flag on recurrences (opt out of automatic generation).
 - `import_file.file_hash` is **informational, not unique** — deliberate re-import is allowed.
 
+The import layouts catalog has name/bank/code search, format and destination filters, and a responsive read-only table. See [Imports](imports.md#import-layouts-screen).
+
 ## Not yet implemented (designed / planned)
 
 | Area | Status |

@@ -1222,8 +1222,14 @@
       "name": "Name",
       "bank": "Bank",
       "format": "Format",
-      "accountType": "Type",
-      "code": "Code"
+      "accountType": "Destination",
+      "code": "Code",
+      "subtitle": "Available bank statement formats. These layouts are provided by the system.",
+      "search": "Search names, banks or codes",
+      "noMatches": "No layouts match these filters.",
+      "empty": "No import layouts available.",
+      "count_one": "{{count}} layout",
+      "count_other": "{{count}} layouts"
     },
     "attachments": {
       "title": "Attachments",

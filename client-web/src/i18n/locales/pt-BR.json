@@ -1218,12 +1218,18 @@
       "viewTransaction": "Ver transação"
     },
     "importLayouts": {
-      "title": "Layouts de importacao",
+      "title": "Layouts de importação",
       "name": "Nome",
       "bank": "Banco",
       "format": "Formato",
-      "accountType": "Tipo",
-      "code": "Codigo"
+      "accountType": "Destino",
+      "code": "Codigo",
+      "subtitle": "Formatos de extrato disponíveis. Estes layouts são fornecidos pelo sistema.",
+      "search": "Buscar nomes, bancos ou códigos",
+      "noMatches": "Nenhum layout corresponde aos filtros.",
+      "empty": "Nenhum layout de importação disponível.",
+      "count_one": "{{count}} layout",
+      "count_other": "{{count}} layouts"
     },
     "attachments": {
       "title": "Anexos",

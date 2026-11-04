@@ -57,6 +57,8 @@ A implementação evoluiu além da primeira proposta de design. Adições notáv
 - **Flag `auto_generate`** nas recorrências (opt-out da geração automática).
 - `import_file.file_hash` é **informativo, não único** — reimportação deliberada é permitida.
 
+O catálogo de layouts tem busca por nome/banco/código, filtros de formato e destino e tabela responsiva somente leitura. Veja [Importações](imports.md#tela-de-layouts-de-importação).
+
 ## Ainda não implementado (projetado / planejado)
 
 | Área | Status |
