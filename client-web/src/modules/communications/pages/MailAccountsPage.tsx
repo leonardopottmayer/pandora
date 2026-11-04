@@ -28,8 +28,8 @@ export function MailAccountsPage() {
   const { token } = theme.useToken()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const { data: mailboxes, isLoading } = useMailboxes()
-  const { data: providers } = useProviders()
+  const { data: mailboxes, isLoading, error: mailboxesError } = useMailboxes()
+  const { data: providers, error: providersError } = useProviders()
   const startConnection = useStartConnection()
   const sync = useSyncMailbox()
   const update = useUpdateMailbox()
@@ -217,6 +217,9 @@ export function MailAccountsPage() {
       </div>
     )
   }
+
+  const loadError = mailboxesError ?? providersError
+  if (loadError) return <Alert type="error" showIcon title={loadError.message} />
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">

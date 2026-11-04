@@ -1260,6 +1260,7 @@
     }
   },
   "notes": {
+    "pageUnavailable": "Página indisponível.",
     "history": {
       "title": "Histórico de versões",
       "description": "Todos os salvamentos com alterações são preservados, sem expiração. Grupos de edições podem ser expandidos para acessar cada versão.",

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
-import { App, Button, Drawer, Empty, Grid, Segmented, Spin, Tooltip, theme } from 'antd'
+import { Alert, App, Button, Drawer, Empty, Grid, Segmented, Spin, Tooltip, theme } from 'antd'
 import {
   CheckOutlined,
   CodeOutlined,
@@ -98,11 +98,11 @@ export function NotesPage() {
   // Local draft of the open page; the source of truth while typing.
   const [draft, setDraft] = useState<PageDraft>({ title: '', icon: null, contentMarkdown: '' })
 
-  const { data: page, isLoading } = usePage(selectedId)
+  const { data: page, isLoading, error: pageError } = usePage(selectedId)
 
   // The space comes from the URL on its own page, and from the open page otherwise.
   const spaceId = routeSpaceId ?? page?.spaceId ?? null
-  const { data: spaces } = useSpaces(true)
+  const { data: spaces, error: spacesError } = useSpaces(true)
   const space = spaces?.find((candidate) => candidate.id === spaceId)
   const updateMutation = useUpdatePage()
   const createMutation = useCreatePage()
@@ -110,12 +110,12 @@ export function NotesPage() {
 
   // Wikilinks resolve against every page, archived included: archiving hides a page from the
   // sidebar but does not break links to it (and the backend resolves it the same way).
-  const { data: allPages } = usePageTree(true)
+  const { data: allPages, error: treeError } = usePageTree(true)
   const pageIndex = useMemo(() => buildPageIndex(allPages ?? [], spaceId), [allPages, spaceId])
 
   // The tags exist module-wide: the preview paints the `#tag` chips with them, and clicking one
   // (in the body or in the header) is what fills the sidebar filter.
-  const { tags, index: tagIndex } = useTags()
+  const { tags, index: tagIndex, error: tagsError } = useTags()
 
   function filterByTag(tagId: string) {
     setTagIds([tagId])
@@ -438,7 +438,10 @@ export function NotesPage() {
   )
 
   let body: ReactNode
-  if (!selectedId) {
+  const loadError = pageError ?? spacesError ?? treeError ?? tagsError
+  if (loadError) {
+    body = <Alert type="error" showIcon title={loadError.message} />
+  } else if (!selectedId) {
     body = space ? (
       <SpaceOverview space={space} onOpenPage={handleSelect} onCreatePage={handleCreateInSpace} />
     ) : (
@@ -446,12 +449,14 @@ export function NotesPage() {
         <Empty description={t('notes.noSelection')} />
       </div>
     )
-  } else if (isLoading || !page) {
+  } else if (isLoading) {
     body = (
       <div className="flex h-full items-center justify-center">
         <Spin />
       </div>
     )
+  } else if (!page) {
+    body = <Empty description={t('notes.pageUnavailable')} />
   } else if (mode === 'split') {
     // Side by side, each pane scrolls on its own; the title sits above both.
     body = (

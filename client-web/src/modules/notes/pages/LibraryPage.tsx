@@ -1,7 +1,7 @@
 import { useRef, useState, type DragEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
-import { App, Button, Empty, Input, Modal, Segmented, Skeleton, TreeSelect, Typography, theme } from 'antd'
+import { Alert, App, Button, Empty, Input, Modal, Segmented, Skeleton, TreeSelect, Typography, theme } from 'antd'
 import { CloudUploadOutlined, FolderAddOutlined, SearchOutlined } from '@ant-design/icons'
 import { PageHeading } from '@/components/settings/PageHeading'
 import { toErrorMessage } from '@/lib/api/envelope'
@@ -48,18 +48,19 @@ export function LibraryPage() {
   const [dialogValue, setDialogValue] = useState('')
   const [draggingFiles, setDraggingFiles] = useState(false)
 
-  const { data: folderData } = useMediaFolders()
+  const { data: folderData, error: folderError } = useMediaFolders()
   const folders = folderData?.folders ?? []
   // A search looks through the whole library, wherever the item is.
   const searching = q.trim().length > 0
   const isFolder = place !== 'all' && place !== 'unsorted' && place !== 'unused'
-  const { data: items, isLoading } = useMediaList({
+  const { data: items, isLoading, error: mediaError } = useMediaList({
     folderId: !searching && isFolder ? place : null,
     unsorted: !searching && place === 'unsorted',
     unused: !searching && place === 'unused',
     kind: kind === 'all' ? null : kind,
     q,
   })
+  const loadError = mediaError ?? folderError
 
   const upload = useUploadMedia()
   const moveItem = useMoveMedia()
@@ -239,7 +240,9 @@ export function LibraryPage() {
             />
           </div>
 
-          {isLoading ? (
+          {loadError ? (
+            <Alert type="error" showIcon title={loadError.message} />
+          ) : isLoading ? (
             <Skeleton active />
           ) : !items?.length ? (
             <Empty

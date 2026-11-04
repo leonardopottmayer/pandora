@@ -41,6 +41,13 @@ afterEach(() => {
 })
 
 describe('DevicesPage', () => {
+  it('shows a device-query failure instead of a blank list', async () => {
+    server.use(http.get(DEVICES, () => HttpResponse.json({ success: false, errorCode: 'Unavailable', errorMessage: 'Devices unavailable', fieldErrors: null, traceId: null }, { status: 500 })))
+    renderWithProviders(<DevicesPage />)
+    expect(await screen.findByRole('alert')).toHaveTextContent('Devices unavailable')
+    expect(screen.queryByRole('button', { name: 'Revoke' })).not.toBeInTheDocument()
+  })
+
   it('lists the devices and revokes one, without a "this computer" section in a browser', async () => {
     let deleted: string | undefined
     server.use(

@@ -10,6 +10,7 @@ Um retrato do que está construído no código versus o que está desenhado mas 
 
 | Área | Notas |
 |---|---|
+| **Revisão do frontend** | Segurança e troca de senha seguem PageHeading/SettingsSection, com quebra de linha nas ações dos códigos de recuperação. Dispositivos distinguem falhas de consulta de resultados vazios e formatam o último acesso com idioma e fuso do aplicativo. Alertas e espaçamentos usam a API atual do Ant Design. |
 | **Scaffold do módulo** | Sete projetos por camada; schema `identity`; `idt001`–`idt009`. |
 | **Usuário + senha** | Agregado `User`; hash Argon2id (`Argon2PasswordHasher`); username/e-mail únicos. |
 | **Cadastro + ativação** | `SignUp`; `AccountActivationRequested` → e-mail; `activate` consome `idt004`; `AccountActivated`. |

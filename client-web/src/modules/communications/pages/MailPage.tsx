@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Button, Checkbox, Drawer, Empty, Grid, Input, Segmented, Spin, theme } from 'antd'
+import { Alert, Button, Checkbox, Drawer, Empty, Grid, Input, Segmented, Spin, theme } from 'antd'
 import { EditOutlined, FilterOutlined, MenuOutlined, SettingOutlined } from '@ant-design/icons'
 import { ACTIONS_THAT_REMOVE, type MessageAction, type MessageSummary } from '../models'
 import { useMailboxes, useMessages } from '../hooks/useMail'
@@ -19,7 +19,7 @@ export function MailPage() {
   const screens = Grid.useBreakpoint()
   const narrow = !screens.lg
   const foldersPane = !!screens.xl
-  const { data: mailboxes, isLoading } = useMailboxes()
+  const { data: mailboxes, isLoading, error: mailboxesError } = useMailboxes()
 
   const [folder, setFolder] = useState<MailFolder>({})
   const [foldersOpen, setFoldersOpen] = useState(false)
@@ -47,6 +47,8 @@ export function MailPage() {
   }
 
   const compose = () => setComposing({ mode: 'new', mailboxId: folder.mailboxId })
+
+  if (mailboxesError) return <Alert type="error" showIcon title={mailboxesError.message} />
 
   if (isLoading) return <Spin />
   if (!mailboxes?.length)
@@ -146,17 +148,21 @@ export function MailPage() {
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
-        <MessageList
-          messages={items}
-          selectedId={selected?.id ?? null}
-          onSelect={setSelected}
-          checkedIds={checkedIds}
-          onCheckedChange={setCheckedIds}
-          loading={messages.isLoading}
-          hasMore={messages.hasNextPage}
-          loadingMore={messages.isFetchingNextPage}
-          onLoadMore={() => void messages.fetchNextPage()}
-        />
+        {messages.error ? (
+          <Alert type="error" showIcon title={messages.error.message} />
+        ) : (
+          <MessageList
+            messages={items}
+            selectedId={selected?.id ?? null}
+            onSelect={setSelected}
+            checkedIds={checkedIds}
+            onCheckedChange={setCheckedIds}
+            loading={messages.isLoading}
+            hasMore={messages.hasNextPage}
+            loadingMore={messages.isFetchingNextPage}
+            onLoadMore={() => void messages.fetchNextPage()}
+          />
+        )}
       </div>
     </div>
   )

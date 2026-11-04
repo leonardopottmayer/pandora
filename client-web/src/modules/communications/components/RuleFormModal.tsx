@@ -67,13 +67,15 @@ export function RuleFormModal({
       onOk={save}
       onCancel={onClose}
       width={640}
+      cancelText={t('common.cancel')}
+      styles={{ body: { maxHeight: 'calc(100dvh - 260px)', overflowY: 'auto', paddingRight: 8 } }}
     >
       <div className="flex flex-col gap-4">
         {needsConsent && (
           <Alert
             type="warning"
             showIcon
-            message={t('mail.rules.consentTitle')}
+            title={t('mail.rules.consentTitle')}
             description={t('mail.rules.consentDesc')}
             action={
               <Button size="small" type="primary" loading={granting} onClick={() => onGrant(draft)}>
@@ -91,9 +93,9 @@ export function RuleFormModal({
         <div className="flex flex-col gap-2">
           <Typography.Text strong>{t('mail.rules.form.when')}</Typography.Text>
           {draft.conditions.map((condition, index) => (
-            <div key={index} className="flex items-center gap-2">
+            <div key={index} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:flex">
               <Select
-                className="w-52 shrink-0"
+                className="col-start-1 w-full min-w-0 sm:w-52 sm:shrink-0"
                 aria-label={t('mail.rules.form.when')}
                 value={condition.kind}
                 options={conditionKinds(provider).map((kind) => ({ value: kind, label: t(`mail.rules.condition.${kind}`) }))}
@@ -101,6 +103,7 @@ export function RuleFormModal({
               />
               {condition.kind !== 'has-attachment' && (
                 <Input
+                  className="col-start-1 min-w-0"
                   aria-label={t('mail.rules.form.value')}
                   placeholder={t('mail.rules.form.value')}
                   value={condition.value}
@@ -109,6 +112,7 @@ export function RuleFormModal({
               )}
               <Button
                 type="text"
+                className="col-start-2 row-start-1"
                 aria-label={t('mail.rules.form.remove')}
                 icon={<DeleteOutlined />}
                 onClick={() => setDraft({ ...draft, conditions: draft.conditions.filter((_, i) => i !== index) })}
@@ -129,9 +133,9 @@ export function RuleFormModal({
         <div className="flex flex-col gap-2">
           <Typography.Text strong>{t('mail.rules.form.then')}</Typography.Text>
           {draft.actions.map((action, index) => (
-            <div key={index} className="flex items-center gap-2">
+            <div key={index} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:flex">
               <Select
-                className="w-52 shrink-0"
+                className="col-start-1 w-full min-w-0 sm:w-52 sm:shrink-0"
                 aria-label={t('mail.rules.form.then')}
                 value={action.kind}
                 options={actionKinds(provider).map((kind) => ({ value: kind, label: t(`mail.rules.action.${kind}`) }))}
@@ -139,7 +143,7 @@ export function RuleFormModal({
               />
               {needsLabel(action.kind) && (
                 <Select
-                  className="min-w-0 flex-1"
+                  className="col-start-1 min-w-0 sm:flex-1"
                   aria-label={t(provider === 'gmail' ? 'mail.rules.form.label' : 'mail.rules.form.folder')}
                   placeholder={t(provider === 'gmail' ? 'mail.rules.form.label' : 'mail.rules.form.folder')}
                   showSearch={{ optionFilterProp: 'label' }}
@@ -150,6 +154,7 @@ export function RuleFormModal({
               )}
               <Button
                 type="text"
+                className="col-start-2 row-start-1"
                 aria-label={t('mail.rules.form.remove')}
                 icon={<DeleteOutlined />}
                 onClick={() => setDraft({ ...draft, actions: draft.actions.filter((_, i) => i !== index) })}
@@ -167,7 +172,7 @@ export function RuleFormModal({
           </div>
         </div>
 
-        {error && <Alert type="error" showIcon message={t(`mail.rules.error.${error}`)} />}
+        {error && <Alert type="error" showIcon title={t(`mail.rules.error.${error}`)} />}
       </div>
     </Modal>
   )

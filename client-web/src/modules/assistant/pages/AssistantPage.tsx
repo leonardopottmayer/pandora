@@ -69,8 +69,8 @@ export function AssistantPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = searchParams.get('tab') === HISTORY_TAB ? HISTORY_TAB : CHAT_TAB
 
-  const { data: profile } = useAssistantProfile()
-  const { data: invocations, isLoading } = useInvocations()
+  const { data: profile, error: profileError } = useAssistantProfile()
+  const { data: invocations, isLoading, error: invocationsError } = useInvocations()
   const interpret = useInterpret()
   const interpretAudio = useInterpretAudio()
   const confirmInvocation = useConfirmInvocation()
@@ -391,6 +391,9 @@ export function AssistantPage() {
       />
     </SettingsSection>
   )
+
+  const loadError = profileError ?? invocationsError
+  if (loadError) return <Alert type="error" showIcon title={loadError.message} />
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">

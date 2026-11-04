@@ -11,6 +11,7 @@ adiante fica em [product-plan.md](product-plan.md).
 
 | Área | Notas |
 |---|---|
+| **Revisão do frontend** | Configurações de notificações distinguem falhas de carregamento de canais e preferências vazios, evitando alterações baseadas em valores padrão após uma leitura com erro. |
 | **Rename** | `Notifications` → `Channels`: projetos, schema `channels`, prefixo `chnXXX_`, rotas; `not001_notification` → `chn006_notification`. |
 | **Canais e endereçamento** | `Channel` (`email` + `telegram`); `NotificationAddress`; `chn001_user_channel` com portões verificado/habilitado. |
 | **Transporte Telegram** | `Pottmayer.Tars.Communication.Telegram` + `TelegramChannelTransport`; e-mail via `EmailChannelTransport` (MailKit). |

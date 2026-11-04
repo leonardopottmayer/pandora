@@ -11,6 +11,7 @@ frente está em [product-plan.md](product-plan.md).
 
 | Área | Notas |
 |---|---|
+| **Revisão do frontend** | Contas, regras e lista de mensagens exibem falhas de consulta. O formulário de regras empilha campos de condições e ações no celular e usa rolagem interna, mantendo o rodapé disponível. Datas de mensagens citadas seguem idioma e fuso do aplicativo; drawers e alertas usam a API atual do Ant Design. |
 | **Regras (M4)** | `com006`, `mail/rules`. No Gmail uma regra é um filtro, nos dois sentidos: todo ciclo lista os filtros e traz o que é novo, sumiu ou mudou. Nos outros, o `RunMailRulesHandler` as roda no `MailMessageReceived`. Um filtro que não cabe fica somente leitura, nunca reescrito |
 | **Estrutura do módulo** | Sete projetos em camadas; schema `communications`; `com001`–`com005`; o outbox e o relay do módulo. |
 | **Domínio** | `Mailbox`, `MailLabel`, `MailMessage`, `MailContent`; `MailProvider`, `MailboxStatus`, `LabelKind`, `LabelRole`, `ThreadKey`; `IMailboxProvider`; `MailErrors`. |

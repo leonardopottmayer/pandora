@@ -11,6 +11,7 @@ forward roadmap lives in [product-plan.md](product-plan.md).
 
 | Area | Notes |
 |---|---|
+| **Frontend review** | Connections, account selectors and activity show query failures. Activity folds account and date metadata into the event cell on smaller screens, without forced horizontal scrolling; dates follow the application language and time zone. |
 | **Module scaffold** | Seven layered projects; `integrations` schema; `int001`, `int002`, `int003`. |
 | **Domain** | `ExternalAccount` + `OAuthState` aggregates; `AccountStatus`, `AuthKind` (`oauth`/`api-key`/`password`) value objects; `IntegrationErrors`. |
 | **OAuth (Google)** | `GoogleOAuthProvider` (`BuildAuthorizationUrl` with `prompt=select_account consent` and an optional `login_hint`, `ExchangeCodeAsync`, `RefreshAsync`, `RevokeAsync`), resolved through `OAuthProviderRegistry`. |

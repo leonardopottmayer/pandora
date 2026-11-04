@@ -24,7 +24,7 @@ export function ProfilePage() {
         <Alert
           type="info"
           showIcon
-          message={t('profile.unavailableTitle')}
+          title={t('profile.unavailableTitle')}
           description={t('profile.unavailableDesc', { label: loginLabel ?? '—' })}
         />
       </div>

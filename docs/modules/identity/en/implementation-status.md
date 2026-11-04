@@ -10,6 +10,7 @@ A snapshot of what is built in the codebase versus what is designed but not yet 
 
 | Area | Notes |
 |---|---|
+| **Frontend review** | Security and password-change pages follow PageHeading/SettingsSection, with wrapping recovery-code actions. Devices distinguish failed queries from empty results and format last-seen dates using the application language and time zone. Alerts and spacing use the current Ant Design API. |
 | **Module scaffold** | Seven layered projects; `identity` schema; `idt001`–`idt009`. |
 | **User + password** | `User` aggregate; Argon2id hashing (`Argon2PasswordHasher`); unique username/email. |
 | **Sign-up + activation** | `SignUp`; `AccountActivationRequested` → email; `activate` consumes `idt004`; `AccountActivated`. |

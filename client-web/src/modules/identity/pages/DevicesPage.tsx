@@ -1,6 +1,7 @@
-import { App, Button, Empty, Popconfirm, Tag } from 'antd'
+import { Alert, App, Button, Empty, Skeleton, Popconfirm, Tag } from 'antd'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { usePreferences } from '../context/preferences-context'
 import { PageHeading } from '@/components/settings/PageHeading'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { SettingRow } from '@/components/settings/SettingRow'
@@ -16,8 +17,9 @@ const DEVICES_KEY = ['identity', 'devices']
  * Desktop the page also pairs (or disconnects) the computer it is running on.
  */
 export function DevicesPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { message } = App.useApp()
+  const { timeZone } = usePreferences()
   const desktop = useDesktop()
   const queryClient = useQueryClient()
 
@@ -27,6 +29,7 @@ export function DevicesPage() {
     queryFn: () => desktop!.invoke<DesktopSettings>('desktop.getSettings'),
     enabled: desktop !== null,
   })
+  const loadError = devices.error ?? desktopSettings.error
   const thisDeviceId = desktopSettings.data?.deviceId ?? null
 
   const revoke = useMutation({
@@ -58,7 +61,11 @@ export function DevicesPage() {
       )}
 
       <SettingsSection title={t('devices.groupConnected')}>
-        {devices.data?.length === 0 ? (
+        {loadError ? (
+          <Alert type="error" showIcon title={loadError.message} />
+        ) : devices.isLoading ? (
+          <Skeleton active className="p-4" />
+        ) : devices.data?.length === 0 ? (
           <Empty className="py-6" image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('devices.empty')} />
         ) : (
           devices.data?.map((device) => (
@@ -70,7 +77,7 @@ export function DevicesPage() {
                   {device.id === thisDeviceId && <Tag color="purple">{t('devices.thisComputer')}</Tag>}
                 </span>
               }
-              description={describe(device, t)}
+              description={describe(device, t, i18n.language, timeZone)}
               control={
                 <Popconfirm
                   title={t('devices.revokeConfirm', { name: device.name })}
@@ -145,9 +152,9 @@ function ThisComputer({
   )
 }
 
-function describe(device: Device, t: (key: string, options?: Record<string, unknown>) => string): string {
+function describe(device: Device, t: (key: string, options?: Record<string, unknown>) => string, language: string, timeZone: string): string {
   const seen = device.lastSeenAt
-    ? t('devices.lastSeen', { when: new Date(device.lastSeenAt).toLocaleString() })
+    ? t('devices.lastSeen', { when: new Intl.DateTimeFormat(language, { dateStyle: 'short', timeStyle: 'short', timeZone }).format(new Date(device.lastSeenAt)) })
     : t('devices.neverSeen')
   return [t(`devices.platform.${device.platform}`), seen, device.scopes.join(', ')].filter(Boolean).join(' · ')
 }

@@ -11,6 +11,7 @@ roadmap à frente fica no [product-plan.md](product-plan.md).
 
 | Área | Notas |
 |---|---|
+| **Revisão do frontend** | Conexões, seletores de conta e atividade exibem falhas de consulta. Em telas menores, a atividade mostra conta e data na célula do evento, sem forçar rolagem horizontal; datas seguem idioma e fuso do aplicativo. |
 | **Estrutura do módulo** | Sete projetos em camadas; schema `integrations`; `int001`, `int002`, `int003`. |
 | **Domínio** | Agregados `ExternalAccount` + `OAuthState`; objetos de valor `AccountStatus`, `AuthKind` (`oauth`/`api-key`/`password`); `IntegrationErrors`. |
 | **OAuth (Google)** | `GoogleOAuthProvider` (`BuildAuthorizationUrl` com `prompt=select_account consent` e `login_hint` opcional, `ExchangeCodeAsync`, `RefreshAsync`, `RevokeAsync`), resolvido via `OAuthProviderRegistry`. |

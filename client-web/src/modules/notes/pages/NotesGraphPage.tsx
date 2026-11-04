@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { Button, Card, Empty, Flex, Grid, Select, Spin, Switch, Typography } from 'antd'
+import { Alert, Button, Card, Empty, Flex, Grid, Select, Spin, Switch, Typography } from 'antd'
 import { useAuth } from '@/modules/identity/context/auth-context'
 import { NotesSidebar } from '../components/NotesSidebar'
 import { GraphView } from '../components/GraphView'
@@ -26,7 +26,7 @@ export function NotesGraphPage() {
   const { user } = useAuth()
   const screens = Grid.useBreakpoint()
   const { preferences, update } = useGraphPreferences(user?.id ?? null)
-  const { tags } = useTags()
+  const { tags, error: tagsError } = useTags()
   const [groupsOpen, setGroupsOpen] = useState(false)
   const [includeArchived, setIncludeArchived] = useState(false)
   const [hideIsolated, setHideIsolated] = useState(false)
@@ -39,9 +39,10 @@ export function NotesGraphPage() {
   const [locatedId, setLocatedId] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [collapsedFamilyIds, setCollapsedFamilyIds] = useState<string[]>([])
-  const { data: spaces = [] } = useSpaces()
+  const { data: spaces = [], error: spaceError } = useSpaces()
 
-  const { data: sourceGraph, isLoading } = useGraph(tagIds, spaceId)
+  const { data: sourceGraph, isLoading, error: graphError } = useGraph(tagIds, spaceId)
+  const loadError = graphError ?? spaceError ?? tagsError
   const graph = useMemo(() => graphVisibility(sourceGraph, includeArchived, hideIsolated), [sourceGraph, includeArchived, hideIsolated])
   let emptyDescription = t('notes.graphEmpty')
   if (sourceGraph && sourceGraph.nodes.length > 0) emptyDescription = t('notes.graphVisibility.empty')
@@ -194,7 +195,9 @@ export function NotesGraphPage() {
         styles={{ body: { padding: 0, flex: 1, minHeight: 0 } }}
         style={{ flex: 1, minWidth: 0, height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
       >
-        {isLoading ? (
+        {loadError ? (
+          <Alert type="error" showIcon title={loadError.message} />
+        ) : isLoading ? (
           <Flex align="center" justify="center" style={{ height: '100%' }}>
             <Spin />
           </Flex>

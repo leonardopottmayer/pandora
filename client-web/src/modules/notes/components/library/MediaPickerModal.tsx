@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { App, Button, Empty, Input, Modal, Skeleton, theme } from 'antd'
+import { Alert, App, Button, Empty, Input, Modal, Skeleton, theme } from 'antd'
 import { CloudUploadOutlined, SearchOutlined } from '@ant-design/icons'
 import { toErrorMessage } from '@/lib/api/envelope'
 import type { MediaItemDto } from '../../models'
@@ -32,13 +32,14 @@ export function MediaPickerModal({ open, kind, onPick, onClose }: MediaPickerMod
   const searching = q.trim().length > 0
   const folderId = !searching && place !== 'all' && place !== 'unsorted' ? place : null
 
-  const { data: folders } = useMediaFolders()
-  const { data: items, isLoading } = useMediaList({
+  const { data: folders, error: folderError } = useMediaFolders()
+  const { data: items, isLoading, error: mediaError } = useMediaList({
     folderId,
     unsorted: !searching && place === 'unsorted',
     kind,
     q,
   })
+  const loadError = mediaError ?? folderError
   const upload = useUploadMedia()
 
   async function uploadAndPick(file: File) {
@@ -92,7 +93,9 @@ export function MediaPickerModal({ open, kind, onPick, onClose }: MediaPickerMod
           </div>
 
           <div className="max-h-[60vh] overflow-auto">
-            {isLoading ? (
+            {loadError ? (
+              <Alert type="error" showIcon title={loadError.message} />
+            ) : isLoading ? (
               <Skeleton active />
             ) : !items?.length ? (
               <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t(searching ? 'notes.library.searchEmpty' : 'notes.library.empty')} />

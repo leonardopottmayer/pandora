@@ -11,6 +11,7 @@ porque existe" de "documentado como plano" ([Product plan](product-plan.md)).
 
 | Área | Notas |
 |---|---|
+| **Revisão do frontend** | Configurações e chat do assistente exibem falhas de consulta; leituras com erro não liberam valores padrão editáveis. Alertas usam a API atual do Ant Design. |
 | **Estrutura do módulo** | Sete projetos em camadas, schema `assistant`, wiring no Host, opções `Pandora:Assistant` (`HistoryMessageLimit`). O `Contracts` está vazio. |
 | **Provedor** | Gemini via `Tars.Ai.Chat.Gemini`, factory com keyed DI, modelo e chave por chamada, nenhuma chave na configuração. |
 | **Perfil** | `ast001`; leitura (com padrões) / save; conta de chat validada contra o Integrations; "usado por" informado ao Integrations. |

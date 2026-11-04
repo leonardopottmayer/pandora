@@ -11,6 +11,7 @@ in [product-plan.md](product-plan.md).
 
 | Area | Notes |
 |---|---|
+| **Frontend review** | Notification settings distinguish loading failures from empty channels and preferences, preventing changes based on fallback values after a failed read. |
 | **Rename** | `Notifications` → `Channels`: projects, `channels` schema, `chnXXX_` prefix, routes; `not001_notification` → `chn006_notification`. |
 | **Channels & addressing** | `Channel` (`email` + `telegram`); `NotificationAddress`; `chn001_user_channel` with verified/enabled gates. |
 | **Telegram transport** | `Pottmayer.Tars.Communication.Telegram` + `TelegramChannelTransport`; email via `EmailChannelTransport` (MailKit). |

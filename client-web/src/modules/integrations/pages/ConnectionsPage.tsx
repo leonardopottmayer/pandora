@@ -54,8 +54,8 @@ function AccountsTab() {
   const { t } = useTranslation()
   const { message, modal } = App.useApp()
 
-  const { data: providers, isLoading: providersLoading } = useProviders()
-  const { data: accounts, isLoading: accountsLoading } = useAccounts()
+  const { data: providers, isLoading: providersLoading, error: providersError } = useProviders()
+  const { data: accounts, isLoading: accountsLoading, error: accountsError } = useAccounts()
 
   const startConnection = useStartConnection()
   const disconnect = useDisconnectAccount()
@@ -227,6 +227,9 @@ function AccountsTab() {
     accountModal?.mode === 'add'
       ? t('connections.addAccountTitle', { provider: providerName(accountModal.provider) })
       : accountModal?.account.label
+
+  const loadError = providersError ?? accountsError
+  if (loadError) return <Alert type="error" showIcon title={loadError.message} />
 
   if (providersLoading || accountsLoading) return <Spin />
 

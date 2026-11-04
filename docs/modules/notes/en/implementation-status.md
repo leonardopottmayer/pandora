@@ -15,6 +15,7 @@ left behind, not the phase log.
 
 | Area | Notes |
 |---|---|
+| **Frontend review** | Spaces, the library, media picker, graph and editor show query failures instead of empty results. An unavailable page leaves the loading state and shows an explicit unavailable message. |
 | **Module scaffold** | All layered projects, `notes` schema, registered in the Host. No jobs, no integration events, no audit event log. |
 | **Pages** | `Page` aggregate, tree with cycle rejection on reparent, frozen slugs with collision suffixes, move/reorder, favorite, archive, soft delete of the whole subtree (`nte001`). |
 | **Spaces** | `Space` aggregate, one default per user (created on the fly when none), pages placed in a space, moving across spaces with the subtree, wikilinks preferring the own space, space filters on tree / search / graph, spaces screen and sidebar switcher, `create_note` taking a space (`nte007`). |

@@ -11,6 +11,7 @@ because it exists" from "documented as a plan" ([Product plan](product-plan.md))
 
 | Area | Notes |
 |---|---|
+| **Frontend review** | Assistant settings and chat show query failures explicitly; failed reads do not expose editable fallback defaults. Alerts use the current Ant Design API. |
 | **Module scaffold** | Seven layered projects, `assistant` schema, Host wiring, `Pandora:Assistant` options (`HistoryMessageLimit`). `Contracts` is empty. |
 | **Provider** | Gemini via `Tars.Ai.Chat.Gemini`, keyed factory, model and key per call, no key in config. |
 | **Profile** | `ast001`; get (with defaults) / save; chat account validated against Integrations; "used by" reported to Integrations. |

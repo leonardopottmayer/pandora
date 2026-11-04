@@ -78,6 +78,13 @@ beforeAll(async () => {
 })
 
 describe('NotesPage', () => {
+  it('shows a failed page load instead of spinning indefinitely', async () => {
+    server.use(http.get(`${BASE}/pages/child`, () => HttpResponse.json({ success: false, errorCode: 'Unavailable', errorMessage: 'Page could not load', fieldErrors: null, traceId: null }, { status: 500 })))
+    renderPage()
+    expect(await screen.findByRole('alert')).toHaveTextContent('Page could not load')
+    expect(screen.queryByRole('heading', { name: 'Packing list' })).not.toBeInTheDocument()
+  })
+
   beforeEach(() => {
     // The editor is CodeMirror; reading mode keeps these tests on the rendered page.
     localStorage.setItem('pandora.notes_view_mode', 'preview')

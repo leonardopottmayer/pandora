@@ -48,11 +48,12 @@ export function MailRulesPage() {
   const [needsConsent, setNeedsConsent] = useState(false)
   const [dragging, setDragging] = useState<number | null>(null)
 
-  const { data: mailboxes, isLoading } = useMailboxes()
-  const { data: providers } = useProviders()
+  const { data: mailboxes, isLoading, error: mailboxesError } = useMailboxes()
+  const { data: providers, error: providersError } = useProviders()
   const mailbox = mailboxes?.find((m) => m.id === chosenId) ?? mailboxes?.[0] ?? null
-  const { data: rules, isLoading: loadingRules } = useRules(mailbox?.id ?? null)
-  const labels = useLabels(mailbox ? [mailbox.id] : [])[0]?.data ?? []
+  const { data: rules, isLoading: loadingRules, error: rulesError } = useRules(mailbox?.id ?? null)
+  const labelsQuery = useLabels(mailbox ? [mailbox.id] : [])[0]
+  const labels = labelsQuery?.data ?? []
 
   const createRule = useCreateRule()
   const updateRule = useUpdateRule()
@@ -292,6 +293,9 @@ export function MailRulesPage() {
       </Typography.Text>
     )
   }
+
+  const loadError = mailboxesError ?? providersError ?? rulesError ?? labelsQuery?.error
+  if (loadError) return <Alert type="error" showIcon title={loadError.message} />
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">

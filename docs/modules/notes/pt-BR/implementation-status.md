@@ -15,6 +15,7 @@ não o log das fases.
 
 | Área | Notas |
 |---|---|
+| **Revisão do frontend** | Espaços, biblioteca, seletor de mídia, grafo e editor exibem falhas de consulta em vez de resultados vazios. Uma página indisponível sai do estado de carregamento e exibe uma mensagem explícita. |
 | **Scaffold do módulo** | Todos os projetos por camada, schema `notes`, registrado no Host. Sem jobs, sem eventos de integração, sem event log de auditoria. |
 | **Pages** | Aggregate `Page`, árvore com rejeição de ciclo no reparent, slugs congelados com sufixo em colisão, mover/reordenar, favoritar, arquivar, soft delete da subárvore inteira (`nte001`). |
 | **Espaços** | Aggregate `Space`, um padrão por usuário (criado na hora quando não há), pages num espaço, mover entre espaços levando a subárvore, wikilinks preferindo o próprio espaço, filtro de espaço na árvore / busca / grafo, tela de espaços e seletor na sidebar, `create_note` aceitando espaço (`nte007`). |

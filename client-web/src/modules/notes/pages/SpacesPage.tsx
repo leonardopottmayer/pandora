@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { App, Button, Dropdown, Empty, Skeleton, Switch, Tag, Typography, theme } from 'antd'
+import { Alert, App, Button, Dropdown, Empty, Skeleton, Switch, Tag, Typography, theme } from 'antd'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined, PlusOutlined } from '@ant-design/icons'
 import { PageHeading } from '@/components/settings/PageHeading'
@@ -22,7 +22,7 @@ export function SpacesPage() {
   const [editing, setEditing] = useState<SpaceDto | null>(null)
   const [formOpen, setFormOpen] = useState(false)
 
-  const { data: spaces, isLoading } = useSpaces(includeArchived)
+  const { data: spaces, isLoading, error: loadError } = useSpaces(includeArchived)
   const setDefault = useSetDefaultSpace()
   const setArchived = useSetSpaceArchived()
   const deleteSpace = useDeleteSpace()
@@ -82,7 +82,7 @@ export function SpacesPage() {
         </Button>
       </div>
 
-      {isLoading ? (
+      {loadError ? <Alert type="error" showIcon title={loadError.message} /> : isLoading ? (
         <Skeleton active />
       ) : (spaces ?? []).length === 0 ? (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('notes.spaces.empty')}>

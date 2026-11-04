@@ -27,7 +27,7 @@ interface AccountSelectProps extends AccountRequirement {
 export function AccountSelect({ value, onChange, redirectAfter, className, ...requirement }: AccountSelectProps) {
   const { t } = useTranslation()
   const { message } = App.useApp()
-  const { data: accounts, isLoading } = useAccounts()
+  const { data: accounts, isLoading, error: loadError } = useAccounts()
   const startConnection = useStartConnection()
 
   const candidates = candidateAccounts(accounts ?? [], requirement)
@@ -56,6 +56,8 @@ export function AccountSelect({ value, onChange, redirectAfter, className, ...re
     }
   }
 
+  if (loadError) return <Alert type="error" showIcon title={loadError.message} />
+
   return (
     <div className={`flex flex-col gap-1.5 ${className ?? ''}`}>
       <Select
@@ -82,7 +84,7 @@ export function AccountSelect({ value, onChange, redirectAfter, className, ...re
           }
         })}
       />
-      {dangling && <Alert type="warning" showIcon message={t('connections.select.dangling')} />}
+      {dangling && <Alert type="warning" showIcon title={t('connections.select.dangling')} />}
       {needingAccess.map((a) => (
         <Button
           key={a.id}

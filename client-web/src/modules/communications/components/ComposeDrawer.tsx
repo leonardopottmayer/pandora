@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Alert, App, Button, Checkbox, Drawer, Form, Input, Select, Space, Spin, Upload, theme } from 'antd'
 import type { UploadFile } from 'antd'
 import { PaperClipOutlined } from '@ant-design/icons'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { ApiResponseError, toErrorMessage } from '@/lib/api/envelope'
 import { addressLabel, type ComposeDraft, type ComposeMode, type Mailbox, type MessageSummary } from '../models'
 import { useComposeDraft, useSendMessage } from '../hooks/useMail'
@@ -30,11 +31,11 @@ export function ComposeDrawer({
   const title = t(`mail.compose.title.${request.mode}`)
 
   return (
-    <Drawer open title={title} width={640} onClose={onClose} destroyOnHidden>
+    <Drawer open title={title} size={640} onClose={onClose} destroyOnHidden>
       {original && draft.isLoading ? (
         <Spin />
       ) : original && draft.error ? (
-        <Alert type="error" showIcon message={toErrorMessage(draft.error, t('mail.compose.loadError'))} />
+        <Alert type="error" showIcon title={toErrorMessage(draft.error, t('mail.compose.loadError'))} />
       ) : (
         <ComposeForm request={request} draft={draft.data} mailboxes={mailboxes} onClose={onClose} />
       )}
@@ -64,6 +65,7 @@ function ComposeForm({
 }) {
   const { t } = useTranslation()
   const { message: toast, modal } = App.useApp()
+  const { timeZone, language } = usePreferences()
   const { token } = theme.useToken()
   const [form] = Form.useForm<ComposeValues>()
   const send = useSendMessage()
@@ -85,8 +87,8 @@ function ComposeForm({
       cc: draft.cc.map((a) => a.address),
       subject: draft.subject,
       body: original.mode === 'forward'
-        ? quoteForReply(t('mail.compose.forwarded', { from: addressLabel(draft.originalFrom), date: new Date(draft.originalDate).toLocaleString() }), draft.originalText)
-        : quoteForReply(t('mail.compose.wrote', { from: addressLabel(draft.originalFrom), date: new Date(draft.originalDate).toLocaleString() }), draft.originalText),
+        ? quoteForReply(t('mail.compose.forwarded', { from: addressLabel(draft.originalFrom), date: new Intl.DateTimeFormat(language, { dateStyle: 'short', timeStyle: 'short', timeZone }).format(new Date(draft.originalDate)) }), draft.originalText)
+        : quoteForReply(t('mail.compose.wrote', { from: addressLabel(draft.originalFrom), date: new Intl.DateTimeFormat(language, { dateStyle: 'short', timeStyle: 'short', timeZone }).format(new Date(draft.originalDate)) }), draft.originalText),
     }
     return {
       mailboxId: original?.message.mailboxId ?? (request.mode === 'new' ? request.mailboxId : undefined) ?? mailboxes[0]?.id,
@@ -218,7 +220,7 @@ function ComposeForm({
           className="mb-4"
           type="warning"
           showIcon
-          message={unsure}
+          title={unsure}
           action={
             <Button
               size="small"

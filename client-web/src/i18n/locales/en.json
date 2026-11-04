@@ -1260,6 +1260,7 @@
     }
   },
   "notes": {
+    "pageUnavailable": "Page unavailable.",
     "history": {
       "title": "Version history",
       "description": "Every save with changes is kept indefinitely. Expand edit groups to access each version.",

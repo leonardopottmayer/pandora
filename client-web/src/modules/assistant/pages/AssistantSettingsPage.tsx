@@ -19,8 +19,8 @@ export function AssistantSettingsPage() {
   const { t } = useTranslation()
   const { message } = App.useApp()
 
-  const { data: profile, isLoading } = useAssistantProfile()
-  const { data: providers } = useAssistantProviders()
+  const { data: profile, isLoading, error: profileError } = useAssistantProfile()
+  const { data: providers, error: providersError } = useAssistantProviders()
   const saveProfile = useSaveAssistantProfile()
   const testProvider = useTestProvider()
 
@@ -80,6 +80,9 @@ export function AssistantSettingsPage() {
 
   const providerOptions = (providers ?? []).map((p) => ({ label: p.displayName, value: p.provider }))
 
+  const loadError = profileError ?? providersError
+  if (loadError) return <Alert type="error" showIcon title={loadError.message} />
+
   if (isLoading) {
     return (
       <div className="mx-auto flex max-w-3xl justify-center py-16">
@@ -103,7 +106,7 @@ export function AssistantSettingsPage() {
       <Alert
         type="info"
         showIcon
-        message={t('assistant.settings.privacyTitle')}
+        title={t('assistant.settings.privacyTitle')}
         description={t('assistant.settings.privacyDesc')}
       />
 
@@ -164,7 +167,7 @@ export function AssistantSettingsPage() {
         <Alert
           type="warning"
           showIcon
-          message={t('assistant.settings.noKeyTitle')}
+          title={t('assistant.settings.noKeyTitle')}
           description={<Link to="/integrations/connections">{t('assistant.settings.noKeyAction')}</Link>}
         />
       )}
@@ -174,14 +177,14 @@ export function AssistantSettingsPage() {
           <Alert
             type="success"
             showIcon
-            message={t('assistant.settings.test.ok', { latency: testResult.latencyMs })}
+            title={t('assistant.settings.test.ok', { latency: testResult.latencyMs })}
             description={testResult.reply ?? undefined}
           />
         ) : (
           <Alert
             type={testResult.errorKind === 'unreachable' ? 'warning' : 'error'}
             showIcon
-            message={t(`assistant.settings.test.kind.${testResult.errorKind ?? 'rejected'}`)}
+            title={t(`assistant.settings.test.kind.${testResult.errorKind ?? 'rejected'}`)}
             description={testResult.error ?? undefined}
           />
         ))}

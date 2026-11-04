@@ -1,8 +1,10 @@
 import { useTranslation } from 'react-i18next'
-import { App, Button, Card, Form, Input } from 'antd'
+import { App, Button, Form, Input } from 'antd'
 import { useMutation } from '@tanstack/react-query'
 import * as authService from '../services/auth.service'
 import { passwordRule } from '../passwordPolicy'
+import { PageHeading } from '@/components/settings/PageHeading'
+import { SettingsSection } from '@/components/settings/SettingsSection'
 import { toErrorMessage } from '@/lib/api/envelope'
 
 interface ChangePasswordForm {
@@ -26,8 +28,9 @@ export function ChangePasswordPage() {
   })
 
   return (
-    <div className="mx-auto max-w-md">
-      <Card title={t('password.title')}>
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+      <PageHeading title={t('password.title')} />
+      <SettingsSection bodyClassName="p-4">
         <Form form={form} layout="vertical" onFinish={mutation.mutate}>
           <Form.Item
             name="currentPassword"
@@ -36,7 +39,7 @@ export function ChangePasswordPage() {
           >
             <Input.Password placeholder={t('password.current')} autoComplete="current-password" size="large" />
           </Form.Item>
-          <Form.Item name="newPassword" label={t('password.new')} tooltip={t('password.hint')} rules={[passwordRule]}>
+          <Form.Item name="newPassword" label={t('password.new')} extra={t('password.hint')} rules={[passwordRule]}>
             <Input.Password placeholder={t('password.new')} autoComplete="new-password" size="large" />
           </Form.Item>
           <Form.Item
@@ -61,7 +64,7 @@ export function ChangePasswordPage() {
             </Button>
           </Form.Item>
         </Form>
-      </Card>
+      </SettingsSection>
     </div>
   )
 }

@@ -11,6 +11,7 @@ lives in [product-plan.md](product-plan.md).
 
 | Area | Notes |
 |---|---|
+| **Frontend review** | Accounts, rules and the message list show query failures. Rule forms stack condition/action fields on phones and scroll internally, keeping their footer available. Quoted-message dates follow the application language and time zone; drawers and alerts use the current Ant Design API. |
 | **Rules (M4)** | `com006`, `mail/rules`. On Gmail a rule is a filter, both ways: every cycle lists them and brings in what is new, gone or changed. Elsewhere `RunMailRulesHandler` runs them on `MailMessageReceived`. A filter that does not fit is read-only, never rewritten |
 | **Module scaffold** | Seven layered projects; `communications` schema; `com001`–`com005`; the module's outbox and relay. |
 | **Domain** | `Mailbox`, `MailLabel`, `MailMessage`, `MailContent`; `MailProvider`, `MailboxStatus`, `LabelKind`, `LabelRole`, `ThreadKey`; `IMailboxProvider`; `MailErrors`. |

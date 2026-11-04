@@ -4,7 +4,6 @@ import {
   Alert,
   App,
   Button,
-  Card,
   Form,
   Input,
   Modal,
@@ -16,7 +15,8 @@ import {
   Tag,
   Typography,
 } from 'antd'
-import { SafetyOutlined } from '@ant-design/icons'
+import { PageHeading } from '@/components/settings/PageHeading'
+import { SettingsSection } from '@/components/settings/SettingsSection'
 import { QRCodeSVG } from 'qrcode.react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as mfaService from '../services/mfa.service'
@@ -53,7 +53,7 @@ function RecoveryCodes({ codes }: { codes: string[] }) {
         type="warning"
         showIcon
         className="mb-3"
-        message={t('security.recoveryTitle')}
+        title={t('security.recoveryTitle')}
         description={t('security.recoveryDesc')}
       />
       <div className="grid grid-cols-2 gap-2 font-mono text-sm">
@@ -63,7 +63,7 @@ function RecoveryCodes({ codes }: { codes: string[] }) {
           </Tag>
         ))}
       </div>
-      <Space className="mt-3">
+      <Space className="mt-3" wrap>
         <Button onClick={copy}>{t('common.copy')}</Button>
         <Button onClick={download}>{t('common.download')}</Button>
       </Space>
@@ -107,7 +107,7 @@ function EnableMfaFlow({ onDone }: { onDone: () => void }) {
       />
 
       {step === 0 && (
-        <Space direction="vertical">
+        <Space orientation="vertical">
           <Typography.Paragraph type="secondary">{t('security.startDesc')}</Typography.Paragraph>
           <Button type="primary" loading={setupMutation.isPending} onClick={() => setupMutation.mutate()}>
             {t('security.startButton')}
@@ -266,25 +266,19 @@ export function SecurityPage() {
   const status = statusQuery.data!
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <Card
-        title={
-          <Space>
-            <SafetyOutlined />
-            {t('security.title')}
-          </Space>
-        }
-      >
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+      <PageHeading title={t('security.title')} />
+      <SettingsSection bodyClassName="p-4">
         {status.enabled ? (
-          <Space direction="vertical" size="large" className="w-full">
-            <Space size="large">
+          <Space orientation="vertical" size="large" className="w-full">
+            <Space size="large" wrap>
               <Tag color="success" className="!text-sm !px-3 !py-1">
                 {t('security.enabled')}
               </Tag>
               <Statistic title={t('security.remaining')} value={status.remainingRecoveryCodes} />
             </Space>
             {status.remainingRecoveryCodes <= 2 && (
-              <Alert type="warning" showIcon message={t('security.lowCodes')} />
+              <Alert type="warning" showIcon title={t('security.lowCodes')} />
             )}
             <Space wrap>
               <Button onClick={() => setRegenOpen(true)}>{t('security.regenerate')}</Button>
@@ -296,7 +290,7 @@ export function SecurityPage() {
         ) : (
           <EnableMfaFlow onDone={refreshStatus} />
         )}
-      </Card>
+      </SettingsSection>
 
       <PasswordCodeModal
         open={disableOpen}

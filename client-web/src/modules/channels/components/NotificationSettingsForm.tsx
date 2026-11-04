@@ -33,7 +33,7 @@ const DEFAULT_END = '07:00'
 function ChannelsSection() {
   const { t } = useTranslation()
   const { message } = App.useApp()
-  const { data: channels, isLoading } = useChannels()
+  const { data: channels, isLoading, error: loadError } = useChannels()
   const link = useLinkChannel()
   const unlink = useUnlinkChannel()
   const test = useTestChannel()
@@ -73,6 +73,8 @@ function ChannelsSection() {
       {t('notifications.sendTest')}
     </Button>
   )
+
+  if (loadError) return <Alert type="error" showIcon title={loadError.message} />
 
   if (isLoading) {
     return (
@@ -147,7 +149,7 @@ function ChannelsSection() {
 function PreferencesSection() {
   const { t } = useTranslation()
   const { message } = App.useApp()
-  const { data: preferences, isLoading } = useNotificationPreferences()
+  const { data: preferences, isLoading, error: loadError } = useNotificationPreferences()
   const setPreference = useSetPreference()
 
   // No row means "no choice made": the backend defaults to every usable channel.
@@ -169,7 +171,7 @@ function PreferencesSection() {
   return (
     <div className="flex flex-col gap-2">
       <SettingsSection title={t('notifications.preferencesTitle')}>
-        {isLoading ? (
+        {loadError ? <Alert type="error" showIcon title={loadError.message} /> : isLoading ? (
           <div className="p-6">
             <Spin />
           </div>
@@ -318,13 +320,13 @@ function QuietHours({ settings }: { settings: NotificationSettings }) {
 
 export function NotificationSettingsForm() {
   const { t } = useTranslation()
-  const { data: settings } = useNotificationSettings()
+  const { data: settings, error: settingsError } = useNotificationSettings()
 
   return (
     <div className="flex flex-col gap-6">
       <ChannelsSection />
       <PreferencesSection />
-      {settings ? (
+      {settingsError ? <Alert type="error" showIcon title={settingsError.message} /> : settings ? (
         <QuietHours settings={settings} />
       ) : (
         <SettingsSection title={t('notifications.quietHoursTitle')} bodyClassName="p-6">
