@@ -1683,6 +1683,7 @@
       "notEmptyHint": "Este calendário ainda tem eventos. Arquive-o."
     },
     "events": {
+      "moreOptions": "Local, link e descrição",
       "new": "Novo evento",
       "newTitle": "Novo evento",
       "editTitle": "Editar evento",

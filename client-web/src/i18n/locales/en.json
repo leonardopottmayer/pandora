@@ -1683,6 +1683,7 @@
       "notEmptyHint": "This calendar still has events. Archive it instead."
     },
     "events": {
+      "moreOptions": "Location, link and description",
       "new": "New event",
       "newTitle": "New event",
       "editTitle": "Edit event",

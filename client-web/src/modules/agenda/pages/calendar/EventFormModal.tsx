@@ -86,6 +86,8 @@ export function EventFormModal({ open, calendars, defaultStart, onClose }: Event
       okText={t('common.save')}
       cancelText={t('common.cancel')}
       destroyOnHidden
+      width={640}
+      styles={{ body: { maxHeight: 'calc(100dvh - 260px)', overflowY: 'auto', paddingRight: 8 } }}
     >
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
         <Form.Item
@@ -109,28 +111,34 @@ export function EventFormModal({ open, calendars, defaultStart, onClose }: Event
           label={t('agenda.events.startsAt')}
           rules={[{ required: true, message: t('agenda.events.startRequired') }]}
         >
-          <DatePicker.RangePicker showTime style={{ width: '100%' }} />
+          <DatePicker.RangePicker format="DD/MM/YYYY HH:mm" showTime={{ format: 'HH:mm' }} style={{ width: '100%' }} />
         </Form.Item>
 
         <Form.Item name="isAllDay" valuePropName="checked">
           <Checkbox>{t('agenda.events.isAllDay')}</Checkbox>
         </Form.Item>
 
-        <Form.Item name="location" label={t('agenda.events.location')}>
-          <Input maxLength={200} />
-        </Form.Item>
+        <details>
+          <summary className="mb-3 w-fit cursor-pointer select-none text-sm">{t('agenda.events.moreOptions')}</summary>
+          <Form.Item name="location" label={t('agenda.events.location')}>
+            <Input maxLength={200} />
+          </Form.Item>
 
-        <Form.Item name="url" label={t('agenda.events.url')}>
-          <Input maxLength={500} />
-        </Form.Item>
+          <Form.Item name="url" label={t('agenda.events.url')}>
+            <Input maxLength={500} />
+          </Form.Item>
 
-        <Form.Item name="description" label={t('agenda.events.description')}>
-          <Input.TextArea rows={2} maxLength={2000} />
-        </Form.Item>
+          <Form.Item name="description" label={t('agenda.events.description')}>
+            <Input.TextArea rows={2} maxLength={2000} />
+          </Form.Item>
+        </details>
 
-        <Form.Item label={t('agenda.recurrence.label')}>
-          <RecurrencePicker value={rrule} onChange={setRrule} />
-        </Form.Item>
+        <details>
+          <summary className="mb-3 w-fit cursor-pointer select-none text-sm">{t('agenda.recurrence.label')}</summary>
+          <Form.Item>
+            <RecurrencePicker value={rrule} onChange={setRrule} />
+          </Form.Item>
+        </details>
       </Form>
     </Modal>
   )

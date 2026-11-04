@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { App, Button, Checkbox, DatePicker, Form, Input, Modal, Segmented, Select, Space, Typography, theme } from 'antd'
+import { Alert, App, Button, Checkbox, DatePicker, Form, Input, Modal, Select, Typography, theme } from 'antd'
 import {
   AlignLeftOutlined,
   BellOutlined,
@@ -56,7 +56,7 @@ export function EventDetailModal({ open, occurrence, calendars, onClose }: Event
   }
 
   // The series row carries the rrule the occurrence read omits — drives scope awareness.
-  const { data: series } = useEvent(open ? (occurrence?.eventId ?? null) : null)
+  const { data: series, isLoading: seriesLoading, isError: seriesError, error: seriesFailure } = useEvent(open ? (occurrence?.eventId ?? null) : null)
   const isRecurring = !!series?.rrule
   const updateMutation = useUpdateEvent()
   const deleteMutation = useDeleteEvent()
@@ -156,9 +156,15 @@ export function EventDetailModal({ open, occurrence, calendars, onClose }: Event
       open={open}
       title={editing ? t('agenda.events.editTitle') : null}
       onCancel={onClose}
-      footer={null}
+      footer={editing ? <>
+        <Button onClick={() => setEditing(false)}>{t('common.cancel')}</Button>
+        <Button type="primary" onClick={() => form.submit()} loading={updateMutation.isPending}>{t('common.save')}</Button>
+      </> : null}
       destroyOnHidden
+      width={640}
+      styles={{ body: { maxHeight: 'calc(100dvh - 260px)', overflowY: 'auto', paddingRight: 8 } }}
     >
+      {seriesError && <Alert type="error" showIcon title={seriesFailure.message} className="mb-3" />}
       {!editing && (
         <div className="flex flex-col gap-3 pt-1">
           <div className="flex items-start gap-3 pe-6">
@@ -213,10 +219,10 @@ export function EventDetailModal({ open, occurrence, calendars, onClose }: Event
             </div>
           ) : (
             <div className="flex justify-end gap-2 pt-1">
-              <Button danger onClick={startDelete}>
+              <Button danger disabled={seriesLoading || seriesError} onClick={startDelete}>
                 {t('common.delete')}
               </Button>
-              <Button type="primary" onClick={() => setEditing(true)}>
+              <Button type="primary" disabled={seriesLoading || seriesError} onClick={() => setEditing(true)}>
                 {t('common.edit')}
               </Button>
             </div>
@@ -233,35 +239,32 @@ export function EventDetailModal({ open, occurrence, calendars, onClose }: Event
           >
             <Input maxLength={200} />
           </Form.Item>
-          <Form.Item name="calendarId" label={t('agenda.events.calendar')}>
+          <Form.Item name="calendarId" label={t('agenda.events.calendar')} rules={[{ required: true, message: t('agenda.events.calendarRequired') }]}>
             <Select options={calendars.map((c) => ({ value: c.id, label: c.name }))} />
           </Form.Item>
-          <Form.Item name="range" label={t('agenda.events.startsAt')}>
-            <DatePicker.RangePicker showTime style={{ width: '100%' }} />
+          <Form.Item name="range" label={t('agenda.events.startsAt')} rules={[{ required: true, message: t('agenda.events.startRequired') }]}>
+            <DatePicker.RangePicker format="DD/MM/YYYY HH:mm" showTime={{ format: 'HH:mm' }} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="isAllDay" valuePropName="checked">
             <Checkbox>{t('agenda.events.isAllDay')}</Checkbox>
           </Form.Item>
-          <Form.Item name="location" label={t('agenda.events.location')}>
-            <Input maxLength={200} />
-          </Form.Item>
-          <Form.Item name="url" label={t('agenda.events.url')}>
-            <Input maxLength={500} />
-          </Form.Item>
-          <Form.Item name="description" label={t('agenda.events.description')}>
-            <Input.TextArea rows={2} maxLength={2000} />
-          </Form.Item>
+          <details open={!!(occurrence.location || occurrence.url || occurrence.description) || undefined}>
+            <summary className="mb-3 w-fit cursor-pointer select-none text-sm">{t('agenda.events.moreOptions')}</summary>
+            <Form.Item name="location" label={t('agenda.events.location')}>
+              <Input maxLength={200} />
+            </Form.Item>
+            <Form.Item name="url" label={t('agenda.events.url')}>
+              <Input maxLength={500} />
+            </Form.Item>
+            <Form.Item name="description" label={t('agenda.events.description')}>
+              <Input.TextArea rows={2} maxLength={2000} />
+            </Form.Item>
+          </details>
           {isRecurring && (
             <Form.Item label={t('agenda.events.scopeTitle')}>
-              <Segmented<EventScope> value={scope} onChange={setScope} options={scopeOptions} />
+              <Select<EventScope> value={scope} onChange={setScope} options={scopeOptions} aria-label={t('agenda.events.scopeTitle')} />
             </Form.Item>
           )}
-          <Space>
-            <Button type="primary" htmlType="submit" loading={updateMutation.isPending}>
-              {t('common.save')}
-            </Button>
-            <Button onClick={() => setEditing(false)}>{t('common.cancel')}</Button>
-          </Space>
         </Form>
       )}
     </Modal>

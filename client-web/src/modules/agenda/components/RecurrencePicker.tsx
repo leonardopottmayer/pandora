@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Checkbox, DatePicker, InputNumber, Segmented, Select, Space } from 'antd'
+import { Checkbox, DatePicker, InputNumber, Radio, Select, Space } from 'antd'
 import dayjs from 'dayjs'
 import {
   buildRrule,
@@ -44,7 +44,7 @@ export function RecurrencePicker({ value, onChange, allowCount = true }: Recurre
   const endModes: EndMode[] = allowCount ? ['never', 'until', 'count'] : ['never', 'until']
 
   return (
-    <Space direction="vertical" style={{ width: '100%' }} size="small">
+    <div className="flex min-w-0 flex-col gap-2">
       <Select<Frequency>
         value={state.frequency}
         onChange={(frequency) => update({ frequency })}
@@ -55,7 +55,7 @@ export function RecurrencePicker({ value, onChange, allowCount = true }: Recurre
 
       {state.frequency !== 'none' && (
         <>
-          <Space>
+          <Space wrap>
             <span>{t('agenda.recurrence.interval')}</span>
             <InputNumber
               min={1}
@@ -74,9 +74,10 @@ export function RecurrencePicker({ value, onChange, allowCount = true }: Recurre
             />
           )}
 
-          <Segmented<EndMode>
+          <Radio.Group
+            className="flex flex-wrap gap-2"
             value={state.endMode}
-            onChange={(endMode) => update({ endMode })}
+            onChange={(event) => update({ endMode: event.target.value as EndMode })}
             options={endModes.map((m) => ({
               value: m,
               label: t(
@@ -91,6 +92,7 @@ export function RecurrencePicker({ value, onChange, allowCount = true }: Recurre
 
           {state.endMode === 'until' && (
             <DatePicker
+              format="DD/MM/YYYY"
               value={state.until ? dayjs(state.until) : null}
               onChange={(d) => update({ until: d ? d.toISOString() : null })}
               style={{ width: '100%' }}
@@ -99,7 +101,7 @@ export function RecurrencePicker({ value, onChange, allowCount = true }: Recurre
           )}
 
           {state.endMode === 'count' && (
-            <Space>
+            <Space wrap>
               <InputNumber
                 min={1}
                 value={state.count ?? 1}
@@ -111,6 +113,6 @@ export function RecurrencePicker({ value, onChange, allowCount = true }: Recurre
           )}
         </>
       )}
-    </Space>
+    </div>
   )
 }

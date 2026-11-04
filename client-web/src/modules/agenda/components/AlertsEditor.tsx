@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { App, Button, InputNumber, List, Space, Typography } from 'antd'
+import { Alert, App, Button, InputNumber, Spin, Typography, theme } from 'antd'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { toErrorMessage } from '@/lib/api/envelope'
 import type { AlertSubjectType } from '../models'
@@ -17,11 +17,12 @@ interface AlertsEditorProps {
 export function AlertsEditor({ subjectType, subjectId }: AlertsEditorProps) {
   const { t } = useTranslation()
   const { message } = App.useApp()
+  const { token } = theme.useToken()
   const { data: preferences } = useAgendaPreferences()
   // The default arrives after the first render, so what is typed is kept apart from it.
   const [chosenOffset, setChosenOffset] = useState<number | null>(null)
   const offset = chosenOffset ?? preferences?.defaultAlertOffsetMinutes ?? -15
-  const { data } = useAlerts(subjectType, subjectId)
+  const { data, isLoading, isError, error } = useAlerts(subjectType, subjectId)
   const createAlert = useCreateAlert(subjectType, subjectId)
   const deleteAlert = useDeleteAlert(subjectType, subjectId)
 
@@ -49,31 +50,18 @@ export function AlertsEditor({ subjectType, subjectId }: AlertsEditorProps) {
   }
 
   return (
-    <Space direction="vertical" style={{ width: '100%' }} size="small">
-      <List
-        size="small"
-        dataSource={data ?? []}
-        locale={{ emptyText: t('agenda.alerts.empty') }}
-        renderItem={(alert) => (
-          <List.Item
-            actions={[
-              <Button
-                key="remove"
-                size="small"
-                type="text"
-                danger
-                icon={<DeleteOutlined />}
-                aria-label={t('common.delete')}
-                onClick={() => handleRemove(alert.id)}
-              />,
-            ]}
-          >
-            {offsetLabel(alert.offsetMinutes)}
-          </List.Item>
-        )}
-      />
+    <div className="flex min-w-0 flex-col gap-2">
+      {isError ? <Alert type="error" showIcon title={error.message} /> : isLoading ? <Spin size="small" /> : !data?.length ? (
+        <Typography.Text type="secondary">{t('agenda.alerts.empty')}</Typography.Text>
+      ) : <ul className="m-0 list-none p-0">
+        {data.map((alert) => <li key={alert.id} className="flex items-center justify-between gap-2 py-2" style={{ borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
+          <span>{offsetLabel(alert.offsetMinutes)}</span>
+          <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={t('common.delete')}
+            loading={deleteAlert.isPending && deleteAlert.variables === alert.id} onClick={() => handleRemove(alert.id)} />
+        </li>)}
+      </ul>}
 
-      <Space>
+      <div className="flex flex-wrap items-center gap-2">
         <InputNumber
           value={offset}
           onChange={(v) => setChosenOffset(v ?? 0)}
@@ -86,10 +74,10 @@ export function AlertsEditor({ subjectType, subjectId }: AlertsEditorProps) {
         >
           {t('agenda.alerts.add')}
         </Button>
-      </Space>
+      </div>
       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
         {t('agenda.alerts.offsetHint')}
       </Typography.Text>
-    </Space>
+    </div>
   )
 }

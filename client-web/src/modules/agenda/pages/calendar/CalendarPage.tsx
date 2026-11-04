@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Button, Calendar, Segmented, Typography } from 'antd'
+import { Alert, Skeleton, Button, Calendar, Segmented, Typography } from 'antd'
 import { LeftOutlined, PlusOutlined, RightOutlined } from '@ant-design/icons'
 import dayjs, { type Dayjs } from 'dayjs'
 import type { CalendarDto, EventOccurrenceDto } from '../../models'
@@ -43,7 +43,7 @@ export function CalendarPage() {
     setSearchParams(params, { replace: true })
   }
 
-  const { data: calendarList } = useCalendars()
+  const { data: calendarList, isLoading: calendarsLoading, error: calendarError } = useCalendars()
   const calendars = useMemo<CalendarDto[]>(() => (calendarList ?? []).filter((c) => !c.archivedAt), [calendarList])
   const visibleIds = useMemo(() => new Set(calendars.filter((c) => c.isVisible).map((c) => c.id)), [calendars])
   const colorOf = useMemo(() => new Map(calendars.map((c) => [c.id, c.color ?? '#1677ff'])), [calendars])
@@ -57,7 +57,7 @@ export function CalendarPage() {
     return Array.from({ length: last.diff(first, 'day') + 1 }, (_, i) => first.add(i, 'day').format(KEY))
   }, [view, cursor, weekStartsOn])
 
-  const { data: occurrences } = useEventOccurrences({
+  const { data: occurrences, isLoading: occurrencesLoading, error: occurrenceError } = useEventOccurrences({
     from: dayjs.tz(days[0], timeZone).toISOString(),
     to: dayjs.tz(days[days.length - 1], timeZone).add(1, 'day').toISOString(),
   })
@@ -103,6 +103,10 @@ export function CalendarPage() {
     }
     return capitalize(fmt({ month: 'long', year: 'numeric' }).format(keyToDate(cursor)))
   })()
+
+  const loadError = calendarError ?? occurrenceError
+  if (loadError) return <Alert type="error" showIcon title={loadError.message} />
+  if (calendarsLoading || occurrencesLoading) return <Skeleton active />
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-4">

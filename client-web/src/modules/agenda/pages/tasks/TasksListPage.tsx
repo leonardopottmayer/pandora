@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { App, Button, Checkbox, Dropdown, Empty, Input, Skeleton, Typography, theme } from 'antd'
+import { Alert, App, Button, Checkbox, Dropdown, Empty, Input, Skeleton, Typography, theme } from 'antd'
 import {
   AlignLeftOutlined,
   CalendarOutlined,
@@ -53,8 +53,8 @@ export function TasksListPage() {
   const [quickTitle, setQuickTitle] = useState('')
 
   // Every list's tasks at once: the list rail counts them, and the selected list is a filter.
-  const { data, isLoading } = useTasks()
-  const { data: lists } = useTaskLists()
+  const { data, isLoading, error: taskError } = useTasks()
+  const { data: lists, error: listError } = useTaskLists()
   const createTask = useCreateTask()
   const completeTask = useCompleteTask()
   const reopenTask = useReopenTask()
@@ -260,6 +260,9 @@ export function TasksListPage() {
   }
 
   const groups = TASK_DUE_BUCKETS.filter((b) => (buckets.get(b) ?? []).length > 0)
+
+  const loadError = taskError ?? listError
+  if (loadError) return <Alert type="error" showIcon title={loadError.message} />
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">

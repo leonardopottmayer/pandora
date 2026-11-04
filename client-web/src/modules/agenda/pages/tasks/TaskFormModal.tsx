@@ -123,6 +123,8 @@ export function TaskFormModal({
       okText={t('common.save')}
       cancelText={t('common.cancel')}
       destroyOnHidden
+      width={640}
+      styles={{ body: { maxHeight: 'calc(100dvh - 260px)', overflowY: 'auto', paddingRight: 8 } }}
     >
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
         {!isEdit && (
@@ -145,35 +147,44 @@ export function TaskFormModal({
           <Input maxLength={200} />
         </Form.Item>
 
-        <Form.Item name="priority" label={t('agenda.tasks.priority')}>
-          <Select
-            options={TASK_PRIORITIES.map((p) => ({
-              value: p,
-              label: t(TASK_PRIORITY_META[p].labelKey),
-            }))}
-          />
-        </Form.Item>
+        <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
+          <Form.Item name="priority" label={t('agenda.tasks.priority')}>
+            <Select
+              options={TASK_PRIORITIES.map((p) => ({
+                value: p,
+                label: t(TASK_PRIORITY_META[p].labelKey),
+              }))}
+            />
+          </Form.Item>
 
-        <Form.Item name="dueAt" label={t('agenda.tasks.dueAt')}>
-          <DatePicker
-            showTime={dueHasTime ? { format: 'HH:mm' } : false}
-            style={{ width: '100%' }}
-          />
-        </Form.Item>
+          <Form.Item name="dueAt" label={t('agenda.tasks.dueAt')}>
+            <DatePicker
+              format={dueHasTime ? 'DD/MM/YYYY HH:mm' : 'DD/MM/YYYY'}
+              showTime={dueHasTime ? { format: 'HH:mm' } : false}
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+        </div>
 
         <Form.Item name="dueHasTime" valuePropName="checked">
           <Checkbox>{t('agenda.tasks.dueHasTime')}</Checkbox>
         </Form.Item>
 
-        <Form.Item name="notes" label={t('agenda.tasks.notes')}>
-          <Input.TextArea rows={2} maxLength={2000} />
-        </Form.Item>
+        <details open={!!task?.notes || undefined}>
+          <summary className="mb-3 w-fit cursor-pointer select-none text-sm">{t('agenda.tasks.notes')}</summary>
+          <Form.Item name="notes" label={t('agenda.tasks.notes')}>
+            <Input.TextArea rows={2} maxLength={2000} />
+          </Form.Item>
+        </details>
 
         {!isEdit && (
-          <Form.Item label={t('agenda.recurrence.label')}>
-            {/* Tasks reject COUNT — no "after N occurrences" option. */}
-            <RecurrencePicker value={rrule} onChange={setRrule} allowCount={false} />
-          </Form.Item>
+          <details>
+            <summary className="mb-3 w-fit cursor-pointer select-none text-sm">{t('agenda.recurrence.label')}</summary>
+            <Form.Item>
+              {/* Tasks reject COUNT — no "after N occurrences" option. */}
+              <RecurrencePicker value={rrule} onChange={setRrule} allowCount={false} />
+            </Form.Item>
+          </details>
         )}
 
         {isEdit && task && (

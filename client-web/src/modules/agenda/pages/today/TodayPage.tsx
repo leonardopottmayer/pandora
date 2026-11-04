@@ -1,6 +1,6 @@
 import { Fragment, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { App, Button, Checkbox, Empty, Skeleton, Typography, theme } from 'antd'
+import { Alert, App, Button, Checkbox, Empty, Skeleton, Typography, theme } from 'antd'
 import { BellOutlined, CalendarOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { toErrorMessage } from '@/lib/api/envelope'
@@ -39,13 +39,13 @@ export function TodayPage() {
 
   // Tasks and reminders come from the day view; events from the occurrences, which carry what the
   // event card needs to edit one. Overdue tasks are not in the day view, so they come from the tasks.
-  const { data: dayItems, isLoading } = useToday()
-  const { data: occurrences } = useEventOccurrences({
+  const { data: dayItems, isLoading, error: todayError } = useToday()
+  const { data: occurrences, error: occurrenceError } = useEventOccurrences({
     from: dayjs.tz(today, timeZone).toISOString(),
     to: dayjs.tz(today, timeZone).add(1, 'day').toISOString(),
   })
-  const { data: tasks } = useTasks()
-  const { data: calendarList } = useCalendars()
+  const { data: tasks, error: taskError } = useTasks()
+  const { data: calendarList, error: calendarError } = useCalendars()
   const calendars = (calendarList ?? []).filter((c) => !c.archivedAt)
   const calendarOf = new Map(calendars.map((c) => [c.id, c]))
 
@@ -253,6 +253,9 @@ export function TodayPage() {
       <span className="h-px flex-1" style={{ background: token.colorError }} />
     </div>
   )
+
+  const loadError = todayError ?? occurrenceError ?? taskError ?? calendarError
+  if (loadError) return <Alert type="error" showIcon title={loadError.message} />
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">

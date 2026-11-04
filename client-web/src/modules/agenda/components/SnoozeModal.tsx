@@ -18,7 +18,12 @@ export function SnoozeModal({ open, reminderId, onClose }: SnoozeModalProps) {
   const { t, i18n } = useTranslation()
   const { message } = App.useApp()
   const { timeZone } = usePreferences()
-  const [until, setUntil] = useState<Dayjs | null>(() => dayjs().add(1, 'hour'))
+  const [until, setUntil] = useState<Dayjs | null>(() => dayjs().tz(timeZone).add(1, 'hour'))
+  const [previous, setPrevious] = useState({ open, reminderId })
+  if (open !== previous.open || reminderId !== previous.reminderId) {
+    setPrevious({ open, reminderId })
+    if (open) setUntil(dayjs().tz(timeZone).add(1, 'hour'))
+  }
   const snoozeMutation = useSnoozeReminder()
 
   const now = dayjs().tz(timeZone)
@@ -65,6 +70,7 @@ export function SnoozeModal({ open, reminderId, onClose }: SnoozeModalProps) {
         <div className="flex flex-col gap-1.5">
           <Typography.Text type="secondary">{t('agenda.reminders.snoozeUntil')}</Typography.Text>
           <DatePicker
+            format="DD/MM/YYYY HH:mm"
             showTime={{ format: 'HH:mm' }}
             value={until}
             onChange={setUntil}

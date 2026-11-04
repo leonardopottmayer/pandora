@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { App, Button, Dropdown, Empty, Input, Modal, Skeleton, Typography, theme } from 'antd'
+import { Alert, App, Button, Dropdown, Empty, Input, Modal, Skeleton, Typography, theme } from 'antd'
 import { AlignLeftOutlined, BellOutlined, EllipsisOutlined, PlusOutlined, RetweetOutlined } from '@ant-design/icons'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { PageHeading } from '@/components/settings/PageHeading'
@@ -22,7 +22,7 @@ export function RemindersListPage() {
   const { message, modal } = App.useApp()
   const { token } = theme.useToken()
   const { timeZone } = usePreferences()
-  const { data, isLoading } = useReminders()
+  const { data, isLoading, error: loadError } = useReminders()
   const acknowledge = useAcknowledgeReminder()
   const deleteMutation = useDeleteReminder()
   const rename = useRenameReminder()
@@ -166,6 +166,8 @@ export function RemindersListPage() {
         {reminders.map((r, index) => renderRow(r, index === 0))}
       </SettingsSection>
     )
+
+  if (loadError) return <Alert type="error" showIcon title={loadError.message} />
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">

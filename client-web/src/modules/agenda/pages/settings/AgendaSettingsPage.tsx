@@ -1,4 +1,4 @@
-import { App, Segmented, Select, Typography } from 'antd'
+import { Alert, App, Segmented, Select, Typography } from 'antd'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { PageHeading } from '@/components/settings/PageHeading'
@@ -14,10 +14,10 @@ export function AgendaSettingsPage() {
   const { t } = useTranslation()
   const { message } = App.useApp()
   const { timeZone, weekStartsOn, setWeekStartsOn } = usePreferences()
-  const { data: preferences } = useAgendaPreferences()
+  const { data: preferences, error: preferenceError } = useAgendaPreferences()
   const savePreferences = useSaveAgendaPreferences()
 
-  const { data: calendarList } = useCalendars()
+  const { data: calendarList, error: calendarError } = useCalendars()
   const calendars = (calendarList ?? []).filter((c) => !c.archivedAt)
   const defaultCalendarId = calendars.find((c) => c.isDefault)?.id
   const updateCalendar = useUpdateCalendar()
@@ -48,6 +48,9 @@ export function AgendaSettingsPage() {
     { label: t('settings.alertOffsetHours', { count: 1 }), value: -60 },
     { label: t('settings.alertOffsetDays', { count: 1 }), value: -1440 },
   ]
+
+  const loadError = preferenceError ?? calendarError
+  if (loadError) return <Alert type="error" showIcon title={loadError.message} />
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
@@ -102,7 +105,7 @@ export function AgendaSettingsPage() {
           label={t('settings.timeZoneLabel')}
           description={t('agenda.settings.inheritedDesc')}
           control={
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <Typography.Text type="secondary">{timeZone}</Typography.Text>
               <Link to="/settings" className="whitespace-nowrap text-sm font-medium">
                 {t('agenda.settings.editInGeneral')}

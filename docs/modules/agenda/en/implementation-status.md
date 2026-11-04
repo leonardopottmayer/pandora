@@ -22,6 +22,21 @@ in [product-plan.md](product-plan.md).
 | **API** | Reminders, task-lists, tasks, calendars, events, alerts, today controllers. |
 | **Frontend** | `client-web/src/modules/agenda` — Today, Reminders, Tasks, Calendar. |
 
+### Frontend form and loading polish
+
+Event creation/editing, tasks and reminder forms use 640 px modals with scrolling bodies. Related
+task fields pair on desktop and stack on phones. Optional notes, event details and recurrence
+controls fold away; existing event details and task notes open when populated. Dates use
+DD/MM/YYYY and time uses HH:mm. Event editing validates the calendar and period before submitting;
+series-load failures disable editing/deletion rather than guessing recurrence scope.
+
+Recurrence endings wrap as radio options; event edit scope uses a full-width select. Alert rows
+use native lists and wrapping controls instead of deprecated Ant Design List/Space APIs. Snooze
+refreshes its custom time on each opening or reminder change, using the user's time zone.
+Today, Calendar, Tasks, Reminders and Settings distinguish request failures from empty results.
+All existing request formats, recurrence rules and time-zone conversions are preserved.
+
+
 ### Notable deviations from the original plan
 
 - **Three sweeps, not one.** `ReminderSweep`, `TaskAlertSweep`, `EventAlertSweep` replace the single

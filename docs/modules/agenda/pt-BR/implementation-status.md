@@ -22,6 +22,21 @@ adiante fica em [product-plan.md](product-plan.md).
 | **API** | Controllers de reminders, task-lists, tasks, calendars, events, alerts, today. |
 | **Frontend** | `client-web/src/modules/agenda` — Hoje, Lembretes, Tarefas, Calendário. |
 
+### Ajustes dos formulários e carregamento do frontend
+
+Criação/edição de eventos, tarefas e lembretes usam modais de 640 px com rolagem interna.
+Campos relacionados de tarefa ficam em pares no desktop e empilham no celular. Notas, detalhes
+opcionais do evento e recorrência ficam recolhidos; detalhes e notas existentes abrem preenchidos.
+Datas usam DD/MM/AAAA e horários HH:mm. A edição de evento valida calendário e período; falha na
+consulta da série desabilita editar/excluir em vez de presumir o alcance da recorrência.
+
+Término de recorrência usa opções de rádio que quebram linha; alcance da edição usa seletor
+na largura disponível. Alertas usam lista nativa e controles com quebra, sem APIs descontinuadas
+de List/Space do Ant Design. Adiar recalcula o horário personalizado ao abrir ou trocar o lembrete,
+no fuso do usuário. Hoje, Calendário, Tarefas, Lembretes e Configurações distinguem falha de
+consulta de resultado vazio. Contratos, regras de recorrência e conversões de fuso são preservados.
+
+
 ### Desvios notáveis do plano original
 
 - **Três sweeps, não um.** `ReminderSweep`, `TaskAlertSweep`, `EventAlertSweep` substituem o único

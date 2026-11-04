@@ -62,6 +62,8 @@ export function ReminderFormModal({ open, onClose }: ReminderFormModalProps) {
       okText={t('common.save')}
       cancelText={t('common.cancel')}
       destroyOnHidden
+      width={640}
+      styles={{ body: { maxHeight: 'calc(100dvh - 260px)', overflowY: 'auto', paddingRight: 8 } }}
     >
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
         <Form.Item
@@ -77,16 +79,22 @@ export function ReminderFormModal({ open, onClose }: ReminderFormModalProps) {
           label={t('agenda.reminders.remindAt')}
           rules={[{ required: true, message: t('agenda.reminders.remindAtRequired') }]}
         >
-          <DatePicker showTime style={{ width: '100%' }} />
+          <DatePicker format="DD/MM/YYYY HH:mm" showTime={{ format: 'HH:mm' }} style={{ width: '100%' }} />
         </Form.Item>
 
-        <Form.Item name="notes" label={t('agenda.reminders.notes')}>
-          <Input.TextArea rows={2} maxLength={1000} />
-        </Form.Item>
+        <details>
+          <summary className="mb-3 w-fit cursor-pointer select-none text-sm">{t('agenda.reminders.notes')}</summary>
+          <Form.Item name="notes" label={t('agenda.reminders.notes')}>
+            <Input.TextArea rows={2} maxLength={1000} />
+          </Form.Item>
+        </details>
 
-        <Form.Item label={t('agenda.recurrence.label')}>
-          <RecurrencePicker value={rrule} onChange={setRrule} />
-        </Form.Item>
+        <details>
+          <summary className="mb-3 w-fit cursor-pointer select-none text-sm">{t('agenda.recurrence.label')}</summary>
+          <Form.Item>
+            <RecurrencePicker value={rrule} onChange={setRrule} />
+          </Form.Item>
+        </details>
       </Form>
     </Modal>
   )

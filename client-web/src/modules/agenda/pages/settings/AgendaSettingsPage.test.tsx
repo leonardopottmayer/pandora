@@ -30,6 +30,7 @@ beforeAll(async () => {
 
 describe('AgendaSettingsPage', () => {
   it('shows the current default calendar and the scheduling defaults', async () => {
+    server.use(http.get(`${AGENDA_BASE}/preferences`, () => HttpResponse.json({ success: true, data: { defaultAlertOffsetMinutes: -15 } })))
     server.use(
       http.get(`${AGENDA_BASE}/calendars`, () =>
         HttpResponse.json({
