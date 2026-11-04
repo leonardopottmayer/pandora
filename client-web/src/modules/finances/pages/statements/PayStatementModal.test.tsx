@@ -60,5 +60,31 @@ describe('PayStatementModal', () => {
 
     await waitFor(() => expect(onClose).toHaveBeenCalled())
     expect(body).toMatchObject({ accountId: 'a1', amount: 500 })
+    expect(body).toMatchObject({ occurredOn: null, description: null })
+  })
+
+  it('preserves optional payment details after collapsing them', async () => {
+    let body: Record<string, unknown> | undefined
+    const onClose = vi.fn()
+    server.use(
+      accountsHandler(),
+      http.post(`${FINANCES_BASE}/statements/s1/pay`, async ({ request }) => {
+        body = await request.json() as Record<string, unknown>
+        return HttpResponse.json({ success: true, data: {} })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<PayStatementModal open statementId="s1" remainingAmount={500} onClose={onClose} />)
+    await user.click(screen.getByRole('combobox'))
+    await user.click(await screen.findByText('Conta (BRL)'))
+    await user.click(screen.getByText('Date and description'))
+    await user.type(screen.getByRole('textbox', { name: 'Description' }), 'Partial payment')
+    const date = screen.getByRole('textbox', { name: 'Date' })
+    await user.type(date, '14/06/2026')
+    await user.tab()
+    await user.click(screen.getByText('Date and description'))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    expect(body).toMatchObject({ accountId: 'a1', amount: 500, occurredOn: '2026-06-14', description: 'Partial payment' })
   })
 })

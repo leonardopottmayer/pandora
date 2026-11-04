@@ -88,6 +88,13 @@ outcome is terminal.
 Suggestions from imports carry dedup/reconciliation badges (duplicate/suspected/matched) and links
 to the related transaction; see [Imports](imports.md).
 
+### Transfer confirmation
+
+The inbox transfer confirmation keeps its account/amount summary and seeds description/date
+from the outflow suggestion. Editable labels are associated with their inputs; the date displays
+DD/MM/YYYY and is submitted as YYYY-MM-DD. An incomplete pair or blank description keeps confirm
+disabled. The 640 px modal has a scrolling body for narrow or short screens.
+
 ## API
 
 | Method | Route | Purpose |

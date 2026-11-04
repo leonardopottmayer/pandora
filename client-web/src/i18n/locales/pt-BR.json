@@ -880,6 +880,7 @@
       "deleteError": "Nao foi possivel excluir o cartao."
     },
     "statements": {
+      "paymentDetails": "Data e descrição",
       "title": "Faturas",
       "referenceMonth": "Mes de referencia",
       "dueDate": "Vencimento",

@@ -128,6 +128,10 @@ closed | partially-paid | overdue ──reopen──▶ (status recomputed)
 - Audit: `transaction.created` + `statement.payment-received`, plus `statement.paid` when this
   payment was the one that fully cleared it.
 
+The payment form pairs the required account and amount and folds optional date/description
+under a named section. It keeps the remaining balance pre-filled and sends null for optional
+fields left empty. The 640 px modal stacks on phones and has a scrolling body when needed.
+
 ## Settling without cash (onboarding write-off)
 
 `POST /statements/{id}/settle` → `SettleStatementCommand`:

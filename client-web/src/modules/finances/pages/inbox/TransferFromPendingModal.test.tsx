@@ -65,7 +65,8 @@ describe('TransferFromPendingModal', () => {
       />,
     )
 
-    expect(screen.getByDisplayValue('Saída')).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Description' })).toHaveValue('Saída')
+    expect(screen.getByRole('textbox', { name: 'Date' })).toHaveValue('13/06/2026')
     // Both account names resolve in the summary.
     expect(screen.getByText('Conta A')).toBeInTheDocument()
     expect(screen.getByText('Conta B')).toBeInTheDocument()
@@ -86,5 +87,23 @@ describe('TransferFromPendingModal', () => {
       />,
     )
     expect(screen.getByRole('alert')).toBeInTheDocument()
+  })
+
+  it('submits an edited localized date as ISO and prevents a blank description', async () => {
+    const onConfirm = vi.fn()
+    const user = userEvent.setup()
+    renderWithProviders(<TransferFromPendingModal open outflow={outflow} inflow={inflow} accountNames={accountNames} onClose={vi.fn()} onConfirm={onConfirm} />)
+    const description = screen.getByRole('textbox', { name: 'Description' })
+    await user.clear(description)
+    await user.type(description, '   ')
+    expect(screen.getByRole('button', { name: 'Create transfer' })).toBeDisabled()
+    await user.clear(description)
+    await user.type(description, 'Reconciled transfer')
+    const date = screen.getByRole('textbox', { name: 'Date' })
+    await user.clear(date)
+    await user.type(date, '14/06/2026')
+    await user.tab()
+    await user.click(screen.getByRole('button', { name: 'Create transfer' }))
+    expect(onConfirm).toHaveBeenCalledWith('Reconciled transfer', '2026-06-14')
   })
 })

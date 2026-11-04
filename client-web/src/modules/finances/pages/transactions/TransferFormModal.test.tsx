@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import i18n from '@/i18n'
 import { server } from '@/test/msw/server'
@@ -22,6 +22,36 @@ function accountsHandler() {
 }
 
 describe('TransferFormModal', () => {
+  it('keeps the optional received amount when collapsed and sends the original request shape', async () => {
+    let body: Record<string, unknown> | undefined
+    const onClose = vi.fn()
+    server.use(
+      accountsHandler(),
+      http.post(`${FINANCES_BASE}/transactions/transfer`, async ({ request }) => {
+        body = await request.json() as Record<string, unknown>
+        return HttpResponse.json({ success: true, data: [] })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<TransferFormModal open onClose={onClose} />)
+    await user.click(screen.getAllByRole('combobox')[0])
+    await user.click(await screen.findByText('Conta (BRL)'))
+    await user.click(screen.getAllByRole('combobox')[1])
+    await user.click((await screen.findAllByText(`${accounts[1].name} (BRL)`, { selector: '.ant-select-item-option-content' })).at(-1)!)
+    await user.type(screen.getByRole('spinbutton', { name: 'Amount sent' }), '100')
+    await user.type(screen.getByRole('textbox', { name: 'Date' }), '14/06/2026')
+    await user.tab()
+    await user.type(screen.getByRole('textbox', { name: 'Description' }), 'Between accounts')
+    const optional = screen.getByText('Amount received', { selector: 'summary' })
+    await user.click(optional)
+    await user.type(screen.getByRole('spinbutton', { name: 'Amount received' }), '100')
+    expect(screen.getByText('Fill in only for transfers between different currencies.')).toBeInTheDocument()
+    await user.click(optional)
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    expect(body).toEqual({ fromAccountId: 'a1', toAccountId: 'a2', amountOut: 100, amountIn: 100, fxRate: null, occurredOn: '2026-06-14', description: 'Between accounts', notes: null })
+  })
+
   it('shows required-field validation and does not call the API when empty', async () => {
     let posted = false
     server.use(

@@ -61,28 +61,35 @@ export function PayStatementModal({ open, statementId, remainingAmount, onClose 
       okText={t('common.save')}
       cancelText={t('common.cancel')}
       destroyOnHidden
+      width={640}
+      styles={{ body: { maxHeight: 'calc(100dvh - 260px)', overflowY: 'auto', paddingRight: 8 } }}
     >
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
-        <Form.Item
-          name="accountId"
-          label={t('finances.statements.payAccount')}
-          rules={[{ required: true, message: t('finances.transactions.accountRequired') }]}
-        >
-          <AccountSelect />
-        </Form.Item>
-        <Form.Item
-          name="amount"
-          label={t('finances.statements.payAmount')}
-          rules={[{ required: true, message: t('finances.transactions.amountRequired') }]}
-        >
-          <InputNumber style={{ width: '100%' }} min={0.01} step={0.01} />
-        </Form.Item>
-        <Form.Item name="occurredOn" label={t('finances.transactions.occurredOn')}>
-          <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
-        </Form.Item>
-        <Form.Item name="description" label={t('finances.transactions.description')}>
-          <Input maxLength={200} />
-        </Form.Item>
+        <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
+          <Form.Item
+            name="accountId"
+            label={t('finances.statements.payAccount')}
+            rules={[{ required: true, message: t('finances.transactions.accountRequired') }]}
+          >
+            <AccountSelect />
+          </Form.Item>
+          <Form.Item
+            name="amount"
+            label={t('finances.statements.payAmount')}
+            rules={[{ required: true, message: t('finances.transactions.amountRequired') }]}
+          >
+            <InputNumber style={{ width: '100%' }} min={0.01} step={0.01} />
+          </Form.Item>
+        </div>
+        <details>
+          <summary className="mb-3 w-fit cursor-pointer select-none text-sm">{t('finances.statements.paymentDetails')}</summary>
+          <Form.Item name="occurredOn" label={t('finances.transactions.occurredOn')}>
+            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+          </Form.Item>
+          <Form.Item name="description" label={t('finances.transactions.description')} className="!mb-0">
+            <Input maxLength={200} />
+          </Form.Item>
+        </details>
       </Form>
     </Modal>
   )

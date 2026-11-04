@@ -94,6 +94,14 @@ A transfer is **two linked transactions** (D3), built atomically by `CreateTrans
 `POST /transactions/transfer` creates a transfer; `POST /pending-transactions/transfer` creates one
 from a pair of inbox suggestions (see [Recurrences & Inbox](recurrences-and-inbox.md)).
 
+## Transfer form
+
+The transfer modal follows the shared form pattern: source/destination accounts share a row,
+amount sent and date share the next, and the description takes the full width. Required fields
+stay visible; the optional received amount folds away with its guidance below the field. The
+640 px form stacks on phones and its body scrolls when needed. Folding the optional field does
+not clear its value. Submission and source-account exclusion keep their existing behavior.
+
 ## Scheduled entries
 
 Creating a transaction with a future date and `post = false` yields a `pending` entry that does not

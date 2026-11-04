@@ -29,6 +29,8 @@ Use para distinguir "documentado porque existe" de "documentado como plano".
 
 O detalhe da fatura usa cabeçalho e indicadores compartilhados, filtros controlados com painel secundário, tabela responsiva com rolagem e anexos sob demanda. Veja [Detalhe da fatura](cards-and-statements.md#tela-de-detalhe-da-fatura).
 
+Os formulários de transferência e pagamento de fatura agrupam obrigatórios, recolhem opcionais e têm rolagem interna. A confirmação de transferência pela inbox associa rótulos aos campos e exibe datas locais com envio ISO.
+
 ### Adições além do design original
 
 O detalhe da importação usa lista responsiva com prévia do parser, filtros por linha, drawer de

@@ -86,6 +86,13 @@ desfecho é terminal.
 Sugestões vindas de importação carregam badges de dedup/conciliação (duplicata/suspeita/casada) e
 links para a transação relacionada; ver [Importação](imports.md).
 
+### Confirmação de transferência
+
+A confirmação pela inbox preserva o resumo de contas/valores e preenche descrição/data pela
+sugestão de saída. Os rótulos editáveis são associados aos campos; a data aparece em DD/MM/AAAA
+e é enviada em YYYY-MM-DD. Par incompleto ou descrição vazia mantêm a confirmação desabilitada.
+O modal de 640 px tem rolagem interna em telas estreitas ou baixas.
+
 ## API
 
 | Método | Rota | Propósito |

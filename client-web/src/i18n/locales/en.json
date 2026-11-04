@@ -880,6 +880,7 @@
       "deleteError": "Could not delete the card."
     },
     "statements": {
+      "paymentDetails": "Date and description",
       "title": "Statements",
       "referenceMonth": "Reference month",
       "dueDate": "Due date",

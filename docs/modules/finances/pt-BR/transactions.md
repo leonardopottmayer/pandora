@@ -95,6 +95,14 @@ Uma transferência são **dois lançamentos ligados** (D3), construídos atomica
 `POST /transactions/transfer` cria uma transferência; `POST /pending-transactions/transfer` cria uma a
 partir de um par de sugestões do inbox (ver [Recorrências e inbox](recurrences-and-inbox.md)).
 
+## Formulário de transferência
+
+O modal segue o padrão compartilhado: contas de origem/destino na mesma linha, valor de saída e
+data na seguinte, e descrição na largura inteira. Os obrigatórios ficam visíveis; o valor de entrada
+opcional fica recolhido, com orientação abaixo do campo. O formulário de 640 px empilha no celular
+e tem rolagem interna quando necessário. Recolher o opcional não apaga seu valor. O envio e a
+exclusão da conta de origem no destino mantêm o comportamento existente.
+
 ## Lançamentos agendados
 
 Criar um lançamento com data futura e `post = false` gera um lançamento `pending` que não afeta o

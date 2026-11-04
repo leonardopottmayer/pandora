@@ -129,6 +129,10 @@ closed | partially-paid | overdue ──reopen──▶ (status recomputado)
 - Auditoria: `transaction.created` + `statement.payment-received`, mais `statement.paid` quando esse
   pagamento foi o que quitou totalmente.
 
+O pagamento agrupa conta e valor obrigatórios e recolhe data/descrição opcionais em uma seção
+nomeada. Preserva o saldo restante preenchido e envia null nos opcionais vazios. O modal de
+640 px empilha no celular e tem rolagem interna quando necessário.
+
 ## Quitar sem caixa (write-off de onboarding)
 
 `POST /statements/{id}/settle` → `SettleStatementCommand`:

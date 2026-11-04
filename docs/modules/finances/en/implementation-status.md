@@ -29,6 +29,8 @@ to tell the difference between "documented because it exists" and "documented as
 
 Statement details now use the shared heading and figures, controlled filters with a secondary overlay, a responsive scrolling table and on-demand attachments. See [Statement detail](cards-and-statements.md#statement-detail-screen).
 
+Transfer and statement-payment forms use paired required fields, folded optional inputs and scrolling modal bodies. Inbox transfer confirmation has associated input labels and localized dates with ISO submission.
+
 ### Additions beyond the original design
 
 Import details use a responsive row list with parser previews, row filters, a read-only data drawer
