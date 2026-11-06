@@ -27,6 +27,7 @@ organized by module plus a few cross-cutting concerns.
   | [Integrations](modules/integrations/README.md) | Implemented (I1–I3, I5); I5 real-Google check pending | OAuth, API-key and password credentials, encrypted at rest; many accounts per provider |
   | [Communications](modules/communications/README.md) | M1–M4 (read, organize, send, rules) done | Email inbox (Gmail, Titan/IMAP): read, organize, send and rules |
   | [Assistant](modules/assistant/README.md) | Implemented (web + Telegram, text + voice, 25 tools) | Natural-language commands over the other modules (Gemini, tools per module) |
+  | [Admin](modules/admin/README.md) | Planned | Global feature flags, per-action permissions, master admin panel |
   | [Files](modules/files/README.md) | F1 (catalog) and F2 (metadata) implemented; F1 homelab check pending | Catalog of the user's disks, fed by the desktop agent |
 
 - **A cross-cutting decision** that no single module owns:
