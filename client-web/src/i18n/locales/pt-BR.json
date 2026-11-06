@@ -106,7 +106,8 @@
     "all": "Todos",
     "none": "Nenhum",
     "yes": "Sim",
-    "no": "Nao"
+    "no": "Nao",
+    "close": "Fechar"
   },
   "nav": {
     "assistant": "Assistente",
@@ -154,7 +155,12 @@
     "mail": "Email",
     "mailInbox": "Mensagens",
     "mailAccounts": "Contas",
-    "mailRules": "Regras"
+    "mailRules": "Regras",
+    "admin": "Administração",
+    "adminUsers": "Usuários",
+    "adminRoles": "Papéis",
+    "adminFeatures": "Funcionalidades",
+    "adminAudit": "Auditoria"
   },
   "theme": {
     "toLight": "Tema claro",
@@ -2231,6 +2237,218 @@
       "deleteTitle": "Remover {{address}}?",
       "deleteDesc": "A cópia das mensagens no Pandora é apagada; nada muda no servidor. A conta continua em Conexões.",
       "deleteError": "Não foi possível remover a caixa."
+    }
+  },
+  "forbidden": {
+    "subtitle": "Você não tem permissão para abrir esta página."
+  },
+  "admin": {
+    "loadError": "Não foi possível carregar esta página.",
+    "saveError": "Não foi possível salvar a alteração.",
+    "everything": "Tudo",
+    "all": "todos",
+    "mfaRequired": {
+      "title": "Ative a verificação em duas etapas",
+      "description": "O painel de administração muda o que todos podem fazer, por isso exige a verificação em duas etapas na sua conta.",
+      "action": "Ir para segurança"
+    },
+    "features": {
+      "subtitle": "Liga ou desliga módulos e recursos para todos, inclusive os administradores.",
+      "changed": "Alterada",
+      "offWithParent": "Desligada porque o módulo acima está desligado.",
+      "turnOff": "Desligar",
+      "turnOffConfirm": "Desligar {{name}}?",
+      "turnOffContent": "Ninguém verá nem usará isto até ser ligado de novo.",
+      "turnOffWithChildren": "Ninguém verá nem usará isto até ser ligado de novo. Também desliga: {{children}}.",
+      "turnedOn": "Ligada.",
+      "turnedOff": "Desligada."
+    },
+    "featureNames": {
+      "finances_import": "Importação de extratos"
+    },
+    "roles": {
+      "subtitle": "Um papel é um conjunto de permissões. Toda conta nova recebe o papel padrão.",
+      "new": "Novo papel",
+      "role": "Papel",
+      "holders": "Usuários",
+      "system": "Sistema",
+      "default": "Padrão",
+      "empty": "Nenhum papel ainda.",
+      "name": "Nome",
+      "nameRequired": "Informe o nome do papel.",
+      "description": "Descrição",
+      "moreActions": "Mais ações para {{name}}",
+      "searchPermissions": "Buscar módulos e recursos",
+      "missingRead": "Estas permissões também precisam do \"Ver\" do recurso:",
+      "featureOff": "Desligada",
+      "systemReadOnly": "O papel admin tem todas as permissões e não pode ser alterado.",
+      "created": "Papel criado.",
+      "updated": "Papel salvo.",
+      "deleted": "Papel excluído.",
+      "deleteConfirm": "Excluir este papel?",
+      "deleteContent_one": "{{name}} — {{count}} usuário perde o papel.",
+      "deleteContent_other": "{{name}} — {{count}} usuários perdem o papel."
+    },
+    "users": {
+      "subtitle": "Todos que têm conta: seus papéis, suas exceções e o que podem fazer.",
+      "user": "Usuário",
+      "roles": "Papéis",
+      "lastSignIn": "Último acesso",
+      "createdAt": "Criado em",
+      "email": "E-mail",
+      "username": "Usuário",
+      "mfa": "Verificação em duas etapas",
+      "mfaOn": "Ativa",
+      "mfaOff": "Desativada",
+      "disabled": "Desativado",
+      "notActivated": "Não ativado",
+      "search": "Buscar por nome, e-mail ou usuário",
+      "anyRole": "Qualquer papel",
+      "filterByRole": "Filtrar por papel",
+      "bulkRole": "Papel para os usuários selecionados",
+      "pickRole_one": "Papel para {{count}} usuário",
+      "pickRole_other": "Papel para {{count}} usuários",
+      "addRole": "Dar papel",
+      "removeRole": "Tirar papel",
+      "rolesAdded_one": "Papel dado a {{count}} usuário.",
+      "rolesAdded_other": "Papel dado a {{count}} usuários.",
+      "rolesRemoved_one": "Papel tirado de {{count}} usuário.",
+      "rolesRemoved_other": "Papel tirado de {{count}} usuários.",
+      "empty": "Nenhum usuário encontrado.",
+      "count_one": "{{count}} usuário",
+      "count_other": "{{count}} usuários",
+      "exceptions": "Exceções",
+      "exceptionsHelp": "Permite ou nega uma permissão, ou um grupo inteiro com .* no fim (finances.cards.*). Negar vence os papéis.",
+      "pattern": "Permissão",
+      "effect": "Efeito",
+      "effects": {
+        "allow": "Permitir",
+        "deny": "Negar"
+      },
+      "addException": "Adicionar exceção",
+      "removeException": "Remover exceção",
+      "exceptionsSaved": "Exceções salvas.",
+      "effective": "O que pode fazer",
+      "noPermissions": "Nenhuma permissão.",
+      "viaRole": "pelo papel {{name}}",
+      "viaAllow": "permitido diretamente",
+      "viaDeny": "negado diretamente",
+      "revokeSessions": "Encerrar sessões",
+      "sessionsRevoked": "Sessões encerradas. Em alguns minutos o usuário precisa entrar de novo em todos os dispositivos.",
+      "disable": "Desativar",
+      "enable": "Reativar",
+      "disableConfirm": "Desativar esta conta?",
+      "disableContent": "{{name}} não poderá entrar até ser reativado e será desconectado de todos os dispositivos em alguns minutos.",
+      "disabledDone": "Conta desativada.",
+      "enabledDone": "Conta reativada."
+    },
+    "audit": {
+      "subtitle": "Toda alteração feita no painel, e as que o sistema faz sozinho.",
+      "when": "Quando",
+      "change": "Alteração",
+      "system": "Sistema",
+      "gone": "(removido)",
+      "empty": "Nenhuma alteração ainda.",
+      "loadMore": "Carregar mais antigas",
+      "targets": {
+        "all": "Todas",
+        "user": "Usuários",
+        "role": "Papéis",
+        "feature": "Funcionalidades"
+      },
+      "roleAssigned": "recebeu o papel {{role}}",
+      "roleRemoved": "perdeu o papel {{role}}",
+      "featureOn": "ligada",
+      "featureOff": "desligada",
+      "exceptionsChanged_one": "exceções alteradas ({{count}} agora)",
+      "exceptionsChanged_other": "exceções alteradas ({{count}} agora)",
+      "actions": {
+        "role_created": "papel criado",
+        "role_updated": "papel alterado",
+        "role_deleted": "papel excluído",
+        "user_disabled": "conta desativada",
+        "user_enabled": "conta reativada",
+        "user_sessions-revoked": "sessões encerradas"
+      }
+    },
+    "actions": {
+      "read": "Ver",
+      "create": "Criar",
+      "update": "Editar",
+      "delete": "Excluir",
+      "manage": "Gerenciar",
+      "approve": "Aprovar",
+      "assign": "Atribuir",
+      "close": "Fechar",
+      "pay": "Pagar",
+      "post": "Efetivar",
+      "reject": "Rejeitar",
+      "reverse": "Estornar",
+      "run": "Executar",
+      "void": "Anular",
+      "send": "Enviar",
+      "test": "Testar"
+    },
+    "resources": {
+      "finances": {
+        "accounts": "Contas",
+        "cards": "Cartões",
+        "statements": "Faturas",
+        "transactions": "Lançamentos",
+        "pending": "Caixa de entrada",
+        "recurrences": "Recorrências",
+        "categories": "Categorias",
+        "tags": "Tags",
+        "attachments": "Anexos",
+        "imports": "Importações",
+        "audit": "Auditoria"
+      },
+      "notes": {
+        "spaces": "Espaços",
+        "pages": "Páginas",
+        "media": "Biblioteca",
+        "tags": "Tags"
+      },
+      "agenda": {
+        "calendars": "Calendários",
+        "events": "Eventos",
+        "reminders": "Lembretes",
+        "lists": "Listas de tarefas",
+        "tasks": "Tarefas",
+        "alerts": "Alertas",
+        "preferences": "Configurações"
+      },
+      "channels": {
+        "channels": "Canais",
+        "notifications": "Notificações"
+      },
+      "communications": {
+        "mailboxes": "Contas",
+        "messages": "Mensagens",
+        "labels": "Marcadores",
+        "rules": "Regras"
+      },
+      "files": {
+        "roots": "Dispositivos e raízes",
+        "scans": "Varreduras",
+        "entries": "Arquivos",
+        "review": "Revisão",
+        "filters": "Filtros",
+        "preferences": "Configurações"
+      },
+      "integrations": {
+        "accounts": "Conexões"
+      },
+      "assistant": {
+        "commands": "Comandos",
+        "profile": "Configurações"
+      },
+      "admin": {
+        "users": "Usuários",
+        "roles": "Papéis",
+        "features": "Funcionalidades",
+        "audit": "Auditoria"
+      }
     }
   }
 }

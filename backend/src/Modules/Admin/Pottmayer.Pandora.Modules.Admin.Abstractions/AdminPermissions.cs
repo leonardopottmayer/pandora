@@ -29,6 +29,7 @@ public static class AdminPermissions
     {
         public const string Resource = "roles";
 
+        public const string Read = Module + "." + Resource + "." + PermissionActions.Read;
         public const string Manage = Module + "." + Resource + "." + Actions.Manage;
     }
 

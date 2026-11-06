@@ -81,7 +81,10 @@ A component used by one screen stays next to it in `pages/<area>/`. It moves to 
   `{ path: 'finances/accounts', lazy: page(() => import('@/modules/finances/pages/accounts/AccountsListPage'), 'AccountsListPage') }`.
   Screens are named exports.
 - Routes are in English and are what the browser shows (`/finances/recurring`).
-- The sidebar's entries are in `layouts/navigation.tsx`. A new screen needs both.
+- The sidebar's entries are in `layouts/navigation.tsx`. A new screen needs both. Each entry declares the
+  `feature` and `permission` it needs: the menu hides it and its route shows the 404/403 page when the
+  user lacks them (`layouts/navigationAccess.ts`). Buttons use `usePermission` or `<Can>` from
+  `modules/identity`.
 
 ## Language
 

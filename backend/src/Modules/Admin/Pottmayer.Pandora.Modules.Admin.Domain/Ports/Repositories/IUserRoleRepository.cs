@@ -10,4 +10,12 @@ public interface IUserRoleRepository : IStandardRepository<UserRole, Guid>
 
     /// <summary>Every pattern held by the roles of the user.</summary>
     Task<IReadOnlyList<string>> ListPatternsAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>Every user-role pair, for the users list.</summary>
+    Task<IReadOnlyList<UserRole>> ListAllAsync(CancellationToken ct = default);
+
+    Task<IReadOnlyList<UserRole>> ListForUserAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>The ids of the users holding the role.</summary>
+    Task<IReadOnlyList<Guid>> ListHolderIdsAsync(Guid roleId, CancellationToken ct = default);
 }

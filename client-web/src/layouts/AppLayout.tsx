@@ -16,7 +16,11 @@ import {
 import { useAuth } from '@/modules/identity/context/auth-context'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { onAccent } from '@/app/theme'
+import { useAccess } from '@/modules/identity/hooks/useAccess'
+import { NotFoundPage } from '@/pages/NotFoundPage'
+import { ForbiddenPage } from '@/pages/ForbiddenPage'
 import { navigationModules } from './navigation'
+import { routeAccess, visibleModules } from './navigationAccess'
 import { loadCollapsed, loadOpenModules, saveCollapsed, saveOpenModules } from './sidebarState'
 
 const { Header, Sider, Content } = Layout
@@ -35,6 +39,9 @@ export function AppLayout() {
   // Uma tela aberta pela primeira vez baixa o próprio pedaço do app; a tela atual fica enquanto isso.
   const loadingScreen = useNavigation().state === 'loading'
   const { token } = theme.useToken()
+  const access = useAccess()
+  const modules = visibleModules(navigationModules, access)
+  const currentAccess = routeAccess(navigationModules, location.pathname, access)
 
   const [siderCollapsed, setSiderCollapsed] = useState(loadCollapsed)
   const [openModules, setOpenModules] = useState(() => loadOpenModules(navigationModules.map((m) => m.key)))
@@ -55,7 +62,7 @@ export function AppLayout() {
     navigate('/login', { replace: true })
   }
 
-  const menuItems: MenuProps['items'] = navigationModules.map((mod) => ({
+  const menuItems: MenuProps['items'] = modules.map((mod) => ({
     key: mod.key,
     icon: mod.icon,
     label: t(mod.labelKey),
@@ -70,7 +77,7 @@ export function AppLayout() {
     })),
   }))
 
-  const selectedKeys = navigationModules
+  const selectedKeys = modules
     .flatMap((m) => m.screens)
     .filter((s) => s.path === location.pathname)
     .map((s) => s.path)
@@ -267,7 +274,9 @@ export function AppLayout() {
               style={{ background: token.colorPrimary }}
             />
           )}
-          <Outlet />
+          {currentAccess === 'allowed' && <Outlet />}
+          {currentAccess === 'feature-off' && <NotFoundPage />}
+          {currentAccess === 'forbidden' && <ForbiddenPage />}
         </Content>
       </Layout>
     </Layout>

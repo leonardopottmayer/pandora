@@ -17,4 +17,13 @@ public sealed class UserRoleRepository(IDataContextAccessor accessor)
             .Join(DbContext.Set<RolePermission>(), r => r.RoleId, p => p.RoleId, (_, p) => p.Pattern)
             .Distinct()
             .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<UserRole>> ListAllAsync(CancellationToken ct = default)
+        => await Queryable().AsNoTracking().ToListAsync(ct);
+
+    public async Task<IReadOnlyList<UserRole>> ListForUserAsync(Guid userId, CancellationToken ct = default)
+        => await Queryable(r => r.UserId == userId).ToListAsync(ct);
+
+    public async Task<IReadOnlyList<Guid>> ListHolderIdsAsync(Guid roleId, CancellationToken ct = default)
+        => await Queryable(r => r.RoleId == roleId).Select(r => r.UserId).ToListAsync(ct);
 }

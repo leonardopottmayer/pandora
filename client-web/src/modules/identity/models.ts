@@ -23,12 +23,16 @@ export interface SignUpRequest {
   password: string
 }
 
-/** Current user (future GET /api/v1/identity/me). */
+/** Current user (GET /api/v1/identity/me). */
 export interface CurrentUser {
   id: string
   name: string
   email: string
   username: string
+  /** Feature flags switched on in the system. */
+  features: string[]
+  /** The user's effective permission keys (wildcards already expanded). */
+  permissions: string[]
 }
 
 export interface MfaStatus {

@@ -17,4 +17,18 @@ public sealed class Role : IAuditable
     public DateTimeOffset? UpdatedAt { get; set; }
 
     private Role() { }
+
+    public static Role Create(string name, string? description) => new()
+    {
+        Id = Guid.CreateVersion7(),
+        Name = name.Trim(),
+        Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
+    };
+
+    /// <summary>Renames the role and replaces its description. System roles are refused by the caller.</summary>
+    public void Rename(string name, string? description)
+    {
+        Name = name.Trim();
+        Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+    }
 }

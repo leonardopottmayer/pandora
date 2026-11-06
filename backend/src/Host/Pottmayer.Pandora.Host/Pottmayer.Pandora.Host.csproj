@@ -59,6 +59,7 @@
     <ProjectReference Include="../../Modules/Admin/Pottmayer.Pandora.Modules.Admin.Application/Pottmayer.Pandora.Modules.Admin.Application.csproj" />
     <ProjectReference Include="../../Modules/Admin/Pottmayer.Pandora.Modules.Admin.Infrastructure/Pottmayer.Pandora.Modules.Admin.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Admin/Pottmayer.Pandora.Modules.Admin.Persistence/Pottmayer.Pandora.Modules.Admin.Persistence.csproj" />
+    <ProjectReference Include="../../Modules/Admin/Pottmayer.Pandora.Modules.Admin.Presentation/Pottmayer.Pandora.Modules.Admin.Presentation.csproj" />
     <!-- Tars: Core -->
     <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.20-local.2" />
     <!-- Tars: Web -->

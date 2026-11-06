@@ -106,7 +106,8 @@
     "all": "All",
     "none": "None",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "close": "Close"
   },
   "nav": {
     "assistant": "Assistant",
@@ -154,7 +155,12 @@
     "mail": "Email",
     "mailInbox": "Messages",
     "mailAccounts": "Accounts",
-    "mailRules": "Rules"
+    "mailRules": "Rules",
+    "admin": "Admin",
+    "adminUsers": "Users",
+    "adminRoles": "Roles",
+    "adminFeatures": "Features",
+    "adminAudit": "Audit"
   },
   "theme": {
     "toLight": "Light theme",
@@ -2231,6 +2237,218 @@
       "deleteTitle": "Remove {{address}}?",
       "deleteDesc": "Pandora's copy of the messages is deleted; nothing changes on the server. The account stays in Connections.",
       "deleteError": "Could not remove the mailbox."
+    }
+  },
+  "forbidden": {
+    "subtitle": "You don't have permission to open this page."
+  },
+  "admin": {
+    "loadError": "Could not load this page.",
+    "saveError": "Could not save the change.",
+    "everything": "Everything",
+    "all": "all",
+    "mfaRequired": {
+      "title": "Turn on two-step verification",
+      "description": "The admin panel changes what everyone can do, so it needs two-step verification on your account.",
+      "action": "Go to security"
+    },
+    "features": {
+      "subtitle": "Switch modules and capabilities on or off for everyone, administrators included.",
+      "changed": "Changed",
+      "offWithParent": "Off because the module above is off.",
+      "turnOff": "Turn off",
+      "turnOffConfirm": "Turn off {{name}}?",
+      "turnOffContent": "Nobody will see it or use it until it is turned on again.",
+      "turnOffWithChildren": "Nobody will see it or use it until it is turned on again. This also turns off: {{children}}.",
+      "turnedOn": "Turned on.",
+      "turnedOff": "Turned off."
+    },
+    "featureNames": {
+      "finances_import": "Statement imports"
+    },
+    "roles": {
+      "subtitle": "A role is a set of permissions. Every new account gets the default role.",
+      "new": "New role",
+      "role": "Role",
+      "holders": "Users",
+      "system": "System",
+      "default": "Default",
+      "empty": "No roles yet.",
+      "name": "Name",
+      "nameRequired": "Enter the role's name.",
+      "description": "Description",
+      "moreActions": "More actions for {{name}}",
+      "searchPermissions": "Search modules and resources",
+      "missingRead": "These permissions also need their resource's \"View\":",
+      "featureOff": "Off",
+      "systemReadOnly": "The admin role holds every permission and cannot be changed.",
+      "created": "Role created.",
+      "updated": "Role saved.",
+      "deleted": "Role deleted.",
+      "deleteConfirm": "Delete this role?",
+      "deleteContent_one": "{{name}} — {{count}} user loses it.",
+      "deleteContent_other": "{{name}} — {{count}} users lose it."
+    },
+    "users": {
+      "subtitle": "Everyone with an account: their roles, their exceptions and what they can do.",
+      "user": "User",
+      "roles": "Roles",
+      "lastSignIn": "Last sign-in",
+      "createdAt": "Created",
+      "email": "Email",
+      "username": "Username",
+      "mfa": "Two-step verification",
+      "mfaOn": "On",
+      "mfaOff": "Off",
+      "disabled": "Disabled",
+      "notActivated": "Not activated",
+      "search": "Search by name, email or username",
+      "anyRole": "Any role",
+      "filterByRole": "Filter by role",
+      "bulkRole": "Role for the selected users",
+      "pickRole_one": "Role for {{count}} user",
+      "pickRole_other": "Role for {{count}} users",
+      "addRole": "Add role",
+      "removeRole": "Remove role",
+      "rolesAdded_one": "Role given to {{count}} user.",
+      "rolesAdded_other": "Role given to {{count}} users.",
+      "rolesRemoved_one": "Role taken from {{count}} user.",
+      "rolesRemoved_other": "Role taken from {{count}} users.",
+      "empty": "No users match.",
+      "count_one": "{{count}} user",
+      "count_other": "{{count}} users",
+      "exceptions": "Exceptions",
+      "exceptionsHelp": "Allow or deny one permission, or a whole group with .* at the end (finances.cards.*). A deny beats the roles.",
+      "pattern": "Permission",
+      "effect": "Effect",
+      "effects": {
+        "allow": "Allow",
+        "deny": "Deny"
+      },
+      "addException": "Add exception",
+      "removeException": "Remove exception",
+      "exceptionsSaved": "Exceptions saved.",
+      "effective": "What they can do",
+      "noPermissions": "No permissions.",
+      "viaRole": "via {{name}}",
+      "viaAllow": "allowed directly",
+      "viaDeny": "denied directly",
+      "revokeSessions": "End sessions",
+      "sessionsRevoked": "Sessions ended. Within a few minutes they must sign in again on every device.",
+      "disable": "Disable",
+      "enable": "Enable",
+      "disableConfirm": "Disable this account?",
+      "disableContent": "{{name}} won't be able to sign in until enabled again, and is signed out of every device within a few minutes.",
+      "disabledDone": "Account disabled.",
+      "enabledDone": "Account enabled."
+    },
+    "audit": {
+      "subtitle": "Every change made in the panel, and the ones the system makes on its own.",
+      "when": "When",
+      "change": "Change",
+      "system": "System",
+      "gone": "(removed)",
+      "empty": "No changes yet.",
+      "loadMore": "Load older",
+      "targets": {
+        "all": "All",
+        "user": "Users",
+        "role": "Roles",
+        "feature": "Features"
+      },
+      "roleAssigned": "given the role {{role}}",
+      "roleRemoved": "lost the role {{role}}",
+      "featureOn": "turned on",
+      "featureOff": "turned off",
+      "exceptionsChanged_one": "exceptions changed ({{count}} now)",
+      "exceptionsChanged_other": "exceptions changed ({{count}} now)",
+      "actions": {
+        "role_created": "role created",
+        "role_updated": "role changed",
+        "role_deleted": "role deleted",
+        "user_disabled": "account disabled",
+        "user_enabled": "account enabled",
+        "user_sessions-revoked": "sessions ended"
+      }
+    },
+    "actions": {
+      "read": "View",
+      "create": "Create",
+      "update": "Edit",
+      "delete": "Delete",
+      "manage": "Manage",
+      "approve": "Approve",
+      "assign": "Assign",
+      "close": "Close",
+      "pay": "Pay",
+      "post": "Post",
+      "reject": "Reject",
+      "reverse": "Reverse",
+      "run": "Run",
+      "void": "Void",
+      "send": "Send",
+      "test": "Test"
+    },
+    "resources": {
+      "finances": {
+        "accounts": "Accounts",
+        "cards": "Cards",
+        "statements": "Statements",
+        "transactions": "Transactions",
+        "pending": "Inbox",
+        "recurrences": "Recurring",
+        "categories": "Categories",
+        "tags": "Tags",
+        "attachments": "Attachments",
+        "imports": "Imports",
+        "audit": "Audit"
+      },
+      "notes": {
+        "spaces": "Spaces",
+        "pages": "Pages",
+        "media": "Library",
+        "tags": "Tags"
+      },
+      "agenda": {
+        "calendars": "Calendars",
+        "events": "Events",
+        "reminders": "Reminders",
+        "lists": "Task lists",
+        "tasks": "Tasks",
+        "alerts": "Alerts",
+        "preferences": "Settings"
+      },
+      "channels": {
+        "channels": "Channels",
+        "notifications": "Notifications"
+      },
+      "communications": {
+        "mailboxes": "Accounts",
+        "messages": "Messages",
+        "labels": "Labels",
+        "rules": "Rules"
+      },
+      "files": {
+        "roots": "Devices and roots",
+        "scans": "Scans",
+        "entries": "Files",
+        "review": "Review",
+        "filters": "Filters",
+        "preferences": "Settings"
+      },
+      "integrations": {
+        "accounts": "Connections"
+      },
+      "assistant": {
+        "commands": "Commands",
+        "profile": "Settings"
+      },
+      "admin": {
+        "users": "Users",
+        "roles": "Roles",
+        "features": "Features",
+        "audit": "Audit"
+      }
     }
   }
 }

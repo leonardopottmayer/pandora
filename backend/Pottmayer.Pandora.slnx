@@ -93,6 +93,7 @@
     <Project Path="src/Modules/Admin/Pottmayer.Pandora.Modules.Admin.Application/Pottmayer.Pandora.Modules.Admin.Application.csproj" />
     <Project Path="src/Modules/Admin/Pottmayer.Pandora.Modules.Admin.Infrastructure/Pottmayer.Pandora.Modules.Admin.Infrastructure.csproj" />
     <Project Path="src/Modules/Admin/Pottmayer.Pandora.Modules.Admin.Persistence/Pottmayer.Pandora.Modules.Admin.Persistence.csproj" />
+    <Project Path="src/Modules/Admin/Pottmayer.Pandora.Modules.Admin.Presentation/Pottmayer.Pandora.Modules.Admin.Presentation.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Pottmayer.Pandora.Modules.Identity.Tests/Pottmayer.Pandora.Modules.Identity.Tests.csproj" Id="b0000006-0000-0000-0000-000000000001" />

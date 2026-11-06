@@ -11,4 +11,7 @@ public sealed class UserPermission
     public string Effect { get; private set; } = default!;
 
     private UserPermission() { }
+
+    public static UserPermission Create(Guid userId, string pattern, string effect) =>
+        new() { UserId = userId, Pattern = pattern, Effect = effect };
 }

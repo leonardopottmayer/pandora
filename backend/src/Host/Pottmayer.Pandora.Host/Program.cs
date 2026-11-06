@@ -43,6 +43,7 @@ using Pottmayer.Pandora.Modules.Files.Presentation.DI;
 using Pottmayer.Pandora.Modules.Admin.Application.DI;
 using Pottmayer.Pandora.Modules.Admin.Infrastructure.DI;
 using Pottmayer.Pandora.Modules.Admin.Persistence.DI;
+using Pottmayer.Pandora.Modules.Admin.Presentation.DI;
 using Pottmayer.Pandora.Shared.Infrastructure.DI;
 using Pottmayer.Pandora.Shared.Persistence.DI;
 using Pottmayer.Tars.Core.Localization.DI;
@@ -118,7 +119,8 @@ builder.Services.AddControllers()
                 .AddIntegrationsPresentationPart()
                 .AddAssistantPresentationPart()
                 .AddCommunicationsPresentationPart()
-                .AddFilesPresentationPart();
+                .AddFilesPresentationPart()
+                .AddAdminPresentationPart();
 
 // API Versioning
 builder.Services.AddApiVersioning(options =>

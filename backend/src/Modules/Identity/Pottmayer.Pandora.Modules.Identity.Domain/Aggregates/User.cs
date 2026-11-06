@@ -77,6 +77,12 @@ public sealed class User : AggregateRoot<Guid>, IAuditable
         LastPasswordChangedAt = timeProvider.GetUtcNow();
     }
 
+    /// <summary>Blocks sign-in and refresh (an administrator's decision). Idempotent.</summary>
+    public void Disable(TimeProvider timeProvider) => DisabledAt ??= timeProvider.GetUtcNow();
+
+    /// <summary>Lets a disabled account sign in again.</summary>
+    public void Enable() => DisabledAt = null;
+
     public void RecordSuccessfulSignIn(TimeProvider timeProvider)
         => LastSignInAt = timeProvider.GetUtcNow();
 

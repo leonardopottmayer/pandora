@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Pottmayer.Pandora.Modules.Admin.Application.Authorization;
 using Pottmayer.Pandora.Modules.Admin.Application.Bootstrap;
+using Pottmayer.Pandora.Modules.Admin.Application.Services;
+using Pottmayer.Tars.Core.Mediator.DI;
 using Pottmayer.Tars.FeatureFlags.Abstractions;
 using Pottmayer.Tars.Messaging.DI;
 using Pottmayer.Tars.Security.Authorization.Abstractions;
@@ -13,6 +15,9 @@ public static class ApplicationDI
 {
     public static IServiceCollection AddAdminApplication(this IServiceCollection services)
     {
+        services.AddTarsMediator(opts =>
+            opts.RegisterHandlersFromAssembly(typeof(ApplicationDI).Assembly));
+
         // The stores behind the Tars flag service and permission checker. Read-only: the panel writes
         // the tables itself and then invalidates the caches.
         services.AddScoped<IFeatureFlagStore, FeatureFlagStore>();
@@ -20,12 +25,14 @@ public static class ApplicationDI
 
         services.AddScoped<RoleAssigner>();
         services.AddScoped<AdminBootstrapper>();
+        services.AddScoped<LastAdminGuard>();
 
         // The panel's own permissions. Admin has no feature flag: switching it off would lock everyone out.
         services.AddTarsPermissionDefinitions(p => p
+            .CheckUsagesIn(typeof(ApplicationDI).Assembly)
             .Module(AdminPermissions.Module)
                 .Resource(AdminPermissions.Users.Resource).Read().Actions(AdminPermissions.Actions.Manage)
-                .Resource(AdminPermissions.Roles.Resource).Actions(AdminPermissions.Actions.Manage)
+                .Resource(AdminPermissions.Roles.Resource).Read().Actions(AdminPermissions.Actions.Manage)
                 .Resource(AdminPermissions.Features.Resource).Actions(AdminPermissions.Actions.Manage)
                 .Resource(AdminPermissions.Audit.Resource).Read());
 

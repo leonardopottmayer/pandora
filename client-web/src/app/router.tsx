@@ -87,6 +87,12 @@ export const router = createBrowserRouter([
       { path: 'mail', lazy: page(() => import('@/modules/communications/pages/MailPage'), 'MailPage') },
       { path: 'mail/accounts', lazy: page(() => import('@/modules/communications/pages/MailAccountsPage'), 'MailAccountsPage') },
       { path: 'mail/rules', lazy: page(() => import('@/modules/communications/pages/MailRulesPage'), 'MailRulesPage') },
+
+      // Admin
+      { path: 'admin/users', lazy: page(() => import('@/modules/admin/pages/users/UsersPage'), 'UsersPage') },
+      { path: 'admin/roles', lazy: page(() => import('@/modules/admin/pages/roles/RolesPage'), 'RolesPage') },
+      { path: 'admin/features', lazy: page(() => import('@/modules/admin/pages/features/FeaturesPage'), 'FeaturesPage') },
+      { path: 'admin/audit', lazy: page(() => import('@/modules/admin/pages/audit/AuditPage'), 'AuditPage') },
     ],
   },
 

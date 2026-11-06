@@ -1,7 +1,7 @@
 # Admin Module — Product Plan
 
-> **Status:** design approved (2026-11-06); A1–A3 built (Tars packages, Admin module and enforcement,
-> see §9), A4 (panel endpoints and screens) next. Covers the Tars packages it needs (feature flags and
+> **Status:** design approved (2026-11-06); A1–A4 built (Tars packages, Admin module and enforcement
+> in §9, the panel in §10). Covers the Tars packages it needs (feature flags and
 > authorization) and the Pandora module that uses them.
 > 🇧🇷 [Versão em português](../pt-BR/product-plan.md)
 >
@@ -298,7 +298,7 @@ The catalog as declared:
 | `files` | `roots`: CRUD · `scans`: read, run · `entries`: read · `review`: read, update · `filters`: read, update, delete · `preferences`: read, update |
 | `integrations` | `accounts`: CRUD |
 | `assistant` | `commands`: read, run · `profile`: read, update |
-| — (no flag) | `admin.users`: read, manage · `admin.roles`, `admin.features`: manage · `admin.audit`: read |
+| — (no flag) | `admin.users`, `admin.roles`: read, manage · `admin.features`: manage · `admin.audit`: read |
 
 Decisions taken while building:
 
@@ -316,3 +316,47 @@ Decisions taken while building:
 5. **Moved to A4**: the panel's endpoints, the MFA requirement for `admin` holders and the guard on the
    last `admin`. Until then the only writes are the bootstrap's; changing grants means editing the
    tables and restarting (the caches are per process).
+
+---
+
+## 10. What A4 built (2026-11-06)
+
+- **API** (`Admin.Presentation`, `AdminController` on `/api/v1/admin`), each request marked with its
+  `admin.*` permission:
+
+  | Endpoint | Permission |
+  |---|---|
+  | `GET catalog` | `admin.roles.read` |
+  | `GET features` · `PUT features/{key}` | `admin.features.manage` |
+  | `GET roles` | `admin.roles.read` |
+  | `POST roles` · `PUT roles/{id}` · `DELETE roles/{id}` | `admin.roles.manage` |
+  | `GET users` · `GET users/{id}` | `admin.users.read` |
+  | `POST users/roles` (bulk add/remove) · `PUT users/{id}/exceptions` · `PUT users/{id}/disabled` · `POST users/{id}/revoke-sessions` | `admin.users.manage` |
+  | `GET audit?targetType&targetId&actorId&before&limit` | `admin.audit.read` |
+
+  `admin.roles.read` was added so the users screen can list roles without managing them. Every write
+  is audited in `adm006` with its before and after, then drops the affected caches.
+- **MFA for the panel**: `RequireMfaFilter` refuses every panel request with 403 `Admin.MfaRequired`
+  while the caller's account has no two-step verification. Checked at the panel, not at sign-in, so
+  Identity never learns about roles; an admin without MFA still uses the other modules.
+- **Last admin**: removing `admin` from, or disabling, the last activated and enabled holder is a 409
+  `Admin.LastAdmin`.
+- **Identity**: `IUserDirectory` lists, finds, disables/enables (ending the sessions) and revokes the
+  sessions of accounts; `User.Disable`/`Enable`. Both end the refresh tokens only: the access token in
+  hand stays valid until it expires (stateless JWT), so the user is signed out within minutes, not at once.
+- **Frontend**:
+  - `useFeature`, `usePermission`, `useAllows` and `<Can>` (`modules/identity`) read `/me`; while it is
+    unknown nothing is hidden.
+  - Every entry in `layouts/navigation.tsx` declares its `feature` and `permission`. The menu drops what
+    the user cannot open; a route under a switched-off feature shows the 404 page, one without the
+    permission a 403 page.
+  - Screens in `modules/admin`: **Users** (search, role filter, bulk add/remove role, detail drawer with
+    roles, exceptions and the effective permissions with their origin, disable/enable, end sessions),
+    **Roles** (list and a modal with the module → resource → action matrix, tri-state groups, a warning
+    for an action without its `read`, resources under a switched-off flag greyed), **Features** (the
+    flag tree with switches, confirming before turning one off) and **Audit** (newest first, by target
+    type, loading older pages).
+
+Not built: copying permissions from another user, marking a pattern left over from a removed key in
+the panel, choosing which role is the default, and paging the users list (all accounts are loaded at
+once).

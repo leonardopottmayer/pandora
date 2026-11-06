@@ -1,7 +1,7 @@
 # Módulo Admin — Plano de Produto
 
-> **Status:** design aprovado (2026-11-06); A1–A3 construídas (pacotes do Tars, módulo Admin e
-> aplicação das regras, ver §9), A4 (endpoints e telas do painel) em seguida. Cobre os pacotes do Tars
+> **Status:** design aprovado (2026-11-06); A1–A4 construídas (pacotes do Tars, módulo Admin e
+> aplicação das regras na §9, o painel na §10). Cobre os pacotes do Tars
 > de que ele precisa (feature flags e autorização) e o módulo do Pandora que os usa.
 > 🇺🇸 [English version](../en/product-plan.md)
 >
@@ -303,7 +303,7 @@ O catálogo como foi declarado:
 | `files` | `roots`: CRUD · `scans`: read, run · `entries`: read · `review`: read, update · `filters`: read, update, delete · `preferences`: read, update |
 | `integrations` | `accounts`: CRUD |
 | `assistant` | `commands`: read, run · `profile`: read, update |
-| — (sem flag) | `admin.users`: read, manage · `admin.roles`, `admin.features`: manage · `admin.audit`: read |
+| — (sem flag) | `admin.users`, `admin.roles`: read, manage · `admin.features`: manage · `admin.audit`: read |
 
 Decisões tomadas na construção:
 
@@ -321,3 +321,48 @@ Decisões tomadas na construção:
 5. **Foi para a A4**: os endpoints do painel, a exigência de MFA para quem tem `admin` e a trava no
    último `admin`. Até lá a única escrita é a do bootstrap; mudar concessões é editar as tabelas e
    reiniciar (os caches são por processo).
+
+---
+
+## 10. O que a A4 construiu (2026-11-06)
+
+- **API** (`Admin.Presentation`, `AdminController` em `/api/v1/admin`), cada requisição marcada com a
+  sua permissão `admin.*`:
+
+  | Endpoint | Permissão |
+  |---|---|
+  | `GET catalog` | `admin.roles.read` |
+  | `GET features` · `PUT features/{key}` | `admin.features.manage` |
+  | `GET roles` | `admin.roles.read` |
+  | `POST roles` · `PUT roles/{id}` · `DELETE roles/{id}` | `admin.roles.manage` |
+  | `GET users` · `GET users/{id}` | `admin.users.read` |
+  | `POST users/roles` (dar/tirar em lote) · `PUT users/{id}/exceptions` · `PUT users/{id}/disabled` · `POST users/{id}/revoke-sessions` | `admin.users.manage` |
+  | `GET audit?targetType&targetId&actorId&before&limit` | `admin.audit.read` |
+
+  O `admin.roles.read` entrou para a tela de usuários listar os papéis sem poder gerenciá-los. Toda
+  escrita é auditada no `adm006` com o antes e o depois, e depois descarta os caches afetados.
+- **MFA para o painel**: o `RequireMfaFilter` recusa toda requisição do painel com 403
+  `Admin.MfaRequired` enquanto a conta de quem chama não tiver verificação em duas etapas. A checagem
+  fica no painel, não no login, para o Identity não precisar saber de papéis; um admin sem MFA continua
+  usando os outros módulos.
+- **Último admin**: tirar o `admin` do último titular ativado e ativo, ou desativá-lo, é 409
+  `Admin.LastAdmin`.
+- **Identity**: o `IUserDirectory` lista, busca, desativa/reativa (encerrando as sessões) e encerra as
+  sessões das contas; `User.Disable`/`Enable`. Os dois encerram só os refresh tokens: o access token já
+  emitido vale até expirar (JWT sem estado), então o usuário cai em alguns minutos, não na hora.
+- **Frontend**:
+  - `useFeature`, `usePermission`, `useAllows` e `<Can>` (`modules/identity`) leem o `/me`; enquanto ele
+    não é conhecido, nada é escondido.
+  - Cada entrada de `layouts/navigation.tsx` declara sua `feature` e `permission`. O menu tira o que o
+    usuário não pode abrir; uma rota sob uma feature desligada mostra a página 404, uma sem a permissão
+    mostra a 403.
+  - Telas em `modules/admin`: **Usuários** (busca, filtro por papel, dar/tirar papel em lote, gaveta de
+    detalhe com papéis, exceções e as permissões efetivas com a origem, desativar/reativar, encerrar
+    sessões), **Papéis** (lista e um modal com a matriz módulo → recurso → ação, grupos com três estados,
+    aviso para ação sem o `read`, recursos sob flag desligada em cinza), **Funcionalidades** (a árvore de
+    flags com chaves, confirmando antes de desligar) e **Auditoria** (mais recentes primeiro, por tipo
+    de alvo, carregando páginas mais antigas).
+
+Não construído: copiar permissões de outro usuário, sinalizar no painel um padrão que sobrou de uma
+chave removida, escolher qual papel é o padrão e paginar a lista de usuários (todas as contas vêm de
+uma vez).

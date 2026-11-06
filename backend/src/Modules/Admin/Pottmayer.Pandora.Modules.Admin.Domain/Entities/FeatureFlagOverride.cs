@@ -9,4 +9,14 @@ public sealed class FeatureFlagOverride
     public DateTimeOffset UpdatedAt { get; private set; }
 
     private FeatureFlagOverride() { }
+
+    public static FeatureFlagOverride Create(string key, bool enabled, Guid actorId, TimeProvider timeProvider) =>
+        new() { Key = key, Enabled = enabled, UpdatedBy = actorId, UpdatedAt = timeProvider.GetUtcNow() };
+
+    public void Set(bool enabled, Guid actorId, TimeProvider timeProvider)
+    {
+        Enabled = enabled;
+        UpdatedBy = actorId;
+        UpdatedAt = timeProvider.GetUtcNow();
+    }
 }

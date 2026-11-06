@@ -81,7 +81,10 @@ módulo quando uma segunda tela precisa dele, e para `src/components/` quando um
   `{ path: 'finances/accounts', lazy: page(() => import('@/modules/finances/pages/accounts/AccountsListPage'), 'AccountsListPage') }`.
   As telas são exports nomeados.
 - As rotas são em inglês e são o que o navegador mostra (`/finances/recurring`).
-- As entradas do menu lateral ficam em `layouts/navigation.tsx`. Uma tela nova precisa dos dois.
+- As entradas do menu lateral ficam em `layouts/navigation.tsx`. Uma tela nova precisa dos dois. Cada
+  entrada declara a `feature` e a `permission` de que precisa: o menu a esconde e a rota mostra a página
+  404/403 quando falta ao usuário (`layouts/navigationAccess.ts`). Botões usam `usePermission` ou
+  `<Can>` de `modules/identity`.
 
 ## Idioma
 

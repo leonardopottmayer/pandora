@@ -7,7 +7,19 @@ namespace Pottmayer.Pandora.Modules.Admin.Domain.Entities;
 public sealed class AuditEntry
 {
     public const string RoleAssigned = "role.assigned";
+    public const string RoleRemoved = "role.removed";
+    public const string RoleCreated = "role.created";
+    public const string RoleUpdated = "role.updated";
+    public const string RoleDeleted = "role.deleted";
+    public const string ExceptionsChanged = "user.exceptions-changed";
+    public const string UserDisabled = "user.disabled";
+    public const string UserEnabled = "user.enabled";
+    public const string SessionsRevoked = "user.sessions-revoked";
+    public const string FeatureChanged = "feature.changed";
+
     public const string UserTarget = "user";
+    public const string RoleTarget = "role";
+    public const string FeatureTarget = "feature";
 
     public Guid Id { get; private set; }
     public Guid? ActorId { get; private set; }

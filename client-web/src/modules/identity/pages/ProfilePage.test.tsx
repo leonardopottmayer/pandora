@@ -12,7 +12,7 @@ function renderProfile(value: Partial<AuthContextValue>) {
   )
 }
 
-const user = { id: 'u1', name: 'Ana Maria Souza', email: 'ana@mail.test', username: 'anasouza' }
+const user = { id: 'u1', name: 'Ana Maria Souza', email: 'ana@mail.test', username: 'anasouza', features: [], permissions: [] }
 
 describe('ProfilePage', () => {
   it("shows the first and last name's initials and the user's data", () => {

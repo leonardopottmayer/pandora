@@ -15,6 +15,8 @@
     <!-- Tars: Messaging -->
     <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.0.20-local.2" />
     <!-- Tars: Data -->
+    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.20-local.2" />
+    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.20-local.2" />
     <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.20-local.2" />
     <!-- Tars: Feature flags and authorization -->
     <PackageReference Include="Pottmayer.Tars.FeatureFlags" Version="0.0.20-local.2" />
