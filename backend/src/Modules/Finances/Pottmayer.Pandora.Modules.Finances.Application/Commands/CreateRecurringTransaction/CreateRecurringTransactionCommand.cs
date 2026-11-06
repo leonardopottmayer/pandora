@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateRecurringTransaction;
 
@@ -30,5 +32,6 @@ public sealed record CreateRecurringTransactionInput(
 /// The destination, frequency and schedule anchors are fixed at creation — only the cosmetic and
 /// future-facing fields can be edited later through <c>UpdateRecurringTransaction</c>.
 /// </summary>
+[RequiresPermission(FinancesPermissions.Recurrences.Create)]
 public sealed class CreateRecurringTransactionCommand(CreateRecurringTransactionInput input)
     : CommandBase<CreateRecurringTransactionInput, RecurringTransactionDto>(input);

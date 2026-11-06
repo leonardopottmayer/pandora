@@ -55,19 +55,23 @@
     <ProjectReference Include="../../Modules/Files/Pottmayer.Pandora.Modules.Files.Infrastructure/Pottmayer.Pandora.Modules.Files.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Files/Pottmayer.Pandora.Modules.Files.Persistence/Pottmayer.Pandora.Modules.Files.Persistence.csproj" />
     <ProjectReference Include="../../Modules/Files/Pottmayer.Pandora.Modules.Files.Presentation/Pottmayer.Pandora.Modules.Files.Presentation.csproj" />
+    <!-- Admin module -->
+    <ProjectReference Include="../../Modules/Admin/Pottmayer.Pandora.Modules.Admin.Application/Pottmayer.Pandora.Modules.Admin.Application.csproj" />
+    <ProjectReference Include="../../Modules/Admin/Pottmayer.Pandora.Modules.Admin.Infrastructure/Pottmayer.Pandora.Modules.Admin.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Admin/Pottmayer.Pandora.Modules.Admin.Persistence/Pottmayer.Pandora.Modules.Admin.Persistence.csproj" />
     <!-- Tars: Core -->
-    <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.18" />
+    <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.20-local.2" />
     <!-- Tars: Web -->
-    <PackageReference Include="Pottmayer.Tars.Web.Http" Version="0.0.18" />
-    <PackageReference Include="Pottmayer.Tars.Web.Http.AspNetCore" Version="0.0.18" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http" Version="0.0.20-local.2" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http.AspNetCore" Version="0.0.20-local.2" />
     <!-- Tars: UserContext -->
-    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.18" />
+    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.20-local.2" />
     <!-- Tars: Observability â€” DI wiring lives in Shared.Infrastructure; the host only needs the
          correlation-id middleware. -->
-    <PackageReference Include="Pottmayer.Tars.Observability.AspNetCore" Version="0.0.18" />
+    <PackageReference Include="Pottmayer.Tars.Observability.AspNetCore" Version="0.0.20-local.2" />
     <!-- Tars: in-process transactional outbox â€” the monolith's messaging transport, wired in the host. -->
-    <PackageReference Include="Pottmayer.Tars.Messaging.EntityFrameworkCore" Version="0.0.18" />
-    <PackageReference Include="Pottmayer.Tars.Messaging.Broker" Version="0.0.18" />
+    <PackageReference Include="Pottmayer.Tars.Messaging.EntityFrameworkCore" Version="0.0.20-local.2" />
+    <PackageReference Include="Pottmayer.Tars.Messaging.Broker" Version="0.0.20-local.2" />
   </ItemGroup>
 
   <ItemGroup>

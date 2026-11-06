@@ -3,6 +3,7 @@ using Pottmayer.Pandora.Modules.Agenda.Application.Commands.CancelReminder;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using static Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands.ToolArguments;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 
@@ -12,6 +13,8 @@ namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 /// </summary>
 public sealed class CancelReminderTool(ISender sender) : IAssistantTargetedTool
 {
+    public IReadOnlyList<string> Permissions { get; } = [AgendaPermissions.Reminders.Delete, AgendaPermissions.Reminders.Read];
+
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "cancel_reminder",
         Description: "Cancels (deletes) one of the user's pending reminders. You cannot see the reminders: point at it by its number on the last list, or pass the words the user used to name it.",

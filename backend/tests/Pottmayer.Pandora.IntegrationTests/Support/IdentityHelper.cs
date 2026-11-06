@@ -7,7 +7,8 @@ namespace Pottmayer.Pandora.IntegrationTests.Support;
 /// <summary>
 /// Helpers for the auth flow: registers a user through the real sign-up endpoint and activates it
 /// directly in the database (the activation token is only delivered by e-mail, so tests that just
-/// need an authenticatable user flip <c>email_confirmed_at</c> instead of replaying that flow).
+/// need an authenticatable user flip <c>email_confirmed_at</c> instead of replaying that flow). The
+/// activation event never fires that way, so the default role it would grant is given here too.
 /// </summary>
 internal static class IdentityHelper
 {
@@ -33,7 +34,12 @@ internal static class IdentityHelper
         await using var conn = new NpgsqlConnection(connectionString);
         await conn.OpenAsync();
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = "UPDATE identity.idt001_user SET email_confirmed_at = now() WHERE email = $1";
+        cmd.CommandText = """
+            WITH activated AS (
+                UPDATE identity.idt001_user SET email_confirmed_at = now() WHERE email = $1 RETURNING id)
+            INSERT INTO admin.adm004_user_role (user_id, role_id)
+            SELECT a.id, r.id FROM activated a, admin.adm002_role r WHERE r.is_default;
+            """;
         cmd.Parameters.AddWithValue(email.ToLowerInvariant());
         await cmd.ExecuteNonQueryAsync();
     }

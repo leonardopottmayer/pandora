@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Agenda.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Commands.UpdateTaskList;
 
@@ -7,5 +9,6 @@ namespace Pottmayer.Pandora.Modules.Agenda.Application.Commands.UpdateTaskList;
 public sealed record UpdateTaskListInput(
     Guid UserId, Guid ListId, string? Name, int? Position, bool? IsDefault, bool Archive = false);
 
+[RequiresPermission(AgendaPermissions.Lists.Update)]
 public sealed class UpdateTaskListCommand(UpdateTaskListInput input)
     : CommandBase<UpdateTaskListInput, TaskListDto>(input);

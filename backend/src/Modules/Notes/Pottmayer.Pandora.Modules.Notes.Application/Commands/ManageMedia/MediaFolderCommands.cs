@@ -6,6 +6,7 @@ using Pottmayer.Pandora.Modules.Notes.Domain.Ports.Repositories;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Notes.Application.Commands.ManageMedia;
 
@@ -27,6 +28,7 @@ public abstract record FolderChange
 public sealed record ChangeMediaFolderInput(Guid UserId, Guid? FolderId, FolderChange Change);
 
 /// <summary>Creates, renames, moves or deletes a folder; answers the folder as it ends up, or as it was when deleted.</summary>
+[RequiresPermission(NotesPermissions.Media.Update)]
 public sealed class ChangeMediaFolderCommand(ChangeMediaFolderInput input)
     : CommandBase<ChangeMediaFolderInput, MediaFolderDto>(input);
 

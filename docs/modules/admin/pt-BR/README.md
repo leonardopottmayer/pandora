@@ -8,7 +8,8 @@ O módulo **Admin** decide o que está ligado no sistema (feature flags) e o que
 vive no Tars (`Pottmayer.Tars.FeatureFlags`, `Pottmayer.Tars.Security.Authorization`); o Admin é dono
 do armazenamento, do bootstrap do admin master, do log de auditoria e do painel.
 
-**Status:** planejado. Nada construído ainda.
+**Status:** em andamento. Os pacotes do Tars, o módulo e a aplicação das regras em todos os módulos
+estão construídos (A1–A3); o painel (A4) vem a seguir.
 
 | # | Documento | O que cobre |
 |---|---|---|

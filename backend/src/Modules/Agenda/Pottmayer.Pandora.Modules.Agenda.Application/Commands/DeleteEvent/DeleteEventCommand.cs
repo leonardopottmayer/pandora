@@ -1,4 +1,6 @@
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Commands.DeleteEvent;
 
@@ -10,5 +12,6 @@ namespace Pottmayer.Pandora.Modules.Agenda.Application.Commands.DeleteEvent;
 public sealed record DeleteEventInput(
     Guid UserId, Guid EventId, EventEditScope Scope, DateTimeOffset? OccurrenceStart);
 
+[RequiresPermission(AgendaPermissions.Events.Delete)]
 public sealed class DeleteEventCommand(DeleteEventInput input)
     : CommandBase<DeleteEventInput, bool>(input);

@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Communications.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Communications.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Communications.Application.Commands.ConnectMailbox;
 
@@ -20,5 +22,6 @@ public sealed record ConnectMailboxInput(
 /// Creates a mailbox on one of the caller's Integrations accounts once the provider accepted it. The
 /// backfill starts on the next sync cycle.
 /// </summary>
+[RequiresPermission(CommunicationsPermissions.Mailboxes.Create)]
 public sealed class ConnectMailboxCommand(ConnectMailboxInput input)
     : CommandBase<ConnectMailboxInput, MailboxDto>(input);

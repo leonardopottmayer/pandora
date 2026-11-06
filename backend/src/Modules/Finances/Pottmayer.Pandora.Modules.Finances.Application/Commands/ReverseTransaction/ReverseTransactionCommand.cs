@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.ReverseTransaction;
 
@@ -10,5 +12,6 @@ public sealed record ReverseTransactionInput(Guid UserId, Guid TransactionId, st
 /// mirror depends on what the original targeted (account, transfer, statement purchase, or
 /// statement payment) — see <see cref="ReverseTransactionCommandHandler"/>.
 /// </summary>
+[RequiresPermission(FinancesPermissions.Transactions.Reverse)]
 public sealed class ReverseTransactionCommand(ReverseTransactionInput input)
     : CommandBase<ReverseTransactionInput, TransactionDto>(input);

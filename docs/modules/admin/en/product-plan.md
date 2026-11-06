@@ -1,7 +1,8 @@
 # Admin Module — Product Plan
 
-> **Status:** design approved (2026-11-06), nothing built yet. Covers the Tars packages it needs
-> (feature flags and authorization) and the Pandora module that uses them.
+> **Status:** design approved (2026-11-06); A1–A3 built (Tars packages, Admin module and enforcement,
+> see §9), A4 (panel endpoints and screens) next. Covers the Tars packages it needs (feature flags and
+> authorization) and the Pandora module that uses them.
 > 🇧🇷 [Versão em português](../pt-BR/product-plan.md)
 >
 > Related: [Identity](../../identity/README.md) · [Tars wiring](../../../architecture/en/tars-wiring.md)
@@ -102,11 +103,16 @@ Each module declares its permissions with a short builder. The CRUD helper gener
 actions:
 
 ```csharp
-catalog.Module("finances", feature: "finances")
-    .Resource("cards").Crud()                         // finances.cards.read/create/update/delete
-    .Resource("imports", feature: "finances.import").Actions("run", "read")
-    .Resource("transactions").Crud().Actions("approve");
+catalog.Module(FinancesPermissions.Module, feature: FinancesFeatures.Finances)
+    .Resource(FinancesPermissions.Cards.Resource).Crud()            // finances.cards.read/create/update/delete
+    .Resource(FinancesPermissions.Imports.Resource, feature: FinancesFeatures.Import)
+        .Read().Actions(FinancesPermissions.Actions.Run)
+    .Resource(FinancesPermissions.Statements.Resource).Read().Actions(FinancesPermissions.Actions.Close);
 ```
+
+The keys live as constants in each module's `Abstractions` (`FinancesFeatures`, `FinancesPermissions`),
+built from tars' `PermissionActions` for the standard actions, so the declaration, the request marks
+and the Assistant tools share them.
 
 Every permission carries:
 - an i18n label key, built from the key by convention;
@@ -129,7 +135,7 @@ Every permission carries:
   catalog into a flat set of keys, cached per user. Any change to a role, a user's roles or a user's
   exceptions drops the affected entries (role change → every holder of the role).
 - `AuthorizationBehavior<TRequest, TResponse>` runs for requests marked
-  `[RequiresPermission("finances.cards.delete")]`:
+  `[RequiresPermission(FinancesPermissions.Cards.Delete)]`:
   1. the permission's feature is on, else `Error.NotFound("feature.disabled")`;
   2. the actor holds the key, else `Error.Forbidden("permission.denied")`;
   3. otherwise calls the handler.
@@ -171,8 +177,8 @@ Patterns left in the database for a key that no longer exists are ignored and fl
 
 ### 6.2 Catalogs
 
-Each module's `Abstractions` declares its flags and permissions (`FinancesPermissions`,
-`FinancesFeatures`) as typed constants, used both in the catalog and in `[RequiresPermission]`. Admin
+Each module declares its flags and permissions in its `ApplicationDI`, and marks its requests with
+the constants of its `<Module>Features` and `<Module>Permissions` classes (§9). Admin
 declares its own: `admin.users.read`, `admin.users.manage`, `admin.roles.manage`,
 `admin.features.manage`, `admin.audit.read`. Admin access is itself a permission, so it can be
 delegated without handing over `*`.
@@ -256,3 +262,57 @@ Every write goes into `adm006` with the before and after state.
 
 Out of scope for now: impersonation, per-module usage numbers, system health page, tenant-scoped
 grants, plans or billing.
+
+---
+
+## 9. What A3 built (2026-11-06)
+
+- **Admin module**: `Abstractions`, `Domain`, `Application`, `Persistence`, `Infrastructure` (no
+  `Contracts` or `Presentation` yet; the panel's endpoints come with A4). Migrations `adm001`–`adm006`
+  plus the seed of `admin` (`*`) and `member` (default, one wildcard per user module), and `member` for
+  every account that existed.
+- **Stores**: `FeatureFlagStore` (`adm001`) and `AuthorizationStore` (`adm003`–`adm005`), read-only,
+  behind the Tars flag service and permission checker.
+- **Checkpoint**: `AddAdminInfrastructure` registers the catalogs, the cached services, the gate, the
+  actor resolver (`InputUserIdActorResolver`, which reads `Input.UserId`) and the authorization
+  behavior. Every module declares its flags and permissions in its own `ApplicationDI`, with
+  `CheckUsagesIn` on its assembly.
+- **Marks**: `[RequiresPermission]` on every user command and query of Finances, Notes, Agenda,
+  Channels, Communications, Files, Integrations and Assistant.
+- **Bootstrap**: `AdminBootstrapper` at startup and `AccountActivatedHandler` (default role, plus
+  `admin` for a bootstrap e-mail), each grant audited in `adm006` with no actor. Docker: `ADMIN_EMAIL`.
+- **`/me`** returns `features` (enabled keys) and `permissions` (effective keys).
+- **Assistant**: `IAssistantTool.Permissions`; `Interpret` offers the model only the tools the user
+  may use.
+- **Identity** gained the `IUserDirectory` port (find an activated account by e-mail).
+
+The catalog as declared:
+
+| Module (flag) | Resources and actions |
+|---|---|
+| `finances` | `accounts`, `cards`, `recurrences`, `attachments`: CRUD · `statements`: read, close, pay · `transactions`: read, create, update, post, reverse, void · `pending`: read, create, update, approve, reject · `categories`: read, create, update · `tags`: CRUD, assign · `imports` (flag `finances.import`): read, run · `audit`: read |
+| `notes` | `spaces`, `pages`, `media`: CRUD · `tags`: read, update |
+| `agenda` | `calendars`, `events`, `reminders`, `lists`, `tasks`: CRUD · `alerts`: read, create, delete · `preferences`: read, update |
+| `channels` | `channels`: read, create, delete, test · `notifications`: read, update |
+| `communications` | `mailboxes`: CRUD · `messages`: read, update, send · `labels`, `rules`: read, update |
+| `files` | `roots`: CRUD · `scans`: read, run · `entries`: read · `review`: read, update · `filters`: read, update, delete · `preferences`: read, update |
+| `integrations` | `accounts`: CRUD |
+| `assistant` | `commands`: read, run · `profile`: read, update |
+| — (no flag) | `admin.users`: read, manage · `admin.roles`, `admin.features`: manage · `admin.audit`: read |
+
+Decisions taken while building:
+
+1. **Keys are constants** per module: `<Module>Features` and `<Module>Permissions` in its
+   `Abstractions`, one nested class per resource (`FinancesPermissions.Cards.Delete`), with the
+   standard actions from tars' `PermissionActions` and the module's own in `<Module>Permissions.Actions`.
+   `CheckUsagesIn` still refuses to start the host on a mark the catalog does not declare.
+2. **Identity self-service is not permissioned**: password, MFA, devices, preferences and `/me` stay
+   open to every signed-in account, so a user can always manage their own account. Sign-in, sign-up,
+   tokens and jobs carry no user and are not marked.
+3. **Jobs ignore flags**: a background job sends unmarked system commands, so a module switched off
+   keeps its jobs running; its user requests and Assistant tools are what turn off.
+4. **New accounts get `member` when the outbox delivers `AccountActivated`**, a few seconds after the
+   activation link is opened.
+5. **Moved to A4**: the panel's endpoints, the MFA requirement for `admin` holders and the guard on the
+   last `admin`. Until then the only writes are the bootstrap's; changing grants means editing the
+   tables and restarting (the caches are per process).

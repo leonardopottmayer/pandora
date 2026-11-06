@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
+using Pottmayer.Pandora.Modules.Admin.Application.Authorization;
 using Pottmayer.Tars.Communication.Email.Abstractions;
 using Pottmayer.Tars.Communication.Email.DI;
 using Pottmayer.Tars.Messaging.Broker.Dispatch;
@@ -13,6 +14,7 @@ using Pottmayer.Tars.Messaging.Broker.Registry;
 using Pottmayer.Tars.Messaging.EntityFrameworkCore.Options;
 using Pottmayer.Tars.Messaging.EntityFrameworkCore.Outbox;
 using Pottmayer.Tars.Messaging.EntityFrameworkCore.Relay;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
 using Respawn;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -50,14 +52,17 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
         // Resets only the module schemas; the migration tracking table lives in "public" and is left intact.
         // fin002 (system categories) and fin012 (import layouts) hold seeded reference data the
         // migrations create once — preserve them across resets or imports can't detect a layout.
+        // adm002/adm003 hold the seeded admin and member roles every user is given.
         _respawner = await Respawner.CreateAsync(_connection, new RespawnerOptions
         {
             DbAdapter = DbAdapter.Postgres,
-            SchemasToInclude = ["identity", "channels", "finances", "notes", "agenda", "integrations", "assistant", "files", "communications"],
+            SchemasToInclude = ["identity", "channels", "finances", "notes", "agenda", "integrations", "assistant", "files", "communications", "admin"],
             TablesToIgnore =
             [
                 new Respawn.Graph.Table("finances", "fin002_system_category"),
-                new Respawn.Graph.Table("finances", "fin012_import_layout")
+                new Respawn.Graph.Table("finances", "fin012_import_layout"),
+                new Respawn.Graph.Table("admin", "adm002_role"),
+                new Respawn.Graph.Table("admin", "adm003_role_permission")
             ]
         });
     }
@@ -79,6 +84,9 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
                 ["Tars:Data:Connections:assistant:ConnectionString"] = ConnectionString,
                 ["Tars:Data:Connections:files:ConnectionString"] = ConnectionString,
                 ["Tars:Data:Connections:communications:ConnectionString"] = ConnectionString,
+                ["Tars:Data:Connections:admin:ConnectionString"] = ConnectionString,
+                // The master admin bootstrap promotes this account (see AdminAuthorizationTests).
+                ["Pandora:Admin:BootstrapEmails:0"] = "boss@pandora.test",
                 // A bot username is all the linking flow needs; no token, because nothing calls Telegram here.
                 ["Pandora:Channels:Telegram:BotUsername"] = "pandora_test_bot",
                 // Test users have no zone preference, so "today" falls back to this default. Pinned to UTC so it
@@ -102,6 +110,12 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
             // suite off a live SMTP server.
             services.RemoveAll<IEmailSender>();
             services.AddTarsLoggingEmailSender();
+
+            // Made-up user ids are members, as every real account is (see SyntheticUsersAreMembersStore).
+            services.RemoveAll<IAuthorizationStore>();
+            services.AddScoped<AuthorizationStore>();
+            services.AddScoped<IAuthorizationStore>(sp =>
+                new SyntheticUsersAreMembersStore(sp.GetRequiredService<AuthorizationStore>(), ConnectionString));
         });
     }
 

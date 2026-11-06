@@ -1,4 +1,6 @@
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Channels.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Channels.Application.Commands.SetNotificationSettings;
 
@@ -14,5 +16,6 @@ public sealed record SetNotificationSettingsInput(
     string? QuietHoursEnd,
     string? QuietHoursBehaviour);
 
+[RequiresPermission(ChannelsPermissions.Notifications.Update)]
 public sealed class SetNotificationSettingsCommand(SetNotificationSettingsInput input)
     : CommandBase<SetNotificationSettingsInput, bool>(input);

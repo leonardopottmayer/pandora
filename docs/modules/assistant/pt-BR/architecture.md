@@ -82,7 +82,9 @@ Um módulo contribui tools registrando implementações de `IAssistantTool` no s
 (`services.AddScoped<IAssistantTool, …>()`); o Assistant recebe `IEnumerable<IAssistantTool>`. Uma tool
 é fina: lê os argumentos com `ToolArguments`, acha o item localmente (`MatchByTitle` / `PickByTitle` /
 `PickTarget`: sem diferenciar acento e caixa, por prefixo de palavra, ignorando palavras com menos de
-três letras) e manda o comando ou query existente do módulo pelo mediator.
+três letras) e manda o comando ou query existente do módulo pelo mediator. Suas `Permissions` listam as
+permissões que esses casos de uso exigem: o `Interpret` oferece ao modelo só as tools cujas permissões
+o usuário tem (e cujas features estão ligadas), e os casos de uso ainda as verificam quando a tool roda.
 
 | Módulo | Tool | Política | Notas |
 |---|---|---|---|

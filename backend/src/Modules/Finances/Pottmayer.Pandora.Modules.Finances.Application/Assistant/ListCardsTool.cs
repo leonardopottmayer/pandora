@@ -5,6 +5,7 @@ using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetCardAvailableLim
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetCards;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetCardStatements;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Assistant;
 
@@ -15,6 +16,8 @@ namespace Pottmayer.Pandora.Modules.Finances.Application.Assistant;
 /// </summary>
 public sealed class ListCardsTool(ISender sender) : IAssistantTool
 {
+    public IReadOnlyList<string> Permissions { get; } = [FinancesPermissions.Cards.Read, FinancesPermissions.Statements.Read];
+
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "list_cards",
         Description: "Shows the user their credit cards: the current statement, any unpaid closed statement with its due date, and the available limit. The numbers go to the user directly; you will not see them.",

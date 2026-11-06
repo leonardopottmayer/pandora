@@ -5,12 +5,14 @@ using Pottmayer.Pandora.Modules.Communications.Domain.Ports.Repositories;
 using Pottmayer.Tars.Core.Cqrs.Queries;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Communications.Application.Queries.GetRules;
 
 public sealed record GetRulesInput(Guid UserId, Guid MailboxId);
 
 /// <summary>In position order.</summary>
+[RequiresPermission(CommunicationsPermissions.Rules.Read)]
 public sealed class GetRulesQuery(GetRulesInput input)
     : QueryBase<GetRulesInput, IReadOnlyList<RuleDto>>(input);
 

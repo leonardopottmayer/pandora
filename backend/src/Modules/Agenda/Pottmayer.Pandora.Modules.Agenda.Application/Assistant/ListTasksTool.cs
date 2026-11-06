@@ -7,6 +7,7 @@ using Pottmayer.Pandora.Modules.Agenda.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using static Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands.ToolArguments;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 
@@ -19,6 +20,8 @@ public sealed class ListTasksTool(ISender sender, TimeProvider timeProvider) : I
 {
     /// <summary>A chat reply stays readable; the Agenda shows the rest.</summary>
     private const int MaxShown = 40;
+
+    public IReadOnlyList<string> Permissions { get; } = [AgendaPermissions.Tasks.Read, AgendaPermissions.Lists.Read];
 
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "list_tasks",

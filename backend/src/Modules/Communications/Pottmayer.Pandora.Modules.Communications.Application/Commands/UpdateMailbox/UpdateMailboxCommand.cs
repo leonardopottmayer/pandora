@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Communications.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Communications.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Communications.Application.Commands.UpdateMailbox;
 
@@ -17,5 +19,6 @@ public sealed record UpdateMailboxInput(
 /// Replaces the display name; new servers are tested first. A mailbox waiting for a reconnect that passes
 /// the test syncs again.
 /// </summary>
+[RequiresPermission(CommunicationsPermissions.Mailboxes.Update)]
 public sealed class UpdateMailboxCommand(UpdateMailboxInput input)
     : CommandBase<UpdateMailboxInput, MailboxDto>(input);

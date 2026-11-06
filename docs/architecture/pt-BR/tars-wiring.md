@@ -22,7 +22,7 @@ chama, nesta ordem:
 
 1. `builder.AddPandoraSharedInfrastructure()` — Observability, UserContext, setup do middleware de correlation-id (ver abaixo).
 2. `builder.AddPandoraSharedPersistence()` — infraestrutura cross-módulo da família Data (resolvedor de conexão, accessor/factory de contexto, factory de unit-of-work).
-3. Por módulo, nesta ordem fixa — **Identity, Channels, Finances, Notes, Agenda, Integrations, Assistant, Communications, Files** — três chamadas cada: `Add<Módulo>Persistence()`, `Add<Módulo>Infrastructure()`, `Add<Módulo>Application()`.
+3. Por módulo, nesta ordem fixa — **Identity, Channels, Finances, Notes, Agenda, Integrations, Assistant, Communications, Files, Admin** — três chamadas cada: `Add<Módulo>Persistence()`, `Add<Módulo>Infrastructure()`, `Add<Módulo>Application()`.
 4. `builder.AddPandoraOutbox()` — a família Messaging (outbox in-process). Registrado **depois** de todos os módulos, porque precisa do assembly de contratos e da chave de banco de cada um já conhecidos.
 5. `AddTarsLocalization()` + localização por módulo (`AddPandoraLocalization()`, `AddFinancesLocalization()`) e `AddTarsProblemDetails()` — preocupações da família Web/error-mapping.
 6. Presentation: `AddControllers()` seguido de um `Add<Módulo>PresentationPart()` por módulo, na mesma ordem; depois API versioning, Swagger, forwarded headers, CORS — não é Tars, mas vem depois dele.
@@ -92,6 +92,22 @@ e `app.UseTarsUserContext()`.
 - **Arquivo:** [`Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Infrastructure/DI/InfrastructureDI.cs`](../../../backend/src/Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Infrastructure/DI/InfrastructureDI.cs)
 - **Chamadas:** `AddTarsAiChatGeminiOptions`, `AddTarsAiChatGeminiHttpClient`, `AddTarsAiChatCompletionClientGemini`, `AddTarsAiClientFactory`.
 - Só o Assistant usa. Nenhuma API key é configurada: a chave Gemini de cada usuário vem do Integrations e vai na requisição; a seção de options (`Tars:Ai:Chat:Gemini`) só leva a URL base e o timeout.
+
+### Feature Flags e Security / Authorization
+
+- **Declarações:** o `ApplicationDI` de cada módulo de usuário chama `AddTarsFeatureFlagDefinitions` (sua
+  flag, mais `finances.import`) e `AddTarsPermissionDefinitions` (suas permissões, com `CheckUsagesIn`
+  no seu assembly); o `ApplicationDI` do Admin declara as permissões `admin.*` e registra as duas
+  stores (`IFeatureFlagStore`, `IAuthorizationStore`).
+- **Arquivo:** [`Modules/Admin/Pottmayer.Pandora.Modules.Admin.Infrastructure/DI/InfrastructureDI.cs`](../../../backend/src/Modules/Admin/Pottmayer.Pandora.Modules.Admin.Infrastructure/DI/InfrastructureDI.cs)
+- **Chamadas:** `AddTarsFeatureFlagCatalog`, `AddTarsFeatureFlagService`, `AddTarsPermissionCatalog`,
+  `AddTarsPermissionChecker`, `AddTarsAuthorizationGate`,
+  `AddTarsAuthorizationActorResolver<InputUserIdActorResolver>`, `AddTarsAuthorizationBehavior`.
+- O behavior é o único pipeline behavior do mediator que o Pandora registra, então vale para as
+  requisições de todos os módulos. Nenhum módulo referencia o Admin: só marcam as requisições com
+  `[RequiresPermission]`. O Identity lê `IFeatureFlags` e `IPermissionChecker` para o `/me`, e o
+  Assistant usa o `AuthorizationGate` para oferecer só as tools que o usuário pode usar. Ver
+  [Admin](../../modules/admin/pt-BR/README.md).
 
 ### Web / HTTP
 

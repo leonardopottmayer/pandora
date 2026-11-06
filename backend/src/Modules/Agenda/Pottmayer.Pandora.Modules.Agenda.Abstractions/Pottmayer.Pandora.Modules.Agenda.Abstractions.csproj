@@ -6,4 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Pottmayer.Tars.Security.Authorization.Abstractions" Version="0.0.20-local.2" />
+  </ItemGroup>
+
 </Project>

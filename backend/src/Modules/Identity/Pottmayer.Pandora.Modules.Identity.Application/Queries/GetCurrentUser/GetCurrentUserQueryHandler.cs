@@ -5,10 +5,15 @@ using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Repositories;
 using Pottmayer.Tars.Core.Cqrs.Queries;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
+using Pottmayer.Tars.FeatureFlags.Abstractions;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Identity.Application.Queries.GetCurrentUser;
 
-public sealed class GetCurrentUserQueryHandler(IUnitOfWorkFactory factory)
+public sealed class GetCurrentUserQueryHandler(
+    IUnitOfWorkFactory factory,
+    IFeatureFlags featureFlags,
+    IPermissionChecker permissions)
     : QueryHandlerBase<GetCurrentUserQuery, CurrentUserDto>
 {
     protected override async Task<Result<CurrentUserDto>> HandleAsync(
@@ -23,6 +28,13 @@ public sealed class GetCurrentUserQueryHandler(IUnitOfWorkFactory factory)
         if (user is null)
             return Fail(UserErrors.NotFound);
 
-        return Ok(new CurrentUserDto(user.Id.ToString(), user.Name, user.Email.Value, user.Username));
+        var features = (await featureFlags.GetAllAsync(cancellationToken))
+            .Where(f => f.Enabled)
+            .Select(f => f.Definition.Key)
+            .ToList();
+        var effective = await permissions.GetEffectiveAsync(user.Id.ToString(), cancellationToken);
+
+        return Ok(new CurrentUserDto(
+            user.Id.ToString(), user.Name, user.Email.Value, user.Username, features, [.. effective.Order()]));
     }
 }

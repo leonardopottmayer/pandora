@@ -8,7 +8,8 @@ do (permissions per action, granted through roles and per-user allow/deny except
 lives in Tars (`Pottmayer.Tars.FeatureFlags`, `Pottmayer.Tars.Security.Authorization`); Admin owns
 the catalogs' storage, the master admin bootstrap, the audit log and the panel.
 
-**Status:** planned. Nothing is built yet.
+**Status:** in progress. The Tars packages, the module and the enforcement in every module are built
+(A1–A3); the panel (A4) is next.
 
 | # | Document | What it covers |
 |---|---|---|

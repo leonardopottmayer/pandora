@@ -7,6 +7,7 @@ using Pottmayer.Pandora.Modules.Agenda.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using static Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands.ToolArguments;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 
@@ -20,6 +21,8 @@ public sealed class ListAgendaTool(ISender sender) : IAssistantTool
 {
     /// <summary>The widest span one request lists — a month; beyond that the reply stops being readable.</summary>
     private const int MaxDays = 31;
+
+    public IReadOnlyList<string> Permissions { get; } = [AgendaPermissions.Events.Read, AgendaPermissions.Reminders.Read, AgendaPermissions.Tasks.Read];
 
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "list_agenda",

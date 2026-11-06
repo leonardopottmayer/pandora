@@ -6,6 +6,7 @@ using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetCards;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetPendingTransactions;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Assistant;
 
@@ -16,6 +17,8 @@ namespace Pottmayer.Pandora.Modules.Finances.Application.Assistant;
 public sealed class ListInboxTool(ISender sender) : IAssistantTool
 {
     private const int MaxShown = 20;
+
+    public IReadOnlyList<string> Permissions { get; } = [FinancesPermissions.Pending.Read, FinancesPermissions.Accounts.Read, FinancesPermissions.Cards.Read];
 
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "list_inbox",

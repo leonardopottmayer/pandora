@@ -3,6 +3,7 @@ using System.Text.Json;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using static Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands.ToolArguments;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Assistant;
 
@@ -16,6 +17,8 @@ public sealed class ListTransactionsTool(ISender sender) : IAssistantTool
 {
     private const int DefaultLimit = 10;
     private const int MaxLimit = 30;
+
+    public IReadOnlyList<string> Permissions { get; } = [FinancesPermissions.Transactions.Read, FinancesPermissions.Accounts.Read, FinancesPermissions.Cards.Read, FinancesPermissions.Categories.Read];
 
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "list_transactions",

@@ -7,6 +7,9 @@ using Pottmayer.Pandora.Modules.Communications.Application.Integrations;
 using Pottmayer.Pandora.Modules.Integrations.Abstractions.Ports;
 using Pottmayer.Tars.Core.Mediator.DI;
 using Pottmayer.Tars.Messaging.DI;
+using Pottmayer.Tars.FeatureFlags.DI;
+using Pottmayer.Tars.Security.Authorization.DI;
+using Pottmayer.Pandora.Modules.Communications.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Communications.Application.DI;
 
@@ -28,6 +31,16 @@ public static class ApplicationDI
 
         // "Used by" on the connections screen: the account each mailbox runs on.
         services.AddScoped<IExternalAccountUsageSource, CommunicationsAccountUsageSource>();
+
+        // What an administrator can switch off and grant in this module (see the Admin module).
+        services.AddTarsFeatureFlagDefinitions(f => f.Add(CommunicationsFeatures.Communications));
+        services.AddTarsPermissionDefinitions(p => p
+            .CheckUsagesIn(typeof(ApplicationDI).Assembly)
+            .Module(CommunicationsPermissions.Module, feature: CommunicationsFeatures.Communications)
+                .Resource(CommunicationsPermissions.Mailboxes.Resource).Crud()
+                .Resource(CommunicationsPermissions.Messages.Resource).Read().Update().Actions(CommunicationsPermissions.Actions.Send)
+                .Resource(CommunicationsPermissions.Labels.Resource).Read().Update()
+                .Resource(CommunicationsPermissions.Rules.Resource).Read().Update());
 
         return services;
     }

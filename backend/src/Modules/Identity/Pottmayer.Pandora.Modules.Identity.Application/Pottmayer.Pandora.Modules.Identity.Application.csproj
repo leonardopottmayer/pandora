@@ -11,14 +11,17 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Identity.Contracts/Pottmayer.Pandora.Modules.Identity.Contracts.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Identity.Domain/Pottmayer.Pandora.Modules.Identity.Domain.csproj" />
     <!-- Tars: Messaging -->
-    <PackageReference Include="Pottmayer.Tars.Messaging.Abstractions" Version="0.0.18" />
+    <PackageReference Include="Pottmayer.Tars.Messaging.Abstractions" Version="0.0.20-local.2" />
     <!-- Tars: Core -->
-    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.18" />
-    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.18" />
+    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.20-local.2" />
+    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.20-local.2" />
     <!-- Tars: Data -->
-    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.18" />
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.20-local.2" />
+    <!-- Tars: Feature flags and authorization (what /me reports) -->
+    <PackageReference Include="Pottmayer.Tars.FeatureFlags.Abstractions" Version="0.0.20-local.2" />
+    <PackageReference Include="Pottmayer.Tars.Security.Authorization.Abstractions" Version="0.0.20-local.2" />
     <!-- Tars: Security -->
-    <PackageReference Include="Pottmayer.Tars.Security.Identity.Abstractions" Version="0.0.18" />
+    <PackageReference Include="Pottmayer.Tars.Security.Identity.Abstractions" Version="0.0.20-local.2" />
   </ItemGroup>
 
 </Project>

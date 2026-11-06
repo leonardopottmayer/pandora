@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Files.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Files.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Files.Application.Commands.UpdateRoot;
 
@@ -12,5 +14,6 @@ public sealed record UpdateRootInput(
     bool IncludeHidden,
     bool CaseSensitive);
 
+[RequiresPermission(FilesPermissions.Roots.Update)]
 public sealed class UpdateRootCommand(UpdateRootInput input)
     : CommandBase<UpdateRootInput, RootDto>(input);

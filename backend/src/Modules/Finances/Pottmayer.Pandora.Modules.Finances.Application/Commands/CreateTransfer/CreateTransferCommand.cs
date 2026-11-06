@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateTransfer;
 
@@ -19,5 +21,6 @@ public sealed record CreateTransferInput(
 /// source, inflow on the destination) atomically. Cross-currency transfers require both amounts
 /// and an FX rate; same-currency transfers mirror the single amount.
 /// </summary>
+[RequiresPermission(FinancesPermissions.Transactions.Create)]
 public sealed class CreateTransferCommand(CreateTransferInput input)
     : CommandBase<CreateTransferInput, IReadOnlyList<TransactionDto>>(input);

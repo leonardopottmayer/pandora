@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Notes.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Queries;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Notes.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPageTree;
 
@@ -13,5 +15,6 @@ public sealed record GetPageTreeInput(
     Guid UserId, bool IncludeArchived, IReadOnlyCollection<Guid>? TagIds = null, Guid? SpaceId = null);
 
 /// <summary>Returns the user's pages as a flat, ordered list; the frontend nests them by parent.</summary>
+[RequiresPermission(NotesPermissions.Pages.Read)]
 public sealed class GetPageTreeQuery(GetPageTreeInput input)
     : QueryBase<GetPageTreeInput, IReadOnlyList<PageSummaryDto>>(input);

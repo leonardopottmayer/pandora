@@ -4,6 +4,7 @@ using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.SearchPages;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using static Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands.ToolArguments;
+using Pottmayer.Pandora.Modules.Notes.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Notes.Application.Assistant;
 
@@ -17,6 +18,8 @@ public sealed class SearchNotesTool(ISender sender) : IAssistantTool
 {
     /// <summary>A chat reply stays short; the palette in the web app shows the full search.</summary>
     private const int MaxShown = 5;
+
+    public IReadOnlyList<string> Permissions { get; } = [NotesPermissions.Pages.Read];
 
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "search_notes",

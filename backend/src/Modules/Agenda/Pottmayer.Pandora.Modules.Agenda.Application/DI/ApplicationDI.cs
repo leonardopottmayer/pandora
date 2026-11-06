@@ -3,6 +3,9 @@ using Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.DI;
 using Pottmayer.Tars.Messaging.DI;
+using Pottmayer.Tars.FeatureFlags.DI;
+using Pottmayer.Tars.Security.Authorization.DI;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.DI;
 
@@ -32,6 +35,19 @@ public static class ApplicationDI
         services.AddScoped<IAssistantTool, CancelReminderTool>();
         services.AddScoped<IAssistantTool, RenameReminderTool>();
         services.AddScoped<IAssistantTool, ListRemindersTool>();
+
+        // What an administrator can switch off and grant in this module (see the Admin module).
+        services.AddTarsFeatureFlagDefinitions(f => f.Add(AgendaFeatures.Agenda));
+        services.AddTarsPermissionDefinitions(p => p
+            .CheckUsagesIn(typeof(ApplicationDI).Assembly)
+            .Module(AgendaPermissions.Module, feature: AgendaFeatures.Agenda)
+                .Resource(AgendaPermissions.Calendars.Resource).Crud()
+                .Resource(AgendaPermissions.Events.Resource).Crud()
+                .Resource(AgendaPermissions.Reminders.Resource).Crud()
+                .Resource(AgendaPermissions.Lists.Resource).Crud()
+                .Resource(AgendaPermissions.Tasks.Resource).Crud()
+                .Resource(AgendaPermissions.Alerts.Resource).Read().Create().Delete()
+                .Resource(AgendaPermissions.Preferences.Resource).Read().Update());
 
         return services;
     }

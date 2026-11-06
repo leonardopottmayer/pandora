@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Communications.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Queries;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Communications.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Communications.Application.Queries.ListMessages;
 
@@ -16,5 +18,6 @@ public sealed record ListMessagesInput(
     int Limit);
 
 /// <summary>Newest first, by keyset.</summary>
+[RequiresPermission(CommunicationsPermissions.Messages.Read)]
 public sealed class ListMessagesQuery(ListMessagesInput input)
     : QueryBase<ListMessagesInput, MessagePageDto>(input);

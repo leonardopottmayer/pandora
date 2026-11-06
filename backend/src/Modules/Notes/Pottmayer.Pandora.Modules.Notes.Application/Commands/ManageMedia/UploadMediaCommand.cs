@@ -10,6 +10,7 @@ using Pottmayer.Pandora.Shared.Domain.Storage;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Notes.Application.Commands.ManageMedia;
 
@@ -20,6 +21,7 @@ public sealed record UploadMediaInput(Guid UserId, Guid? FolderId, string FileNa
 /// than <see cref="RenditionPurpose.ThumbnailMaxSide"/>, gets a thumbnail; one the server cannot read
 /// is kept as a plain file. Kinds the library does not take yet (video) are refused.
 /// </summary>
+[RequiresPermission(NotesPermissions.Media.Create)]
 public sealed class UploadMediaCommand(UploadMediaInput input) : CommandBase<UploadMediaInput, MediaItemDto>(input);
 
 public sealed class UploadMediaCommandHandler(

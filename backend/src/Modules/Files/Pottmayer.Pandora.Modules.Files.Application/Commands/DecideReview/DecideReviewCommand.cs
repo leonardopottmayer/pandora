@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Files.Domain.ReadModels;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Files.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Files.Application.Commands.DecideReview;
 
@@ -12,5 +14,6 @@ public sealed record DecideReviewInput(
     IReadOnlyList<Guid>? EntryIds,
     IReadOnlyList<ReviewFolder>? Folders);
 
+[RequiresPermission(FilesPermissions.Review.Update)]
 public sealed class DecideReviewCommand(DecideReviewInput input)
     : CommandBase<DecideReviewInput, int>(input);

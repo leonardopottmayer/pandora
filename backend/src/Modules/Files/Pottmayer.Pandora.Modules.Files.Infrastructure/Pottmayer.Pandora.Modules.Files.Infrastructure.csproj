@@ -8,8 +8,8 @@
 
   <ItemGroup>
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Files.Application/Pottmayer.Pandora.Modules.Files.Application.csproj" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
   </ItemGroup>
 
 </Project>

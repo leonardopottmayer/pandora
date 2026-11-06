@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Notes.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Notes.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Notes.Application.Commands.MovePage;
 
@@ -16,5 +18,6 @@ public sealed record MovePageInput(
 /// parent's space, or at the top of <see cref="MovePageInput.SpaceId"/>; changing space takes the
 /// whole subtree along.
 /// </summary>
+[RequiresPermission(NotesPermissions.Pages.Update)]
 public sealed class MovePageCommand(MovePageInput input)
     : CommandBase<MovePageInput, PageDto>(input);

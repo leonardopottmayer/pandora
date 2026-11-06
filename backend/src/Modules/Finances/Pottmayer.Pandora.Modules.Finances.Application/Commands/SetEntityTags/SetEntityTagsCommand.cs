@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.SetEntityTags;
 
@@ -10,5 +12,6 @@ public sealed record SetEntityTagsInput(
     IReadOnlyList<Guid> TagIds);
 
 /// <summary>Replaces an entity's entire tag set in one call. See <see cref="SetEntityTagsCommandHandler"/>.</summary>
+[RequiresPermission(FinancesPermissions.Tags.Assign)]
 public sealed class SetEntityTagsCommand(SetEntityTagsInput input)
     : CommandBase<SetEntityTagsInput, IReadOnlyList<TagDto>>(input);

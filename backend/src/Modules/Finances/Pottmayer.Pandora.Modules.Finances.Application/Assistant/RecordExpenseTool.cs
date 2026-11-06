@@ -6,6 +6,7 @@ using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetAccounts;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetCards;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using static Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands.ToolArguments;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Assistant;
 
@@ -18,6 +19,8 @@ namespace Pottmayer.Pandora.Modules.Finances.Application.Assistant;
 /// </summary>
 public sealed class RecordExpenseTool(ISender sender, TimeProvider timeProvider) : IAssistantTool
 {
+    public IReadOnlyList<string> Permissions { get; } = [FinancesPermissions.Pending.Create, FinancesPermissions.Accounts.Read, FinancesPermissions.Cards.Read];
+
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "record_expense",
         Description: "Records money the user spent, for review in their finances inbox. You cannot see their accounts or cards: pass the words they used to name one. Not for paying a card statement or settling anything already in Finances — that is done in the app, and recording it here would count it twice; never offer it.",

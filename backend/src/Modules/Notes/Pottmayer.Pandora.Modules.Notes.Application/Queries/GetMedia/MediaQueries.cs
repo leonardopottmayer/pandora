@@ -8,6 +8,7 @@ using Pottmayer.Pandora.Shared.Domain.Storage;
 using Pottmayer.Tars.Core.Cqrs.Queries;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Notes.Application.Queries.GetMedia;
 
@@ -19,6 +20,7 @@ namespace Pottmayer.Pandora.Modules.Notes.Application.Queries.GetMedia;
 public sealed record ListMediaInput(
     Guid UserId, Guid? FolderId, bool UnsortedOnly, string? Kind, string? Search, bool UnusedOnly = false);
 
+[RequiresPermission(NotesPermissions.Media.Read)]
 public sealed class ListMediaQuery(ListMediaInput input) : QueryBase<ListMediaInput, IReadOnlyList<MediaItemDto>>(input);
 
 public sealed class ListMediaQueryHandler(IUnitOfWorkFactory factory)
@@ -52,6 +54,7 @@ public sealed class ListMediaQueryHandler(IUnitOfWorkFactory factory)
 public sealed record GetMediaFoldersInput(Guid UserId);
 
 /// <summary>Every folder with its own item count, plus the unsorted and total counts.</summary>
+[RequiresPermission(NotesPermissions.Media.Read)]
 public sealed class GetMediaFoldersQuery(GetMediaFoldersInput input) : QueryBase<GetMediaFoldersInput, MediaFoldersDto>(input);
 
 public sealed class GetMediaFoldersQueryHandler(IUnitOfWorkFactory factory)
@@ -87,6 +90,7 @@ public sealed class GetMediaFoldersQueryHandler(IUnitOfWorkFactory factory)
 /// <summary>An item's bytes, or a rendition's when <paramref name="Purpose"/> is set.</summary>
 public sealed record GetMediaContentInput(Guid UserId, Guid MediaId, string? Purpose = null);
 
+[RequiresPermission(NotesPermissions.Media.Read)]
 public sealed class GetMediaContentQuery(GetMediaContentInput input) : QueryBase<GetMediaContentInput, MediaContentDto>(input);
 
 public sealed class GetMediaContentQueryHandler(
@@ -125,6 +129,7 @@ public sealed class GetMediaContentQueryHandler(
 public sealed record GetMediaUsagesInput(Guid UserId, Guid MediaId);
 
 /// <summary>The pages that show an item — what the library lists as "used in".</summary>
+[RequiresPermission(NotesPermissions.Media.Read)]
 public sealed class GetMediaUsagesQuery(GetMediaUsagesInput input) : QueryBase<GetMediaUsagesInput, IReadOnlyList<MediaUsageDto>>(input);
 
 public sealed class GetMediaUsagesQueryHandler(IUnitOfWorkFactory factory)
@@ -155,6 +160,7 @@ public sealed record LookupMediaInput(Guid UserId, IReadOnlyCollection<Guid> Ids
 /// The items a page shows, by id, deleted ones included — what the preview needs to draw a file as a
 /// card (name, size, kind). Ids that are not the user's are left out.
 /// </summary>
+[RequiresPermission(NotesPermissions.Media.Read)]
 public sealed class LookupMediaQuery(LookupMediaInput input) : QueryBase<LookupMediaInput, IReadOnlyList<MediaItemDto>>(input);
 
 public sealed class LookupMediaQueryHandler(IUnitOfWorkFactory factory)

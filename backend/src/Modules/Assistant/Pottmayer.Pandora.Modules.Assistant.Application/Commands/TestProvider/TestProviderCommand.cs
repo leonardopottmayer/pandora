@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Assistant.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Assistant.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Assistant.Application.Commands.TestProvider;
 
@@ -10,5 +12,6 @@ namespace Pottmayer.Pandora.Modules.Assistant.Application.Commands.TestProvider;
 /// </summary>
 public sealed record TestProviderInput(Guid UserId, string Provider, Guid? AccountId, string? Model);
 
+[RequiresPermission(AssistantPermissions.Profile.Update)]
 public sealed class TestProviderCommand(TestProviderInput input)
     : CommandBase<TestProviderInput, ReachabilityResultDto>(input);

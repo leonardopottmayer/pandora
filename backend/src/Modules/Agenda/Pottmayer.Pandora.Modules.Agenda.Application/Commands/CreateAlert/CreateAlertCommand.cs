@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Agenda.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateAlert;
 
@@ -10,5 +12,6 @@ namespace Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateAlert;
 public sealed record CreateAlertInput(
     Guid UserId, string SubjectType, Guid SubjectId, int OffsetMinutes, string[]? Channels);
 
+[RequiresPermission(AgendaPermissions.Alerts.Create)]
 public sealed class CreateAlertCommand(CreateAlertInput input)
     : CommandBase<CreateAlertInput, AlertDto>(input);

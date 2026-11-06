@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Communications.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Communications.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Communications.Application.Commands.ApplyMessageAction;
 
@@ -31,5 +33,6 @@ public static class MessageActions
 /// One action on up to <see cref="MessageActions.MaxMessages"/> messages of one mailbox. The provider first, the
 /// local rows after it accepts: a failure changes nothing here. Returns the messages as they are now.
 /// </summary>
+[RequiresPermission(CommunicationsPermissions.Messages.Update)]
 public sealed class ApplyMessageActionCommand(ApplyMessageActionInput input)
     : CommandBase<ApplyMessageActionInput, IReadOnlyList<MessageSummaryDto>>(input);

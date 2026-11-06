@@ -21,7 +21,7 @@ calls, in this order:
 
 1. `builder.AddPandoraSharedInfrastructure()` — Observability, UserContext, correlation-id middleware setup (see below).
 2. `builder.AddPandoraSharedPersistence()` — the Data family's cross-module infrastructure (connection resolver, context accessor/factory, unit-of-work factory).
-3. Per module, in this fixed order — **Identity, Channels, Finances, Notes, Agenda, Integrations, Assistant, Communications, Files** — three calls each: `Add<Module>Persistence()`, `Add<Module>Infrastructure()`, `Add<Module>Application()`.
+3. Per module, in this fixed order — **Identity, Channels, Finances, Notes, Agenda, Integrations, Assistant, Communications, Files, Admin** — three calls each: `Add<Module>Persistence()`, `Add<Module>Infrastructure()`, `Add<Module>Application()`.
 4. `builder.AddPandoraOutbox()` — the Messaging family (in-process outbox). Registered **after** every module, because it needs every module's contracts assembly and database key already known.
 5. `AddTarsLocalization()` + module-level localization (`AddPandoraLocalization()`, `AddFinancesLocalization()`) and `AddTarsProblemDetails()` — Web/error-mapping concerns.
 6. Presentation: `AddControllers()` followed by one `Add<Module>PresentationPart()` per module, in the same order; then API versioning, Swagger, forwarded headers, CORS — not Tars, but downstream of it.
@@ -91,6 +91,22 @@ Two middleware calls (not shown above, in the pipeline build): `app.UseTarsCorre
 - **File:** [`Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Infrastructure/DI/InfrastructureDI.cs`](../../../backend/src/Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Infrastructure/DI/InfrastructureDI.cs)
 - **Calls:** `AddTarsAiChatGeminiOptions`, `AddTarsAiChatGeminiHttpClient`, `AddTarsAiChatCompletionClientGemini`, `AddTarsAiClientFactory`.
 - Only the Assistant uses it. No API key is configured: each user's Gemini key comes from Integrations and goes on the request; the options section (`Tars:Ai:Chat:Gemini`) only carries the base URL and timeout.
+
+### Feature Flags and Security / Authorization
+
+- **Declarations:** every user module's `ApplicationDI` calls `AddTarsFeatureFlagDefinitions` (its flag,
+  plus `finances.import`) and `AddTarsPermissionDefinitions` (its permissions, with `CheckUsagesIn` on
+  its assembly); Admin's `ApplicationDI` declares the `admin.*` permissions and registers the two
+  stores (`IFeatureFlagStore`, `IAuthorizationStore`).
+- **File:** [`Modules/Admin/Pottmayer.Pandora.Modules.Admin.Infrastructure/DI/InfrastructureDI.cs`](../../../backend/src/Modules/Admin/Pottmayer.Pandora.Modules.Admin.Infrastructure/DI/InfrastructureDI.cs)
+- **Calls:** `AddTarsFeatureFlagCatalog`, `AddTarsFeatureFlagService`, `AddTarsPermissionCatalog`,
+  `AddTarsPermissionChecker`, `AddTarsAuthorizationGate`,
+  `AddTarsAuthorizationActorResolver<InputUserIdActorResolver>`, `AddTarsAuthorizationBehavior`.
+- The behavior is the only mediator pipeline behavior Pandora registers, so it applies to every
+  module's requests. Modules never reference Admin: they only mark requests with
+  `[RequiresPermission]`. Identity reads `IFeatureFlags` and `IPermissionChecker` for `/me`, and the
+  Assistant uses `AuthorizationGate` to offer only the tools a user may use. See
+  [Admin](../../modules/admin/README.md).
 
 ### Web / HTTP
 

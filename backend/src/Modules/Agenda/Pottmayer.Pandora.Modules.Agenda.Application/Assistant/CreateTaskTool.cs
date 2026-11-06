@@ -5,6 +5,7 @@ using Pottmayer.Pandora.Modules.Agenda.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using static Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands.ToolArguments;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 
@@ -14,6 +15,8 @@ namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 /// </summary>
 public sealed class CreateTaskTool(ISender sender) : IAssistantTool
 {
+    public IReadOnlyList<string> Permissions { get; } = [AgendaPermissions.Tasks.Create, AgendaPermissions.Lists.Read];
+
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "create_task",
         Description: "Creates a to-do task, optionally with a due date. Use when the user wants to note something to do (not to be pinged at a time — that is create_reminder).",

@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Agenda.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Commands.UpdateEvent;
 
@@ -27,5 +29,6 @@ public sealed record UpdateEventInput(
     bool? IsAllDay,
     Guid? CalendarId);
 
+[RequiresPermission(AgendaPermissions.Events.Update)]
 public sealed class UpdateEventCommand(UpdateEventInput input)
     : CommandBase<UpdateEventInput, EventDto>(input);

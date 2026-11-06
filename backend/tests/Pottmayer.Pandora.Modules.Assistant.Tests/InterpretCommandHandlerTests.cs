@@ -9,6 +9,7 @@ using Pottmayer.Tars.Ai.Abstractions;
 using Pottmayer.Tars.Ai.Chat.Abstractions.Models;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Xunit;
+using Pottmayer.Tars.Security.Authorization;
 
 namespace Pottmayer.Pandora.Modules.Assistant.Tests;
 
@@ -56,6 +57,8 @@ public sealed class InterpretCommandHandlerTests
             tools,
             Microsoft.Extensions.Options.Options.Create(new AssistantOptions()),
             sender ?? new FakeSender(),
+            // The fake tools require no permission, so the gate never reaches its catalog or checker.
+            new AuthorizationGate(null!, null!, null!),
             TimeProvider.System);
 
         return (handler, invocations);

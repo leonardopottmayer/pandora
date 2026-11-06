@@ -16,8 +16,8 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Communications.Domain/Pottmayer.Pandora.Modules.Communications.Domain.csproj" />
     <ProjectReference Include="../../Integrations/Pottmayer.Pandora.Modules.Integrations.Abstractions/Pottmayer.Pandora.Modules.Integrations.Abstractions.csproj" />
     <!-- Hosting / options / logging for providers and background jobs added in later phases -->
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.14" />
     <!-- IMAP/SMTP with per-mailbox credentials (same version Tars.Communication.Email.MailKit uses) -->
     <PackageReference Include="MailKit" Version="4.18.2" />
   </ItemGroup>

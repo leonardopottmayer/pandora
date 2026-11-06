@@ -7,6 +7,7 @@ using Pottmayer.Pandora.Modules.Communications.Domain.Ports;
 using Pottmayer.Tars.Core.Cqrs.Queries;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Communications.Application.Queries.GetComposeDraft;
 
@@ -17,6 +18,7 @@ public sealed record GetComposeDraftInput(Guid UserId, Guid MessageId, string? M
 /// The form for a reply or a forward, worked out from the raw message: the mirror has no <c>Reply-To</c>, and getting that
 /// wrong sends mail to the wrong person.
 /// </summary>
+[RequiresPermission(CommunicationsPermissions.Messages.Send)]
 public sealed class GetComposeDraftQuery(GetComposeDraftInput input) : QueryBase<GetComposeDraftInput, ComposeDraft>(input);
 
 public sealed class GetComposeDraftQueryHandler(IUnitOfWorkFactory factory, IServiceProvider services)

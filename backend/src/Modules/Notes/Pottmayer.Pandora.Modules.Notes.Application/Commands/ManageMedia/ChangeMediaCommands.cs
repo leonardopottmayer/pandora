@@ -7,6 +7,7 @@ using Pottmayer.Pandora.Modules.Notes.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Notes.Application.Commands.ManageMedia;
 
@@ -24,6 +25,7 @@ public abstract record MediaChange
 public sealed record ChangeMediaInput(Guid UserId, Guid MediaId, MediaChange Change);
 
 /// <summary>Renames, moves or deletes a library item. Deleting keeps the bytes (see <see cref="MediaItem.Delete"/>).</summary>
+[RequiresPermission(NotesPermissions.Media.Update)]
 public sealed class ChangeMediaCommand(ChangeMediaInput input) : CommandBase<ChangeMediaInput, MediaItemDto>(input);
 
 public sealed class ChangeMediaCommandHandler(IUnitOfWorkFactory factory, TimeProvider timeProvider)

@@ -3,6 +3,9 @@ using Pottmayer.Pandora.Modules.Integrations.Abstractions.Ports;
 using Pottmayer.Pandora.Modules.Integrations.Application.Credentials;
 using Pottmayer.Pandora.Modules.Integrations.Application.Oauth;
 using Pottmayer.Tars.Core.Mediator.DI;
+using Pottmayer.Tars.FeatureFlags.DI;
+using Pottmayer.Tars.Security.Authorization.DI;
+using Pottmayer.Pandora.Modules.Integrations.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Integrations.Application.DI;
 
@@ -20,6 +23,13 @@ public static class ApplicationDI
         // consumer module registers its own implementation.)
         services.AddScoped<IExternalCredentialProvider, ExternalCredentialProvider>();
         services.AddScoped<IExternalAccountReader, ExternalAccountReader>();
+
+        // What an administrator can switch off and grant in this module (see the Admin module).
+        services.AddTarsFeatureFlagDefinitions(f => f.Add(IntegrationsFeatures.Integrations));
+        services.AddTarsPermissionDefinitions(p => p
+            .CheckUsagesIn(typeof(ApplicationDI).Assembly)
+            .Module(IntegrationsPermissions.Module, feature: IntegrationsFeatures.Integrations)
+                .Resource(IntegrationsPermissions.Accounts.Resource).Crud());
 
         return services;
     }

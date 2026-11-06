@@ -5,6 +5,7 @@ using Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetReminders;
 using Pottmayer.Pandora.Modules.Agenda.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 
@@ -15,6 +16,8 @@ namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 /// </summary>
 public sealed class ListRemindersTool(ISender sender) : IAssistantTool
 {
+    public IReadOnlyList<string> Permissions { get; } = [AgendaPermissions.Reminders.Read];
+
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "list_reminders",
         Description: "Shows the user all their pending reminders, numbered. The list goes to the user directly; you will not see it. For what happens on a given day use list_agenda.",

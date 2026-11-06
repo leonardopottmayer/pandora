@@ -3,6 +3,7 @@ using Pottmayer.Pandora.Modules.Agenda.Application.Commands.RescheduleReminder;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using static Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands.ToolArguments;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 
@@ -14,6 +15,8 @@ namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 /// </summary>
 public sealed class RescheduleReminderTool(ISender sender) : IAssistantTargetedTool
 {
+    public IReadOnlyList<string> Permissions { get; } = [AgendaPermissions.Reminders.Update, AgendaPermissions.Reminders.Read];
+
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "reschedule_reminder",
         Description: "Moves one of the user's pending reminders to another time (reschedule, postpone, snooze, bring forward). You cannot see the reminders: point at it by its number on the last list, or pass the words the user used to name it; the system finds it.",

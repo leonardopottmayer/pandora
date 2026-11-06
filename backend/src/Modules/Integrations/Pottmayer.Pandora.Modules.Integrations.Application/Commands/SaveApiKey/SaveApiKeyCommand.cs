@@ -1,4 +1,6 @@
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Integrations.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Integrations.Application.Commands.SaveApiKey;
 
@@ -12,5 +14,6 @@ namespace Pottmayer.Pandora.Modules.Integrations.Application.Commands.SaveApiKey
 /// </summary>
 public sealed record SaveApiKeyInput(Guid UserId, string Provider, string ApiKey, string? Label);
 
+[RequiresPermission(IntegrationsPermissions.Accounts.Create)]
 public sealed class SaveApiKeyCommand(SaveApiKeyInput input)
     : CommandBase<SaveApiKeyInput, Guid>(input);

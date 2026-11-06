@@ -84,7 +84,9 @@ A module contributes tools by registering `IAssistantTool` implementations in it
 (`services.AddScoped<IAssistantTool, …>()`); the Assistant takes `IEnumerable<IAssistantTool>`. A tool
 is thin: it reads its arguments with `ToolArguments`, finds the item locally (`MatchByTitle` /
 `PickByTitle` / `PickTarget`: accent- and case-insensitive, word prefixes, ignoring words under three
-letters) and sends the module's existing command or query through the mediator.
+letters) and sends the module's existing command or query through the mediator. Its `Permissions` list
+the permissions those use cases require: `Interpret` offers the model only the tools whose permissions
+the user holds (and whose features are on), and the use cases still check them when the tool runs.
 
 | Module | Tool | Policy | Notes |
 |---|---|---|---|

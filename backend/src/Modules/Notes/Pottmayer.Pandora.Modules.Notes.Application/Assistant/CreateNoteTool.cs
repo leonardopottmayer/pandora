@@ -5,6 +5,7 @@ using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetSpaces;
 using Pottmayer.Pandora.Modules.Notes.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using static Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands.ToolArguments;
+using Pottmayer.Pandora.Modules.Notes.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Notes.Application.Assistant;
 
@@ -14,6 +15,8 @@ namespace Pottmayer.Pandora.Modules.Notes.Application.Assistant;
 /// </summary>
 public sealed class CreateNoteTool(ISender sender) : IAssistantTool
 {
+    public IReadOnlyList<string> Permissions { get; } = [NotesPermissions.Pages.Create, NotesPermissions.Spaces.Read];
+
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "create_note",
         Description: "Saves a note (an idea, a piece of information to keep). Use when the user wants to write something down, not to be pinged (create_reminder) or to do it (create_task).",

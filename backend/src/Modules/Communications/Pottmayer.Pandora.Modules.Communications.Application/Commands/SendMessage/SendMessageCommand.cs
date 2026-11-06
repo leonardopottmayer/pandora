@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Communications.Application.Mime;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Communications.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Communications.Application.Commands.SendMessage;
 
@@ -23,4 +25,5 @@ public sealed record SendMessageInput(
 
 public sealed record SentMessageDto(bool CopySaved);
 
+[RequiresPermission(CommunicationsPermissions.Messages.Send)]
 public sealed class SendMessageCommand(SendMessageInput input) : CommandBase<SendMessageInput, SentMessageDto>(input);

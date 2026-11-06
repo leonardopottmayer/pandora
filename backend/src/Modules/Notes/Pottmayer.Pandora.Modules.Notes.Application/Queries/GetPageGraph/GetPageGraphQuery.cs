@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Notes.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Queries;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Notes.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPageGraph;
 
@@ -12,5 +14,6 @@ namespace Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPageGraph;
 public sealed record GetPageGraphInput(
     Guid UserId, Guid? RootPageId, int Depth, IReadOnlyCollection<Guid>? TagIds = null, Guid? SpaceId = null);
 
+[RequiresPermission(NotesPermissions.Pages.Read)]
 public sealed class GetPageGraphQuery(GetPageGraphInput input)
     : QueryBase<GetPageGraphInput, PageGraphDto>(input);

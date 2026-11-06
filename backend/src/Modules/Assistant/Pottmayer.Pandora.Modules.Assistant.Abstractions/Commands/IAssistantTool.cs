@@ -15,6 +15,13 @@ public interface IAssistantTool
     AssistantCommandDescriptor Descriptor { get; }
 
     /// <summary>
+    /// The permissions the tool's use cases require. The assistant offers the tool to the model only when
+    /// the user holds all of them (and their features are on), so it never proposes an action that would
+    /// be refused. The use cases still check them when the tool runs.
+    /// </summary>
+    IReadOnlyList<string> Permissions => [];
+
+    /// <summary>
     /// Runs the tool for <see cref="AssistantToolContext.UserId"/> with the model-produced
     /// <paramref name="arguments"/> (already parsed from the tool call). Returns the outcome to record and
     /// echo back, in the context's locale; it must reflect the underlying use case's real result.

@@ -1,4 +1,6 @@
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.DeleteRecurringTransaction;
 
@@ -8,5 +10,6 @@ public sealed record DeleteRecurringTransactionInput(Guid UserId, Guid Id);
 /// Permanently removes a recurring template. Past transactions and pending suggestions it already
 /// generated are not touched — only the template itself is deleted.
 /// </summary>
+[RequiresPermission(FinancesPermissions.Recurrences.Delete)]
 public sealed class DeleteRecurringTransactionCommand(DeleteRecurringTransactionInput input)
     : CommandBase<DeleteRecurringTransactionInput, bool>(input);

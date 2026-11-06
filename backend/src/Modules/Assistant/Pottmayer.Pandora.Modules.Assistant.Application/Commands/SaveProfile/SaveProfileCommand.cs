@@ -1,4 +1,6 @@
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Assistant.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Assistant.Application.Commands.SaveProfile;
 
@@ -16,5 +18,6 @@ public sealed record SaveProfileInput(
     string? LocaleOverride,
     string ConfirmationLevel);
 
+[RequiresPermission(AssistantPermissions.Profile.Update)]
 public sealed class SaveProfileCommand(SaveProfileInput input)
     : CommandBase<SaveProfileInput, bool>(input);

@@ -5,6 +5,7 @@ using Pottmayer.Pandora.Modules.Agenda.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using static Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands.ToolArguments;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 
@@ -14,6 +15,8 @@ namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 /// </summary>
 public sealed class UpdateTaskTool(ISender sender) : IAssistantTargetedTool
 {
+    public IReadOnlyList<string> Permissions { get; } = [AgendaPermissions.Tasks.Update, AgendaPermissions.Tasks.Read];
+
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "update_task",
         Description: "Changes one of the user's tasks: its title, due date or priority. You cannot see the tasks: point at it by its number on the last list, or pass the words the user used to name it.",

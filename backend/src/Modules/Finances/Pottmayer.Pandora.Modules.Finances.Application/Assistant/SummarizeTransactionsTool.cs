@@ -4,6 +4,7 @@ using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using static Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands.ToolArguments;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Assistant;
 
@@ -16,6 +17,8 @@ public sealed class SummarizeTransactionsTool(ISender sender, TimeProvider timeP
 {
     /// <summary>Groups shown before the rest is folded into "others".</summary>
     private const int MaxGroups = 10;
+
+    public IReadOnlyList<string> Permissions { get; } = [FinancesPermissions.Transactions.Read, FinancesPermissions.Accounts.Read, FinancesPermissions.Cards.Read, FinancesPermissions.Categories.Read];
 
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "summarize_transactions",

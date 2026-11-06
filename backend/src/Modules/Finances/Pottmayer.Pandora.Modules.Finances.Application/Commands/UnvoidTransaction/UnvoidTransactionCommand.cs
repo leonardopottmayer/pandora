@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.UnvoidTransaction;
 
@@ -9,5 +11,6 @@ public sealed record UnvoidTransactionInput(Guid UserId, Guid TransactionId, boo
 /// Undoes a void, reapplying the transaction's effect on the destination's totals. Mirrors
 /// <see cref="VoidTransaction.VoidTransactionCommand"/>'s transfer-pair and installment-plan handling.
 /// </summary>
+[RequiresPermission(FinancesPermissions.Transactions.Void)]
 public sealed class UnvoidTransactionCommand(UnvoidTransactionInput input)
     : CommandBase<UnvoidTransactionInput, TransactionDto>(input);

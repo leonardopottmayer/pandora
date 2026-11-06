@@ -2,6 +2,7 @@ using System.Text.Json;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.DeleteEvent;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 
@@ -11,6 +12,8 @@ namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 /// </summary>
 public sealed class DeleteEventTool(ISender sender, TimeProvider timeProvider) : IAssistantTargetedTool
 {
+    public IReadOnlyList<string> Permissions { get; } = [AgendaPermissions.Events.Delete, AgendaPermissions.Events.Read];
+
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "delete_event",
         Description: "Deletes (cancels) one of the user's calendar events. You cannot see the events: point at it by its number on the last list, or pass the words the user used to name it.",

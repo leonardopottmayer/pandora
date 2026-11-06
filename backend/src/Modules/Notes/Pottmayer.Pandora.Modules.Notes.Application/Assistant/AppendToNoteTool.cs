@@ -4,6 +4,7 @@ using Pottmayer.Pandora.Modules.Notes.Application.Commands.UpdatePage;
 using Pottmayer.Pandora.Modules.Notes.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using static Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands.ToolArguments;
+using Pottmayer.Pandora.Modules.Notes.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Notes.Application.Assistant;
 
@@ -14,6 +15,8 @@ namespace Pottmayer.Pandora.Modules.Notes.Application.Assistant;
 /// </summary>
 public sealed class AppendToNoteTool(ISender sender) : IAssistantTargetedTool
 {
+    public IReadOnlyList<string> Permissions { get; } = [NotesPermissions.Pages.Update, NotesPermissions.Pages.Read];
+
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "append_to_note",
         Description: "Adds text at the end of one of the user's existing notes. You cannot see the notes: point at it by its number on the last list, or pass the title the user said. To start a new note use create_note.",

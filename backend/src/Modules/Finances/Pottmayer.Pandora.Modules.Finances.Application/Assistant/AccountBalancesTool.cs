@@ -4,6 +4,7 @@ using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetAccountBalance;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetAccounts;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Assistant;
 
@@ -13,6 +14,8 @@ namespace Pottmayer.Pandora.Modules.Finances.Application.Assistant;
 /// </summary>
 public sealed class AccountBalancesTool(ISender sender) : IAssistantTool
 {
+    public IReadOnlyList<string> Permissions { get; } = [FinancesPermissions.Accounts.Read];
+
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "account_balances",
         Description: "Shows the user the balance of each of their accounts and the total. The numbers go to the user directly; you will not see them.",

@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Files.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Queries;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Files.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Files.Application.Queries.SearchEntries;
 
@@ -28,5 +30,6 @@ public sealed record SearchEntriesInput(
     int Skip,
     int Take);
 
+[RequiresPermission(FilesPermissions.Entries.Read)]
 public sealed class SearchEntriesQuery(SearchEntriesInput input)
     : QueryBase<SearchEntriesInput, PageDto<EntryDto>>(input);

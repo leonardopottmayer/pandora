@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.CreatePendingExpense;
 
@@ -16,5 +18,6 @@ public sealed record CreatePendingExpenseInput(
     DateOnly OccurredOn,
     string Description);
 
+[RequiresPermission(FinancesPermissions.Pending.Create)]
 public sealed class CreatePendingExpenseCommand(CreatePendingExpenseInput input)
     : CommandBase<CreatePendingExpenseInput, PendingTransactionDto>(input);

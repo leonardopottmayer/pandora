@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Notes.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Queries;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Notes.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Notes.Application.Queries.SearchPages;
 
@@ -11,5 +13,6 @@ namespace Pottmayer.Pandora.Modules.Notes.Application.Queries.SearchPages;
 public sealed record SearchPagesInput(
     Guid UserId, string? Term, IReadOnlyCollection<Guid>? TagIds = null, Guid? SpaceId = null);
 
+[RequiresPermission(NotesPermissions.Pages.Read)]
 public sealed class SearchPagesQuery(SearchPagesInput input)
     : QueryBase<SearchPagesInput, IReadOnlyList<PageSearchResultDto>>(input);

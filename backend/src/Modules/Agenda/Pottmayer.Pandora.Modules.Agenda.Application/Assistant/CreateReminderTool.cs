@@ -3,6 +3,7 @@ using System.Text.Json;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateReminder;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 
@@ -14,6 +15,8 @@ namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 /// </summary>
 public sealed class CreateReminderTool(ISender sender) : IAssistantTool
 {
+    public IReadOnlyList<string> Permissions { get; } = [AgendaPermissions.Reminders.Create];
+
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "create_reminder",
         Description: "Creates a one-off reminder with a title and a time. Use when the user asks to be reminded of something.",

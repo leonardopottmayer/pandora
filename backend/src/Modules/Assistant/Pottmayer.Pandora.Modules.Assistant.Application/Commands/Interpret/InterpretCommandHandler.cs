@@ -20,6 +20,7 @@ using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
+using Pottmayer.Tars.Security.Authorization;
 
 namespace Pottmayer.Pandora.Modules.Assistant.Application.Commands.Interpret;
 
@@ -40,6 +41,7 @@ public sealed partial class InterpretCommandHandler(
     IEnumerable<IAssistantTool> tools,
     IOptions<AssistantOptions> options,
     ISender sender,
+    AuthorizationGate authorization,
     TimeProvider timeProvider)
     : CommandHandlerBase<InterpretCommand, InterpretResultDto>
 {
@@ -149,7 +151,7 @@ public sealed partial class InterpretCommandHandler(
                 return await AnswerHeldAsync(turn, utterance, held, yes, transcript, ct);
         }
 
-        var toolsByName = tools.ToDictionary(t => t.Descriptor.Name, StringComparer.Ordinal);
+        var toolsByName = (await OfferedToolsAsync(turn.UserId, ct)).ToDictionary(t => t.Descriptor.Name, StringComparer.Ordinal);
         var descriptors = toolsByName.Values.Select(t => t.Descriptor).ToList();
         var toolDefinitions = descriptors
             .Select(d => new ToolDefinition(d.Name, d.Description, d.ParametersJsonSchema))
@@ -296,6 +298,18 @@ public sealed partial class InterpretCommandHandler(
     /// Confirms (or cancels) every call held in the conversation, through the same commands the buttons use,
     /// and records the exchange so the conversation reads on.
     /// </summary>
+    /// <summary>The tools the user may use: the model is never offered an action that would be refused.</summary>
+    private async Task<IReadOnlyList<IAssistantTool>> OfferedToolsAsync(Guid userId, CancellationToken ct)
+    {
+        var offered = new List<IAssistantTool>();
+        foreach (var tool in tools)
+        {
+            if (await authorization.CheckAsync(userId.ToString(), tool.Permissions, ct) is null)
+                offered.Add(tool);
+        }
+        return offered;
+    }
+
     private async Task<Result<InterpretResultDto>> AnswerHeldAsync(
         Turn turn, string utterance, IReadOnlyList<CommandInvocation> held, bool yes, string? transcript, CancellationToken ct)
     {

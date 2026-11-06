@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.GenerateRecurringTransactionOccurrence;
 
@@ -22,5 +24,6 @@ public sealed record GenerateRecurringTransactionOccurrenceInput(
     Guid? UserCategoryId);
 
 /// <summary>Manually triggers one occurrence of a recurring template ahead of the scheduled job.</summary>
+[RequiresPermission(FinancesPermissions.Recurrences.Update)]
 public sealed class GenerateRecurringTransactionOccurrenceCommand(GenerateRecurringTransactionOccurrenceInput input)
     : CommandBase<GenerateRecurringTransactionOccurrenceInput, GeneratedOccurrenceDto>(input);

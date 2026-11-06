@@ -4,12 +4,15 @@ using Pottmayer.Pandora.Modules.Agenda.Application.Dtos;
 using Pottmayer.Pandora.Modules.Agenda.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 
 /// <summary><c>reopen_task</c>: puts a finished task back to do (<see cref="ReopenTaskCommand"/>).</summary>
 public sealed class ReopenTaskTool(ISender sender) : IAssistantTargetedTool
 {
+    public IReadOnlyList<string> Permissions { get; } = [AgendaPermissions.Tasks.Update, AgendaPermissions.Tasks.Read];
+
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "reopen_task",
         Description: "Reopens one of the user's finished tasks (marks it as not done). You cannot see the tasks: point at it by its number on the last list, or pass the words the user used to name it.",

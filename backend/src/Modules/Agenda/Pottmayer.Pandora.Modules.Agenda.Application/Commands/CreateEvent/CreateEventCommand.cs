@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Agenda.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateEvent;
 
@@ -21,5 +23,6 @@ public sealed record CreateEventInput(
     string? Rrule,
     string? Status);
 
+[RequiresPermission(AgendaPermissions.Events.Create)]
 public sealed class CreateEventCommand(CreateEventInput input)
     : CommandBase<CreateEventInput, EventDto>(input);

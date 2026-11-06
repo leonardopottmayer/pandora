@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Agenda.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Commands.UpdateCalendar;
 
@@ -14,5 +16,6 @@ public sealed record UpdateCalendarInput(
     bool? IsDefault,
     bool Archive);
 
+[RequiresPermission(AgendaPermissions.Calendars.Update)]
 public sealed class UpdateCalendarCommand(UpdateCalendarInput input)
     : CommandBase<UpdateCalendarInput, CalendarDto>(input);

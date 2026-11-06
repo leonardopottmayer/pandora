@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.UploadImportFile;
 
@@ -15,5 +17,6 @@ public sealed record UploadImportFileInput(
 /// Uploads a file for import, auto-detecting its layout from the registered system layouts and
 /// validating it matches the chosen destination (account or card).
 /// </summary>
+[RequiresPermission(FinancesPermissions.Imports.Run)]
 public sealed class UploadImportFileCommand(UploadImportFileInput input)
     : CommandBase<UploadImportFileInput, ImportFileDto>(input);

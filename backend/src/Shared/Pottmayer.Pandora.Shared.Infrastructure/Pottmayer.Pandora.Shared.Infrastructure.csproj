@@ -7,19 +7,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.14" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../Pottmayer.Pandora.Shared.Domain/Pottmayer.Pandora.Shared.Domain.csproj" />
     <!-- Tars: Messaging -->
     <!-- Tars: UserContext -->
-    <PackageReference Include="Pottmayer.Tars.UserContext" Version="0.0.18" />
-    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.18" />
+    <PackageReference Include="Pottmayer.Tars.UserContext" Version="0.0.20-local.2" />
+    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.20-local.2" />
     <!-- Tars: Observability -->
-    <PackageReference Include="Pottmayer.Tars.Observability" Version="0.0.18" />
-    <PackageReference Include="Pottmayer.Tars.Observability.AspNetCore" Version="0.0.18" />
+    <PackageReference Include="Pottmayer.Tars.Observability" Version="0.0.20-local.2" />
+    <PackageReference Include="Pottmayer.Tars.Observability.AspNetCore" Version="0.0.20-local.2" />
   </ItemGroup>
 
 </Project>

@@ -4,6 +4,7 @@ using Pottmayer.Pandora.Modules.Agenda.Application.Dtos;
 using Pottmayer.Pandora.Modules.Agenda.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 
@@ -14,6 +15,8 @@ namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 /// </summary>
 public sealed class CompleteTaskTool(ISender sender) : IAssistantTargetedTool
 {
+    public IReadOnlyList<string> Permissions { get; } = [AgendaPermissions.Tasks.Update, AgendaPermissions.Tasks.Read];
+
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "complete_task",
         Description: "Marks one of the user's open tasks as done. You cannot see the tasks: point at it by its number on the last list, or pass the words the user used to name it; the system finds it.",

@@ -1,7 +1,8 @@
 # Módulo Admin — Plano de Produto
 
-> **Status:** design aprovado (2026-11-06), nada construído ainda. Cobre os pacotes do Tars de que ele
-> precisa (feature flags e autorização) e o módulo do Pandora que os usa.
+> **Status:** design aprovado (2026-11-06); A1–A3 construídas (pacotes do Tars, módulo Admin e
+> aplicação das regras, ver §9), A4 (endpoints e telas do painel) em seguida. Cobre os pacotes do Tars
+> de que ele precisa (feature flags e autorização) e o módulo do Pandora que os usa.
 > 🇺🇸 [English version](../en/product-plan.md)
 >
 > Relacionados: [Identity](../../identity/pt-BR/README.md) · [Tars wiring](../../../architecture/pt-BR/tars-wiring.md)
@@ -104,11 +105,16 @@ Cada módulo declara suas permissões com um builder curto. O atalho CRUD gera a
 sempre:
 
 ```csharp
-catalog.Module("finances", feature: "finances")
-    .Resource("cards").Crud()                         // finances.cards.read/create/update/delete
-    .Resource("imports", feature: "finances.import").Actions("run", "read")
-    .Resource("transactions").Crud().Actions("approve");
+catalog.Module(FinancesPermissions.Module, feature: FinancesFeatures.Finances)
+    .Resource(FinancesPermissions.Cards.Resource).Crud()            // finances.cards.read/create/update/delete
+    .Resource(FinancesPermissions.Imports.Resource, feature: FinancesFeatures.Import)
+        .Read().Actions(FinancesPermissions.Actions.Run)
+    .Resource(FinancesPermissions.Statements.Resource).Read().Actions(FinancesPermissions.Actions.Close);
 ```
+
+As chaves ficam como constantes no `Abstractions` de cada módulo (`FinancesFeatures`,
+`FinancesPermissions`), montadas a partir do `PermissionActions` do tars nas ações padrão, então a
+declaração, as marcações das requisições e as tools do Assistant usam as mesmas.
 
 Cada permissão carrega:
 - uma chave i18n de rótulo, montada a partir da chave por convenção;
@@ -132,7 +138,7 @@ Cada permissão carrega:
   papéis de um usuário ou nas exceções dele descarta as entradas afetadas (mudou o papel → todos que
   o têm).
 - `AuthorizationBehavior<TRequest, TResponse>` roda para requisições marcadas com
-  `[RequiresPermission("finances.cards.delete")]`:
+  `[RequiresPermission(FinancesPermissions.Cards.Delete)]`:
   1. a feature da permissão está ligada, senão `Error.NotFound("feature.disabled")`;
   2. o ator tem a chave, senão `Error.Forbidden("permission.denied")`;
   3. senão, chama o handler.
@@ -175,9 +181,8 @@ painel.
 
 ### 6.2 Catálogos
 
-O `Abstractions` de cada módulo declara suas flags e permissões (`FinancesPermissions`,
-`FinancesFeatures`) como constantes tipadas, usadas tanto no catálogo quanto no
-`[RequiresPermission]`. O Admin declara as dele: `admin.users.read`, `admin.users.manage`,
+Cada módulo declara suas flags e permissões no seu `ApplicationDI` e marca suas requisições com as
+constantes das suas classes `<Módulo>Features` e `<Módulo>Permissions` (§9). O Admin declara as dele: `admin.users.read`, `admin.users.manage`,
 `admin.roles.manage`, `admin.features.manage`, `admin.audit.read`. O acesso ao Admin também é uma
 permissão, então dá para delegar sem entregar `*`.
 
@@ -262,3 +267,57 @@ Toda escrita vai para o `adm006` com o estado de antes e de depois.
 
 Fora por enquanto: "entrar como" outro usuário, números de uso por módulo, página de saúde do
 sistema, permissões por tenant, planos ou cobrança.
+
+---
+
+## 9. O que a A3 construiu (2026-11-06)
+
+- **Módulo Admin**: `Abstractions`, `Domain`, `Application`, `Persistence`, `Infrastructure` (ainda sem
+  `Contracts` e `Presentation`; os endpoints do painel vêm com a A4). Migrations `adm001`–`adm006` mais
+  o seed de `admin` (`*`) e `member` (padrão, um curinga por módulo de usuário), e `member` para toda
+  conta que já existia.
+- **Stores**: `FeatureFlagStore` (`adm001`) e `AuthorizationStore` (`adm003`–`adm005`), só de leitura,
+  atrás do serviço de flags e do verificador de permissões do Tars.
+- **Checkpoint**: `AddAdminInfrastructure` registra os catálogos, os serviços com cache, o gate, o
+  resolvedor de ator (`InputUserIdActorResolver`, que lê `Input.UserId`) e o behavior de autorização.
+  Cada módulo declara suas flags e permissões no próprio `ApplicationDI`, com `CheckUsagesIn` no seu
+  assembly.
+- **Marcações**: `[RequiresPermission]` em todo command e query de usuário de Finances, Notes, Agenda,
+  Channels, Communications, Files, Integrations e Assistant.
+- **Bootstrap**: `AdminBootstrapper` no startup e `AccountActivatedHandler` (papel padrão, mais `admin`
+  para um e-mail de bootstrap), cada concessão auditada no `adm006` sem ator. Docker: `ADMIN_EMAIL`.
+- **`/me`** devolve `features` (chaves ligadas) e `permissions` (chaves efetivas).
+- **Assistant**: `IAssistantTool.Permissions`; o `Interpret` oferece ao modelo só as tools que o
+  usuário pode usar.
+- **Identity** ganhou a porta `IUserDirectory` (achar uma conta ativada pelo e-mail).
+
+O catálogo como foi declarado:
+
+| Módulo (flag) | Recursos e ações |
+|---|---|
+| `finances` | `accounts`, `cards`, `recurrences`, `attachments`: CRUD · `statements`: read, close, pay · `transactions`: read, create, update, post, reverse, void · `pending`: read, create, update, approve, reject · `categories`: read, create, update · `tags`: CRUD, assign · `imports` (flag `finances.import`): read, run · `audit`: read |
+| `notes` | `spaces`, `pages`, `media`: CRUD · `tags`: read, update |
+| `agenda` | `calendars`, `events`, `reminders`, `lists`, `tasks`: CRUD · `alerts`: read, create, delete · `preferences`: read, update |
+| `channels` | `channels`: read, create, delete, test · `notifications`: read, update |
+| `communications` | `mailboxes`: CRUD · `messages`: read, update, send · `labels`, `rules`: read, update |
+| `files` | `roots`: CRUD · `scans`: read, run · `entries`: read · `review`: read, update · `filters`: read, update, delete · `preferences`: read, update |
+| `integrations` | `accounts`: CRUD |
+| `assistant` | `commands`: read, run · `profile`: read, update |
+| — (sem flag) | `admin.users`: read, manage · `admin.roles`, `admin.features`: manage · `admin.audit`: read |
+
+Decisões tomadas na construção:
+
+1. **As chaves são constantes** por módulo: `<Módulo>Features` e `<Módulo>Permissions` no
+   `Abstractions`, uma classe aninhada por recurso (`FinancesPermissions.Cards.Delete`), com as ações
+   padrão do `PermissionActions` do tars e as do próprio módulo em `<Módulo>Permissions.Actions`. O
+   `CheckUsagesIn` continua impedindo o host de subir com uma marcação que o catálogo não declara.
+2. **O autoatendimento do Identity não tem permissão**: senha, MFA, dispositivos, preferências e `/me`
+   ficam abertos a toda conta logada, para o usuário sempre conseguir cuidar da própria conta. Login,
+   cadastro, tokens e jobs não carregam usuário e não são marcados.
+3. **Jobs ignoram flags**: um job manda commands de sistema sem marcação, então um módulo desligado
+   continua com os jobs rodando; o que desliga são as requisições do usuário e as tools do Assistant.
+4. **Contas novas ganham `member` quando o outbox entrega o `AccountActivated`**, alguns segundos
+   depois de abrir o link de ativação.
+5. **Foi para a A4**: os endpoints do painel, a exigência de MFA para quem tem `admin` e a trava no
+   último `admin`. Até lá a única escrita é a do bootstrap; mudar concessões é editar as tabelas e
+   reiniciar (os caches são por processo).

@@ -4,6 +4,7 @@ using Pottmayer.Pandora.Modules.Agenda.Application.Commands.UpdateEvent;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using static Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands.ToolArguments;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 
@@ -15,6 +16,8 @@ namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 /// </summary>
 public sealed class UpdateEventTool(ISender sender, TimeProvider timeProvider) : IAssistantTargetedTool
 {
+    public IReadOnlyList<string> Permissions { get; } = [AgendaPermissions.Events.Update, AgendaPermissions.Events.Read];
+
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "update_event",
         Description: "Changes one of the user's calendar events: its title, time or place. You cannot see the events: point at it by its number on the last list, or pass the words the user used to name it.",

@@ -28,6 +28,9 @@ services:
       Tars__Data__Connections__assistant__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       Tars__Data__Connections__files__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       Tars__Data__Connections__communications__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Tars__Data__Connections__admin__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      # The account(s) promoted to master administrator at startup and on activation.
+      Pandora__Admin__BootstrapEmails__0: ${ADMIN_EMAIL:-}
       Tars__Security__Identity__Jwt__SigningKey: ${JWT_SIGNING_KEY}
       Pandora__Identity__Mfa__EncryptionKey: ${MFA_ENCRYPTION_KEY}
       # SMTP target. Staging -> mailhog (capture); prod -> a real provider.

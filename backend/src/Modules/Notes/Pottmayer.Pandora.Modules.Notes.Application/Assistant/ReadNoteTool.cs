@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
+using Pottmayer.Pandora.Modules.Notes.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Notes.Application.Assistant;
 
@@ -10,6 +11,8 @@ namespace Pottmayer.Pandora.Modules.Notes.Application.Assistant;
 /// </summary>
 public sealed class ReadNoteTool(ISender sender) : IAssistantTool
 {
+    public IReadOnlyList<string> Permissions { get; } = [NotesPermissions.Pages.Read];
+
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "read_note",
         Description: "Shows the user the full content of one of their notes. You cannot see the notes: point at it by its number on the last list, or pass the title the user said. The content goes to the user directly; you will not see it.",

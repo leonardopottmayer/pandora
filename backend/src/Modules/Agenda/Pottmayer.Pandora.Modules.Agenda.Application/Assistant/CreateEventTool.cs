@@ -4,6 +4,7 @@ using Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetCalendars;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using static Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands.ToolArguments;
+using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 
@@ -14,6 +15,8 @@ namespace Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
 /// </summary>
 public sealed class CreateEventTool(ISender sender) : IAssistantTool
 {
+    public IReadOnlyList<string> Permissions { get; } = [AgendaPermissions.Events.Create, AgendaPermissions.Calendars.Read];
+
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "create_event",
         Description: "Creates a calendar event (an appointment, meeting or something happening at a time or on a day). Use when the user schedules something, not when they want to be pinged (create_reminder) or note a to-do (create_task).",

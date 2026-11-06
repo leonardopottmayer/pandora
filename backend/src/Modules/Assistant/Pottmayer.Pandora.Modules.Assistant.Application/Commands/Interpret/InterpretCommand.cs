@@ -1,6 +1,8 @@
 using Pottmayer.Pandora.Modules.Assistant.Application.Dtos;
 using Pottmayer.Tars.Ai.Chat.Abstractions.Models;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Assistant.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Assistant.Application.Commands.Interpret;
 
@@ -14,5 +16,6 @@ public sealed record InterpretInput(Guid UserId, string? Text, Guid? Conversatio
 /// Interpret one sentence (typed, or transcribed from a voice note) and, when it maps cleanly to a command, execute it. A command (not a query):
 /// it makes a real, billed provider call and can change state.
 /// </summary>
+[RequiresPermission(AssistantPermissions.Commands.Run)]
 public sealed class InterpretCommand(InterpretInput input)
     : CommandBase<InterpretInput, InterpretResultDto>(input);
