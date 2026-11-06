@@ -45,7 +45,7 @@ request ──► 1. Is the feature on in the system?          no ► 404 (nobod
 
 | Thing | Value |
 |---|---|
-| Tars packages | `Pottmayer.Tars.FeatureFlags{,.Abstractions,.AspNetCore}`, `Pottmayer.Tars.Security.Authorization{,.Abstractions,.AspNetCore,.EntityFrameworkCore}` |
+| Tars packages | `Pottmayer.Tars.FeatureFlags{,.Abstractions,.AspNetCore}`, `Pottmayer.Tars.Security.Authorization{,.Abstractions,.AspNetCore}` |
 | Backend projects | `Pottmayer.Pandora.Modules.Admin.{Abstractions,Contracts,Domain,Application,Infrastructure,Persistence,Presentation}` |
 | PostgreSQL schema | `admin` |
 | Table prefix | `admXXX_`, PK `uuid_generate_v7()` |
@@ -136,18 +136,21 @@ Every permission carries:
 
   Both come back as a `Result` failure, so the existing `DefaultHttpErrorMapper` turns them into
   404/403 and the bot or the Assistant can reply with a message.
-- **Who the actor is** comes from `IAuthorizationActorResolver<TRequest>`, registered by the app.
+- **Who the actor is** comes from `IAuthorizationActorResolver.Resolve(request)`, registered by the app; subjects are
+  strings (the JWT `sub`).
   Pandora's resolver reads `Input.UserId`, which every user command already carries (the controller
   fills it from the token, the bot from the linked user). Requests without `[RequiresPermission]`,
   such as system jobs (`RunRecurrenceGeneration`), are not checked.
-- `.AspNetCore` adds `[RequiresPermission]` for controllers, through a policy provider with a
-  `perm:` prefix, like the existing `DevicePolicyProvider`.
+- `.AspNetCore` adds a global MVC filter that enforces the same `[RequiresPermission]` on controllers
+  and actions, reading the subject from the `sub` claim.
 
 ### 5.4 Store
 
-`IAuthorizationStore` reads roles, role patterns, user roles and user exceptions. The
-`.EntityFrameworkCore` package ships the entities and configurations with **configurable table
-names**, so Pandora maps them to `adm002`–`adm005` and keeps writing its own `.sql` migrations.
+`IAuthorizationStore.GetGrantsAsync(subjectId)` returns the subject's role patterns, direct allows
+and direct denials. It only reads; Pandora implements it on `adm002`–`adm005` in its own persistence
+and writes grants (with the audit entry) itself, then calls `Invalidate(subjectId)` or
+`InvalidateAll()`. Tars ships no EF Core store: one query in Pandora does the job, and a generic one
+waits for a second application that needs it.
 
 ---
 
@@ -236,7 +239,7 @@ Every write goes into `adm006` with the before and after state.
 | Step | Repository | Content | Done when |
 |---|---|---|---|
 | A1 | tars | `FeatureFlags` (catalog, stores, `IFeatureFlags`, `[RequiresFeature]`) | tests green, docs in `docs/feature-flags/` |
-| A2 | tars | `Security.Authorization` (catalog builder, resolution with wildcards and deny, cache, behavior, ASP.NET attribute, EF store) | tests green, docs in `docs/security/` |
+| A2 | tars | `Security.Authorization` (catalog builder, resolution with wildcards and deny, cache, behavior, MVC filter) | tests green, docs in `docs/security/` |
 | A3 | pandora | Admin module, `adm001`–`adm006`, catalogs for every module, `[RequiresPermission]` on every user command and query, Pandora actor resolver, bootstrap, `/me` with features and permissions, Assistant tool filter | existing tests green, new tests for 403/404 and bootstrap; nothing changes for the current user |
 | A4 | pandora | Frontend hooks, menu and route guards, screens for roles, users, features and audit | checked in the browser by the user |
 

@@ -45,7 +45,7 @@ requisição ──► 1. A feature está ligada no sistema?        não ► 404
 
 | Item | Valor |
 |---|---|
-| Pacotes do Tars | `Pottmayer.Tars.FeatureFlags{,.Abstractions,.AspNetCore}`, `Pottmayer.Tars.Security.Authorization{,.Abstractions,.AspNetCore,.EntityFrameworkCore}` |
+| Pacotes do Tars | `Pottmayer.Tars.FeatureFlags{,.Abstractions,.AspNetCore}`, `Pottmayer.Tars.Security.Authorization{,.Abstractions,.AspNetCore}` |
 | Projetos do backend | `Pottmayer.Pandora.Modules.Admin.{Abstractions,Contracts,Domain,Application,Infrastructure,Persistence,Presentation}` |
 | Schema PostgreSQL | `admin` |
 | Prefixo de tabela | `admXXX_`, PK `uuid_generate_v7()` |
@@ -139,19 +139,21 @@ Cada permissão carrega:
 
   Os dois voltam como falha de `Result`, então o `DefaultHttpErrorMapper` que já existe transforma em
   404/403, e o bot ou o Assistant podem responder com uma mensagem.
-- **Quem é o ator** vem de `IAuthorizationActorResolver<TRequest>`, registrado pela aplicação. O do
+- **Quem é o ator** vem de `IAuthorizationActorResolver.Resolve(request)`, registrado pela aplicação; o
+  sujeito é uma string (o `sub` do JWT). O do
   Pandora lê `Input.UserId`, que todo command de usuário já carrega (o controller preenche a partir do
   token, o bot a partir do usuário vinculado). Requisições sem `[RequiresPermission]`, como jobs de
   sistema (`RunRecurrenceGeneration`), não são checadas.
-- O `.AspNetCore` traz o `[RequiresPermission]` para controllers, por um policy provider com o
-  prefixo `perm:`, como o `DevicePolicyProvider` que já existe.
+- O `.AspNetCore` traz um filtro MVC global que aplica o mesmo `[RequiresPermission]` em
+  controllers e actions, lendo o sujeito da claim `sub`.
 
 ### 5.4 Store
 
-`IAuthorizationStore` lê papéis, padrões dos papéis, papéis dos usuários e exceções dos usuários. O
-pacote `.EntityFrameworkCore` traz as entidades e configurações com **nomes de tabela
-configuráveis**, então o Pandora as mapeia para `adm002`–`adm005` e continua escrevendo as próprias
-migrations `.sql`.
+`IAuthorizationStore.GetGrantsAsync(subjectId)` devolve os padrões dos papéis do sujeito, as
+permissões diretas e as negações diretas. Ela só lê; o Pandora a implementa sobre `adm002`–`adm005`
+na própria persistência e grava as concessões (com a auditoria) ele mesmo, depois chama
+`Invalidate(subjectId)` ou `InvalidateAll()`. O Tars não traz store EF Core: uma consulta no Pandora
+resolve, e uma genérica fica para quando uma segunda aplicação precisar.
 
 ---
 
@@ -243,7 +245,7 @@ Toda escrita vai para o `adm006` com o estado de antes e de depois.
 | Etapa | Repositório | Conteúdo | Pronto quando |
 |---|---|---|---|
 | A1 | tars | `FeatureFlags` (catálogo, stores, `IFeatureFlags`, `[RequiresFeature]`) | testes verdes, docs em `docs/feature-flags/` |
-| A2 | tars | `Security.Authorization` (builder do catálogo, resolução com coringas e negação, cache, behavior, atributo ASP.NET, store EF) | testes verdes, docs em `docs/security/` |
+| A2 | tars | `Security.Authorization` (builder do catálogo, resolução com coringas e negação, cache, behavior, filtro MVC) | testes verdes, docs em `docs/security/` |
 | A3 | pandora | Módulo Admin, `adm001`–`adm006`, catálogos de todos os módulos, `[RequiresPermission]` em todo command e query de usuário, resolvedor de ator do Pandora, bootstrap, `/me` com features e permissões, filtro de ferramentas do Assistant | testes atuais verdes, testes novos para 403/404 e bootstrap; nada muda para o usuário atual |
 | A4 | pandora | Hooks do frontend, guardas do menu e das rotas, telas de papéis, usuários, features e auditoria | conferido no navegador pelo user |
 
