@@ -86,8 +86,9 @@ requisição ──► 1. A feature está ligada no sistema?        não ► 404
   flags.Add("finances.import", defaultOn: true, parent: "finances");
   ```
   Uma flag filha fica desligada sempre que a mãe está desligada.
-- **Store.** `IFeatureFlagStore` lê e grava as alterações. O Tars traz uma store em memória e uma
-  por `appsettings`; o Pandora implementa uma no Postgres (`adm001`).
+- **Store.** `IFeatureFlagStore` só lê as alterações; quem grava é a aplicação (junto com a entrada
+  de auditoria), que depois chama `IFeatureFlags.Invalidate()`. O Tars traz uma store em memória; o
+  Pandora implementa uma no Postgres (`adm001`).
 - **Uso.** `IFeatureFlags.IsEnabled(key)` no código; `[RequiresFeature(key)]` no controller (do
   `.AspNetCore`). Uma feature desligada devolve `Error.NotFound("feature.disabled", …)`.
 - **Cache.** O mapa de flags é pequeno: fica todo na memória e é recarregado quando uma alteração

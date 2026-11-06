@@ -85,8 +85,9 @@ request ──► 1. Is the feature on in the system?          no ► 404 (nobod
   flags.Add("finances.import", defaultOn: true, parent: "finances");
   ```
   A child flag is off whenever its parent is off.
-- **Store.** `IFeatureFlagStore` reads and writes overrides. Tars ships an in-memory store and an
-  `appsettings` store; Pandora implements one on Postgres (`adm001`).
+- **Store.** `IFeatureFlagStore` only reads overrides; the application writes them (with its audit
+  entry) and then calls `IFeatureFlags.Invalidate()`. Tars ships an in-memory store; Pandora
+  implements one on Postgres (`adm001`).
 - **Use.** `IFeatureFlags.IsEnabled(key)` in code; `[RequiresFeature(key)]` on a controller (from
   `.AspNetCore`). A disabled feature returns `Error.NotFound("feature.disabled", …)`.
 - **Cache.** The whole flag map is small: held in memory, reloaded when an override changes.
