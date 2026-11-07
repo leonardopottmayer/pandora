@@ -118,6 +118,7 @@ files it uses:
 | `JWT_SIGNING_KEY` | Overrides `Tars:Security:Identity:Jwt:SigningKey`. |
 | `MFA_ENCRYPTION_KEY` | Overrides `Pandora:Identity:Mfa:EncryptionKey`. |
 | `ADMIN_EMAIL` | Overrides `Pandora:Admin:BootstrapEmails:0`: the account promoted to the `admin` role at startup and when it is activated. |
+| `REVERSE_PROXY_FORWARD_LIMIT` | Overrides `Pandora:ReverseProxy:ForwardLimit` (default `1`): proxies in front of the backend that append to `X-Forwarded-For`. See [Reverse proxy readiness](#reverse-proxy-readiness). |
 | `REQUIRE_ACCOUNT_APPROVAL` | Overrides `Pandora:Identity:AccountApproval:Required` (default `false`): new accounts sign in only after an administrator approves them; `ADMIN_EMAIL` is exempt. |
 | `SMTP_HOST` / `SMTP_PORT` | Backend SMTP target. Staging: `mailhog`/`1025`; prod: real provider. |
 | `MAILHOG_UI_PORT` | Host port for the Mailhog web UI (only when the profile is on). |
@@ -378,3 +379,27 @@ For reproducible prod deploys, pin `BACKEND_IMAGE` / `FRONTEND_IMAGE` to the
 The backend runs `UseForwardedHeaders` (trusts `X-Forwarded-For` / `-Proto`) and
 only forces HTTPS redirection in Development. TLS is terminated by the proxy
 (nginx now, Cloudflare in phase 2), so exposing it later needs no app changes.
+
+`Pandora:ReverseProxy:ForwardLimit` (Docker: `REVERSE_PROXY_FORWARD_LIMIT`, default
+`1`) is how many proxies append to `X-Forwarded-For`. The client IP is read that many
+entries from the end, so it must match the chain: `1` for the bundled nginx alone,
+`2` with one more proxy in front (Cloudflare Tunnel, Traefik). Too low and every
+user shares the outer proxy's address (and its rate limit); too high and a client
+can choose its own address by sending the header. The backend port is not published,
+so nothing reaches it except through nginx.
+
+## Rate limiting
+
+ASP.NET Core's rate limiter, in memory and per process (a restart resets the counters).
+Fixed windows, configured under `Pandora:RateLimiting`:
+
+| Limit | Applies to | Counted per | Default |
+|---|---|---|---|
+| `Api` | every `/api` request | user, or IP before sign-in | 300 / 60 s |
+| `Auth` | sign-up, sign-in, activation, password forgot/reset/change, refresh, MFA challenge | IP | 10 / 60 s |
+| `Assistant` | the Assistant's commands (text and audio) | user | 20 / 60 s |
+
+Each takes `PermitLimit` and `WindowSeconds`; `Enabled: false` turns all of them off
+(the integration tests do). A refused request gets 429 with `Retry-After` and the
+usual error envelope (`RateLimit.Exceeded`, localized). Controllers opt into a named
+limit with `[EnableRateLimiting(RateLimitPolicies.Auth)]` (`Shared.Domain`).

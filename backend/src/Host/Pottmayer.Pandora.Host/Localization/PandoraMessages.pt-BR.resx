@@ -33,6 +33,10 @@
     <value>A senha é obrigatória.</value>
   </data>
 
+  <!-- Rate limiting -->
+  <data name="RateLimit.Exceeded" xml:space="preserve">
+    <value>Muitas tentativas. Aguarde um pouco e tente de novo.</value>
+  </data>
   <!-- Identity -->
   <data name="Identity.InvalidCredentials" xml:space="preserve">
     <value>As credenciais informadas são inválidas.</value>

@@ -86,6 +86,10 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
                 ["Tars:Data:Connections:communications:ConnectionString"] = ConnectionString,
                 ["Tars:Data:Connections:admin:ConnectionString"] = ConnectionString,
                 // The master admin bootstrap promotes this account (see AdminAuthorizationTests).
+                // Tests sign in many times from one address; RateLimitingTests turns it back on.
+                ["Pandora:RateLimiting:Enabled"] = "false",
+                // Pinned off whatever appsettings.json says; AdminPanelTests sets the waiting state itself.
+                ["Pandora:Identity:AccountApproval:Required"] = "false",
                 ["Pandora:Admin:BootstrapEmails:0"] = "boss@pandora.test",
                 // A bot username is all the linking flow needs; no token, because nothing calls Telegram here.
                 ["Pandora:Channels:Telegram:BotUsername"] = "pandora_test_bot",

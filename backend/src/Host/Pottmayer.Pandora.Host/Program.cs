@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using Pottmayer.Pandora.Host;
 using Pottmayer.Pandora.Host.Localization;
+using Pottmayer.Pandora.Host.RateLimiting;
 using Pottmayer.Pandora.Modules.Identity.Application.DI;
 using Pottmayer.Pandora.Modules.Identity.Infrastructure.DI;
 using Pottmayer.Pandora.Modules.Identity.Persistence.DI;
@@ -109,6 +110,9 @@ builder.Services.AddPandoraLocalization();
 builder.Services.AddFinancesLocalization();
 builder.Services.AddTarsProblemDetails();
 
+// Rate limiting: every /api request, the auth endpoints and the Assistant (see RateLimitingRegistration).
+builder.Services.AddPandoraRateLimiting();
+
 // Presentation
 builder.Services.AddControllers()
                 .AddIdentityPresentationPart()
@@ -150,6 +154,10 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     // The proxy is not on a fixed address inside the Docker network; trust it.
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
+    // How many proxies append to X-Forwarded-For: 1 for the bundled nginx. The client IP (what rate
+    // limiting counts by) is the entry that many hops from the end; one more proxy in front (Cloudflare,
+    // Traefik) needs 2, or every user would share that proxy's address.
+    options.ForwardLimit = builder.Configuration.GetValue("Pandora:ReverseProxy:ForwardLimit", 1);
 });
 
 // CORS
@@ -221,6 +229,8 @@ if (app.Environment.IsDevelopment())
 app.UseCors("PandoraClient");
 
 app.UseAuthentication();
+// After authentication, so the per-user limits know the user.
+app.UseRateLimiter();
 app.UseAuthorization();
 app.UseTarsUserContext();
 

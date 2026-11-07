@@ -33,6 +33,8 @@ services:
       Pandora__Admin__BootstrapEmails__0: ${ADMIN_EMAIL:-}
       # New accounts wait for an administrator's approval before they can sign in.
       Pandora__Identity__AccountApproval__Required: ${REQUIRE_ACCOUNT_APPROVAL:-false}
+      # Proxies appending to X-Forwarded-For: 1 for the bundled nginx, 2 with Cloudflare/Traefik in front.
+      Pandora__ReverseProxy__ForwardLimit: ${REVERSE_PROXY_FORWARD_LIMIT:-1}
       Tars__Security__Identity__Jwt__SigningKey: ${JWT_SIGNING_KEY}
       Pandora__Identity__Mfa__EncryptionKey: ${MFA_ENCRYPTION_KEY}
       # SMTP target. Staging -> mailhog (capture); prod -> a real provider.

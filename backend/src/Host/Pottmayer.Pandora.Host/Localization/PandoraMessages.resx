@@ -33,6 +33,10 @@
     <value>Password is required.</value>
   </data>
 
+  <!-- Rate limiting -->
+  <data name="RateLimit.Exceeded" xml:space="preserve">
+    <value>Too many requests. Wait a moment and try again.</value>
+  </data>
   <!-- Identity -->
   <data name="Identity.InvalidCredentials" xml:space="preserve">
     <value>The provided credentials are invalid.</value>

@@ -2,6 +2,7 @@ using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Pottmayer.Pandora.Modules.Assistant.Application.Commands.CancelInvocation;
 using Pottmayer.Pandora.Modules.Assistant.Application.Commands.ConfirmInvocation;
 using Pottmayer.Pandora.Modules.Assistant.Application.Commands.Interpret;
@@ -76,6 +77,7 @@ public sealed class AssistantController(
     /// </summary>
     [Authorize]
     [HttpPost("interpret")]
+    [EnableRateLimiting(RateLimitPolicies.Assistant)]
     public async Task<IActionResult> InterpretAsync([FromBody] InterpretRequest body, CancellationToken ct)
     {
         var result = await sender.Send(
@@ -89,6 +91,7 @@ public sealed class AssistantController(
     /// </summary>
     [Authorize]
     [HttpPost("interpret/audio")]
+    [EnableRateLimiting(RateLimitPolicies.Assistant)]
     [Consumes("multipart/form-data")]
     // A little above the pipeline's own cap, so a slightly long note gets its readable refusal, not a 413.
     [RequestSizeLimit(InterpretCommandHandler.MaxAudioBytes + 1024 * 1024)]
