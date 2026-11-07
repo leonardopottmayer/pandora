@@ -29,6 +29,7 @@ organized by module plus a few cross-cutting concerns.
   | [Assistant](modules/assistant/README.md) | Implemented (web + Telegram, text + voice, 25 tools) | Natural-language commands over the other modules (Gemini, tools per module) |
   | [Admin](modules/admin/README.md) | In progress | Global feature flags, per-action permissions, master admin panel |
   | [Files](modules/files/README.md) | F1 (catalog) and F2 (metadata) implemented; F1 homelab check pending | Catalog of the user's disks, fed by the desktop agent |
+  | [Databases](modules/databases/README.md) | Designed (T1–T6), nothing built | User-built bases: tables, typed fields, relations, views, CSV/Excel import and export |
 
 - **A cross-cutting decision** that no single module owns:
   - [Messaging architecture](architecture/en/messaging.md) — the in-process outbox, why there is no broker, idempotency, what does *not* go through the bus.
@@ -57,7 +58,8 @@ Every implemented module follows the same shape — see [Finances](modules/finan
 
 **Files is the exception**: it does not have the topic set yet — no `overview.md`,
 `architecture.md`, `data-model.md`, `api-reference.md` or `implementation-status.md` — only a product
-plan (en + pt-BR). See [Files' README](modules/files/README.md) for the specifics.
+plan (en + pt-BR). See [Files' README](modules/files/README.md) for the specifics. **Databases** is in
+the same state until it is built: only a [product plan](modules/databases/README.md).
 
 ## What is out of scope for this folder
 
