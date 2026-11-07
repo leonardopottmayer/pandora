@@ -19,18 +19,18 @@
     <!-- Cross-module port: downloads the bytes of an inbound voice note by its opaque media ref. -->
     <ProjectReference Include="../../Channels/Pottmayer.Pandora.Modules.Channels.Abstractions/Pottmayer.Pandora.Modules.Channels.Abstractions.csproj" />
     <!-- Tars: Messaging (integration-event subscribe + publish) -->
-    <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.0.20-local.2" />
+    <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.1.0" />
     <!-- Tars: AI transport -->
-    <PackageReference Include="Pottmayer.Tars.Ai.Abstractions" Version="0.0.20-local.2" />
-    <PackageReference Include="Pottmayer.Tars.Ai.Chat.Abstractions" Version="0.0.20-local.2" />
+    <PackageReference Include="Pottmayer.Tars.Ai.Abstractions" Version="0.1.0" />
+    <PackageReference Include="Pottmayer.Tars.Ai.Chat.Abstractions" Version="0.1.0" />
     <!-- Tars: Core -->
-    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.20-local.2" />
-    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.20-local.2" />
+    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.1.0" />
+    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.1.0" />
     <!-- Tars: Data -->
-    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.20-local.2" />
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.1.0" />
     <!-- Tars: Feature flags and authorization -->
-    <PackageReference Include="Pottmayer.Tars.FeatureFlags" Version="0.0.20-local.2" />
-    <PackageReference Include="Pottmayer.Tars.Security.Authorization" Version="0.0.20-local.2" />
+    <PackageReference Include="Pottmayer.Tars.FeatureFlags" Version="0.1.0" />
+    <PackageReference Include="Pottmayer.Tars.Security.Authorization" Version="0.1.0" />
   </ItemGroup>
 
 </Project>

@@ -13,14 +13,14 @@
     <ProjectReference Include="../../Identity/Pottmayer.Pandora.Modules.Identity.Contracts/Pottmayer.Pandora.Modules.Identity.Contracts.csproj" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.14" />
     <!-- Tars: Messaging -->
-    <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.0.20-local.2" />
+    <PackageReference Include="Pottmayer.Tars.Messaging" Version="0.1.0" />
     <!-- Tars: Data -->
-    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.0.20-local.2" />
-    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.0.20-local.2" />
-    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.20-local.2" />
+    <PackageReference Include="Pottmayer.Tars.Core.Cqrs" Version="0.1.0" />
+    <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.1.0" />
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.1.0" />
     <!-- Tars: Feature flags and authorization -->
-    <PackageReference Include="Pottmayer.Tars.FeatureFlags" Version="0.0.20-local.2" />
-    <PackageReference Include="Pottmayer.Tars.Security.Authorization" Version="0.0.20-local.2" />
+    <PackageReference Include="Pottmayer.Tars.FeatureFlags" Version="0.1.0" />
+    <PackageReference Include="Pottmayer.Tars.Security.Authorization" Version="0.1.0" />
   </ItemGroup>
 
 </Project>
