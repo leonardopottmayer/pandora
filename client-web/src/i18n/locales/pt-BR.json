@@ -2340,7 +2340,21 @@
       "disableConfirm": "Desativar esta conta?",
       "disableContent": "{{name}} não poderá entrar até ser reativado e será desconectado de todos os dispositivos em alguns minutos.",
       "disabledDone": "Conta desativada.",
-      "enabledDone": "Conta reativada."
+      "enabledDone": "Conta reativada.",
+      "status": "Situação",
+      "awaitingApproval": "Aguardando aprovação",
+      "waitingNotice_one": "{{count}} conta aguarda sua aprovação.",
+      "waitingNotice_other": "{{count}} contas aguardam sua aprovação.",
+      "showWaiting": "Mostrar só estas",
+      "showEveryone": "Mostrar todos",
+      "approve": "Aprovar",
+      "approveSelected_one": "Aprovar {{count}}",
+      "approveSelected_other": "Aprovar {{count}}",
+      "approvedDone_one": "{{count}} conta aprovada. O usuário foi avisado por e-mail.",
+      "approvedDone_other": "{{count}} contas aprovadas. Os usuários foram avisados por e-mail.",
+      "reject": "Recusar",
+      "rejectConfirm": "Recusar esta conta?",
+      "rejectContent": "{{name}} não poderá entrar. A conta fica desativada, então o endereço não consegue se cadastrar de novo; dá para reativá-la depois."
     },
     "audit": {
       "subtitle": "Toda alteração feita no painel, e as que o sistema faz sozinho.",

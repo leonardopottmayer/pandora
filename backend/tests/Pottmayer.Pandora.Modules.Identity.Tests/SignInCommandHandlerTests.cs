@@ -85,6 +85,18 @@ public sealed class SignInCommandHandlerTests
     }
 
     [Fact]
+    public async Task An_account_waiting_for_approval_is_told_so_after_the_right_password()
+    {
+        var (handler, _, _) = Build(new FakeUserRepository(TestUsers.AwaitingApproval(_hasher, Password)));
+
+        var waiting = await handler.Handle(Command("alice"), CancellationToken.None);
+        var wrongPassword = await handler.Handle(Command("alice", "wrong"), CancellationToken.None);
+
+        Assert.Equal("Identity.PendingApproval", waiting.Errors[0].Code);
+        Assert.Equal("Identity.InvalidCredentials", wrongPassword.Errors[0].Code);
+    }
+
+    [Fact]
     public async Task Fails_with_account_not_active_when_status_disallows()
     {
         var (handler, _, _) = Build(new FakeUserRepository(TestUsers.Disabled(_hasher, Password)));

@@ -13,12 +13,20 @@ single-use activation link backed by `idt004`.
 `POST /identity/auth/activate` consumes the activation token (single-use, expiring), sets
 `email_confirmed_at`, and publishes **`AccountActivated`**. Username and email are unique.
 
+**Account approval** (`Pandora:Identity:AccountApproval:Required`, off by default): an account
+activated while it is on also gets `awaiting_approval_since` and publishes
+**`AccountApprovalRequested`**, unless `IAccountApprovalPolicy` (implemented by Admin with its
+bootstrap e-mails) pre-approves it; the activation e-mail says so. Admin approves through
+`IUserDirectory.ApproveAsync`, which clears the mark and publishes **`AccountApproved`**. See the
+[Admin plan §11](../../admin/en/product-plan.md).
+
 ## 2. Sign-in
 
 `POST /identity/auth/signin`:
 
 1. Look up the user by email; verify the password with Argon2id. Failure is **uniform** — the response
-   does not reveal whether the email exists or the password was wrong.
+   does not reveal whether the email exists or the password was wrong. After the right password, an
+   account waiting for approval gets 403 `Identity.PendingApproval`.
 2. **If MFA is off** — issue a JWT **access token** (via Tars) and a **refresh token** (persisted
    hashed in `idt002`), stamp `last_sign_in_at`, return `TokenDto`.
 3. **If MFA is on** — do *not* issue an access token. Issue a short-lived **MFA challenge** (`idt008`)

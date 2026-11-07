@@ -59,6 +59,10 @@ public sealed class SignInCommandHandler(
             if (!user.CanAuthenticate)
                 return Result<SignInOutcome>.Failure([IdentityErrors.AccountNotActive]);
 
+            // Only after the right password, so the answer reveals nothing to someone guessing.
+            if (user.IsAwaitingApproval)
+                return Result<SignInOutcome>.Failure([IdentityErrors.PendingApproval]);
+
             if (user.MfaEnabled)
             {
                 var ticket = MfaTickets.Generate();

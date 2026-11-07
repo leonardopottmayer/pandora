@@ -118,6 +118,7 @@ files it uses:
 | `JWT_SIGNING_KEY` | Overrides `Tars:Security:Identity:Jwt:SigningKey`. |
 | `MFA_ENCRYPTION_KEY` | Overrides `Pandora:Identity:Mfa:EncryptionKey`. |
 | `ADMIN_EMAIL` | Overrides `Pandora:Admin:BootstrapEmails:0`: the account promoted to the `admin` role at startup and when it is activated. |
+| `REQUIRE_ACCOUNT_APPROVAL` | Overrides `Pandora:Identity:AccountApproval:Required` (default `false`): new accounts sign in only after an administrator approves them; `ADMIN_EMAIL` is exempt. |
 | `SMTP_HOST` / `SMTP_PORT` | Backend SMTP target. Staging: `mailhog`/`1025`; prod: real provider. |
 | `MAILHOG_UI_PORT` | Host port for the Mailhog web UI (only when the profile is on). |
 | `APP_BASE_URL` | Public base URL for emailed activation/reset links. Optional — defaults to `http://localhost:${HTTP_PORT}`; set it for a LAN IP or real domain. |

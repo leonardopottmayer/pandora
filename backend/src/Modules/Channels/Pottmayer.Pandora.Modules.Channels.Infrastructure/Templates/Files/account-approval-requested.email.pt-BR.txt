@@ -1,0 +1,2 @@
+Novo cadastro no Pandora aguardando aprovação
+{{name}} ({{email}}) ativou uma conta e aguarda sua aprovação. Revise os papéis e aprove ou recuse em Administração → Usuários.

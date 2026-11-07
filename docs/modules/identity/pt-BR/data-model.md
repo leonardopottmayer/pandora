@@ -35,6 +35,7 @@ As migrations ficam em `migrations/migrations/identity/`.
 | `password_hash` | text NOT NULL | Argon2id |
 | `email_confirmed_at` | timestamptz NULL | definido na ativação |
 | `disabled_at` | timestamptz NULL | desativação suave |
+| `awaiting_approval_since` | timestamptz NULL | ativada com aprovação exigida; limpa ao aprovar |
 | `mfa_enabled` | bool DEFAULT false | dirige o challenge de login |
 | `last_sign_in_at` / `last_password_changed_at` | timestamptz NULL | |
 | `created_by/created_at/updated_by/updated_at` | | auditoria; `created_by`/`updated_by` com FK de volta para `idt001` |

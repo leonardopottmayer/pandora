@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { App, Button, Input, Select, Space, Table, Tag, Typography, theme } from 'antd'
+import { Alert, App, Button, Input, Select, Space, Table, Tag, Typography, theme } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { SearchOutlined } from '@ant-design/icons'
 import { PageHeading } from '@/components/settings/PageHeading'
@@ -8,7 +8,7 @@ import { toErrorMessage } from '@/lib/api/envelope'
 import { formatDateTime } from '@/modules/finances/lib/format'
 import { usePermission } from '@/modules/identity/hooks/useAccess'
 import type { AdminUserDto } from '../../models'
-import { useAdminUsers, useChangeUserRoles, useRoles } from '../../hooks/useAdmin'
+import { useAdminUsers, useApproveUsers, useChangeUserRoles, useRoles } from '../../hooks/useAdmin'
 import { AdminError } from '../../components/AdminError'
 import { UserDetailDrawer } from './UserDetailDrawer'
 
@@ -21,9 +21,11 @@ export function UsersPage() {
   const { data, isLoading, error } = useAdminUsers()
   const { data: roles } = useRoles(canReadRoles)
   const changeRoles = useChangeUserRoles()
+  const approve = useApproveUsers()
 
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<string | undefined>()
+  const [onlyWaiting, setOnlyWaiting] = useState(false)
   const [selected, setSelected] = useState<string[]>([])
   const [bulkRole, setBulkRole] = useState<string | undefined>()
   const [openId, setOpenId] = useState<string | null>(null)
@@ -32,12 +34,18 @@ export function UsersPage() {
   const roleName = useMemo(() => new Map((roles ?? []).map((r) => [r.id, r.name])), [roles])
   const users = useMemo(() => {
     const term = search.trim().toLowerCase()
-    return (data ?? []).filter(
-      (u) =>
-        (!roleFilter || u.roleIds.includes(roleFilter)) &&
-        (!term || [u.name, u.email, u.username].some((v) => v.toLowerCase().includes(term))),
-    )
-  }, [data, search, roleFilter])
+    return (data ?? [])
+      .filter(
+        (u) =>
+          (!onlyWaiting || u.awaitingApproval) &&
+          (!roleFilter || u.roleIds.includes(roleFilter)) &&
+          (!term || [u.name, u.email, u.username].some((v) => v.toLowerCase().includes(term))),
+      )
+      // Who is waiting comes first: it is what needs doing.
+      .sort((a, b) => Number(b.awaitingApproval) - Number(a.awaitingApproval))
+  }, [data, search, roleFilter, onlyWaiting])
+  const waitingCount = (data ?? []).filter((u) => u.awaitingApproval).length
+  const selectedWaiting = selected.filter((id) => data?.find((u) => u.id === id)?.awaitingApproval)
 
   if (error) return <AdminError error={error} />
 
@@ -46,6 +54,16 @@ export function UsersPage() {
     try {
       const changed = await changeRoles.mutateAsync({ userIds: selected, roleId: bulkRole, assign })
       message.success(t(assign ? 'admin.users.rolesAdded' : 'admin.users.rolesRemoved', { count: changed }))
+      setSelected([])
+    } catch (err) {
+      message.error(toErrorMessage(err, t('admin.saveError')))
+    }
+  }
+
+  async function approveSelected() {
+    try {
+      const count = await approve.mutateAsync(selectedWaiting)
+      message.success(t('admin.users.approvedDone', { count }))
       setSelected([])
     } catch (err) {
       message.error(toErrorMessage(err, t('admin.saveError')))
@@ -63,6 +81,7 @@ export function UsersPage() {
               {user.name}
             </span>
             {user.disabled && <Tag color="red">{t('admin.users.disabled')}</Tag>}
+            {user.awaitingApproval && !user.disabled && <Tag color="gold">{t('admin.users.awaitingApproval')}</Tag>}
             {!user.activated && <Tag color="gold">{t('admin.users.notActivated')}</Tag>}
           </span>
           <Typography.Text type="secondary" className="truncate text-xs">
@@ -100,6 +119,20 @@ export function UsersPage() {
         <PageHeading title={t('nav.adminUsers')} description={t('admin.users.subtitle')} />
       </div>
 
+      {waitingCount > 0 && (
+        <Alert
+          className="shrink-0"
+          type="warning"
+          showIcon
+          title={t('admin.users.waitingNotice', { count: waitingCount })}
+          action={
+            <Button size="small" onClick={() => setOnlyWaiting(!onlyWaiting)}>
+              {onlyWaiting ? t('admin.users.showEveryone') : t('admin.users.showWaiting')}
+            </Button>
+          }
+        />
+      )}
+
       <div className="flex shrink-0 flex-wrap items-center gap-3">
         <Input
           allowClear
@@ -119,6 +152,11 @@ export function UsersPage() {
             className="w-full sm:w-48"
             aria-label={t('admin.users.filterByRole')}
           />
+        )}
+        {canManage && selectedWaiting.length > 0 && (
+          <Button type="primary" loading={approve.isPending} onClick={() => void approveSelected()}>
+            {t('admin.users.approveSelected', { count: selectedWaiting.length })}
+          </Button>
         )}
         {canManage && canReadRoles && selected.length > 0 && (
           <Space.Compact className="w-full sm:w-auto">

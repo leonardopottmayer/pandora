@@ -53,6 +53,8 @@ export interface AdminUserDto {
   email: string
   activated: boolean
   disabled: boolean
+  /** Activated while approval was required, and not approved yet: cannot sign in. */
+  awaitingApproval: boolean
   mfaEnabled: boolean
   lastSignInAt: string | null
   createdAt: string

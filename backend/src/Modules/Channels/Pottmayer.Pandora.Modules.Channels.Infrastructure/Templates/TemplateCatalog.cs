@@ -18,6 +18,9 @@ internal static class TemplateCatalog
         new Dictionary<string, IReadOnlyList<Channel>>
         {
             ["account-activation"] = [Channel.Email],
+            ["account-activation-approval"] = [Channel.Email],
+            ["account-approval-requested"] = [Channel.Email],
+            ["account-approved"] = [Channel.Email],
             ["password-reset"] = [Channel.Email],
             ["password-changed"] = [Channel.Email],
             ["mfa-enabled"] = [Channel.Email],

@@ -14,6 +14,7 @@ public sealed class AuditEntry
     public const string ExceptionsChanged = "user.exceptions-changed";
     public const string UserDisabled = "user.disabled";
     public const string UserEnabled = "user.enabled";
+    public const string UserApproved = "user.approved";
     public const string SessionsRevoked = "user.sessions-revoked";
     public const string FeatureChanged = "feature.changed";
 

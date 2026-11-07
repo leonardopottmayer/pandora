@@ -15,6 +15,8 @@ public sealed class User : AggregateRoot<Guid>, IAuditable
     public string PasswordHash { get; private set; } = string.Empty;
     public DateTimeOffset? EmailConfirmedAt { get; private set; }
     public DateTimeOffset? DisabledAt { get; private set; }
+    /// <summary>Set when the account was activated while approval was required; cleared on approval.</summary>
+    public DateTimeOffset? AwaitingApprovalSince { get; private set; }
     public bool MfaEnabled { get; private set; }
     public DateTimeOffset? LastSignInAt { get; private set; }
     public DateTimeOffset? LastPasswordChangedAt { get; private set; }
@@ -76,6 +78,14 @@ public sealed class User : AggregateRoot<Guid>, IAuditable
         PasswordHash = newPasswordHash;
         LastPasswordChangedAt = timeProvider.GetUtcNow();
     }
+
+    public bool IsAwaitingApproval => AwaitingApprovalSince is not null;
+
+    /// <summary>Holds sign-in until an administrator approves the account. Idempotent.</summary>
+    public void AwaitApproval(TimeProvider timeProvider) => AwaitingApprovalSince ??= timeProvider.GetUtcNow();
+
+    /// <summary>Lets an account waiting for approval sign in.</summary>
+    public void Approve() => AwaitingApprovalSince = null;
 
     /// <summary>Blocks sign-in and refresh (an administrator's decision). Idempotent.</summary>
     public void Disable(TimeProvider timeProvider) => DisabledAt ??= timeProvider.GetUtcNow();

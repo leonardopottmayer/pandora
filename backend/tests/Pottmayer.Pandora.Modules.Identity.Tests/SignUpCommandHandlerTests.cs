@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.Activation;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.SignUp;
 using Pottmayer.Pandora.Modules.Identity.Application.Options;
+using Pottmayer.Pandora.Modules.Identity.Application.Services;
 using Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
 using Pottmayer.Pandora.Modules.Identity.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Repositories;
@@ -19,6 +20,10 @@ public sealed class SignUpCommandHandlerTests
     private readonly FakeIntegrationEventBus _eventBus = new();
 
     private (SignUpCommandHandler Handler, FakeUserRepository Users, FakeActivationTokenRepository Tokens) Build(params User[] existingUsers)
+        => Build(ApprovalRules.Off, existingUsers);
+
+    private (SignUpCommandHandler Handler, FakeUserRepository Users, FakeActivationTokenRepository Tokens) Build(
+        AccountApprovalRule approval, params User[] existingUsers)
     {
         var users   = new FakeUserRepository(existingUsers);
         var tokens  = new FakeActivationTokenRepository();
@@ -26,7 +31,7 @@ public sealed class SignUpCommandHandlerTests
             .Register<IUserRepository>(users)
             .Register<IActivationTokenRepository>(tokens);
         var options = Options.Create(new AccountActivationOptions());
-        var handler = new SignUpCommandHandler(new FakeUnitOfWorkFactory(ctx), _hasher, _eventBus, options, TimeProvider.System);
+        var handler = new SignUpCommandHandler(new FakeUnitOfWorkFactory(ctx), _hasher, _eventBus, options, approval, TimeProvider.System);
         return (handler, users, tokens);
     }
 
@@ -108,5 +113,17 @@ public sealed class SignUpCommandHandlerTests
         Assert.True(result.IsFailure);
         Assert.Equal("Users.EmailOrUsernameAlreadyRegistered", result.Errors[0].Code);
         Assert.Single(users.Users);
+    }
+
+    [Fact]
+    public async Task Activation_mail_says_approval_follows_only_when_it_applies()
+    {
+        var (required, _, _) = Build(ApprovalRules.Required("boss@example.com"));
+        await required.Handle(Command(), CancellationToken.None);
+        await required.Handle(Command("boss@example.com", "boss"), CancellationToken.None);
+
+        var requests = _eventBus.Published.OfType<AccountActivationRequested>().ToList();
+        Assert.True(requests[0].RequiresApproval);
+        Assert.False(requests[1].RequiresApproval); // a bootstrap e-mail is pre-approved
     }
 }

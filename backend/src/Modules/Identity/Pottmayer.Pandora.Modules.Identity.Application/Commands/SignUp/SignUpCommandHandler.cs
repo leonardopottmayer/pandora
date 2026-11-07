@@ -3,6 +3,7 @@ using Pottmayer.Pandora.Modules.Identity.Abstractions;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.Activation;
 using Pottmayer.Pandora.Modules.Identity.Application.Options;
 using Pottmayer.Pandora.Modules.Identity.Application.Security;
+using Pottmayer.Pandora.Modules.Identity.Application.Services;
 using Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
 using Pottmayer.Pandora.Modules.Identity.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Identity.Domain.Entities;
@@ -23,6 +24,7 @@ public sealed class SignUpCommandHandler(
     IPasswordHasher passwordHasher,
     IIntegrationEventBus integrationEventBus,
     IOptions<AccountActivationOptions> activationOptions,
+    AccountApprovalRule approvalRule,
     TimeProvider timeProvider)
     : CommandHandlerBase<SignUpCommand, SignUpResult>
 {
@@ -78,7 +80,8 @@ public sealed class SignUpCommandHandler(
                 UserId: user.Id,
                 Email: email!.Value,
                 Token: activationToken,
-                Locale: CultureInfo.CurrentUICulture.Name);
+                Locale: CultureInfo.CurrentUICulture.Name,
+                RequiresApproval: approvalRule.Applies(email.Value));
             await integrationEventBus.PublishAsync(activationRequested, token);
 
             return Ok(new SignUpResult(user.Id));

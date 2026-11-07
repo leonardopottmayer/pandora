@@ -79,6 +79,10 @@ export function useChangeUserRoles() {
   )
 }
 
+export function useApproveUsers() {
+  return useAdminMutation((userIds: string[]) => adminService.approveUsers(userIds))
+}
+
 export function useSetUserExceptions() {
   return useAdminMutation(({ id, exceptions }: { id: string; exceptions: UserException[] }) =>
     adminService.setUserExceptions(id, exceptions),

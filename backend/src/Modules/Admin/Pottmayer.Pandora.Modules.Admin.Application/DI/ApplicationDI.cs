@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Pottmayer.Pandora.Modules.Admin.Application.Authorization;
 using Pottmayer.Pandora.Modules.Admin.Application.Bootstrap;
 using Pottmayer.Pandora.Modules.Admin.Application.Services;
+using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
 using Pottmayer.Tars.Core.Mediator.DI;
 using Pottmayer.Tars.FeatureFlags.Abstractions;
 using Pottmayer.Tars.Messaging.DI;
@@ -26,6 +27,9 @@ public static class ApplicationDI
         services.AddScoped<RoleAssigner>();
         services.AddScoped<AdminBootstrapper>();
         services.AddScoped<LastAdminGuard>();
+
+        // Answers Identity's approval question: the bootstrap e-mails skip approval and hear about it.
+        services.AddScoped<IAccountApprovalPolicy, BootstrapApprovalPolicy>();
 
         // The panel's own permissions. Admin has no feature flag: switching it off would lock everyone out.
         services.AddTarsPermissionDefinitions(p => p

@@ -63,6 +63,12 @@ export async function changeUserRoles(userIds: string[], roleId: string, assign:
   return data
 }
 
+/** Lets accounts waiting for approval sign in; returns how many were waiting. */
+export async function approveUsers(userIds: string[]): Promise<number> {
+  const { data } = await apiClient.post<number>(`${BASE}/users/approve`, { userIds })
+  return data
+}
+
 export async function setUserExceptions(id: string, exceptions: UserException[]): Promise<void> {
   await apiClient.put(`${BASE}/users/${id}/exceptions`, { exceptions })
 }

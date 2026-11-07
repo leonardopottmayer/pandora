@@ -13,7 +13,8 @@ A regra de qual ponto de entrada um produtor usa é simples: **quem é dono dos 
   `AccountActivationRequested`, `MfaEnabled`, …) e um **subscriber neste módulo** o mapeia para uma
   `TemplateKey` + payload e categoria. É assim que o Identity funciona; continua assim. Subscribers:
   `AccountActivationRequestedHandler`, `AccountActivatedHandler`, `PasswordResetRequestedHandler`,
-  `PasswordChangedHandler`, `MfaEnabledHandler`, `MfaDisabledHandler`.
+  `PasswordChangedHandler`, `MfaEnabledHandler`, `MfaDisabledHandler`, `AccountApprovalRequestedHandler`
+  (um e-mail por aprovador), `AccountApprovedHandler`.
 - **Com botões (`agenda.*`, `assistant.*`).** Quem chama publica **`NotifyUserRequested`** diretamente,
   porque a ação e o payload de cada botão são seu domínio. Tratado por `NotifyUserRequestedHandler`.
 - **Ad-hoc.** `SendNotificationRequested` é a saída de emergência — um envio endereçado simples, não

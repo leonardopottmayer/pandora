@@ -13,12 +13,20 @@ link de ativação de uso único apoiado em `idt004`.
 `POST /identity/auth/activate` consome o token de ativação (uso único, com expiração), define
 `email_confirmed_at`, e publica **`AccountActivated`**. Username e e-mail são únicos.
 
+**Aprovação de contas** (`Pandora:Identity:AccountApproval:Required`, desligada por padrão): uma conta
+ativada com a opção ligada também recebe `awaiting_approval_since` e publica
+**`AccountApprovalRequested`**, a menos que o `IAccountApprovalPolicy` (implementado pelo Admin com os
+e-mails de bootstrap) a aprove de antemão; o e-mail de ativação avisa disso. O Admin aprova pelo
+`IUserDirectory.ApproveAsync`, que tira a marca e publica **`AccountApproved`**. Ver o
+[plano do Admin §11](../../admin/pt-BR/product-plan.md).
+
 ## 2. Login
 
 `POST /identity/auth/signin`:
 
 1. Busca o usuário por e-mail; verifica a senha com Argon2id. A falha é **uniforme** — a resposta não
-   revela se o e-mail existe ou se a senha estava errada.
+   revela se o e-mail existe ou se a senha estava errada. Depois da senha certa, uma conta aguardando
+   aprovação recebe 403 `Identity.PendingApproval`.
 2. **Se o MFA está desligado** — emite um **access token** JWT (via Tars) e um **refresh token**
    (persistido hasheado em `idt002`), carimba `last_sign_in_at`, devolve `TokenDto`.
 3. **Se o MFA está ligado** — *não* emite um access token. Emite um **challenge MFA** de curta duração

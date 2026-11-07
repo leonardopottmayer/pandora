@@ -13,3 +13,5 @@ public sealed record ChangeUserRolesRequest(IReadOnlyList<Guid> UserIds, Guid Ro
 public sealed record SetUserExceptionsRequest(IReadOnlyList<UserExceptionDto>? Exceptions);
 
 public sealed record SetUserDisabledRequest(bool Disabled);
+
+public sealed record ApproveUsersRequest(IReadOnlyList<Guid> UserIds);

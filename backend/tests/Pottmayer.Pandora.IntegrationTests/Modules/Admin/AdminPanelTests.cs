@@ -148,6 +148,25 @@ public sealed class AdminPanelTests : IAsyncLifetime
         Assert.All(audit.Take(2), a => Assert.Equal("Test User", a.TargetName));
     }
 
+    [Fact]
+    public async Task An_account_waiting_for_approval_signs_in_once_approved()
+    {
+        await AdminAsync();
+        var memberId = await AuthenticateMemberWithMfaAsync();
+        // What activation does while approval is required (covered by the Identity unit tests).
+        await ExecuteAsync("UPDATE identity.idt001_user SET awaiting_approval_since = now() WHERE id = $1", memberId);
+
+        var refused = await IdentityHelper.PostSignInAsync(_member, "member", IdentityHelper.DefaultPassword);
+        Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
+        Assert.Contains("Identity.PendingApproval", await refused.Content.ReadAsStringAsync());
+
+        var approved = await _boss.PostAsJsonAsync($"{Admin}/users/approve", new { userIds = new[] { memberId } });
+        Assert.Equal(1, (await approved.Content.ReadFromJsonAsync<Envelope<int>>())!.Data);
+
+        Assert.True((await IdentityHelper.PostSignInAsync(_member, "member", IdentityHelper.DefaultPassword)).IsSuccessStatusCode);
+        Assert.Equal(1L, await ScalarAsync("SELECT count(*) FROM admin.adm006_audit_entry WHERE action = 'user.approved'"));
+    }
+
     /// <summary>The bootstrap admin, signed in on <see cref="_boss"/> with MFA on.</summary>
     private async Task<Guid> AdminAsync()
     {

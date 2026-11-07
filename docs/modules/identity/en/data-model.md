@@ -35,6 +35,7 @@ Migrations live in `migrations/migrations/identity/`.
 | `password_hash` | text NOT NULL | Argon2id |
 | `email_confirmed_at` | timestamptz NULL | set on activation |
 | `disabled_at` | timestamptz NULL | soft disable |
+| `awaiting_approval_since` | timestamptz NULL | activated while approval was required; cleared on approval |
 | `mfa_enabled` | bool DEFAULT false | drives the sign-in challenge |
 | `last_sign_in_at` / `last_password_changed_at` | timestamptz NULL | |
 | `created_by/created_at/updated_by/updated_at` | | audit; `created_by`/`updated_by` FK back to `idt001` |

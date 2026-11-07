@@ -40,6 +40,9 @@
   <data name="Identity.AccountNotActive" xml:space="preserve">
     <value>A conta não está ativa.</value>
   </data>
+  <data name="Identity.PendingApproval" xml:space="preserve">
+    <value>Seu cadastro aguarda a aprovação de um administrador.</value>
+  </data>
   <data name="Identity.InvalidRefreshToken" xml:space="preserve">
     <value>O refresh token é inválido ou expirou.</value>
   </data>

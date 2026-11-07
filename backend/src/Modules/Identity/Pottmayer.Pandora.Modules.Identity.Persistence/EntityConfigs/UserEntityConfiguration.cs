@@ -54,6 +54,9 @@ internal sealed class UserEntityConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.DisabledAt)
                .HasColumnName("disabled_at");
 
+        builder.Property(u => u.AwaitingApprovalSince)
+               .HasColumnName("awaiting_approval_since");
+
         builder.Property(u => u.MfaEnabled)
                .HasColumnName("mfa_enabled")
                .IsRequired();

@@ -4,6 +4,7 @@ using Pottmayer.Pandora.Modules.Identity.Application.Commands.SignIn;
 using Pottmayer.Pandora.Modules.Identity.Application.Devices;
 using Pottmayer.Pandora.Modules.Identity.Application.Options;
 using Pottmayer.Pandora.Modules.Identity.Application.Preferences;
+using Pottmayer.Pandora.Modules.Identity.Application.Services;
 using Pottmayer.Pandora.Modules.Identity.Application.Users;
 using Pottmayer.Tars.Core.Mediator.DI;
 
@@ -34,6 +35,10 @@ public static class ApplicationDI
 
         services.AddOptions<AccountActivationOptions>()
                 .BindConfiguration(AccountActivationOptions.SectionName);
+
+        services.AddOptions<AccountApprovalOptions>()
+                .BindConfiguration(AccountApprovalOptions.SectionName);
+        services.AddScoped<AccountApprovalRule>();
 
         services.AddOptions<PasswordResetOptions>()
                 .BindConfiguration(PasswordResetOptions.SectionName);

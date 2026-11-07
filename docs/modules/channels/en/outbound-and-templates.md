@@ -13,7 +13,8 @@ The rule for which entry point a producer uses is simple: **whoever owns the but
   `AccountActivationRequested`, `MfaEnabled`, …) and a **subscriber in this module** maps it to a
   `TemplateKey` + payload and category. This is how Identity works; it stays that way. Subscribers:
   `AccountActivationRequestedHandler`, `AccountActivatedHandler`, `PasswordResetRequestedHandler`,
-  `PasswordChangedHandler`, `MfaEnabledHandler`, `MfaDisabledHandler`.
+  `PasswordChangedHandler`, `MfaEnabledHandler`, `MfaDisabledHandler`, `AccountApprovalRequestedHandler`
+  (one e-mail per approver), `AccountApprovedHandler`.
 - **With buttons (`agenda.*`, `assistant.*`).** The caller publishes **`NotifyUserRequested`** directly,
   because each button's action and payload are its domain. Handled by `NotifyUserRequestedHandler`.
 - **Ad-hoc.** `SendNotificationRequested` is the escape hatch — a plain addressed send, not attributed

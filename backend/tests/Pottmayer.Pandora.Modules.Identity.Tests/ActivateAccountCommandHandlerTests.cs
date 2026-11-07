@@ -1,4 +1,5 @@
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.Activation;
+using Pottmayer.Pandora.Modules.Identity.Application.Services;
 using Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
 using Pottmayer.Pandora.Modules.Identity.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Identity.Domain.Entities;
@@ -15,13 +16,17 @@ public sealed class ActivateAccountCommandHandlerTests
 
     private (ActivateAccountCommandHandler Handler, FakeUserRepository Users, FakeActivationTokenRepository Tokens) Build(
         User user, params AccountActivationToken[] tokens)
+        => Build(ApprovalRules.Off, user, tokens);
+
+    private (ActivateAccountCommandHandler Handler, FakeUserRepository Users, FakeActivationTokenRepository Tokens) Build(
+        AccountApprovalRule approval, User user, params AccountActivationToken[] tokens)
     {
         var users     = new FakeUserRepository(user);
         var tokenRepo = new FakeActivationTokenRepository(tokens);
         var ctx       = new FakeDataContext()
             .Register<IUserRepository>(users)
             .Register<IActivationTokenRepository>(tokenRepo);
-        var handler   = new ActivateAccountCommandHandler(new FakeUnitOfWorkFactory(ctx), _eventBus, TimeProvider.System);
+        var handler   = new ActivateAccountCommandHandler(new FakeUnitOfWorkFactory(ctx), _eventBus, approval, TimeProvider.System);
         return (handler, users, tokenRepo);
     }
 
@@ -107,5 +112,34 @@ public sealed class ActivateAccountCommandHandlerTests
 
         Assert.True(result.IsFailure);
         Assert.Equal("Identity.InvalidActivationToken", result.Errors[0].Code);
+    }
+
+    [Fact]
+    public async Task With_approval_required_the_account_waits_and_the_approvers_are_told()
+    {
+        var user = TestUsers.Unconfirmed(_hasher);
+        var (plain, token) = IssueToken(user.Id, TimeSpan.FromHours(1));
+        var (handler, users, _) = Build(ApprovalRules.Required("boss@example.com"), user, token);
+
+        var result = await handler.Handle(Command(plain), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.True(users.Users[0].IsAwaitingApproval);
+        var requested = Assert.Single(_eventBus.Published.OfType<AccountApprovalRequested>());
+        Assert.Equal(user.Email.Value, requested.Email);
+        Assert.Equal(["boss@example.com"], requested.ApproverEmails);
+    }
+
+    [Fact]
+    public async Task A_pre_approved_account_does_not_wait()
+    {
+        var user = TestUsers.Unconfirmed(_hasher);
+        var (plain, token) = IssueToken(user.Id, TimeSpan.FromHours(1));
+        var (handler, users, _) = Build(ApprovalRules.Required(user.Email.Value), user, token);
+
+        await handler.Handle(Command(plain), CancellationToken.None);
+
+        Assert.False(users.Users[0].IsAwaitingApproval);
+        Assert.Empty(_eventBus.Published.OfType<AccountApprovalRequested>());
     }
 }

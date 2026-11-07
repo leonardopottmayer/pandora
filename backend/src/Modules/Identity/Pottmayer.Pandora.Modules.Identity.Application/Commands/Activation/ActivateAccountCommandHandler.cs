@@ -1,5 +1,6 @@
 using System.Globalization;
 using Pottmayer.Pandora.Modules.Identity.Abstractions;
+using Pottmayer.Pandora.Modules.Identity.Application.Services;
 using Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
 using Pottmayer.Pandora.Modules.Identity.Domain.Errors;
 using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Repositories;
@@ -13,6 +14,7 @@ namespace Pottmayer.Pandora.Modules.Identity.Application.Commands.Activation;
 public sealed class ActivateAccountCommandHandler(
     IUnitOfWorkFactory factory,
     IIntegrationEventBus integrationEventBus,
+    AccountApprovalRule approvalRule,
     TimeProvider timeProvider)
     : CommandHandlerBase<ActivateAccountCommand, bool>
 {
@@ -37,7 +39,11 @@ public sealed class ActivateAccountCommandHandler(
             if (user is null)
                 return Fail(IdentityErrors.InvalidActivationToken);
 
+            // Decided now, not at every sign-in: accounts activated while the option was off never wait.
+            var mustWait = user.EmailConfirmedAt is null && approvalRule.Applies(user.Email.Value);
             user.ConfirmEmail(timeProvider);
+            if (mustWait)
+                user.AwaitApproval(timeProvider);
             await users.UpdateAsync(user, token);
 
             activation.Consume(now);
@@ -53,6 +59,18 @@ public sealed class ActivateAccountCommandHandler(
                 Email: user.Email.Value,
                 Locale: CultureInfo.CurrentUICulture.Name);
             await integrationEventBus.PublishAsync(activated, token);
+
+            if (mustWait)
+            {
+                await integrationEventBus.PublishAsync(new AccountApprovalRequested(
+                    EventId: Guid.CreateVersion7(),
+                    OccurredAt: now,
+                    UserId: user.Id,
+                    Name: user.Name,
+                    Email: user.Email.Value,
+                    ApproverEmails: approvalRule.ApproverEmails(),
+                    Locale: CultureInfo.CurrentUICulture.Name), token);
+            }
 
             return Ok(true);
         }, cancellationToken: ct);

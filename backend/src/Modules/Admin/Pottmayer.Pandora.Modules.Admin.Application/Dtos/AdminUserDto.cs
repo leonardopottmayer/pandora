@@ -8,6 +8,7 @@ public sealed record AdminUserDto(
     string Email,
     bool Activated,
     bool Disabled,
+    bool AwaitingApproval,
     bool MfaEnabled,
     DateTimeOffset? LastSignInAt,
     DateTimeOffset CreatedAt,

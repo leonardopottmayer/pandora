@@ -2340,7 +2340,21 @@
       "disableConfirm": "Disable this account?",
       "disableContent": "{{name}} won't be able to sign in until enabled again, and is signed out of every device within a few minutes.",
       "disabledDone": "Account disabled.",
-      "enabledDone": "Account enabled."
+      "enabledDone": "Account enabled.",
+      "status": "Status",
+      "awaitingApproval": "Awaiting approval",
+      "waitingNotice_one": "{{count}} account is waiting for your approval.",
+      "waitingNotice_other": "{{count}} accounts are waiting for your approval.",
+      "showWaiting": "Show only these",
+      "showEveryone": "Show everyone",
+      "approve": "Approve",
+      "approveSelected_one": "Approve {{count}}",
+      "approveSelected_other": "Approve {{count}}",
+      "approvedDone_one": "{{count}} account approved. They were told by e-mail.",
+      "approvedDone_other": "{{count}} accounts approved. They were told by e-mail.",
+      "reject": "Reject",
+      "rejectConfirm": "Reject this account?",
+      "rejectContent": "{{name}} won't be able to sign in. The account is disabled, so the address can't sign up again; you can enable it later."
     },
     "audit": {
       "subtitle": "Every change made in the panel, and the ones the system makes on its own.",

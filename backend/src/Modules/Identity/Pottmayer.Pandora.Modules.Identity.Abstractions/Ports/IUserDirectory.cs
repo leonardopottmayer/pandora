@@ -24,6 +24,12 @@ public interface IUserDirectory
     /// </summary>
     Task<bool> SetDisabledAsync(Guid userId, bool disabled, CancellationToken ct = default);
 
+    /// <summary>
+    /// Lets an account waiting for approval sign in and tells the user. <c>false</c> when there is no
+    /// such account; an account that was not waiting is left as it is.
+    /// </summary>
+    Task<bool> ApproveAsync(Guid userId, CancellationToken ct = default);
+
     /// <summary>Ends every session of the account (its refresh tokens). <c>false</c> when there is no such account.</summary>
     Task<bool> RevokeSessionsAsync(Guid userId, CancellationToken ct = default);
 }

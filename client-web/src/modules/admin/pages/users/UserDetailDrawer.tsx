@@ -8,6 +8,7 @@ import { usePermission } from '@/modules/identity/hooks/useAccess'
 import { EXCEPTION_EFFECTS, type AdminUserDetailDto, type RoleDto, type UserException } from '../../models'
 import {
   useAdminUser,
+  useApproveUsers,
   useChangeUserRoles,
   useRevokeUserSessions,
   useSetUserDisabled,
@@ -81,6 +82,9 @@ function DrawerBody({ detail, roles }: { detail: AdminUserDetailDto; roles: Role
         items={[
           { key: 'email', label: t('admin.users.email'), children: user.email },
           { key: 'username', label: t('admin.users.username'), children: `@${user.username}` },
+          ...(user.awaitingApproval
+            ? [{ key: 'approval', label: t('admin.users.status'), children: <Tag color="gold">{t('admin.users.awaitingApproval')}</Tag> }]
+            : []),
           {
             key: 'mfa',
             label: t('admin.users.mfa'),
@@ -194,6 +198,7 @@ function DrawerFooter({ detail }: { detail: AdminUserDetailDto }) {
   const canManage = usePermission('admin.users.manage')
   const setDisabled = useSetUserDisabled()
   const revoke = useRevokeUserSessions()
+  const approve = useApproveUsers()
   const { user } = detail
 
   if (!canManage) return null
@@ -216,6 +221,40 @@ function DrawerFooter({ detail }: { detail: AdminUserDetailDto }) {
     } catch (err) {
       message.error(toErrorMessage(err, t('admin.saveError')))
     }
+  }
+
+  async function approveUser() {
+    try {
+      await approve.mutateAsync([user.id])
+      message.success(t('admin.users.approvedDone', { count: 1 }))
+    } catch (err) {
+      message.error(toErrorMessage(err, t('admin.saveError')))
+    }
+  }
+
+  // Rejecting is disabling: the account stays, so the address cannot sign up again.
+  function confirmReject() {
+    modal.confirm({
+      title: t('admin.users.rejectConfirm'),
+      content: t('admin.users.rejectContent', { name: user.name }),
+      okText: t('admin.users.reject'),
+      okButtonProps: { danger: true },
+      cancelText: t('common.cancel'),
+      onOk: () => toggleDisabled(true),
+    })
+  }
+
+  if (user.awaitingApproval && !user.disabled) {
+    return (
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button danger loading={setDisabled.isPending} onClick={confirmReject}>
+          {t('admin.users.reject')}
+        </Button>
+        <Button type="primary" loading={approve.isPending} onClick={() => void approveUser()}>
+          {t('admin.users.approve')}
+        </Button>
+      </div>
+    )
   }
 
   async function revokeSessions() {

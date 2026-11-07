@@ -9,12 +9,14 @@ namespace Pottmayer.Pandora.Modules.Channels.Application.Subscribers;
 
 /// <summary>
 /// Maps Identity's <see cref="AccountActivationRequested"/> to the <c>account-activation</c> template
-/// and enqueues an e-mail. The producer knows nothing about templates or channels.
+/// (or <c>account-activation-approval</c>, which says an administrator still has to approve the
+/// account) and enqueues an e-mail. The producer knows nothing about templates or channels.
 /// </summary>
 public sealed class AccountActivationRequestedHandler(NotificationEnqueuer enqueuer, IOptions<ChannelsOptions> options)
     : IIntegrationEventHandler<AccountActivationRequested>
 {
     private static readonly TemplateKey Template = TemplateKey.Create("account-activation");
+    private static readonly TemplateKey WithApprovalTemplate = TemplateKey.Create("account-activation-approval");
 
     private string ActivationUrl(string token) =>
         options.Value.ActivationUrlTemplate.Replace("{token}", Uri.EscapeDataString(token), StringComparison.Ordinal);
@@ -32,7 +34,7 @@ public sealed class AccountActivationRequestedHandler(NotificationEnqueuer enque
         return enqueuer.EnqueueAsync(
             Channel.Email,
             @event.Email,
-            Template,
+            @event.RequiresApproval ? WithApprovalTemplate : Template,
             Locale.Normalize(@event.Locale),
             payload,
             @event.EventId,

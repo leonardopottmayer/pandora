@@ -22,6 +22,13 @@ internal static class TestUsers
         return user;
     }
 
+    public static User AwaitingApproval(FakePasswordHasher hasher, string password)
+    {
+        var user = Active(hasher, password);
+        user.AwaitApproval(TimeProvider.System);
+        return user;
+    }
+
     public static User Disabled(FakePasswordHasher hasher, string password)
         => SetField(Active(hasher, password), nameof(User.DisabledAt), TimeProvider.System.GetUtcNow());
 

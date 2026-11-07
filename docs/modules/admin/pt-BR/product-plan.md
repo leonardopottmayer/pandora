@@ -366,3 +366,32 @@ Decisões tomadas na construção:
 Não construído: copiar permissões de outro usuário, sinalizar no painel um padrão que sobrou de uma
 chave removida, escolher qual papel é o padrão e paginar a lista de usuários (todas as contas vêm de
 uma vez).
+
+---
+
+## 11. Aprovação de contas (2026-11-06)
+
+Uma opção que a instalação pode ligar para que uma conta nova só consiga entrar depois que um
+administrador aprová-la, dando tempo de ajustar papéis e exceções antes.
+
+- **Opção**: `Pandora:Identity:AccountApproval:Required` (Docker: `REQUIRE_ACCOUNT_APPROVAL`),
+  desligada por padrão.
+- **Fluxo**: cadastro e ativação seguem como hoje; o e-mail de ativação avisa que um administrador
+  ainda precisa aprovar a conta. Na ativação a conta fica marcada como aguardando aprovação
+  (`idt001.awaiting_approval_since`) e recebe o papel padrão normalmente. Entrar com a senha certa
+  responde 403 `Identity.PendingApproval`. Aprovar tira a marca e manda um e-mail ao usuário; recusar
+  desativa a conta, então o endereço não consegue se cadastrar de novo.
+- **Quando a regra vale**: decidido na ativação. Contas que já existiam, e contas ativadas com a opção
+  desligada, nunca são marcadas. Desligar a opção depois não libera quem já está esperando: esses são
+  aprovados no painel.
+- **E-mails de bootstrap** já nascem aprovados. O Identity pergunta por uma porta dele,
+  `IAccountApprovalPolicy`, que o Admin implementa com `Pandora:Admin:BootstrapEmails`, então o
+  Identity não fica sabendo de papéis. O bootstrap do startup também aprova uma conta de bootstrap que
+  esteja esperando.
+- **Os administradores são avisados**: uma ativação pendente manda e-mail aos endereços de bootstrap.
+- **Painel**: a tela de Usuários mostra primeiro as contas esperando, com um aviso contando quantas, um
+  *Aprovar* em lote e *Aprovar* / *Recusar* na gaveta de detalhe. Aprovar usa `admin.users.manage`;
+  cada aprovação é auditada (`user.approved`).
+- **Eventos** (publicados pelo Identity no outbox dele): `AccountActivationRequested` ganha
+  `RequiresApproval`; novos `AccountApprovalRequested` (com os endereços de quem aprova) e
+  `AccountApproved`. O Channels transforma em e-mails.

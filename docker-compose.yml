@@ -31,6 +31,8 @@ services:
       Tars__Data__Connections__admin__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       # The account(s) promoted to master administrator at startup and on activation.
       Pandora__Admin__BootstrapEmails__0: ${ADMIN_EMAIL:-}
+      # New accounts wait for an administrator's approval before they can sign in.
+      Pandora__Identity__AccountApproval__Required: ${REQUIRE_ACCOUNT_APPROVAL:-false}
       Tars__Security__Identity__Jwt__SigningKey: ${JWT_SIGNING_KEY}
       Pandora__Identity__Mfa__EncryptionKey: ${MFA_ENCRYPTION_KEY}
       # SMTP target. Staging -> mailhog (capture); prod -> a real provider.

@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Pottmayer.Pandora.Modules.Admin.Application.Commands.ApproveUsers;
 using Pottmayer.Pandora.Modules.Admin.Application.Commands.ChangeUserRoles;
 using Pottmayer.Pandora.Modules.Admin.Application.Commands.CreateRole;
 using Pottmayer.Pandora.Modules.Admin.Application.Commands.DeleteRole;
@@ -110,6 +111,14 @@ public sealed class AdminController(
     {
         var command = new ChangeUserRolesCommand(new ChangeUserRolesInput(UserId, body.UserIds, body.RoleId, body.Assign));
         var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>Lets accounts waiting for approval sign in. Rejecting one is disabling it.</summary>
+    [HttpPost("users/approve")]
+    public async Task<IActionResult> ApproveUsersAsync([FromBody] ApproveUsersRequest body, CancellationToken ct)
+    {
+        var result = await sender.Send(new ApproveUsersCommand(new ApproveUsersInput(UserId, body.UserIds)), ct);
         return result.ToActionResult(errorMapper);
     }
 

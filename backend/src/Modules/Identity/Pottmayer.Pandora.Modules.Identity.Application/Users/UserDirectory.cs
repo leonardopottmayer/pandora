@@ -1,14 +1,18 @@
+using System.Globalization;
 using Pottmayer.Pandora.Modules.Identity.Abstractions;
 using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
+using Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
 using Pottmayer.Pandora.Modules.Identity.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Shared.Domain.ValueObjects;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
+using Pottmayer.Tars.Messaging.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Identity.Application.Users;
 
 /// <summary>Finds, lists and disables accounts for other modules. No aggregate crosses this boundary.</summary>
-public sealed class UserDirectory(IUnitOfWorkFactory factory, TimeProvider timeProvider) : IUserDirectory
+public sealed class UserDirectory(IUnitOfWorkFactory factory, IIntegrationEventBus integrationEventBus, TimeProvider timeProvider)
+    : IUserDirectory
 {
     public async Task<Guid?> FindActivatedUserIdByEmailAsync(string email, CancellationToken ct = default)
     {
@@ -63,6 +67,29 @@ public sealed class UserDirectory(IUnitOfWorkFactory factory, TimeProvider timeP
             return true;
         }, cancellationToken: ct);
 
+    public Task<bool> ApproveAsync(Guid userId, CancellationToken ct = default) =>
+        factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
+        {
+            var users = ctx.AcquireRepository<IUserRepository>();
+            var user = await users.FindByIdWithPreferencesAsync(userId, token);
+            if (user is null)
+                return false;
+            if (!user.IsAwaitingApproval)
+                return true;
+
+            user.Approve();
+            await users.UpdateAsync(user, token);
+
+            // Published inside the unit of work: the e-mail goes out only if the approval commits.
+            await integrationEventBus.PublishAsync(new AccountApproved(
+                EventId: Guid.CreateVersion7(),
+                OccurredAt: timeProvider.GetUtcNow(),
+                UserId: user.Id,
+                Email: user.Email.Value,
+                Locale: user.Preferences?.Language.Value ?? CultureInfo.CurrentUICulture.Name), token);
+            return true;
+        }, cancellationToken: ct);
+
     public Task<bool> RevokeSessionsAsync(Guid userId, CancellationToken ct = default) =>
         factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
@@ -77,5 +104,6 @@ public sealed class UserDirectory(IUnitOfWorkFactory factory, TimeProvider timeP
         user.Id, user.Name, user.Username, user.Email.Value,
         Activated: user.EmailConfirmedAt is not null,
         Disabled: user.DisabledAt is not null,
+        AwaitingApproval: user.IsAwaitingApproval,
         user.MfaEnabled, user.LastSignInAt, user.CreatedAt);
 }

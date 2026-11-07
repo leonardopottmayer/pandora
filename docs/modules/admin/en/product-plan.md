@@ -360,3 +360,31 @@ Decisions taken while building:
 Not built: copying permissions from another user, marking a pattern left over from a removed key in
 the panel, choosing which role is the default, and paging the users list (all accounts are loaded at
 once).
+
+---
+
+## 11. Account approval (2026-11-06)
+
+An option an installation can switch on so that a new account cannot sign in until an administrator
+approves it, leaving time to adjust its roles and exceptions first.
+
+- **Option**: `Pandora:Identity:AccountApproval:Required` (Docker: `REQUIRE_ACCOUNT_APPROVAL`), off
+  by default.
+- **Flow**: sign-up and activation work as before; the activation e-mail says an administrator still
+  has to approve the account. On activation the account is marked as awaiting approval
+  (`idt001.awaiting_approval_since`) and gets the default role as usual. Signing in with the right
+  password answers 403 `Identity.PendingApproval`. Approving clears the mark and e-mails the user;
+  rejecting disables the account, so the address cannot sign up again.
+- **When the rule applies**: decided at activation. Accounts that existed before, and accounts
+  activated while the option is off, are never marked. Switching the option off later does not release
+  those already waiting: they are approved in the panel.
+- **Bootstrap e-mails** are pre-approved. Identity asks through a port it owns,
+  `IAccountApprovalPolicy`, which Admin implements with `Pandora:Admin:BootstrapEmails`, so Identity
+  never learns about roles. The startup bootstrap also approves a bootstrap account that is waiting.
+- **Administrators are told**: a pending activation e-mails the bootstrap addresses.
+- **Panel**: the Users screen lists the accounts waiting first, with a notice counting them, a bulk
+  *Approve* and *Approve* / *Reject* in the detail drawer. Approving uses `admin.users.manage`; each
+  approval is audited (`user.approved`).
+- **Events** (published by Identity on its outbox): `AccountActivationRequested` gains
+  `RequiresApproval`; new `AccountApprovalRequested` (with the approvers' addresses) and
+  `AccountApproved`. Channels turns them into e-mails.

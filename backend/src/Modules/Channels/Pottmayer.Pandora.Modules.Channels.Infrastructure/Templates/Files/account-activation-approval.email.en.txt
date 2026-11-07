@@ -1,0 +1,5 @@
+Activate your Pandora account
+Welcome to Pandora! Confirm your account using the link:
+{{activationUrl}}
+
+After that, an administrator still has to approve your account. We'll e-mail you as soon as you can sign in.

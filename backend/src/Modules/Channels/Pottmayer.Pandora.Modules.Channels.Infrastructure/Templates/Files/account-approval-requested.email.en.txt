@@ -1,0 +1,2 @@
+New Pandora account waiting for approval
+{{name}} ({{email}}) activated an account and is waiting for your approval. Review their roles and approve or reject them in Admin → Users.
