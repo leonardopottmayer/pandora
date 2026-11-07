@@ -344,7 +344,8 @@ Decisões tomadas na construção:
 - **MFA para o painel**: o `RequireMfaFilter` recusa toda requisição do painel com 403
   `Admin.MfaRequired` enquanto a conta de quem chama não tiver verificação em duas etapas. A checagem
   fica no painel, não no login, para o Identity não precisar saber de papéis; um admin sem MFA continua
-  usando os outros módulos.
+  usando os outros módulos. `Pandora:Admin:RequireMfa` (padrão `true`) desliga a checagem; o
+  `appsettings.Development.json` a deixa `false` para o desenvolvimento local.
 - **Último admin**: tirar o `admin` do último titular ativado e ativo, ou desativá-lo, é 409
   `Admin.LastAdmin`.
 - **Identity**: o `IUserDirectory` lista, busca, desativa/reativa (encerrando as sessões) e encerra as

@@ -339,6 +339,8 @@ Decisions taken while building:
 - **MFA for the panel**: `RequireMfaFilter` refuses every panel request with 403 `Admin.MfaRequired`
   while the caller's account has no two-step verification. Checked at the panel, not at sign-in, so
   Identity never learns about roles; an admin without MFA still uses the other modules.
+  `Pandora:Admin:RequireMfa` (default `true`) turns the check off; `appsettings.Development.json` sets
+  it to `false` for local work.
 - **Last admin**: removing `admin` from, or disabling, the last activated and enabled holder is a 409
   `Admin.LastAdmin`.
 - **Identity**: `IUserDirectory` lists, finds, disables/enables (ending the sessions) and revokes the

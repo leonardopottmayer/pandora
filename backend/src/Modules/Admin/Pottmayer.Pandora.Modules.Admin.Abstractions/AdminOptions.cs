@@ -11,4 +11,10 @@ public sealed class AdminOptions
     /// database. Blank entries (an unset environment variable) are ignored.
     /// </summary>
     public string[] BootstrapEmails { get; set; } = [];
+
+    /// <summary>
+    /// Whether the panel needs two-step verification on the caller's account. On by default; turned
+    /// off in <c>appsettings.Development.json</c> so local work does not ask for a code every sign-in.
+    /// </summary>
+    public bool RequireMfa { get; set; } = true;
 }

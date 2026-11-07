@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Options;
+using Pottmayer.Pandora.Modules.Admin.Abstractions;
 using Pottmayer.Pandora.Modules.Admin.Domain.Errors;
 using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
 using Pottmayer.Pandora.Shared.Domain;
@@ -11,15 +13,23 @@ namespace Pottmayer.Pandora.Modules.Admin.Presentation.Filters;
 
 /// <summary>
 /// The panel can change what everyone may do, so only an account with two-step verification uses it.
-/// Checked here rather than at sign-in, so Identity never needs to know about roles.
+/// Checked here rather than at sign-in, so Identity never needs to know about roles. Off when
+/// <see cref="AdminOptions.RequireMfa"/> is (local development).
 /// </summary>
 public sealed class RequireMfaFilter(
     IUserContextAccessor<UserData> userContextAccessor,
     IUserDirectory directory,
-    IHttpErrorMapper errorMapper) : IAsyncActionFilter
+    IHttpErrorMapper errorMapper,
+    IOptions<AdminOptions> options) : IAsyncActionFilter
 {
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
+        if (!options.Value.RequireMfa)
+        {
+            await next();
+            return;
+        }
+
         var userId = userContextAccessor.Context.User!.Id;
         var user = await directory.FindAsync(userId, context.HttpContext.RequestAborted);
         if (user is not { MfaEnabled: true })
