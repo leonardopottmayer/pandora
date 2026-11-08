@@ -23,7 +23,7 @@ public sealed class SearchNotesTool(ISender sender) : IAssistantTool
 
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "search_notes",
-        Description: "Searches the user's notes and shows them the matching ones, numbered, with an excerpt. Use when they look for something they wrote down. The results go to the user directly; you will not see them.",
+        Description: "Searches the user's notes and shows them the matching ones, numbered, with an excerpt. Use when they want to find or list notes; when they ask a question the notes may answer, use ask_notes. The results go to the user directly; you will not see them.",
         ParametersJsonSchema: """
         {
           "type": "object",

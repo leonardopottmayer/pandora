@@ -105,6 +105,7 @@ o usuário tem (e cujas features estão ligadas), e os casos de uso ainda as ver
 | Notes | `create_note` | WhenAmbiguous | nova página de topo |
 | Notes | `append_to_note` | WhenAmbiguous | targeted; texto no fim |
 | Notes | `search_notes` | Never | lista numerada |
+| Notes | `ask_notes` | Never | uma resposta tirada das notas, com as notas citadas numeradas |
 | Notes | `read_note` | Never | a nota inteira, ao usuário |
 | Finances | `record_expense` | WhenAmbiguous | uma transação pendente `manual` no inbox, nunca postada |
 | Finances | `list_transactions`, `summarize_transactions`, `account_balances`, `list_cards`, `list_inbox` | Never | só leitura, em tópicos (não numerada) |
@@ -147,6 +148,9 @@ digitado só olha linhas ainda dentro da janela).
   content withheld from you]`. Só a prosa do próprio modelo (uma clarificação) fica como foi dita.
 - Uma lista numerada acrescenta `[numbered for reference: 1=event, 2=task; …]` — tipos, nunca títulos.
 - Nomes são casados localmente, então um título que o usuário não digitou nunca sai de casa.
+- **A exceção é o `ask_notes`**: para responder uma pergunta, ele manda trechos de até cinco notas ao
+  Gemini (o mesmo `AskNotesCommand` do "Perguntar às notas" do web) e guarda a resposta no recap, para
+  uma pergunta seguinte aproveitar. O `search_notes` e o `read_note` continuam sem mandar nada.
 
 ## 6. Apontar por número
 

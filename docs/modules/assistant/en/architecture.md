@@ -107,6 +107,7 @@ the user holds (and whose features are on), and the use cases still check them w
 | Notes | `create_note` | WhenAmbiguous | new top-level page |
 | Notes | `append_to_note` | WhenAmbiguous | targeted; text added at the end |
 | Notes | `search_notes` | Never | numbered list |
+| Notes | `ask_notes` | Never | an answer from the notes, with the cited notes numbered |
 | Notes | `read_note` | Never | the whole note, to the user |
 | Finances | `record_expense` | WhenAmbiguous | a `manual` pending transaction in the inbox, never posted |
 | Finances | `list_transactions`, `summarize_transactions`, `account_balances`, `list_cards`, `list_inbox` | Never | read-only, bullets (not numbered) |
@@ -149,6 +150,9 @@ yes/no only looks at rows still inside the window).
   withheld from you]`. Only the model's own prose (a clarification) is kept as said.
 - A numbered list adds `[numbered for reference: 1=event, 2=task; …]` — kinds, never titles.
 - Names are matched locally, so a title the user did not type never leaves the house.
+- **The exception is `ask_notes`**: to answer a question it sends passages of up to five matching notes
+  to Gemini (the same `AskNotesCommand` as the web app's "Ask your notes"), and keeps the answer in the
+  recap so a follow-up can build on it. `search_notes` and `read_note` still send nothing.
 
 ## 6. Pointing by number
 

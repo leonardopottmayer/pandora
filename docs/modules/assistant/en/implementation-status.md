@@ -21,7 +21,7 @@ because it exists" from "documented as a plan" ([Product plan](product-plan.md))
 | **Confirmation** | Policies `Never`/`WhenAmbiguous`/`Always`/`Required`, levels `strict`/`balanced`/`trusting`, 10-min window, confirm/cancel endpoints, Telegram buttons, typed yes/no. |
 | **Pointing by number** | `ast002.last_listing`, `ListedRefs.Pin`/`PinTarget`, targeted tools find their item before a confirmation. |
 | **Privacy** | Read replies go to the user only; history keeps content-free recaps; names matched locally. |
-| **Tool catalog** | 25 tools: Agenda 15 (create/update/complete/reopen/delete tasks, events, reminders; three lists), Notes 4 (`create_note`, `search_notes`, `read_note`, `append_to_note`), Finances 6 (`record_expense` into the inbox + 5 read-only). |
+| **Tool catalog** | 26 tools: Agenda 15 (create/update/complete/reopen/delete tasks, events, reminders; three lists), Notes 5 (`create_note`, `search_notes`, `ask_notes`, `read_note`, `append_to_note`), Finances 6 (`record_expense` into the inbox + 5 read-only). |
 | **Telegram** | Subscriber on the `assistant` bot (text, voice, files), button-tap subscriber, replies via `SendAssistantReply` over the Assistant outbox + relay. |
 | **Shared files** | `IAssistantFileQueue`; Finances queue by caption keywords into `fin017` (images/PDFs, ≤ 20 MB). |
 | **Frontend** | `/assistant` (chat + history tabs) and `/settings/assistant`. |

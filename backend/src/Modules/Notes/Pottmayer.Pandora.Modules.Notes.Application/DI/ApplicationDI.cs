@@ -20,6 +20,7 @@ public static class ApplicationDI
 
         services.AddScoped<IAssistantTool, CreateNoteTool>();
         services.AddScoped<IAssistantTool, SearchNotesTool>();
+        services.AddScoped<IAssistantTool, AskNotesTool>();
         services.AddScoped<IAssistantTool, ReadNoteTool>();
         services.AddScoped<IAssistantTool, AppendToNoteTool>();
         services.AddScoped<INoteCapture, NoteCaptureService>();

@@ -21,7 +21,8 @@ public sealed class AskNotesCommandHandler(IUnitOfWorkFactory factory, ITextComp
         var input = request.Input;
         if (string.IsNullOrWhiteSpace(input.Question) || input.Question.Length > 1000)
             return Fail(NoteAiErrors.InvalidQuestion);
-        var query = NoteQuestionSearch.ToTsQuery(input.Question);
+        var words = $"{input.Question} {input.SearchTerms}";
+        var query = NoteQuestionSearch.ToTsQuery(words);
         if (query.Length == 0) return Ok(new NoteAnswerDto(null, []));
 
         // ponytail: five lexical hits / 4K characters each bound cost. Revisit pgvector if recall is insufficient.
@@ -29,7 +30,7 @@ public sealed class AskNotesCommandHandler(IUnitOfWorkFactory factory, ITextComp
         {
             var pages = await context.AcquireRepository<IPageRepository>().SearchAsync(input.UserId, query, 5, input.SpaceId, ct: token);
             return pages.Select(page => new NoteSourceDto(page.Id, page.SpaceId, page.Title, page.Icon,
-                NoteQuestionSearch.Excerpt(page.ContentText, input.Question))).ToList();
+                NoteQuestionSearch.Excerpt(page.ContentText, words))).ToList();
         }, cancellationToken: ct);
         if (sources.Count == 0) return Ok(new NoteAnswerDto(null, []));
 

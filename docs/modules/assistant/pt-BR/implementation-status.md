@@ -21,7 +21,7 @@ porque existe" de "documentado como plano" ([Product plan](product-plan.md)).
 | **Confirmação** | Políticas `Never`/`WhenAmbiguous`/`Always`/`Required`, níveis `strict`/`balanced`/`trusting`, janela de 10 min, endpoints confirmar/cancelar, botões no Telegram, sim/não digitado. |
 | **Apontar por número** | `ast002.last_listing`, `ListedRefs.Pin`/`PinTarget`, tools targeted acham o item antes da confirmação. |
 | **Privacidade** | Respostas de leitura vão só ao usuário; o histórico guarda recaps sem conteúdo; nomes casados localmente. |
-| **Catálogo de tools** | 25 tools: Agenda 15 (criar/alterar/concluir/reabrir/excluir tarefas, eventos, lembretes; três listas), Notes 4 (`create_note`, `search_notes`, `read_note`, `append_to_note`), Finances 6 (`record_expense` no inbox + 5 só leitura). |
+| **Catálogo de tools** | 26 tools: Agenda 15 (criar/alterar/concluir/reabrir/excluir tarefas, eventos, lembretes; três listas), Notes 5 (`create_note`, `search_notes`, `ask_notes`, `read_note`, `append_to_note`), Finances 6 (`record_expense` no inbox + 5 só leitura). |
 | **Telegram** | Subscriber no bot `assistant` (texto, voz, arquivos), subscriber de toque em botão, respostas via `SendAssistantReply` pelo outbox do Assistant + relay. |
 | **Arquivos compartilhados** | `IAssistantFileQueue`; fila do Finances por palavras da legenda em `fin017` (imagens/PDFs, ≤ 20 MB). |
 | **Frontend** | `/assistant` (abas chat + histórico) e `/settings/assistant`. |
