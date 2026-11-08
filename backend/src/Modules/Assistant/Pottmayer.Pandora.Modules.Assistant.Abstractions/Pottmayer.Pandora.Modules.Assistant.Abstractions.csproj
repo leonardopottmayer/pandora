@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Pottmayer.Tars.Core.Primitives" Version="0.1.0" />
     <PackageReference Include="Pottmayer.Tars.Security.Authorization.Abstractions" Version="0.1.0" />
   </ItemGroup>
 

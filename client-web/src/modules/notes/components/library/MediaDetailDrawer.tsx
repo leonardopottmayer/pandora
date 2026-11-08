@@ -2,12 +2,11 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { App, Button, Drawer, Grid, Input, TreeSelect, Typography, theme } from 'antd'
-import { CopyOutlined, DeleteOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons'
+import { DeleteOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons'
 import { formatBytes } from '@/lib/formatBytes'
 import { toErrorMessage } from '@/lib/api/envelope'
 import type { MediaFolderDto, MediaItemDto } from '../../models'
 import { useDeleteMedia, useMediaUsages, useMoveMedia, useRenameMedia } from '../../hooks/useMedia'
-import { embedMarkdown } from '../../lib/media'
 import { folderOptions, fromFolderOption, toFolderOption } from '../../lib/mediaFolders'
 import { downloadMedia } from '../../services/media.service'
 import { MediaPicture } from './MediaCard'
@@ -121,17 +120,6 @@ export function MediaDetailDrawer({ item, folders, onClose }: MediaDetailDrawerP
           <div className="flex flex-wrap gap-2">
             <Button icon={<DownloadOutlined />} onClick={() => run(() => downloadMedia(item.url, item.originalFileName))}>
               {t('notes.library.download')}
-            </Button>
-            <Button
-              icon={<CopyOutlined />}
-              onClick={() =>
-                run(async () => {
-                  await navigator.clipboard.writeText(embedMarkdown(item))
-                  message.success(t('notes.library.copied'))
-                })
-              }
-            >
-              {t('notes.library.copyMarkdown')}
             </Button>
             <Button danger icon={<DeleteOutlined />} onClick={confirmDelete}>
               {t('common.delete')}

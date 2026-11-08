@@ -5,7 +5,7 @@ import type { DataNode } from 'antd/es/tree'
 import { FileTextOutlined, SearchOutlined } from '@ant-design/icons'
 import { useSpaces } from '../hooks/useSpaces'
 import { buildTree } from '../lib/buildTree'
-import { filterPages } from '../lib/wikilinks'
+import { filterPages } from '../lib/filterPages'
 import type { PageSummaryDto, PageTreeNode } from '../models'
 import { SpaceIcon } from './SpaceIcon'
 

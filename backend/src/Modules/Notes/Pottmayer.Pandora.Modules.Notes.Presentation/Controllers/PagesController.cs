@@ -2,18 +2,23 @@ using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.CreatePage;
+using Pottmayer.Pandora.Modules.Notes.Application.Commands.CreatePageFromTemplate;
+using Pottmayer.Pandora.Modules.Notes.Application.Commands.SetPageTemplate;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.DeletePage;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.MovePage;
+using Pottmayer.Pandora.Modules.Notes.Application.Commands.PageSettings;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.RestorePageVersion;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.SetPageArchived;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.SetPageFavorite;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.UpdatePage;
+using Pottmayer.Pandora.Modules.Notes.Application.Commands.SummarizePage;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetBacklinks;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPage;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPageGraph;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPageTree;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPageVersion;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetPageVersions;
+using Pottmayer.Pandora.Modules.Notes.Application.Queries.PageViews;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.SearchPages;
 using Pottmayer.Pandora.Modules.Notes.Presentation.Filters;
 using Pottmayer.Pandora.Modules.Notes.Presentation.Requests;
@@ -36,6 +41,10 @@ public sealed class PagesController(
     IUserContextAccessor<UserData> userContextAccessor) : ControllerBase
 {
     private Guid UserId => userContextAccessor.Context.User!.Id;
+
+    [HttpPost("{id:guid}/ai/summary")]
+    public async Task<IActionResult> SummaryAsync(Guid id, CancellationToken ct)
+        => (await sender.Send(new SummarizePageCommand(new SummarizePageInput(UserId, id)), ct)).ToActionResult(errorMapper);
 
     [HttpGet("{id:guid}/versions")]
     public async Task<IActionResult> VersionsAsync(Guid id, [FromQuery] long? before, CancellationToken ct)
@@ -122,7 +131,7 @@ public sealed class PagesController(
     public async Task<IActionResult> CreateAsync(CreatePageRequest request, CancellationToken ct)
     {
         var command = new CreatePageCommand(new CreatePageInput(
-            UserId, request.Title, request.ParentId, request.Icon, request.ContentMarkdown, request.SpaceId));
+            UserId, request.Title, request.ParentId, request.Icon, request.Content?.GetRawText(), request.SpaceId, FolderId: request.FolderId));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
@@ -131,15 +140,24 @@ public sealed class PagesController(
     public async Task<IActionResult> UpdateAsync(Guid id, UpdatePageRequest request, CancellationToken ct)
     {
         var command = new UpdatePageCommand(new UpdatePageInput(
-            UserId, id, request.Title, request.Icon, request.ContentMarkdown));
+            UserId, id, request.Title, request.Icon, request.Content?.GetRawText(), request.Source));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
 
+    [HttpPut("{id:guid}/template")]
+    public async Task<IActionResult> TemplateAsync(Guid id, SetPageTemplateRequest request, CancellationToken ct)
+        => (await sender.Send(new SetPageTemplateCommand(new SetPageTemplateInput(UserId, id, request.IsTemplate)), ct)).ToActionResult(errorMapper);
+
+    [HttpPost("from-template")]
+    public async Task<IActionResult> FromTemplateAsync(CreatePageFromTemplateRequest request, CancellationToken ct)
+        => (await sender.Send(new CreatePageFromTemplateCommand(new CreatePageFromTemplateInput(
+            UserId, request.TemplateId, request.Title, request.SpaceId, request.FolderId)), ct)).ToActionResult(errorMapper);
+
     [HttpPost("{id:guid}/move")]
     public async Task<IActionResult> MoveAsync(Guid id, MovePageRequest request, CancellationToken ct)
     {
-        var command = new MovePageCommand(new MovePageInput(UserId, id, request.ParentId, request.OrderIndex, request.SpaceId));
+        var command = new MovePageCommand(new MovePageInput(UserId, id, request.ParentId, request.OrderIndex, request.SpaceId, request.FolderId));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
@@ -182,4 +200,33 @@ public sealed class PagesController(
         var result = await sender.Send(new DeletePageCommand(new DeletePageInput(UserId, id)), ct);
         return result.ToActionResult(errorMapper);
     }
+
+    /// <summary>The pages opened last, newest first.</summary>
+    [HttpGet("recent")]
+    public async Task<IActionResult> RecentAsync([FromQuery] int limit = 20, CancellationToken ct = default)
+        => (await sender.Send(new GetRecentPagesQuery(new GetRecentPagesInput(UserId, limit)), ct)).ToActionResult(errorMapper);
+
+    /// <summary>Notes that the page was opened; not an edit.</summary>
+    [HttpPost("{id:guid}/viewed")]
+    public async Task<IActionResult> ViewedAsync(Guid id, CancellationToken ct)
+        => (await sender.Send(new MarkPageViewedCommand(new MarkPageViewedInput(UserId, id)), ct)).ToActionResult(errorMapper);
+
+    [HttpPut("{id:guid}/appearance")]
+    public async Task<IActionResult> AppearanceAsync(Guid id, SetPageAppearanceRequest request, CancellationToken ct)
+        => (await sender.Send(new SetPageAppearanceCommand(new SetPageAppearanceInput(
+            UserId, id, request.Cover, request.Width, request.Font, request.SmallText)), ct)).ToActionResult(errorMapper);
+
+    [HttpPut("{id:guid}/lock")]
+    public async Task<IActionResult> LockAsync(Guid id, SetPageLockedRequest request, CancellationToken ct)
+        => (await sender.Send(new SetPageLockedCommand(new SetPageLockedInput(UserId, id, request.Locked)), ct)).ToActionResult(errorMapper);
+
+    [HttpPut("{id:guid}/verification")]
+    public async Task<IActionResult> VerificationAsync(Guid id, SetPageVerificationRequest request, CancellationToken ct)
+        => (await sender.Send(new SetPageVerificationCommand(new SetPageVerificationInput(UserId, id, request.Verified, request.Days)), ct))
+            .ToActionResult(errorMapper);
+
+    /// <summary>Opens or closes the page's read-only public link; the token comes back in <c>publicToken</c>.</summary>
+    [HttpPut("{id:guid}/public")]
+    public async Task<IActionResult> PublicAsync(Guid id, SetPagePublicRequest request, CancellationToken ct)
+        => (await sender.Send(new SetPagePublicCommand(new SetPagePublicInput(UserId, id, request.Public)), ct)).ToActionResult(errorMapper);
 }

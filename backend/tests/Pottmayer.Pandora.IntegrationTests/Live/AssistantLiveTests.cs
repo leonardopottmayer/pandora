@@ -90,11 +90,11 @@ public sealed class AssistantLiveTests(AssistantLiveFactory factory, ITestOutput
 
         // ── Notes ─────────────────────────────────────────────────────────────────────────────────
         new("Buscar, abrir, acrescentar", "procura minhas notas sobre ideias", "abre a 1", "acrescenta na 2: app de controle de plantas",
-            "?SELECT title, right(content_markdown, 60) AS ending FROM notes.nte001_page WHERE content_markdown ILIKE '%plantas%'"),
+            "?SELECT title, right(content_text, 60) AS ending FROM notes.nte001_page WHERE content_text ILIKE '%plantas%'"),
         new("Nota longa", "abre a nota anotações hábitos atômicos"),
         new("Criar nota", "anota: a senha do portão é 4321"),
         new("Acrescentar por nome", "acrescenta na nota do imposto de renda: pedir informe da corretora",
-            "?SELECT right(content_markdown, 80) AS ending FROM notes.nte001_page WHERE title ILIKE 'Imposto%'"),
+            "?SELECT right(content_text, 80) AS ending FROM notes.nte001_page WHERE title ILIKE 'Imposto%'"),
         new("Nota arquivada", "procura lista de compras"),
         new("Editar o meio da nota", "muda o segundo passo da receita do pão para 3 dobras"),
 

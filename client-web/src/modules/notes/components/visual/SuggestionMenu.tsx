@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { theme } from 'antd'
 import type { MenuState } from './suggestions'
@@ -11,12 +12,18 @@ interface SuggestionMenuProps {
 /** The list a `/`, `[[` or `#` opens, under the cursor; the keyboard drives it from the editor. */
 export function SuggestionMenu({ menu, active, onHover }: SuggestionMenuProps) {
   const { token } = theme.useToken()
+  const listRef = useRef<HTMLDivElement>(null)
+  // The arrow keys walk a list longer than the box: the chosen one stays in sight.
+  useEffect(() => {
+    listRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView?.({ block: 'nearest' })
+  }, [active, menu.entries])
   if (!menu.rect || menu.entries.length === 0) return null
 
   // Below the cursor, unless that runs off the screen: then above it.
   const below = menu.rect.bottom + 320 < window.innerHeight
   return createPortal(
     <div
+      ref={listRef}
       role="listbox"
       className="notes-suggestion-menu"
       style={{
@@ -27,7 +34,12 @@ export function SuggestionMenu({ menu, active, onHover }: SuggestionMenuProps) {
         borderRadius: token.borderRadiusLG,
       }}
     >
-      {menu.entries.map((entry, index) => (
+      {menu.entries.map((entry, index) => [
+        entry.section && entry.section !== menu.entries[index - 1]?.section && (
+          <div key={`section-${entry.section}`} role="presentation" className="notes-suggestion-section">
+            {entry.section}
+          </div>
+        ),
         <div
           key={entry.key}
           role="option"
@@ -46,8 +58,8 @@ export function SuggestionMenu({ menu, active, onHover }: SuggestionMenuProps) {
             {entry.label}
           </span>
           {entry.hint && <span className="notes-suggestion-hint">{entry.hint}</span>}
-        </div>
-      ))}
+        </div>,
+      ])}
     </div>,
     document.body,
   )

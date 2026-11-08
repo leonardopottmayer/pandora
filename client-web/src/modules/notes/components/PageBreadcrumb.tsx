@@ -2,46 +2,41 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Typography } from 'antd'
 import { LeftOutlined } from '@ant-design/icons'
-import type { PageSummaryDto, SpaceDto } from '../models'
+import type { SpaceNode } from '../lib/spaceTree'
+import type { SpaceDto } from '../models'
+import { useNodeText } from '../hooks/useNodeText'
+import { NodeIcon } from './SpaceItems'
 import { SpaceIcon } from './SpaceIcon'
 
 interface PageBreadcrumbProps {
   space: SpaceDto | undefined
-  /** The open page, or null on the space itself. */
-  page: Pick<PageSummaryDto, 'id' | 'parentId' | 'title' | 'icon'> | null
-  /** Every page, to walk up from the open one. */
-  pages: PageSummaryDto[]
+  /** The folders and pages above the open one, from the top. */
+  path: SpaceNode[]
+  /** The open page or folder, or null on the space itself. */
+  current: { icon: string | null; name: string } | null
   /** A phone shows only the way back up, not the whole path. */
   compact: boolean
   onOpenSpace: () => void
-  onOpenPage: (id: string) => void
+  onOpenNode: (node: SpaceNode) => void
 }
 
-/** Where the open page sits: its space, then each page above it. */
-export function PageBreadcrumb({ space, page, pages, compact, onOpenSpace, onOpenPage }: PageBreadcrumbProps) {
+/** Where the open page or folder sits: its space, then each folder and page above it. */
+export function PageBreadcrumb({ space, path, current, compact, onOpenSpace, onOpenNode }: PageBreadcrumbProps) {
   const { t } = useTranslation()
-
-  const byId = new Map(pages.map((p) => [p.id, p]))
-  const ancestors: PageSummaryDto[] = []
-  // A missing or cyclic parent ends the walk; the backend rejects cycles, this only guards the loop.
-  for (let id = page?.parentId; id && ancestors.length < 20; id = byId.get(id)?.parentId) {
-    const parent = byId.get(id)
-    if (!parent) break
-    ancestors.unshift(parent)
-  }
+  const text = useNodeText()
 
   if (compact) {
-    const parent = ancestors[ancestors.length - 1]
-    if (!page) return null
+    const parent = path.at(-1)
+    if (!current) return null
     return (
       <Button
         type="text"
         size="small"
         icon={<LeftOutlined />}
         className="min-w-0 max-w-full"
-        onClick={() => (parent ? onOpenPage(parent.id) : onOpenSpace())}
+        onClick={() => (parent ? onOpenNode(parent) : onOpenSpace())}
       >
-        <span className="truncate">{parent ? parent.title || t('notes.untitled') : space?.name}</span>
+        <span className="truncate">{parent ? text.name(parent) : space?.name}</span>
       </Button>
     )
   }
@@ -52,6 +47,7 @@ export function PageBreadcrumb({ space, page, pages, compact, onOpenSpace, onOpe
         <button
           type="button"
           className="flex min-w-0 cursor-pointer items-center gap-1.5 rounded px-1.5 py-0.5 hover:bg-[var(--ant-color-fill-tertiary)]"
+          style={{ border: 0, background: 'transparent' }}
           onClick={onClick}
         >
           {content}
@@ -77,32 +73,32 @@ export function PageBreadcrumb({ space, page, pages, compact, onOpenSpace, onOpe
           <SpaceIcon space={space} size={18} />
           <span className="truncate">{space.name}</span>
         </>,
-        page ? onOpenSpace : undefined,
+        current ? onOpenSpace : undefined,
       ),
     )
   }
-  for (const ancestor of ancestors) {
-    items.push(separator(`sep-${ancestor.id}`))
+  for (const node of path) {
+    items.push(separator(`sep-${node.id}`))
     items.push(
       crumb(
-        ancestor.id,
+        node.id,
         <>
-          {ancestor.icon && <span>{ancestor.icon}</span>}
-          <span className="truncate">{ancestor.title || t('notes.untitled')}</span>
+          <NodeIcon node={node} />
+          <span className="truncate">{text.name(node)}</span>
         </>,
-        () => onOpenPage(ancestor.id),
+        () => onOpenNode(node),
       ),
     )
   }
-  if (page) {
+  if (current) {
     if (items.length) items.push(separator('sep-current'))
     items.push(
       crumb(
         'current',
         <>
-          {page.icon && <span>{page.icon}</span>}
+          {current.icon && <span>{current.icon}</span>}
           <Typography.Text strong className="truncate">
-            {page.title || t('notes.untitled')}
+            {current.name || t('notes.untitled')}
           </Typography.Text>
         </>,
       ),
@@ -111,7 +107,7 @@ export function PageBreadcrumb({ space, page, pages, compact, onOpenSpace, onOpe
 
   return (
     <nav aria-label={t('notes.breadcrumb')} className="min-w-0">
-      <ol className="flex min-w-0 items-center gap-0.5 overflow-hidden text-sm">{items}</ol>
+      <ol className="m-0 flex min-w-0 list-none items-center gap-0.5 overflow-hidden p-0 text-sm">{items}</ol>
     </nav>
   )
 }

@@ -78,3 +78,66 @@ consulta de resultado vazio. Contratos, regras de recorrência e conversões de 
 2. **Profundidade de subtarefa** limitada a um nível (casa com a fidelidade do Google Tasks).
 3. **Se o Finances migra para o motor RRULE** — não é pré-requisito; reavaliar se surgir um terceiro
    consumidor de recorrência.
+
+## B11: bloco de Agenda com dados atuais
+
+Construído, sem commit. `/Agenda` insere rich block agenda-list. Origem padrão Hoje usa a visão
+unificada do dia no fuso da conta (eventos, tarefas e lembretes, com estados atuais). Outro modo
+seleciona lista ativa e mostra somente tarefas Todo/InProgress dela. Ambos somente leitura: sem
+concluir tarefa, reconhecer lembrete ou editar evento pelo Notes. Abrir na Agenda leva à tela
+correspondente.
+
+Configuração salva apenas `{ mode: "today" }` ou `{ mode: "tasks", listId }`; props vazias usam
+today. Títulos, nomes de listas, estados, datas e resultados consultados não entram no bloco,
+autosave, texto de busca ou snapshots. Trocar modo limpa lista anterior. Lista não configurada,
+excluída, alheia ou arquivada mostra estado explícito, sem carregar todas as tarefas como fallback.
+Valida ID entre listas ativas do usuário antes de montar consulta de tarefas.
+
+Reutiliza hooks, services e famílias de query keys da Agenda. Mutações normais da Agenda atualizam
+blocos ativos pelo mesmo cache; Atualizar invalida explicitamente a origem escolhida. Mantém regras
+normais de cache/foco, sem polling ou assinatura push. Consultar/atualizar não altera nota. Datas
+exibidas usam fuso da conta e formatadores existentes; decidir o dia de hoje continua no servidor.
+Falha da API esconde linhas antigas e permite tentar novamente.
+
+Visão pública retorna Conteúdo privado antes de montar consultas, mesmo com dados do dono no cache.
+Nota privada exige feature Agenda e permissões da origem: Hoje exige
+agenda.events.read/tasks.read/reminders.read; lista exige agenda.tasks.read/lists.read. Nota
+travada/em leitura pode consultar e atualizar, mas não configurar origem/lista. Exportações
+Markdown/HTML emitem somente [Agenda], sem IDs ou valores consultados; PDF pelo navegador usa a
+visão do dono renderizada naquele momento. IDs/configuração sobrevivem ao editor e versões.
+
+Sem endpoint backend, esquema, migração ou dependência backend cruzada nova. Navegador/conta real
+pendentes. Próximos eventos e resumos de Finanças construídos nas fatias seguintes. Blocos Radar/Databases/Projects dependem dos respectivos módulos.
+
+## B11: próximos eventos da Agenda
+
+Construído, sem commit. O bloco /Agenda oferece Próximos eventos. Configuração: { mode: "events",
+days: 7 | 30, calendarId?: string }; days ausente/não suportado usa 7. Sem calendarId, considera
+todos os calendários ativos, independentemente da visibilidade na tela Calendário. ID configurado
+deve estar na lista ativa do dono. Calendário ausente/arquivado/de outro dono fica indisponível,
+sem cair em todos. Lista ativa vazia não consulta eventos.
+
+Janela cobre hoje mais as próximas 6 ou 29 datas no fuso da conta. Cada meia-noite local é
+convertida separadamente para UTC, respeitando horário de verão. Fim exclusivo: meia-noite
+seguinte à última data. Mostra eventos em andamento e futuros em ordem de início; oculta
+encerrados/cancelados e início no/após limite final. Eventos de dia inteiro/vários dias usam
+formatador existente da Agenda, incluindo fim exclusivo. Janela resolve ao renderizar/reabrir e
+Atualizar; sem polling ou timer de meia-noite.
+
+Reutiliza useCalendars/useEventOccurrences e query keys da Agenda. Endpoint existente expande
+recorrências e aplica edições/cancelamentos de ocorrência; Notes não reimplementa recorrência nem
+consulta detalhe de série. Filtro envia chaves calendarIds repetidas para binding ASP.NET.
+Mutações normais de eventos/calendários invalidam blocos ativos; Atualizar recarrega ambas as
+famílias. Erro esconde resultados antigos e permite tentar novamente.
+
+Exige feature Agenda, agenda.events.read e agenda.calendars.read. Nota travada/em leitura pode
+consultar/atualizar, mas não configurar. Trocar origem limpa filtros. Persiste apenas dias/ID;
+nomes, ocorrências e datas resolvidas não entram em autosave, histórico ou templates. Página
+pública bloqueia consultas mesmo com cache do dono. Markdown/HTML mantêm [Agenda]; PDF usa a visão
+do dono renderizada. Sem mudança backend, esquema ou migração.
+
+Verificação: 909 testes frontend passaram, incluindo 16 casos novos para limites no fuso/horário
+de verão, ocorrências expandidas, eventos em andamento/dia inteiro, fim exclusivo,
+acesso/privacidade, configuração e invalidação por mutação. Build/typecheck, ESLint Notes e
+service Agenda alterado, e antd lint Notes passaram. Backend sem alteração; suítes não rerodadas.
+Navegador/conta real pendentes. Sem commit ou alteração no banco local.

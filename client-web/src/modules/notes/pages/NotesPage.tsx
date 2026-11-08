@@ -1,51 +1,62 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Alert, App, Button, Drawer, Empty, Grid, Segmented, Spin, Tooltip, theme } from 'antd'
+import { useQueryClient } from '@tanstack/react-query'
+import { Alert, App, Badge, Button, Drawer, Empty, Grid, Spin, Tag, Tooltip, theme } from 'antd'
 import {
   CheckOutlined,
-  CodeOutlined,
+  CommentOutlined,
   EditOutlined,
-  EyeOutlined,
+  LockOutlined,
+  SafetyCertificateOutlined,
   InfoCircleOutlined,
   HistoryOutlined,
   MenuFoldOutlined,
   MenuOutlined,
   MenuUnfoldOutlined,
   PictureOutlined,
-  SplitCellsOutlined,
 } from '@ant-design/icons'
-import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { BacklinksPanel } from '../components/BacklinksPanel'
+import { PageCover } from '../components/PageCover'
+import { PageMenu, type ExportKind } from '../components/PageMenu'
+import { ShareModal } from '../components/ShareModal'
+import { CommentComposer, CommentsPanel } from '../components/CommentsPanel'
+import { useBlockStamps, useCommentChange, usePageComments } from '../hooks/useComments'
+import * as commentsService from '../services/comments.service'
+import { noteKeys } from '../hooks/queryKeys'
+import { blocksToHtml, blocksToMarkdown } from '../lib/markdown'
+import { downloadText, fileNameOf, mediaDataUrl } from '../lib/pageExport'
+import { timeAgo } from '../lib/timeAgo'
+import * as pagesService from '../services/pages.service'
+import type { PageAppearance } from '../models'
 import { LocalGraphPanel } from '../components/LocalGraphPanel'
-import { MarkdownEditor, type MarkdownEditorHandle } from '../components/MarkdownEditor'
-import { MarkdownPreview } from '../components/MarkdownPreview'
 import { NotesSidebar } from '../components/NotesSidebar'
+import { FolderView } from '../components/FolderView'
 import { PageBreadcrumb } from '../components/PageBreadcrumb'
+import { PageFooter } from '../components/PageFooter'
+import { PageToc } from '../components/PageToc'
 import { PageHeader } from '../components/PageHeader'
 import { PageHistoryDrawer } from '../components/PageHistoryDrawer'
 import { SearchPalette } from '../components/SearchPalette'
 import { SpaceOverview } from '../components/SpaceOverview'
-import { VisualEditor } from '../components/visual/VisualEditor'
+import { VisualEditor, type VisualEditorHandle } from '../components/visual/VisualEditor'
 import { useAutosave } from '../hooks/useAutosave'
-import { useCreatePage, usePage, usePageTree, useUpdatePage } from '../hooks/usePages'
+import { useCreateFolder, useFolders } from '../hooks/useFolders'
+import { useCreatePage, usePage, usePageSetting, usePageTree, useUpdatePage } from '../hooks/usePages'
 import { useSpaces } from '../hooks/useSpaces'
 import { useUploadMedia } from '../hooks/useMedia'
 import { useTags } from '../hooks/useTags'
 import type { PageDto } from '../models'
-import { buildPageIndex } from '../lib/wikilinks'
+import { headingsOf, newBlockId, tagsOf, withTags, type Block } from '../lib/blocks'
+import { getPage } from '../services/pages.service'
+import { buildSpaceTree, findNode, pathTo, type SpaceNode } from '../lib/spaceTree'
 import '../components/notes.css'
 
-/** `visual` writes on the page itself; `edit` and `split` write the markdown, the latter beside the reading. */
-type ViewMode = 'visual' | 'edit' | 'split' | 'preview'
-
 const SIDEBAR_WIDTH = 272
-const VIEW_MODES: ViewMode[] = ['visual', 'edit', 'split', 'preview']
-const VIEW_MODE_KEY = 'pandora.notes_view_mode'
 const SIDEBAR_KEY = 'pandora.notes_sidebar_closed'
 
-// Remembered per device: how one likes to write and whether the tree is in the way are habits.
+// Remembered per device: whether the tree is in the way is a habit.
 function readStored<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
   try {
     const value = localStorage.getItem(key)
@@ -67,25 +78,28 @@ function store(key: string, value: string) {
 interface PageDraft {
   title: string
   icon: string | null
-  contentMarkdown: string
+  /** Every block of the page, its tags block included. */
+  blocks: Block[]
+  /** Identifies an accepted AI change, so later manual saves return to the edit origin. */
+  assistantRevision?: string
 }
 
 export function NotesPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const queryClient = useQueryClient()
   const { message } = App.useApp()
   const { token } = theme.useToken()
-  const { isDark } = usePreferences()
   const navigate = useNavigate()
-  const { id: routeId, spaceId: routeSpaceId } = useParams<{ id: string; spaceId: string }>()
+  const { id: routeId, spaceId: routeSpaceId, folderId: routeFolderId } = useParams<{ id: string; spaceId: string; folderId: string }>()
   const screens = Grid.useBreakpoint()
   // Until the first measure lands, assume the wide layout: a phone settles a frame later.
   const isMobile = screens.md === false
 
   const selectedId = routeId ?? null
+  const selectedFolderId = routeFolderId ?? null
   const [includeArchived, setIncludeArchived] = useState(false)
   const [tagIds, setTagIds] = useState<string[]>([])
   const [searchOpen, setSearchOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(VIEW_MODE_KEY, VIEW_MODES, 'visual'))
   const [sidebarClosed, setSidebarClosed] = useState(() => readStored(SIDEBAR_KEY, ['1', '0'], '0') === '1')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [infoOpen, setInfoOpen] = useState(false)
@@ -93,44 +107,46 @@ export function NotesPage() {
   const [editorGeneration, setEditorGeneration] = useState(0)
   // A phone opens a page to read it; editing is a step it takes on purpose.
   const [mobileEditing, setMobileEditing] = useState(false)
-  const editorRef = useRef<MarkdownEditorHandle>(null)
+  const editorRef = useRef<VisualEditorHandle>(null)
+  // The element the page scrolls in: the table of contents follows the reading through it.
+  const [scroller, setScroller] = useState<HTMLDivElement | null>(null)
 
   // Local draft of the open page; the source of truth while typing.
-  const [draft, setDraft] = useState<PageDraft>({ title: '', icon: null, contentMarkdown: '' })
+  const [draft, setDraft] = useState<PageDraft>({ title: '', icon: null, blocks: [] })
+  const savedAssistantRevisions = useRef(new Map<string, string>())
 
   const { data: page, isLoading, error: pageError } = usePage(selectedId)
 
-  // The space comes from the URL on its own page, and from the open page otherwise.
-  const spaceId = routeSpaceId ?? page?.spaceId ?? null
+  // Every folder, so an opened folder (whose URL names no space) is known before its space is.
+  const { data: allFolders = [], error: foldersError } = useFolders(null)
+  const folder = selectedFolderId ? allFolders.find((candidate) => candidate.id === selectedFolderId) : undefined
+
+  // The space comes from the URL on its own page, and from the open page or folder otherwise.
+  const spaceId = routeSpaceId ?? page?.spaceId ?? folder?.spaceId ?? null
   const { data: spaces, error: spacesError } = useSpaces(true)
   const space = spaces?.find((candidate) => candidate.id === spaceId)
   const updateMutation = useUpdatePage()
   const createMutation = useCreatePage()
+  const createFolder = useCreateFolder()
   const uploadMedia = useUploadMedia()
 
-  // Wikilinks resolve against every page, archived included: archiving hides a page from the
-  // sidebar but does not break links to it (and the backend resolves it the same way).
+  // Mentions name every page, archived included: archiving hides a page from the sidebar but does
+  // not break links to it.
   const { data: allPages, error: treeError } = usePageTree(true)
-  const pageIndex = useMemo(() => buildPageIndex(allPages ?? [], spaceId), [allPages, spaceId])
 
-  // The tags exist module-wide: the preview paints the `#tag` chips with them, and clicking one
-  // (in the body or in the header) is what fills the sidebar filter.
-  const { tags, index: tagIndex, error: tagsError } = useTags()
+  // The open space as the sidebar shows it, for the breadcrumb and an opened folder's contents.
+  const spaceTree = buildSpaceTree(
+    allFolders.filter((candidate) => candidate.spaceId === spaceId),
+    (allPages ?? []).filter((candidate) => candidate.spaceId === spaceId),
+  )
+
+  // The tags exist module-wide: the header offers them, and clicking one fills the sidebar filter.
+  const { tags, error: tagsError } = useTags()
 
   function filterByTag(tagId: string) {
     setTagIds([tagId])
     if (isMobile) setDrawerOpen(true)
     else if (sidebarClosed) toggleSidebar()
-  }
-
-  function filterByTagSlug(slug: string) {
-    const tag = tags.find((candidate) => candidate.slug === slug)
-    if (tag) filterByTag(tag.id)
-  }
-
-  function changeViewMode(mode: ViewMode) {
-    setViewMode(mode)
-    store(VIEW_MODE_KEY, mode)
   }
 
   const toggleSidebar = useCallback(() => {
@@ -159,7 +175,7 @@ export function NotesPage() {
   // Seed the draft when a different page arrives (render-phase adjustment, not an effect).
   if (page && page.id !== draftPageId) {
     setDraftPageId(page.id)
-    setDraft({ title: page.title, icon: page.icon, contentMarkdown: page.contentMarkdown })
+    setDraft({ title: page.title, icon: page.icon, blocks: page.content.blocks })
     setMobileEditing(false)
   }
 
@@ -168,13 +184,119 @@ export function NotesPage() {
       if (!draftPageId) return
       await updateMutation.mutateAsync({
         id: draftPageId,
-        body: { title: value.title, icon: value.icon, contentMarkdown: value.contentMarkdown },
+        body: {
+          title: value.title, icon: value.icon, content: { version: 1, blocks: value.blocks },
+          ...(value.assistantRevision && savedAssistantRevisions.current.get(draftPageId) !== value.assistantRevision ? { source: 'assistant' as const } : {}),
+        },
       })
+      if (value.assistantRevision) savedAssistantRevisions.current.set(draftPageId, value.assistantRevision)
     },
     [updateMutation, draftPageId],
   )
 
   const { status, schedule, flush, reset } = useAutosave<PageDraft>({ onSave: handleSave })
+
+  const setting = usePageSetting()
+  const [shareOpen, setShareOpen] = useState(false)
+
+  // ---------- Comments ----------
+  const [commentsOpen, setCommentsOpen] = useState(false)
+  const [focusThread, setFocusThread] = useState<string | null>(null)
+  // A new thread waits on its first comment; the editor marks its words once it exists.
+  const [composer, setComposer] = useState<{ blockId: string; quote: string | null; resolve: (id: string | null) => void } | null>(null)
+  const { data: comments = [] } = usePageComments(selectedId)
+  const { data: stamps } = useBlockStamps(selectedId)
+  const stampsById = useMemo(() => new Map((stamps ?? []).map((stamp) => [stamp.blockId, stamp])), [stamps])
+  const commentChange = useCommentChange(selectedId ?? '')
+  const openThreads = comments.filter((c) => !c.threadId && !c.resolvedAt)
+  const blockIds = useMemo(() => {
+    const ids = new Set<string>()
+    const collect = (blocks: Block[]) => blocks.forEach((block) => {
+      ids.add(block.id)
+      if (block.children) collect(block.children)
+    })
+    collect(draft.blocks)
+    return ids
+  }, [draft.blocks])
+
+  const handleComment = (target: { blockId: string; quote: string | null }) =>
+    new Promise<string | null>((resolve) => setComposer({ ...target, resolve }))
+
+  async function submitComment(body: string) {
+    if (!composer || !selectedId) return
+    try {
+      let id: string | null = null
+      await commentChange.mutateAsync(async () => {
+        id = (await commentsService.addComment(selectedId, { blockId: composer.blockId, quote: composer.quote, body })).id
+      })
+      composer.resolve(id)
+      setComposer(null)
+      setFocusThread(id)
+      setCommentsOpen(true)
+    } catch (err) {
+      message.error(toErrorMessage(err, t('notes.actionError')))
+    }
+  }
+
+  function openThread(id: string) {
+    setFocusThread(id)
+    setCommentsOpen(true)
+  }
+
+  function jumpToBlock(blockId: string) {
+    const hash = `#block-${blockId}`
+    if (window.location.hash === hash) window.dispatchEvent(new HashChangeEvent('hashchange'))
+    else window.location.hash = hash
+  }
+
+  // The words of open threads are painted, and a block with an open thread of its own is marked at
+  // its side; a resolved or deleted thread leaves the text as it was.
+  const commentStyle = openThreads
+    .map((c) => (c.quote ? `.notes-visual [data-thread="${CSS.escape(c.id)}"]` : `.notes-visual [data-block-id="${CSS.escape(c.blockId)}"]`))
+    .reduce(
+      (css, selector) => css + `${selector}{${selector.includes('data-thread') ? 'background:var(--notes-comment-bg);border-bottom:2px solid var(--notes-comment-line);cursor:pointer' : 'box-shadow:inset 3px 0 0 var(--notes-comment-line)'}}`,
+      '',
+    )
+
+  // Opening a page puts it first in the recent ones; a visit is not an edit.
+  const viewedId = page?.id
+  useEffect(() => {
+    if (!viewedId) return
+    void pagesService
+      .markPageViewed(viewedId)
+      .then(() => queryClient.invalidateQueries({ queryKey: noteKeys.recentPages() }))
+      .catch(() => undefined)
+  }, [viewedId, queryClient])
+
+  async function changeSetting(run: () => Promise<unknown>) {
+    try {
+      await setting.mutateAsync(run as () => Promise<PageDto>)
+    } catch (err) {
+      message.error(toErrorMessage(err, t('notes.actionError')))
+    }
+  }
+
+  const setAppearance = (appearance: PageAppearance) => page && void changeSetting(() => pagesService.setPageAppearance(page.id, appearance))
+
+  async function handleExport(kind: ExportKind) {
+    if (!page) return
+    const titleOf = (id: string) => allPages?.find((candidate) => candidate.id === id)?.title
+    if (kind === 'pdf') {
+      // The print stylesheet leaves only the page; "Save as PDF" is the browser's.
+      window.print()
+      return
+    }
+    try {
+      await flush()
+      if (kind === 'markdown') {
+        downloadText(fileNameOf(draft.title, 'md'), `# ${draft.title}\n\n${blocksToMarkdown(draft.blocks, titleOf)}`, 'text/markdown;charset=utf-8')
+      } else {
+        downloadText(fileNameOf(draft.title, 'html'), await blocksToHtml(draft.title, draft.blocks, titleOf, mediaDataUrl), 'text/html;charset=utf-8')
+      }
+    } catch (err) {
+      message.error(toErrorMessage(err, t('notes.actionError')))
+    }
+  }
 
   async function openHistory() {
     try {
@@ -185,9 +307,20 @@ export function NotesPage() {
     }
   }
 
+  async function summarizePage() {
+    const pageId = selectedId
+    try {
+      await flush()
+      // A navigation while saving must not open a preview for the page that replaced this one.
+      if (editorRef.current?.docId === pageId) editorRef.current.summarizePage()
+    } catch (err) {
+      message.error(toErrorMessage(err, t('notes.saveError')))
+    }
+  }
+
   function handleRestored(restored: PageDto) {
     reset()
-    setDraft({ title: restored.title, icon: restored.icon, contentMarkdown: restored.contentMarkdown })
+    setDraft({ title: restored.title, icon: restored.icon, blocks: restored.content.blocks })
     setEditorGeneration((generation) => generation + 1)
     setHistoryOpen(false)
   }
@@ -196,7 +329,7 @@ export function NotesPage() {
   async function handleSelect(id: string | null) {
     setDrawerOpen(false)
     setInfoOpen(false)
-    if (id === selectedId) return
+    if (id === selectedId && !selectedFolderId) return
     try {
       await flush()
     } catch (err) {
@@ -224,30 +357,82 @@ export function NotesPage() {
     navigate(`/notes/s/${id}`)
   }
 
-  async function handleCreateInSpace() {
+  async function handleCreateInSpace(folderId: string | null = null) {
     try {
-      const created = await createMutation.mutateAsync({ title: t('notes.untitled'), spaceId })
+      const created = await createMutation.mutateAsync({ title: t('notes.untitled'), spaceId, folderId })
       await handleSelect(created.id)
     } catch (err) {
       message.error(toErrorMessage(err, t('notes.saveError')))
     }
   }
 
-  function updateDraft(patch: Partial<PageDraft>) {
+  // Opening a folder leaves the page: its pending edits are written first.
+  async function openFolder(id: string) {
+    setDrawerOpen(false)
+    setInfoOpen(false)
+    try {
+      await flush()
+    } catch (err) {
+      message.error(toErrorMessage(err, t('notes.saveError')))
+      return
+    }
+    reset()
+    setDraftPageId(null)
+    navigate(`/notes/f/${id}`)
+  }
+
+  const openNode = (node: SpaceNode) => (node.kind === 'folder' ? openFolder(node.id) : handleSelect(node.id))
+
+  async function handleCreateFolder(parentId: string | null) {
+    try {
+      const created = await createFolder.mutateAsync({ name: t('notes.folders.untitled'), parentId, spaceId })
+      await openFolder(created.id)
+    } catch (err) {
+      message.error(toErrorMessage(err, t('notes.saveError')))
+    }
+  }
+
+  function updateDraft(patch: Partial<PageDraft> | ((current: PageDraft) => Partial<PageDraft>)) {
     setDraft((current) => {
-      const next = { ...current, ...patch }
+      const next = { ...current, ...(typeof patch === 'function' ? patch(current) : patch) }
       schedule(next)
       return next
     })
   }
 
-  // Clicking a `[[link]]` that resolves to nothing: create that page, then open it.
-  async function handleCreateFromLink(title: string) {
+  // The editor holds every block but the tags one, which the header edits.
+  const handleBlocksChange = (blocks: Block[], source?: 'assistant') =>
+    updateDraft((current) => ({
+      blocks: [...current.blocks.filter((block) => block.type === 'tags'), ...blocks],
+      ...(source === 'assistant' ? { assistantRevision: newBlockId() } : {}),
+    }))
+
+  const handleTagsChange = (names: string[]) => updateDraft((current) => ({ blocks: withTags(current.blocks, names) }))
+
+  // A page linked from the text before it exists: made in this space, and the link points at it.
+  async function handleCreateFromLink(title: string): Promise<string | null> {
     try {
-      const created = await createMutation.mutateAsync({ title, spaceId })
-      await handleSelect(created.id)
+      return (await createMutation.mutateAsync({ title, spaceId })).id
     } catch (err) {
       message.error(toErrorMessage(err, t('notes.saveError')))
+      return null
+    }
+  }
+
+  // Blocks moved out of this page: appended to the other one, with fresh ids so none clashes there.
+  async function handleMoveBlocks(targetId: string, blocks: Block[]): Promise<boolean> {
+    const renew = (list: Block[]): Block[] => list.map((block) => ({ ...block, id: newBlockId(), ...(block.children ? { children: renew(block.children) } : {}) }))
+    try {
+      const target = await getPage(targetId)
+      await updateMutation.mutateAsync({
+        id: targetId,
+        body: { title: target.title, icon: target.icon, content: { version: 1, blocks: [...target.content.blocks, ...renew(blocks)] } },
+      })
+      message.success(t('notes.blocks.moved', { title: target.title || t('notes.untitled') }))
+      return true
+    } catch (err) {
+      message.error(toErrorMessage(err, t('notes.saveError')))
+      return false
     }
   }
 
@@ -269,8 +454,9 @@ export function NotesPage() {
     error: t('notes.saveError'),
   }
 
-  // A phone has no room for two panes: it reads, or it edits.
-  const mode: ViewMode = isMobile ? (mobileEditing ? 'visual' : 'preview') : viewMode
+  // A phone opens a page to read it; editing is a step it takes on purpose.
+  // A locked page reads until it is unlocked, on any screen.
+  const editable = (!isMobile || mobileEditing) && !page?.isLocked
   const border = `1px solid ${token.colorBorderSecondary}`
 
   const sidebar = (
@@ -279,6 +465,9 @@ export function NotesPage() {
       onSpaceChange={handleSpaceChange}
       selectedId={selectedId}
       onSelect={handleSelect}
+      selectedFolderId={selectedFolderId}
+      onSelectFolder={(id) => void openFolder(id)}
+      onOpenOverview={() => void handleSelect(null)}
       includeArchived={includeArchived}
       onToggleArchived={setIncludeArchived}
       tagIds={tagIds}
@@ -290,51 +479,49 @@ export function NotesPage() {
     />
   )
 
-  // Both editors start from the draft, not the saved page: switching modes carries what is not saved yet.
-  const editor = (autoHeight: boolean) =>
-    selectedId && (
-      <MarkdownEditor
-        key={`${selectedId}-${editorGeneration}`}
-        docId={selectedId}
-        initialValue={draft.contentMarkdown}
-        placeholder={t('notes.contentPlaceholder')}
-        isDark={isDark}
-        pages={allPages ?? []}
-        tags={tags}
-        onChange={(value) => updateDraft({ contentMarkdown: value })}
-        onUpload={handleUpload}
-        autoHeight={autoHeight}
-        ref={editorRef}
-      />
-    )
-
+  // The editor starts from the draft, not the saved page, so a remount carries what is not saved yet.
   const visualEditor = selectedId && (
     <VisualEditor
       key={`${selectedId}-${editorGeneration}`}
       docId={selectedId}
-      initialValue={draft.contentMarkdown}
+      initialContent={draft.blocks}
       pages={allPages ?? []}
-      tags={tags}
-      pageIndex={pageIndex}
-      tagIndex={tagIndex}
-      onChange={(value) => updateDraft({ contentMarkdown: value })}
+      folders={allFolders}
+      onOpenFolder={(id) => void openFolder(id)}
+      editable={editable}
+      onChange={handleBlocksChange}
       onUpload={handleUpload}
       onOpenPage={handleSelect}
       onCreatePage={handleCreateFromLink}
-      onSelectTag={filterByTagSlug}
+      onMoveBlocks={handleMoveBlocks}
+      onComment={handleComment}
+      onOpenThread={openThread}
+      blockStamps={stampsById}
       ref={editorRef}
     />
   )
 
-  const preview = (
-    <MarkdownPreview
-      markdown={draft.contentMarkdown}
-      pageIndex={pageIndex}
-      tagIndex={tagIndex}
-      onOpenPage={handleSelect}
-      onCreatePage={handleCreateFromLink}
-      onSelectTag={filterByTagSlug}
-    />
+  // Where the page stands: locked (with the way out), verified or due for a check.
+  const verificationDue = !!page?.verifiedUntil && new Date(page.verifiedUntil) < new Date()
+  const pageBadges = page && (
+    <>
+      {page.isLocked && (
+        <Tag icon={<LockOutlined />} className="!me-0 cursor-pointer" onClick={() => void changeSetting(() => pagesService.setPageLocked(page.id, false))}>
+          {t('notes.lock.locked')}
+        </Tag>
+      )}
+      {page.verifiedAt && (
+        <Tooltip title={t('notes.verify.at', { when: timeAgo(page.verifiedAt, i18n.language) })}>
+          <Tag icon={<SafetyCertificateOutlined />} color={verificationDue ? 'warning' : 'success'} className="!me-0">
+            {verificationDue
+              ? t('notes.verify.due')
+              : page.verifiedUntil
+                ? t('notes.verify.until', { date: new Date(page.verifiedUntil).toLocaleDateString(i18n.language) })
+                : t('notes.verify.verified')}
+          </Tag>
+        </Tooltip>
+      )}
+    </>
   )
 
   const header = page && (
@@ -344,11 +531,14 @@ export function NotesPage() {
       editedAt={page.updatedAt ?? page.createdAt}
       status={statusLabel[status]}
       statusIsError={status === 'error'}
-      tags={page.tags}
-      editable={!isMobile || mobileEditing}
+      tags={tagsOf(draft.blocks)}
+      knownTags={tags}
+      editable={editable}
       onIconChange={(icon) => updateDraft({ icon })}
       onTitleChange={(title) => updateDraft({ title })}
+      onTagsChange={handleTagsChange}
       onSelectTag={filterByTag}
+      badges={pageBadges}
     />
   )
 
@@ -370,11 +560,15 @@ export function NotesPage() {
       <div className="min-w-0 flex-1">
         <PageBreadcrumb
           space={space}
-          page={page && selectedId ? { ...page, title: draft.title, icon: draft.icon } : null}
-          pages={allPages ?? []}
+          path={pathTo(spaceTree, selectedFolderId ?? selectedId ?? '')}
+          current={
+            folder ? { icon: folder.icon, name: folder.name }
+              : page && selectedId ? { icon: draft.icon, name: draft.title }
+                : null
+          }
           compact={isMobile}
           onOpenSpace={() => handleSelect(null)}
-          onOpenPage={handleSelect}
+          onOpenNode={(node) => void openNode(node)}
         />
       </div>
 
@@ -392,21 +586,8 @@ export function NotesPage() {
             >
               {t(mobileEditing ? 'notes.doneEditing' : 'notes.edit')}
             </Button>
-          ) : (
-            <Segmented
-              size="small"
-              value={viewMode}
-              onChange={(value) => changeViewMode(value as ViewMode)}
-              aria-label={t('notes.viewMode')}
-              options={[
-                { value: 'visual', icon: <EditOutlined />, title: t('notes.viewVisual') },
-                { value: 'edit', icon: <CodeOutlined />, title: t('notes.viewEdit') },
-                { value: 'split', icon: <SplitCellsOutlined />, title: t('notes.viewSplit') },
-                { value: 'preview', icon: <EyeOutlined />, title: t('notes.viewPreview') },
-              ]}
-            />
-          )}
-          {mode !== 'preview' && (
+          ) : null}
+          {editable && (
             <Tooltip title={t('notes.media.insert')}>
               <Button
                 type="text"
@@ -424,6 +605,19 @@ export function NotesPage() {
               onClick={() => setInfoOpen(!infoOpen)}
             />
           </Tooltip>
+          <Tooltip title={t('notes.comments.title')}>
+            <Badge count={openThreads.length} size="small" offset={[-4, 4]}>
+              <Button
+                type={commentsOpen ? 'default' : 'text'}
+                icon={<CommentOutlined />}
+                aria-label={t('notes.comments.title')}
+                onClick={() => {
+                  setFocusThread(null)
+                  setCommentsOpen(!commentsOpen)
+                }}
+              />
+            </Badge>
+          </Tooltip>
           <Tooltip title={t('notes.history.title')}>
             <Button
               type="text"
@@ -432,18 +626,55 @@ export function NotesPage() {
               onClick={() => void openHistory()}
             />
           </Tooltip>
+          <PageMenu
+            page={page}
+            onAppearance={setAppearance}
+            onLocked={(locked) => void changeSetting(() => pagesService.setPageLocked(page.id, locked))}
+            onTemplate={(isTemplate) => void changeSetting(async () => {
+              await flush()
+              return pagesService.setPageTemplate(page.id, isTemplate)
+            })}
+            onVerify={(days) => void changeSetting(() => pagesService.setPageVerification(page.id, days !== false, days === false ? null : days))}
+            onShare={() => setShareOpen(true)}
+            onExport={(kind) => void handleExport(kind)}
+            onSummarize={editable ? () => void summarizePage() : undefined}
+          />
         </>
       )}
     </div>
   )
 
   let body: ReactNode
-  const loadError = pageError ?? spacesError ?? treeError ?? tagsError
+  const loadError = pageError ?? spacesError ?? treeError ?? tagsError ?? foldersError
+  const wide = !!screens.xl
   if (loadError) {
     body = <Alert type="error" showIcon title={loadError.message} />
+  } else if (selectedFolderId) {
+    body = folder ? (
+      <FolderView
+        folder={folder}
+        includeArchived={includeArchived}
+        tagIds={tagIds}
+        node={findNode(spaceTree, folder.id)}
+        onOpen={(node) => void openNode(node)}
+        onCreatePage={(folderId) => void handleCreateInSpace(folderId)}
+        onCreateFolder={(parentId) => void handleCreateFolder(parentId)}
+        onDeleted={() => void handleSelect(null)}
+      />
+    ) : (
+      <div className="flex h-full items-center justify-center">
+        <Spin />
+      </div>
+    )
   } else if (!selectedId) {
     body = space ? (
-      <SpaceOverview space={space} onOpenPage={handleSelect} onCreatePage={handleCreateInSpace} />
+      <SpaceOverview
+        space={space}
+        onOpenPage={handleSelect}
+        onOpenFolder={(id) => void openFolder(id)}
+        onCreatePage={() => void handleCreateInSpace()}
+        onCreateFolder={() => void handleCreateFolder(null)}
+      />
     ) : (
       <div className="flex h-full items-center justify-center">
         <Empty description={t('notes.noSelection')} />
@@ -457,26 +688,27 @@ export function NotesPage() {
     )
   } else if (!page) {
     body = <Empty description={t('notes.pageUnavailable')} />
-  } else if (mode === 'split') {
-    // Side by side, each pane scrolls on its own; the title sits above both.
-    body = (
-      <div className="flex h-full flex-col">
-        <div className="notes-doc shrink-0 px-8 pt-6">{header}</div>
-        <div className="flex min-h-0 flex-1" style={{ borderTop: border }}>
-          <div className="min-w-0 flex-1" style={{ borderRight: border }}>
-            {editor(false)}
-          </div>
-          <div className="notes-doc min-w-0 flex-1 overflow-auto px-6 py-4">{preview}</div>
-        </div>
-      </div>
-    )
   } else {
-    // One column at a reading width, scrolling as a whole document.
+    // One column at a reading width, scrolling as a whole document; the contents beside it when
+    // there is room, above it otherwise.
+    const side = wide && headingsOf(draft.blocks).length > 0
     body = (
-      <div className="h-full overflow-auto">
-        <div className="notes-doc mx-auto w-full max-w-[760px] px-5 py-8 md:px-10 md:py-12">
-          {header}
-          {mode === 'edit' ? editor(true) : mode === 'visual' ? visualEditor : preview}
+      <div ref={setScroller} className="notes-print h-full overflow-auto">
+        <PageCover cover={page.appearance.cover} editable={editable} onChange={(cover) => setAppearance({ ...page.appearance, cover })} />
+        <div className={`mx-auto flex w-full justify-center gap-10 px-5 py-8 md:px-10 md:py-12 ${page.appearance.width === 'wide' ? 'max-w-[1500px]' : 'max-w-[1100px]'}`}>
+          <div
+            className={`notes-doc notes-font-${page.appearance.font} w-full min-w-0 ${page.appearance.width === 'wide' ? '' : 'max-w-[760px]'} ${page.appearance.smallText ? 'notes-small-text' : ''}`}
+          >
+            {header}
+            {!side && <PageToc blocks={draft.blocks} scroller={scroller} placement="top" />}
+            {visualEditor}
+            <PageFooter pageId={page.id} pages={allPages ?? []} onOpenPage={handleSelect} />
+          </div>
+          {side && (
+            <aside className="w-56 shrink-0">
+              <PageToc blocks={draft.blocks} scroller={scroller} placement="side" />
+            </aside>
+          )}
         </div>
       </div>
     )
@@ -515,6 +747,41 @@ export function NotesPage() {
         {toolbar}
         <div className="min-h-0 flex-1">{body}</div>
       </main>
+
+      {page && (
+        <ShareModal
+          open={shareOpen}
+          publicToken={page.publicToken}
+          saving={setting.isPending}
+          onChange={(isPublic) => void changeSetting(() => pagesService.setPagePublic(page.id, isPublic))}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
+
+      {selectedId && (
+        <CommentsPanel
+          key={selectedId}
+          pageId={selectedId}
+          open={commentsOpen}
+          comments={comments}
+          focusThread={focusThread}
+          blockExists={(id) => blockIds.has(id)}
+          onJump={jumpToBlock}
+          onClose={() => setCommentsOpen(false)}
+        />
+      )}
+      {composer && (
+        <CommentComposer
+          quote={composer.quote}
+          saving={commentChange.isPending}
+          onSubmit={(body) => void submitComment(body)}
+          onCancel={() => {
+            composer.resolve(null)
+            setComposer(null)
+          }}
+        />
+      )}
+      {commentStyle && <style>{commentStyle}</style>}
 
       {selectedId && (
         <Drawer

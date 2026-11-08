@@ -18,6 +18,9 @@ import {
 
 const summary = { id: 'p1', parentId: null, title: 'Home', slug: 'home', icon: null, orderIndex: 0, isFavorite: false, isArchived: false }
 
+const HI = { version: 1 as const, blocks: [{ id: 'h', type: 'heading', props: { level: 1 }, content: [{ text: 'Hi' }] }] }
+const EMPTY = { version: 1 as const, blocks: [] }
+
 describe('pages.service', () => {
   it('lists pages and forwards includeArchived', () => {
     let includeArchived: string | null = null
@@ -36,11 +39,11 @@ describe('pages.service', () => {
   it('gets a single page with its markdown body', async () => {
     server.use(
       http.get(`${NOTES_BASE}/pages/p1`, () =>
-        HttpResponse.json({ success: true, data: { ...summary, contentMarkdown: '# Hi', createdAt: '', updatedAt: null } }),
+        HttpResponse.json({ success: true, data: { ...summary, content: HI, createdAt: '', updatedAt: null } }),
       ),
     )
     const page = await getPage('p1')
-    expect(page.contentMarkdown).toBe('# Hi')
+    expect(page.content).toEqual(HI)
   })
 
   it('creates a page', async () => {
@@ -48,7 +51,7 @@ describe('pages.service', () => {
     server.use(
       http.post(`${NOTES_BASE}/pages`, async ({ request }) => {
         body = await request.json()
-        return HttpResponse.json({ success: true, data: { ...summary, id: 'p2', contentMarkdown: '' } })
+        return HttpResponse.json({ success: true, data: { ...summary, id: 'p2', content: EMPTY } })
       }),
     )
     const created = await createPage({ title: 'Nova', parentId: 'p1' })
@@ -61,11 +64,11 @@ describe('pages.service', () => {
     server.use(
       http.put(`${NOTES_BASE}/pages/p1`, async ({ request }) => {
         body = await request.json()
-        return HttpResponse.json({ success: true, data: { ...summary, contentMarkdown: 'texto' } })
+        return HttpResponse.json({ success: true, data: { ...summary, content: EMPTY } })
       }),
     )
-    await updatePage('p1', { title: 'Home', icon: null, contentMarkdown: 'texto' })
-    expect(body).toMatchObject({ title: 'Home', contentMarkdown: 'texto' })
+    await updatePage('p1', { title: 'Home', icon: null, content: HI })
+    expect(body).toMatchObject({ title: 'Home', content: HI })
   })
 
   it('moves a page with its new parent and order', async () => {
@@ -73,7 +76,7 @@ describe('pages.service', () => {
     server.use(
       http.post(`${NOTES_BASE}/pages/p1/move`, async ({ request }) => {
         body = await request.json()
-        return HttpResponse.json({ success: true, data: { ...summary, contentMarkdown: '' } })
+        return HttpResponse.json({ success: true, data: { ...summary, content: EMPTY } })
       }),
     )
     await movePage('p1', { parentId: 'p9', orderIndex: 2 })
@@ -85,7 +88,7 @@ describe('pages.service', () => {
     server.use(
       http.post(`${NOTES_BASE}/pages/p1/:action`, ({ params }) => {
         paths.push(String(params.action))
-        return HttpResponse.json({ success: true, data: { ...summary, contentMarkdown: '' } })
+        return HttpResponse.json({ success: true, data: { ...summary, content: EMPTY } })
       }),
     )
     await setPageFavorite('p1', true)
@@ -98,7 +101,7 @@ describe('pages.service', () => {
     server.use(
       http.post(`${NOTES_BASE}/pages/p1/:action`, ({ params }) => {
         paths.push(String(params.action))
-        return HttpResponse.json({ success: true, data: { ...summary, contentMarkdown: '' } })
+        return HttpResponse.json({ success: true, data: { ...summary, content: EMPTY } })
       }),
     )
     await setPageArchived('p1', true)

@@ -22,6 +22,8 @@ internal sealed class PageTagEntityConfiguration : IEntityTypeConfiguration<Page
         // sweep that deletes an orphaned tag removes its page_tag rows in the same transaction, and
         // without this the tag would go first and hit fk_nte006_tag.
         builder.HasOne<Tag>().WithMany().HasForeignKey(t => t.TagId).OnDelete(DeleteBehavior.Cascade);
+        // A daily note can create its folder and page together with tag references.
+        builder.HasOne<Page>().WithMany().HasForeignKey(t => t.PageId).OnDelete(DeleteBehavior.NoAction).HasConstraintName("fk_nte006_page");
 
         // A tag written five times in one page is one fact.
         builder.HasIndex(t => new { t.PageId, t.TagId })

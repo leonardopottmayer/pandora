@@ -94,7 +94,7 @@ public sealed class SpacesTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task A_wikilink_prefers_the_page_in_its_own_space()
+    public async Task A_mention_points_at_the_page_it_names_whatever_its_space()
     {
         await AuthAsync("spaces5");
         var home = await CreateSpaceAsync("Home");
@@ -102,7 +102,7 @@ public sealed class SpacesTests : IAsyncLifetime
         var homeMeeting = await CreatePageAsync(new { title = "Meeting", spaceId = home.Id });
         var workMeeting = await CreatePageAsync(new { title = "Meeting", spaceId = work.Id });
 
-        var linking = await CreatePageAsync(new { title = "Standup", spaceId = work.Id, contentMarkdown = "see [[Meeting]]" });
+        var linking = await CreatePageAsync(new { title = "Standup", spaceId = home.Id, content = NoteBlocks.Text("see ", NoteBlocks.Mention(workMeeting.Id)) });
 
         Assert.Contains(await BacklinksAsync(workMeeting.Id), b => b.PageId == linking.Id);
         Assert.DoesNotContain(await BacklinksAsync(homeMeeting.Id), b => b.PageId == linking.Id);

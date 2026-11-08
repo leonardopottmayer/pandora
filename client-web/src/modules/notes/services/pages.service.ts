@@ -7,12 +7,25 @@ import type {
   PageGraphDto,
   PageSearchResultDto,
   PageSummaryDto,
+  PageAppearance,
   PageVersionDto,
+  PublicPageDto,
+  TrashItemDto,
   PageVersionSummaryDto,
   UpdatePageRequest,
 } from '../models'
 
 const BASE = '/api/v1/notes/pages'
+
+export async function setPageTemplate(id: string, isTemplate: boolean): Promise<PageDto> {
+  const { data } = await apiClient.put<PageDto>(`${BASE}/${id}/template`, { isTemplate })
+  return data
+}
+
+export async function createPageFromTemplate(body: { templateId: string; title: string; spaceId: string | null; folderId: string | null }): Promise<PageDto> {
+  const { data } = await apiClient.post<PageDto>(`${BASE}/from-template`, body)
+  return data
+}
 
 export async function listPageVersions(id: string, before?: number): Promise<PageVersionSummaryDto[]> {
   const { data } = await apiClient.get<PageVersionSummaryDto[]>(`${BASE}/${id}/versions`, { params: { before } })
@@ -106,4 +119,59 @@ export async function setPageArchived(id: string, archived: boolean): Promise<Pa
 
 export async function deletePage(id: string): Promise<void> {
   await apiClient.delete(`${BASE}/${id}`)
+}
+
+export async function setPageAppearance(id: string, appearance: PageAppearance): Promise<PageDto> {
+  const { data } = await apiClient.put<PageDto>(`${BASE}/${id}/appearance`, appearance)
+  return data
+}
+
+export async function setPageLocked(id: string, locked: boolean): Promise<PageDto> {
+  const { data } = await apiClient.put<PageDto>(`${BASE}/${id}/lock`, { locked })
+  return data
+}
+
+/** `days` 1 to 365, or null for a verification that does not run out; `verified: false` clears it. */
+export async function setPageVerification(id: string, verified: boolean, days: number | null = null): Promise<PageDto> {
+  const { data } = await apiClient.put<PageDto>(`${BASE}/${id}/verification`, { verified, days })
+  return data
+}
+
+export async function setPagePublic(id: string, isPublic: boolean): Promise<PageDto> {
+  const { data } = await apiClient.put<PageDto>(`${BASE}/${id}/public`, { public: isPublic })
+  return data
+}
+
+/** Notes that the page was opened, for the recent pages; not an edit. */
+export async function markPageViewed(id: string): Promise<void> {
+  await apiClient.post(`${BASE}/${id}/viewed`)
+}
+
+export async function listRecentPages(limit = 8): Promise<PageSummaryDto[]> {
+  const { data } = await apiClient.get<PageSummaryDto[]>(`${BASE}/recent`, { params: { limit } })
+  return data
+}
+
+const TRASH = '/api/v1/notes/trash'
+
+export async function listTrash(): Promise<TrashItemDto[]> {
+  const { data } = await apiClient.get<TrashItemDto[]>(TRASH)
+  return data
+}
+
+export async function restoreFromTrash(id: string): Promise<PageDto> {
+  const { data } = await apiClient.post<PageDto>(`${TRASH}/${id}/restore`)
+  return data
+}
+
+/** Deletes one page in the trash for good, or empties the trash with no id; answers how many went. */
+export async function deleteFromTrash(id: string | null): Promise<number> {
+  const { data } = await apiClient.delete<number>(id ? `${TRASH}/${id}` : TRASH)
+  return data
+}
+
+/** The page behind a public link; no sign-in needed. */
+export async function getPublicPage(token: string): Promise<PublicPageDto> {
+  const { data } = await apiClient.get<PublicPageDto>(`/api/v1/public/notes/pages/${encodeURIComponent(token)}`)
+  return data
 }

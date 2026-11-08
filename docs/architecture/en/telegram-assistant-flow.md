@@ -91,7 +91,8 @@ retry with backoff.
 3. InboundMessageReceivedHandler                       (Assistant · subscriber)
    injects: IUnitOfWorkFactory, ISender, IIntegrationEventBus, TimeProvider, ILogger
    → filters bot=="assistant"
-   → ISender.Send(InterpretCommand(userId, text))
+   → text-only /nota: INoteCapture → authorized Notes capture command (no model)
+   → other text: ISender.Send(InterpretCommand(userId, text))
 
 4. InterpretCommandHandler   ⭐ the brain              (Assistant · command)
    injects: IUnitOfWorkFactory, IExternalCredentialProvider, IAiChatCompletionClientFactory,
@@ -151,5 +152,8 @@ outbound channels change; the multi-turn context is identical (active, channel-a
 - **Integrations** holds the Gemini key (fetched per call).
 - **Agenda** (or another) exposes the action as an `IAssistantTool`, which internally is just a normal
   module `Command`.
-- Every hop between modules is an **integration event over the outbox** — decoupled and ready to split
-  into a separate service.
+- Transport hops use **integration events over the outbox**. Explicit `/nota` uses the synchronous
+  Notes.Abstractions `INoteCapture` port, through an authorized command. It appends a literal dated
+  paragraph to the capture page in Notes and records the EventId in `nte015_note_capture` atomically.
+  No model/profile/key is needed; Notes and Assistant permissions/features still apply. Replays cannot
+  duplicate content even after page purge. Replies still return through `SendAssistantReply`/outbox.

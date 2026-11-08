@@ -101,6 +101,10 @@ Where natural idempotency exists, it does the work and no extra table is needed:
 - `chn004_inbound_update` has a unique index on `(provider, provider_update_id)` — reprocessing a
   Telegram update is harmless by construction.
 - `chn003_interaction` has `consumed_at` — a button acts once.
+- `nte015_note_capture` uses the Channels inbound `EventId` as its PK. Direct `/nota` capture saves
+  the receipt with the page and history; replay never appends twice, even after page purge. Receipts
+  contain ids/time only and deliberately have no page FK. The serial Channels relay is the capture
+  writer; ordinary page writers retain Notes' optimistic history concurrency checks.
 - `agd008_alert_dispatch` has a unique index on `(alert_id, occurrence_starts_at)` — resweeping the
   same occurrence does not double-fire.
 

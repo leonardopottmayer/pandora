@@ -180,3 +180,15 @@ The form, worked out from the raw message: `to`, `cc`, `subject`, `inReplyTo`, `
 **`MailMessageReceived`** (Contracts), through the outbox: `EventId`, `OccurredAt`, `UserId`, `MailboxId`,
 `MessageId`, `From`, `Subject`, `Labels`. Published for a message that arrives after the backfill, and only when
 the mailbox has no row with the same Message-ID.
+
+## Copy a message to Notes
+
+`POST /messages/{id}/notes { title?, spaceId?, folderId? }` returns the created Notes page UUID in
+the normal envelope. Omitted title uses the subject (Email if empty); explicit titles must be
+nonblank and at most 255 characters. A folder determines its owning space; without a folder the
+selected/default space is used. Requires communications.messages.read, notes.pages.read/create,
+notes.spaces.read and notes.folders.read, and both module features. Foreign/missing message or
+destination returns 404; missing access 403; invalid title/page limits 422. Body is read
+server-side, converted to literal text and copied through the Notes import port; attachments are
+excluded. No provider flags are changed. Each explicit save creates a new independent page. Its
+bookmark opens `/mail?message={id}`, subject to normal authentication/ownership checks.

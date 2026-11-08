@@ -21,7 +21,7 @@ internal sealed class PageVersionSaveChangesInterceptor(TimeProvider timeProvide
                 continue;
 
             var changed = isNew || entry.Entity.RestoredFrom is not null ||
-                PageSnapshot.From(entry.Entity) != PageSnapshot.From((Page)entry.OriginalValues.ToObject());
+                !PageSnapshot.From(entry.Entity).SameStateAs(PageSnapshot.From((Page)entry.OriginalValues.ToObject()));
             if (!changed)
                 continue;
 

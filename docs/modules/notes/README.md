@@ -3,16 +3,15 @@
 > A personal Notion/Obsidian inside the Pandora modular monolith.
 > **Language:** English is the primary documentation. 🇧🇷 [Versão em português](pt-BR/README.md).
 
-The **Notes** module is a markdown knowledge base for a single user: hierarchical **pages** in a
-sidebar tree, a **media library** of images and files, `[[wikilinks]]` with backlinks, `#tags`, full-text
-search, a force-directed **graph view**, and an Obsidian-like CodeMirror editor with slash commands,
-callouts and markdown tables.
+The **Notes** module is a knowledge base for a single user: hierarchical **pages** in a sidebar
+tree, a **media library** of images and files, page links with backlinks, tags, full-text search, a
+force-directed **graph view**, and a Notion-style block editor.
 
-The guiding rule of the whole module: **the markdown is the single source of truth.** Links and tags
-are not authored through forms — they are written in the text, and the backend materializes them into
-rows on every save. An exported `.md` carries everything that matters; the database only adds what
-plain text cannot remember (a tag's color) and what plain text cannot answer fast (the link graph,
-the search vector).
+**A page is a document of blocks** (since the blocks revamp, 2026-11-07): every paragraph, heading,
+list item, image or table is a block with a stable id, stored as one `jsonb` document per page. Links,
+tags, media use and the search text are derived from the blocks on every save. The plan and the format
+are in the [Product Plan](en/product-plan.md); the topic files below still describe the markdown era
+until each step of the plan rewrites them.
 
 ---
 
@@ -38,6 +37,7 @@ the *technical rules* (aggregates, invariants, schema, endpoints).
 | 10a | [Version history](en/version-history.md) | Complete snapshots, comparison and reversible restoration |
 | 11 | [API Reference](en/api-reference.md) | Every endpoint under `/api/v{n}/notes` |
 | 12 | [Implementation Status](en/implementation-status.md) | What is built vs. planned |
+| 13 | [Product Plan — blocks revamp](en/product-plan.md) | The block format, derived data, decisions and the steps B1–B11 |
 
 ---
 
@@ -45,6 +45,6 @@ the *technical rules* (aggregates, invariants, schema, endpoints).
 
 - **Backend:** `Pottmayer.Pandora.Modules.Notes.*` (.NET 10, DDD, CQRS-style commands/queries).
 - **Schema:** PostgreSQL schema `notes`, tables prefixed `nteXXX_`, PK `uuid_generate_v7()`.
-- **Frontend:** `client-web/src/modules/notes` (React + TanStack Query + CodeMirror 6).
+- **Frontend:** `client-web/src/modules/notes` (React + TanStack Query + TipTap).
 - **API base:** `/api/v{version}/notes`, authenticated, scoped to the token's user.
 - **Migrations:** `migrations/migrations/notes/`.

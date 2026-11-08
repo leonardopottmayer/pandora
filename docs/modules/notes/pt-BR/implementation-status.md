@@ -2,6 +2,38 @@
 
 [← Voltar ao índice](README.md)
 
+## Reforma em blocos — atualização de 2026-11-07
+
+B1–B10 estão construídas, sem commit. A primeira fatia da B9 acrescenta resumir/melhorar/traduzir
+seleção e continuar pelo menu `/`, com prévia antes de aplicar, configuração do Assistant e origem
+`assistant` no autosave aceito. Ver [plano da reforma](product-plan.md). B11 inclui captura de e-mail, resumos de Finanças e Agenda Hoje/tarefas/próximos eventos. Validação no navegador e com provedor real pendente. As seções históricas abaixo
+descrevem a implementação anterior em markdown até a atualização de sua documentação.
+
+A segunda fatia da B9 acrescenta o resumo da página inteira no menu de opções da página editável:
+salvar edições pendentes, gerar prévia e aceitar como novo destaque Resumo no topo. A rota valida o
+dono e lê texto salvo (incluindo tabelas/propriedades/chips), com limite explícito de 32000 caracteres
+e sem gravar página até aceitar.
+
+A terceira fatia da B9 acrescenta “Perguntar às notas” ao lado da busca, com filtro opcional por espaço.
+Busca até cinco páginas salvas do dono por alternativas de palavras-chave, envia trechos limitados ao
+Assistant configurado e aceita citações apenas dessas páginas. A resposta em texto simples mostra
+fontes clicáveis e trechos; sem resultado/evidência suficiente aparece uma mensagem explícita. Não
+grava notas nem conversas. A busca lexical não encontra sinônimos/relações semânticas. Bloco de IA e
+captura no Telegram estão descritos abaixo. Navegador e provider real continuam pendentes.
+
+A quarta fatia da B9 acrescenta `/Bloco de IA`: prompt salvo, resultado aceito como texto simples e
+instante UTC de geração do servidor. Gerar/regenerar usa o perfil existente do Assistant, mostra prévia,
+mantém o resultado anterior ao descartar/falhar e marca a aceitação como origem Assistente. O resultado
+entra na busca, no texto legível, nas exportações e no diff de versões. Leitura/link público só exibem
+o conteúdo salvo; o prompt também faz parte da página compartilhada.
+
+A última fatia da B9 acrescenta captura direta `/nota <texto>` no bot Assistant Telegram vinculado,
+sem IA/perfil/chave. Cria/reutiliza página Captura dedicada, data no fuso da conta, texto literal e
+histórico/busca/datas de bloco com origem Assistente. Recibos em `nte015_note_capture` impedem salvar
+de novo mesmo após purgar a página. Caixa travada recusa; caixa excluída é substituída. Exige
+permissões/flags normais de Notes/Assistant. B9 construída, sem commit; testes reais de Telegram,
+navegador e provedor pendentes. B10 construída abaixo; próxima etapa: B11.
+
 Uma fotografia do que está construído no código versus o que está previsto mas ainda não
 implementado. Serve para separar "documentado porque existe" de "documentado como plano".
 
@@ -83,3 +115,227 @@ inicial; soft delete preserva o histórico. Ver [Histórico de versões](version
 4. **Parsers duplicados.** `lib/wikilinks.ts` e `lib/tags.ts` espelham o backend de propósito, para o
    preview resolver o que o save vai resolver. Qualquer mudança numa regra de parse tem que pousar nos
    dois lados — os testes unitários de cada lado são a proteção.
+
+## B10: modelos de página
+
+Construído, sem commit. Marcar/desmarcar no menu da página, seção Modelos na lateral e criação a
+partir de qualquer modelo ativo do usuário no espaço/pasta atual. A cópia mantém conteúdo e ícone,
+recebe IDs novos em todos os níveis, remove âncoras de comentários e expande `{{date}}` (data ISO no
+fuso da conta) e `{{title}}` (título final) nos textos visíveis. O título aceita `{{date}}`.
+Subpáginas e configurações não são copiadas; `is_template` não é versionado. Notas diárias e tabela
+de propriedades da pasta pendentes; o arrastar foi revisado abaixo. O CREATE
+original ganha `is_template`; banco local não recriado nem migrado. Validação no navegador pendente.
+
+## B10: notas diárias
+
+Construído, sem commit. Hoje na lateral do Notes e na Home abre ou cria a nota diária da conta.
+`POST /notes/daily { date? }` aceita data de calendário; ausente usa hoje no fuso efetivo da conta.
+Páginas novas recebem título AAAA-MM-DD na pasta Diário (Daily em inglês) do espaço padrão. Uma
+pasta raiz com esse nome é reutilizada inicialmente; o ID salvo mantém a identidade após renomear.
+Pasta ausente/excluída é substituída.
+
+A identidade do dia fica separada de título/localização em `nte017_daily_note`, única por usuário e
+data. Renomear/mover/arquivar/bloquear mantém a página; reabrir não edita nem cria versão. Página na
+lixeira ou eliminada é substituída no próximo acesso; restaurar a antiga não troca a nota diária
+atual. Páginas comuns com título igual à data não são reutilizadas. Conflitos de slug recebem sufixo
+numérico.
+
+`nte016_notes_preferences` guarda modelo opcional e ID da pasta no próprio Notes. Configurações do
+diário na lateral seleciona modelo marcado, ativo e do usuário; null limpa a escolha. Somente novas
+notas usam o modelo: IDs aninhados novos, sem âncoras de comentários, cópia de ícone/conteúdo e
+variáveis de data/título usando a data escolhida da nota. Modelo indisponível resulta em página
+vazia. Entradas existentes preservadas. Páginas novas mantêm histórico/busca/tags/links/mídia/datas
+dos blocos.
+
+Lock consultivo de sessão PostgreSQL por usuário cobre leitura até commit atômico da unidade de
+trabalho, serializando primeiros acessos e alterações de preferência entre instâncias. Liberação
+explícita na mesma conexão aberta. Unicidade no banco garante um registro por usuário/data. Relações
+EF para links e tags agora declaram a página para ordenar a inserção quando a pasta também é nova.
+
+Permissões: abrir exige notes.pages.read/create, notes.folders.create e notes.spaces.read.
+Preferências usam notes.preferences.read/update; selecionar modelo exige também notes.pages.read.
+Vinculadas à feature Notes. Migrações novas criam nte016 e nte017; banco local não recriado nem
+migrado. Navegador pendente.
+
+## B10: revisão do arrastar na árvore
+
+Construído, sem commit. Arrastar na lateral move/reordena páginas e pastas por uma chamada atômica
+`POST /notes/tree/move`. Pastas continuam antes de páginas; soltar sobre pasta coloca dentro dela,
+sobre página cria subpágina e intervalos reordenam irmãos. Ciclos e pastas dentro de páginas são
+recusados. Só os irmãos visíveis da árvore principal são renumerados; modelos continuam separados,
+sem arraste nem reordenação implícita.
+
+Arraste disponível em um espaço selecionado, sem filtro de tags, conforme permissão de atualização
+do tipo de item. Todos os espaços e filtro de tags não representam hierarquia completa para
+reordenar. Novos movimentos ficam bloqueados até terminar gravação e recarga; destino expande após
+sucesso. Destinos inválidos são bloqueados antes de soltar. Erros recarregam a árvore e permitem
+tentar de novo. O menu de mover para outro espaço conserva a rota de página individual.
+
+Backend valida dono, espaço, destino, IDs distintos e ciclos de todo o lote antes de alterar
+entidades. Usa Page.Move/Folder.Move existentes e um único commit, com histórico das páginas. Lock
+por usuário serializa lotes; falha não move irmãos parcialmente nem cria versões. A implementação
+não despacha comandos individuais de movimento porque gravações aninhadas independentes não
+garantiriam atomicidade. Sem mudança de esquema ou migração nova. Arraste nativo com mouse/toque
+ainda não conferido no navegador; testes de UI cobrem o contrato de eventos Tree e envio à API.
+
+## B10: tabela de propriedades da pasta, somente leitura
+
+Construído, sem commit. A pasta oferece Tabela junto das visões Lista/Cartões existentes. Padrão
+anterior preservado; selecionar Tabela usa a mesma preferência local de visualização. Propriedades
+carregam apenas nessa visão. Cada página diretamente na pasta ganha linha, inclusive sem
+propriedades; subpastas e subpáginas ficam de fora. Respeita filtros de arquivadas e interseção de
+tags do Notes. Clicar no título abre a página; células somente leitura e valores ausentes/vazios
+mostram travessão.
+
+`GET /notes/folders/{id}/properties` verifica dono da pasta e permissões de leitura de
+pastas/páginas. Lê apenas páginas diretamente na pasta, não excluídas, retornando resumos, união dos
+nomes de propriedades e valores em texto, sem documentos completos. `PageContent.Properties()`
+percorre blocos properties em qualquer nível, aparando nomes/valores, ignorando linhas sem nome e
+lendo inlines de texto/status/data/item/fórmula. Variações de maiúsculas/minúsculas usam o primeiro
+rótulo encontrado; chaves repetidas na mesma página preservam valores separados por quebra de linha.
+Colunas seguem a ordem de encontro e páginas seguem order_index/id. Não grava conteúdo, versões ou
+dados derivados.
+
+Strings renderizadas como texto, rolagem horizontal quando necessário e estados de vazio/erro
+explícitos. Trocar pasta limpa resultados anteriores. Chaves de consulta ficam sob a família de
+páginas: criar/mover/arquivar/excluir invalida a projeção; autosave também atualiza as projeções
+explicitamente. Sem tabela, coluna ou migração nova. Navegador e aplicação das migrações anteriores
+no banco local pendentes.
+
+Implementação da B10 concluída no escopo somente leitura aprovado. Edição nas células não incluída.
+B11 integrações é a próxima; revisão visual continua pendente.
+
+## B11: e-mail para Notes
+
+Construído, sem commit. Salvar no Notes no leitor de e-mail abre modal com título, espaço ativo e
+pasta existente (inclusive aninhada), ou raiz do espaço. Assunto sugere título, limitado a 255
+caracteres. Trocar espaço limpa a pasta. Salvar abre a nova página. Cada salvamento explícito cria
+cópia independente; alterações posteriores no e-mail não atualizam a nota. Anexos, imagens inline e
+formatação HTML não são copiados.
+
+`POST /communications/messages/{id}/notes` lê mensagem do usuário pelo fluxo OpenMessage existente,
+incluindo cache/provedor. Cliente envia apenas título/destino, nunca o corpo. Prioriza parte MIME em
+texto; e-mail somente HTML usa tokenizer MimeKit: entidades decodificadas, separação de
+parágrafos/listas/linhas preservada, scripts/styles/head/template/noscript/comentários descartados,
+sem executar HTML ou carregar recursos remotos. Corpo vira parágrafos literais; linhas parecidas com
+markdown não viram comandos ou tags.
+
+Communications chama `INoteImporter` em Notes.Abstractions. Implementação no Notes despacha
+ImportNoteCommand e CreatePageCommand normal, preservando dono do destino, busca, histórico inicial
+e datas dos blocos. Sem referência a Application/Domain/Persistence de outro módulo, acesso cruzado
+a tabelas ou evento de integração novo. Porta síncrona retorna ID da página já gravada para a UI.
+Título/conteúdo inválido ou destino indisponível não cria página parcial. Limites normais de
+tamanho/blocos da página continuam valendo.
+
+Origem em bookmark `/mail?message={id}`. MailPage mantém mensagem selecionada nessa URL e pode
+abri-la fora da lista/caixa atual. Mensagem ausente/alheia mostra erro; voltar no celular retorna à
+lista. A nota copiada continua independente se o original desaparecer. Endpoint não envia e-mail,
+muda flags do provedor ou importa anexos; acesso/retenção normal do cache de corpo continua
+ocorrendo.
+
+Exige communications.messages.read, notes.pages.read/create, notes.spaces.read e notes.folders.read,
+com os dois módulos habilitados. Ação escondida sem acesso Notes e desabilitada até carregar o corpo
+atual. Erro ao carregar destinos bloqueia salvar. Salvamento pendente bloqueia submissão
+duplicada/cancelamento; falha conserva título/destino para tentar novamente. Consultas Notes
+invalidadas após sucesso. Sem mudança de esquema ou migração. Navegador/provedor real pendentes;
+banco local preservado. Blocos vivos de Agenda/Finanças da B11 construídos; Radar/Databases/Projects
+dependem dos respectivos módulos.
+
+## B11: bloco de Agenda com dados atuais
+
+Construído, sem commit. `/Agenda` insere rich block agenda-list. Origem padrão Hoje usa a visão
+unificada do dia no fuso da conta (eventos, tarefas e lembretes, com estados atuais). Outro modo
+seleciona lista ativa e mostra somente tarefas Todo/InProgress dela. Ambos somente leitura: sem
+concluir tarefa, reconhecer lembrete ou editar evento pelo Notes. Abrir na Agenda leva à tela
+correspondente.
+
+Configuração salva apenas `{ mode: "today" }` ou `{ mode: "tasks", listId }`; props vazias usam
+today. Títulos, nomes de listas, estados, datas e resultados consultados não entram no bloco,
+autosave, texto de busca ou snapshots. Trocar modo limpa lista anterior. Lista não configurada,
+excluída, alheia ou arquivada mostra estado explícito, sem carregar todas as tarefas como fallback.
+Valida ID entre listas ativas do usuário antes de montar consulta de tarefas.
+
+Reutiliza hooks, services e famílias de query keys da Agenda. Mutações normais da Agenda atualizam
+blocos ativos pelo mesmo cache; Atualizar invalida explicitamente a origem escolhida. Mantém regras
+normais de cache/foco, sem polling ou assinatura push. Consultar/atualizar não altera nota. Datas
+exibidas usam fuso da conta e formatadores existentes; decidir o dia de hoje continua no servidor.
+Falha da API esconde linhas antigas e permite tentar novamente.
+
+Visão pública retorna Conteúdo privado antes de montar consultas, mesmo com dados do dono no cache.
+Nota privada exige feature Agenda e permissões da origem: Hoje exige
+agenda.events.read/tasks.read/reminders.read; lista exige agenda.tasks.read/lists.read. Nota
+travada/em leitura pode consultar e atualizar, mas não configurar origem/lista. Exportações
+Markdown/HTML emitem somente [Agenda], sem IDs ou valores consultados; PDF pelo navegador usa a
+visão do dono renderizada naquele momento. IDs/configuração sobrevivem ao editor e versões.
+
+Sem endpoint backend, esquema, migração ou dependência backend cruzada nova. Navegador/conta real
+pendentes. Próximos eventos construídos abaixo. Blocos Radar/Databases/Projects dependem dos respectivos módulos.
+
+## B11: resumos de Finanças com dados atuais
+
+Construído, sem commit. /Finanças insere rich block finance-summary. Conta mostra saldos
+efetivado/projetado; cartão mostra limites total/disponível, distinguindo zero de limite não
+definido. Origem arquivada, excluída ou de outro dono aparece indisponível. O ID deve estar na
+lista ativa do usuário antes da consulta de valores. Nenhuma origem é selecionada automaticamente.
+
+Despesas mensais agregam todas as páginas dos lançamentos kind=expense, status=posted, pela data
+do lançamento (from/to inclusivos). Total bruto: reembolsos não são descontados;
+pendentes/anulados, receitas, transferências e pagamentos de fatura ficam fora. Moedas permanecem
+separadas. Categorias agrupam por identidade, incluindo nomes históricos inativos; categoria
+indisponível difere de despesa sem categoria. Erro em lançamentos/categorias esconde o resultado
+para evitar total parcial.
+
+Salva somente configuração: { mode: "account", accountId }, { mode: "card", cardId } ou { mode:
+"expenses", month?: "YYYY-MM" }. Props vazias usam conta. Sem month, resolve o mês atual no fuso
+da conta; mês fixo usa datas de calendário, incluindo bissextos. Mês inválido não consulta
+valores. Trocar modo limpa origem/mês anterior. Nomes, saldos e totais não entram em persistência,
+autosave ou versões/templates.
+
+Frontend privado reutiliza hooks/services/query keys de Finanças. Mutações normais invalidam
+resumos ativos; Atualizar recarrega a origem selecionada. Cache/foco normais, sem polling.
+Consultar/atualizar não altera nota. Nota travada/em leitura pode consultar e atualizar, mas não
+configurar.
+
+Exige feature Finanças e permissões da origem: finances.accounts.read, finances.cards.read ou
+ambas finances.transactions.read e finances.categories.read. Página pública retorna Conteúdo
+privado antes de montar consultas, mesmo com cache do dono. Markdown/HTML emitem apenas
+[Finances]; PDF usa a visão do dono renderizada no momento. Sem rota backend, dependência, esquema
+ou migração nova. Navegador/conta real pendentes.
+
+Verificação: 893 testes frontend passaram (34 novos para agregação, meses, paginação, acesso,
+público, configuração, atualização e invalidação por mutação). Build/typecheck, ESLint Notes e
+antd lint passaram. Backend sem alteração; suítes não rerodadas. Navegador/conta real pendentes.
+Sem commit ou alteração no banco local.
+
+## B11: próximos eventos da Agenda
+
+Construído, sem commit. O bloco /Agenda oferece Próximos eventos. Configuração: { mode: "events",
+days: 7 | 30, calendarId?: string }; days ausente/não suportado usa 7. Sem calendarId, considera
+todos os calendários ativos, independentemente da visibilidade na tela Calendário. ID configurado
+deve estar na lista ativa do dono. Calendário ausente/arquivado/de outro dono fica indisponível,
+sem cair em todos. Lista ativa vazia não consulta eventos.
+
+Janela cobre hoje mais as próximas 6 ou 29 datas no fuso da conta. Cada meia-noite local é
+convertida separadamente para UTC, respeitando horário de verão. Fim exclusivo: meia-noite
+seguinte à última data. Mostra eventos em andamento e futuros em ordem de início; oculta
+encerrados/cancelados e início no/após limite final. Eventos de dia inteiro/vários dias usam
+formatador existente da Agenda, incluindo fim exclusivo. Janela resolve ao renderizar/reabrir e
+Atualizar; sem polling ou timer de meia-noite.
+
+Reutiliza useCalendars/useEventOccurrences e query keys da Agenda. Endpoint existente expande
+recorrências e aplica edições/cancelamentos de ocorrência; Notes não reimplementa recorrência nem
+consulta detalhe de série. Filtro envia chaves calendarIds repetidas para binding ASP.NET.
+Mutações normais de eventos/calendários invalidam blocos ativos; Atualizar recarrega ambas as
+famílias. Erro esconde resultados antigos e permite tentar novamente.
+
+Exige feature Agenda, agenda.events.read e agenda.calendars.read. Nota travada/em leitura pode
+consultar/atualizar, mas não configurar. Trocar origem limpa filtros. Persiste apenas dias/ID;
+nomes, ocorrências e datas resolvidas não entram em autosave, histórico ou templates. Página
+pública bloqueia consultas mesmo com cache do dono. Markdown/HTML mantêm [Agenda]; PDF usa a visão
+do dono renderizada. Sem mudança backend, esquema ou migração.
+
+Verificação: 909 testes frontend passaram, incluindo 16 casos novos para limites no fuso/horário
+de verão, ocorrências expandidas, eventos em andamento/dia inteiro, fim exclusivo,
+acesso/privacidade, configuração e invalidação por mutação. Build/typecheck, ESLint Notes e
+service Agenda alterado, e antd lint Notes passaram. Backend sem alteração; suítes não rerodadas.
+Navegador/conta real pendentes. Sem commit ou alteração no banco local.

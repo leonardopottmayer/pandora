@@ -6,30 +6,32 @@ namespace Pottmayer.Pandora.Modules.Notes.Application.Services;
 
 /// <summary>
 /// Keeps the <see cref="PageLink"/> graph in sync with page content. Edges are derived data: a save
-/// recomputes the whole outgoing set from the markdown and reconciles it against what is stored, so
-/// saving the same text twice changes nothing and a removed wikilink drops its edge.
+/// recomputes the whole outgoing set from the blocks and reconciles it against what is stored, so
+/// saving the same blocks twice changes nothing and a removed page link drops its edge.
 /// </summary>
 internal static class PageLinkSynchronizer
 {
     /// <summary>
-    /// Rewrites the edges whose source is <paramref name="page"/>. References that match no page of
-    /// the owner produce no edge — a "broken" link only exists in the text, never in the graph.
+    /// Rewrites the edges whose source is <paramref name="page"/>: a page named in the text is a
+    /// <see cref="PageLinkKind.Wikilink"/>, a page-link block an <see cref="PageLinkKind.Embed"/>. Ids that
+    /// are not the owner's live pages produce no edge.
     /// </summary>
     public static async Task RebuildAsync(
         Page page,
+        PageContent content,
         IPageRepository pages,
         IPageLinkRepository links,
         TimeProvider timeProvider,
         CancellationToken ct)
     {
-        var desired = await ResolveEdgesAsync(page, pages, ct);
+        var desired = await ResolveEdgesAsync(page, content, pages, ct);
         var existing = await links.GetBySourceAsync(page.Id, ct);
 
         var stale = existing.Where(l => !desired.Contains((l.TargetPageId, l.Kind.Value))).ToList();
         if (stale.Count > 0)
             await links.RemoveRangeAsync(stale, ct);
 
-        // Only genuinely new edges are inserted; re-saving unchanged text touches nothing (and never
+        // Only genuinely new edges are inserted; re-saving unchanged blocks touches nothing (and never
         // deletes then re-inserts the same row, which the unique index would reject mid-transaction).
         var kept = existing.Select(l => (l.TargetPageId, l.Kind.Value)).ToHashSet();
         foreach (var (targetId, kind) in desired.Where(e => !kept.Contains(e)))
@@ -37,51 +39,21 @@ internal static class PageLinkSynchronizer
                 PageLink.Create(page.Id, targetId, PageLinkKind.FromValue(kind), timeProvider), ct);
     }
 
-    /// <summary>The edges the page's markdown asks for, as (target id, kind) pairs.</summary>
+    /// <summary>The edges the page's blocks ask for, as (target id, kind) pairs.</summary>
     private static async Task<HashSet<(Guid TargetId, string Kind)>> ResolveEdgesAsync(
-        Page page, IPageRepository pages, CancellationToken ct)
+        Page page, PageContent content, IPageRepository pages, CancellationToken ct)
     {
-        var references = WikilinkParser.Parse(page.ContentMarkdown);
-        if (references.Count == 0)
+        var ids = content.MentionedPageIds.Concat(content.LinkedPageIds).ToHashSet();
+        if (ids.Count == 0)
             return [];
 
-        // A reference may be written as the page's title ("[[My Notes]]") or as its slug
-        // ("[[my-notes]]"), so both spellings are looked up in one round trip.
-        var lowerTitles = references.Select(r => r.Target.ToLowerInvariant()).Distinct().ToList();
-        var slugs = references.Select(r => Slugger.From(r.Target)).Distinct().ToList();
+        var live = (await pages.GetByIdsForUserAsync(ids, page.UserId, ct)).Select(p => p.Id).ToHashSet();
 
-        var candidates = await pages.FindByTitlesOrSlugsAsync(page.UserId, lowerTitles, slugs, ct);
-        if (candidates.Count == 0)
-            return [];
-
-        // Two spaces may each hold a "Meeting notes": the one in the linking page's own space wins, and
-        // only a title no page here has reaches into the other spaces.
-        candidates = [.. candidates.OrderBy(p => p.SpaceId == page.SpaceId ? 0 : 1)];
-
-        var byTitle = candidates
-            .GroupBy(p => p.Title.ToLowerInvariant())
-            .ToDictionary(g => g.Key, g => g.First().Id);
-        var bySlug = candidates
-            .GroupBy(p => p.Slug)
-            .ToDictionary(g => g.Key, g => g.First().Id);
-
-        // Two spellings of the same page ("[[My Notes]]" and "[[my-notes]]") collapse into one edge.
         var edges = new HashSet<(Guid, string)>();
-        foreach (var reference in references)
-        {
-            if (Resolve(reference.Target, byTitle, bySlug, out var targetId))
-                edges.Add((targetId, reference.Kind.Value));
-        }
-
+        foreach (var id in content.MentionedPageIds.Where(live.Contains))
+            edges.Add((id, PageLinkKind.Wikilink.Value));
+        foreach (var id in content.LinkedPageIds.Where(live.Contains))
+            edges.Add((id, PageLinkKind.Embed.Value));
         return edges;
     }
-
-    /// <summary>Title first (what the author most likely typed), then the slugified form.</summary>
-    private static bool Resolve(
-        string target,
-        IReadOnlyDictionary<string, Guid> byTitle,
-        IReadOnlyDictionary<string, Guid> bySlug,
-        out Guid targetId)
-        => byTitle.TryGetValue(target.ToLowerInvariant(), out targetId) ||
-           bySlug.TryGetValue(Slugger.From(target), out targetId);
 }

@@ -91,7 +91,11 @@ e `app.UseTarsUserContext()`.
 
 - **Arquivo:** [`Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Infrastructure/DI/InfrastructureDI.cs`](../../../backend/src/Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Infrastructure/DI/InfrastructureDI.cs)
 - **Chamadas:** `AddTarsAiChatGeminiOptions`, `AddTarsAiChatGeminiHttpClient`, `AddTarsAiChatCompletionClientGemini`, `AddTarsAiClientFactory`.
-- Só o Assistant usa. Nenhuma API key é configurada: a chave Gemini de cada usuário vem do Integrations e vai na requisição; a seção de options (`Tars:Ai:Chat:Gemini`) só leva a URL base e o timeout.
+- Só o Assistant chama o provider. Nenhuma API key é configurada: a chave Gemini de cada usuário vem do Integrations e vai na requisição; a seção de options (`Tars:Ai:Chat:Gemini`) só leva a URL base e o timeout.
+- Notes B9 reutiliza isso via `ITextCompletion` em `Assistant.Abstractions`, registrado por
+  `AddAssistantApplication`. A implementação passa pelo comando autorizado `CompleteTextCommand`;
+  Notes não registra outro provider nem referencia `Assistant.Application`. Só a seleção ou o
+  contexto anterior limitado da prévia é enviado ao provider.
 
 ### Feature Flags e Security / Authorization
 

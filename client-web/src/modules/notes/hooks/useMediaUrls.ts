@@ -1,13 +1,12 @@
 import { useQueries } from '@tanstack/react-query'
 import { noteKeys } from './queryKeys'
-import { parseMediaImagePaths } from '../lib/media'
 import { fetchMediaBlob } from '../services/media.service'
 
 /**
- * Resolves the images a page embeds into object URLs, so the rendered HTML can carry them.
+ * Resolves library images into object URLs, so an image block can show them.
  *
  * The URL has to be part of what React renders. Setting `img.src` after the fact — outside React's
- * model — meant any re-render that did not change the markdown restored the original path, and the
+ * model — meant any re-render that did not change the page restored the original path, and the
  * image broke: the browser cannot fetch that endpoint without the Bearer token. A theme switch, a
  * language switch and every refetch that rebuilt a prop identity did exactly that.
  *
@@ -16,11 +15,6 @@ import { fetchMediaBlob } from '../services/media.service'
  * still be showing it. Nothing revokes it — an id addresses immutable bytes, so at most one URL per
  * item exists per session, and the reload that ends the session releases them.
  */
-export function useMediaUrls(markdown: string): ReadonlyMap<string, string> {
-  return useMediaPathUrls(parseMediaImagePaths(markdown))
-}
-
-/** The same, for paths already in hand — an image node of the visual editor knows its own. */
 export function useMediaPathUrls(paths: string[]): ReadonlyMap<string, string> {
   return useQueries({
     queries: paths.map((path) => ({

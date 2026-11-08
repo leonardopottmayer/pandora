@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Alert, Button, Checkbox, Drawer, Empty, Grid, Input, Segmented, Spin, theme } from 'antd'
 import { EditOutlined, FilterOutlined, MenuOutlined, SettingOutlined } from '@ant-design/icons'
 import { ACTIONS_THAT_REMOVE, type MessageAction, type MessageSummary } from '../models'
-import { useMailboxes, useMessages } from '../hooks/useMail'
+import { useMailboxes, useMessage, useMessages } from '../hooks/useMail'
 import { ComposeDrawer, type ComposeRequest } from '../components/ComposeDrawer'
 import { MailActions } from '../components/MailActions'
 import { MailSidebar, type MailFolder } from '../components/MailSidebar'
@@ -26,20 +26,34 @@ export function MailPage() {
   const [unreadOnly, setUnreadOnly] = useState(false)
   const [q, setQ] = useState('')
   const [selected, setSelected] = useState<MessageSummary | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedId = searchParams.get('message')
+  const selectedMessage = useMessage(selectedId)
   const [checkedIds, setCheckedIds] = useState<ReadonlySet<string>>(new Set())
   const [composing, setComposing] = useState<ComposeRequest | null>(null)
 
   const messages = useMessages({ ...folder, unread: unreadOnly || undefined, q: q || undefined })
   const items = messages.data?.pages.flatMap((p) => p.items) ?? []
 
-  // The list has the row's current flags after an action; the state only remembers which one is open.
-  const current = selected && (items.find((m) => m.id === selected.id) ?? selected)
+  // Prefer current list flags; a source link can open a message outside that list.
+  const current = selectedId ? items.find((m) => m.id === selectedId)
+    ?? (selected?.id === selectedId ? selected : selectedMessage.data?.message ?? null) : null
   const checked = items.filter((m) => checkedIds.has(m.id))
   const allChecked = items.length > 0 && checked.length === items.length
 
   function onActionDone(action: MessageAction, ids: string[]) {
     setCheckedIds(new Set())
-    if (ACTIONS_THAT_REMOVE.includes(action) && selected && ids.includes(selected.id)) setSelected(null)
+    if (ACTIONS_THAT_REMOVE.includes(action) && selectedId && ids.includes(selectedId)) selectMessage(null)
+  }
+
+  function selectMessage(message: MessageSummary | null) {
+    setSelected(message)
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous)
+      if (message) next.set('message', message.id)
+      else next.delete('message')
+      return next
+    }, { replace: true })
   }
 
   function clearList() {
@@ -76,7 +90,7 @@ export function MailPage() {
           folder={folder}
           onSelect={(next) => {
             setFolder(next)
-            setSelected(null)
+            selectMessage(null)
             setFoldersOpen(false)
             clearList()
           }}
@@ -153,8 +167,8 @@ export function MailPage() {
         ) : (
           <MessageList
             messages={items}
-            selectedId={selected?.id ?? null}
-            onSelect={setSelected}
+            selectedId={selectedId}
+            onSelect={selectMessage}
             checkedIds={checkedIds}
             onCheckedChange={setCheckedIds}
             loading={messages.isLoading}
@@ -172,14 +186,17 @@ export function MailPage() {
       key={current.id}
       summary={current}
       mailboxes={mailboxes}
-      onSelect={setSelected}
+      onSelect={selectMessage}
       onActionDone={onActionDone}
       onCompose={(mode) => setComposing({ mode, message: current })}
-      onBack={narrow ? () => setSelected(null) : undefined}
+      onBack={narrow ? () => selectMessage(null) : undefined}
     />
   ) : (
     <div className="flex h-full items-center justify-center">
-      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('mail.noSelection')} />
+      {selectedId ? <div className="flex flex-col gap-3 p-4">
+        {selectedMessage.error ? <Alert type="error" showIcon title={selectedMessage.error.message} /> : <Spin />}
+        {narrow && <Button onClick={() => selectMessage(null)}>{t('mail.back')}</Button>}
+      </div> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('mail.noSelection')} />}
     </div>
   )
 
@@ -190,7 +207,7 @@ export function MailPage() {
         style={{ height: 'calc(100dvh - 112px)', border: divider, background: token.colorBgContainer }}
       >
         {narrow ? (
-          <div className="min-w-0 flex-1">{current ? reader : list}</div>
+          <div className="min-w-0 flex-1">{selectedId ? reader : list}</div>
         ) : (
           <>
             {foldersPane && (

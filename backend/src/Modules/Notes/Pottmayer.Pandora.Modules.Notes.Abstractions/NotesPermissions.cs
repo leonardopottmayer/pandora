@@ -31,6 +31,23 @@ public static class NotesPermissions
         public const string Delete = Module + "." + Resource + "." + PermissionActions.Delete;
     }
 
+    public static class Preferences
+    {
+        public const string Resource = "preferences";
+        public const string Read = Module + "." + Resource + "." + PermissionActions.Read;
+        public const string Update = Module + "." + Resource + "." + PermissionActions.Update;
+    }
+
+    public static class Folders
+    {
+        public const string Resource = "folders";
+
+        public const string Read = Module + "." + Resource + "." + PermissionActions.Read;
+        public const string Create = Module + "." + Resource + "." + PermissionActions.Create;
+        public const string Update = Module + "." + Resource + "." + PermissionActions.Update;
+        public const string Delete = Module + "." + Resource + "." + PermissionActions.Delete;
+    }
+
     public static class Media
     {
         public const string Resource = "media";

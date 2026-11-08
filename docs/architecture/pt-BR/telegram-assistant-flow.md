@@ -151,5 +151,8 @@ entrada e de saída; o contexto multi-turno é o mesmo (conversa ativa, agnósti
 - **Integrations** guarda a chave Gemini (buscada por chamada).
 - **Agenda** (ou outro) expõe a ação como `IAssistantTool`, que por dentro é só um `Command` normal do
   módulo.
-- Todo salto entre módulos é **evento de integração via outbox** — desacoplado e pronto pra virar
-  serviço separado.
+- Saltos de transporte usam **eventos de integração via outbox**. `/nota` explícito usa o port síncrono
+  `INoteCapture` em Notes.Abstractions, por comando autorizado. Acrescenta um parágrafo literal com data
+  à caixa no Notes e registra o EventId em `nte015_note_capture` junto com o save. Não precisa de modelo,
+  perfil ou chave; permissões/flags de Notes e Assistant continuam valendo. Reentregas não duplicam
+  conteúdo mesmo após purgar a página. Respostas continuam por `SendAssistantReply`/outbox.

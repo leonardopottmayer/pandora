@@ -90,7 +90,11 @@ Two middleware calls (not shown above, in the pipeline build): `app.UseTarsCorre
 
 - **File:** [`Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Infrastructure/DI/InfrastructureDI.cs`](../../../backend/src/Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Infrastructure/DI/InfrastructureDI.cs)
 - **Calls:** `AddTarsAiChatGeminiOptions`, `AddTarsAiChatGeminiHttpClient`, `AddTarsAiChatCompletionClientGemini`, `AddTarsAiClientFactory`.
-- Only the Assistant uses it. No API key is configured: each user's Gemini key comes from Integrations and goes on the request; the options section (`Tars:Ai:Chat:Gemini`) only carries the base URL and timeout.
+- Only the Assistant calls the provider. No API key is configured: each user's Gemini key comes from Integrations and goes on the request; the options section (`Tars:Ai:Chat:Gemini`) only carries the base URL and timeout.
+- Notes B9 reuses this through `ITextCompletion` in `Assistant.Abstractions`, registered by
+  `AddAssistantApplication`. Its implementation sends the authorized `CompleteTextCommand`; Notes
+  registers no provider and never references `Assistant.Application`. Only the preview's selected
+  text or bounded preceding context is sent to the provider.
 
 ### Feature Flags and Security / Authorization
 

@@ -13,6 +13,15 @@ write-once (`nte003`, `nte009`) carregam só `created_at`, porque nada ali atual
 
 As migrations ficam em `migrations/migrations/notes/`.
 
+## Recibos de captura Telegram — `nte015_note_capture`
+
+Registros imutáveis: `id` é o id do evento recebido do Channels (PK informada), `user_id`, `page_id`
+e `captured_at` UTC. O índice `ix_nte015_user_page` ajuda a localizar a página viva mais recente já
+usada para capturas, independentemente do nome/local. Não há FK de página de propósito: os recibos
+sobrevivem à lixeira/purga e restauração de versões, evitando que reentrega ressuscite texto removido.
+Não guardam o corpo da mensagem. O recibo é salvo junto com página, derivados e versão.
+Migration nova: `20261107150000-create-table-nte015-note-capture`; nenhum CREATE existente mudou nesta fatia.
+
 ## Catálogo de tabelas
 
 | # | Tabela | Conteúdo |
@@ -28,6 +37,9 @@ As migrations ficam em `migrations/migrations/notes/`.
 | nte009 | `media_rendition` | Versões derivadas de um item de mídia (miniaturas) |
 | nte010 | `page_media` | Page → item de mídia, derivada do corpo |
 | nte011 | `page_version` | Snapshots completos e imutáveis; ver [Histórico de versões](version-history.md) |
+| nte015 | `note_capture` | Recibos de captura Telegram por evento, mantidos após purgar a página |
+| nte016 | `notes_preferences` | Preferências de modelo e pasta do diário do usuário |
+| nte017 | `daily_note` | Identidade estável da página por usuário e data de calendário |
 
 > Os números nomeiam as tabelas; as migrations rodam na ordem das dependências (espaço antes da
 > page, blob store e pastas antes da mídia).
@@ -48,6 +60,7 @@ As migrations ficam em `migrations/migrations/notes/`.
 | `icon` | varchar(50) NULL | um único grafema de emoji |
 | `order_index` | int NOT NULL DEFAULT 0 | posição entre as irmãs |
 | `is_favorite` | boolean NOT NULL DEFAULT false | |
+| `is_template` | boolean NOT NULL DEFAULT false | disponível como modelo; configuração fora dos snapshots de versão |
 | `archived_at` | timestamptz NULL | arquivada = fora da árvore padrão, ainda editável |
 | `deleted_at` | timestamptz NULL | soft delete |
 | `history_number` | bigint NOT NULL | Número do último snapshot; token de concorrência otimista |
@@ -227,3 +240,47 @@ nte001_page ──parent_id──┐ (auto-referência, árvore, sem cascade)
 nte008_media_folder ──< nte002_media (folder_id) ──< nte009_media_rendition (media_id)
                          nte002 / nte009 ──storage_key──> nte003_file_blob
 ```
+
+## Notas diárias (B10)
+
+`nte016_notes_preferences` tem chave `user_id` (uuid). `daily_template_id` e `daily_folder_id`,
+nullable, guardam modelo escolhido e identidade da pasta do diário. Auditoria padrão: `created_by`,
+`created_at`, `updated_by`, `updated_at`. Sem registro = padrões. Sem FKs: referências opcionais são
+validadas por dono no uso; modelo/pasta indisponível recebe fallback após eliminação.
+
+`nte017_daily_note` tem PK UUID `id`, dono `user_id`, data de calendário `date` (PostgreSQL date /
+DateOnly) e `page_id` atual, obrigatórios. `uq_nte017_user_date` garante uma entrada por
+usuário/dia. Sem FK para página: o registro sobrevive à eliminação e troca a referência no próximo
+acesso. Restaurar página antiga preserva o registro atual. Identidade fora das versões de página,
+estável após renomear/mover/arquivar.
+
+Novas migrações CREATE/down: `20261107160000-create-table-nte016-notes-preferences` e
+`20261107160001-create-table-nte017-daily-note`. Banco local não migrado nem recriado.
+
+## Projeção de propriedades da pasta
+
+A tabela da pasta é derivada na leitura dos blocos properties existentes (`props.rows[{key,value}]`,
+arrays de inlines). `PageContent.Properties()` extrai linhas com nome, inclusive em blocos
+aninhados. API agrupa nomes sem distinguir maiúsculas/minúsculas e preserva valores repetidos com
+quebras de linha. Sem coluna/tabela persistida, regravação do conteúdo ou versão nova.
+
+## Configuração de Agenda ao vivo
+
+agenda-list usa somente o JSON de conteúdo existente: modo today/tasks e listId opcional. Bloco não
+persiste nomes de listas, títulos de tarefas, estados, datas ou resultados consultados. Front
+autenticado resolve esses dados. Restaurar versões/modelos conserva configuração, sem snapshot
+histórico da Agenda; listas indisponíveis são indicadas na leitura.
+
+## Configuração de Finanças
+
+finance-summary usa JSON existente: mode account/card/expenses e accountId/cardId ou month
+opcional (YYYY-MM). Versões/templates mantêm somente configuração; restauração resolve valores
+atuais. Nomes, valores, totais por moeda e linhas consultadas não são persistidos. Sem mudança de
+esquema/migração.
+
+## Configuração de próximos eventos
+
+agenda-list aceita também { mode: "events", days: 7 | 30, calendarId?: string }. Padrão: 7 dias,
+todos os calendários ativos. Salva apenas filtros; limites UTC, nomes e ocorrências resolvem na
+renderização. Versões/templates mantêm configuração sem snapshot de dados consultados. Sem
+esquema/migração nova.

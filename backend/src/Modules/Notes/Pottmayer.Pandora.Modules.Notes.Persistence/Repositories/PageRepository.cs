@@ -11,6 +11,16 @@ namespace Pottmayer.Pandora.Modules.Notes.Persistence.Repositories;
 public sealed class PageRepository(IDataContextAccessor accessor)
     : StandardRepository<Page, Guid>(accessor), IPageRepository
 {
+    public async Task<IReadOnlyList<Page>> GetInFolderAsync(Guid userId, Guid folderId, bool includeArchived,
+        IReadOnlyCollection<Guid>? pageIds = null, CancellationToken ct = default)
+    {
+        if (pageIds is { Count: 0 }) return [];
+        return await Queryable().AsNoTracking()
+            .Where(page => page.UserId == userId && page.FolderId == folderId && page.ParentId == null && page.DeletedAt == null &&
+                (includeArchived || page.ArchivedAt == null) && (pageIds == null || pageIds.Contains(page.Id)))
+            .OrderBy(page => page.OrderIndex).ThenBy(page => page.Id).ToListAsync(ct);
+    }
+
     public Task<Page?> FindByIdForUserAsync(Guid id, Guid userId, CancellationToken ct = default)
         => Queryable().FirstOrDefaultAsync(
             p => p.Id == id && p.UserId == userId && p.DeletedAt == null, ct);
@@ -45,21 +55,6 @@ public sealed class PageRepository(IDataContextAccessor accessor)
         => Queryable().AnyAsync(
             p => p.UserId == userId && p.Slug == slug && p.DeletedAt == null, ct);
 
-    public async Task<IReadOnlyList<Page>> FindByTitlesOrSlugsAsync(
-        Guid userId,
-        IReadOnlyCollection<string> lowerTitles,
-        IReadOnlyCollection<string> slugs,
-        CancellationToken ct = default)
-    {
-        if (lowerTitles.Count == 0 && slugs.Count == 0)
-            return [];
-
-        return await Queryable()
-            .Where(p => p.UserId == userId && p.DeletedAt == null &&
-                        (slugs.Contains(p.Slug) || lowerTitles.Contains(p.Title.ToLower())))
-            .ToListAsync(ct);
-    }
-
     public async Task<IReadOnlyList<Page>> GetByIdsForUserAsync(
         IReadOnlyCollection<Guid> ids, Guid userId, CancellationToken ct = default)
     {
@@ -83,6 +78,31 @@ public sealed class PageRepository(IDataContextAccessor accessor)
 
         return rows.ToDictionary(r => r.Key, r => new SpacePageStats(r.Count, r.Last));
     }
+
+    public async Task<IReadOnlyList<Page>> GetRecentForUserAsync(Guid userId, int limit, CancellationToken ct = default)
+        => await Queryable()
+            .Where(p => p.UserId == userId && p.DeletedAt == null && p.ViewedAt != null)
+            .OrderByDescending(p => p.ViewedAt)
+            .Take(limit)
+            .ToListAsync(ct);
+
+    public async Task<bool> MarkViewedAsync(Guid id, Guid userId, DateTimeOffset at, CancellationToken ct = default)
+        => await Queryable()
+            .Where(p => p.Id == id && p.UserId == userId && p.DeletedAt == null)
+            .ExecuteUpdateAsync(set => set.SetProperty(p => p.ViewedAt, at), ct) > 0;
+
+    public async Task<IReadOnlyList<Page>> GetDeletedForUserAsync(Guid userId, CancellationToken ct = default)
+        => await Queryable()
+            .Where(p => p.UserId == userId && p.DeletedAt != null)
+            .OrderByDescending(p => p.DeletedAt)
+            .ThenBy(p => p.Id)
+            .ToListAsync(ct);
+
+    public Task PurgeAsync(Guid id, Guid userId, CancellationToken ct = default)
+        => Queryable().Where(p => p.Id == id && p.UserId == userId && p.DeletedAt != null).ExecuteDeleteAsync(ct);
+
+    public Task<Page?> FindByPublicTokenAsync(string token, CancellationToken ct = default)
+        => Queryable().AsNoTracking().FirstOrDefaultAsync(p => p.PublicToken == token && p.DeletedAt == null, ct);
 
     public async Task<IReadOnlyList<Page>> SearchAsync(
         Guid userId, string tsQuery, int limit, Guid? spaceId = null,

@@ -19,7 +19,8 @@ namespace Pottmayer.Pandora.Modules.Channels.Infrastructure.Ingress;
 
 /// <summary>
 /// Classifies one inbound Telegram update by its structure and acts: links a chat on
-/// <c>/start &lt;token&gt;</c>, answers other slash commands locally, and turns free text or media
+/// <c>/start &lt;token&gt;</c>, forwards text-only <c>/nota</c> on the assistant bot, answers other slash
+/// commands locally, and turns free text or media
 /// from a linked user into an <see cref="InboundMessageReceived"/> event. It never interprets meaning
 /// — that is the Assistant's job.
 /// </summary>
@@ -87,7 +88,10 @@ public sealed class TelegramInboundTriage(
 
         var chatId = ChatId(message.Chat);
 
-        if (TelegramCommand.TryParse(message.Text, out var command, out var argument))
+        // Normalize separators only for routing; the capture's original text and line breaks stay intact.
+        var isNoteCapture = bot.Equals("assistant", StringComparison.OrdinalIgnoreCase) && message.Media is null &&
+            TelegramCommand.TryParse(message.Text?.ReplaceLineEndings(" ").Replace('\t', ' '), out var routedCommand, out _) && routedCommand == "nota";
+        if (!isNoteCapture && TelegramCommand.TryParse(message.Text, out var command, out var argument))
             return await HandleCommandAsync(client, chatId, message, command, argument, ct);
 
         var userId = await ResolveUserAsync(chatId, ct);
@@ -135,7 +139,7 @@ public sealed class TelegramInboundTriage(
             return new Outcome(InboundClassification.Command, result.IsSuccess ? result.Value : null, Event: null);
         }
 
-        // Every other command is answered locally and never becomes an event.
+        // Other commands are answered locally; the assistant bot's text capture was routed above.
         await ReplyAsync(client, chatId,
             "I forward your Pandora notifications and take your notes. Connect from Pandora settings if you haven't.", ct);
         return new Outcome(InboundClassification.Command, await ResolveUserAsync(chatId, ct), Event: null);

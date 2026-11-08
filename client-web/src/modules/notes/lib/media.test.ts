@@ -1,52 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import {
-  mediaFileName,
-  isMediaUrl,
-  parseMediaImagePaths,
-  withMediaUrls,
-} from './media'
+import { isMediaUrl, mediaFileName } from './media'
 
 const PATH = '/api/v1/notes/media/aaaaaaaa-0000-0000-0000-000000000001'
-const OTHER = '/api/v1/notes/media/bbbbbbbb-0000-0000-0000-000000000002'
-
-describe('parseMediaImagePaths', () => {
-  it('finds embedded images', () => {
-    expect(parseMediaImagePaths(`![foto](${PATH})`)).toEqual([PATH])
-  })
-
-  it('deduplicates the same image embedded twice', () => {
-    expect(parseMediaImagePaths(`![a](${PATH}) e ![b](${PATH})`)).toEqual([PATH])
-  })
-
-  it('ignores plain links, which are only fetched when clicked', () => {
-    expect(parseMediaImagePaths(`[manual.pdf](${PATH})`)).toEqual([])
-  })
-
-  it('finds an image written as html', () => {
-    expect(parseMediaImagePaths(`<img src="${PATH}" width="200"> <IMG alt='x' src='${OTHER}'>`)).toEqual([PATH, OTHER])
-  })
-
-  it('ignores images that are not attachments', () => {
-    expect(parseMediaImagePaths('![externa](https://exemplo.com/a.png)')).toEqual([])
-  })
-})
-
-describe('withMediaUrls', () => {
-  const urls = new Map([[PATH, 'blob:fake-1']])
-
-  it('points an image at its object url', () => {
-    expect(withMediaUrls(`<img src="${PATH}">`, urls)).toBe('<img src="blob:fake-1">')
-  })
-
-  it('leaves a link href alone, since the click handler needs the api path', () => {
-    const html = `<a href="${PATH}">manual.pdf</a>`
-    expect(withMediaUrls(html, urls)).toBe(html)
-  })
-
-  it('holds back the src of an image with no url yet, so the browser never fetches it without a token', () => {
-    expect(withMediaUrls(`<img src="${OTHER}">`, urls)).toBe(`<img data-media-src="${OTHER}">`)
-  })
-})
 
 describe('mediaFileName', () => {
   it('prefers the markdown label, which is the original file name', () => {

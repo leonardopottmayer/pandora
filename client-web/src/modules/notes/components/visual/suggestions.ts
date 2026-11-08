@@ -10,8 +10,10 @@ export interface MenuEntry {
   /** An emoji before the label: a page's own icon. */
   icon?: string
   label: string
-  /** Muted text beside the label: a group, the slug of a page. */
+  /** Muted text beside the label: the slug of a page. */
   hint?: string
+  /** The category it is listed under; a heading opens each new one. */
+  section?: string
 }
 
 export interface MenuState {
@@ -31,7 +33,8 @@ interface TriggerOptions<T> {
   name: string
   char: string
   allowSpaces?: boolean
-  items: (query: string) => T[]
+  /** What the typed query offers; may be read from the server. */
+  items: (query: string) => T[] | Promise<T[]>
   entry: (item: T) => MenuEntry
   /** Replaces the typed trigger (`range`) with what the item stands for. */
   apply: (editor: Editor, range: Range, item: T) => void

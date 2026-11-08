@@ -3,16 +3,15 @@
 > Um Notion/Obsidian pessoal dentro do monolito modular Pandora.
 > **Idioma:** o inglês é a documentação principal. 🇺🇸 [English version](../README.md).
 
-O módulo **Notes** é uma base de conhecimento em markdown para um único usuário: **pages**
-hierárquicas numa sidebar em árvore, uma **biblioteca de mídia** de imagens e arquivos, `[[wikilinks]]` com
-backlinks, `#tags`, busca full-text, uma **visão em grafo** force-directed e um editor CodeMirror
-estilo Obsidian com slash commands, callouts e tabelas markdown.
+O módulo **Notes** é uma base de conhecimento para um único usuário: **pages** hierárquicas numa
+sidebar em árvore, uma **biblioteca de mídia** de imagens e arquivos, links entre páginas com backlinks,
+tags, busca full-text, uma **visão em grafo** force-directed e um editor de blocos estilo Notion.
 
-A regra que rege o módulo inteiro: **o markdown é a única fonte da verdade.** Links e tags não são
-cadastrados em formulário — são escritos no texto, e o backend materializa as linhas a cada save. Um
-`.md` exportado leva junto tudo que importa; o banco só guarda o que o texto puro não consegue
-lembrar (a cor de uma tag) e o que o texto puro não responde rápido (o grafo de links, o vetor de
-busca).
+**Uma página é um documento de blocos** (desde a reforma em blocos, 2026-11-07): cada parágrafo,
+título, item de lista, imagem ou tabela é um bloco com id estável, guardado como um documento `jsonb`
+por página. Links, tags, uso de mídia e o texto da busca saem dos blocos a cada save. O plano e o
+formato estão no [Plano de Produto](product-plan.md); os arquivos abaixo ainda descrevem a era do
+markdown até cada etapa do plano reescrevê-los.
 
 ---
 
@@ -38,6 +37,7 @@ precisar. Cada arquivo traz o *contexto de produto* (o que significa para o usu�
 | 10a | [Histórico de versões](version-history.md) | Snapshots completos, comparação e restauração reversível |
 | 11 | [Referência de API](api-reference.md) | Todos os endpoints em `/api/v{n}/notes` |
 | 12 | [Status de implementação](implementation-status.md) | O que está pronto vs. planejado |
+| 13 | [Plano de Produto — reforma em blocos](product-plan.md) | O formato dos blocos, dados derivados, decisões e as etapas B1–B11 |
 
 ---
 
@@ -45,6 +45,6 @@ precisar. Cada arquivo traz o *contexto de produto* (o que significa para o usu�
 
 - **Backend:** `Pottmayer.Pandora.Modules.Notes.*` (.NET 10, DDD, comandos/queries estilo CQRS).
 - **Schema:** schema PostgreSQL `notes`, tabelas com prefixo `nteXXX_`, PK `uuid_generate_v7()`.
-- **Frontend:** `client-web/src/modules/notes` (React + TanStack Query + CodeMirror 6).
+- **Frontend:** `client-web/src/modules/notes` (React + TanStack Query + TipTap).
 - **Base da API:** `/api/v{version}/notes`, autenticada, escopada ao usuário do token.
 - **Migrations:** `migrations/migrations/notes/`.

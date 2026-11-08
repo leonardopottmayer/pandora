@@ -2,11 +2,12 @@ using System.Text.Json;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using Pottmayer.Pandora.Modules.Notes.Abstractions;
+using Pottmayer.Pandora.Modules.Notes.Domain.ValueObjects;
 
 namespace Pottmayer.Pandora.Modules.Notes.Application.Assistant;
 
 /// <summary>
-/// <c>read_note</c>: sends the user one note whole — its title and markdown body, as written. The body goes
+/// <c>read_note</c>: sends the user one note whole — its title and blocks, as readable text. The body goes
 /// straight to the user (a long one in several messages); the history keeps a content-free recap.
 /// </summary>
 public sealed class ReadNoteTool(ISender sender) : IAssistantTool
@@ -43,7 +44,7 @@ public sealed class ReadNoteTool(ISender sender) : IAssistantTool
         if (page is null)
             return AssistantCommandOutcome.Failed(problem!);
 
-        var body = page.ContentMarkdown.Trim();
+        var body = PageContent.Parse(page.Content.GetRawText()).ToReadableText();
         return AssistantCommandOutcome.Ok(
             body.Length == 0
                 ? context.Text($"{page.Title}\n\n(nota vazia)", $"{page.Title}\n\n(empty note)")

@@ -1,4 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
+using Pottmayer.Pandora.Modules.Assistant.Abstractions.Text;
+using Pottmayer.Pandora.Modules.Assistant.Application.Services;
 using Pottmayer.Pandora.Modules.Assistant.Application.Integrations;
 using Pottmayer.Pandora.Modules.Assistant.Application.Interpret;
 using Pottmayer.Pandora.Modules.Integrations.Abstractions.Ports;
@@ -19,6 +21,7 @@ public static class ApplicationDI
 
         // Locale + zone for confirmations and button taps (the pipeline builds its own).
         services.AddScoped<AssistantToolContextResolver>();
+        services.AddScoped<ITextCompletion, TextCompletion>();
 
         // Tells Integrations which account the assistant uses, for the connections screen's "used by".
         services.AddScoped<IExternalAccountUsageSource, AssistantAccountUsageSource>();

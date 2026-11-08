@@ -26,8 +26,8 @@ ON notes.nte011_page_version (page_id, number);
 -- Existing pages start here; this does not claim to reconstruct their earlier history.
 INSERT INTO notes.nte011_page_version (page_id, user_id, number, created_at, source, snapshot)
 SELECT id, user_id, 1, current_timestamp, 'initial', jsonb_build_object(
-	'Title', title, 'ContentMarkdown', content_markdown, 'Icon', icon,
-	'SpaceId', space_id, 'ParentId', parent_id, 'OrderIndex', order_index,
+	'Title', title, 'Content', content::text, 'Icon', icon,
+	'SpaceId', space_id, 'ParentId', parent_id, 'FolderId', folder_id, 'OrderIndex', order_index,
 	'IsFavorite', is_favorite, 'ArchivedAt', archived_at, 'DeletedAt', deleted_at
 )
 FROM notes.nte001_page;

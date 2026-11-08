@@ -4,6 +4,7 @@ using Pottmayer.Pandora.Modules.Notes.Application.Assistant;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.CreatePage;
 using Pottmayer.Pandora.Modules.Notes.Application.Dtos;
 using Pottmayer.Pandora.Modules.Notes.Application.Queries.GetSpaces;
+using Pottmayer.Pandora.Modules.Notes.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using Pottmayer.Tars.Core.Mediator.Abstractions.Messaging;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
@@ -34,8 +35,8 @@ public sealed class CreateNoteToolTests
             var input = ((CreatePageCommand)(object)request).Input;
             Created.Add(input);
             object page = Result<PageDto>.Success(new PageDto(
-                Guid.NewGuid(), input.SpaceId ?? Guid.NewGuid(), input.ParentId, input.Title, "slug", input.ContentMarkdown ?? "", input.Icon,
-                0, false, false, DateTimeOffset.UtcNow, null, []));
+                Guid.NewGuid(), input.SpaceId ?? Guid.NewGuid(), input.ParentId, input.FolderId, input.Title, "slug", JsonDocument.Parse(input.Content ?? PageContent.Empty.Json).RootElement.Clone(), input.Icon,
+                0, false, false, DateTimeOffset.UtcNow, null, [], PageAppearance.Default, false, null, null, null));
             return ValueTask.FromResult((TResponse)page);
         }
     }
@@ -53,7 +54,7 @@ public sealed class CreateNoteToolTests
         var input = Assert.Single(sender.Created);
         Assert.Equal(Context.UserId, input.UserId);
         Assert.Null(input.ParentId);
-        Assert.Equal("Senha: girassol2024", input.ContentMarkdown);
+        Assert.Equal("Senha: girassol2024", PageContent.Parse(input.Content).Text);
         Assert.Equal("Nota \"Wifi da mãe\" criada no Notes.", outcome.Message);
     }
 

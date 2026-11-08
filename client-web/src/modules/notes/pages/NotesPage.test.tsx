@@ -30,20 +30,29 @@ const summary = (id: string, title: string, parentId: string | null): PageSummar
   id,
   spaceId: 's1',
   parentId,
+  folderId: null,
+  createdAt: '2026-11-01T00:00:00Z',
+  updatedAt: null,
   title,
   slug: id,
   icon: null,
   orderIndex: 0,
   isFavorite: false,
+  isTemplate: false,
   isArchived: false,
 })
 
 const child: PageDto = {
   ...summary('child', 'Packing list', 'parent'),
-  contentMarkdown: 'Passport and charger.',
+  content: { version: 1, blocks: [{ id: 'b1', type: 'paragraph', content: [{ text: 'Passport and charger.' }] }] },
   createdAt: '2026-11-01T00:00:00Z',
   updatedAt: new Date().toISOString(),
   tags: [],
+  appearance: { cover: null, width: 'normal', font: 'default', smallText: false },
+  isLocked: false,
+  verifiedAt: null,
+  verifiedUntil: null,
+  publicToken: null,
 }
 
 /** antd reads the width through matchMedia; the test setup answers "no" to every query, a phone. */
@@ -78,6 +87,53 @@ beforeAll(async () => {
 })
 
 describe('NotesPage', () => {
+  it('saves pending edits before marking the page as a template', async () => {
+    asDesktop()
+    const writes: string[] = []
+    server.use(
+      http.put(`${BASE}/pages/child`, async ({ request }) => {
+        const body = await request.json() as { title: string }
+        writes.push('save')
+        return ok({ ...child, title: body.title })
+      }),
+      http.put(`${BASE}/pages/child/template`, async ({ request }) => {
+        expect(await request.json()).toEqual({ isTemplate: true })
+        writes.push('template')
+        return ok({ ...child, title: 'Packing list updated', isTemplate: true })
+      }),
+    )
+    renderPage()
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Page title' }), ' updated')
+    await userEvent.click(screen.getByRole('button', { name: 'Page options' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Use as template' }))
+    await waitFor(() => expect(writes).toEqual(['save', 'template']))
+  })
+
+  it('saves pending edits before opening the whole-page summary preview', async () => {
+    asDesktop()
+    let saved = false
+    server.use(http.put(`${BASE}/pages/child`, async ({ request }) => {
+      const body = await request.json() as { title: string }
+      saved = true
+      return ok({ ...child, title: body.title })
+    }),
+      http.get(`${BASE}/pages/recent`, () => ok([])),
+      http.get(`${BASE}/pages/child/comments`, () => ok([])),
+      http.get(`${BASE}/pages/child/block-stamps`, () => ok([])),
+      http.post(`${BASE}/pages/child/viewed`, () => ok(true)),
+      http.get(`${BASE}/media`, () => ok([])),
+      http.get(`${BASE}/media-folders`, () => ok({ folders: [], unsortedCount: 0, unusedCount: 0, totalCount: 0, totalBytes: 0, unusedBytes: 0 })),
+    )
+    renderPage()
+    const title = await screen.findByRole('textbox', { name: 'Page title' })
+    await userEvent.type(title, ' updated')
+    await userEvent.click(screen.getByRole('button', { name: 'Page options' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Summarize page with AI' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByText('Summarize page with AI')).toBeInTheDocument()
+    expect(saved).toBe(true)
+  })
+
   it('shows a failed page load instead of spinning indefinitely', async () => {
     server.use(http.get(`${BASE}/pages/child`, () => HttpResponse.json({ success: false, errorCode: 'Unavailable', errorMessage: 'Page could not load', fieldErrors: null, traceId: null }, { status: 500 })))
     renderPage()
@@ -86,13 +142,12 @@ describe('NotesPage', () => {
   })
 
   beforeEach(() => {
-    // The editor is CodeMirror; reading mode keeps these tests on the rendered page.
-    localStorage.setItem('pandora.notes_view_mode', 'preview')
     server.use(
       http.get(`${BASE}/pages/child`, () => ok(child)),
       http.get(`${BASE}/pages/child/backlinks`, () => ok([])),
       http.get(`${BASE}/pages`, () => ok([summary('parent', 'Trip', null), summary('child', 'Packing list', 'parent')])),
       http.get(`${BASE}/spaces`, () => ok([space])),
+      http.get(`${BASE}/folders`, () => ok([])),
       http.get(`${BASE}/tags`, () => ok([])),
     )
   })

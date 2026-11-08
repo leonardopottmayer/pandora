@@ -1,3 +1,4 @@
+using Pottmayer.Pandora.Modules.Notes.Domain.ValueObjects;
 using System.Net;
 using System.Net.Http.Json;
 using Npgsql;
@@ -34,15 +35,17 @@ public sealed class PageVersionsTests : IAsyncLifetime
         await AuthAsync();
         var page = await CreateAsync();
         await SaveAsync(page.Id, "Second", "middle");
-        await SaveAsync(page.Id, "Third", "after");
-        await SaveAsync(page.Id, "Third", "after");
+        // The editor sends the same block ids again, so an unchanged page is the same document.
+        var after = NoteBlocks.Text("after");
+        await SaveAsync(page.Id, "Third", after);
+        await SaveAsync(page.Id, "Third", after);
         Assert.Equal(new long[] { 3, 2, 1 }, (await GetVersionsAsync(page.Id)).Select(v => v.Number));
-        Assert.Equal("before", (await GetVersionAsync(page.Id, 1)).Snapshot.ContentMarkdown);
-        Assert.Equal("middle", (await GetVersionAsync(page.Id, 2)).Snapshot.ContentMarkdown);
+        Assert.Equal("before", NoteBlocks.TextOf((await GetVersionAsync(page.Id, 1)).Snapshot.Content));
+        Assert.Equal("middle", NoteBlocks.TextOf((await GetVersionAsync(page.Id, 2)).Snapshot.Content));
         var last = await GetVersionAsync(page.Id, 3);
         Assert.Equal("Third", last.Snapshot.Title);
         Assert.Equal(page.SpaceId, last.Snapshot.SpaceId);
-        Assert.Equal("after", last.Snapshot.ContentMarkdown);
+        Assert.Equal("after", NoteBlocks.TextOf(last.Snapshot.Content));
         Assert.Equal(new long[] { 2, 1 }, (await GetVersionsAsync(page.Id, 3)).Select(v => v.Number));
     }
 
@@ -51,8 +54,8 @@ public sealed class PageVersionsTests : IAsyncLifetime
     {
         await AuthAsync();
         var target = await CreateAsync("Target");
-        var page = await CreateAsync(body: "[[Target]] #original");
-        await SaveAsync(page.Id, "Changed", "#changed");
+        var page = await CreateAsync(body: NoteBlocks.Doc(NoteBlocks.Tags("original"), NoteBlocks.Paragraph(NoteBlocks.Mention(target.Id))));
+        await SaveAsync(page.Id, "Changed", NoteBlocks.Doc(NoteBlocks.Tags("changed")));
         var response = await RestoreAsync(page.Id, 1, 2);
         response.EnsureSuccessStatusCode();
         var restored = (await response.Content.ReadFromJsonAsync<Envelope<PageDto>>())!.Data;
@@ -65,8 +68,8 @@ public sealed class PageVersionsTests : IAsyncLifetime
         Assert.Equal(1, snapshot.RestoredFrom);
         Assert.Equal(3, (await GetVersionsAsync(page.Id)).Count);
         (await RestoreAsync(page.Id, 2, 3)).EnsureSuccessStatusCode();
-        Assert.Equal("#changed", (await GetVersionAsync(page.Id, 4)).Snapshot.ContentMarkdown);
-        Assert.Equal("[[Target]] #original", (await GetVersionAsync(page.Id, 1)).Snapshot.ContentMarkdown);
+        Assert.Contains("\"changed\"", (await GetVersionAsync(page.Id, 4)).Snapshot.Content);
+        Assert.Contains(target.Id.ToString(), (await GetVersionAsync(page.Id, 1)).Snapshot.Content);
     }
 
     [Fact]
@@ -100,7 +103,7 @@ public sealed class PageVersionsTests : IAsyncLifetime
         await SaveAsync(page.Id, "Newer", "do not overwrite");
         Assert.Equal(HttpStatusCode.Conflict, (await RestoreAsync(page.Id, 1, 1)).StatusCode);
         Assert.Equal(2, (await GetVersionsAsync(page.Id)).Count);
-        Assert.Equal("do not overwrite", (await GetVersionAsync(page.Id, 2)).Snapshot.ContentMarkdown);
+        Assert.Equal("do not overwrite", NoteBlocks.TextOf((await GetVersionAsync(page.Id, 2)).Snapshot.Content));
     }
 
     [Fact]
@@ -152,7 +155,7 @@ public sealed class PageVersionsTests : IAsyncLifetime
                     if (Interlocked.Increment(ref readers) == 2)
                         ready.SetResult();
                     await ready.Task.WaitAsync(TimeSpan.FromSeconds(10));
-                    loaded.Update(text, null, text);
+                    loaded.Update(text, null, PageContent.FromText(text));
                     await repo.UpdateAsync(loaded, ct);
                     return true;
                 });
@@ -167,7 +170,7 @@ public sealed class PageVersionsTests : IAsyncLifetime
         Assert.Single(results, success => success);
         Assert.Equal(2, (await GetVersionsAsync(page.Id)).Count);
         var latest = await GetVersionAsync(page.Id, 2);
-        Assert.Equal(latest.Snapshot.Title, latest.Snapshot.ContentMarkdown);
+        Assert.Equal(latest.Snapshot.Title, NoteBlocks.TextOf(latest.Snapshot.Content));
     }
 
     [Fact]
@@ -191,7 +194,7 @@ public sealed class PageVersionsTests : IAsyncLifetime
     public async Task Migration_backfills_existing_pages_with_their_full_current_state()
     {
         await AuthAsync();
-        var page = await CreateAsync(body: "Existing markdown");
+        var page = await CreateAsync(body: "Existing text");
         (await _client.PostAsync($"{Url}/{page.Id}/favorite", null)).EnsureSuccessStatusCode();
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null && !Directory.Exists(Path.Combine(directory.FullName, "migrations", "migrations"))) directory = directory.Parent;
@@ -208,7 +211,7 @@ public sealed class PageVersionsTests : IAsyncLifetime
         await transaction.CommitAsync();
         var baseline = await GetVersionAsync(page.Id, 1);
         Assert.Equal("initial", baseline.Source);
-        Assert.Equal("Existing markdown", baseline.Snapshot.ContentMarkdown);
+        Assert.Equal("Existing text", NoteBlocks.TextOf(baseline.Snapshot.Content));
         Assert.True(baseline.Snapshot.IsFavorite);
         Assert.Equal(page.SpaceId, baseline.Snapshot.SpaceId);
         await SaveAsync(page.Id, "After migration", "new");
@@ -218,15 +221,18 @@ public sealed class PageVersionsTests : IAsyncLifetime
     private Task AuthAsync(string name = "versions") => IdentityHelper.AuthenticateAsync(
         _client, _factory.ConnectionString, $"{name}@example.com", name);
 
-    private async Task<PageDto> CreateAsync(string title = "Original", string body = "before", Guid? parentId = null)
+    private async Task<PageDto> CreateAsync(string title = "Original", object? body = null, Guid? parentId = null)
     {
-        var response = await _client.PostAsJsonAsync(Url, new { title, contentMarkdown = body, parentId });
+        var response = await _client.PostAsJsonAsync(Url, new { title, content = Content(body ?? "before"), parentId });
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<Envelope<PageDto>>())!.Data;
     }
 
-    private async Task SaveAsync(Guid id, string title, string body)
-        => (await _client.PutAsJsonAsync($"{Url}/{id}", new { title, contentMarkdown = body })).EnsureSuccessStatusCode();
+    private async Task SaveAsync(Guid id, string title, object body)
+        => (await _client.PutAsJsonAsync($"{Url}/{id}", new { title, content = Content(body) })).EnsureSuccessStatusCode();
+
+    /// <summary>Text becomes a one-paragraph document; a document goes as built.</summary>
+    private static object Content(object body) => body is string text ? NoteBlocks.Text(text) : body;
 
     private async Task<IReadOnlyList<PageVersionSummaryDto>> GetVersionsAsync(Guid id, long? before = null)
         => (await _client.GetFromJsonAsync<Envelope<IReadOnlyList<PageVersionSummaryDto>>>($"{Url}/{id}/versions?before={before}"))!.Data;

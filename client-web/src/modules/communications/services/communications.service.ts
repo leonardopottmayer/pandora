@@ -17,6 +17,11 @@ import type {
 
 const BASE = '/api/v1/communications'
 
+export async function saveMessageToNotes(id: string, body: { title: string; spaceId: string | null; folderId: string | null }): Promise<string> {
+  const { data } = await apiClient.post<string>(`${BASE}/messages/${id}/notes`, body)
+  return data
+}
+
 export interface ServerSettings {
   imapHost: string
   imapPort: number
@@ -186,7 +191,7 @@ export async function listMessages(filter: MessageFilter, before?: string, limit
 
 /** The first open fetches the message from the server; later ones read the cache. */
 export async function getMessage(id: string): Promise<MailMessage> {
-  const { data } = await apiClient.get<MailMessage>(`${BASE}/messages/${id}`)
+  const { data } = await apiClient.get<MailMessage>(`${BASE}/messages/${encodeURIComponent(id)}`)
   return data
 }
 

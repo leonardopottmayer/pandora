@@ -1,103 +1,109 @@
 import { CALLOUT_TYPES } from './callouts'
+import { BLOCK_COLORS, TURN_INTO } from './blockStyle'
 
-// The `/` menu inserts plain markdown — every block below is something the user could have typed by
-// hand, which is what keeps the document round-trippable.
+// The `/` menu: each command is a block the editor inserts, a dialog it opens first, or a change to
+// the block the slash was typed in (a colour, another kind).
 
-interface SlashCommandBase {
+export const SLASH_GROUPS = ['basic', 'media', 'advanced', 'data', 'inline', 'embed', 'color', 'turnInto'] as const
+export type SlashGroup = (typeof SLASH_GROUPS)[number]
+
+export interface SlashCommand {
   id: string
   /** i18n key of the label shown in the menu. */
   labelKey: string
-  group: 'block' | 'callout'
+  /** Values for the label's placeholders (the colour in "Red background"). */
+  labelValues?: Record<string, string>
+  group: SlashGroup
+  /** `image` and `file` open the media library, `page` the page picker, `table` its size. */
+  prompt?: 'table' | 'image' | 'file' | 'page'
+  /** Listed only once something is typed: colours and "turn into" would bury the blocks. */
+  searchOnly?: boolean
 }
 
-/** Replaces the typed `/query` with its markdown right away. */
-export interface InsertCommand extends SlashCommandBase {
-  kind: 'insert'
-  /** Markdown that replaces the typed `/query`. */
-  text: string
-  /** Where the cursor lands afterwards, as an offset into `text`. */
-  cursor: number
-}
-
-/** Asks for something first: the editor opens the matching dialog and inserts what it answers. */
-export interface PromptCommand extends SlashCommandBase {
-  kind: 'prompt'
-  /** `image` and `file` open the media library to pick from; `page` the page picker. */
-  prompt: 'table' | 'image' | 'file' | 'page'
-}
-
-export type SlashCommand = InsertCommand | PromptCommand
-
-function block(id: string, text: string, cursor = text.length): InsertCommand {
-  return { id, labelKey: `notes.slash.${id}`, group: 'block', kind: 'insert', text, cursor }
-}
-
-function callout(type: string): InsertCommand {
-  return {
-    id: `callout-${type}`,
-    labelKey: `notes.callout.${type}`,
-    group: 'callout',
-    kind: 'insert',
-    text: `> [!${type}] `,
-    cursor: `> [!${type}] `.length,
-  }
-}
+const command = (group: SlashGroup, id: string, prompt?: SlashCommand['prompt']): SlashCommand => ({ id, labelKey: `notes.slash.${id}`, group, prompt })
 
 export const SLASH_COMMANDS: SlashCommand[] = [
-  block('h1', '# '),
-  block('h2', '## '),
-  block('h3', '### '),
-  block('bulletList', '- '),
-  block('numberedList', '1. '),
-  block('todo', '- [ ] '),
-  block('quote', '> '),
-  block('codeBlock', '```\n\n```\n', 4),
-  block('divider', '---\n\n'),
-  // The blank lines around the body are what let markdown inside a <details> still render.
-  block('toggle', '<details>\n<summary></summary>\n\n\n\n</details>\n', '<details>\n<summary>'.length),
-  { id: 'table', labelKey: 'notes.slash.table', group: 'block', kind: 'prompt', prompt: 'table' },
-  { id: 'image', labelKey: 'notes.slash.image', group: 'block', kind: 'prompt', prompt: 'image' },
-  { id: 'file', labelKey: 'notes.slash.file', group: 'block', kind: 'prompt', prompt: 'file' },
-  { id: 'wikilink', labelKey: 'notes.slash.wikilink', group: 'block', kind: 'prompt', prompt: 'page' },
-  ...CALLOUT_TYPES.map((type) => callout(type)),
+  command('basic', 'paragraph'),
+  command('basic', 'h1'),
+  command('basic', 'h2'),
+  command('basic', 'h3'),
+  command('basic', 'bulletList'),
+  command('basic', 'numberedList'),
+  command('basic', 'todo'),
+  command('basic', 'toggle'),
+  command('basic', 'toggleH1'),
+  command('basic', 'toggleH2'),
+  command('basic', 'toggleH3'),
+  command('basic', 'quote'),
+  command('basic', 'divider'),
+  ...CALLOUT_TYPES.map((type): SlashCommand => ({ id: `callout-${type}`, labelKey: `notes.callout.${type}`, group: 'basic' })),
+  command('media', 'image', 'image'),
+  command('media', 'gallery'),
+  command('media', 'video'),
+  command('media', 'audio'),
+  command('media', 'file', 'file'),
+  command('media', 'pdf'),
+  command('advanced', 'codeBlock'),
+  command('advanced', 'aiContinue'),
+  command('advanced', 'ai'),
+  command('advanced', 'mermaid'),
+  command('advanced', 'math'),
+  command('advanced', 'synced'),
+  command('advanced', 'templateButton'),
+  command('advanced', 'decision'),
+  command('advanced', 'breadcrumb'),
+  command('advanced', 'subpages'),
+  command('advanced', 'tag-pages'),
+  command('advanced', 'properties'),
+  command('advanced', 'columns2'),
+  command('advanced', 'columns3'),
+  command('advanced', 'columns4'),
+  command('data', 'table', 'table'),
+  command('data', 'agenda-list'),
+  command('data', 'finance-summary'),
+  command('inline', 'wikilink', 'page'),
+  command('inline', 'date'),
+  command('inline', 'status'),
+  command('inline', 'inlineMath'),
+  command('embed', 'pageCard', 'page'),
+  command('embed', 'pagePreview', 'page'),
+  command('embed', 'bookmark'),
+  command('embed', 'embed'),
+  ...['default', ...BLOCK_COLORS].flatMap((color): SlashCommand[] => [
+    { id: `color-${color}`, labelKey: 'notes.slash.textColor', labelValues: { color }, group: 'color', searchOnly: true },
+    { id: `background-${color}`, labelKey: 'notes.slash.backgroundColor', labelValues: { color }, group: 'color', searchOnly: true },
+  ]),
+  ...TURN_INTO.map((kind): SlashCommand => ({ id: `turn-${kind}`, labelKey: 'notes.slash.turnInto', labelValues: { kind }, group: 'turnInto', searchOnly: true })),
 ]
 
-export interface SlashTrigger {
-  /** Offset in the line where the `/` sits — the replacement starts here. */
-  from: number
-  /** What was typed after the slash, used to filter the menu. */
-  query: string
-}
-
 /**
- * The `/query` being typed at `ch`, or `null` when the cursor isn't in one. A slash only opens the
- * menu at the start of a line or after whitespace, so a path like `src/lib` never triggers it.
+ * Commands whose (already translated) label, group or id matches what was typed after the slash,
+ * in menu order: by group, then as listed.
  */
-export function slashTriggerAt(line: string, ch: number): SlashTrigger | null {
-  const before = line.slice(0, ch)
-  const slash = before.lastIndexOf('/')
-  if (slash === -1) return null
-
-  const preceding = before[slash - 1]
-  if (preceding !== undefined && !/\s/.test(preceding)) return null
-
-  const query = before.slice(slash + 1)
-  // A space closes the menu: the user moved on to writing prose.
-  if (/\s/.test(query)) return null
-
-  return { from: slash, query }
-}
-
-/** Commands whose (already translated) label or id matches what was typed after the slash. */
 export function filterCommands(
   commands: SlashCommand[],
   query: string,
   label: (command: SlashCommand) => string,
+  groupLabel: (group: SlashGroup) => string = (group) => group,
 ): SlashCommand[] {
   const term = query.trim().toLowerCase()
-  if (term.length === 0) return commands
-  return commands.filter(
-    (command) =>
-      command.id.toLowerCase().includes(term) || label(command).toLowerCase().includes(term),
-  )
+  const found = term.length === 0
+    ? commands.filter((entry) => !entry.searchOnly)
+    : commands.filter((entry) =>
+        // Each word somewhere: "fundo azul" finds "Fundo azul", "turn h1" finds "Turn into Heading 1".
+        term.split(/\s+/).every((word) =>
+          [entry.id, label(entry), groupLabel(entry.group)].some((text) => text.toLowerCase().includes(word)),
+        ),
+      )
+  return SLASH_GROUPS.flatMap((group) => found.filter((entry) => entry.group === group))
+}
+
+/** A command's label, its colour or kind put in ("Red background", "Turn into Heading 1"). */
+export function slashLabel(t: (key: string, values?: Record<string, string>) => string, entry: SlashCommand): string {
+  const values = entry.labelValues
+  if (!values) return t(entry.labelKey)
+  return t(entry.labelKey, {
+    color: values.color ? t(`notes.colors.${values.color}`) : '',
+    kind: values.kind ? t(`notes.slash.${values.kind}`) : '',
+  })
 }

@@ -147,3 +147,39 @@ A verificação achou duas coisas que os testes não tinham pegado. **As telas d
 14. **Os erros das regras estão em inglês,** como as outras mensagens do servidor, e uma regra cujo marcador sumiu mostra "Mover para ?" até ser editada.
 15. **As regras leem condições e ações de volta como o Gmail as dá,** então uma regra salva como arquivar + adicionar marcador volta como mover. Significam o mesmo.
 16. **Uma edição nas telas do Gmail pode levar minutos para chegar ao `filters.list`,** além do ciclo de 2 minutos. O Pandora mostra o que a API responde. É uma medição só, não um número para confiar.
+
+## B11: e-mail para Notes
+
+Construído, sem commit. Salvar no Notes no leitor de e-mail abre modal com título, espaço ativo e
+pasta existente (inclusive aninhada), ou raiz do espaço. Assunto sugere título, limitado a 255
+caracteres. Trocar espaço limpa a pasta. Salvar abre a nova página. Cada salvamento explícito cria
+cópia independente; alterações posteriores no e-mail não atualizam a nota. Anexos, imagens inline e
+formatação HTML não são copiados.
+
+`POST /communications/messages/{id}/notes` lê mensagem do usuário pelo fluxo OpenMessage existente,
+incluindo cache/provedor. Cliente envia apenas título/destino, nunca o corpo. Prioriza parte MIME em
+texto; e-mail somente HTML usa tokenizer MimeKit: entidades decodificadas, separação de
+parágrafos/listas/linhas preservada, scripts/styles/head/template/noscript/comentários descartados,
+sem executar HTML ou carregar recursos remotos. Corpo vira parágrafos literais; linhas parecidas com
+markdown não viram comandos ou tags.
+
+Communications chama `INoteImporter` em Notes.Abstractions. Implementação no Notes despacha
+ImportNoteCommand e CreatePageCommand normal, preservando dono do destino, busca, histórico inicial
+e datas dos blocos. Sem referência a Application/Domain/Persistence de outro módulo, acesso cruzado
+a tabelas ou evento de integração novo. Porta síncrona retorna ID da página já gravada para a UI.
+Título/conteúdo inválido ou destino indisponível não cria página parcial. Limites normais de
+tamanho/blocos da página continuam valendo.
+
+Origem em bookmark `/mail?message={id}`. MailPage mantém mensagem selecionada nessa URL e pode
+abri-la fora da lista/caixa atual. Mensagem ausente/alheia mostra erro; voltar no celular retorna à
+lista. A nota copiada continua independente se o original desaparecer. Endpoint não envia e-mail,
+muda flags do provedor ou importa anexos; acesso/retenção normal do cache de corpo continua
+ocorrendo.
+
+Exige communications.messages.read, notes.pages.read/create, notes.spaces.read e notes.folders.read,
+com os dois módulos habilitados. Ação escondida sem acesso Notes e desabilitada até carregar o corpo
+atual. Erro ao carregar destinos bloqueia salvar. Salvamento pendente bloqueia submissão
+duplicada/cancelamento; falha conserva título/destino para tentar novamente. Consultas Notes
+invalidadas após sucesso. Sem mudança de esquema ou migração. Navegador/provedor real pendentes;
+banco local preservado. Blocos vivos de Agenda/Finanças da B11 pendentes; Radar/Databases/Projects
+dependem dos respectivos módulos.

@@ -223,3 +223,11 @@ imagens".
   responde 404, igual a uma que não existe.
 - **`TimeProvider` em tudo** que lê o tempo.
 - **O outbox** é do próprio módulo (`AddTarsOutbox`, um relay), porque ele publica um evento.
+
+## Importação de texto de módulos (B11)
+
+Communications chama `Notes.Abstractions.Import.INoteImporter` com dono autenticado, título, texto
+literal, caminho/título de origem interna e destino opcional. Notes cria parágrafos comuns e
+bookmark de origem pelo ImportNoteCommand/CreatePageCommand. Retorna apenas ID da página gravada.
+Porta síncrona de aplicação, não evento de integração; sem expor internos do Notes ou aceitar
+HTML/bytes de anexos. Ver POST /messages/{id}/notes na API Communications.

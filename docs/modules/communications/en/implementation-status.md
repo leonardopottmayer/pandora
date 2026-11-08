@@ -148,3 +148,40 @@ The check found two things the tests had not caught. **Gmail's own screens keep 
 14. **Rules' errors are in English,** like the server's other messages, and a rule whose label is gone reads "Move to ?" until it is edited.
 15. **Rules read their conditions and actions back as Gmail gives them,** so a rule saved as archive + add label comes back as a move. They mean the same.
 16. **An edit in Gmail's screens can take minutes to reach `filters.list`,** on top of the 2-minute cycle. Pandora shows what the API answers. One measure, not a figure to rely on.
+
+## B11: email to Notes
+
+Built, uncommitted. Save to Notes in the message reader opens a modal for a title, active space and
+existing folder (including nested folders), or the space root. The subject suggests the title,
+bounded to 255 characters. Choosing another space clears the folder selection. Saving opens the new
+page. Every explicit save creates an independent copy; subsequent email changes do not update the
+note. Attachments, inline images and HTML formatting are not copied.
+
+`POST /communications/messages/{id}/notes` reads the authenticated owner's message through the
+existing OpenMessage flow, including its cached/provider body handling. The client supplies only
+title/destination, never the message body. Plain-text MIME content is preferred. HTML-only mail is
+converted using MimeKit's tokenizer: entities decoded, paragraph/list/line separation retained,
+scripts/styles/head/template/noscript/comments discarded, no HTML execution or remote-resource
+loading. The copied body is literal paragraph text; markdown-looking lines do not become commands or
+tags.
+
+Communications calls `INoteImporter` in Notes.Abstractions. Its Notes implementation dispatches
+ImportNoteCommand and normal CreatePageCommand, preserving destination ownership checks, search,
+initial history and block stamps. No cross-module Application/Domain/Persistence reference,
+cross-module table access or new integration event. A synchronous port returns the committed page id
+needed by the UI. Invalid titles/content or unavailable destinations create no partial page. The
+normal page content size/block limits apply.
+
+The source is a bookmark to `/mail?message={id}`. MailPage now keeps the selected message in that
+URL and can load it outside the current inbox/list. Missing/foreign messages show an error; the
+phone's back action returns to the list. The copied note remains independent if the original
+disappears. The save endpoint does not send mail, change provider flags or import attachment bytes;
+normal body-cache access/retention still occurs.
+
+Requires communications.messages.read and notes.pages.read/create, notes.spaces.read and
+notes.folders.read, with both modules enabled. The action is hidden without Notes access and
+disabled until the current mail body is loaded. Destination-query errors block saving. Pending saves
+block duplicate submission/cancel; failures keep the title/destination for retry. Notes query
+families are invalidated after success. No schema or migration change. Browser/live-provider
+validation remains pending; local database preserved. B11 live Agenda/Finances blocks remain
+pending; Radar/Databases/Projects depend on those modules.

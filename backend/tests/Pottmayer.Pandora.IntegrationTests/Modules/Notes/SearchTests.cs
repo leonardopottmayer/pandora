@@ -113,7 +113,7 @@ public sealed class SearchTests : IAsyncLifetime
         var page = await CreateAsync("Notas", "conteudo original");
 
         await _client.PutAsJsonAsync($"{Url}/{page}",
-            new { title = "Notas", contentMarkdown = "conteudo revisado" });
+            new { title = "Notas", content = NoteBlocks.Text("conteudo revisado") });
 
         Assert.Empty(await SearchAsync("original"));
         Assert.Single(await SearchAsync("revisado"));
@@ -195,9 +195,9 @@ public sealed class SearchTests : IAsyncLifetime
     private Task AuthAsync(string username) =>
         IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, $"{username}@example.com", username);
 
-    private async Task<Guid> CreateAsync(string title, string contentMarkdown)
+    private async Task<Guid> CreateAsync(string title, string text)
     {
-        var response = await _client.PostAsJsonAsync(Url, new { title, contentMarkdown });
+        var response = await _client.PostAsJsonAsync(Url, new { title, content = NoteBlocks.Text(text) });
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<SingleEnvelope>())!.Data.Id;
     }

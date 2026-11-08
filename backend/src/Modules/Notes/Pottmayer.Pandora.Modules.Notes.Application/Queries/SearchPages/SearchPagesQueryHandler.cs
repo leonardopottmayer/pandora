@@ -50,7 +50,7 @@ public sealed class SearchPagesQueryHandler(IUnitOfWorkFactory factory)
         [
             .. pages.Select(p => new PageSearchResultDto(
                 p.Id, p.SpaceId, p.Title, p.Slug, p.Icon, p.IsArchived,
-                PageSearch.Excerpt(p.ContentMarkdown, input.Term)))
+                PageSearch.Excerpt(p.ContentText, input.Term)))
         ];
 
         return Ok(results);

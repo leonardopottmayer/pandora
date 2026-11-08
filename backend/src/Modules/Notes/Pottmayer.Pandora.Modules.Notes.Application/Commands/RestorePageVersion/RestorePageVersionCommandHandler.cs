@@ -4,6 +4,7 @@ using Pottmayer.Pandora.Modules.Notes.Application.Services;
 using Pottmayer.Pandora.Modules.Notes.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Notes.Domain.Errors;
 using Pottmayer.Pandora.Modules.Notes.Domain.Ports.Repositories;
+using Pottmayer.Pandora.Modules.Notes.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
@@ -63,16 +64,24 @@ public sealed class RestorePageVersionCommandHandler(IUnitOfWorkFactory factory,
             }
 
             page.Restore(snapshot, version.Number);
+            if (page.FolderId is { } folderId &&
+                (await ctx.AcquireRepository<IFolderRepository>().FindByIdForUserAsync(folderId, input.UserId, token))?.SpaceId != page.SpaceId)
+                page.LeaveFolder();
+            var content = PageContent.Parse(page.Content);
             await pages.UpdateAsync(page, token);
 
-            await PageLinkSynchronizer.RebuildAsync(page, pages, ctx.AcquireRepository<IPageLinkRepository>(), timeProvider, token);
+            await PageLinkSynchronizer.RebuildAsync(page, content, pages, ctx.AcquireRepository<IPageLinkRepository>(), timeProvider, token);
 
             await PageMediaSynchronizer.RebuildAsync(
-                page, ctx.AcquireRepository<IMediaItemRepository>(),
+                page, content, ctx.AcquireRepository<IMediaItemRepository>(),
                 ctx.AcquireRepository<IPageMediaRepository>(), timeProvider, token);
+
+            // And when each block was written, and by what.
+            await BlockStampSynchronizer.RebuildAsync(page, content, ctx.AcquireRepository<IBlockStampRepository>(), timeProvider, token);
 
             var tags = await PageTagSynchronizer.RebuildAsync(
                 page,
+                content,
                 ctx.AcquireRepository<ITagRepository>(),
                 ctx.AcquireRepository<IPageTagRepository>(),
                 timeProvider,

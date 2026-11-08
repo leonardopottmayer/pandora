@@ -6,11 +6,15 @@ function page(id: string, parentId: string | null, orderIndex = 0): PageSummaryD
   return {
     id,
     parentId,
+    folderId: null,
+    createdAt: '2026-11-01T00:00:00Z',
+    updatedAt: null,
     title: id,
     slug: id,
     icon: null,
     orderIndex,
     isFavorite: false,
+    isTemplate: false,
     isArchived: false,
     spaceId: 's1',
   }

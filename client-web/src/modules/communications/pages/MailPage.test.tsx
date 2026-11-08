@@ -96,6 +96,35 @@ function asDesktop() {
 }
 
 describe('MailPage on a phone', () => {
+  it('opens a linked message even when it is not in the current list, and can return to the list', async () => {
+    server.use(
+      http.get(`${BASE}/mailboxes`, () => ok([mailbox])),
+      http.get(`${BASE}/mailboxes/mb1/labels`, () => ok([inbox])),
+      http.get(`${BASE}/messages`, () => ok({ items: [], nextCursor: null })),
+      http.get(`${BASE}/messages/m1`, () => ok(opened)),
+    )
+    recordActions()
+    renderWithProviders(<MailPage />, { route: '/mail?message=m1' })
+    await screen.findByTitle('Weekly digest')
+    expect(screen.getByRole('button', { name: 'Save to Notes' })).toBeEnabled()
+    await userEvent.click(screen.getByRole('button', { name: 'Back to the list' }))
+    expect(screen.queryByTitle('Weekly digest')).not.toBeInTheDocument()
+  })
+
+  it('shows a failed source link without opening an unrelated inbox message', async () => {
+    server.use(
+      http.get(`${BASE}/mailboxes`, () => ok([mailbox])),
+      http.get(`${BASE}/mailboxes/mb1/labels`, () => ok([inbox])),
+      http.get(`${BASE}/messages`, () => ok({ items: [summary], nextCursor: null })),
+      http.get(`${BASE}/messages/missing`, () => HttpResponse.json({ success: false, errorMessage: 'Message unavailable.' }, { status: 404 })),
+    )
+    renderWithProviders(<MailPage />, { route: '/mail?message=missing' })
+    expect(await screen.findByRole('alert')).toHaveTextContent('Message unavailable.')
+    expect(screen.queryByTitle('Weekly digest')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Back to the list' }))
+    expect(await screen.findByRole('checkbox', { name: 'Select: Weekly digest' })).toBeInTheDocument()
+  })
+
   it('shows the list or the open message, and goes back to the list', async () => {
     server.use(
       http.get(`${BASE}/mailboxes`, () => ok([mailbox])),

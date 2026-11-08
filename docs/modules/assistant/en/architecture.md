@@ -34,6 +34,14 @@ the key is read per call from Integrations (`IExternalCredentialProvider.GetApiK
 accountId)`) and passed as `ChatRequest.ApiKey`. Model per call too (`ChatRequest.Model`), default
 `gemini-3.6-flash` (`AssistantDefaults`). Temperature 0 everywhere.
 
+**Text generation for other modules.** `ITextCompletion` in `Assistant.Abstractions/Text` is a
+synchronous port registered in Application. `TextCompletion` sends `CompleteTextCommand`, requiring
+`assistant.commands.run` and the module feature. It reuses the user's enabled profile, model and key;
+no tools, history or prompt/invocation writes. Notes uses it for B9 writing previews, sending only
+selected text or bounded preceding context. Provider failures and empty or oversized (over 16000
+characters) responses return `Assistant.TextCompletionFailed` without provider details. This is separate
+from the interpret pipeline's read tools below, which still never resend notes to the model.
+
 ## 2. The interpret pipeline
 
 `InterpretCommandHandler` is the core; the web endpoints and the Telegram subscriber both send
@@ -170,6 +178,14 @@ The module never talks to the Bot API. Full sequence: [Telegram flow](../../../a
   commit. Channels splits replies over 4096 characters. See [Messaging](../../../architecture/en/messaging.md).
 
 The web console runs the pipeline inline in the HTTP request; Telegram runs it in the subscriber.
+
+**Explicit Notes capture.** Text-only `/nota <text>` is routed before interpretation, through
+`INoteCapture` in Notes.Abstractions. It never calls Gemini or creates conversation/invocation rows;
+an enabled AI profile/key is unnecessary. The authorized Notes command creates/reuses the capture
+page, appends a dated literal paragraph and records the inbound EventId with the save. Permissions
+and module flags still apply. Empty/oversized text gets usage; failures are reported without claiming
+success; duplicate events get an already-captured reply. All replies use `SendAssistantReply` and the
+Assistant outbox as usual. Media/captions and other text keep their original paths.
 
 ## 8. Integrations coupling
 

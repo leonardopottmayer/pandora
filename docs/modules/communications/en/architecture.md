@@ -222,3 +222,11 @@ images".
   message or account answers 404, the same as one that does not exist.
 - **`TimeProvider` everywhere** for time reads.
 - **The outbox** is the module's own (`AddTarsOutbox`, one relay), since it publishes an event.
+
+## Module text imports (B11)
+
+Communications calls `Notes.Abstractions.Import.INoteImporter` with authenticated owner, title,
+literal text, internal source path/title and optional destination. Notes creates ordinary paragraphs
+and one source bookmark through ImportNoteCommand/CreatePageCommand. It returns only the committed
+page id. This is a synchronous application port, not an integration event; it neither exposes Notes
+internals nor accepts HTML/attachment bytes. See the Communications API's POST /messages/{id}/notes.

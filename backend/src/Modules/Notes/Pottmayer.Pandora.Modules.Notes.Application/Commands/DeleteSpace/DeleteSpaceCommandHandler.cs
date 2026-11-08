@@ -25,7 +25,7 @@ public sealed class DeleteSpaceCommandHandler(IUnitOfWorkFactory factory, TimePr
 
             // Archived pages count: they still live in the space and would point at a deleted row.
             var stats = await ctx.AcquireRepository<IPageRepository>().GetSpaceStatsAsync(input.UserId, token);
-            if (stats.ContainsKey(space.Id))
+            if (stats.ContainsKey(space.Id) || await ctx.AcquireRepository<IFolderRepository>().AnyInSpaceAsync(space.Id, token))
                 return Result<bool>.Failure([SpaceErrors.NotEmpty]);
 
             space.Delete(timeProvider);

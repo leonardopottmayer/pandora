@@ -25,6 +25,8 @@ export const router = createBrowserRouter([
   // Open public routes (accessed via email link)
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/activate', element: <ActivateAccountPage /> },
+  // A page's public link: read without signing in, whoever opens it.
+  { path: '/p/:token', lazy: page(() => import('@/modules/notes/pages/PublicPage'), 'PublicPage') },
 
   // Protected (inside the AppLayout)
   {
@@ -74,6 +76,7 @@ export const router = createBrowserRouter([
       { path: 'notes/graph', lazy: page(() => import('@/modules/notes/pages/NotesGraphPage'), 'NotesGraphPage') },
       { path: 'notes/library', lazy: page(() => import('@/modules/notes/pages/LibraryPage'), 'LibraryPage') },
       { path: 'notes/s/:spaceId', lazy: page(() => import('@/modules/notes/pages/NotesPage'), 'NotesPage') },
+      { path: 'notes/f/:folderId', lazy: page(() => import('@/modules/notes/pages/NotesPage'), 'NotesPage') },
       { path: 'notes/:id', lazy: page(() => import('@/modules/notes/pages/NotesPage'), 'NotesPage') },
 
       // Files

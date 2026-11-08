@@ -1,4 +1,5 @@
 using Pottmayer.Pandora.Modules.Notes.Domain.Aggregates;
+using Pottmayer.Pandora.Modules.Notes.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Notes.Tests.Fakes;
 using Xunit;
 
@@ -16,7 +17,7 @@ public sealed class PageTests
         parentId: parentId,
         icon: "📄",
         orderIndex: 0,
-        contentMarkdown: "# hello",
+        content: PageContent.FromText("# hello"),
         timeProvider: time);
 
     [Fact]
@@ -27,7 +28,8 @@ public sealed class PageTests
         Assert.NotEqual(Guid.Empty, page.Id);
         Assert.Equal("My Note", page.Title);
         Assert.Equal("my-note", page.Slug);
-        Assert.Equal("# hello", page.ContentMarkdown);
+        Assert.Equal("hello", page.ContentText);
+        Assert.Contains("\"heading\"", page.Content);
         Assert.Equal(Now, page.CreatedAt);
         Assert.False(page.IsArchived);
         Assert.False(page.IsDeleted);
@@ -38,11 +40,11 @@ public sealed class PageTests
     {
         var page = NewPage(new FixedTimeProvider(Now));
 
-        page.Update("Renamed", "🚀", "new body");
+        page.Update("Renamed", "🚀", PageContent.FromText("new body"));
 
         Assert.Equal("Renamed", page.Title);
         Assert.Equal("🚀", page.Icon);
-        Assert.Equal("new body", page.ContentMarkdown);
+        Assert.Equal("new body", page.ContentText);
         Assert.Equal("my-note", page.Slug); // slug stays fixed so links survive renames
     }
 
@@ -89,12 +91,12 @@ public sealed class PageTests
         var time = new FixedTimeProvider(Now);
         var page = NewPage(time);
 
-        page.Delete(time);
+        page.Delete(time.GetUtcNow());
         Assert.True(page.IsDeleted);
         Assert.Equal(Now, page.DeletedAt);
 
         time.Advance(TimeSpan.FromHours(1));
-        page.Delete(time);
+        page.Delete(time.GetUtcNow());
         Assert.Equal(Now, page.DeletedAt); // no-op: keeps the first timestamp
     }
 

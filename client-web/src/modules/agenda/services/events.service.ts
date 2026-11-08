@@ -13,6 +13,7 @@ const BASE = '/api/v1.0/agenda/events'
 export async function listOccurrences(filters: EventFilters): Promise<EventOccurrenceDto[]> {
   const { data } = await apiClient.get<EventOccurrenceDto[]>(BASE, {
     params: { from: filters.from, to: filters.to, calendarIds: filters.calendarIds },
+    paramsSerializer: { indexes: null },
   })
   return data
 }

@@ -9,7 +9,7 @@ using Pottmayer.Pandora.Modules.Notes.Abstractions;
 namespace Pottmayer.Pandora.Modules.Notes.Application.Assistant;
 
 /// <summary>
-/// <c>append_to_note</c>: adds the user's text at the end of a note, after a blank line
+/// <c>append_to_note</c>: adds the user's text at the end of a note, one block per line
 /// (<see cref="UpdatePageCommand"/>). Only appending: editing the middle of a note would mean sending it to
 /// the model, which never sees the user's notes.
 /// </summary>
@@ -56,8 +56,7 @@ public sealed class AppendToNoteTool(ISender sender) : IAssistantTargetedTool
         if (page is null)
             return AssistantCommandOutcome.Failed(problem!);
 
-        var body = page.ContentMarkdown.TrimEnd();
-        var content = body.Length == 0 ? text : $"{body}\n\n{text}";
+        var content = PageContent.Parse(page.Content.GetRawText()).Append(PageContent.FromText(text)).Json;
 
         var result = await sender.Send(new UpdatePageCommand(new UpdatePageInput(
             context.UserId, page.Id, page.Title, page.Icon, content, Source: PageVersionSource.Assistant)), ct);

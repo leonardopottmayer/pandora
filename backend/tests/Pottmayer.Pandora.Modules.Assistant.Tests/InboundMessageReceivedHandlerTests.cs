@@ -9,6 +9,7 @@ using Pottmayer.Pandora.Modules.Assistant.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Assistant.Tests.Fakes;
 using Pottmayer.Pandora.Modules.Channels.Abstractions;
 using Pottmayer.Pandora.Modules.Channels.Contracts;
+using Pottmayer.Pandora.Modules.Notes.Abstractions.Capture;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Xunit;
 
@@ -21,6 +22,7 @@ public sealed class InboundMessageReceivedHandlerTests
 
     private readonly FakeMediaReader _media = new();
     private readonly FakeFileQueue _queue = new();
+    private readonly FakeCapture _captures = new();
 
     private (InboundMessageReceivedHandler Handler, FakeSender Sender, FakeIntegrationEventBus Bus) Build(
         Result<InterpretResultDto>? response = null)
@@ -33,6 +35,7 @@ public sealed class InboundMessageReceivedHandlerTests
         var handler = new InboundMessageReceivedHandler(
             factory, sender, bus, _media, [_queue],
             new AssistantToolContextResolver(factory, FakeEffectiveTimeZoneResolver.With("America/Sao_Paulo")),
+            _captures,
             _time, NullLogger<InboundMessageReceivedHandler>.Instance);
         return (handler, sender, bus);
     }
@@ -66,6 +69,71 @@ public sealed class InboundMessageReceivedHandlerTests
         Assert.Equal(inbound.UserId, reply.UserId);
         Assert.Equal("assistant", reply.Bot);
         Assert.Equal("lembrete criado ✓", reply.Text);
+    }
+
+    [Theory]
+    [InlineData("/nota senha do wifi", "senha do wifi")]
+    [InlineData("/nota@pandora_bot primeira linha\nsegunda linha", "primeira linha\nsegunda linha")]
+    [InlineData(" /NOTA texto literal #tag ", "texto literal #tag")]
+    public async Task Explicit_notes_bypass_AI_and_reply_through_the_outbox(string text, string expected)
+    {
+        var (handler, sender, bus) = Build();
+        var inbound = Inbound("assistant", text);
+        await handler.HandleAsync(inbound);
+        var captured = Assert.Single(_captures.Received);
+        Assert.Equal((inbound.UserId, inbound.EventId, inbound.OccurredAt, expected),
+            (captured.UserId, captured.MessageId, captured.ReceivedAt, captured.Text));
+        Assert.Empty(sender.Sent);
+        Assert.Contains("Captura", Assert.IsType<SendAssistantReply>(Assert.Single(bus.Published)).Text);
+    }
+
+    [Theory]
+    [InlineData("/nota")]
+    [InlineData("/nota   ")]
+    public async Task Empty_capture_commands_get_usage_without_calling_AI(string text)
+    {
+        var (handler, sender, bus) = Build();
+        await handler.HandleAsync(Inbound("assistant", text));
+        Assert.Empty(sender.Sent);
+        Assert.Empty(_captures.Received);
+        Assert.Contains("/nota <texto>", Assert.IsType<SendAssistantReply>(Assert.Single(bus.Published)).Text);
+    }
+
+    [Fact]
+    public async Task Oversized_capture_gets_usage_and_media_captions_keep_the_file_queue_path()
+    {
+        var (handler, sender, bus) = Build();
+        await handler.HandleAsync(Inbound("assistant", "/nota " + new string('x', 8001)));
+        Assert.Contains("8000", Assert.IsType<SendAssistantReply>(bus.Published.Last()).Text);
+        await handler.HandleAsync(File("application/pdf", "/nota comprovante", "receipt.pdf"));
+        Assert.Single(_queue.Received);
+        Assert.Empty(_captures.Received);
+        Assert.Empty(sender.Sent);
+    }
+
+    [Fact]
+    public async Task Duplicate_and_failed_captures_do_not_claim_a_new_save()
+    {
+        var (handler, sender, bus) = Build();
+        _captures.Result = Result<NoteCaptureResult>.Success(new(Guid.NewGuid(), "Captura", true));
+        await handler.HandleAsync(Inbound("assistant", "/nota texto"));
+        Assert.Contains("já foi capturada", Assert.IsType<SendAssistantReply>(bus.Published.Last()).Text);
+        _captures.Result = Result<NoteCaptureResult>.Failure(AssistantErrors.NotEnabled);
+        await handler.HandleAsync(Inbound("assistant", "/nota outro texto"));
+        Assert.Contains("Não consegui", Assert.IsType<SendAssistantReply>(bus.Published.Last()).Text);
+        Assert.Empty(sender.Sent);
+    }
+
+    [Theory]
+    [InlineData("/notas texto")]
+    [InlineData("anota isso")]
+    [InlineData("texto com /nota no meio")]
+    public async Task Other_text_still_uses_the_normal_interpret_pipeline(string text)
+    {
+        var (handler, sender, _) = Build();
+        await handler.HandleAsync(Inbound("assistant", text));
+        Assert.IsType<InterpretCommand>(Assert.Single(sender.Sent));
+        Assert.Empty(_captures.Received);
     }
 
     [Fact]
@@ -270,6 +338,17 @@ public sealed class InboundMessageReceivedHandlerTests
         {
             Opened = (channel, bot, mediaRef);
             return Task.FromResult<Stream>(new MemoryStream(Bytes));
+        }
+    }
+
+    private sealed class FakeCapture : INoteCapture
+    {
+        public List<NoteCaptureRequest> Received { get; } = [];
+        public Result<NoteCaptureResult> Result { get; set; } = Result<NoteCaptureResult>.Success(new(Guid.NewGuid(), "Captura", false));
+        public Task<Result<NoteCaptureResult>> CaptureAsync(NoteCaptureRequest request, CancellationToken ct = default)
+        {
+            Received.Add(request);
+            return Task.FromResult(Result);
         }
     }
 }

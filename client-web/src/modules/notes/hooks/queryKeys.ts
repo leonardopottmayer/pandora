@@ -1,6 +1,7 @@
 // Central query key factory for the notes module — keeps queries and invalidations in sync.
 export const noteKeys = {
   all: ['notes'] as const,
+  preferences: () => [...noteKeys.all, 'preferences'] as const,
 
   pages: () => [...noteKeys.all, 'pages'] as const,
   pageTree: (includeArchived: boolean, tagIds: string[], spaceId: string | null) =>
@@ -16,6 +17,22 @@ export const noteKeys = {
   graph: (tagIds: string[], spaceId: string | null) =>
     [...noteKeys.allGraphs(), 'global', spaceId, ...tagIds] as const,
   localGraph: (id: string, depth: number) => [...noteKeys.allGraphs(), 'local', id, depth] as const,
+
+  // Folders sit beside the pages; page mutations do not touch them, folder mutations refresh both.
+  folders: () => [...noteKeys.all, 'folders'] as const,
+  allFolderProperties: () => [...noteKeys.pages(), 'folder-properties'] as const,
+  folderProperties: (id: string, includeArchived: boolean, tagIds: string[]) =>
+    [...noteKeys.allFolderProperties(), id, includeArchived, ...tagIds] as const,
+  linkPreview: (url: string) => [...noteKeys.all, 'link-preview', url] as const,
+  recentPages: () => [...noteKeys.pages(), 'recent'] as const,
+  trash: () => [...noteKeys.pages(), 'trash'] as const,
+  // A page's comments, and when each of its blocks was written (read again after every save).
+  comments: (id: string) => [...noteKeys.all, 'comments', id] as const,
+  blockStamps: (id: string) => [...noteKeys.pages(), 'block-stamps', id] as const,
+  publicPage: (token: string) => ['public-page', token] as const,
+  // Tasks, reminders, accounts and cards a page can name after `@`.
+  moduleItems: () => [...noteKeys.all, 'module-items'] as const,
+  folderList: (spaceId: string | null) => [...noteKeys.folders(), spaceId] as const,
 
   // Each space's page count moves with page mutations, which invalidate this along with the pages.
   spaces: () => [...noteKeys.all, 'spaces'] as const,

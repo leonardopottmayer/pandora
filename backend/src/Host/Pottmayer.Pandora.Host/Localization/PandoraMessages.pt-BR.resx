@@ -89,4 +89,25 @@
   <data name="Users.InvalidLanguage" xml:space="preserve">
     <value>Idioma não suportado.</value>
   </data>
+  <data name="Assistant.TextCompletionFailed" xml:space="preserve">
+    <value>A IA não conseguiu gerar o texto agora. Tente novamente em instantes.</value>
+  </data>
+  <data name="Notes.InvalidTransform" xml:space="preserve">
+    <value>Escolha uma ação de escrita válida, envie até 8000 caracteres de texto e contexto e informe o idioma para tradução.</value>
+  </data>
+  <data name="Notes.InvalidSource" xml:space="preserve">
+    <value>A origem da edição deve ser edit ou assistant.</value>
+  </data>
+  <data name="Notes.InvalidPageSummary" xml:space="preserve">
+    <value>O resumo precisa de uma página com texto entre 1 e 32000 caracteres. Para páginas maiores, resuma uma seleção.</value>
+  </data>
+  <data name="Notes.InvalidQuestion" xml:space="preserve">
+    <value>Escreva uma pergunta com até 1000 caracteres.</value>
+  </data>
+  <data name="Notes.InvalidAnswer" xml:space="preserve">
+    <value>A IA não retornou uma resposta com fontes válidas das notas. Tente reformular a pergunta.</value>
+  </data>
+  <data name="Notes.InvalidPrompt" xml:space="preserve">
+    <value>Escreva um prompt com até 8000 caracteres.</value>
+  </data>
 </root>

@@ -11,8 +11,11 @@ import { PageHistoryDrawer } from './PageHistoryDrawer'
 
 const BASE = `${TEST_API_BASE}/api/v1/notes`
 const ok = (data: unknown) => HttpResponse.json({ success: true, data })
+/** A version's blocks, as the snapshot keeps them: JSON text. */
+const doc = (text: string) => JSON.stringify({ version: 1, blocks: [{ id: 'b1', type: 'paragraph', content: [{ text }] }] })
+
 const snapshot: PageSnapshot = {
-  title: 'Original', contentMarkdown: 'Original body', icon: null, spaceId: 's1', parentId: null,
+  title: 'Original', content: doc('Original body'), icon: null, spaceId: 's1', parentId: null,
   orderIndex: 0, isFavorite: false, archivedAt: null, deletedAt: null,
 }
 const versions = [3, 2, 1].map((number) => ({ number, createdAt: `2026-11-02T12:0${number}:00Z`, source: 'edit', restoredFrom: null }))
@@ -23,7 +26,7 @@ beforeEach(async () => {
     http.get(`${BASE}/pages/p1/versions`, () => ok(versions)),
     http.get(`${BASE}/pages/p1/versions/:number`, ({ params }) => ok({
       ...versions.find((v) => v.number === Number(params.number)),
-      snapshot: { ...snapshot, title: `Title ${params.number}`, contentMarkdown: `Body ${params.number}` },
+      snapshot: { ...snapshot, title: `Title ${params.number}`, content: doc(`Body ${params.number}`) },
     })),
     http.get(`${BASE}/spaces`, () => ok([{ id: 's1', name: 'Home' }])),
     http.get(`${BASE}/pages`, () => ok([])),

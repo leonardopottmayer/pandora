@@ -9,6 +9,7 @@ using Pottmayer.Pandora.Modules.Communications.Application.Commands.DeleteMailbo
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.ManageLabels;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.ManageRules;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.OpenMessage;
+using Pottmayer.Pandora.Modules.Communications.Application.Commands.SaveMessageToNotes;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.SendMessage;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.SyncMailboxNow;
 using Pottmayer.Pandora.Modules.Communications.Application.Commands.UpdateMailbox;
@@ -46,6 +47,11 @@ public sealed class CommunicationsController(
     private const long SendRequestLimit = 40 * 1024 * 1024;
 
     private Guid UserId => userContextAccessor.Context.User!.Id;
+
+    [HttpPost("messages/{id:guid}/notes")]
+    public async Task<IActionResult> SaveToNotesAsync(Guid id, SaveMessageToNotesRequest request, CancellationToken ct) =>
+        (await sender.Send(new SaveMessageToNotesCommand(new SaveMessageToNotesInput(
+            UserId, id, request.Title, request.SpaceId, request.FolderId)), ct)).ToActionResult(errorMapper);
 
     // ── Mailboxes ──
 

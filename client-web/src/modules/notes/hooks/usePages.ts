@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { noteKeys } from './queryKeys'
 import { buildTree } from '../lib/buildTree'
-import type { CreatePageRequest, MovePageRequest, PageTreeNode, UpdatePageRequest } from '../models'
+import type { CreatePageRequest, MovePageRequest, PageDto, PageTreeNode, UpdatePageRequest } from '../models'
 import * as pagesService from '../services/pages.service'
 
 /** One space's pages as a tree; with no `spaceId`, every space's. */
@@ -93,6 +93,18 @@ export function useCreatePage() {
   })
 }
 
+export function useCreatePageFromTemplate() {
+  const invalidate = useInvalidatePages()
+  const invalidateTags = useInvalidateTags()
+  return useMutation({
+    mutationFn: pagesService.createPageFromTemplate,
+    onSuccess: () => {
+      invalidate()
+      invalidateTags()
+    },
+  })
+}
+
 export function useUpdatePage() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -105,12 +117,15 @@ export function useUpdatePage() {
       queryClient.setQueryData(noteKeys.page(page.id), page)
       queryClient.invalidateQueries({ queryKey: noteKeys.pages(), refetchType: 'none' })
       queryClient.invalidateQueries({ queryKey: [...noteKeys.pages(), 'tree'] })
+      queryClient.invalidateQueries({ queryKey: noteKeys.allFolderProperties() })
       // A save rewrites this page's outgoing links, so any other page's backlinks — and the
       // shape of the graph — may have changed.
       queryClient.invalidateQueries({ queryKey: noteKeys.allBacklinks() })
       queryClient.invalidateQueries({ queryKey: noteKeys.allGraphs() })
       // The same save may have written the first #tag of a new one, or dropped the last of an old.
       queryClient.invalidateQueries({ queryKey: noteKeys.tags() })
+      // And the dates of the blocks it changed.
+      queryClient.invalidateQueries({ queryKey: noteKeys.blockStamps(page.id) })
     },
   })
 }
@@ -120,20 +135,6 @@ export function useMovePage() {
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: MovePageRequest }) =>
       pagesService.movePage(id, body),
-    onSuccess: invalidate,
-  })
-}
-
-/**
- * Applies a batch of moves in one shot. The backend orders siblings by the raw `orderIndex`
- * (ties broken by id), so a drag-and-drop renumbers the whole destination sibling list to make
- * the dropped position stick — hence a batch rather than a single move.
- */
-export function useReorderPages() {
-  const invalidate = useInvalidatePages()
-  return useMutation({
-    mutationFn: (moves: { id: string; body: MovePageRequest }[]) =>
-      Promise.all(moves.map((m) => pagesService.movePage(m.id, m.body))),
     onSuccess: invalidate,
   })
 }
@@ -153,6 +154,40 @@ export function useSetPageArchived() {
     mutationFn: ({ id, archived }: { id: string; archived: boolean }) =>
       pagesService.setPageArchived(id, archived),
     onSuccess: invalidate,
+  })
+}
+
+/** A change to what a page is besides its blocks (look, lock, verification, link): the answer is the page. */
+export function usePageSetting() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (run: () => Promise<PageDto>) => run(),
+    onSuccess: (page) => {
+      queryClient.setQueryData(noteKeys.page(page.id), page)
+      queryClient.invalidateQueries({ queryKey: [...noteKeys.pages(), 'tree'] })
+    },
+  })
+}
+
+export function useRecentPages() {
+  return useQuery({ queryKey: noteKeys.recentPages(), queryFn: () => pagesService.listRecentPages() })
+}
+
+export function useTrash(enabled: boolean) {
+  return useQuery({ queryKey: noteKeys.trash(), queryFn: () => pagesService.listTrash(), enabled })
+}
+
+/** Restores or deletes for good: either way the tree, the trash and the tags move. */
+export function useTrashAction() {
+  const invalidate = useInvalidatePages()
+  const invalidateTags = useInvalidateTags()
+  return useMutation({
+    mutationFn: async ({ id, action }: { id: string | null; action: 'restore' | 'delete' }): Promise<unknown> =>
+      action === 'restore' && id ? pagesService.restoreFromTrash(id) : pagesService.deleteFromTrash(id),
+    onSuccess: () => {
+      invalidate()
+      invalidateTags()
+    },
   })
 }
 

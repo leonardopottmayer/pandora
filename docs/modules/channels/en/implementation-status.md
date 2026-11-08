@@ -22,6 +22,7 @@ in [product-plan.md](product-plan.md).
 | **Integrations subscriber** | `ExternalAccountRevoked` → `integrations.account-revoked` "reconnect your account" notification, republished as `NotifyUserRequested` and fanned out to the user's channels. |
 | **Linking** | `chn002` handshake; `POST/DELETE /{channel}/link`; `ConsumeTelegramLink` on `/start <token>`. |
 | **Inbound** | `chn003`, `chn004`; `TelegramLongPollingService`; `TelegramInboundTriage`; idempotency by `(provider, provider_update_id)`; routing via `InboundInteractionReceived` / `InboundMessageReceived`. |
+| **Notes capture routing** | Text-only `/nota` (including `@botname` and newline separators) on the `assistant` bot follows the linked-user check and becomes `InboundMessageReceived`; other bots/commands/media keep their original paths. The Assistant/Notes modules execute the capture without AI. |
 | **Interactions** | Registered buttons routed to owners; single-use; first consumer Agenda (`task_done`, `snooze_1h`). |
 | **Media** | `IInboundMediaReader` + `TelegramInboundMediaReader` (`getFile`/download). |
 | **Permanent-failure handling** | Disables the channel + `UserChannelDisabled`. |

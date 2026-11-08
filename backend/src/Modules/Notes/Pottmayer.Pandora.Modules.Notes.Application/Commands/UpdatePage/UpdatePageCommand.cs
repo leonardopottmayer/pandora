@@ -11,11 +11,11 @@ public sealed record UpdatePageInput(
     Guid PageId,
     string Title,
     string? Icon,
-    string ContentMarkdown,
+    string? Content,
     string Source = PageVersionSource.Edit);
 
 /// <summary>
-/// Edits a page's title, icon, and markdown body — the autosave path. The slug is intentionally not
+/// Edits a page's title, icon, and blocks (a <see cref="PageContent"/> document as JSON) — the autosave path. The slug is intentionally not
 /// recomputed: it stays fixed so links to the page survive renames.
 /// </summary>
 [RequiresPermission(NotesPermissions.Pages.Update)]

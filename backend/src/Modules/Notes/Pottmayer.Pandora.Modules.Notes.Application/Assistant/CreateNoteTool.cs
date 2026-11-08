@@ -11,7 +11,7 @@ namespace Pottmayer.Pandora.Modules.Notes.Application.Assistant;
 
 /// <summary>
 /// <c>create_note</c>: a new top-level page in Notes, forwarded to <see cref="CreatePageCommand"/>. The
-/// body is the user's text as markdown, so #tags and [[links]] in it work as in the editor.
+/// user's text becomes blocks, one per line, with markdown line starts (headings, lists) read as such.
 /// </summary>
 public sealed class CreateNoteTool(ISender sender) : IAssistantTool
 {
@@ -75,7 +75,8 @@ public sealed class CreateNoteTool(ISender sender) : IAssistantTool
         }
 
         var result = await sender.Send(new CreatePageCommand(new CreatePageInput(
-            context.UserId, title, ParentId: null, Icon: null, content, spaceId, Source: PageVersionSource.Assistant)), ct);
+            context.UserId, title, ParentId: null, Icon: null, content is null ? null : PageContent.FromText(content).Json, spaceId,
+            Source: PageVersionSource.Assistant)), ct);
 
         if (!result.IsSuccess)
             return AssistantCommandOutcome.Failed(string.Join("; ", result.Errors.Select(e => e.Message)));

@@ -43,7 +43,6 @@
   pointer-events: none;
   background: rgba(22, 119, 255, 0.12);
 }
-.notes-visual .notes-wikilink { cursor: pointer; }
 .notes-native-block { min-width: 0; }
 .notes-native-heading { display: flex; align-items: center; gap: 6px; }
 .notes-native-title.ant-input { flex: 1; min-width: 0; padding: 2px 0; font: inherit; font-weight: 600; color: inherit; }
@@ -66,37 +65,6 @@
   padding: 6px 12px;
   border: 1px solid var(--ant-color-border);
   border-radius: 8px;
-}
-/* A raw block reads as the preview draws it; its source opens from the corner. */
-.notes-raw-block { position: relative; margin: 0.6em 0; border-radius: 6px; }
-.notes-raw-block:hover { box-shadow: 0 0 0 1px rgba(128, 128, 128, 0.3); }
-.notes-raw-block .notes-preview { padding: 0 !important; }
-.notes-raw-edit {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  padding: 2px 6px;
-  border: 0;
-  border-radius: 4px;
-  background: rgba(128, 128, 128, 0.15);
-  color: inherit;
-  cursor: pointer;
-  opacity: 0;
-}
-.notes-raw-block:hover .notes-raw-edit { opacity: 1; }
-.notes-raw-source {
-  display: block;
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--ant-color-primary);
-  border-radius: 6px;
-  background: rgba(128, 128, 128, 0.08);
-  color: inherit;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 13px;
-  line-height: 1.6;
-  resize: vertical;
-  outline: none;
 }
 .notes-image-tools {
   display: inline-flex;
@@ -121,6 +89,8 @@
 .notes-bubble-button:hover { background: rgba(128, 128, 128, 0.2); }
 .notes-bubble {
   display: flex;
+  flex-wrap: wrap;
+  max-width: calc(100vw - 24px);
   gap: 2px;
   padding: 3px;
   border: 1px solid var(--ant-color-border-secondary);
@@ -230,37 +200,40 @@
 }
 .notes-preview a { color: var(--ant-color-link); }
 
-/* Wikilinks: resolved ones read like internal links, broken ones invite creating the page. */
-.notes-preview .notes-wikilink {
-  cursor: pointer;
-  text-decoration: none;
-  border-bottom: 1px solid rgba(22, 119, 255, 0.4);
-}
-.notes-preview .notes-wikilink:hover {
-  border-bottom-color: var(--ant-color-primary);
-}
-.notes-preview .notes-wikilink-missing {
-  color: #d4380d;
-  border-bottom: 1px dashed rgba(212, 56, 13, 0.5);
-}
-.notes-preview .notes-wikilink-missing:hover {
-  border-bottom-color: #d4380d;
-}
-/* Tags: an inline chip. Uncolored ones borrow the text color, painted ones override both the
-   text and the border inline (see renderTags). */
-.notes-preview .notes-tag {
-  display: inline-block;
-  padding: 0 0.45em;
-  border: 1px solid rgba(128, 128, 128, 0.45);
-  border-radius: 10px;
-  font-size: 0.85em;
-  line-height: 1.6;
-  cursor: pointer;
+/* A page named in the text: its icon and title in a box, like a Confluence page link. */
+.notes-preview .notes-mention {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  margin: 0 1px;
+  padding: 0 6px 0 4px;
+  border: 1px solid var(--ant-color-border);
+  border-radius: 4px;
+  background: var(--ant-color-bg-container);
+  color: var(--ant-color-link);
+  font-size: 0.94em;
+  line-height: 1.5;
+  vertical-align: baseline;
   white-space: nowrap;
+  cursor: pointer;
 }
-.notes-preview .notes-tag:hover {
-  background: rgba(128, 128, 128, 0.12);
+.notes-preview .notes-mention:hover { border-color: var(--ant-color-primary); background: var(--ant-color-primary-bg); }
+.notes-preview .notes-mention-icon { font-size: 0.9em; }
+.notes-preview .notes-mention-missing { color: var(--ant-color-text-tertiary); text-decoration: line-through; cursor: default; }
+.notes-preview .notes-mention-missing:hover { border-color: var(--ant-color-border); background: var(--ant-color-bg-container); }
+
+/* A block this version does not draw yet: kept, and said so. */
+.notes-preview .notes-unknown-block {
+  margin: 0.6em 0;
+  padding: 8px 12px;
+  border: 1px dashed var(--ant-color-border);
+  border-radius: 8px;
+  color: var(--ant-color-text-tertiary);
+  font-size: 0.9em;
 }
+
+.notes-tags-field { min-width: 200px; }
 
 /* Callouts: a plain blockquote with a labelled heading. The type is carried by the icon, not
    by colour, so callouts read as part of the monochrome markdown around them. */
@@ -307,7 +280,6 @@
 
 /* Players and maps: full column width; a video keeps 16:9, a map keeps the height it was written with. */
 .notes-preview iframe { display: block; width: 100%; max-width: 100%; margin: 0.8em 0; border: 0; border-radius: 8px; }
-.notes-preview .notes-video iframe { aspect-ratio: 16 / 9; height: auto; }
 
 .notes-preview table {
   border-collapse: collapse;
@@ -347,13 +319,22 @@
 }
 .notes-preview .notes-caption {
   display: block;
+  width: 100%;
   margin-top: 0.35em;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
   font-size: 0.85em;
+  text-align: center;
   color: rgba(128, 128, 128, 0.95);
 }
+.notes-preview .notes-image-loading { display: block; height: 120px; border-radius: 6px; background: var(--ant-color-fill-quaternary); }
 .notes-preview .notes-file-card {
   cursor: pointer;
-  display: inline-flex;
+  display: flex;
+  width: fit-content;
   align-items: center;
   gap: 10px;
   max-width: 100%;
@@ -370,3 +351,371 @@
 .notes-preview .notes-file-body { display: flex; flex-direction: column; min-width: 0; }
 .notes-preview .notes-file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 .notes-preview .notes-file-meta { font-size: 0.8em; color: rgba(128, 128, 128, 0.95); }
+
+/* ---------- B3: block colours, columns, collapsible headings, page links, block menus ---------- */
+
+/* The eight colours a block can take, for its text and its background; light-dark() follows the
+   colour scheme the app puts on <html>. */
+.notes-visual-host, .notes-swatch {
+  --notes-c-gray: light-dark(#7c8796, #9aa3ad);
+  --notes-c-orange: light-dark(#d46b08, #e89a3c);
+  --notes-c-yellow: light-dark(#ad8b00, #d8bd14);
+  --notes-c-green: light-dark(#389e0d, #6abe39);
+  --notes-c-blue: light-dark(#0958d9, #3c89e8);
+  --notes-c-purple: light-dark(#531dab, #a07ad8);
+  --notes-c-magenta: light-dark(#c41d7f, #e0529c);
+  --notes-c-red: light-dark(#cf1322, #e84749);
+  --notes-bg-gray: light-dark(#f5f5f5, #262626);
+  --notes-bg-orange: light-dark(#fff7e6, #2b1d11);
+  --notes-bg-yellow: light-dark(#feffe6, #2b2611);
+  --notes-bg-green: light-dark(#f6ffed, #162312);
+  --notes-bg-blue: light-dark(#e6f4ff, #111a2c);
+  --notes-bg-purple: light-dark(#f9f0ff, #1a1325);
+  --notes-bg-magenta: light-dark(#fff0f6, #291321);
+  --notes-bg-red: light-dark(#fff1f0, #2a1215);
+}
+.notes-visual [data-color='gray'], .notes-swatch[data-swatch='gray'] { color: var(--notes-c-gray); }
+.notes-visual [data-color='orange'], .notes-swatch[data-swatch='orange'] { color: var(--notes-c-orange); }
+.notes-visual [data-color='yellow'], .notes-swatch[data-swatch='yellow'] { color: var(--notes-c-yellow); }
+.notes-visual [data-color='green'], .notes-swatch[data-swatch='green'] { color: var(--notes-c-green); }
+.notes-visual [data-color='blue'], .notes-swatch[data-swatch='blue'] { color: var(--notes-c-blue); }
+.notes-visual [data-color='purple'], .notes-swatch[data-swatch='purple'] { color: var(--notes-c-purple); }
+.notes-visual [data-color='magenta'], .notes-swatch[data-swatch='magenta'] { color: var(--notes-c-magenta); }
+.notes-visual [data-color='red'], .notes-swatch[data-swatch='red'] { color: var(--notes-c-red); }
+.notes-visual [data-background] { border-radius: 4px; padding-inline: 4px; }
+.notes-visual span[data-background] { border-radius: 2px; padding-inline: 1px; }
+.notes-visual [data-background='gray'], .notes-swatch-background[data-swatch='gray'] { background: var(--notes-bg-gray); }
+.notes-visual [data-background='orange'], .notes-swatch-background[data-swatch='orange'] { background: var(--notes-bg-orange); }
+.notes-visual [data-background='yellow'], .notes-swatch-background[data-swatch='yellow'] { background: var(--notes-bg-yellow); }
+.notes-visual [data-background='green'], .notes-swatch-background[data-swatch='green'] { background: var(--notes-bg-green); }
+.notes-visual [data-background='blue'], .notes-swatch-background[data-swatch='blue'] { background: var(--notes-bg-blue); }
+.notes-visual [data-background='purple'], .notes-swatch-background[data-swatch='purple'] { background: var(--notes-bg-purple); }
+.notes-visual [data-background='magenta'], .notes-swatch-background[data-swatch='magenta'] { background: var(--notes-bg-magenta); }
+.notes-visual [data-background='red'], .notes-swatch-background[data-swatch='red'] { background: var(--notes-bg-red); }
+/* The title of a callout or toggle is an input: it takes the block colour too. */
+.notes-visual [data-color] .notes-native-title.ant-input { color: inherit; }
+
+.notes-swatch {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ant-color-border);
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+}
+.notes-swatch-background { background: var(--ant-color-bg-container); }
+
+/* Callout tones: a tinted box, its edge in the tone colour. */
+.notes-callout { border-radius: 0 8px 8px 0; padding-block: 6px; }
+.notes-callout.notes-callout-note { border-left-color: var(--notes-c-gray); }
+.notes-callout.notes-callout-info { border-left-color: var(--notes-c-blue); background: var(--notes-bg-blue); }
+.notes-callout.notes-callout-success { border-left-color: var(--notes-c-green); background: var(--notes-bg-green); }
+.notes-callout.notes-callout-warning { border-left-color: var(--notes-c-orange); background: var(--notes-bg-orange); }
+.notes-callout.notes-callout-error { border-left-color: var(--notes-c-red); background: var(--notes-bg-red); }
+button.notes-callout-icon { font-size: 1em; }
+
+/* Columns side by side; a narrow screen stacks them. */
+.notes-visual [data-columns] { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 24px; margin: 0.6em 0; }
+.notes-visual [data-column] { min-width: 0; }
+.notes-visual [data-column] > :first-child { margin-top: 0; }
+@media (max-width: 640px) {
+  .notes-visual [data-columns] { grid-auto-flow: row; gap: 8px; }
+}
+
+/* A collapsible heading: the title of a toggle, at a heading size. */
+.notes-toggle-heading .notes-native-title.ant-input { font-weight: 600; line-height: 1.3; }
+.notes-toggle-h1 { margin-top: 1.1em; }
+.notes-toggle-h1 .notes-native-title.ant-input { font-size: 1.85em; }
+.notes-toggle-h2 { margin-top: 0.9em; }
+.notes-toggle-h2 .notes-native-title.ant-input { font-size: 1.45em; }
+.notes-toggle-h3 .notes-native-title.ant-input { font-size: 1.2em; }
+.notes-toggle-heading > .notes-native-body { padding-left: 28px; }
+
+/* Another page as a block: a card, or a preview with its first lines. */
+.notes-page-link { margin: 0.5em 0; }
+.notes-page-link-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--ant-color-border-secondary);
+  border-radius: 8px;
+  background: var(--ant-color-bg-container);
+  cursor: pointer;
+}
+.notes-page-link-card:hover { border-color: var(--ant-color-primary); }
+.notes-page-link-card:focus-visible { outline: 2px solid var(--ant-color-primary); }
+.notes-page-link-icon { font-size: 1.3em; line-height: 1.3; }
+.notes-page-link-body { display: flex; flex-direction: column; min-width: 0; }
+.notes-page-link-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--ant-color-link); }
+.notes-page-link-meta { font-size: 0.8em; color: var(--ant-color-text-tertiary); }
+.notes-page-link-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ant-color-border-secondary);
+  font-size: 0.9em;
+  color: var(--ant-color-text-secondary);
+}
+.notes-page-link-preview > span { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+/* The categories of the slash menu. */
+.notes-suggestion-section {
+  padding: 8px 10px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ant-color-text-tertiary);
+}
+
+/* Whole blocks selected (Ctrl/Cmd-drag, Shift+arrows, Ctrl/Cmd+A): marked as blocks, not as text. */
+.notes-visual.ProseMirror-noderangeselection *::selection { background: transparent; }
+.notes-visual .ProseMirror-selectednoderange { border-radius: 4px; background: var(--ant-color-primary-bg); }
+
+/* A block opened from a link to it. */
+.notes-visual .notes-block-target { border-radius: 4px; animation: notes-block-target 2s ease-out; }
+@keyframes notes-block-target {
+  from { background: var(--ant-color-warning-bg); }
+  to { background: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .notes-visual .notes-block-target { animation: none; outline: 2px solid var(--ant-color-warning); }
+}
+
+/* ---------- B4: media blocks (bookmark, embed, video, audio, PDF, gallery) ---------- */
+
+.notes-rich { margin: 0.8em 0; }
+.notes-preview .notes-rich iframe { margin: 0; }
+.notes-rich-frame { display: block; width: 100%; border: 0; border-radius: 8px; background: var(--ant-color-fill-quaternary); }
+.notes-rich-video { display: block; width: 100%; aspect-ratio: 16 / 9; height: auto; border: 0; border-radius: 8px; background: #000; }
+.notes-rich-audio { display: block; width: 100%; }
+.notes-rich-audio-box { display: flex; flex-direction: column; gap: 4px; }
+.notes-rich-caption { font-size: 0.85em; color: var(--ant-color-text-secondary); }
+.notes-rich-pdf { display: block; width: 100%; height: 70vh; min-height: 420px; border: 1px solid var(--ant-color-border-secondary); border-radius: 8px; }
+.notes-rich-photo { display: block; max-width: 100%; border-radius: 8px; }
+.notes-rich-loading { display: block; padding: 16px; }
+.notes-rich-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px dashed var(--ant-color-border);
+  border-radius: 8px;
+  color: var(--ant-color-text-tertiary);
+  font-size: 0.9em;
+}
+.notes-rich-empty .ant-input { flex: 1; min-width: 200px; }
+
+/* A link as a card: text on the left, the page image on the right; the image drops on a phone. */
+.notes-bookmark {
+  display: flex;
+  overflow: hidden;
+  min-height: 96px;
+  border: 1px solid var(--ant-color-border-secondary);
+  border-radius: 8px;
+  background: var(--ant-color-bg-container);
+  color: inherit !important;
+  text-decoration: none;
+}
+.notes-bookmark:hover { border-color: var(--ant-color-primary); }
+.notes-bookmark-body { display: flex; flex: 1; flex-direction: column; gap: 4px; min-width: 0; padding: 12px 14px; }
+.notes-bookmark-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.notes-bookmark-description {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-size: 0.88em;
+  color: var(--ant-color-text-secondary);
+}
+.notes-bookmark-site { display: flex; align-items: center; gap: 6px; margin-top: auto; overflow: hidden; white-space: nowrap; font-size: 0.8em; color: var(--ant-color-text-tertiary); }
+.notes-bookmark-image { flex-shrink: 0; width: 32%; max-width: 240px; object-fit: cover; }
+@media (max-width: 640px) {
+  .notes-bookmark-image { display: none; }
+}
+
+/* A gallery: a grid of images, each opening the viewer, with a tile to add one more. */
+.notes-gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 640px) {
+  .notes-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.notes-gallery-item { position: relative; overflow: hidden; aspect-ratio: 4 / 3; border-radius: 8px; background: var(--ant-color-fill-quaternary); }
+.notes-gallery-item .ant-image, .notes-gallery-item .ant-image-img { width: 100%; height: 100%; object-fit: cover; }
+.notes-gallery-item .notes-image-loading { height: 100%; }
+.notes-gallery-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: none;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+}
+.notes-gallery-item:hover .notes-gallery-remove, .notes-gallery-remove:focus-visible { display: flex; }
+.notes-gallery-add {
+  display: flex;
+  aspect-ratio: 4 / 3;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px dashed var(--ant-color-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ant-color-text-secondary);
+  cursor: pointer;
+}
+.notes-gallery-add:hover { border-color: var(--ant-color-primary); color: var(--ant-color-primary); }
+
+/* ---------- B5: advanced blocks ---------- */
+
+.notes-diagram, .notes-math { display: flex; flex-direction: column; gap: 8px; }
+.notes-diagram-svg { overflow-x: auto; text-align: center; }
+.notes-diagram-svg svg { max-width: 100%; height: auto; }
+.notes-math { overflow-x: auto; }
+.notes-source-field.ant-input { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+.notes-source-error { font-size: 0.85em; color: var(--ant-color-error); }
+
+/* A synced block: its edge in the accent colour; a copy says where it comes from. */
+.notes-synced { margin: 0.6em 0; padding: 4px 10px 6px; border: 1px solid var(--ant-color-warning-border); border-radius: 8px; }
+.notes-synced-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.8em; color: var(--ant-color-warning-text); user-select: none; }
+.notes-synced-copy .notes-visual { min-height: 0; }
+.notes-synced-body > :first-child { margin-top: 0.2em; }
+
+/* A template button: its body shows only while the template is being edited. */
+.notes-template { margin: 0.6em 0; }
+.notes-template-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.notes-template-label { max-width: 280px; margin-top: 6px; }
+.notes-template[data-editing='false'] > .notes-template-body { display: none; }
+.notes-template[data-editing='true'] > .notes-template-body { margin-top: 6px; padding: 4px 12px; border: 1px dashed var(--ant-color-border); border-radius: 8px; }
+
+/* A decision: its status as a pill before the text. */
+.notes-decision { display: flex; align-items: baseline; gap: 10px; margin: 0.5em 0; padding: 6px 10px; border-radius: 8px; background: var(--ant-color-fill-quaternary); }
+.notes-decision-pill button { padding: 0; border: 0; background: transparent; cursor: pointer; }
+.notes-decision-status { display: inline-block; padding: 0 8px; border-radius: 10px; font-size: 0.78em; font-weight: 600; line-height: 1.7; white-space: nowrap; }
+.notes-decision-open { background: var(--ant-color-fill-secondary); color: var(--ant-color-text-secondary); }
+.notes-decision-decided { background: var(--ant-color-success-bg); color: var(--ant-color-success-text); }
+.notes-decision-rejected { background: var(--ant-color-error-bg); color: var(--ant-color-error-text); }
+.notes-decision-text { flex: 1; min-width: 0; }
+
+/* Blocks that list pages, and the breadcrumb. */
+.notes-page-list { display: flex; flex-direction: column; gap: 6px; margin: 0.5em 0; }
+.notes-page-list ul { margin: 0; padding: 0; list-style: none; }
+.notes-page-row { display: flex; width: 100%; align-items: center; gap: 8px; padding: 3px 6px; border: 0; border-radius: 4px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.notes-page-row:hover { background: var(--ant-color-fill-tertiary); }
+.notes-page-row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ant-color-link); }
+.notes-tag-pages-select { width: 100%; max-width: 420px; }
+.notes-breadcrumb-block { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 0.4em 0; font-size: 0.9em; color: var(--ant-color-text-secondary); }
+.notes-breadcrumb-crumb { display: inline-flex; align-items: center; gap: 4px; }
+.notes-breadcrumb-crumb button { padding: 0 4px; border: 0; border-radius: 4px; background: transparent; color: inherit; cursor: pointer; }
+.notes-breadcrumb-crumb button:hover { background: var(--ant-color-fill-tertiary); }
+.notes-breadcrumb-sep { color: var(--ant-color-text-quaternary); }
+
+/* Page properties: a two-column table. */
+.notes-properties { margin: 0.6em 0; }
+.notes-properties table { width: 100%; border-collapse: collapse; }
+.notes-preview .notes-properties th, .notes-preview .notes-properties td { padding: 2px 8px; border: 0; border-bottom: 1px solid var(--ant-color-border-secondary); vertical-align: middle; }
+.notes-properties th { width: 32%; font-weight: 500; text-align: left; color: var(--ant-color-text-secondary); }
+.notes-preview .notes-properties td.notes-properties-tools { width: 32px; padding: 0; }
+
+/* ---------- B6: chips in the text (date, status, other modules' items, formulas) ---------- */
+
+.notes-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 100%;
+  margin: 0 1px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 0.94em;
+  line-height: 1.5;
+  vertical-align: baseline;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.notes-chip-date { background: var(--ant-color-fill-tertiary); color: var(--ant-color-text); }
+.notes-chip-item { border: 1px solid var(--ant-color-border); background: var(--ant-color-bg-container); color: var(--ant-color-link); }
+.notes-chip-item:hover { border-color: var(--ant-color-primary); }
+.notes-chip-math { padding: 0 2px; cursor: text; }
+/* A status: the pill takes its colour as text on the colour's own tint. */
+.notes-visual .notes-chip-status { font-size: 0.8em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+.notes-visual .notes-chip-status[data-color='gray'] { background: var(--notes-bg-gray); }
+.notes-visual .notes-chip-status[data-color='orange'] { background: var(--notes-bg-orange); }
+.notes-visual .notes-chip-status[data-color='yellow'] { background: var(--notes-bg-yellow); }
+.notes-visual .notes-chip-status[data-color='green'] { background: var(--notes-bg-green); }
+.notes-visual .notes-chip-status[data-color='blue'] { background: var(--notes-bg-blue); }
+.notes-visual .notes-chip-status[data-color='purple'] { background: var(--notes-bg-purple); }
+.notes-visual .notes-chip-status[data-color='magenta'] { background: var(--notes-bg-magenta); }
+.notes-visual .notes-chip-status[data-color='red'] { background: var(--notes-bg-red); }
+.notes-visual .ProseMirror-selectednode > .notes-chip { outline: 2px solid var(--ant-color-primary); }
+
+.notes-chip-editor { display: flex; flex-direction: column; gap: 8px; min-width: 220px; }
+.notes-chip-row { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.notes-chip-colors { display: flex; flex-wrap: wrap; gap: 4px; }
+.notes-chip-colors .notes-swatch { cursor: pointer; }
+.notes-chip-colors .notes-swatch[aria-pressed='true'] { outline: 2px solid var(--ant-color-primary); outline-offset: 1px; }
+
+/* ---------- B7: cover, page look, print ---------- */
+
+.notes-cover { position: relative; height: 220px; overflow: hidden; background: var(--ant-color-fill-tertiary); }
+.notes-cover > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 640px) {
+  .notes-cover { height: 140px; }
+}
+.notes-cover-tools { position: absolute; right: 16px; bottom: 12px; display: flex; gap: 6px; opacity: 0; transition: opacity 0.15s; }
+.notes-cover:hover .notes-cover-tools, .notes-cover-tools:focus-within { opacity: 1; }
+@media (hover: none) {
+  .notes-cover-tools { opacity: 1; }
+}
+.notes-cover-picker { display: flex; flex-direction: column; gap: 10px; }
+.notes-cover-gradients { display: grid; grid-template-columns: repeat(3, 72px); gap: 6px; }
+.notes-cover-gradients button { height: 40px; border: 0; border-radius: 6px; cursor: pointer; }
+.notes-cover-gradients button[aria-pressed='true'] { outline: 2px solid var(--ant-color-primary); outline-offset: 2px; }
+/* The gradients read in both themes: they are the image, not the chrome. */
+.notes-cover-sunset { background: linear-gradient(120deg, #f6d365, #fda085 55%, #f5576c); }
+.notes-cover-ocean { background: linear-gradient(120deg, #2193b0, #6dd5ed); }
+.notes-cover-forest { background: linear-gradient(120deg, #134e5e, #71b280); }
+.notes-cover-dusk { background: linear-gradient(120deg, #2c3e50, #4ca1af 60%, #c4e0e5); }
+.notes-cover-sand { background: linear-gradient(120deg, #e6dada, #c9b79c 60%, #a68b6d); }
+.notes-cover-slate { background: linear-gradient(120deg, #434343, #737373 60%, #a7a7a7); }
+
+/* The page's font and text size. */
+.notes-font-serif .notes-visual, .notes-font-serif textarea { font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif; }
+.notes-font-mono .notes-visual, .notes-font-mono textarea { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.notes-small-text .notes-visual { font-size: 0.9em; }
+
+/* Printing a page (Export as PDF): the page alone, its whole length. */
+@media print {
+  .notes-ai-controls, .notes-ai-prompt { display: none !important; }
+  body * { visibility: hidden; }
+  .notes-print, .notes-print * { visibility: visible; }
+  .notes-print { position: absolute; inset: 0 auto auto 0; width: 100%; height: auto !important; overflow: visible !important; }
+  .notes-cover-tools, .notes-drag-handle, .notes-bubble, aside { display: none !important; }
+}
+
+/* ---------- B8: comments ---------- */
+
+/* Painted by the page only for open threads (see NotesPage), so these are just the colours. */
+.notes-visual-host {
+  --notes-comment-bg: light-dark(rgba(250, 173, 20, 0.18), rgba(250, 173, 20, 0.16));
+  --notes-comment-line: light-dark(#d89614, #d8a434);
+}
+.notes-comment-quote { display: block; padding: 0 0 0 8px; border: 0; border-inline-start: 3px solid light-dark(#d89614, #d8a434); background: none; color: inherit; font: inherit; font-size: 0.85em; opacity: 0.8; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+button.notes-comment-quote:not(:disabled) { cursor: pointer; }
+button.notes-comment-quote:not(:disabled):hover { opacity: 1; }
+@media print {
+  .notes-visual [data-thread] { background: none !important; border: 0 !important; }
+}

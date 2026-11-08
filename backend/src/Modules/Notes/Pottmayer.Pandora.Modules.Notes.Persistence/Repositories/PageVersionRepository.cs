@@ -18,4 +18,7 @@ public sealed class PageVersionRepository(IDataContextAccessor accessor)
     public Task<PageVersion?> FindAsync(Guid pageId, Guid userId, long number, CancellationToken ct)
         => Queryable().AsNoTracking().FirstOrDefaultAsync(
             v => v.PageId == pageId && v.UserId == userId && v.Number == number, ct);
+
+    public Task PurgeByPageAsync(Guid pageId, CancellationToken ct)
+        => Queryable().Where(v => v.PageId == pageId).ExecuteDeleteAsync(ct);
 }

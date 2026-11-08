@@ -34,6 +34,14 @@ a chave é lida por chamada do Integrations (`IExternalCredentialProvider.GetApi
 accountId)`) e passada em `ChatRequest.ApiKey`. O modelo também é por chamada (`ChatRequest.Model`),
 padrão `gemini-3.6-flash` (`AssistantDefaults`). Temperatura 0 em tudo.
 
+**Geração de texto para outros módulos.** `ITextCompletion` em `Assistant.Abstractions/Text` é um
+port síncrono registrado no Application. `TextCompletion` envia `CompleteTextCommand`, exigindo
+`assistant.commands.run` e a flag do módulo. Reutiliza perfil ligado, modelo e chave do usuário;
+sem tools, histórico ou gravação de prompts/invocações. Notes o usa nas prévias de escrita da B9,
+enviando somente seleção ou contexto anterior limitado. Falhas do provedor e respostas vazias ou
+acima de 16000 caracteres retornam `Assistant.TextCompletionFailed`, sem detalhes do provedor.
+Isso é separado das tools de leitura do pipeline abaixo, que continuam sem reenviar notas ao modelo.
+
 ## 2. O pipeline de interpretação
 
 O `InterpretCommandHandler` é o núcleo; os endpoints web e o subscriber do Telegram mandam o mesmo
@@ -168,6 +176,14 @@ O módulo nunca fala com a Bot API. Sequência completa: [Fluxo do Telegram](../
   depois do commit. O Channels quebra respostas acima de 4096 caracteres. Ver [Mensageria](../../../architecture/pt-BR/messaging.md).
 
 O console web roda o pipeline inline na requisição HTTP; o Telegram roda no subscriber.
+
+**Captura explícita no Notes.** `/nota <texto>` só de texto é roteado antes da interpretação, via
+`INoteCapture` em Notes.Abstractions. Não chama Gemini nem cria conversas/invocações; não exige perfil
+de IA ligado/chave. O comando autorizado do Notes cria/reutiliza a caixa, acrescenta parágrafo literal
+com data e registra o EventId junto com o save. Permissões e flags continuam valendo. Texto vazio ou
+grande demais recebe instrução de uso; falhas são informadas sem alegar sucesso; evento repetido
+recebe resposta de captura já realizada. Respostas usam `SendAssistantReply` e outbox do Assistant.
+Mídia/legendas e os demais textos mantêm seus fluxos anteriores.
 
 ## 8. Acoplamento com o Integrations
 

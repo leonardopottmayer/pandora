@@ -1,6 +1,5 @@
 using Pottmayer.Pandora.Modules.Notes.Abstractions;
 using Pottmayer.Pandora.Modules.Notes.Application.Services;
-using Pottmayer.Pandora.Modules.Notes.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Notes.Domain.Errors;
 using Pottmayer.Pandora.Modules.Notes.Domain.Ports.Repositories;
 using Pottmayer.Tars.Core.Cqrs.Commands;
@@ -24,29 +23,7 @@ public sealed class DeletePageCommandHandler(IUnitOfWorkFactory factory, TimePro
             if (page is null)
                 return Result<bool>.Failure([PageErrors.NotFound]);
 
-            var links = ctx.AcquireRepository<IPageLinkRepository>();
-            var tags = ctx.AcquireRepository<ITagRepository>();
-            var pageTags = ctx.AcquireRepository<IPageTagRepository>();
-            var pageMedia = ctx.AcquireRepository<IPageMediaRepository>();
-
-            // Soft-delete the whole subtree so no child is left pointing at a deleted parent.
-            var all = await repo.GetTreeForUserAsync(input.UserId, includeArchived: true, token);
-            foreach (var descendant in PageHierarchy.Subtree(page.Id, all))
-            {
-                descendant.Delete(timeProvider);
-                await repo.UpdateAsync(descendant, token);
-
-                // Edges leaving a deleted page are gone for good; edges pointing at it stay and are
-                // filtered out on read, so restoring the row would restore its inbound mentions.
-                await links.RemoveBySourceAsync(descendant.Id, token);
-
-                // A deleted page no longer uses its media: they may now count as unused.
-                await pageMedia.RemoveByPageAsync(descendant.Id, token);
-
-                // A deleted page stops carrying its tags, and a tag nobody carries anymore goes with
-                // it unless it kept a color.
-                await PageTagSynchronizer.ClearAsync(descendant.Id, input.UserId, tags, pageTags, token);
-            }
+            await PageDeletion.DeleteSubtreesAsync(ctx, [page.Id], input.UserId, timeProvider, token);
 
             return Result<bool>.Success(true);
         }, cancellationToken: ct);

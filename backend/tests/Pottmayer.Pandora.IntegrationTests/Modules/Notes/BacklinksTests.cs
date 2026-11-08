@@ -7,7 +7,7 @@ using Xunit;
 namespace Pottmayer.Pandora.IntegrationTests.Modules.Notes;
 
 /// <summary>
-/// Covers the wiki graph: wikilinks parsed out of a page's markdown on save, the edges rebuilt
+/// Covers the wiki graph: page mentions and page-link blocks read out of a page's blocks on save, the edges rebuilt
 /// idempotently, and the backlinks ("linked mentions") read — including what happens to edges when a
 /// page on either end is deleted.
 /// </summary>
@@ -35,7 +35,7 @@ public sealed class BacklinksTests : IAsyncLifetime
         var target = await CreateAsync("B");
         var source = await CreateAsync("A");
 
-        await UpdateAsync(source, "A", "See [[B]] for details.");
+        await UpdateAsync(source, "A", NoteBlocks.Text("See ", NoteBlocks.Mention(target), " for details."));
 
         var backlink = Assert.Single(await BacklinksAsync(target));
         Assert.Equal(source, backlink.PageId);
@@ -50,23 +50,25 @@ public sealed class BacklinksTests : IAsyncLifetime
         var target = await CreateAsync("B");
         var source = await CreateAsync("A");
 
-        await UpdateAsync(source, "A", "[[B]]");
-        await UpdateAsync(source, "A", "[[B]] still [[B]]");
+        await UpdateAsync(source, "A", NoteBlocks.Text(NoteBlocks.Mention(target)));
+        await UpdateAsync(source, "A", NoteBlocks.Text(NoteBlocks.Mention(target), " still ", NoteBlocks.Mention(target)));
         Assert.Single(await BacklinksAsync(target));
 
-        await UpdateAsync(source, "A", "nothing here anymore");
+        await UpdateAsync(source, "A", NoteBlocks.Text("nothing here anymore"));
         Assert.Empty(await BacklinksAsync(target));
     }
 
     [Fact]
-    public async Task Target_resolves_by_title_or_by_slug_and_an_embed_is_its_own_edge()
+    public async Task A_mention_and_a_page_link_block_are_two_edges()
     {
         await AuthAsync("links3");
         var target = await CreateAsync("Meeting Notes");
         var source = await CreateAsync("Journal");
 
-        // Both spellings point at the same page — one edge — and the embed adds a second kind.
-        await UpdateAsync(source, "Journal", "[[Meeting Notes]] and [[meeting-notes]] and ![[Meeting Notes]]");
+        // Two mentions of the same page are one edge; the page-link block adds a second kind.
+        await UpdateAsync(source, "Journal", NoteBlocks.Doc(
+            NoteBlocks.Paragraph(NoteBlocks.Mention(target), " and ", NoteBlocks.Mention(target)),
+            NoteBlocks.PageLink(target)));
 
         var backlinks = await BacklinksAsync(target);
         Assert.Equal(2, backlinks.Count);
@@ -81,7 +83,7 @@ public sealed class BacklinksTests : IAsyncLifetime
         await AuthAsync("links4");
         var source = await CreateAsync("A");
 
-        var response = await UpdateRawAsync(source, "A", "[[Nowhere]]");
+        var response = await UpdateRawAsync(source, "A", NoteBlocks.Text(NoteBlocks.Mention(Guid.NewGuid())));
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Empty(await BacklinksAsync(source));
     }
@@ -94,19 +96,19 @@ public sealed class BacklinksTests : IAsyncLifetime
 
         await AuthAsync("links-intruder");
         var theirs = await CreateAsync("Their Page");
-        await UpdateAsync(theirs, "Their Page", "[[Shared Title]]");
+        await UpdateAsync(theirs, "Their Page", NoteBlocks.Text(NoteBlocks.Mention(mine)));
 
-        // The intruder's link resolved to nothing: the title belongs to another user's page.
+        // The intruder's mention resolved to nothing: the page belongs to another user.
         await ReAuthAsync("links-owner");
         Assert.Empty(await BacklinksAsync(mine));
     }
 
     [Fact]
-    public async Task Content_created_with_wikilinks_is_parsed_on_create()
+    public async Task Content_created_with_mentions_is_read_on_create()
     {
         await AuthAsync("links5");
         var target = await CreateAsync("B");
-        var source = await CreateAsync("A", "[[B]]");
+        var source = await CreateAsync("A", NoteBlocks.Text(NoteBlocks.Mention(target)));
 
         var backlink = Assert.Single(await BacklinksAsync(target));
         Assert.Equal(source, backlink.PageId);
@@ -118,7 +120,7 @@ public sealed class BacklinksTests : IAsyncLifetime
         await AuthAsync("links6");
         var target = await CreateAsync("B");
         var source = await CreateAsync("A");
-        await UpdateAsync(source, "A", "[[B]]");
+        await UpdateAsync(source, "A", NoteBlocks.Text(NoteBlocks.Mention(target)));
 
         Assert.Equal(HttpStatusCode.OK, (await _client.DeleteAsync($"{Url}/{source}")).StatusCode);
         Assert.Empty(await BacklinksAsync(target));
@@ -130,15 +132,15 @@ public sealed class BacklinksTests : IAsyncLifetime
         await AuthAsync("links7");
         var target = await CreateAsync("B");
         var source = await CreateAsync("A");
-        await UpdateAsync(source, "A", "[[B]]");
+        await UpdateAsync(source, "A", NoteBlocks.Text(NoteBlocks.Mention(target)));
 
         await _client.DeleteAsync($"{Url}/{target}");
 
         // The edge is broken: the target is gone, so its backlinks cannot be read at all.
         Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"{Url}/{target}/backlinks")).StatusCode);
 
-        // Re-saving the source with the same text drops the now-unresolvable edge.
-        var response = await UpdateRawAsync(source, "A", "[[B]]");
+        // Re-saving the source with the same blocks drops the now-unresolvable edge.
+        var response = await UpdateRawAsync(source, "A", NoteBlocks.Text(NoteBlocks.Mention(target)));
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
@@ -162,18 +164,18 @@ public sealed class BacklinksTests : IAsyncLifetime
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokens.AccessToken);
     }
 
-    private async Task<Guid> CreateAsync(string title, string? contentMarkdown = null)
+    private async Task<Guid> CreateAsync(string title, object? content = null)
     {
-        var response = await _client.PostAsJsonAsync(Url, new { title, contentMarkdown });
+        var response = await _client.PostAsJsonAsync(Url, new { title, content });
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<SingleEnvelope>())!.Data.Id;
     }
 
-    private async Task UpdateAsync(Guid id, string title, string contentMarkdown)
-        => (await UpdateRawAsync(id, title, contentMarkdown)).EnsureSuccessStatusCode();
+    private async Task UpdateAsync(Guid id, string title, object content)
+        => (await UpdateRawAsync(id, title, content)).EnsureSuccessStatusCode();
 
-    private Task<HttpResponseMessage> UpdateRawAsync(Guid id, string title, string contentMarkdown)
-        => _client.PutAsJsonAsync($"{Url}/{id}", new { title, contentMarkdown });
+    private Task<HttpResponseMessage> UpdateRawAsync(Guid id, string title, object content)
+        => _client.PutAsJsonAsync($"{Url}/{id}", new { title, content });
 
     private async Task<IReadOnlyList<BacklinkNode>> BacklinksAsync(Guid id)
         => (await _client.GetFromJsonAsync<ListEnvelope>($"{Url}/{id}/backlinks"))!.Data;

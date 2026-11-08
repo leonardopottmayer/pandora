@@ -87,3 +87,11 @@ The import layouts catalog has name/bank/code search, format and destination fil
    revisit with multi-currency consolidation.
 5. **Backfill of past installments** — when a plan is created from installment N via import, whether
    to optionally generate installments 1..N−1 (default: no).
+
+## Notes summaries
+
+Notes now embeds read-only live account balances, card limits and monthly gross posted expenses
+grouped by category and separated by currency. It reuses the existing authenticated frontend APIs,
+hooks and query keys, with no backend dependency or new endpoint. Configurations store ids/month
+only; public Notes pages never query/display financial data. See Notes implementation status for
+permissions, date semantics and export privacy.

@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Marked } from 'marked'
-import { embedRenderer, sanitizeNoteHtml, videoEmbedUrl } from './embeds'
-
-const render = (md: string) => sanitizeNoteHtml(new Marked({ renderer: embedRenderer }).parse(md, { async: false }))
+import { embedFrame, mediaFileKind, videoEmbedUrl } from './embeds'
 
 describe('videoEmbedUrl', () => {
   it.each([
@@ -21,35 +18,30 @@ describe('videoEmbedUrl', () => {
   })
 })
 
-describe('embeds in a note', () => {
-  it('draws a video link alone on a line as a sandboxed player', () => {
-    const html = render('Before\n\nhttps://youtu.be/dQw4w9WgXcQ\n\nAfter')
-    expect(html).toContain('<div class="notes-video"><iframe src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"')
-    expect(html).toContain('sandbox="allow-scripts allow-same-origin')
-    expect(html).toContain('referrerpolicy="strict-origin-when-cross-origin"')
-  })
-
-  it('leaves a video link inside a sentence as a link', () => {
-    const html = render('Watch https://youtu.be/dQw4w9WgXcQ later')
-    expect(html).not.toContain('<iframe')
-    expect(html).toContain('<a href="https://youtu.be/dQw4w9WgXcQ">')
-  })
-
-  it('keeps a hand-written map frame, sandboxed, whatever it asked for', () => {
-    const html = render('<iframe src="https://www.google.com/maps/embed?pb=abc" height="300" allow="camera" srcdoc="<b>x</b>"></iframe>')
-    expect(html).toContain('src="https://www.google.com/maps/embed?pb=abc"')
-    expect(html).toContain('height="300"')
-    expect(html).toContain('sandbox=')
-    expect(html).not.toContain('camera')
-    expect(html).not.toContain('srcdoc')
-  })
-
+describe('embedFrame', () => {
   it.each([
-    '<iframe src="https://evil.example.com/embed/x"></iframe>',
-    '<iframe src="http://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>',
-    '<iframe src="https://www.google.com/search?q=x"></iframe>',
-    '<iframe srcdoc="<script>alert(1)</script>"></iframe>',
-  ])('drops a frame from anywhere else: %s', (md) => {
-    expect(render(md)).not.toContain('<iframe')
+    ['https://www.loom.com/share/0281766fa2d04bb788eaf19e65135184', 'https://www.loom.com/embed/0281766fa2d04bb788eaf19e65135184'],
+    ['https://www.figma.com/design/AbC123/Tela', 'https://www.figma.com/embed?embed_host=pandora&url=https%3A%2F%2Fwww.figma.com%2Fdesign%2FAbC123%2FTela'],
+    ['https://www.google.com/maps/@-27.59,-48.54,14z', 'https://maps.google.com/maps?q=-27.59%2C-48.54&z=14&output=embed'],
+    ['https://www.google.com/maps/place/Florian%C3%B3polis/@-27.59,-48.54,12z', 'https://maps.google.com/maps?q=Florian%C3%B3polis&z=12&output=embed'],
+    ['https://drive.google.com/file/d/1AbC-dEf/view?usp=sharing', 'https://drive.google.com/file/d/1AbC-dEf/preview'],
+    ['https://docs.google.com/document/d/1AbC/edit', 'https://docs.google.com/document/d/1AbC/preview'],
+    ['https://miro.com/app/board/uXjVabc=/', 'https://miro.com/app/live-embed/uXjVabc=/'],
+    ['https://codepen.io/ana/pen/xYzAbc', 'https://codepen.io/ana/embed/xYzAbc?default-tab=result'],
+    ['https://youtu.be/dQw4w9WgXcQ', 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ'],
+  ])('draws %s from the site frame', (link, src) => {
+    expect(embedFrame(link)?.src).toBe(src)
+  })
+
+  it('writes the frame of a gist, the site gives none', () => {
+    expect(embedFrame('https://gist.github.com/ana/0123abcd')?.html).toContain('https://gist.github.com/ana/0123abcd.js')
+  })
+
+  it.each(['https://github.com/ana/repo', 'https://x.com/ana/status/1', 'javascript:alert(1)', 'nada'])('leaves %s to the preview', (link) => {
+    expect(embedFrame(link)).toBeNull()
+  })
+
+  it('knows a video or an audio file by its extension', () => {
+    expect([mediaFileKind('https://a.example/v.mp4'), mediaFileKind('https://a.example/a.mp3?x=1'), mediaFileKind('https://a.example/p.html')]).toEqual(['video', 'audio', null])
   })
 })

@@ -17,6 +17,7 @@
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Communications.Abstractions/Pottmayer.Pandora.Modules.Communications.Abstractions.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Communications.Contracts/Pottmayer.Pandora.Modules.Communications.Contracts.csproj" />
     <ProjectReference Include="../Pottmayer.Pandora.Modules.Communications.Domain/Pottmayer.Pandora.Modules.Communications.Domain.csproj" />
+    <ProjectReference Include="../../Notes/Pottmayer.Pandora.Modules.Notes.Abstractions/Pottmayer.Pandora.Modules.Notes.Abstractions.csproj" />
     <!-- Integrations: credentials (usage source) and the account events -->
     <ProjectReference Include="../../Integrations/Pottmayer.Pandora.Modules.Integrations.Abstractions/Pottmayer.Pandora.Modules.Integrations.Abstractions.csproj" />
     <ProjectReference Include="../../Integrations/Pottmayer.Pandora.Modules.Integrations.Contracts/Pottmayer.Pandora.Modules.Integrations.Contracts.csproj" />

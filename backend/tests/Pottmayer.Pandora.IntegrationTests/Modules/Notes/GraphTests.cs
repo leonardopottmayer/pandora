@@ -32,7 +32,7 @@ public sealed class GraphTests : IAsyncLifetime
     {
         await AuthAsync("graph1");
         var b = await CreateAsync("B");
-        var a = await CreateAsync("A", "[[B]]");
+        var a = await CreateAsync("A", NoteBlocks.Text(NoteBlocks.Mention(b)));
         var lonely = await CreateAsync("Lonely");
 
         var graph = await GraphAsync();
@@ -55,8 +55,8 @@ public sealed class GraphTests : IAsyncLifetime
     public async Task An_embed_and_a_link_to_the_same_page_are_two_edges()
     {
         await AuthAsync("graph2");
-        await CreateAsync("B");
-        await CreateAsync("A", "[[B]] and ![[B]]");
+        var b = await CreateAsync("B");
+        await CreateAsync("A", NoteBlocks.Doc(NoteBlocks.Paragraph(NoteBlocks.Mention(b)), NoteBlocks.PageLink(b)));
 
         var graph = await GraphAsync();
 
@@ -71,9 +71,9 @@ public sealed class GraphTests : IAsyncLifetime
         await AuthAsync("graph3");
         // c <- b <- a  and  d -> b : from b, a and d are one hop, c is one hop, nothing is two.
         var c = await CreateAsync("C");
-        var b = await CreateAsync("B", "[[C]]");
-        var a = await CreateAsync("A", "[[B]]");
-        var d = await CreateAsync("D", "[[B]]");
+        var b = await CreateAsync("B", NoteBlocks.Text(NoteBlocks.Mention(c)));
+        var a = await CreateAsync("A", NoteBlocks.Text(NoteBlocks.Mention(b)));
+        var d = await CreateAsync("D", NoteBlocks.Text(NoteBlocks.Mention(b)));
 
         var graph = await GraphAsync($"{Url}/{b}/graph?depth=1");
 
@@ -89,8 +89,8 @@ public sealed class GraphTests : IAsyncLifetime
         await AuthAsync("graph4");
         // a -> b -> c: from a, c is two hops away.
         var c = await CreateAsync("C");
-        await CreateAsync("B", "[[C]]");
-        var a = await CreateAsync("A", "[[B]]");
+        var b = await CreateAsync("B", NoteBlocks.Text(NoteBlocks.Mention(c)));
+        var a = await CreateAsync("A", NoteBlocks.Text(NoteBlocks.Mention(b)));
 
         var depthOne = await GraphAsync($"{Url}/{a}/graph?depth=1");
         Assert.Equal(2, depthOne.Nodes.Count);
@@ -123,7 +123,7 @@ public sealed class GraphTests : IAsyncLifetime
     {
         await AuthAsync("graph6");
         var b = await CreateAsync("B");
-        await CreateAsync("A", "[[B]]");
+        await CreateAsync("A", NoteBlocks.Text(NoteBlocks.Mention(b)));
 
         (await _client.DeleteAsync($"{Url}/{b}")).EnsureSuccessStatusCode();
 
@@ -137,7 +137,7 @@ public sealed class GraphTests : IAsyncLifetime
     {
         await AuthAsync("graph7");
         var b = await CreateAsync("B");
-        await CreateAsync("A", "[[B]]");
+        await CreateAsync("A", NoteBlocks.Text(NoteBlocks.Mention(b)));
 
         (await _client.PostAsync($"{Url}/{b}/archive", null)).EnsureSuccessStatusCode();
 
@@ -174,8 +174,8 @@ public sealed class GraphTests : IAsyncLifetime
     public async Task Graph_nodes_carry_their_tags_for_families_without_duplicating_pages()
     {
         await AuthAsync("graph-families");
-        var tagged = await CreateAsync("Both", "#work #travel");
-        var plain = await CreateAsync("Plain", "[[Both]]");
+        var tagged = await CreateAsync("Both", NoteBlocks.Doc(NoteBlocks.Tags("work", "travel")));
+        var plain = await CreateAsync("Plain", NoteBlocks.Text(NoteBlocks.Mention(tagged)));
         var graph = await GraphAsync();
         Assert.Equal(2, graph.Nodes.Count);
         Assert.Equal(2, graph.Nodes.Single(node => node.Id == tagged).TagIds.Count);
@@ -188,9 +188,9 @@ public sealed class GraphTests : IAsyncLifetime
     private Task AuthAsync(string username) =>
         IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, $"{username}@example.com", username);
 
-    private async Task<Guid> CreateAsync(string title, string? contentMarkdown = null)
+    private async Task<Guid> CreateAsync(string title, object? content = null)
     {
-        var response = await _client.PostAsJsonAsync(Url, new { title, contentMarkdown });
+        var response = await _client.PostAsJsonAsync(Url, new { title, content });
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<SingleEnvelope>())!.Data.Id;
     }

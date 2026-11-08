@@ -32,4 +32,7 @@ public sealed class PageLinkRepository(IDataContextAccessor accessor)
         if (links.Count > 0)
             await RemoveRangeAsync(links, ct);
     }
+
+    public Task PurgeByPageAsync(Guid pageId, CancellationToken ct = default)
+        => Queryable().Where(l => l.SourcePageId == pageId || l.TargetPageId == pageId).ExecuteDeleteAsync(ct);
 }

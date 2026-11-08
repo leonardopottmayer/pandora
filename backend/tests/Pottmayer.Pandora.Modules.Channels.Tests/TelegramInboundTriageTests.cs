@@ -44,6 +44,26 @@ public sealed class TelegramInboundTriageTests
         new(updateId, Message: new TelegramIncomingMessage(
             1, new TelegramChat(chatId, "private"), new TelegramSender(chatId), Now, Text: text));
 
+    [Theory]
+    [InlineData("/nota texto")]
+    [InlineData("/nota@pandora_bot texto")]
+    [InlineData("/nota\nprimeira linha")]
+    public async Task Note_capture_commands_on_the_assistant_bot_are_forwarded_for_linked_users(string text)
+    {
+        await Triage().HandleAsync("assistant", TextUpdate(80, long.Parse(ChatId), text), CancellationToken.None);
+        Assert.Equal(text, Assert.IsType<InboundMessageReceived>(Assert.Single(_bus.Published)).Text);
+        Assert.Empty(_client.Sent);
+    }
+
+    [Fact]
+    public async Task Note_commands_do_not_bypass_linking_or_run_on_the_notifications_bot()
+    {
+        await Triage().HandleAsync("assistant", TextUpdate(81, 999, "/nota private"), CancellationToken.None);
+        await Triage().HandleAsync("notifications", TextUpdate(82, long.Parse(ChatId), "/nota private"), CancellationToken.None);
+        Assert.Empty(_bus.Published);
+        Assert.Equal(2, _client.Sent.Count);
+    }
+
     [Fact]
     public async Task A_message_from_a_linked_user_becomes_an_inbound_message_event()
     {

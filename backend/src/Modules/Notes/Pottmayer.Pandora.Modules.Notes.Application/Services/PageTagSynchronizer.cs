@@ -5,8 +5,8 @@ using Pottmayer.Pandora.Modules.Notes.Domain.ValueObjects;
 namespace Pottmayer.Pandora.Modules.Notes.Application.Services;
 
 /// <summary>
-/// Keeps a page's tags in sync with its content, the same way <see cref="PageLinkSynchronizer"/>
-/// keeps the wiki edges: tags are derived data, so a save recomputes the whole set from the markdown
+/// Keeps a page's tags in sync with its tags block, the same way <see cref="PageLinkSynchronizer"/>
+/// keeps the wiki edges: tags are derived data, so a save recomputes the whole set from the blocks
 /// and reconciles it against what is stored.
 ///
 /// Two things set it apart from the link graph. A tag that no page mentions yet is <em>created</em>
@@ -17,17 +17,18 @@ namespace Pottmayer.Pandora.Modules.Notes.Application.Services;
 internal static class PageTagSynchronizer
 {
     /// <summary>
-    /// Rewrites the tags of <paramref name="page"/> from its markdown and returns them — the caller
+    /// Rewrites the tags of <paramref name="page"/> from its tags block and returns them — the caller
     /// has just computed the page's tag list, so it does not have to read it back.
     /// </summary>
     public static async Task<IReadOnlyList<Tag>> RebuildAsync(
         Page page,
+        PageContent content,
         ITagRepository tags,
         IPageTagRepository pageTags,
         TimeProvider timeProvider,
         CancellationToken ct)
     {
-        var desired = await ResolveTagsAsync(page, tags, timeProvider, ct);
+        var desired = await ResolveTagsAsync(page, content, tags, timeProvider, ct);
         var desiredIds = desired.Select(t => t.Id).ToHashSet();
         var existing = await pageTags.GetByPageAsync(page.Id, ct);
 
@@ -66,12 +67,12 @@ internal static class PageTagSynchronizer
     }
 
     /// <summary>
-    /// The tags the markdown asks for — creating the ones the user does not have yet.
+    /// The tags the tags block asks for — creating the ones the user does not have yet.
     /// </summary>
     private static async Task<IReadOnlyList<Tag>> ResolveTagsAsync(
-        Page page, ITagRepository tags, TimeProvider timeProvider, CancellationToken ct)
+        Page page, PageContent content, ITagRepository tags, TimeProvider timeProvider, CancellationToken ct)
     {
-        var references = TagParser.Parse(page.ContentMarkdown);
+        var references = content.Tags;
         if (references.Count == 0)
             return [];
 

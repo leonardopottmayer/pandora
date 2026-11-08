@@ -16,6 +16,8 @@
     <ProjectReference Include="../../Identity/Pottmayer.Pandora.Modules.Identity.Abstractions/Pottmayer.Pandora.Modules.Identity.Abstractions.csproj" />
     <!-- Cross-module contracts: inbound message the Assistant interprets + the reply it asks Channels to send. -->
     <ProjectReference Include="../../Channels/Pottmayer.Pandora.Modules.Channels.Contracts/Pottmayer.Pandora.Modules.Channels.Contracts.csproj" />
+    <!-- Cross-module port: direct /nota capture without AI. -->
+    <ProjectReference Include="../../Notes/Pottmayer.Pandora.Modules.Notes.Abstractions/Pottmayer.Pandora.Modules.Notes.Abstractions.csproj" />
     <!-- Cross-module port: downloads the bytes of an inbound voice note by its opaque media ref. -->
     <ProjectReference Include="../../Channels/Pottmayer.Pandora.Modules.Channels.Abstractions/Pottmayer.Pandora.Modules.Channels.Abstractions.csproj" />
     <!-- Tars: Messaging (integration-event subscribe + publish) -->

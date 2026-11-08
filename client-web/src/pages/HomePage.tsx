@@ -1,6 +1,7 @@
 import { Card, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/modules/identity/context/auth-context'
+import { DailyNoteButton } from '@/modules/notes/components/DailyNoteButton'
 
 export function HomePage() {
   const { t } = useTranslation()
@@ -16,6 +17,7 @@ export function HomePage() {
         <Typography.Paragraph type="secondary" className="!mb-0">
           {t('home.welcome')}
         </Typography.Paragraph>
+        <div className="mt-4"><DailyNoteButton /></div>
       </Card>
     </div>
   )

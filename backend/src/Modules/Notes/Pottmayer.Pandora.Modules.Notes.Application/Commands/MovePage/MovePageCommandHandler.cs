@@ -38,6 +38,13 @@ public sealed class MovePageCommandHandler(IUnitOfWorkFactory factory)
 
                 spaceId = parent.SpaceId;
             }
+            else if (input.FolderId is { } folderId)
+            {
+                var folder = await ctx.AcquireRepository<IFolderRepository>().FindByIdForUserAsync(folderId, input.UserId, token);
+                if (folder is null)
+                    return Result<PageDto>.Failure([FolderErrors.NotFound]);
+                spaceId = folder.SpaceId;
+            }
             else if (input.SpaceId is { } targetSpaceId)
             {
                 if (await ctx.AcquireRepository<ISpaceRepository>().FindByIdForUserAsync(targetSpaceId, input.UserId, token) is null)
@@ -45,7 +52,7 @@ public sealed class MovePageCommandHandler(IUnitOfWorkFactory factory)
                 spaceId = targetSpaceId;
             }
 
-            page.Move(input.ParentId, input.OrderIndex);
+            page.Move(input.ParentId, input.OrderIndex, input.FolderId);
 
             // A page never sits in a different space from its parent, so its descendants come along.
             if (spaceId != page.SpaceId)

@@ -4,6 +4,9 @@ namespace Pottmayer.Pandora.Modules.Assistant.Domain.Errors;
 
 public static class AssistantErrors
 {
+    public static Error TextCompletionFailed =>
+        Error.Validation("Assistant.TextCompletionFailed", "The AI could not generate text right now. Try again shortly.");
+
     public static Error ModelRequired =>
         Error.Validation("Assistant.ModelRequired", "A chat model is required.");
 

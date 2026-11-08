@@ -9,6 +9,10 @@ public interface IPageRepository : IStandardRepository<Page, Guid>
     /// <summary>One non-deleted page owned by the user, or <c>null</c> (404-on-foreign-resource rule).</summary>
     Task<Page?> FindByIdForUserAsync(Guid id, Guid userId, CancellationToken ct = default);
 
+    /// <summary>Only direct, nondeleted pages of an owned folder, optionally narrowed by archive state and ids.</summary>
+    Task<IReadOnlyList<Page>> GetInFolderAsync(Guid userId, Guid folderId, bool includeArchived,
+        IReadOnlyCollection<Guid>? pageIds = null, CancellationToken ct = default);
+
     /// <summary>
     /// The user's non-deleted pages for the sidebar tree, ordered by parent then <see cref="Page.OrderIndex"/>;
     /// archived ones are optional.
@@ -24,17 +28,6 @@ public interface IPageRepository : IStandardRepository<Page, Guid>
 
     /// <summary>Whether the user already has a non-deleted page with this slug.</summary>
     Task<bool> ExistsWithSlugAsync(Guid userId, string slug, CancellationToken ct = default);
-
-    /// <summary>
-    /// Candidate wikilink targets: the user's non-deleted pages whose title (case-insensitive) is in
-    /// <paramref name="lowerTitles"/> or whose slug is in <paramref name="slugs"/>. Archived pages
-    /// count â€” archiving hides a page from the sidebar, it does not unlink it.
-    /// </summary>
-    Task<IReadOnlyList<Page>> FindByTitlesOrSlugsAsync(
-        Guid userId,
-        IReadOnlyCollection<string> lowerTitles,
-        IReadOnlyCollection<string> slugs,
-        CancellationToken ct = default);
 
     /// <summary>The user's non-deleted pages among <paramref name="ids"/>, ordered by title.</summary>
     Task<IReadOnlyList<Page>> GetByIdsForUserAsync(
@@ -56,6 +49,27 @@ public interface IPageRepository : IStandardRepository<Page, Guid>
     /// them last changed. Spaces with no page are absent.
     /// </summary>
     Task<IReadOnlyDictionary<Guid, SpacePageStats>> GetSpaceStatsAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>The user's non-deleted pages opened most recently, newest first.</summary>
+    Task<IReadOnlyList<Page>> GetRecentForUserAsync(Guid userId, int limit, CancellationToken ct = default);
+
+    /// <summary>
+    /// Stamps when the page was opened, straight in the store: a visit is not an edit, so neither the
+    /// page's "edited" time nor its versions move. False when it is not the user's live page.
+    /// </summary>
+    Task<bool> MarkViewedAsync(Guid id, Guid userId, DateTimeOffset at, CancellationToken ct = default);
+
+    /// <summary>The user's soft-deleted pages (the trash), most recently deleted first.</summary>
+    Task<IReadOnlyList<Page>> GetDeletedForUserAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Deletes a soft-deleted page's row for good, straight in the store. Its links, versions, tags and
+    /// media uses must be gone first, and its sub-pages before it.
+    /// </summary>
+    Task PurgeAsync(Guid id, Guid userId, CancellationToken ct = default);
+
+    /// <summary>The non-deleted page whose public link is <paramref name="token"/>, whoever owns it.</summary>
+    Task<Page?> FindByPublicTokenAsync(string token, CancellationToken ct = default);
 }
 
 public sealed record SpacePageStats(int PageCount, DateTimeOffset LastEditedAt);

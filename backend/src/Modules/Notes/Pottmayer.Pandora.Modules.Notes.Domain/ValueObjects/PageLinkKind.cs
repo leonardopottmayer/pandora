@@ -3,9 +3,9 @@ using Pottmayer.Pandora.Shared.Domain;
 namespace Pottmayer.Pandora.Modules.Notes.Domain.ValueObjects;
 
 /// <summary>
-/// How a page references another one in its markdown: a plain wikilink <c>[[Target]]</c> or an
-/// embed <c>![[Target]]</c> (the target's content shown inline). Both are edges in the same graph;
-/// the kind only changes how the reference is rendered.
+/// How a page references another one: named inside the text (a mention, stored as
+/// <c>wikilink</c>) or shown as a page-link block (a card, stored as <c>embed</c>). Both are edges in the
+/// same graph; the kind only changes how the reference is drawn.
 /// </summary>
 public sealed class PageLinkKind : IDomainValue<PageLinkKind>
 {

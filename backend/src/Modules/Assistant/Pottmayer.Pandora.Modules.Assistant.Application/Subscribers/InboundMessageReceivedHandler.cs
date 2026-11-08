@@ -8,6 +8,7 @@ using Pottmayer.Pandora.Modules.Assistant.Application.Interpret;
 using Pottmayer.Pandora.Modules.Assistant.Domain.ValueObjects;
 using Pottmayer.Pandora.Modules.Channels.Abstractions;
 using Pottmayer.Pandora.Modules.Channels.Contracts;
+using Pottmayer.Pandora.Modules.Notes.Abstractions.Capture;
 using Pottmayer.Tars.Ai.Chat.Abstractions.Models;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
@@ -16,8 +17,8 @@ using Pottmayer.Tars.Messaging.Abstractions;
 namespace Pottmayer.Pandora.Modules.Assistant.Application.Subscribers;
 
 /// <summary>
-/// The Telegram side of the assistant: an inbound message that arrived on the assistant bot is interpreted
-/// exactly like the web command bar, and whatever it produced is sent back to the user through Channels.
+/// The Telegram side of the assistant: explicit /nota text is captured directly; other inbound messages
+/// are interpreted like the web command bar, and the result is sent back to the user through Channels.
 /// Runs one message at a time as an integration-event subscriber — the latency and durability the async
 /// path was meant to give — and speaks only in domain terms, never touching the Bot API.
 /// </summary>
@@ -39,6 +40,7 @@ public sealed class InboundMessageReceivedHandler(
     IInboundMediaReader media,
     IEnumerable<IAssistantFileQueue> fileQueues,
     AssistantToolContextResolver contexts,
+    INoteCapture captures,
     TimeProvider timeProvider,
     ILogger<InboundMessageReceivedHandler> logger)
     : IIntegrationEventHandler<InboundMessageReceived>
@@ -47,6 +49,30 @@ public sealed class InboundMessageReceivedHandler(
     {
         if (!string.Equals(@event.Bot, AssistantModule.Name, StringComparison.OrdinalIgnoreCase))
             return;
+
+        if (@event.Channel.Equals("telegram", StringComparison.OrdinalIgnoreCase) &&
+            @event.MediaRef is null && NoteCaptureSyntax.TryParse(@event.Text, out var captureText))
+        {
+            var context = await contexts.ResolveAsync(@event.UserId, cancellationToken);
+            if (string.IsNullOrWhiteSpace(captureText) || captureText.Length > 8000)
+            {
+                await ReplyAsync(@event.UserId, context.Text("Use /nota <texto> para guardar uma captura no Notes (até 8000 caracteres).",
+                    "Use /nota <text> to capture a note in Notes (up to 8000 characters)."), null, cancellationToken);
+                return;
+            }
+            var captured = await captures.CaptureAsync(new NoteCaptureRequest(
+                @event.UserId, @event.EventId, captureText, @event.OccurredAt, context.Locale), cancellationToken);
+            string captureReply;
+            if (captured.IsFailure)
+                captureReply = context.Text("Não consegui guardar a captura. Confira as permissões e a página de captura no Notes.",
+                    "I couldn't save the capture. Check permissions and the capture page in Notes.");
+            else if (captured.Value!.IsDuplicate)
+                captureReply = context.Text("Essa mensagem já foi capturada no Notes.", "That message was already captured in Notes.");
+            else
+                captureReply = context.Text($"📝 Texto guardado em \"{captured.Value.Title}\" no Notes.", $"📝 Text saved to \"{captured.Value.Title}\" in Notes.");
+            await ReplyAsync(@event.UserId, captureReply, null, cancellationToken);
+            return;
+        }
 
         var isAudio = @event.MediaMimeType?.StartsWith("audio/", StringComparison.OrdinalIgnoreCase) == true;
         if (@event.MediaRef is not null && !isAudio)

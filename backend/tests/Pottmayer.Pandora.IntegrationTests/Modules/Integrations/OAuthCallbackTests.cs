@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Pottmayer.Pandora.IntegrationTests.Support;
 using Pottmayer.Pandora.Modules.Integrations.Domain.Ports;
 using Xunit;
@@ -27,8 +28,15 @@ public sealed class OAuthCallbackTests : IAsyncLifetime
     {
         _factory = factory;
         _client = factory
-            .WithWebHostBuilder(b => b.ConfigureTestServices(s => s.AddSingleton<IOAuthProvider, FakeGoogle>()))
+            .WithWebHostBuilder(b => b.ConfigureTestServices(UseFakeGoogle))
             .CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+    }
+
+    // The real Google is registered whenever the local config has a client id; the fake replaces it.
+    private static void UseFakeGoogle(IServiceCollection services)
+    {
+        services.RemoveAll<IOAuthProvider>();
+        services.AddSingleton<IOAuthProvider, FakeGoogle>();
     }
 
     public Task InitializeAsync() => _factory.ResetDatabaseAsync();
@@ -102,7 +110,7 @@ public sealed class OAuthCallbackTests : IAsyncLifetime
         var erins = Assert.Single(await AccountsApi.AccountsAsync(_client)).Id;
 
         var other = _factory
-            .WithWebHostBuilder(b => b.ConfigureTestServices(s => s.AddSingleton<IOAuthProvider, FakeGoogle>()))
+            .WithWebHostBuilder(b => b.ConfigureTestServices(UseFakeGoogle))
             .CreateClient();
         await IdentityHelper.AuthenticateAsync(other, _factory.ConnectionString, "frank@example.com", "frank");
 

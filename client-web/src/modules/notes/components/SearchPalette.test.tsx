@@ -29,13 +29,31 @@ function Harness({ onSelect }: { onSelect: (id: string) => void }) {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <button onClick={() => setOpen(true)}>search</button>
+      <button aria-expanded={open} onClick={() => setOpen(true)}>search</button>
       <SearchPalette open={open} onOpenChange={setOpen} onSelect={onSelect} />
     </>
   )
 }
 
 describe('SearchPalette', () => {
+  it('offers questions beside search and closes when a cited page is chosen', async () => {
+    const onSelect = vi.fn()
+    server.use(
+      http.get(`${NOTES_BASE}/spaces`, () => HttpResponse.json({ data: [], success: true })),
+      http.get(`${NOTES_BASE}/tags`, () => HttpResponse.json({ data: [], success: true })),
+      http.post(`${NOTES_BASE}/ai/ask`, () => HttpResponse.json({ answer: 'March 20', sources: [
+      { pageId: 'p1', spaceId: 's1', title: 'Apollo deadline', icon: null, excerpt: 'Launch date' },
+    ] })))
+    renderWithProviders(<Harness onSelect={onSelect} />)
+    await userEvent.click(screen.getByRole('button', { name: 'search' }))
+    await userEvent.click(await screen.findByText('Ask your notes'))
+    await userEvent.type(screen.getByRole('textbox', { name: 'Question for your notes' }), 'Apollo deadline')
+    await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+    await userEvent.click(await screen.findByRole('button', { name: /Apollo deadline/ }))
+    expect(onSelect).toHaveBeenCalledWith('p1')
+    expect(screen.getByRole('button', { name: 'search' })).toHaveAttribute('aria-expanded', 'false')
+  })
+
   it('opens on Ctrl+K, searches, and opens the chosen page on Enter', async () => {
     mockSearch([hit('p1', 'Alpha'), hit('p2', 'Beta')])
     const onSelect = vi.fn()

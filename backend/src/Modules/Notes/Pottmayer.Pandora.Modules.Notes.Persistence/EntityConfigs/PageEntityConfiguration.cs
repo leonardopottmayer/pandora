@@ -24,14 +24,23 @@ internal sealed class PageEntityConfiguration : IEntityTypeConfiguration<Page>
         builder.Property(p => p.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(p => p.SpaceId).HasColumnName("space_id").IsRequired();
         builder.Property(p => p.ParentId).HasColumnName("parent_id");
+        builder.Property(p => p.FolderId).HasColumnName("folder_id");
         builder.Property(p => p.Title).HasColumnName("title").HasMaxLength(255).IsRequired();
         builder.Property(p => p.Slug).HasColumnName("slug").HasMaxLength(100).IsRequired();
-        builder.Property(p => p.ContentMarkdown).HasColumnName("content_markdown").IsRequired();
+        builder.Property(p => p.Content).HasColumnName("content").HasColumnType("jsonb").IsRequired();
+        builder.Property(p => p.ContentText).HasColumnName("content_text").IsRequired();
         builder.Property(p => p.Icon).HasColumnName("icon").HasMaxLength(50);
         builder.Property(p => p.OrderIndex).HasColumnName("order_index").IsRequired();
         builder.Property(p => p.IsFavorite).HasColumnName("is_favorite").IsRequired();
+        builder.Property(p => p.IsTemplate).HasColumnName("is_template").IsRequired();
         builder.Property(p => p.ArchivedAt).HasColumnName("archived_at");
         builder.Property(p => p.DeletedAt).HasColumnName("deleted_at");
+        builder.Property(p => p.Appearance).HasColumnName("appearance").HasColumnType("jsonb").IsRequired();
+        builder.Property(p => p.IsLocked).HasColumnName("is_locked").IsRequired();
+        builder.Property(p => p.VerifiedAt).HasColumnName("verified_at");
+        builder.Property(p => p.VerifiedUntil).HasColumnName("verified_until");
+        builder.Property(p => p.ViewedAt).HasColumnName("viewed_at");
+        builder.Property(p => p.PublicToken).HasColumnName("public_token").HasMaxLength(64);
         builder.Property(p => p.HistoryNumber).HasColumnName("history_number").IsConcurrencyToken();
         builder.Ignore(p => p.HistorySource);
         builder.Ignore(p => p.RestoredFrom);
@@ -47,12 +56,15 @@ internal sealed class PageEntityConfiguration : IEntityTypeConfiguration<Page>
         builder.Property<NpgsqlTsVector>(PageColumns.SearchVector)
                .HasColumnName("search_vector")
                .HasComputedColumnSql(
-                   "to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(content_markdown, ''))",
+                   "to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(content_text, ''))",
                    stored: true);
 
         builder.HasIndex(p => p.UserId).HasDatabaseName("ix_nte001_user_id");
         builder.HasIndex(p => p.ParentId).HasDatabaseName("ix_nte001_parent_id");
         builder.HasIndex(p => p.SpaceId).HasDatabaseName("ix_nte001_space_id");
+        builder.HasIndex(p => p.FolderId).HasDatabaseName("ix_nte001_folder_id");
+        builder.HasIndex(p => p.PublicToken).HasDatabaseName("uq_nte001_public_token").IsUnique().HasFilter("public_token IS NOT NULL");
+        builder.HasOne<Folder>().WithMany().HasForeignKey(p => p.FolderId).HasConstraintName("fk_nte001_folder");
 
         // Declared so EF inserts a space created on the fly before the page that goes in it.
         builder.HasOne<Space>().WithMany().HasForeignKey(p => p.SpaceId).HasConstraintName("fk_nte001_space");

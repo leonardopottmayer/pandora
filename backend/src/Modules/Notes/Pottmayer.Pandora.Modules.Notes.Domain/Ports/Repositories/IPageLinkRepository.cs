@@ -24,4 +24,7 @@ public interface IPageLinkRepository : IStandardRepository<PageLink, Guid>
 
     /// <summary>Drops every edge leaving this page. Runs when the page is deleted.</summary>
     Task RemoveBySourceAsync(Guid sourcePageId, CancellationToken ct = default);
+
+    /// <summary>Drops every link from or to a page that is going away for good, straight in the store.</summary>
+    Task PurgeByPageAsync(Guid pageId, CancellationToken ct = default);
 }

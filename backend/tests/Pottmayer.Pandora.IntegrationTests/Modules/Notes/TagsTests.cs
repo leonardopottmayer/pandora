@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using System.Net;
 using System.Net.Http.Json;
 using Npgsql;
@@ -96,10 +97,11 @@ public sealed class TagsTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task A_heading_a_number_and_code_are_not_tags()
+    public async Task Only_the_tags_block_makes_tags_and_a_bare_number_is_not_one()
     {
         await AuthAsync("tag6");
-        await CreateAsync("Variados", "# Titulo\n\nissue #123\n\n```\n#comentario\n```\n\n#valida");
+        await CreateRawAsync("Variados", NoteBlocks.Doc(
+            NoteBlocks.Heading(1, "#titulo"), NoteBlocks.Paragraph("issue #comentario"), NoteBlocks.Tags("#123", "valida")));
 
         Assert.Equal(["valida"], (await ListTagsAsync()).Select(t => t.Slug));
     }
@@ -154,7 +156,7 @@ public sealed class TagsTests : IAsyncLifetime
         await using var connection = new NpgsqlConnection(_factory.ConnectionString);
         await connection.OpenAsync();
         await using var command = new NpgsqlCommand("""
-            INSERT INTO notes.nte001_page (user_id, space_id, title, slug, content_markdown)
+            INSERT INTO notes.nte001_page (user_id, space_id, title, slug, content_text)
             SELECT p.user_id, p.space_id, 'A viagem ' || n, 'search-cut-' || n, 'viagem'
               FROM notes.nte001_page p CROSS JOIN generate_series(1, 205) n
              WHERE p.id = @id
@@ -272,16 +274,23 @@ public sealed class TagsTests : IAsyncLifetime
     private Task AuthAsync(string username) =>
         IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, $"{username}@example.com", username);
 
-    private async Task<Guid> CreateAsync(string title, string contentMarkdown)
+    /// <summary>A page whose text names its tags with <c>#</c>; they go in its tags block, as the editor sends them.</summary>
+    private Task<Guid> CreateAsync(string title, string text) => CreateRawAsync(title, WithTags(text));
+
+    private static object WithTags(string text) => NoteBlocks.Doc(
+        NoteBlocks.Tags([.. Regex.Matches(text, @"(?<=^|\s)#([\p{L}\p{N}_/-]+)").Select(m => m.Groups[1].Value)]),
+        NoteBlocks.Paragraph(text));
+
+    private async Task<Guid> CreateRawAsync(string title, object content)
     {
-        var response = await _client.PostAsJsonAsync(PagesUrl, new { title, contentMarkdown });
+        var response = await _client.PostAsJsonAsync(PagesUrl, new { title, content });
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<Envelope<PageNode>>())!.Data.Id;
     }
 
-    private async Task UpdateAsync(Guid id, string title, string contentMarkdown)
+    private async Task UpdateAsync(Guid id, string title, string text)
     {
-        var response = await _client.PutAsJsonAsync($"{PagesUrl}/{id}", new { title, contentMarkdown });
+        var response = await _client.PutAsJsonAsync($"{PagesUrl}/{id}", new { title, content = WithTags(text) });
         response.EnsureSuccessStatusCode();
     }
 

@@ -89,4 +89,25 @@
   <data name="Users.InvalidLanguage" xml:space="preserve">
     <value>Language not supported.</value>
   </data>
+  <data name="Assistant.TextCompletionFailed" xml:space="preserve">
+    <value>The AI could not generate text right now. Try again shortly.</value>
+  </data>
+  <data name="Notes.InvalidTransform" xml:space="preserve">
+    <value>Choose a valid writing action, provide up to 8000 characters of text and context, and a target language for translation.</value>
+  </data>
+  <data name="Notes.InvalidSource" xml:space="preserve">
+    <value>The edit source must be edit or assistant.</value>
+  </data>
+  <data name="Notes.InvalidPageSummary" xml:space="preserve">
+    <value>A page summary needs between 1 and 32000 characters of text. Summarize a selection for larger pages.</value>
+  </data>
+  <data name="Notes.InvalidQuestion" xml:space="preserve">
+    <value>Enter a question of up to 1000 characters.</value>
+  </data>
+  <data name="Notes.InvalidAnswer" xml:space="preserve">
+    <value>The AI did not return an answer with valid note sources. Try rephrasing your question.</value>
+  </data>
+  <data name="Notes.InvalidPrompt" xml:space="preserve">
+    <value>Enter a prompt of up to 8000 characters.</value>
+  </data>
 </root>

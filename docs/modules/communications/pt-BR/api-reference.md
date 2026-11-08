@@ -178,3 +178,14 @@ O formulário, calculado a partir da mensagem crua: `to`, `cc`, `subject`, `inRe
 **`MailMessageReceived`** (Contracts), pelo outbox: `EventId`, `OccurredAt`, `UserId`, `MailboxId`, `MessageId`, `From`,
 `Subject`, `Labels`. Publicado para uma mensagem que chega depois da carga inicial, e só quando a caixa não tem linha
 com o mesmo Message-ID.
+
+## Copiar mensagem para Notes
+
+`POST /messages/{id}/notes { title?, spaceId?, folderId? }` retorna UUID da página Notes criada no
+envelope normal. Título ausente usa assunto (Email se vazio); título explícito deve ser não vazio,
+até 255 caracteres. Pasta determina o espaço; sem pasta, usa espaço escolhido/padrão. Exige
+communications.messages.read, notes.pages.read/create, notes.spaces.read, notes.folders.read e
+features dos dois módulos. Mensagem/destino alheio ou ausente: 404; sem acesso: 403; título/limite
+de página inválido: 422. Corpo lido no servidor, convertido em texto literal e copiado pela porta
+Notes; anexos ficam de fora. Não muda flags do provedor. Cada salvamento explícito cria página
+independente. Bookmark abre `/mail?message={id}` com autenticação e verificação de dono normais.

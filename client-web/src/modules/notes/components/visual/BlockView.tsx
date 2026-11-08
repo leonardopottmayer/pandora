@@ -1,9 +1,9 @@
 import { useRef } from 'react'
 import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from '@tiptap/react'
 import { Selection } from '@tiptap/pm/state'
-import { Input, type InputRef } from 'antd'
+import { Dropdown, Input, type InputRef } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { CALLOUT_ICONS, type CalloutType } from '../../lib/callouts'
+import { CALLOUT_ICONS, CALLOUT_TYPES, type CalloutType } from '../../lib/callouts'
 
 /** The title updates with each keystroke; the body belongs to the editor, not a nested editor. */
 export function BlockView({ node, editor, getPos, updateAttributes }: NodeViewProps) {
@@ -13,7 +13,9 @@ export function BlockView({ node, editor, getPos, updateAttributes }: NodeViewPr
   const type = node.attrs.calloutType as CalloutType
   const collapsible = !callout || node.attrs.fold !== null
   const open = callout ? node.attrs.fold !== '-' : !!node.attrs.open
-  const titleLabel = callout ? t('notes.visual.calloutTitle') : t('notes.visual.toggleTitle')
+  // A toggle with a level is a collapsible heading: its title reads as that heading.
+  const level = callout ? null : (node.attrs.level as number | null)
+  const titleLabel = callout ? t('notes.visual.calloutTitle') : level ? t('notes.visual.toggleHeadingTitle', { level }) : t('notes.visual.toggleTitle')
 
   function focusBody() {
     const pos = getPos()
@@ -27,10 +29,10 @@ export function BlockView({ node, editor, getPos, updateAttributes }: NodeViewPr
 
   return (
     <NodeViewWrapper
-      className={`notes-native-block ${callout ? `notes-callout notes-callout-${type}` : 'notes-native-toggle'}`}
+      className={`notes-native-block ${callout ? `notes-callout notes-callout-${type}` : level ? `notes-toggle-heading notes-toggle-h${level}` : 'notes-native-toggle'}`}
       data-collapsed={collapsible && !open}
     >
-      <div className="notes-native-heading" contentEditable={false}>
+      <div className="notes-native-heading" contentEditable={false} {...(level ? { role: 'heading', 'aria-level': level } : {})}>
         {collapsible && (
           <button
             type="button"
@@ -47,13 +49,32 @@ export function BlockView({ node, editor, getPos, updateAttributes }: NodeViewPr
             <span aria-hidden="true">{open ? '▾' : '▸'}</span>
           </button>
         )}
-        {callout && <span className="notes-callout-icon" aria-hidden="true">{CALLOUT_ICONS[type]}</span>}
+        {callout && editor.isEditable && (
+          // The icon picks the tone: info, success, warning, error or a plain note.
+          <Dropdown
+            trigger={['click']}
+            menu={{
+              selectedKeys: [type],
+              items: CALLOUT_TYPES.map((tone) => ({
+                key: tone,
+                icon: <span aria-hidden="true">{CALLOUT_ICONS[tone]}</span>,
+                label: t(`notes.callout.${tone}`),
+                onClick: () => updateAttributes({ calloutType: tone }),
+              })),
+            }}
+          >
+            <button type="button" className="notes-callout-icon notes-fold-button" aria-label={t('notes.visual.calloutTone')}>
+              {CALLOUT_ICONS[type] ?? CALLOUT_ICONS.note}
+            </button>
+          </Dropdown>
+        )}
+        {callout && !editor.isEditable && <span className="notes-callout-icon" aria-hidden="true">{CALLOUT_ICONS[type] ?? CALLOUT_ICONS.note}</span>}
         <Input
           ref={titleRef}
           variant="borderless"
           className="notes-native-title"
           aria-label={titleLabel}
-          placeholder={callout ? t(`notes.callout.${type}`) : titleLabel}
+          placeholder={callout ? t(`notes.callout.${type}`) : level ? t(`notes.slash.h${level}`) : titleLabel}
           value={String(node.attrs.title)}
           autoFocus={!!node.attrs.autoFocus}
           onChange={(event) => updateAttributes({ title: event.target.value })}

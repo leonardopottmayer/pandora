@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, App, Button, Empty, Spin, Typography, theme } from 'antd'
-import { ArrowLeftOutlined, PaperClipOutlined, RollbackOutlined, SendOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, BookOutlined, PaperClipOutlined, RollbackOutlined, SendOutlined } from '@ant-design/icons'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { downloadBlob } from '@/lib/api/blob'
 import { addressLabel, shortDate, type ComposeMode, type MailAddress, type Mailbox, type MessageAction, type MessageSummary } from '../models'
@@ -9,6 +9,8 @@ import { attachmentUrl } from '../services/communications.service'
 import { useInlineImages, useMessage, useMessageAction, useMessages } from '../hooks/useMail'
 import { mailSrcDoc, prepareMailHtml } from '../lib/prepareMailHtml'
 import { MailActions } from './MailActions'
+import { SaveMessageToNotesModal } from './SaveMessageToNotesModal'
+import { useFeature, usePermission } from '@/modules/identity/hooks/useAccess'
 
 function addresses(list: MailAddress[]): string {
   return list.map((a) => (a.name ? `${a.name} <${a.address}>` : a.address)).join(', ')
@@ -35,6 +37,12 @@ export function MessageReader({
   const { message: toast } = App.useApp()
   const { token } = theme.useToken()
   const [allowImages, setAllowImages] = useState(false)
+  const [saveToNotesOpen, setSaveToNotesOpen] = useState(false)
+  const notesEnabled = useFeature('notes')
+  const canCreateNotes = usePermission('notes.pages.create')
+  const canReadNotes = usePermission('notes.pages.read')
+  const canReadSpaces = usePermission('notes.spaces.read')
+  const canReadFolders = usePermission('notes.folders.read')
 
   const { data: opened, isLoading, error } = useMessage(summary.id)
 
@@ -93,8 +101,12 @@ export function MessageReader({
         <span className="ms-auto">
           <MailActions messages={[summary]} mailboxes={mailboxes} onDone={onActionDone} />
         </span>
+        {notesEnabled && canCreateNotes && canReadNotes && canReadSpaces && canReadFolders && (
+          <Button size="small" icon={<BookOutlined />} disabled={!opened || !!error} aria-label={t('mail.saveToNotes.title')} onClick={() => setSaveToNotesOpen(true)}>{t('mail.saveToNotes.title')}</Button>
+        )}
       </div>
 
+      {saveToNotesOpen && <SaveMessageToNotesModal messageId={summary.id} subject={summary.subject} onClose={() => setSaveToNotesOpen(false)} />}
       <div className="flex flex-col gap-3 px-5 pb-3 pt-4" style={{ borderBottom: divider }}>
         <Typography.Title level={4} className="!mb-0 break-words">
           {summary.subject || t('mail.noSubject')}

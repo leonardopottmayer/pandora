@@ -8,6 +8,7 @@ import { useSpaces } from '../hooks/useSpaces'
 import { SpaceIcon } from './SpaceIcon'
 import { TagFilter } from './TagFilter'
 import { SearchHighlight } from './SearchHighlight'
+import { AskNotesPanel } from './AskNotesPanel'
 
 interface SearchPaletteProps {
   open: boolean
@@ -29,6 +30,7 @@ export function SearchPalette({ open, onOpenChange, onSelect, spaceId = null }: 
   const { token } = theme.useToken()
 
   const [term, setTerm] = useState('')
+  const [mode, setMode] = useState<'search' | 'ask'>('search')
   const [tagIds, setTagIds] = useState<string[]>([])
   const [activeIndex, setActiveIndex] = useState(0)
   const [everySpace, setEverySpace] = useState(false)
@@ -37,8 +39,8 @@ export function SearchPalette({ open, onOpenChange, onSelect, spaceId = null }: 
 
   const debouncedTerm = useDebouncedValue(term)
   const { data: results = [], isFetching, isPlaceholderData } = useSearchPages(
-    debouncedTerm,
-    tagIds,
+    mode === 'search' ? debouncedTerm : '',
+    mode === 'search' ? tagIds : [],
     everySpace ? null : spaceId,
   )
   // Old results may remain visible while the next query loads. Do not mark them as new matches.
@@ -65,6 +67,7 @@ export function SearchPalette({ open, onOpenChange, onSelect, spaceId = null }: 
     setTagIds([])
     setActiveIndex(0)
     setEverySpace(false)
+    setMode('search')
   }
 
   function choose(id: string) {
@@ -92,9 +95,18 @@ export function SearchPalette({ open, onOpenChange, onSelect, spaceId = null }: 
       closable={false}
       destroyOnHidden
       width={560}
-      styles={{ body: { padding: 0 } }}
+      styles={{ body: { padding: 0, maxHeight: 'calc(100dvh - 140px)', overflowY: 'auto' } }}
       style={{ top: 96 }}
     >
+      <div className="p-2">
+        <Segmented
+          block
+          value={mode}
+          onChange={(value) => setMode(value as 'search' | 'ask')}
+          options={[{ value: 'search', label: t('notes.ask.searchTab') }, { value: 'ask', label: t('notes.ask.title') }]}
+        />
+      </div>
+      {mode === 'ask' ? (open && <AskNotesPanel key={spaceId ?? 'all'} spaceId={spaceId} onSelect={choose} />) : <>
       <Input
         autoFocus
         variant="borderless"
@@ -182,6 +194,7 @@ export function SearchPalette({ open, onOpenChange, onSelect, spaceId = null }: 
           ))
         )}
       </div>
+      </>}
     </Modal>
   )
 }

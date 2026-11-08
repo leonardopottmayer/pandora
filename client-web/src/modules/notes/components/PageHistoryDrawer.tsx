@@ -8,7 +8,8 @@ import { usePageVersion, usePageVersions, useRestorePageVersion } from '../hooks
 import { usePageTree } from '../hooks/usePages'
 import { useSpaces } from '../hooks/useSpaces'
 import { groupVersions } from '../lib/pageHistory'
-import { MarkdownPreview } from './MarkdownPreview'
+import { documentLines, type BlockDocument } from '../lib/blocks'
+import { VisualEditor } from './visual/VisualEditor'
 import type { PageDto, PageSnapshot } from '../models'
 
 interface PageHistoryDrawerProps {
@@ -27,6 +28,11 @@ const METADATA_FIELDS = {
   archived: 'archivedAt',
   deleted: 'deletedAt',
 } as const
+
+/** A version's blocks; the snapshot keeps the document as JSON text. */
+function readBlocks(snapshot: PageSnapshot) {
+  return (JSON.parse(snapshot.content || '{"blocks":[]}') as BlockDocument).blocks
+}
 
 export function PageHistoryDrawer({ pageId, onClose, onRestored }: PageHistoryDrawerProps) {
   const { t, i18n } = useTranslation()
@@ -47,12 +53,12 @@ export function PageHistoryDrawer({ pageId, onClose, onRestored }: PageHistoryDr
   const { data: spaces } = useSpaces(true)
   const { data: pages } = usePageTree(true)
   const groups = groupVersions(versions)
-  const parts = useMemo(
-    () => target.data && base.data
-      ? diffLines(base.data.snapshot.contentMarkdown, target.data.snapshot.contentMarkdown, { timeout: 1000 })
-      : [],
-    [target.data, base.data],
-  )
+  const parts = useMemo(() => {
+    if (!target.data || !base.data) return []
+    const titleOf = (id: string) => pages?.find((page) => page.id === id)?.title
+    const text = (snapshot: PageSnapshot) => documentLines(readBlocks(snapshot), titleOf).join('\n')
+    return diffLines(text(base.data.snapshot), text(target.data.snapshot), { timeout: 1000 })
+  }, [target.data, base.data, pages])
 
   function date(value: string) {
     return new Intl.DateTimeFormat(i18n.language, {
@@ -142,7 +148,14 @@ export function PageHistoryDrawer({ pageId, onClose, onRestored }: PageHistoryDr
         {mode === 'preview' ? (
           <div className="notes-doc">
             <h2>{to.icon} {to.title}</h2>
-            <MarkdownPreview markdown={to.contentMarkdown} />
+            <VisualEditor
+              key={targetNumber}
+              docId={`${pageId}-v${targetNumber}`}
+              initialContent={readBlocks(to)}
+              pages={pages ?? []}
+              editable={false}
+              onOpenPage={() => undefined}
+            />
           </div>
         ) : (
           <div>

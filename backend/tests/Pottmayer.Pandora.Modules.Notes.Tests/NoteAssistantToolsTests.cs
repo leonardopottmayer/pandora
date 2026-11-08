@@ -3,6 +3,7 @@ using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Pandora.Modules.Notes.Application.Assistant;
 using Pottmayer.Pandora.Modules.Notes.Application.Commands.UpdatePage;
 using Pottmayer.Pandora.Modules.Notes.Application.Dtos;
+using Pottmayer.Pandora.Modules.Notes.Domain.ValueObjects;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using Pottmayer.Tars.Core.Mediator.Abstractions.Messaging;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
@@ -30,11 +31,11 @@ public sealed class NoteAssistantToolsTests
     private static JsonElement Args(string json) => JsonDocument.Parse(json).RootElement.Clone();
 
     private static PageDto Page(string title, string content) =>
-        new(Guid.NewGuid(), Guid.NewGuid(), null, title, "slug", content, "💡", 0, false, false, DateTimeOffset.UtcNow, null, []);
+        new(Guid.NewGuid(), Guid.NewGuid(), null, null, title, "slug", JsonDocument.Parse(PageContent.FromText(content).Json).RootElement.Clone(), "💡", 0, false, false, DateTimeOffset.UtcNow, null, [], PageAppearance.Default, false, null, null, null);
 
     private static ScriptedSender Sending(PageDto page, params PageDto[] others) => new(
         Result<IReadOnlyList<PageSummaryDto>>.Success(
-            [.. others.Prepend(page).Select(p => new PageSummaryDto(p.Id, p.SpaceId, null, p.Title, p.Slug, p.Icon, 0, false, false))]),
+            [.. others.Prepend(page).Select(p => new PageSummaryDto(p.Id, p.SpaceId, null, null, p.Title, p.Slug, p.Icon, 0, false, false, p.CreatedAt, null))]),
         Result<PageDto>.Success(page));
 
     [Fact]
@@ -50,7 +51,7 @@ public sealed class NoteAssistantToolsTests
     }
 
     [Fact]
-    public async Task Append_adds_the_text_after_a_blank_line_keeping_title_and_icon()
+    public async Task Append_adds_the_text_as_new_blocks_keeping_title_and_icon()
     {
         var page = Page("Ideia: app de mercado", "Divide a conta entre colegas.\n\n");
         var sender = Sending(page);
@@ -61,7 +62,7 @@ public sealed class NoteAssistantToolsTests
 
         var input = sender.Sent.OfType<UpdatePageCommand>().Single().Input;
         Assert.Equal((page.Id, page.Title, page.Icon), (input.PageId, input.Title, input.Icon));
-        Assert.Equal("Divide a conta entre colegas.\n\nTambém dividir o aluguel.", input.ContentMarkdown);
+        Assert.Equal("Divide a conta entre colegas.\nTambém dividir o aluguel.", PageContent.Parse(input.Content).Text);
         Assert.Equal("Texto acrescentado à nota \"Ideia: app de mercado\".", outcome.Message);
     }
 
@@ -73,6 +74,6 @@ public sealed class NoteAssistantToolsTests
 
         await new AppendToNoteTool(sender).ExecuteAsync(Context, Args("""{ "note": "vazia", "text": "Primeira linha." }"""));
 
-        Assert.Equal("Primeira linha.", sender.Sent.OfType<UpdatePageCommand>().Single().Input.ContentMarkdown);
+        Assert.Equal("Primeira linha.", PageContent.Parse(sender.Sent.OfType<UpdatePageCommand>().Single().Input.Content).Text);
     }
 }

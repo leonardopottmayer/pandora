@@ -76,3 +76,72 @@ All existing request formats, recurrence rules and time-zone conversions are pre
 2. **Subtask depth** capped at one level (matches Google Tasks fidelity).
 3. **Whether Finances migrates to the RRULE engine** — not a prerequisite; revisit if a third
    recurrence consumer appears.
+
+## B11: live Agenda block
+
+Built, uncommitted. `/Agenda` inserts an agenda-list rich block. Source defaults to Today, reading
+the existing account-local unified day endpoint (events, tasks and reminders, including their
+current statuses). The other mode selects an active task list and shows only Todo/InProgress tasks
+in that list. Both modes are read-only: no completion, acknowledgment or event edits inside Notes.
+Open in Agenda navigates to the relevant Agenda screen.
+
+Saved configuration is only `{ mode: "today" }` or `{ mode: "tasks", listId }`; empty props default
+to today. Live titles, list names, statuses, dates and results never enter the block, autosave,
+search text or version snapshots. Changing mode clears the prior list. Unconfigured, deleted,
+foreign or archived lists show an explicit unavailable/choose-list state and do not fall back to
+loading all tasks. The list id is validated against the authenticated user's current active lists
+before mounting the tasks query.
+
+Queries reuse the existing Agenda hooks, services and query-key families. Normal Agenda mutations
+refresh active blocks through the same cache; Refresh explicitly invalidates the selected source.
+Standard cache staleness/focus behavior still applies; this is not polling or a push subscription.
+Reads/refreshes do not update the note. Displayed dates use the account time zone and existing
+Agenda formatters; deciding which day is today remains server-side. API failures hide stale rows and
+allow retry.
+
+Public view returns Private content before mounting any Agenda query, even with owner data already
+cached. Private notes require the Agenda feature and the source's permissions: Today requires
+agenda.events.read/tasks.read/reminders.read; list mode requires agenda.tasks.read/lists.read.
+Read-mode/locked notes can view and refresh but cannot change source/list. Markdown/HTML exports
+emit only [Agenda], without source ids or live values; browser PDF printing uses the currently
+rendered owner view. Block ids and configuration round-trip through the editor and versions.
+
+No backend endpoint, schema, migration or cross-module backend dependency change. Browser/live
+account validation is pending. The upcoming-events mode and Finance summaries are now built below. Radar/Databases/Projects blocks depend on
+those modules.
+
+## B11: upcoming Agenda events
+
+Built, uncommitted. The existing /Agenda block now offers Upcoming events. Configuration is {
+mode: "events", days: 7 | 30, calendarId?: string }; missing/unsupported days defaults to 7.
+Missing calendarId means all active calendars, independently of the Calendar screen visibility
+toggles. A configured calendar must belong to the current active owner list.
+Missing/archived/foreign calendars show an explicit unavailable state and never fall back to all
+calendars. An empty active list issues no event query.
+
+The window covers today plus the next 6 or 29 calendar dates in the account time zone. Both local
+midnights are converted independently to UTC, preserving DST changes. The exclusive end is the
+next midnight after the last date. Ongoing and future events are displayed in start order;
+ended/cancelled events and occurrences starting at/after the exclusive end are hidden.
+All-day/multi-day ranges use the existing Agenda formatter, including the exclusive midnight end.
+The window is resolved on rendering/reopening and Refresh; no background polling or midnight timer
+is added.
+
+Reads reuse useCalendars/useEventOccurrences and Agenda query keys. The existing events endpoint
+expands recurrence rules and applies occurrence edits/cancellations; Notes does not implement
+another recurrence engine or request series details. Calendar filters serialize as repeated
+calendarIds keys for ASP.NET query binding. Normal event/calendar mutations invalidate active
+blocks; Refresh reloads both families. Query failures hide stale results and allow retry.
+
+Requires the Agenda feature and both agenda.events.read and agenda.calendars.read.
+Locked/read-mode notes can view and refresh but cannot configure. Changing source clears old
+filters. Only days/calendar identity are persisted; names, occurrences and resolved dates never
+enter autosave, history or templates. Public pages guard before source queries, even with owner
+caches. Markdown/HTML still emit [Agenda]; browser PDF uses the rendered owner view. No backend,
+schema or migration change.
+
+Verification: 909 frontend tests passed, including 16 added cases for account-day/DST bounds,
+expanded occurrences, ongoing/all-day events, exclusive end, source access/privacy, configuration
+and mutation invalidation. Production build/typecheck, Notes and touched Agenda service ESLint,
+and Notes antd lint passed. Backend unchanged; backend suites were not rerun. Browser/live-account
+validation remains pending. No commit or local database change.

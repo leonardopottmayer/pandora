@@ -160,13 +160,13 @@ public sealed class MediaTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task A_page_using_an_item_counts_as_a_use_until_the_text_or_the_page_goes()
+    public async Task A_page_using_an_item_counts_as_a_use_until_the_block_or_the_page_goes()
     {
         await AuthAsync("media8");
         var beach = await UploadAsync(Png(10, 10), "beach.png", "image/png");
         var unused = await UploadAsync(Png(10, 10), "spare.png", "image/png");
 
-        var page = await CreatePageAsync("Trip", $"![Beach|400]({beach.Url})\n\n`![example]({unused.Url})`");
+        var page = await CreatePageAsync("Trip", NoteBlocks.Doc(NoteBlocks.Image(beach.Id), NoteBlocks.Paragraph($"see {unused.Url}")));
 
         Assert.Equal(1, (await ListAsync("")).Single(i => i.Id == beach.Id).UsageCount);
         Assert.Equal([unused.Id], (await ListAsync("?unused=true")).Select(i => i.Id));
@@ -176,13 +176,13 @@ public sealed class MediaTests : IAsyncLifetime
         var usages = await _client.GetFromJsonAsync<Envelope<IReadOnlyList<UsageNode>>>($"{Url}/{beach.Id}/usages");
         Assert.Equal([("Trip", page)], usages!.Data.Select(u => (u.Title, u.PageId)));
 
-        // Taking the image out of the text takes the use away.
+        // Taking the image block out takes the use away.
         Assert.Equal(HttpStatusCode.OK,
-            (await _client.PutAsJsonAsync($"{PagesUrl}/{page}", new { title = "Trip", contentMarkdown = "No pictures." })).StatusCode);
+            (await _client.PutAsJsonAsync($"{PagesUrl}/{page}", new { title = "Trip", content = NoteBlocks.Text("No pictures.") })).StatusCode);
         Assert.Equal(2, (await ListAsync("?unused=true")).Count);
 
         // So does deleting the page.
-        await _client.PutAsJsonAsync($"{PagesUrl}/{page}", new { title = "Trip", contentMarkdown = $"![b]({beach.Url})" });
+        await _client.PutAsJsonAsync($"{PagesUrl}/{page}", new { title = "Trip", content = NoteBlocks.Doc(NoteBlocks.Image(beach.Id)) });
         Assert.Equal(HttpStatusCode.OK, (await _client.DeleteAsync($"{PagesUrl}/{page}")).StatusCode);
         Assert.Equal(0, (await ListAsync("")).Single(i => i.Id == beach.Id).UsageCount);
     }
@@ -208,7 +208,7 @@ public sealed class MediaTests : IAsyncLifetime
         var theirs = await UploadAsync(Png(10, 10), "theirs.png", "image/png");
 
         await AuthAsync("media-intruder2");
-        await CreatePageAsync("Copy", $"![x]({theirs.Url})");
+        await CreatePageAsync("Copy", NoteBlocks.Doc(NoteBlocks.Image(theirs.Id)));
         Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"{Url}/{theirs.Id}/usages")).StatusCode);
 
         var owner = await IdentityHelper.SignInAsync(_client, "media-owner2");
@@ -269,9 +269,9 @@ public sealed class MediaTests : IAsyncLifetime
         return (await response.Content.ReadFromJsonAsync<Envelope<FolderNode>>())!.Data;
     }
 
-    private async Task<Guid> CreatePageAsync(string title, string contentMarkdown)
+    private async Task<Guid> CreatePageAsync(string title, object content)
     {
-        var response = await _client.PostAsJsonAsync(PagesUrl, new { title, contentMarkdown });
+        var response = await _client.PostAsJsonAsync(PagesUrl, new { title, content });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<Envelope<PageNode>>())!.Data.Id;
     }

@@ -102,6 +102,10 @@ Onde existe idempotência natural, ela resolve e nenhuma tabela extra é necess�
 - `chn004_inbound_update` tem índice único em `(provider, provider_update_id)` — reprocessar um
   update do Telegram é inofensivo por construção.
 - `chn003_interaction` tem `consumed_at` — um botão age uma vez só.
+- `nte015_note_capture` usa o `EventId` recebido do Channels como PK. A captura direta `/nota` salva
+  recibo junto com página e histórico; reentrega não acrescenta de novo, mesmo após purgar a página.
+  Recibos só guardam ids/instante e não têm FK de página de propósito. O relay serial do Channels é
+  o escritor de capturas; os demais escritores mantêm a concorrência otimista do histórico do Notes.
 - `agd008_alert_dispatch` tem índice único em `(alert_id, occurrence_starts_at)` — revarrer a mesma
   ocorrência não dispara em dobro.
 

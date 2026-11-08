@@ -1,35 +1,161 @@
 // DTOs mirroring the Notes backend module (Phase 01/02). See
 // Pottmayer.Pandora.Modules.Notes.Application.Dtos.
 
-/** Lightweight node for the sidebar tree — no markdown body. */
-export interface PageSummaryDto {
-  id: string
-  spaceId: string
-  parentId: string | null
-  title: string
-  slug: string
-  icon: string | null
-  orderIndex: number
-  isFavorite: boolean
-  isArchived: boolean
+import type { BlockDocument } from './lib/blocks'
+
+export interface NotesPreferencesDto {
+  dailyTemplateId: string | null
 }
 
-/** Full view of a page, including its markdown body. */
-export interface PageDto {
+export interface FolderPropertyPageDto {
+  page: PageSummaryDto
+  properties: Record<string, string>
+}
+
+export interface FolderPropertiesDto {
+  columns: string[]
+  pages: FolderPropertyPageDto[]
+}
+
+export interface MoveTreeItemsRequest {
+  spaceId: string
+  kind: 'page' | 'folder'
+  parentId: string | null
+  folderId: string | null
+  /** The destination's visible siblings in their final order. */
+  itemIds: string[]
+}
+
+/** Lightweight node for the sidebar tree — no body. */
+export interface PageSummaryDto {
+  isTemplate: boolean
   id: string
   spaceId: string
   parentId: string | null
+  /** The folder a top-level page sits in; a sub-page has none. */
+  folderId: string | null
   title: string
   slug: string
-  contentMarkdown: string
   icon: string | null
   orderIndex: number
   isFavorite: boolean
   isArchived: boolean
   createdAt: string
   updatedAt: string | null
-  /** The tags the body mentions, rewritten by the backend on every save. */
+}
+
+/** A folder of a space: it holds folders and pages, never sits inside a page. */
+export interface FolderDto {
+  id: string
+  spaceId: string
+  parentId: string | null
+  name: string
+  icon: string | null
+  description: string | null
+  orderIndex: number
+  createdAt: string
+  updatedAt: string | null
+}
+
+export interface SaveFolderRequest {
+  name: string
+  icon?: string | null
+  description?: string | null
+  /** On create only: the folder it goes in, or none for the top of `spaceId`. */
+  parentId?: string | null
+  spaceId?: string | null
+}
+
+export interface MoveFolderRequest {
+  parentId: string | null
+  orderIndex: number
+}
+
+/** Full view of a page, including its blocks. */
+export interface PageDto {
+  isTemplate: boolean
+  id: string
+  spaceId: string
+  parentId: string | null
+  folderId: string | null
+  title: string
+  slug: string
+  content: BlockDocument
+  icon: string | null
+  orderIndex: number
+  isFavorite: boolean
+  isArchived: boolean
+  createdAt: string
+  updatedAt: string | null
+  /** The tags of the page's tags block, rewritten by the backend on every save. */
   tags: PageTagDto[]
+  appearance: PageAppearance
+  /** Locked, the page opens to read; its blocks are edited only once unlocked. */
+  isLocked: boolean
+  /** When someone said the page is right, and when that runs out (null: it does not). */
+  verifiedAt: string | null
+  verifiedUntil: string | null
+  /** The secret of the page's public link; null while it is private. */
+  publicToken: string | null
+}
+
+export const PAGE_WIDTHS = ['normal', 'wide'] as const
+export const PAGE_FONTS = ['default', 'serif', 'mono'] as const
+export const COVER_GRADIENTS = ['sunset', 'ocean', 'forest', 'dusk', 'sand', 'slate'] as const
+
+/** A cover: a library image or a preset gradient, shown at `position` (0 top, 100 bottom). */
+export interface PageCover {
+  mediaId?: string | null
+  gradient?: (typeof COVER_GRADIENTS)[number] | null
+  position: number
+}
+
+export interface PageAppearance {
+  cover?: PageCover | null
+  width: (typeof PAGE_WIDTHS)[number]
+  font: (typeof PAGE_FONTS)[number]
+  smallText: boolean
+}
+
+/** A page in the trash, and how many sub-pages were deleted with it. */
+export interface TrashItemDto {
+  id: string
+  spaceId: string
+  title: string
+  icon: string | null
+  deletedAt: string
+  subpageCount: number
+}
+
+/** A comment on a block; a thread has no `threadId`, its replies point at it. */
+export interface CommentDto {
+  id: string
+  pageId: string
+  blockId: string
+  threadId: string | null
+  /** The words a thread is about, when it is on part of the text. */
+  quote: string | null
+  body: string
+  resolvedAt: string | null
+  createdAt: string
+  editedAt: string | null
+}
+
+/** When a block was written and last changed, and by what. */
+export interface BlockStampDto {
+  blockId: string
+  createdAt: string
+  updatedAt: string
+  updatedSource: 'create' | 'edit' | 'assistant' | 'restore' | string
+}
+
+/** A page as its public link shows it. */
+export interface PublicPageDto {
+  title: string
+  icon: string | null
+  content: BlockDocument
+  appearance: PageAppearance
+  updatedAt: string | null
 }
 
 /** A tag as the page carries it — no usage count, this is one page's list. */
@@ -42,7 +168,8 @@ export interface PageTagDto {
 
 export interface PageSnapshot {
   title: string
-  contentMarkdown: string
+  /** The block document, as JSON text. */
+  content: string
   icon: string | null
   spaceId: string
   parentId: string | null
@@ -74,13 +201,52 @@ export interface CreatePageRequest {
   spaceId?: string | null
   parentId?: string | null
   icon?: string | null
-  contentMarkdown?: string | null
+  content?: BlockDocument | null
+  /** A top-level page's folder; ignored for a sub-page. */
+  folderId?: string | null
 }
 
 export interface UpdatePageRequest {
   title: string
   icon?: string | null
-  contentMarkdown: string
+  content: BlockDocument
+  source?: 'edit' | 'assistant'
+}
+
+export type TextAction = 'summarize' | 'improve' | 'translate' | 'continue'
+
+export interface TextTransformRequest {
+  action: TextAction
+  text: string
+  language?: string
+  context?: string
+}
+
+export interface TextTransformDto {
+  text: string
+}
+
+export interface AiGenerationDto {
+  text: string
+  generatedAt: string
+}
+
+export interface AskNotesRequest {
+  question: string
+  spaceId?: string | null
+}
+
+export interface NoteSourceDto {
+  pageId: string
+  spaceId: string
+  title: string
+  icon: string | null
+  excerpt: string
+}
+
+export interface NoteAnswerDto {
+  answer: string | null
+  sources: NoteSourceDto[]
 }
 
 export interface MovePageRequest {
@@ -88,6 +254,8 @@ export interface MovePageRequest {
   orderIndex: number
   /** With no parent, the space the page goes to the top of. The subtree comes along. */
   spaceId?: string | null
+  /** With no parent, the folder it goes in (and that folder's space). */
+  folderId?: string | null
 }
 
 /** A group of pages, like a Confluence space. The default one takes pages nobody placed. */
@@ -109,6 +277,26 @@ export interface SaveSpaceRequest {
   icon: string | null
   color: string | null
   description: string | null
+}
+
+/** An oEmbed answer: `video`/`rich` bring the site's HTML (drawn sandboxed), `photo` an image. */
+export interface LinkEmbedDto {
+  type: 'video' | 'rich' | 'photo' | 'link'
+  html: string | null
+  url: string | null
+  width: number | null
+  height: number | null
+}
+
+/** What a web page says about itself, read by the server (the browser cannot, across sites). */
+export interface LinkPreviewDto {
+  url: string
+  title: string | null
+  description: string | null
+  siteName: string | null
+  imageUrl: string | null
+  iconUrl: string | null
+  embed: LinkEmbedDto | null
 }
 
 /** What a library item is: how it shows. `video` exists in the schema but is not accepted yet. */

@@ -25,6 +25,9 @@ internal sealed class PageLinkEntityConfiguration : IEntityTypeConfiguration<Pag
                .IsRequired();
 
         builder.Property(l => l.CreatedAt).HasColumnName("created_at").IsRequired();
+        // A template can write links in the same save that creates its destination folder and page.
+        builder.HasOne<Page>().WithMany().HasForeignKey(l => l.SourcePageId).OnDelete(DeleteBehavior.NoAction).HasConstraintName("fk_nte004_source");
+        builder.HasOne<Page>().WithMany().HasForeignKey(l => l.TargetPageId).OnDelete(DeleteBehavior.NoAction).HasConstraintName("fk_nte004_target");
 
         // One edge per (source, target, kind): a target linked twice in the same page is one fact.
         builder.HasIndex(l => new { l.SourcePageId, l.TargetPageId, l.Kind })

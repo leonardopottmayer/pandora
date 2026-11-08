@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Net;
 using System.Net.Http.Json;
 using Pottmayer.Pandora.IntegrationTests.Support;
@@ -38,13 +39,14 @@ public sealed class PagesTests : IAsyncLifetime
     {
         await AuthAsync("notes1");
 
-        var created = await CreateAsync(new { title = "First Note", icon = "📝", contentMarkdown = "# hi" });
+        var created = await CreateAsync(new { title = "First Note", icon = "📝", content = NoteBlocks.Doc(NoteBlocks.Heading(1, "hi")) });
         Assert.Equal(HttpStatusCode.OK, created.status);
         Assert.Equal("first-note", created.dto!.Slug);
 
         var get = await _client.GetFromJsonAsync<SingleEnvelope>($"{Url}/{created.dto.Id}");
         Assert.Equal("First Note", get!.Data.Title);
-        Assert.Equal("# hi", get.Data.ContentMarkdown);
+        Assert.Equal("hi", NoteBlocks.TextOf(get.Data.Content.GetRawText()));
+        Assert.Equal("heading", get.Data.Content.GetProperty("blocks")[0].GetProperty("type").GetString());
 
         var tree = await TreeAsync();
         Assert.Single(tree, p => p.Id == created.dto.Id);
@@ -168,20 +170,20 @@ public sealed class PagesTests : IAsyncLifetime
     {
         await AuthAsync("notes-icon");
 
-        var created = await CreateAsync(new { title = "Com icone", icon = "📝", contentMarkdown = "corpo" });
+        var created = await CreateAsync(new { title = "Com icone", icon = "📝", content = NoteBlocks.Text("corpo") });
         var id = created.dto!.Id;
         Assert.Equal("📝", created.dto.Icon);
 
         // The picker saves through the same PUT the autosave uses, icon included.
         await _client.PutAsJsonAsync($"{Url}/{id}",
-            new { title = "Com icone", icon = "🚀", contentMarkdown = "corpo" });
+            new { title = "Com icone", icon = "🚀", content = NoteBlocks.Text("corpo") });
         Assert.Equal("🚀", (await _client.GetFromJsonAsync<SingleEnvelope>($"{Url}/{id}"))!.Data.Icon);
 
         // It reaches the sidebar, which is the whole point of having one.
         Assert.Equal("🚀", Assert.Single(await TreeAsync(), p => p.Id == id).Icon);
 
         await _client.PutAsJsonAsync($"{Url}/{id}",
-            new { title = "Com icone", icon = (string?)null, contentMarkdown = "corpo" });
+            new { title = "Com icone", icon = (string?)null, content = NoteBlocks.Text("corpo") });
         Assert.Null((await _client.GetFromJsonAsync<SingleEnvelope>($"{Url}/{id}"))!.Data.Icon);
     }
 
@@ -214,7 +216,7 @@ public sealed class PagesTests : IAsyncLifetime
     private sealed record SingleEnvelope(PageNode Data);
 
     private sealed record PageNode(
-        Guid Id, Guid? ParentId, string Title, string Slug, string ContentMarkdown,
+        Guid Id, Guid? ParentId, string Title, string Slug, JsonElement Content,
         string? Icon, int OrderIndex, bool IsFavorite, bool IsArchived);
 
     private sealed record PageSummaryNode(

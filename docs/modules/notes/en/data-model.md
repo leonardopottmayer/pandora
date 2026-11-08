@@ -13,6 +13,15 @@ write-once ones (`nte003`, `nte009`) carry just `created_at`, because nothing ev
 
 Migrations live in `migrations/migrations/notes/`.
 
+## Telegram capture receipts — `nte015_note_capture`
+
+Write-once capture records: `id` is the Channels inbound event id (PK, supplied rather than generated),
+`user_id`, `page_id`, and UTC `captured_at`. Index `ix_nte015_user_page` supports finding the user's
+newest live page previously used for capture, independently of title or location. There is deliberately
+no page FK: receipts survive trash/purge and version restore, preventing event replay from resurrecting
+deleted text. They contain no message body. A receipt commits with the page, derived data and version.
+New migration: `20261107150000-create-table-nte015-note-capture`; no existing CREATE was changed for this slice.
+
 ## Table catalog
 
 | # | Table | Contents |
@@ -28,6 +37,9 @@ Migrations live in `migrations/migrations/notes/`.
 | nte009 | `media_rendition` | Versions derived from a media item (thumbnails) |
 | nte010 | `page_media` | Page → media item, derived from the body |
 | nte011 | `page_version` | Complete immutable page snapshots; see [Version history](version-history.md) |
+| nte015 | `note_capture` | Event-keyed Telegram capture receipts, retained after page purge |
+| nte016 | `notes_preferences` | User's daily template and folder preference |
+| nte017 | `daily_note` | Stable page identity by user and calendar date |
 
 > The numbers name the tables; the migrations run in dependency order instead (space before page,
 > blob store and folders before media).
@@ -48,6 +60,7 @@ Migrations live in `migrations/migrations/notes/`.
 | `icon` | varchar(50) NULL | a single emoji grapheme |
 | `order_index` | int NOT NULL DEFAULT 0 | position among siblings |
 | `is_favorite` | boolean NOT NULL DEFAULT false | |
+| `is_template` | boolean NOT NULL DEFAULT false | available as a template; page setting, excluded from version snapshots |
 | `archived_at` | timestamptz NULL | archived = hidden from the default tree, still editable |
 | `deleted_at` | timestamptz NULL | soft delete |
 | `history_number` | bigint NOT NULL | Latest snapshot number; optimistic concurrency token |
@@ -228,3 +241,47 @@ nte001_page ──parent_id──┐ (self, tree, no cascade)
 nte008_media_folder ──< nte002_media (folder_id) ──< nte009_media_rendition (media_id)
                          nte002 / nte009 ──storage_key──> nte003_file_blob
 ```
+
+## Daily notes (B10)
+
+`nte016_notes_preferences` is keyed by `user_id` (uuid). Nullable `daily_template_id` and
+`daily_folder_id` retain the selected model and daily folder identity. Standard audit columns:
+`created_by`, `created_at`, `updated_by`, `updated_at`. No row means defaults. No FKs: optional
+references are owner-checked on use, and unavailable templates/folders fall back safely after purge.
+
+`nte017_daily_note` has UUID PK `id`, owner `user_id`, calendar `date` (PostgreSQL date / DateOnly)
+and current `page_id`, all required. Constraint `uq_nte017_user_date` enforces one entry per
+owner/day. No page FK: entries survive page purge and replace their page reference on the next
+visit. Restoring an old page leaves the current registry unchanged. This identity is not part of
+page versions. It remains stable after rename/move/archive.
+
+New CREATE/down migrations: `20261107160000-create-table-nte016-notes-preferences` and
+`20261107160001-create-table-nte017-daily-note`. Local database not migrated or recreated.
+
+## Folder properties projection
+
+The folder table is derived on read from existing properties blocks (`props.rows[{key,value}]`,
+rich-text inline arrays). `PageContent.Properties()` extracts named rows, including nested blocks.
+The API groups column names case-insensitively and preserves repeated values with newlines. No
+persisted column/table, content rewrite or version is added.
+
+## Live Agenda configuration
+
+agenda-list uses the existing content JSON only: mode today/tasks and optional listId. No list name,
+task title, status, date or fetched result is persisted by the block. These are resolved by the
+authenticated frontend. Restoring versions/templates keeps the configuration, not a historical
+Agenda snapshot; unavailable lists are reported when viewed.
+
+## Live Finance configuration
+
+finance-summary uses existing content JSON: mode account/card/expenses and accountId/cardId or
+optional month (YYYY-MM). Only configuration survives versions/templates; restored content
+resolves current figures. No financial names, amounts, currency totals or fetched rows are
+persisted. No schema/migration change.
+
+## Upcoming Agenda configuration
+
+agenda-list also accepts { mode: "events", days: 7 | 30, calendarId?: string }. Defaults: 7 days,
+all active calendars. Only filters are stored; UTC date bounds, names and occurrences are resolved
+when rendered. Configuration survives versions/templates without preserving a financial or
+calendar snapshot. No schema/migration change.

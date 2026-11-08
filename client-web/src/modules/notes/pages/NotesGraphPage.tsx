@@ -110,6 +110,9 @@ export function NotesGraphPage() {
             onSpaceChange={changeSpace}
             selectedId={null}
             onSelect={openPage}
+            selectedFolderId={null}
+            onSelectFolder={(id) => navigate(`/notes/f/${id}`)}
+            onOpenOverview={() => navigate(spaceId ? `/notes/s/${spaceId}` : '/notes')}
             includeArchived={includeArchived}
             onToggleArchived={changeArchived}
             tagIds={tagIds}

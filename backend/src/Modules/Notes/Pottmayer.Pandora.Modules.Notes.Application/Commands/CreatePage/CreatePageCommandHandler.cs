@@ -21,6 +21,9 @@ public sealed class CreatePageCommandHandler(IUnitOfWorkFactory factory, TimePro
         if (string.IsNullOrWhiteSpace(input.Title))
             return Fail(PageErrors.InvalidTitle);
 
+        if (!PageContent.TryParse(input.Content, out var content, out var problem))
+            return Fail(PageErrors.InvalidContent(problem!));
+
         var result = await factory.ExecuteAsync(NotesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IPageRepository>();
@@ -35,6 +38,13 @@ public sealed class CreatePageCommandHandler(IUnitOfWorkFactory factory, TimePro
                     return Result<PageDto>.Failure([PageErrors.ParentNotFound]);
                 spaceId = parent.SpaceId;
             }
+            else if (input.FolderId is { } folderId)
+            {
+                var folder = await ctx.AcquireRepository<IFolderRepository>().FindByIdForUserAsync(folderId, input.UserId, token);
+                if (folder is null)
+                    return Result<PageDto>.Failure([FolderErrors.NotFound]);
+                spaceId = folder.SpaceId;
+            }
             else
             {
                 var space = await SpaceResolver.ResolveAsync(
@@ -48,19 +58,23 @@ public sealed class CreatePageCommandHandler(IUnitOfWorkFactory factory, TimePro
 
             var page = Page.Create(
                 input.UserId, spaceId, input.Title, slug, input.ParentId, input.Icon,
-                orderIndex: 0, input.ContentMarkdown ?? string.Empty, timeProvider);
+                orderIndex: 0, content, timeProvider, input.ParentId is null ? input.FolderId : null);
             page.SetHistorySource(input.Source);
             await repo.AddAsync(page, token);
 
-            // A page may already carry wikilinks and tags in its initial content (e.g. a duplicated note).
+            // A page may already carry page links and tags in its initial blocks (e.g. a duplicated note).
             var links = ctx.AcquireRepository<IPageLinkRepository>();
-            await PageLinkSynchronizer.RebuildAsync(page, repo, links, timeProvider, token);
+            await PageLinkSynchronizer.RebuildAsync(page, content, repo, links, timeProvider, token);
             await PageMediaSynchronizer.RebuildAsync(
-                page, ctx.AcquireRepository<IMediaItemRepository>(), ctx.AcquireRepository<IPageMediaRepository>(),
+                page, content, ctx.AcquireRepository<IMediaItemRepository>(), ctx.AcquireRepository<IPageMediaRepository>(),
                 timeProvider, token);
+
+            // And when each block was written, and by what.
+            await BlockStampSynchronizer.RebuildAsync(page, content, ctx.AcquireRepository<IBlockStampRepository>(), timeProvider, token);
 
             var tags = await PageTagSynchronizer.RebuildAsync(
                 page,
+                content,
                 ctx.AcquireRepository<ITagRepository>(),
                 ctx.AcquireRepository<IPageTagRepository>(),
                 timeProvider,

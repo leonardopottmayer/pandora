@@ -87,3 +87,11 @@ O catálogo de layouts tem busca por nome/banco/código, filtros de formato e de
    revisar com a consolidação multi-moeda.
 5. **Backfill de parcelas passadas** — quando um plano é criado a partir da parcela N via importação,
    se gerar opcionalmente as parcelas 1..N−1 (default: não).
+
+## Resumos no Notes
+
+Notes incorpora saldos de conta, limites de cartão e despesas mensais brutas efetivadas por
+categoria, separadas por moeda, somente leitura. Reutiliza APIs autenticadas, hooks e query keys
+existentes, sem dependência backend ou endpoint novo. Configuração salva apenas IDs/mês; página
+pública não consulta/exibe valores. Ver status de implementação do Notes para permissões, datas e
+privacidade das exportações.
