@@ -447,8 +447,8 @@ public sealed partial class PageContent
                             Props(value);
                     }
                     break;
-                // A list of inline objects is rich text (a table cell, a caption).
-                case JsonArray array when array.Count > 0 && array.All(i => i is JsonObject o && (o.ContainsKey("text") || o.ContainsKey("mention"))):
+                // A list of inline objects is rich text (a table cell, a caption, a property's value), chips included.
+                case JsonArray array when array.Count > 0 && array.All(i => i is JsonObject o && (o.ContainsKey("text") || o.ContainsKey("mention") || ChipText(o) is not null)):
                     Inlines(array);
                     break;
                 case JsonArray array:

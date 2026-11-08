@@ -138,6 +138,21 @@ public sealed class PageContentTests
         Assert.Equal("Entrega 2026-12-01 Bloqueado Revisar contrato x^2", content.Text);
     }
 
+    [Fact]
+    public void Chips_in_a_property_value_or_a_table_cell_are_searched()
+    {
+        const string json = """
+            { "version": 1, "blocks": [
+              { "id": "p", "type": "properties", "props": { "rows": [
+                { "key": [{ "text": "Quando" }], "value": [{ "date": { "value": "2026-11-28" } }, { "text": " a " }, { "date": { "value": "2026-11-30" } }] },
+                { "key": [{ "text": "Status" }], "value": [{ "status": { "label": "Planejando", "color": "blue" } }] } ] } },
+              { "id": "t", "type": "table", "props": { "rows": [[[{ "item": { "module": "finances", "kind": "card", "id": "c", "label": "Nubank" } }]]] } }
+            ] }
+            """;
+        Assert.True(PageContent.TryParse(json, out var content, out var problem), problem);
+        Assert.Equal("Quando\n2026-11-28 a 2026-11-30\nStatus\nPlanejando\nNubank", content.Text);
+    }
+
     [Theory]
     [InlineData("""{ "blocks": "nope" }""", "blocks list")]
     [InlineData("""{ "blocks": [{ "type": "paragraph" }] }""", "needs an id")]
