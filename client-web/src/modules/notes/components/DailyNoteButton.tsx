@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { App, Button } from 'antd'
-import { CalendarOutlined } from '@ant-design/icons'
+import { App } from 'antd'
+import { CalendarOutlined, LoadingOutlined } from '@ant-design/icons'
 import { useFeature, usePermission } from '@/modules/identity/hooks/useAccess'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { useOpenDailyNote } from '../hooks/useDailyNotes'
@@ -29,5 +29,10 @@ export function DailyNoteButton({ onOpen }: { onOpen?: (id: string) => void }) {
     }
   }
 
-  return <Button type="text" icon={<CalendarOutlined />} aria-label={t('notes.daily.today')} loading={open.isPending} onClick={() => void handleOpen()}>{t('notes.daily.today')}</Button>
+  return (
+    <button type="button" className="notes-shortcut" aria-label={t('notes.daily.today')} disabled={open.isPending} onClick={() => void handleOpen()}>
+      {open.isPending ? <LoadingOutlined /> : <CalendarOutlined />}
+      <span>{t('notes.daily.today')}</span>
+    </button>
+  )
 }

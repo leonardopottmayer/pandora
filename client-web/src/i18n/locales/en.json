@@ -1835,6 +1835,7 @@
       "selected_one": "{{count}} block",
       "selected_other": "{{count}} blocks"
     },
+    "shortcuts": "Shortcuts",
     "pagesTitle": "Pages",
     "subpageCount_one": "{{count}} subpage",
     "subpageCount_other": "{{count}} subpages",

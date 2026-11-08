@@ -1835,6 +1835,7 @@
       "selected_one": "{{count}} bloco",
       "selected_other": "{{count}} blocos"
     },
+    "shortcuts": "Atalhos",
     "pagesTitle": "Páginas",
     "subpageCount_one": "{{count}} subpágina",
     "subpageCount_other": "{{count}} subpáginas",

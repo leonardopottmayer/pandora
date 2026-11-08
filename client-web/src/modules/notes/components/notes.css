@@ -719,3 +719,21 @@ button.notes-comment-quote:not(:disabled):hover { opacity: 1; }
 @media print {
   .notes-visual [data-thread] { background: none !important; border: 0 !important; }
 }
+
+/* ---------- Sidebar shortcuts: overview, today, recent ---------- */
+
+.notes-shortcuts { display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px; }
+.notes-shortcut {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 4px 8px; border: 0; border-radius: 6px;
+  background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; list-style: none;
+}
+.notes-shortcut::-webkit-details-marker { display: none; }
+.notes-shortcut:hover { background: var(--ant-color-fill-tertiary); }
+.notes-shortcut:focus-visible { outline: 2px solid var(--ant-color-primary-border); outline-offset: -2px; }
+.notes-shortcut:disabled { cursor: progress; opacity: 0.7; }
+.notes-shortcut[aria-current='page'] { background: var(--ant-color-primary-bg); color: var(--ant-color-primary-text); }
+.notes-shortcut-row { position: relative; display: flex; align-items: center; }
+.notes-shortcut-row .notes-shortcut-extra { position: absolute; inset-inline-end: 4px; opacity: 0; }
+.notes-shortcut-row:hover .notes-shortcut-extra,
+.notes-shortcut-row:focus-within .notes-shortcut-extra { opacity: 1; }
+@media (hover: none) { .notes-shortcut-row .notes-shortcut-extra { opacity: 1; } }

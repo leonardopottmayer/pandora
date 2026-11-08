@@ -451,6 +451,22 @@ export function NotesSidebar({
         </button>
       </Dropdown>
 
+      <nav className="notes-shortcuts" aria-label={t('notes.shortcuts')}>
+        {spaceId && (
+          <button type="button" className="notes-shortcut" aria-current={!selectedId && !selectedFolderId ? 'page' : undefined} onClick={onOpenOverview}>
+            <HomeOutlined />
+            <span>{t('notes.overview.title')}</span>
+          </button>
+        )}
+        <div className="notes-shortcut-row">
+          <DailyNoteButton onOpen={onSelect} />
+          {canReadPreferences && canUpdatePreferences && canReadPages && (
+            <Button type="text" size="small" className="notes-shortcut-extra" icon={<SettingOutlined />} aria-label={t('notes.daily.settings')} title={t('notes.daily.settings')} onClick={() => setDailySettingsOpen(true)} />
+          )}
+        </div>
+        <RecentPages selectedId={selectedId} onSelect={onSelect} />
+      </nav>
+
       <Flex align="center" justify="space-between" className="mb-2 px-2">
         <Typography.Text type="secondary" className="text-xs font-semibold uppercase tracking-wider">
           {t('notes.pagesTitle')}
@@ -489,28 +505,6 @@ export function NotesSidebar({
       </div>
 
       <div style={{ flex: 1, overflow: 'auto' }}>
-        {spaceId && (
-          <button
-            type="button"
-            className="mb-1 flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-left hover:bg-[var(--ant-color-fill-tertiary)]"
-            style={{
-              border: 0,
-              background: !selectedId && !selectedFolderId ? 'var(--ant-color-primary-bg)' : 'transparent',
-              color: !selectedId && !selectedFolderId ? 'var(--ant-color-primary-text)' : undefined,
-            }}
-            onClick={onOpenOverview}
-          >
-            <HomeOutlined />
-            <span>{t('notes.overview.title')}</span>
-          </button>
-        )}
-        <RecentPages selectedId={selectedId} onSelect={onSelect} />
-        <Flex align="center" justify="space-between" className="mb-1 px-1">
-          <DailyNoteButton onOpen={onSelect} />
-          {canReadPreferences && canUpdatePreferences && canReadPages && (
-            <Button type="text" size="small" icon={<SettingOutlined />} aria-label={t('notes.daily.settings')} title={t('notes.daily.settings')} onClick={() => setDailySettingsOpen(true)} />
-          )}
-        </Flex>
         <Tree
           blockNode
           // A filtered/all-spaces view is not one complete hierarchy to reorder.

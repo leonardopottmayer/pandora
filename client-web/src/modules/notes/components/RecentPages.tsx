@@ -9,8 +9,8 @@ export function RecentPages({ selectedId, onSelect }: { selectedId: string | nul
   const shown = (pages ?? []).filter((page) => page.id !== selectedId).slice(0, 5)
   if (!shown.length) return null
   return (
-    <details className="notes-recent mb-1">
-      <summary className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-[var(--ant-color-fill-tertiary)]">
+    <details className="notes-recent">
+      <summary className="notes-shortcut">
         <ClockCircleOutlined />
         <span>{t('notes.recent.title')}</span>
       </summary>
