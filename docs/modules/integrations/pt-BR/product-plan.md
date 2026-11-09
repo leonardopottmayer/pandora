@@ -1,9 +1,10 @@
-# Módulo Integrations — Roadmap (trabalho restante)
+# Módulo Integrations — Roadmap (o que falta)
 
-> **Status:** a fase **I1 (Core)** está implementada. Este arquivo agora rastreia só o que **ainda não
-> foi construído**. Para o que existe, ver os docs do módulo: [README](README.md) ·
+> **Status:** as fases **I1 (núcleo)**, **I2 (resiliência)**, **I3 (credenciais digitadas)** e **I5
+> (várias contas por provedor)** estão implementadas. Este arquivo acompanha só o que **ainda não
+> existe**. Para o que existe, veja os docs do módulo: [README](README.md) ·
 > [Visão geral](overview.md) · [Arquitetura](architecture.md) · [Modelo de dados](data-model.md) ·
-> [OAuth e Credenciais](oauth-and-credentials.md) · [Status de implementação](implementation-status.md).
+> [OAuth e credenciais](oauth-and-credentials.md) · [Status de implementação](implementation-status.md).
 > 🇺🇸 [English version](../en/product-plan.md)
 >
 > Planos relacionados: [Agenda](../../agenda/pt-BR/product-plan.md) ·
@@ -11,56 +12,28 @@
 
 ---
 
-## Recapitulação de design (já decidido)
+## Verificar a I5 com o Google real
 
-O limite, os princípios (I1–I5), o modelo de domínio, a semântica de refresh, a encriptação e o fluxo
-de autorização estão documentados nos arquivos linkados acima e estão **construídos**. O que resta é
-resiliência, gestão de chaves de API e mais provedores.
+A I5 está construída e coberta por testes, mas não foi verificada à mão com o projeto real do Google
+Cloud:
 
----
+- três contas Google e duas chaves Gemini conectadas e nomeadas;
+- o Assistant roda na chave escolhida nas configurações dele;
+- desconectar uma chave em uso mostra "Usada por: Assistant · chat" e desconecta mesmo assim;
+- o Assistant então pede uma conta.
 
-## Fase I2 — Resiliência ✅ *(pronta)*
+## Provedor `openai`
 
-As duas metades entregues. Ver [implementation-status.md](implementation-status.md).
+Um `CredentialProviderDescriptor(..., AuthKind.ApiKey)` no catálogo. Entra junto com o
+[segundo provedor](../../assistant/pt-BR/product-plan.md#1-segundo-provedor-openai) do Assistant.
 
-- **Reação de Channels à revogação.** O Channels assina `ExternalAccountRevoked` e envia a notificação
-  `integrations.account-revoked` de "reconectar", distribuída pelos canais do usuário.
-- **Log de eventos `int003`** — log append-only de ciclo de vida + falhas, cada linha escrita na mesma
-  transação da mudança que registra; exposto como a linha do tempo "Atividade recente" nas
-  configurações. Refreshes bem-sucedidos não são logados de propósito (`int001.last_refreshed_at`
-  cobre o último).
-
-## Fase I3 — Chaves de API *(pré-requisito para a fase A5 do [Assistant](../../assistant/pt-BR/product-plan.md))*
-
-- Endpoints de registrar / rotacionar / remover para contas `auth_kind = api-key` (o caminho de
-  leitura, `GetApiKeyAsync`, já existe).
-- `openai` e `gemini` no catálogo de provedores, com **nenhum fluxo de autorização** — só um formulário
-  com a chave e um teste de alcance.
-- **Pronto quando:** o Assistant consegue chamar a OpenAI com uma chave que nunca viu em texto puro, e o
-  mesmo cofre guarda o refresh token do Google.
-
-## Fase I5 — Várias contas ✅ *(construída; falta a checagem no Google real)*
-
-Quantas contas quiser por provedor, cada uma com um nome dado pelo usuário, e cada uso vinculado à
-conta em que roda (sem conta padrão). Construída de ponta a ponta — porta por id da conta, auth kind
-`password`, `label`, `IExternalAccountUsageSource`, os fluxos OAuth de adicionar/reconectar, a tela de
-conexões e o `AccountSelect` compartilhado — ver [oauth-and-credentials §6](oauth-and-credentials.md#6-várias-contas-por-provedor),
-[api-reference](api-reference.md) e [implementation-status](implementation-status.md).
-
-**Falta checar na mão** (precisa do projeto no Google Cloud): três contas Google e duas chaves Gemini
-conectadas e nomeadas; o Assistant roda na chave escolhida nas configurações dele; desconectar uma
-chave em uso mostra "Usada por: Assistant · chat" e desconecta mesmo assim; o Assistant então pede uma
-conta.
-
-## Fase I4 — Mais provedores *(guiado por demanda, não agendado)*
+## Fase I4 — Mais provedores *(conforme a demanda, sem data)*
 
 - Microsoft (Outlook Calendar / To Do), CalDAV (genérico; cobre Apple/Fastmail/Nextcloud).
 
 ---
 
-## Perguntas em aberto
+## Questões em aberto
 
-1. **Gate in-process vs. advisory lock.** A implementação serializa o refresh com um gate in-process
-   (monólito de processo único). Reavaliar só se o host escalar horizontalmente.
-2. ~~**Multi-conta por provedor.**~~ Decidido na fase I5 acima: vínculo explícito pelo id da conta,
-   sem conta padrão.
+1. **Trava de refresh no processo vs. advisory lock.** A implementação serializa o refresh com uma trava
+   no processo (monolito de processo único). Rever só se o host for escalado horizontalmente.

@@ -39,4 +39,4 @@ A snapshot of what is built in the codebase versus what is designed but not yet 
 | **Social / OAuth login** (e.g. Google sign-in) | Not implemented. (Distinct from [Integrations](../../integrations/en/overview.md), which is Pandora calling Google *as* the user.) |
 | **Session management UI** | Refresh tokens are stored + purged, but there is no list of signed-in sessions to revoke one by one. (Paired *devices* do have one — see [Devices](devices.md).) |
 | **WebAuthn / passkeys** | Future — MFA is TOTP-only today. |
-| **Roles / permissions** | Not modelled — single-user personal system. |
+| **Roles / permissions** | Owned by the [Admin](../../admin/README.md) module (roles, per-action permissions, feature flags), not by Identity. |

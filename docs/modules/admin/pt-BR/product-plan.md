@@ -216,18 +216,26 @@ Nada muda para ninguém até um administrador editar um papel.
 
 ### 6.6 API
 
-- `GET /identity/me` ganha `features: string[]` (chaves ligadas) e `permissions: string[]` (as chaves
-  efetivas do usuário, com os coringas expandidos).
-- `GET /admin/catalog`: módulos → recursos → ações, com rótulos, features e dependências.
-- Usuários: lista com filtros, detalhe com **as permissões efetivas e a origem de cada uma**, adicionar
-  ou remover papel em lote, copiar as permissões de outro usuário, exceções, desativar/ativar,
-  derrubar sessões.
-- Papéis: CRUD, padrões, quem tem.
-- Features: lista com estado e padrão, liga/desliga.
-- Auditoria: lista paginada, filtro por ator, alvo e período.
+`GET /identity/me` ganha `features: string[]` (chaves ligadas) e `permissions: string[]` (as chaves
+efetivas do usuário, com os coringas expandidos). O resto fica em `/api/v{version}/admin`:
+
+| Método | Rota | Para quê |
+|---|---|---|
+| GET | `/catalog` | Módulos → recursos → ações, com rótulos, features e dependências |
+| GET | `/features` | Todas as features com estado e padrão |
+| PUT | `/features/{key}` | Liga ou desliga uma feature |
+| GET · POST | `/roles` | Lista os papéis com padrões e quem tem; cria um |
+| PUT · DELETE | `/roles/{id}` | Altera ou exclui um papel |
+| GET | `/users` | Lista os usuários, com filtros |
+| GET | `/users/{id}` | Detalhe com **as permissões efetivas e a origem de cada uma** |
+| POST | `/users/roles` | Adiciona ou remove um papel de vários usuários de uma vez |
+| POST | `/users/approve` | Aprova contas pendentes (§11) |
+| PUT | `/users/{id}/exceptions` | Substitui as exceções allow/deny do usuário |
+| PUT | `/users/{id}/disabled` | Desativa ou ativa o usuário |
+| POST | `/users/{id}/revoke-sessions` | Derruba as sessões do usuário em todo lugar |
+| GET | `/audit` | Lista paginada, filtrada por ator, alvo e período |
 
 Toda escrita vai para o `adm006` com o estado de antes e de depois.
-
 ### 6.7 Frontend
 
 - `usePermission(key)`, `useFeature(key)` e `<Can permission="…">` leem do `/me`. O menu mostra um

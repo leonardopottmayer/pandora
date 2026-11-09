@@ -72,7 +72,7 @@ The import layouts catalog has name/bank/code search, format and destination fil
 | **Reports** | Cash-flow, by-category, balance-history, and the upcoming-agenda endpoints are not implemented — only the audit timeline exists. |
 | **Channels integration events** | The `Contracts` project is empty; `StatementClosed`/`StatementDueSoon`/`StatementOverdue`/`ImportCompleted`/`PendingTransactionsGenerated` are not published, and there are no Channels subscribers/templates yet. |
 | **User-created import layouts** | Only system layouts are seeded; user layouts + preview endpoint are reserved for a future phase. |
-| **Transaction split, budgets, goals, attachments, balance snapshots, multi-currency consolidation, open finance, multi-user households** | Future — the model leaves room without a core rewrite. |
+| **Transaction split, budgets, goals, balance snapshots, multi-currency consolidation, open finance, multi-user households** | Future — the model leaves room without a core rewrite. |
 
 ## Known open points
 
@@ -88,10 +88,3 @@ The import layouts catalog has name/bank/code search, format and destination fil
 5. **Backfill of past installments** — when a plan is created from installment N via import, whether
    to optionally generate installments 1..N−1 (default: no).
 
-## Notes summaries
-
-Notes now embeds read-only live account balances, card limits and monthly gross posted expenses
-grouped by category and separated by currency. It reuses the existing authenticated frontend APIs,
-hooks and query keys, with no backend dependency or new endpoint. Configurations store ids/month
-only; public Notes pages never query/display financial data. See Notes implementation status for
-permissions, date semantics and export privacy.

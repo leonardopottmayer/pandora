@@ -224,7 +224,7 @@ imagens".
 - **`TimeProvider` em tudo** que lê o tempo.
 - **O outbox** é do próprio módulo (`AddTarsOutbox`, um relay), porque ele publica um evento.
 
-## Importação de texto de módulos (B11)
+## Salvar uma mensagem no Notes
 
 Communications chama `Notes.Abstractions.Import.INoteImporter` com dono autenticado, título, texto
 literal, caminho/título de origem interna e destino opcional. Notes cria parágrafos comuns e

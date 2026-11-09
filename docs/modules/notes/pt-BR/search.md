@@ -10,11 +10,13 @@ A busca full-text roda sobre uma **coluna gerada `STORED`** em `nte001_page`:
 
 ```sql
 search_vector tsvector GENERATED ALWAYS AS (
-    to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(content_markdown, ''))
+    to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(content_text, ''))
 ) STORED
 ```
 
-com um índice **GIN** sobre ela. Sendo o Postgres quem mantém o vetor, nenhum caminho de save pode
+com um índice **GIN** sobre ela. O `content_text` é derivado dos blocos a cada salvamento (`PageContent`): as palavras de todo inline, células de tabela, legendas, código, propriedades da página e a saída aceita dos blocos de IA. Chips contam como suas palavras: uma data como o valor, um status ou item como o rótulo, uma fórmula como o LaTeX.
+
+Sendo o Postgres quem mantém o vetor, nenhum caminho de save pode
 esquecer de atualizá-lo — que é exatamente o motivo de ser coluna gerada em vez de algo que a
 aplicação escreve.
 
@@ -74,6 +76,10 @@ trecho, sem diferenciar maiúsculas, usando letras/números Unicode e pontuaçã
 Acentos continuam significativos, como na busca `simple` existente; não há stemming ou busca aproximada.
 
 A API mantém `Excerpt` como **texto puro**, também utilizável pelo assistente. O palette cria texto
-React e nós `<mark>` com tokens do tema, sem inserir HTML de `ts_headline` ou renderizar o markdown da
-nota. HTML literal continua texto. Enquanto resultados anteriores ficam visíveis durante a próxima
+React e nós `<mark>` com tokens do tema, sem inserir HTML de `ts_headline`. HTML literal continua texto. Enquanto resultados anteriores ficam visíveis durante a próxima
 consulta, o realce é suspenso até chegarem os novos resultados. Não há mudança de schema.
+
+## 6. Pergunte às suas notas
+
+Uma aba ao lado da busca responde a uma pergunta a partir das notas em vez de listar páginas. Ela usa o
+mesmo vetor com uma consulta OU; ver [IA §3](ai.md#3-pergunte-às-suas-notas).

@@ -1,6 +1,6 @@
 # Visão em grafo
 
-[← Voltar ao índice](README.md) · Relacionados: [Wikilinks e backlinks](wikilinks-and-backlinks.md), [Tags](tags.md)
+[← Voltar ao índice](README.md) · Relacionados: [Links e backlinks](links-and-backlinks.md), [Tags](tags.md)
 
 Nós são pages, arestas são `PageLink`. Como os dados já existem, o grafo é essencialmente uma
 **visualização** — o trabalho de backend é uma query.

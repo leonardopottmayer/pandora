@@ -1,112 +1,126 @@
 # Arquitetura
 
-[← Voltar ao índice](README.md) · Relacionados: [Modelo de dados](data-model.md), [Visão geral](overview.md)
+[← Voltar ao índice](README.md) · Relacionados: [Modelo de dados](data-model.md), [Blocos e editor](blocks.md)
 
 ---
 
-## 1. Estrutura dos projetos
+## 1. Organização dos projetos
 
-O módulo espelha o módulo Finances, dividido em projetos por camada sob `backend/src/Modules/Notes/`:
+O módulo segue os outros módulos, dividido em projetos por camada em `backend/src/Modules/Notes/`:
 
 ```
 Pottmayer.Pandora.Modules.Notes.
-  Abstractions      → NotesModule (nome, chave de banco, schema) compartilhado entre as camadas
-  Application       → Commands, Queries, Dtos, Services, DI
-  Contracts         → IntegrationEvents (vazio — o módulo não publica nenhum)
+  Abstractions      → NotesModule, NotesFeatures, NotesPermissions, e as portas que outros módulos
+                      chamam: INoteImporter ("salvar no Notes" do Communications), INoteCapture (/nota)
+  Application       → Commands, Queries, Dtos, Services, ferramentas do Assistant, DI
+  Contracts         → vazio: o módulo não publica eventos de integração
   Domain            → Aggregates, ValueObjects, Errors, Ports (Repositories)
-  Infrastructure    → DI (sem jobs e sem parsers externos — o módulo não tem nenhum dos dois)
-  Persistence       → EntityConfigs, Repositories, Storage, NotesDbContext, DI
+  Infrastructure    → miniaturas com ImageSharp, o leitor de links (HTTP, protegido contra SSRF)
+  Persistence       → EntityConfigs, Repositories, o interceptor de versões, NotesDbContext, DI
   Presentation      → Controllers, Requests, DI
 ```
 
-Estilo de design: **aggregates de DDD** com construtor privado + factories estáticas, um
-`TimeProvider` injetado para toda leitura de tempo, e uma camada de aplicação **command/query** (uma
-pasta por caso de uso). Toda escrita passa por um command handler dentro de uma unit of work; as
-leituras passam por query handlers que devolvem DTOs.
+Aggregates DDD com construtores privados e factories estáticas, um `TimeProvider` para toda leitura de
+tempo, e uma pasta por caso de uso na camada de aplicação. Toda escrita passa por um command handler numa
+unit of work; leituras passam por query handlers que devolvem DTOs. O módulo **não tem jobs**.
 
-Frontend: `client-web/src/modules/notes`, dividido em `pages/` (rotas), `components/`, `hooks/`
-(TanStack Query), `services/` (HTTP), `lib/` (lógica pura, com testes unitários) e `models.ts`
-(espelho dos DTOs).
+Frontend: `client-web/src/modules/notes`, dividido em `pages/` (rotas), `components/` (com
+`components/visual/` para o editor e `components/library/` para a mídia), `hooks/`, `services/`,
+`lib/` (lógica pura, com testes) e `models.ts`.
 
-## 2. Blocos do domínio
+## 2. Peças do domínio
 
 ### Aggregates (`Domain/Aggregates`)
 
-| Aggregate root | Responsabilidade / invariantes principais |
+| Aggregate | Responsabilidade / invariantes |
 |---|---|
-| **Page** | O documento markdown. Slug fixado na criação (um rename nunca quebra um link); `Move` guarda só o caso trivial de ser o próprio pai e delega a checagem real de ciclo a `PageHierarchy`; arquivar e deletar são timestamps, não booleanos. |
-| **PageLink** | Uma aresta do grafo wiki. Criada e removida, nunca editada — por isso só carrega `CreatedAt`. Ciclos permitidos. |
-| **Tag** | Um rótulo do usuário. A identidade é o `Slug`; `Name` registra a primeira grafia; `Color` é o único campo mutável, e `HasUserMetadata` é o que faz uma tag vazia valer a pena manter. |
-| **PageTag** | O fato de uma page carregar uma tag. Derivado e imutável, como `PageLink`. |
-| **MediaItem** | Um item da biblioteca (imagem ou arquivo) + o par `(StorageBackend, StorageKey)` que localiza os bytes. |
-| **MediaFolder** | Uma pasta virtual da biblioteca, numa árvore. |
-| **MediaRendition** | Uma versão derivada de um item, com bytes próprios (a miniatura). Write-once. |
+| **Space** | Um grupo de páginas; no máximo um padrão por usuário. |
+| **Folder** | Um contêiner num espaço, em árvore por `parent_id`; nunca dentro de uma página. |
+| **Page** | O documento de blocos mais título, ícone, slug (fixo na criação), lugar na árvore, estados (favorita, arquivada, excluída, modelo) e configurações (aparência, trava, verificação, último acesso, token público). `history_number` conta as versões. |
+| **PageVersion** | Um snapshot imutável da página depois de um salvamento que a mudou. |
+| **PageLink** | Uma aresta derivada entre duas páginas, tipo `wikilink` ou `embed`. |
+| **Tag** / **PageTag** | Um rótulo do usuário e o fato derivado de que uma página o carrega. |
+| **PageMedia** | O fato derivado de que uma página usa um item da biblioteca. |
+| **BlockStamp** | Quando um bloco foi escrito e editado pela última vez, e a origem da edição. |
+| **PageComment** | Um comentário ou resposta, ancorado num bloco e opcionalmente em palavras citadas. |
+| **MediaItem**, **MediaFolder**, **MediaRendition** | A biblioteca: itens, pastas, miniaturas. |
+| **NotesPreferences** | O modelo diário e a pasta das notas diárias. |
+| **DailyNote** | Qual página é a nota diária de uma data, por usuário. |
+| **NoteCapture** | Um recibo por captura do Telegram, para um evento reentregue não acrescentar nada. |
 
-Dois desses são **helpers puros**, não aggregates — lógica sem estado que precisa do conjunto inteiro
-em vez de uma linha, mantida no domínio para continuar testável:
-
-- `PageHierarchy.WouldCreateCycle` — sobe a partir do pai pretendido sobre um mapa de links de pai;
-  há ciclo se o passeio chegar na page que está sendo movida.
-- `PageGraph.Neighborhood` — BFS não-direcionada com visited set, devolvendo as pages dentro de N
-  saltos.
+Dois **helpers puros** ficam ao lado, no domínio para continuarem testáveis: `PageHierarchy`
+(checagem de ciclo, caminhada pela subárvore) e `PageGraph.Neighborhood` (BFS não direcionada do grafo
+local).
 
 ### Value objects (`Domain/ValueObjects`)
 
 | Tipo | Papel |
 |---|---|
+| `PageContent` | Lê e valida um documento, e deriva numa passada só: o texto de busca, os ids das páginas mencionadas, os ids das páginas ligadas (blocos de link de página e synced-ref), as tags, os ids de mídia, as impressões digitais dos blocos, as propriedades da página e um texto legível para o Assistant. Também monta um documento a partir de texto puro, junta documentos e copia um modelo com ids novos. |
+| `PageAppearance` | Capa (imagem da biblioteca ou gradiente, posição), largura, fonte, texto pequeno. |
+| `PageSnapshot` | O que uma versão guarda. |
+| `PageVersionSource` | `initial`, `edit`, `assistant`, `restore`. |
 | `PageLinkKind` | `wikilink` \| `embed`. |
-| `Slugger` | Título → slug: minúsculas, acentos removidos, não-alfanuméricos colapsados em hífens únicos, teto de 80 chars. A unicidade é do chamador (precisa do repositório). |
-| `WikilinkParser` | Corpo → lista de `WikilinkReference(Target, Kind)`, deduplicada por (alvo, tipo). |
-| `TagName` | Texto da tag → slug. Mantém `/`, `-` e `_` (ao contrário do `Slugger`), teto de 50, e exige ao menos uma letra — então `#123` não é tag. |
-| `TagParser` | Corpo → lista de `TagReference(Name, Slug)`. Remove código cercado e inline antes. |
-| `PageSearch` | O que o usuário digitou → `tsquery` (`palavra:*` unidas por `&`), mais o excerpt cortado em volta do primeiro match (160 chars). |
+| `PageProperty` | Uma linha de um bloco de propriedades, como texto puro. |
+| `Slugger` | Título → slug: minúsculas, sem acentos, não alfanuméricos viram hífen, no máximo 80 caracteres. |
+| `TagName` | Texto da tag → slug: minúsculas, sem acentos, mantém `/`, `-` e `_`, no máximo 50 caracteres, exige uma letra. |
+| `PageSearch` | A caixa de busca → um `tsquery` de prefixos seguro, mais o trecho em volta do primeiro acerto. |
+| `NoteQuestionSearch` | Uma pergunta → um `tsquery` com OR, sem as palavras comuns de pergunta, para o pergunte às suas notas. |
+| `MediaKind` | `image`, `file`, `video` (vídeo recusado no upload por enquanto). |
 
-### Ports (`Domain/Ports/Repositories`)
+### Portas
 
-`IPageRepository`, `IPageLinkRepository`, `ITagRepository`, `IPageTagRepository`,
-`IMediaItemRepository`, `IMediaFolderRepository`, `IMediaRenditionRepository`, e `IImageProcessor`
-(ImageSharp, em `Infrastructure`). O storage é o port compartilhado `IFileStorage` (`Shared.Domain/Storage`),
-consumido pela aplicação pela chave `NotesModule.DatabaseKey`; o `DatabaseFileStorage` dele fica em
-`Shared.Persistence/Storage`, sobre a tabela `nte003_file_blob` do módulo (ver [Biblioteca de mídia](media-library.md)).
+Um `I…Repository` por aggregate em `Domain/Ports/Repositories`, mais `IImageProcessor` (ImageSharp) e
+o leitor de links. Os bytes passam pela porta compartilhada `IFileStorage` com a chave
+`NotesModule.DatabaseKey`; o backend de banco grava na `nte003_file_blob`. Chamadas de IA passam pelo
+`ITextCompletion` do `Assistant.Abstractions`.
 
-O módulo **não declara domain services nem jobs** — nada aqui roda em schedule.
-
-### Application services (`Application/Services`)
+### Serviços de aplicação (`Application/Services`)
 
 | Serviço | Papel |
 |---|---|
-| `PageLinkSynchronizer` | Reconstrói por diff as arestas que saem de uma page, a partir do corpo dela. |
-| `PageTagSynchronizer` | O mesmo para tags, mais **criar** as tags que o texto inventou e **varrer** as que ele abandonou. |
-| `PageTagReader` | Lê as tags de uma page para os handlers que não tocaram no corpo (abrir, mover, favoritar, arquivar). |
-| `TagFilter` | Resolve "quais pages carregam todas essas tags?" — a regra única compartilhada pela sidebar, pela busca e pelo grafo. |
+| `PageLinkSynchronizer` | Reconstrói as arestas que saem de uma página a partir do documento, por diff. |
+| `PageTagSynchronizer` | O mesmo para as tags, criando as que o documento trouxe e varrendo as sem cor que nenhuma página carrega mais. |
+| `PageMediaSynchronizer` | O mesmo para o uso de mídia (blocos e capa). |
+| `BlockStampSynchronizer` | Compara a impressão digital de cada bloco com a guardada e carimba blocos novos e editados. |
+| `PageDeletion` | Lixeira e exclusão definitiva de uma página e suas subpáginas. |
+| `SpaceResolver`, `SpaceValidation` | O espaço padrão, e as checagens do espaço de uma página ou pasta. |
+| `TagFilter` | "Que páginas têm todas estas tags?" — uma regra para barra lateral, busca e grafo. |
+| `PageTagReader` | As tags da página para os handlers que não mexeram no documento. |
+| `NoteImporter`, `NoteCaptureService` | As portas `INoteImporter` e `INoteCapture`. |
+| `NoteAnswerParser` | Valida a resposta do modelo no pergunte às suas notas. |
+
+### Versões sem chamada em cada handler
+
+O `PageVersionSaveChangesInterceptor` (Persistence) observa a unit of work: sempre que campos
+versionados de uma página mudam, ele acrescenta um snapshot na mesma transação e incrementa o
+`history_number`. Assim todo caminho grava o histórico do mesmo jeito: o editor, o Assistant, mover uma
+subárvore, uma restauração, uma captura.
 
 ## 3. Decisões de design
 
 | # | Decisão | Motivo (alternativa rejeitada) |
 |---|---|---|
-| **D1** | Links e tags são **escritos no markdown** e parseados pelo backend no save. | Mantém o corpo portável e o frontend simples. Rejeitado cadastrá-los em formulário/CRUD de junção, o que deixaria o metadado fora do arquivo exportado. |
-| **D2** | Linhas derivadas são reconciliadas por **diff**, não apagadas e recriadas. | Mesmo resultado idempotente, e nunca esbarra no índice único apagando e reinserindo a mesma linha dentro de uma transação. |
-| **D3** | A árvore e o grafo são sistemas separados sobre uma `Page`. | A árvore é decisão de arquivo (acíclica), o grafo é significado (cíclico). Rejeitado modelar links como arestas da árvore. |
-| **D4** | O slug é congelado na criação. | Um rename não pode quebrar `[[links]]` nem URLs. Rejeitado re-sluggar no rename. |
-| **D5** | Deletar é **soft delete da subárvore inteira**, feito no comando e não por cascade do banco. | Nenhum filho fica apontando para um pai deletado, e as linhas sobrevivem para a história. Rejeitado `ON DELETE CASCADE` (que é um hard delete da história). |
-| **D6** | `search_vector` é uma **coluna gerada STORED**, não mantida por código de aplicação. | O Postgres a mantém em dia, então nenhum caminho de save pode esquecê-la. Configuração `simple` (só lower-case, sem stemming) porque o caderno mistura PT-BR e EN. |
-| **D7** | O blob store fica atrás de `IFileStorage`, com o backend e a chave gravados **em cada linha de mídia**. | Ligar o S3 depois não exige migration nem reescrita das linhas antigas — a leitura é auto-descritiva. |
-| **D8** | O grafo local é cortado **em memória**, não com passeio recursivo em SQL. | Um caderno pessoal é pequeno; carregar as pages e arestas do usuário e rodar BFS mantém a lógica de profundidade fora do SQL e testável. |
-| **D9** | Uma linha de tag sobrevive a perder a última page **só se tiver cor**. | A cor é a única coisa que o texto não recupera; sem ela, uma tag sem uso é só ruído nos filtros. |
-| **D10** | Filtro com várias tags **intersecta** (E), igual nas três superfícies. | "Ir estreitando" é o comportamento esperado, e uma regra só em todo lugar é melhor que OU aqui e E ali. |
-| **D11** | Mídias são servidas por um **endpoint autenticado**, nunca por path direto. | Os bytes são do usuário. A consequência é que o browser não consegue buscá-los sozinho — ver [Biblioteca de mídia](media-library.md#7-servir-os-bytes). |
+| **D1** | Um documento `jsonb` por página, id estável por bloco. | A página carrega e salva como uma unidade, e o dado derivado sai dela. Rejeitado: uma linha por bloco. |
+| **D2** | TipTap no frontend, com um conversor (`lib/blocks.ts`) entre o JSON do TipTap e os blocos do Pandora. | O banco não depende do editor. Rejeitado: escrever um motor de editor. |
+| **D3** | Linhas derivadas são reconciliadas por **diff**, não apagadas e reinseridas. | Mesmo resultado idempotente, e nunca esbarra num índice único dentro de uma transação. |
+| **D4** | Links apontam para ids de página. | Renomear nunca quebra um link; nada resolve títulos. |
+| **D5** | O backend valida a forma, não cada tipo de bloco. | Bloco novo é trabalho só de frontend. |
+| **D6** | A árvore (pastas, páginas-pai) e os links são sistemas separados. | A árvore é arquivo (acíclica), os links são significado (cíclicos). |
+| **D7** | Excluir é soft e vai para a lixeira, feito no command, não por cascata no banco. | Subpáginas saem e voltam juntas, e o histórico sobrevive. |
+| **D8** | `search_vector` é uma coluna gerada sobre `title` e `content_text`. | O Postgres mantém em dia; configuração `simple` porque o caderno mistura português e inglês. |
+| **D9** | Os bytes ficam atrás do `IFileStorage`, com backend e chave em cada linha de mídia. | Um bucket depois não precisa de migration. |
+| **D10** | O grafo local é recortado em memória. | Um caderno pessoal é pequeno; BFS em C# fica testável. |
+| **D11** | Mídia é servida por endpoint autenticado; uma página pública serve só os itens que usa. | Os bytes são do usuário. |
+| **D12** | Uma cópia sincronizada é somente leitura; o original é editado onde mora. | Duas páginas nunca escrevem o mesmo bloco. |
+| **D13** | Blocos ao vivo (Agenda, Finances) guardam só a configuração. | Os números nunca entram no documento, nas versões nem numa página pública. |
 
 ## 4. Regras transversais
 
-- **Multi-tenant por usuário.** `nte001_page`, `nte005_tag`, `nte007_space`, `nte002_media` e
-  `nte008_media_folder` têm `user_id NOT NULL` (um item de mídia não pertence a page nenhuma); as tabelas
-  derivadas chegam ao dono pela page delas. Todo endpoint é autenticado e escopado ao usuário do
-  token; recurso de outro usuário devolve **404** (não 403).
-- **`TimeProvider` em todo lugar.** Nenhum aggregate lê `DateTime.Now` direto, o que é o que torna os
-  timestamps de arquivar/deletar testáveis.
-- **Sem event log de auditoria.** Diferente do Finances, o módulo não tem tabela de `audit_event`.
-  `Page` e `Tag` são `IAuditable` (`created_by/at`, `updated_by/at`); as tabelas de aresta derivada
-  carregam só `created_at`, porque são reescritas em vez de editadas.
-- **Espelhos dos parsers no frontend.** `lib/wikilinks.ts` e `lib/tags.ts` reimplementam os parsers do
-  backend para o preview resolver uma referência exatamente como o próximo save vai resolver. São
-  duplicação deliberada, cada uma coberta pelos próprios testes unitários.
+- **Multi-tenant por usuário.** Toda tabela de aggregate tem `user_id`, ou chega a ele pela página.
+  Todo endpoint é restrito ao usuário do token; recurso de outro usuário devolve **404**.
+- **Permissões e features.** Todo command e query declara sua permissão `notes.*` (`NotesPermissions`)
+  e a feature do Notes; ações que tocam outro módulo exigem também a permissão e a feature dele. Ver
+  [Admin](../../admin/pt-BR/README.md).
+- **`TimeProvider` em todo lugar.** Nenhum aggregate lê `DateTime.Now`.
+- **Limites.** Um documento tem no máximo 2 MB, 10.000 blocos e 24 níveis.

@@ -22,8 +22,7 @@ Comece pela **Visão geral** para os princípios e o vocabulário, depois vá ao
 | 3 | [Modelo de dados](data-model.md) | Catálogo do schema (`ast001`–`ast004` + outbox): colunas, constraints, status |
 | 4 | [Referência da API](api-reference.md) | Todos os endpoints em `/api/v{n}/assistant` |
 | 5 | [Status de implementação](implementation-status.md) | O que está construído, o que mudou em relação ao plano, pontos em aberto |
-| 6 | [Product Plan](product-plan.md) | O que ainda falta (OpenAI, eval set, retenção de áudio, questões em aberto) |
-| 7 | [Plano de execução](execution-plan.md) | Histórico: a ordem em que o módulo foi construído (Etapa 0 → A4) |
+| 6 | [Product Plan](product-plan.md) | O que ainda falta (OpenAI, eval set, retenção de áudio, persona e voz, questões em aberto) |
 
 A sequência completa do Telegram está em [Fluxo do Telegram](../../../architecture/pt-BR/telegram-assistant-flow.md).
 
@@ -37,5 +36,5 @@ A sequência completa do Telegram está em [Fluxo do Telegram](../../../architec
 - **Base da API:** `/api/v{version}/assistant`, autenticada, restrita ao usuário do token.
 - **Frontend:** `client-web/src/modules/assistant` — `/assistant` (chat + histórico) e `/settings/assistant`.
 - **Provedor de LLM:** Gemini via `Tars.Ai.Chat.Gemini`; modelo e chave por chamada; a chave é a conta de API key do usuário no [Integrations](../../integrations/pt-BR/README.md) (`ast001.chat_account_id`).
-- **Tools:** 25, contribuídas por [Agenda](../../agenda/pt-BR/README.md), [Notes](../../notes/pt-BR/README.md) e [Finances](../../finances/pt-BR/README.md) como `IAssistantTool`s nas pastas `Application/Assistant`; o Finances também recebe arquivos compartilhados via `IAssistantFileQueue`.
+- **Tools:** 26, contribuídas por [Agenda](../../agenda/pt-BR/README.md), [Notes](../../notes/pt-BR/README.md) e [Finances](../../finances/pt-BR/README.md) como `IAssistantTool`s nas pastas `Application/Assistant`; o Finances também recebe arquivos compartilhados via `IAssistantFileQueue`.
 - **Superfícies:** web (inline na requisição) e Telegram (subscribers de integration event no inbound do [Channels](../../channels/pt-BR/README.md); respostas pelo outbox do Assistant — [Mensageria](../../../architecture/pt-BR/messaging.md)).

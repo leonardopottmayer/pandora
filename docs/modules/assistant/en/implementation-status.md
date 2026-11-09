@@ -51,6 +51,7 @@ because it exists" from "documented as a plan" ([Product plan](product-plan.md))
 | **Audio retention opt-in** | Not built; audio is always discarded. |
 | **Ambiguity detection for `WhenAmbiguous`** | Not built — see Known open points. |
 | **Proactive digests** | Not planned for now. |
+| **Persona and voice** | An idea in three stages (name and personality, spoken replies, live conversation); see [Product plan §5](product-plan.md#5-persona-and-voice-idea-not-scheduled). |
 
 ## Known open points
 

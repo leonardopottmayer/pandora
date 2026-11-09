@@ -185,8 +185,9 @@ public async Task<IActionResult> CloseAsync(Guid id, CancellationToken ct)
 
 - Update the affected module docs in the same change: English is primary, with the same topics
   mirrored in pt-BR. A module's `implementation-status.md` says what is built; `product-plan.md` only
-  what is still missing. Use the [documentation index](../../README.md); handoffs record session
-  context and may be outdated.
+  what is still missing. Use the [documentation index](../../README.md). Execution plans, session
+  handoffs and step-by-step build logs leave `docs/` once the work is done: the topic files describe what
+  exists, and git keeps the history.
 - A cross-cutting change (a Tars call added or removed, a new event, a new job) also updates
   [Tars wiring](tars-wiring.md) or [Messaging](messaging.md).
 

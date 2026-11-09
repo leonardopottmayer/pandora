@@ -68,13 +68,13 @@ invariantes e endpoints; se Tarefas um dia superar o módulo, sai com suas tabel
 
 ### No escopo (implementado — ver [Status de implementação](implementation-status.md))
 
-O schema `agenda` (`agd001`–`agd008`); lembretes (único-disparo e recorrentes) com um ledger de
+O schema `agenda` (`agd001`–`agd008`, `agd013`); lembretes (único-disparo e recorrentes) com um ledger de
 dispatch por ocorrência; o motor de recorrência RRULE (parse + expand, ciente de DST); tarefas com
 listas, subtarefas, prioridade, vencimentos, concluir/reabrir, materialização recorrente e alertas;
 calendários e eventos com ocorrências calculadas, overrides e os escopos de edição esta /
 esta-e-futuras / todas; o alerta polimórfico com três sweeps de background; a leitura unificada
-`GET /agenda/today`; botões inline do Telegram roteados de volta pelo Channels; e o frontend (Hoje,
-Lembretes, Tarefas, Calendário).
+`GET /agenda/today`; botões inline do Telegram roteados de volta pelo Channels; as 15 ferramentas do Assistant; e o frontend (Hoje,
+Lembretes, Tarefas, Calendário, Configurações).
 
 ### Fora do escopo / futuro (ver [product-plan.md](product-plan.md))
 
@@ -82,5 +82,4 @@ Lembretes, Tarefas, Calendário).
 |---|---|
 | **Sync Google Calendar** (fase 5) | Não implementado — tabelas de sync (`agd009`–`agd012`), provedores, cursores, log de conflito ausentes. Depende de [Integrations](../../integrations/pt-BR/overview.md). |
 | **Sync Google Tasks** (fase 6) | Não implementado. |
-| **Catálogo de comandos do Assistant** (fase 7) | Não implementado — os comandos existem e são comandáveis, mas o registro de descriptors para o Assistant não está ligado. |
 | **Além** | Links Nota↔evento, quick-add em linguagem natural, tempo de deslocamento, ICS/CalDAV, provedores Microsoft/Apple, vencimentos do Finances na visão do dia. |

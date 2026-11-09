@@ -213,17 +213,26 @@ Nothing changes for anyone until an administrator edits a role.
 
 ### 6.6 API
 
-- `GET /identity/me` gains `features: string[]` (enabled keys) and `permissions: string[]` (the
-  user's effective keys, wildcards expanded).
-- `GET /admin/catalog`: modules → resources → actions, with labels, features and dependencies.
-- Users: list with filters, detail with **effective permissions and where each comes from**, bulk
-  add/remove role, copy permissions from another user, exceptions, disable/enable, revoke sessions.
-- Roles: CRUD, patterns, holders.
-- Features: list with state and default, toggle.
-- Audit: paged list, filter by actor, target and period.
+`GET /identity/me` gains `features: string[]` (enabled keys) and `permissions: string[]` (the user's
+effective keys, wildcards expanded). The rest is under `/api/v{version}/admin`:
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/catalog` | Modules → resources → actions, with labels, features and dependencies |
+| GET | `/features` | Every feature with its state and default |
+| PUT | `/features/{key}` | Switch a feature on or off |
+| GET · POST | `/roles` | List roles with their patterns and holders; create one |
+| PUT · DELETE | `/roles/{id}` | Update or delete a role |
+| GET | `/users` | List users, with filters |
+| GET | `/users/{id}` | Detail with **effective permissions and where each comes from** |
+| POST | `/users/roles` | Add or remove a role for several users at once |
+| POST | `/users/approve` | Approve pending accounts (§11) |
+| PUT | `/users/{id}/exceptions` | Replace the user's allow/deny exceptions |
+| PUT | `/users/{id}/disabled` | Disable or enable the user |
+| POST | `/users/{id}/revoke-sessions` | Sign the user out everywhere |
+| GET | `/audit` | Paged list, filtered by actor, target and period |
 
 Every write goes into `adm006` with the before and after state.
-
 ### 6.7 Frontend
 
 - `usePermission(key)`, `useFeature(key)` and `<Can permission="…">` read from `/me`. The menu shows a

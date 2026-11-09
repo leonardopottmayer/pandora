@@ -1,6 +1,6 @@
 # Media Library
 
-[← Back to index](../README.md) · Related: [Data Model](data-model.md), [Editor](editor.md), [API Reference](api-reference.md)
+[← Back to index](../README.md) · Related: [Data Model](data-model.md), [Blocks & Editor](blocks.md), [API Reference](api-reference.md)
 
 ---
 
@@ -11,7 +11,7 @@ tree, nothing on disk. It belongs to the user and is shared by every [space](spa
 appear in notes of different spaces.
 
 Pasting or dropping a file in the editor sends it to the library, **"Unsorted"** (no folder), and
-inserts the markdown that embeds it. The `/notes/library` screen organizes everything afterwards.
+inserts the block that shows it. The `/notes/library` screen organizes everything afterwards.
 
 ## 2. The tables
 
@@ -80,9 +80,10 @@ Responses carry **`Cache-Control: private, max-age=31536000, immutable`**: an id
 never change. The browser keeps both the image and its thumbnail, across sessions too — which is what
 keeps a grid of dozens of thumbnails cheap, with no signed links needed.
 
-The notes preview still resolves embedded images before rendering (`hooks/useMediaUrls.ts`),
-swapping the path for the object URL **after** DOMPurify, whose URI allow-list does not cover `blob:`.
-A click on a file link becomes an in-place download, without sending the tab to the API.
+The editor resolves each block's `mediaId` to an object URL before drawing it (`hooks/useMediaUrls.ts`).
+A click on a file card becomes an in-place download, without sending the tab to the API. A public page
+fetches the same bytes through `/public/notes/pages/{token}/media/{id}`, which serves only the items
+that page uses.
 
 ## 8. The screen
 
@@ -93,7 +94,7 @@ A click on a file link becomes an in-place download, without sending the tab to 
 - **In the middle**, the thumbnail grid, with a name search (across the whole library), an Images /
   Files filter, and uploads by button or by dragging files from the computer — into the open folder.
 - **Dragging an item** onto a folder (or onto "Unsorted") moves it.
-- **Clicking an item** opens its details: preview, editable name, folder, download, copy markdown,
+- **Clicking an item** opens its details: preview, editable name, folder, download,
   delete, plus kind, size, dimensions, original name and date.
 - The open folder is in the URL (`?folder=`), and the app menu and the notes sidebar lead to it.
 
@@ -101,35 +102,23 @@ A click on a file link becomes an in-place download, without sending the tab to 
 
 **Inserting.** `/image` and `/file` in the slash menu, or the image button on the page toolbar, open
 the library picker (`components/library/MediaPickerModal.tsx`): folders, search, grid, and "Upload and
-insert", which files the upload in the open folder and inserts it. What goes in is plain markdown —
-`![name](…)` for an image, `[name](…)` for a file — at the cursor.
+insert", which files the upload in the open folder and inserts it. `/gallery`, `/audio` and `/pdf`
+take library items too. Every one of these blocks stores the item's `mediaId`; see
+[Blocks & Editor §3](blocks.md#media).
 
-**Width and caption** come from the alt text, the Obsidian way (`lib/mediaMarkdown.ts`):
-
-```
-![Jurerê beach|360](/api/v1/notes/media/…)
-```
-
-- The number after the `|` is the width in pixels; without it the image goes to the column's width.
-- An alignment can follow too, in any order with the width: `left`/`esquerda` and `right`/`direita`
-  float the image with the text running beside it (dropped on a phone), `center`/`centro` centres it —
-  `![Jurerê beach|360|right](…)`.
-- The text before it becomes a caption, **unless it looks like a file name** (`IMG_2034.jpg`) — what
-  pasting writes —, so older images get no caption nobody chose.
-- Clicking an image opens it full screen (antd's `Image` preview).
-- An `<img src="/api/v1/notes/media/…">` written as HTML loads the same way, for when a width or
-  attribute the alt text cannot say is needed; it also counts as a use of the item.
-
-**Files** draw as a card with icon, name and size; a click downloads under the original name. The size
-comes from `GET /notes/media/lookup`, which answers many ids at once, deleted ones included (marked
-"removed from the library").
+- An **image block** has a width, an alignment (`left`, `center`, `right`; a floated image drops its
+  float on a phone) and a caption. A click opens it full screen.
+- A **file block** draws as a card with icon, name and size; a click downloads under the original name.
+  The size comes from `GET /notes/media/lookup`, which answers many ids at once, deleted ones
+  included (marked "removed from the library").
+- A **cover** can be a library image too.
 
 ## 10. Which notes use each item
 
-`nte010_page_media` is derived from the markdown on every save, like the wikilink edges
-(`PageMediaSynchronizer`, `MediaReferenceParser`): every `/api/v1/notes/media/{id}` path outside code,
-of an item the user owns, becomes a row. Taking the image out of the text takes the row away; deleting
-the page takes all of its rows.
+`nte010_page_media` is derived from the document on every save, like the page links
+(`PageMediaSynchronizer`): every `mediaId` in any block's props, plus a library cover, of an item the
+user owns, becomes a row. Removing the block takes the row away; deleting the page for good takes all
+of its rows.
 
 So the library shows **"Used in N notes"** in an item's details, with links to them; has an
 **"Unused"** place to clear what no note shows; and **deleting an item in use warns** with the notes —

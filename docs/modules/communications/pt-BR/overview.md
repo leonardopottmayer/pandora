@@ -73,7 +73,7 @@ Construído hoje (M1, conectar e ler; M2, organizar; M3, enviar):
 
 ### Dentro do escopo (implementado — veja [Status de implementação](implementation-status.md))
 
-O schema `communications` (`com001`–`com005` + outbox); os adaptadores Gmail e IMAP; carga inicial e
+O schema `communications` (`com001`–`com006` + outbox); os adaptadores Gmail e IMAP; carga inicial e
 sincronização incremental; o cache de conteúdo e os anexos; os endpoints de caixas, etiquetas e mensagens; etiquetas nos dois sentidos e ações em
 lote; envio; `MailMessageReceived`; regras; as telas `mail`, `mail/accounts` e `mail/rules`.
 

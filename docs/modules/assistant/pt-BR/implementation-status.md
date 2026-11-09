@@ -50,6 +50,7 @@ porque existe" de "documentado como plano" ([Product plan](product-plan.md)).
 | **Opt-in de retenção de áudio** | Não construído; o áudio é sempre descartado. |
 | **Detecção de ambiguidade para `WhenAmbiguous`** | Não construída — ver Pontos em aberto. |
 | **Resumos proativos** | Não planejados por enquanto. |
+| **Persona e voz** | Uma ideia em três etapas (nome e personalidade, resposta falada, conversa ao vivo); ver [Plano de produto §5](product-plan.md#5-persona-e-voz-ideia-sem-data). |
 
 ## Pontos em aberto conhecidos
 

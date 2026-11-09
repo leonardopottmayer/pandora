@@ -1,6 +1,6 @@
 # Biblioteca de mídia
 
-[← Voltar ao índice](README.md) · Relacionados: [Modelo de dados](data-model.md), [Editor](editor.md), [Referência de API](api-reference.md)
+[← Voltar ao índice](README.md) · Relacionados: [Modelo de dados](data-model.md), [Blocos e editor](blocks.md), [Referência de API](api-reference.md)
 
 ---
 
@@ -11,7 +11,7 @@ virtuais** — nomes numa árvore, nada no disco. Ela é do usuário e compartil
 [espaços](spaces.md): uma imagem pode aparecer em notas de espaços diferentes.
 
 Colar ou arrastar um arquivo no editor manda ele para a biblioteca, em **"Não organizadas"** (sem
-pasta), e insere o markdown que o embeda. Na tela `/notes/library` dá para organizar tudo depois.
+pasta), e insere o bloco que o mostra. Na tela `/notes/library` dá para organizar tudo depois.
 
 ## 2. As tabelas
 
@@ -83,10 +83,10 @@ bytes que nunca mudam. O navegador guarda tanto a imagem quanto a miniatura, inc
 sessões — é isso que mantém barata uma grade com dezenas de miniaturas, sem precisar de link
 assinado.
 
-O preview das notas continua resolvendo as imagens embedadas antes de renderizar
-(`hooks/useMediaUrls.ts`), trocando o caminho pelo object URL **depois** do DOMPurify, cuja
-allow-list de URI não cobre `blob:`. Um clique num link de arquivo vira um download no lugar, sem
-navegar a aba para a API.
+O editor resolve o `mediaId` de cada bloco num object URL antes de desenhá-lo (`hooks/useMediaUrls.ts`).
+Um clique num cartão de arquivo vira um download no lugar, sem navegar a aba para a API. Uma página
+pública busca os mesmos bytes por `/public/notes/pages/{token}/media/{id}`, que serve só os itens que
+aquela página usa.
 
 ## 8. A tela
 
@@ -97,7 +97,7 @@ navegar a aba para a API.
 - **No centro**, a grade de miniaturas, com busca por nome (que procura na biblioteca inteira), filtro
   Imagens / Arquivos e envio por botão ou arrastando arquivos do computador — para a pasta aberta.
 - **Arrastar um item** para uma pasta (ou para "Não organizadas") move ele.
-- **Clicar num item** abre os detalhes: prévia, nome editável, pasta, baixar, copiar o markdown,
+- **Clicar num item** abre os detalhes: prévia, nome editável, pasta, baixar,
   excluir, e tipo, tamanho, dimensões, nome original e data.
 - A pasta aberta fica na URL (`?folder=`), e o menu do app e a barra lateral das notas levam até ela.
 
@@ -105,35 +105,23 @@ navegar a aba para a API.
 
 **Inserir.** `/imagem` e `/arquivo` no menu de barra, ou o botão de imagem na barra da página, abrem
 o seletor da biblioteca (`components/library/MediaPickerModal.tsx`): pastas, busca, grade e
-"Enviar e inserir", que manda o arquivo para a pasta aberta e já insere. O que entra é markdown
-comum — `![nome](…)` para imagem, `[nome](…)` para arquivo — no cursor.
+"Enviar e inserir", que manda o arquivo para a pasta aberta e já insere. `/galeria`, `/áudio` e `/pdf`
+também usam itens da biblioteca. Todos esses blocos guardam o `mediaId` do item; ver
+[Blocos e editor §3](blocks.md#mídia).
 
-**Largura e legenda** vêm do texto alternativo, no estilo do Obsidian (`lib/mediaMarkdown.ts`):
-
-```
-![Praia de Jurerê|360](/api/v1/notes/media/…)
-```
-
-- O número depois da `|` é a largura em pixels; sem ele, a imagem vai até a largura da coluna.
-- Um alinhamento também pode vir, em qualquer ordem com a largura: `esquerda`/`left` e
-  `direita`/`right` flutuam a imagem com o texto correndo ao lado (no celular não), `centro`/`center`
-  centraliza — `![Praia de Jurerê|360|direita](…)`.
-- O texto antes vira legenda, **exceto quando parece um nome de arquivo** (`IMG_2034.jpg`) — o que
-  colar escreve —, para as imagens antigas não ganharem uma legenda que ninguém escolheu.
-- Clicar na imagem abre em tela cheia (o preview do `Image` do antd).
-- Um `<img src="/api/v1/notes/media/…">` escrito em HTML carrega do mesmo jeito, para quando precisa
-  de um atributo que o texto alternativo não diz; ele também conta como uso do item.
-
-**Arquivos** viram um cartão com ícone, nome e tamanho; clicar baixa com o nome original. O tamanho
-vem de `GET /notes/media/lookup`, que responde vários ids de uma vez, excluídos incluídos (marcados
-"removido da biblioteca").
+- Um **bloco de imagem** tem largura, alinhamento (`left`, `center`, `right`; uma imagem flutuante
+  perde a flutuação no celular) e legenda. Um clique abre em tela cheia.
+- Um **bloco de arquivo** vira um cartão com ícone, nome e tamanho; clicar baixa com o nome original. O
+  tamanho vem de `GET /notes/media/lookup`, que responde vários ids de uma vez, excluídos incluídos
+  (marcados "removido da biblioteca").
+- Uma **capa** também pode ser uma imagem da biblioteca.
 
 ## 10. Quais notas usam cada item
 
-`nte010_page_media` é derivada do markdown a cada save, como as arestas de wikilink
-(`PageMediaSynchronizer`, `MediaReferenceParser`): todo caminho `/api/v1/notes/media/{id}` fora de
-código, de um item do próprio usuário, vira uma linha. Tirar a imagem do texto tira a linha; excluir a
-página tira todas as dela.
+`nte010_page_media` é derivada do documento a cada salvamento, como os links entre páginas
+(`PageMediaSynchronizer`): todo `mediaId` nas props de qualquer bloco, mais uma capa da biblioteca, de
+um item do próprio usuário, vira uma linha. Tirar o bloco tira a linha; excluir a página de vez tira
+todas as dela.
 
 Com isso a biblioteca mostra, nos detalhes, **"Usado em N notas"** com links para elas; tem o lugar
 **"Sem uso"** para limpar o que nenhuma nota mostra; e **excluir um item em uso avisa** listando as

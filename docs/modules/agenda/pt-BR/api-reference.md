@@ -13,6 +13,7 @@ token; o recurso de outro usuário devolve 404. Erros vêm de falhas tipadas `Re
 |---|---|---|
 | GET | `/agenda/reminders` | Lista os lembretes do usuário. |
 | POST | `/agenda/reminders` | Cria um lembrete (único-disparo ou recorrente). |
+| PATCH | `/agenda/reminders/{id}` | Renomeia; horário, recorrência e status não mudam. |
 | POST | `/agenda/reminders/{id}/acknowledge` | Reconhece (único-disparo). |
 | POST | `/agenda/reminders/{id}/snooze` | Soneca (único-disparo). |
 | DELETE | `/agenda/reminders/{id}` | Cancela. |

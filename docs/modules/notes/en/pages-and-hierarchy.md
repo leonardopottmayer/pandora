@@ -1,98 +1,135 @@
 # Pages & Hierarchy
 
-[← Back to index](../README.md) · Related: [Data Model](data-model.md), [Editor](editor.md), [API Reference](api-reference.md)
+[← Back to index](../README.md) · Related: [Data Model](data-model.md), [Spaces](spaces.md), [Blocks & Editor](blocks.md)
 
 ---
 
-## 1. What a page is
+## 1. Pages, folders and sub-pages
 
-A **page** is a markdown document owned by the user and the aggregate root of the module
-(`nte001_page`). Everything else in Notes either derives from its body (edges, tags, the search
-vector) or is embedded in it (media).
+- A **page** (`nte001`) holds a [block document](blocks.md), a title, an emoji icon, a slug and its place
+  in the tree.
+- A **folder** (`nte012`) holds folders and pages and lives in one [space](spaces.md). It has a name,
+  an icon and a description, edited in place on its own page (`/notes/f/:id`).
+- A **top-level page** sits in a folder (`folder_id`) or at the top of its space. A **sub-page** sits
+  under its parent page (`parent_id`) and lives in its parent's space.
+- **Never a folder inside a page.**
 
-A page carries a `title`, an optional emoji `icon`, the `content_markdown` body, its place in the
-tree (`parent_id` + `order_index`), and three states: favorite, archived, deleted.
+Siblings are ordered by `order_index`; folders come before pages. The frontend nests the flat lists
+from `GET /notes/pages` and `GET /notes/folders` with `lib/buildTree.ts`.
 
-## 2. The tree
+**Cycles are rejected.** `PageHierarchy.WouldCreateCycle` walks upward from the prospective parent and
+reports a cycle if it reaches the moving page; folders use the same rule.
 
-The sidebar hierarchy is `parent_id` and nothing else — `NULL` means a root page. Siblings are
-ordered by `order_index`. The frontend nests the flat list from `GET /notes/pages` with
-`lib/buildTree.ts`; the backend never returns a nested payload.
+## 2. The sidebar
 
-**Cycles are rejected.** `Page.Move` only guards the trivial "parent is myself" case; the real
-invariant needs the whole tree, so it lives in `PageHierarchy.WouldCreateCycle`, which walks upward
-from the prospective parent over a map of every page's parent and reports a cycle if the walk ever
-reaches the page being moved. A broken or foreign parent link ends the walk without a cycle.
+From top to bottom (`components/NotesSidebar.tsx`):
 
-This is the opposite stance from the wiki graph, which expects cycles — see
-[Wikilinks & Backlinks](wikilinks-and-backlinks.md).
+1. **The space switcher**, search (`Ctrl+K`) and the graph.
+2. **Shortcuts:** the space **Overview**, **Today** (the daily note, with its settings gear) and
+   **Recent** (the last five pages opened).
+3. **The tree:** folders and pages together. A folder's `+` creates a page or a folder in it.
+4. **Templates**, in their own section.
 
-## 3. Slugs
+**Drag and drop** goes through one atomic request, `POST /notes/tree/move`: dropping on a folder puts
+the item inside it, on a page makes a sub-page, and gaps reorder siblings. The backend checks owner,
+space, destination and cycles for the whole batch before moving anything, so a failed drop moves
+nothing and writes no version. Dragging is on only in one selected space with no tag filter, because
+the other views do not show a complete hierarchy. "Move to another space" in the page menu uses the
+single-page `POST /notes/pages/{id}/move`.
 
-The slug is derived from the title by `Slugger` — lower-cased, accents stripped, non-alphanumerics
-collapsed into single hyphens, capped at 80 characters, falling back to `untitled` when nothing
-usable is left. `CreatePage` then appends `-2`, `-3`, … until it is free for that user.
+A **tag filter** turns the tree into a flat list and disables dragging.
 
-Two rules follow from the schema:
+## 3. Overview, folder page and page
 
-- **The slug is frozen at creation.** Renaming a page does not re-slug it, so a `[[link]]` written
-  against the old slug keeps resolving.
-- **A soft-deleted page frees its slug**, because `uq_nte001_user_slug` is a partial index over
-  `deleted_at IS NULL`.
+- **Space overview** (`/notes/s/:spaceId`): counts, recently edited pages, and the structure as cards
+  or as a tree.
+- **Folder page** (`/notes/f/:id`): its content as a list, cards, or a **table**. The table has one row
+  per page directly in the folder and one column per property found in their properties blocks
+  (`GET /notes/folders/{id}/properties`). It is read-only.
+- **Page** (`/notes/:id`): breadcrumb (space, folders, parents), header (icon, title, tags), the
+  document, then its sub-pages and "Mentioned in".
 
-## 4. States
+## 4. Slugs
+
+`Slugger` derives the slug from the title (lower-case, accents stripped, non-alphanumerics collapsed
+into hyphens, 80 characters at most, `untitled` when nothing is left). `CreatePage` appends `-2`,
+`-3`, … until it is free. The slug is **fixed at creation**; a page in the trash frees it, because the
+unique index covers live pages only.
+
+## 5. States
 
 | State | Storage | Meaning |
 |---|---|---|
-| **Favorite** | `is_favorite` boolean | Purely a marker for the sidebar. |
-| **Archived** | `archived_at` timestamptz | Hidden from the default tree, **still editable**, still in the graph and in search results (flagged). `POST /archive` is a no-op if already archived. |
-| **Deleted** | `deleted_at` timestamptz | Soft delete. The row and its history stay; every read filters it out. |
+| **Favorite** | `is_favorite` | A marker for the sidebar. |
+| **Archived** | `archived_at` | Hidden from the default tree, still editable, still in search (flagged) and in the graph when "Show archived" is on. |
+| **Template** | `is_template` | Listed under Templates; see §7. |
+| **In the trash** | `deleted_at` | See §6. |
 
-Archiving and deleting are timestamps rather than booleans so the module records *when* — and so the
-`TimeProvider` injected into the aggregate is what tests control.
+## 6. Trash
 
-## 5. Deleting a subtree
+- **Deleting** a page stamps one moment on it and every sub-page, so they come back together. Deleting
+  a folder sends its subfolders and pages along.
+- **Restoring** (`POST /notes/trash/{id}/restore`) puts the page back under its parent, or at the top
+  of its space in its folder when the parent is gone, or in the default space when its space is gone.
+  A live page that took the slug meanwhile gives the restored page a numbered slug. Links, media uses
+  and tags are worked out again.
+- **Delete for good**, one page or the whole trash, removes the rows, their versions, comments, block
+  stamps, and every link from or to them.
 
-`DeletePageCommandHandler` does more than flip one flag. It loads the user's whole tree, walks the
-subtree breadth-first from the target, and for every page in it:
+## 7. Templates
 
-1. soft-deletes the page (so no child is left pointing at a deleted parent);
-2. removes the `PageLink` edges **leaving** it — edges pointing *at* it stay, and are filtered out on
-   read, which means restoring the row would restore its inbound mentions;
-3. clears its `PageTag` rows through `PageTagSynchronizer.ClearAsync`, which also sweeps any tag that
-   just lost its last page and has no color.
+- Mark or unmark a page in its options menu (`PUT /notes/pages/{id}/template`). `is_template` is not
+  versioned.
+- **New from template** (`POST /notes/pages/from-template`) copies the content and icon into the
+  chosen space and folder, with fresh ids for every block, no comment anchors, and `{{date}}`
+  (the account's local date) and `{{title}}` expanded in visible text. A title may use `{{date}}`.
+- Sub-pages and page settings are not copied.
 
-There is deliberately **no `ON DELETE CASCADE`** on `fk_nte001_parent`: a database cascade would be a
-hard delete of the history the soft delete exists to keep.
+## 8. Page settings
 
-## 6. Commands and queries
+| Setting | How it works |
+|---|---|
+| **Cover** | A library image (moved up and down) or one of six gradients. A library cover counts as a use of the item. |
+| **Width, font, small text** | `appearance.width` (`normal`, `wide`), `font` (`default`, `serif`, `mono`), `smallText`. |
+| **Lock** | A locked page opens read-only on every screen; the "Locked" tag in the header unlocks it. |
+| **Verification** | Verified for 7, 30, 90 or 365 days, or with no expiry. The header shows until when, and "expired" once it runs out. |
+| **Recent pages** | Opening a page stamps `viewed_at` straight in the store. It is not an edit: neither "edited" nor the versions move. |
+| **Public link** | A 32-byte random token. `/p/<token>` reads the page without signing in. Only the library items the page uses are served through the link, a mentioned page reads as "Private page", and live blocks show "Private content". Turning the link off and on makes a new one. |
 
-| Use case | Type | Notes |
-|---|---|---|
-| `CreatePage` | Command | Resolves a unique slug; parses the body for links and tags (a page can be born with content). |
-| `UpdatePage` | Command | Title + icon + body — the autosave path. Rebuilds edges and tags. |
-| `MovePage` | Command | Reparent + reorder, rejecting cycles. Changing space takes the subtree along ([Spaces](spaces.md)). |
-| `SetPageFavorite` / `SetPageArchived` | Commands | Two routes each (`/favorite` ↔ `/unfavorite`, `/archive` ↔ `/unarchive`) over one flag-carrying command. |
-| `DeletePage` | Command | The subtree walk above. |
-| `GetPage` | Query | Full `PageDto` including the body and the page's tags. |
-| `GetPageTree` | Query | Flat `PageSummaryDto` list (no body), filtered by `includeArchived`, `tagIds` and `spaceId`. |
+None of these are part of a page's versions.
 
-`PageDto` carries the page's tags. On the save path they come straight from `PageTagSynchronizer`,
-which just wrote them; on the read paths that never touched the body (open, move, favorite, archive)
-`PageTagReader` loads them instead.
+## 9. Daily notes
 
-## 7. In the frontend
+**Today** (in the sidebar and on Home) opens or creates the page of a date
+(`POST /notes/daily { date? }`; omitted means today in the account's zone).
 
-- **Sidebar** (`components/NotesSidebar.tsx`): the tree, with expand/collapse, drag-and-drop for
-  reordering and reparenting (`lib/moveMath.ts` computes the resulting `parentId` + `orderIndex`),
-  per-page actions, an archived toggle, a tag filter and a search button.
-- **Icon** (`components/PageIconPicker.tsx`): a button left of the title opening a popover with a
-  free field, a row of suggestions and "remove". No emoji library — every OS ships a picker
-  (`Win+.`), and what gets typed is reduced to its **first grapheme** via `Intl.Segmenter`, because
-  an emoji is often several code points (flags, skin tones, families) and cutting by index would
-  yield half of one. The icon rides in the `PageDraft`, so it saves through the same autosave as the
-  title and the body.
-- **Filtered sidebar turns into a flat list**, not a tree: filtering a hierarchy by tag breaks it
-  (a child matches, its parent does not), and inventing an ancestor rule would answer a question
-  nobody asked. While a filter is active, **drag-and-drop is disabled** — a drop would be reordering
-  against siblings that are not on screen.
+- A new daily page is titled `YYYY-MM-DD` and goes into the **daily folder**: a top-level folder called
+  "Daily" ("Diário" in Portuguese) in the default space. The first time, an existing top-level folder
+  with that name is adopted; its id is then stored in `nte016.daily_folder_id`, so renaming it keeps it
+  in use. A missing folder is created again.
+- The **daily template** (`nte016.daily_template_id`, set with the gear next to Today) fills new pages,
+  with `{{date}}` and `{{title}}` expanded for the note's date. An unavailable template gives an empty
+  page; existing pages are never touched.
+- Which page belongs to which date is stored in `nte017`, not read from the title: renaming, moving,
+  archiving or locking keeps the link. A page in the trash gets a replacement on the next visit.
+- A per-user advisory lock serializes first visits, so two tabs never create two pages for one date.
+
+## 10. Export and import
+
+- **Export** from the page menu: Markdown, a standalone HTML file (library images inside as data
+  URLs), or PDF through the browser's print dialog with a stylesheet that leaves only the page.
+- **Import** a Markdown file from the `+` menu: its first heading becomes the title, and `[[Title]]`
+  becomes a mention of a page that exists.
+
+## 11. Commands and queries
+
+| Use case | Notes |
+|---|---|
+| `CreatePage`, `UpdatePage` | Validate the document, then rebuild links, tags, media uses and block stamps. `UpdatePage` takes `source: edit \| assistant`. |
+| `MovePage`, `MoveTreeItems` | One page (also across spaces, with its sub-pages), or a batch from the sidebar. |
+| `SetPageFavorite`, `SetPageArchived`, `SetPageTemplate` | Flags. |
+| `PageSettings` commands | Appearance, lock, verification, public link, viewed. |
+| `DeletePage`, `Trash` commands | Trash, restore, delete for good, empty. |
+| `CreatePageFromTemplate`, `OpenDailyNote` | §7 and §9. |
+| `CreateFolder`, `UpdateFolder`, `MoveFolder`, `DeleteFolder` | Folders. |
+| `GetPage`, `GetPageTree`, `GetFolders`, `GetFolderProperties`, `PageViews` | Reads. |

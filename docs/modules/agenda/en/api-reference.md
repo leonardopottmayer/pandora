@@ -13,6 +13,7 @@ user; another user's resource returns 404. Errors are mapped from typed `Result`
 |---|---|---|
 | GET | `/agenda/reminders` | List the user's reminders. |
 | POST | `/agenda/reminders` | Create a reminder (single-shot or recurring). |
+| PATCH | `/agenda/reminders/{id}` | Rename; time, recurrence and status are untouched. |
 | POST | `/agenda/reminders/{id}/acknowledge` | Acknowledge (single-shot). |
 | POST | `/agenda/reminders/{id}/snooze` | Snooze (single-shot). |
 | DELETE | `/agenda/reminders/{id}` | Cancel. |

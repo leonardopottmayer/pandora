@@ -185,8 +185,9 @@ public async Task<IActionResult> CloseAsync(Guid id, CancellationToken ct)
 
 - Atualizar as docs do módulo afetado na mesma mudança: inglês é o principal, com os mesmos tópicos
   espelhados em pt-BR. O `implementation-status.md` do módulo diz o que está construído; o
-  `product-plan.md`, só o que ainda falta. Usar o [índice da documentação](../../README.md); handoffs
-  registram contexto de sessão e podem estar desatualizados.
+  `product-plan.md`, só o que ainda falta. Usar o [índice da documentação](../../README.md). Planos de
+  execução, handoffs de sessão e registros de construção passo a passo saem de `docs/` quando o trabalho
+  termina: os arquivos de tópico descrevem o que existe, e o git guarda o histórico.
 - Uma mudança transversal (uma chamada do Tars adicionada ou removida, um evento novo, um job novo)
   também atualiza [Tars wiring](tars-wiring.md) ou [Mensageria](messaging.md).
 

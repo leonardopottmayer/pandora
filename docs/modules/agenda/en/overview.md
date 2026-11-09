@@ -66,12 +66,12 @@ endpoints; if Tasks ever outgrows the module, it leaves with its tables intact.
 
 ### In scope (implemented — see [Implementation Status](implementation-status.md))
 
-The `agenda` schema (`agd001`–`agd008`); reminders (single-shot and recurring) with a per-occurrence
+The `agenda` schema (`agd001`–`agd008`, `agd013`); reminders (single-shot and recurring) with a per-occurrence
 dispatch ledger; the RRULE recurrence engine (parse + expand, DST-aware); tasks with lists, subtasks,
 priority, due dates, complete/reopen, recurring materialization and alerts; calendars and events with
 computed occurrences, overrides and the this / this-and-future / all edit scopes; the polymorphic
 alert with three background sweeps; the `GET /agenda/today` unified read; inline Telegram buttons
-routed back from Channels; and the frontend (Today, Reminders, Tasks, Calendar).
+routed back from Channels; the 15 Assistant tools; and the frontend (Today, Reminders, Tasks, Calendar, Settings).
 
 ### Out of scope / future (see [product-plan.md](product-plan.md))
 
@@ -79,5 +79,4 @@ routed back from Channels; and the frontend (Today, Reminders, Tasks, Calendar).
 |---|---|
 | **Google Calendar sync** (phase 5) | Not implemented — sync tables (`agd009`–`agd012`), providers, cursors, conflict log absent. Depends on [Integrations](../../integrations/en/overview.md). |
 | **Google Tasks sync** (phase 6) | Not implemented. |
-| **Assistant command catalog** (phase 7) | Not implemented — commands exist and are commandable, but the descriptor registration for Assistant is not wired. |
 | **Beyond** | Note ↔ event links, natural-language quick-add, travel time, ICS/CalDAV, Microsoft/Apple providers, Finances due dates in the day view. |

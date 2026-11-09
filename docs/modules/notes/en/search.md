@@ -10,11 +10,13 @@ Full-text search runs on a **generated `STORED` column** on `nte001_page`:
 
 ```sql
 search_vector tsvector GENERATED ALWAYS AS (
-    to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(content_markdown, ''))
+    to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(content_text, ''))
 ) STORED
 ```
 
-with a **GIN** index over it. Postgres maintains the vector, so no save path can forget to update it
+with a **GIN** index over it. `content_text` is derived from the blocks on every save (`PageContent`): every inline's words, table cells, captions, code, page properties and the accepted output of AI blocks. Chips count as their words: a date as its value, a status or an item as its label, math as its LaTeX.
+
+Postgres maintains the vector, so no save path can forget to update it
 — which is exactly why it is a generated column rather than something the application writes.
 
 The configuration is **`simple`**: lower-casing only, no stemming, no language guess. The notebook
@@ -74,6 +76,10 @@ case-insensitively, using Unicode letters/numbers and treating punctuation as se
 remain significant, like the existing `simple` search; this does not add stemming or fuzzy search.
 
 The API keeps `Excerpt` as **plain text**, also usable by the assistant. The palette creates React
-text and `<mark>` nodes with theme tokens rather than inserting `ts_headline` HTML or rendering the
-note's markdown. Literal HTML stays text. While placeholder results from the previous query are
+text and `<mark>` nodes with theme tokens rather than inserting `ts_headline` HTML. Literal HTML stays text. While placeholder results from the previous query are
 visible, highlighting is suppressed until the new results arrive. No schema change is required.
+
+## 6. Ask your notes
+
+A tab beside the search answers a question from the notes instead of listing pages. It uses the same
+vector with an OR query; see [AI §3](ai.md#3-ask-your-notes).

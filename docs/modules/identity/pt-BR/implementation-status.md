@@ -40,4 +40,4 @@ Um retrato do que está construído no código versus o que está desenhado mas 
 | **Login social / OAuth** (ex. login com Google) | Não implementado. (Distinto de [Integrations](../../integrations/pt-BR/overview.md), que é o Pandora chamando o Google *como* o usuário.) |
 | **UI de gestão de sessões** | Refresh tokens são guardados + purgados, mas não há lista de sessões logadas para revogar uma a uma. (Os *dispositivos* pareados têm — ver [Dispositivos](devices.md).) |
 | **WebAuthn / passkeys** | Futuro — o MFA é só TOTP hoje. |
-| **Papéis / permissões** | Não modelado — sistema pessoal de usuário único. |
+| **Papéis / permissões** | Ficam no módulo [Admin](../../admin/pt-BR/README.md) (papéis, permissões por ação, feature flags), não no Identity. |

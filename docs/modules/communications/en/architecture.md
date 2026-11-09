@@ -223,7 +223,7 @@ images".
 - **`TimeProvider` everywhere** for time reads.
 - **The outbox** is the module's own (`AddTarsOutbox`, one relay), since it publishes an event.
 
-## Module text imports (B11)
+## Saving a message to Notes
 
 Communications calls `Notes.Abstractions.Import.INoteImporter` with authenticated owner, title,
 literal text, internal source path/title and optional destination. Notes creates ordinary paragraphs

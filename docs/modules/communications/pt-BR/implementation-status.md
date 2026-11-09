@@ -2,184 +2,86 @@
 
 [← Voltar ao índice](README.md)
 
-Um retrato do que está construído no código e do que está desenhado mas ainda não implementado. O que vem pela
-frente está em [product-plan.md](product-plan.md).
+O que está construído, como foi verificado com contas reais e os pontos em aberto conhecidos. O que falta
+está em [product-plan.md](product-plan.md).
 
 ---
 
-## Implementado (M1 — conectar e ler; M2 — organizar; M3 — enviar; M4 — regras)
+## Implementado
+
+As quatro fases estão construídas: M1 conectar e ler, M2 organizar, M3 enviar, M4 regras.
 
 | Área | Notas |
 |---|---|
-| **Revisão do frontend** | Contas, regras e lista de mensagens exibem falhas de consulta. O formulário de regras empilha campos de condições e ações no celular e usa rolagem interna, mantendo o rodapé disponível. Datas de mensagens citadas seguem idioma e fuso do aplicativo; drawers e alertas usam a API atual do Ant Design. |
-| **Regras (M4)** | `com006`, `mail/rules`. No Gmail uma regra é um filtro, nos dois sentidos: todo ciclo lista os filtros e traz o que é novo, sumiu ou mudou. Nos outros, o `RunMailRulesHandler` as roda no `MailMessageReceived`. Um filtro que não cabe fica somente leitura, nunca reescrito |
-| **Estrutura do módulo** | Sete projetos em camadas; schema `communications`; `com001`–`com005`; o outbox e o relay do módulo. |
-| **Domínio** | `Mailbox`, `MailLabel`, `MailMessage`, `MailContent`; `MailProvider`, `MailboxStatus`, `LabelKind`, `LabelRole`, `ThreadKey`; `IMailboxProvider`; `MailErrors`. |
+| **Estrutura do módulo** | Sete projetos em camadas; schema `communications`; `com001`–`com006`; o outbox e o relay do módulo. |
+| **Domínio** | `Mailbox`, `MailLabel`, `MailMessage`, `MailContent`, `MailRule`; `MailProvider`, `MailboxStatus`, `LabelKind`, `LabelRole`, `ThreadKey`; `IMailboxProvider`; `MailErrors`. |
 | **Adaptador Gmail** | REST sem o SDK do Google; `history.list` para as mudanças; dois gets em paralelo; novas tentativas com espera crescente quando há limite de taxa. |
 | **Adaptador IMAP** | MailKit, para o Titan e qualquer servidor; cursores por pasta; CONDSTORE quando oferecido, senão os últimos 200 UIDs; remoções por snapshot. |
-| **Sincronização** | `SyncMailboxCommand` sob uma trava por caixa; `MailboxSyncBackgroundService` a cada 2 minutos; carga inicial em lotes, com orçamento de 5 minutos por ciclo; cursor expirado → lê de novo. |
+| **Sincronização** | `SyncMailboxCommand` sob travas por caixa (`MailboxGates`, duas por caixa); `MailboxSyncBackgroundService` a cada 2 minutos; carga inicial em lotes, com orçamento de 5 minutos por ciclo; cursor expirado → lê de novo; mensagens movidas no webmail são juntadas pelo Message-ID. |
 | **Falhas** | `needs-reconnect` com um aviso no IMAP (`communications.mailbox-auth-failed`, email + Telegram, en + pt-BR); `error` depois de 5 falhas; subscribers de `ExternalAccountRevoked` e `ExternalAccountDisconnected`. |
 | **Leitura** | `OpenMessage` com o cache de conteúdo; retenção de 30 dias; `MimeReader`; anexos sob demanda. |
-| **Evento** | `MailMessageReceived` pelo outbox, sem duplicar mensagens movidas. Sem consumidor ainda. |
-| **Organizar (M2)** | `ApplyMessageAction` (lida, estrela, mover, arquivar, lixeira, etiquetas), `CreateLabel`, `RenameLabel`, `DeleteLabel`; escritas nos dois adaptadores; sem exclusão definitiva. |
-| **Envio (M3)** | `SendMessage`, `SendKeys`, `GetComposeDraft`, `MessageComposer`; SMTP com cópia em Enviados detectada; upload multipart do Gmail; sem repetir em caso de dúvida. Email em Enviados ou Rascunhos não é chegada. |
-| **Sincronização, M2** | `MailboxGates` (duas por caixa), `MailboxChangesStep`, junção de mensagens movidas pelo Message-ID, etiquetas que sumiram removidas depois das mudanças. |
-| **API** | `GET`/`POST /mailboxes`, `PATCH`/`DELETE /mailboxes/{id}`, `POST /mailboxes/{id}/sync`, `GET /mailboxes/{id}/labels`, `GET /messages`, `GET /messages/{id}`, `GET /messages/{id}/attachments/{attachmentId}`, `POST /messages/actions`, `POST /mailboxes/{id}/labels`, `PATCH`/`DELETE /labels/{id}`, `POST /messages/send`, `GET /messages/{id}/compose`. |
+| **Evento** | `MailMessageReceived` pelo outbox, nunca para mensagem movida nem para cópia em Enviados/Rascunhos. O motor de regras do Pandora o consome. |
+| **Organizar** | `ApplyMessageAction` (lida, estrela, mover, arquivar, lixeira, etiquetas), `CreateLabel`, `RenameLabel`, `DeleteLabel`; escritas nos dois adaptadores; sem exclusão definitiva. |
+| **Envio** | `SendMessage`, `SendKeys`, `GetComposeDraft`, `MessageComposer`; SMTP com cópia em Enviados detectada; upload multipart do Gmail; sem repetir em caso de dúvida. |
+| **Regras** | `com006`, `mail/rules`. No Gmail uma regra é um filtro, nos dois sentidos: todo ciclo lista os filtros e traz o que é novo, sumiu ou mudou. Nos outros, o `RunMailRulesHandler` as roda no `MailMessageReceived`. Um filtro que não cabe no modelo fica somente leitura, nunca reescrito. |
+| **Salvar no Notes** | "Salvar no Notes" no leitor copia o texto da mensagem para uma página nova via `INoteImporter` (Notes.Abstractions). Texto puro tem preferência; email só em HTML vira texto pelo tokenizador do MimeKit. Anexos e formatação não são copiados, e a página não acompanha mudanças posteriores do email. |
+| **API** | Ver [Referência da API](api-reference.md). |
 | **Integrations** | `CommunicationsAccountUsageSource`: a tela de conexões mostra "Email · endereço" como uso da conta. |
-| **Frontend** | `/mail` e `/mail/accounts`; `prepareMailHtml` + iframe em sandbox + CSP; `MailActions`, seleção na lista, menu de etiquetas na barra lateral; `ComposeDrawer`. |
-| **Testes** | Unitários: 91 (`MailboxTests`, `MessageComposerTests`, `ThreadKeyTests`, `LabelRoleTests`, `GmailMailboxProviderTests`). Integração: 72 (`SyncEngineTests`, `CommunicationsApiTests`, `MailActionsApiTests`, `SendMessageApiTests`, `ImapMailboxProviderTests` contra o GreenMail, `PersistenceTests`, `ProviderRegistrationTests`). Front: `prepareMailHtml.test.ts`, `MailPage.test.tsx`, `ComposeDrawer.test.tsx`, `composeBody.test.ts`. |
+| **Frontend** | `/mail`, `/mail/accounts` e `/mail/rules`; `prepareMailHtml` + iframe em sandbox + CSP; `MailActions`, seleção na lista, menu de etiquetas na barra lateral; `ComposeDrawer`; a mensagem aberta fica na URL (`/mail?message={id}`). |
+| **Testes** | Unitários: `MailboxTests`, `MessageComposerTests`, `ThreadKeyTests`, `LabelRoleTests`, `GmailMailboxProviderTests` e os testes de regras. Integração: `SyncEngineTests`, `CommunicationsApiTests`, `MailActionsApiTests`, `SendMessageApiTests`, `ImapMailboxProviderTests` contra o GreenMail, `PersistenceTests`, `ProviderRegistrationTests`. Front: `prepareMailHtml.test.ts`, `MailPage.test.tsx`, `ComposeDrawer.test.tsx`, `composeBody.test.ts`. |
 
-### Verificação real (2026-10-30)
+### Verificado com contas reais
 
-Contra um Gmail real (cerca de 64 mil mensagens) e uma caixa Titan real (cerca de 1.600):
+Cada fase foi verificada à mão com um Gmail real (cerca de 64.000 mensagens) e uma caixa Titan real
+(cerca de 1.600), entre 2026-10-30 e 2026-11-01. O que essas verificações estabeleceram e ainda importa:
 
-| Verificação | Resultado |
-|---|---|
-| As duas caixas conectadas, carga inicial concluída, sem erros | ✅ |
-| Lida no webmail → lida no Pandora | ✅ nas duas. **No Gmail levou mais de um ciclo**, alguns minutos; o plano pedia um. O momento da leitura não foi anotado, então a causa da demora é desconhecida |
-| Uma newsletter não dispara requisição externa até "Mostrar imagens" | ✅ |
-| Cabeçalhos chegam do mais novo para o mais antigo | Coberto por testes; não conferido à parte nas contas reais |
-| Titan: CONDSTORE | ✅ Oferecido: o cursor tem `highestModSeq`, gravado só quando o servidor oferece |
-| Titan: QRESYNC | Não verificado; também não é usado, porque as remoções vão por snapshot |
-| Titan: ManageSieve | ❌ Não oferecido (portas 4190 e 2000 fechadas), então as regras do Titan rodam no motor do Pandora |
-| Titan: o SMTP salva em Enviados? | Não verificado; o Pandora ainda não envia. Necessário no início da M3 |
+- **Titan** oferece CONDSTORE mas não ManageSieve, então as regras do Titan rodam no motor do Pandora. O
+  SMTP dele salva exatamente uma cópia em Enviados.
+- **Gmail** pode levar mais de um ciclo para mostrar uma mudança feita no webmail. A edição de um filtro
+  pode levar minutos para chegar ao `filters.list`.
+- **As telas do próprio Gmail mantêm o id do filtro ao editá-lo**, o que a documentação dele não diz. Por
+  isso a comparação das regras olha o que um filtro conhecido faz, não só o id.
+- Filtros que usam "nunca enviar para spam" (`removeLabelIds: SPAM`) não cabem no modelo de regras e
+  aparecem somente leitura.
+- Nunca mostrado numa conta real: resposta do Gmail entrando na conversa, encaminhar com anexo, Cco e
+  clique duplo em Enviar.
 
-As primeiras execuções reais acharam dois bugs que os testes não tinham pegado, ambos corrigidos: os `403` de limite de
-taxa do Gmail derrubavam lotes inteiros, e um cabeçalho `Date` com fuso não podia ser salvo. O GreenMail normaliza as
-datas, então o teste dele não pegaria o segundo; agora o `SyncEngineTests` cobre isso com um fuso pelo provedor falso.
+### Decisões diferentes do primeiro desenho
 
-### Verificação real da M2 (2026-10-31)
-
-Nas mesmas contas, com mensagens descartáveis, à mão; o outbox e as etiquetas conferidos no banco:
-
-| Verificação | Resultado |
-|---|---|
-| Uma etiqueta criada no Pandora aparece no Gmail e no Titan | ✅ |
-| Abrir, estrela, etiquetas, mover, arquivar e lixeira chegam ao provedor | ✅ |
-| Uma mudança no webmail volta para o Pandora | ✅ |
-| Uma pasta renomeada no webmail do Titan aparece renomeada, com as mensagens dentro | ✅ |
-| Um mover no webmail do Titan não conta como chegada | ✅ Nenhum evento veio de mover ou renomear |
-| Uma pasta com mensagem não pode ser apagada; vazia, pode | ✅ no Titan |
-| Lixeira no Titan | ✅ depois da correção abaixo |
-| Titan: `UIDPLUS` e `MOVE` | Não registrado: o que eles mudam, um mover aparecendo um ciclo depois, não foi relatado |
-
-A verificação achou um bug que os testes não tinham pegado: assinar uma pasta criada no Pandora virava a regra de pastas assinadas da M1, então Trash, Sent e as
-outras saíram do Pandora no Titan, embora nada tenha mudado no provedor. Agora toda pasta selecionável está no escopo (decisão D8 na
-[Arquitetura](architecture.md)). O retorno das pastas publicou 25 `MailMessageReceived` falsos, sem efeito, porque nada os consumia; corrigido na M4.
-
-### Verificação real da M3 (2026-10-31)
-
-Nas mesmas contas, entre os endereços do próprio usuário. Encerrada pelo usuário; o banco mostra o que está marcado com ✅:
-
-| Verificação | Resultado |
-|---|---|
-| Titan para Gmail com anexo, Gmail para Titan | ✅ Recebidas uma vez |
-| Exatamente uma cópia em Enviados do Titan | ✅ Uma por envio, conferido no espelho |
-| Uma resposta pelo Titan entra na conversa do Gmail | ✅ Mesma conversa |
-| Encaminhar pelo Gmail, sem anexo | ✅ Recebida uma vez |
-| Email enviado não é chegada | ✅ Nenhum evento de cópia em Enviados |
-| **Uma resposta pelo Gmail** (`threadId`), o critério do próprio plano | Não há essa mensagem no espelho: **não comprovado** |
-| **Encaminhar com anexo, Cco, clique duplo** | Não há essas mensagens no espelho: **não comprovado** |
-| Responder a todos, `Reply-To`, layout | Sem relato em nenhum sentido |
-| Uma resposta pelo Titan caiu no Spam do Gmail | Visto uma vez. O usuário avaliou como não relacionado ao Pandora; a causa não foi registrada |
-
-A verificação achou um bug que os testes não tinham pegado: o envio esperava a trava de ação enquanto o job lia um acúmulo grande do Gmail, com o email já enviado e a tela carregando. Ele não roda mais o passo de sincronização.
-
-### Verificação real da M4 (2026-11-01)
-
-Nas mesmas contas. Só foram escritos uma regra, um marcador e uma pasta `pandora-test`, todos removidos depois; nenhum filtro existente foi editado ou apagado.
-
-| Verificação | Resultado |
-|---|---|
-| Filtros existentes aparecem como regras | ✅ 112: 102 editáveis, 10 somente leitura. Essas 10 usam "nunca enviar para spam" (`removeLabelIds: SPAM`), que uma regra não guarda |
-| `Label_` como marca de marcador do usuário | ✅ Como a documentação dava a entender |
-| Salvar sem o escopo, depois conceder | ✅ O aviso aparece, o consentimento é dado, o formulário volta preenchido |
-| Uma regra vira filtro no Gmail | ✅ Um ciclo depois continua uma regra só |
-| Uma edição no Pandora | ✅ Cria + apaga; nenhum filtro antigo voltou como regra |
-| Uma mensagem recebe o marcador do filtro | ✅ Visto no Gmail. **Não com o backend parado:** ele estava rodando e o email saiu pelo Pandora. O log mostra que a única outra escrita no Gmail foi marcar como lida, e o motor não roda regras de filtro, então o marcador é do Gmail |
-| Um filtro editado no Gmail | ✅ Depois de uma correção, abaixo: mesma regra, mesmo nome e posição. **A API do Gmail levou minutos para mostrar:** na segunda tentativa, o `filters.list` ainda trazia o assunto antigo às 23:57, e o novo às 23:59, pelo menos 9 minutos depois de o usuário relatar a edição |
-| Desabilitar, habilitar, apagar no Pandora | ✅ Um ciclo depois de cada um mostra o filtro sumido ou de volta. Feito pela API, não pela tela, para não arriscar uma regra real |
-| Titan: mensagem nova é movida, anterior fica | ✅ Enviadas da caixa para ela mesma |
-| Titan: a pasta é apagada | ✅ A regra fica `broken`, em destaque |
-| Arrastar | ✅ Moveu uma regra, uma linha acima do alvo. Pode ser a ferramenta; **vale conferir uma vez à mão** |
-| As confirmações de uma regra do Gmail, na tela | Só em testes; na tela, a de uma regra do Titan |
-
-A verificação achou duas coisas que os testes não tinham pegado. **As telas do próprio Gmail mantêm o id do filtro ao editar**, o que a documentação não diz e o plano supunha o contrário, então a edição nunca chegava: o diff agora compara também o que um filtro conhecido faz. Com cerca de 100 marcadores, a lista do formulário precisava de busca. E a tela nunca recarregava as regras sozinha: agora recarrega a cada 30 segundos e ao receber foco.
-
-### Desvios relevantes em relação ao plano original
-
-- **Sem `Google.Apis.Gmail.v1`.** REST com `HttpClient`, como faz o `GoogleOAuthProvider`.
+- **Sem `Google.Apis.Gmail.v1`.** REST com `HttpClient`, como o `GoogleOAuthProvider` faz.
 - **Sem o endpoint de batch do Gmail.** Um `messages.get` por mensagem, dois por vez.
-- **Só `gmail.modify` é pedido.** O plano pedia também `gmail.send` e `gmail.settings.basic`. Enviar não precisa de mais que o `gmail.modify`. Escrever filtros
-  precisa do `gmail.settings.basic`, pedido só quando uma regra é salva.
-- **Uma edição no Gmail pode manter o id do filtro.** O plano esperava um sumido + um novo, que continua tratado, para o que recria o filtro.
-- **Um ciclo lê lotes da carga inicial até o orçamento acabar**, não um lote por ciclo: um lote a cada 2 minutos levava
-  mais de 3 horas em 50 mil mensagens.
-- **`POST /mailboxes` não começa a carga inicial.** O primeiro ciclo começa.
-- **Sem colunas por pasta na `com002`.** O estado do IMAP fica no `sync_cursor` opaco.
-- **O cache de conteúdo não tem teto de tamanho**, só de idade. Veja [Modelo de dados](data-model.md#cache-de-conteúdo).
+- **Só `gmail.modify` é pedido de início.** Enviar não precisa de mais. Escrever filtros precisa de
+  `gmail.settings.basic`, pedido só quando uma regra é salva.
+- **Um envio não traz a cópia de Enviados na hora.** Ela aparece no ciclo seguinte, em até 2 minutos.
+- **Um ciclo lê lotes da carga inicial até acabar um orçamento**, não um lote por ciclo: um lote a cada 2
+  minutos levou mais de 3 horas para 50.000 mensagens.
+- **`POST /mailboxes` não inicia a carga inicial.** O primeiro ciclo inicia.
+- **Sem colunas por pasta em `com002`.** O estado do IMAP fica no `sync_cursor` opaco.
+- **O cache de conteúdo não tem limite de tamanho**, só de idade. Ver [Modelo de dados](data-model.md#cache-de-conteúdo).
 - **A lista de mensagens é uma lista simples** com "Carregar mais", não uma `Table` virtual.
-- **Imagens `cid:` são URLs `data:`**, não links para a API.
+- **Imagens `cid:` viram URLs `data:`**, não links para a API.
 
-## Ainda não implementado (desenhado / planejado)
+## Ainda não implementado
 
-| Área | Status | Fase |
-|---|---|---|
-| **Push do Gmail, Radar, mais provedores** | Futuro | Depois |
+| Área | Status |
+|---|---|
+| **Push do Gmail, Radar consumindo o evento, mais provedores** | Depois; ver [product-plan.md](product-plan.md) |
 
-## Pontos em aberto
+## Pontos em aberto conhecidos
 
-1. **O job é sequencial**, então a carga inicial de uma caixa grande atrasa as outras em até 5 minutos. Serve para um
-   usuário. A primeira coisa a mudar com vários: uma fila separada de cargas iniciais, com concorrência limitada.
-2. **Instância única.** A trava é em processo; várias instâncias precisariam de uma concessão no banco.
-3. **Modo de teste no Google.** O refresh token do Gmail expira em 7 dias, então a caixa pede reconexão cerca de uma vez
-   por semana. Passar de 100 usuários exigiria a verificação do Google para um escopo restrito.
-4. **A busca** usa `ILIKE` sem índice e não lê o corpo. Serve no volume de uma pessoa.
-5. **O download de anexo** busca a mensagem crua inteira de novo.
-6. **Um mover que atravessa a varredura IMAP**, de uma pasta ainda não lida para uma já lida, ocupa dois ciclos, então não é juntado e pode disparar um evento falso.
-7. **Depois de uma ação no Gmail durante uma carga inicial**, um lote antigo pode mostrar o estado anterior por até um ciclo.
+1. **O job é sequencial**, então a carga inicial de uma caixa grande atrasa todas as outras em até o orçamento de 5 minutos.
+   Serve para um usuário. A primeira coisa a mudar com vários: uma fila separada para a carga inicial, com concorrência limitada.
+2. **Uma instância só.** A trava fica no processo; várias instâncias precisariam de um lease no banco.
+3. **Modo de teste no Google.** O refresh token do Gmail expira em 7 dias, então a caixa pede reconexão mais ou menos
+   uma vez por semana. Passar de 100 usuários exigiria a verificação do Google para um escopo restrito.
+4. **A busca** usa `ILIKE` sem índice e não lê os corpos. Serve no volume de uma pessoa.
+5. **O download de anexo** busca a mensagem bruta inteira de novo.
+6. **Uma movimentação que atravessa a varredura do IMAP**, de uma pasta ainda não lida para uma já lida, cai em dois ciclos, então não é juntada e pode disparar um evento falso.
+7. **Depois de uma ação no Gmail durante a carga inicial**, um lote velho pode mostrar o estado antigo por até um ciclo.
 8. **Só a página carregada pode ser selecionada**, e não há desfazer; a lixeira pode ser restaurada no provedor.
-9. **Não se sabe por que um acúmulo foi tão longo.** Depois de 9 horas parado, um ciclo leu por mais de 20 minutos, cerca de 44 mil ids de histórico. Agora é salvo em partes, e o log diz quantas mensagens cada parte leu.
-10. **As chaves de envio ficam na memória do processo,** então uma nova tentativa logo depois de reiniciar pode enviar duas vezes.
-11. **Um servidor que salva a cópia mais de 3 segundos depois** fica com duas. O Titan não ficou.
-12. **O limite de 25 MB não está confirmado:** as páginas da API do Google não informam nenhum. Um email acima do limite real volta como recusa.
-13. **Sem nome de remetente, sem imagens inline, texto citado puro.**
-14. **Os erros das regras estão em inglês,** como as outras mensagens do servidor, e uma regra cujo marcador sumiu mostra "Mover para ?" até ser editada.
-15. **As regras leem condições e ações de volta como o Gmail as dá,** então uma regra salva como arquivar + adicionar marcador volta como mover. Significam o mesmo.
-16. **Uma edição nas telas do Gmail pode levar minutos para chegar ao `filters.list`,** além do ciclo de 2 minutos. O Pandora mostra o que a API responde. É uma medição só, não um número para confiar.
-
-## B11: e-mail para Notes
-
-Construído, sem commit. Salvar no Notes no leitor de e-mail abre modal com título, espaço ativo e
-pasta existente (inclusive aninhada), ou raiz do espaço. Assunto sugere título, limitado a 255
-caracteres. Trocar espaço limpa a pasta. Salvar abre a nova página. Cada salvamento explícito cria
-cópia independente; alterações posteriores no e-mail não atualizam a nota. Anexos, imagens inline e
-formatação HTML não são copiados.
-
-`POST /communications/messages/{id}/notes` lê mensagem do usuário pelo fluxo OpenMessage existente,
-incluindo cache/provedor. Cliente envia apenas título/destino, nunca o corpo. Prioriza parte MIME em
-texto; e-mail somente HTML usa tokenizer MimeKit: entidades decodificadas, separação de
-parágrafos/listas/linhas preservada, scripts/styles/head/template/noscript/comentários descartados,
-sem executar HTML ou carregar recursos remotos. Corpo vira parágrafos literais; linhas parecidas com
-markdown não viram comandos ou tags.
-
-Communications chama `INoteImporter` em Notes.Abstractions. Implementação no Notes despacha
-ImportNoteCommand e CreatePageCommand normal, preservando dono do destino, busca, histórico inicial
-e datas dos blocos. Sem referência a Application/Domain/Persistence de outro módulo, acesso cruzado
-a tabelas ou evento de integração novo. Porta síncrona retorna ID da página já gravada para a UI.
-Título/conteúdo inválido ou destino indisponível não cria página parcial. Limites normais de
-tamanho/blocos da página continuam valendo.
-
-Origem em bookmark `/mail?message={id}`. MailPage mantém mensagem selecionada nessa URL e pode
-abri-la fora da lista/caixa atual. Mensagem ausente/alheia mostra erro; voltar no celular retorna à
-lista. A nota copiada continua independente se o original desaparecer. Endpoint não envia e-mail,
-muda flags do provedor ou importa anexos; acesso/retenção normal do cache de corpo continua
-ocorrendo.
-
-Exige communications.messages.read, notes.pages.read/create, notes.spaces.read e notes.folders.read,
-com os dois módulos habilitados. Ação escondida sem acesso Notes e desabilitada até carregar o corpo
-atual. Erro ao carregar destinos bloqueia salvar. Salvamento pendente bloqueia submissão
-duplicada/cancelamento; falha conserva título/destino para tentar novamente. Consultas Notes
-invalidadas após sucesso. Sem mudança de esquema ou migração. Navegador/provedor real pendentes;
-banco local preservado. Blocos vivos de Agenda/Finanças da B11 pendentes; Radar/Databases/Projects
-dependem dos respectivos módulos.
+9. **As chaves de envio ficam na memória do processo,** então uma nova tentativa logo depois de reiniciar pode enviar duas vezes.
+10. **Um servidor que salva a cópia de Enviados mais de 3 segundos depois** fica com duas cópias. O Titan não.
+11. **O limite de 25 MB não está confirmado:** as páginas da API do Google não dizem nenhum. Um email acima do limite real volta como recusa.
+12. **Sem nome do remetente, sem imagens inline, citação em texto puro.**
+13. **Os erros das regras estão em inglês,** como as outras mensagens do servidor, e uma regra cuja etiqueta sumiu aparece "Mover para ?" até ser editada.
+14. **As regras leem condições e ações de volta como o Gmail as entrega,** então uma regra salva como arquivar + adicionar etiqueta volta como mover. Significam o mesmo.

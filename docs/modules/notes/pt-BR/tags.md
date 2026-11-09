@@ -1,99 +1,67 @@
 # Tags
 
-[← Voltar ao índice](README.md) · Relacionados: [Modelo de dados](data-model.md), [Busca](search.md), [Visão em grafo](graph-view.md)
+[← Voltar ao índice](README.md) · Relacionados: [Modelo de dados](data-model.md), [Busca](search.md), [Grafo](graph-view.md)
 
 ---
 
-## 1. O modelo: híbrido — o texto manda, a linha guarda a cor
+## 1. O modelo: o bloco de tags da página manda, a linha guarda a cor
 
-A tag é **escrita no markdown** (`#ideias`), como no Obsidian, e o backend materializa as arestas no
-save — a mesma mecânica já provada pelo `PageLink`. Isso mantém a promessa central do módulo: markdown
-é a fonte da verdade, e um `.md` exportado leva as tags junto.
+As tags de uma página ficam num **bloco `tags`**, o primeiro bloco do documento:
+`{ "type": "tags", "props": { "tags": ["dotnet", "Mensageria"] } }`. O cabeçalho as edita como chips;
+o editor as salva como esse bloco.
 
-Sobre isso mora uma linha `Tag` guardando o que o texto não sabe dizer: a **cor** e o nome como foi
-escrito da primeira vez. Ela não é gerenciada por CRUD — nasce quando uma tag aparece num conteúdo, e
-o texto continua no comando.
+Acima disso fica uma linha `Tag` (`nte005`) com o que o documento não diz: a **cor**, e o nome como foi
+escrito da primeira vez. Não há CRUD para ela: a tag nasce quando uma página a carrega pela primeira
+vez.
 
-> Consequência aceita: **não há rename global de tag.** Renomear exigiria reescrever o markdown de
-> todas as pages que a carregam — é `find & replace`, não uma operação de banco.
+> Consequência aceita: **não existe renomear tag em todas as páginas.** Renomear seria reescrever toda
+> página que a carrega.
 
-## 2. Regras de parse
+## 2. Normalização
 
-`#` é muito mais comum em prosa e em shell do que `[[`, então o `TagParser` é mais rígido que o parser
-de wikilink:
+O `TagName.ToSlug` transforma um nome na identidade: minúsculas, sem acentos, mantendo `/`, `-` e `_`,
+no máximo 50 caracteres, e pelo menos uma letra (`123` não é tag). `Café` e `cafe` são a mesma tag; o
+**nome** exibido é como foi escrita primeiro.
 
-| Regra | Efeito |
-|---|---|
-| Precisa iniciar a linha ou vir depois de espaço | `http://x#frag` e `src/lib#2` nunca disparam. |
-| Não pode ter espaço depois do `#` | Um heading (`# Título`) não é tag. |
-| Caracteres aceitos: letras, dígitos, `-`, `_`, `/` | `#projeto/pandora` é uma tag aninhada só. |
-| Precisa ter ao menos uma letra | `#123` é número no texto, não rótulo. |
-| **Código é removido antes da busca** | Um `#comentário` dentro de bloco cercado ou inline não é tag. Os trechos são substituídos por espaços do mesmo tamanho, então nada fora deles muda de posição. |
+## 3. Sincronização e a varredura de órfãs
 
-O `TagName.ToSlug` então normaliza para a identidade: minúsculas, acentos removidos, mantendo `/`, `-`
-e `_` (ao contrário do `Slugger`, que achata tudo em hífen), com teto de 50 caracteres. `#Café` e
-`#cafe` são a mesma tag; o **nome** exibido é como foi escrita primeiro.
+A cada salvamento o `PageTagSynchronizer` lê o bloco de tags (em qualquer profundidade), resolve as
+tags pelo slug e **compara** com a `nte006_page_tag`, com dois acréscimos que o grafo de links não
+precisa:
 
-O espelho no frontend é `lib/tags.ts`. Duas manhas que vale conhecer ali: o regex teve que ser montado
-com strings **aspeadas** (a crase escapada é escape inválido sob a flag `u`), e a cerca é escrita duas
-vezes — fechada e correndo até o fim do texto — porque `$` ali significaria fim de *linha*, já que a
-flag `m` é necessária para a regra de início de linha.
+- ele **cria** as tags que a página acabou de trazer;
+- ele **varre** as tags cuja última página acabou de largá-las, *a menos que tenham cor*. A cor é a
+  única coisa que vale manter uma linha vazia viva.
 
-## 3. Sincronização e varredura de órfãs
+A varredura desconta as arestas removidas na mesma transação, recebendo o id da página que está sendo
+salva. Excluir uma página roda o `ClearAsync`, que tira todas as linhas dela e varre o que ficou órfão.
 
-O `PageTagSynchronizer` espelha o `PageLinkSynchronizer` — parseia o corpo, resolve as tags, faz
-**diff** das arestas — com duas adições que o grafo de links não precisa:
-
-- Ele **cria** as tags que o texto acabou de inventar; nenhuma tela de CRUD poderia tê-las criado.
-- Ele **varre** as tags cuja última page acabou de largá-las, *a menos que tenham cor*. A cor é a
-  única coisa que o texto não recupera, então é a única coisa que faz valer a pena manter viva uma
-  linha vazia.
-
-A varredura desconta as arestas removidas **na mesma transação** (o repositório ainda as enxerga)
-passando o id da page que está sendo salva.
-
-Deletar uma page roda o `ClearAsync`, que derruba todas as arestas dela e varre o que isso orfanou.
-
-Duas notas de implementação com dentes:
-
-- O EF precisou conhecer a FK `page_tag → tag` (`HasOne<Tag>().WithMany().HasForeignKey(…)`) mesmo sem
-  propriedade de navegação. A varredura apaga a tag órfã e as arestas dela na mesma transação, e sem a
-  relação declarada o EF mandava o `DELETE` da tag primeiro e batia em `fk_nte006_tag`. Foi um teste de
-  integração que pegou.
-- Re-salvar o mesmo texto não toca em nada, e nenhuma linha é apagada e reinserida dentro de uma
-  transação — o `uq_nte006_page_tag` rejeitaria.
+O EF conhece a chave estrangeira `page_tag → tag` mesmo sem propriedade de navegação, então apaga as
+linhas de uma tag órfã antes da tag.
 
 ## 4. Cor
 
-`PUT /notes/tags/{id}/color` é a única escrita. Só hex é aceito — `#rgb`, `#rrggbb`, `#rrggbbaa` —,
-validado no handler porque o valor vai inline no `style` do chip. Cor inválida responde **422**, que é
-como o projeto mapeia erro de validação.
+`PUT /notes/tags/{id}/color` é a única escrita. Só hex é aceito (`#rgb`, `#rrggbb`, `#rrggbbaa`),
+porque o valor vai inline no estilo do chip; qualquer outra coisa responde **422**.
 
-## 5. Filtragem
+## 5. Filtros
 
-O filtro é um query param `tagIds` em quatro rotas, e uma regra governa todas: **várias tags
-intersectam (E)**. Duas tags selecionadas mostram as pages que carregam *as duas*. É a semântica de
-"ir estreitando" que se espera de um filtro, e uma regra só em todo lugar é mais previsível que OU no
-grafo e E na busca.
+O filtro é um parâmetro `tagIds`, e uma regra vale em toda superfície: **várias tags se intersectam
+(E)**. O `TagFilter.MatchingPageIdsAsync` é a implementação única; ele devolve `null` quando nenhuma
+tag foi pedida, o que significa *sem filtro*.
 
-`TagFilter.MatchingPageIdsAsync` é a implementação única. Ela devolve `null` quando nenhuma tag foi
-pedida — os chamadores leem isso como *sem filtro*, não como *nada casa* — e o resultado não é escopado
-por dono, porque os chamadores o intersectam com as pages que já leram para o usuário.
-
-| Superfície | Comportamento sob filtro |
+| Superfície | Comportamento com filtro |
 |---|---|
-| **Sidebar** (`GET /notes/pages`) | Vira **lista plana**, não árvore, e o drag-and-drop é desligado. Ver [Pages e hierarquia §7](pages-and-hierarchy.md#7-no-frontend). |
-| **Busca** (`GET /notes/pages/search`) | Com `q` vazio, listar as pages daquela tag *é* a navegação. Lê `ResultLimit × 10` e corta depois — cortar antes deixaria de fora uma page que casa com os dois critérios. |
-| **Grafo** (`/graph`, `/{id}/graph`) | Os nós são cortados **antes** do passeio pela vizinhança, então a profundidade é contada sobre o que sobrou. |
-| **Page** | O `PageDto` carrega as tags da própria page, desenhadas como chips; clicar numa filtra a sidebar por ela. |
+| **Barra lateral** (`GET /notes/pages`) | Uma lista plana em vez de árvore; o arrasto fica desligado. |
+| **Busca** (`GET /notes/pages/search`) | Filtra antes do ranking e do limite de 20. Com `q` vazio, lista as páginas das tags. |
+| **Grafo** (`/graph`, `/{id}/graph`) | Os nós são cortados antes da caminhada pela vizinhança. |
+| **Página** | O cabeçalho mostra as tags da página; clicar numa filtra a barra lateral. |
+| **Bloco páginas por tag** | `tag-pages` lista as páginas que têm as tags dele. |
 
-Os filtros vivem em estado de componente e **não entram na URL** — não existe link compartilhável de
-"as pages com #x". Ver [Status de implementação](implementation-status.md).
+Os filtros ficam no estado do componente e não entram na URL.
 
-## 6. Fora de escopo
+## 6. Fora do escopo
 
-- **Rename global** (§1).
-- **Hierarquia real de tags aninhadas** — `#projeto/pandora` é aceito como texto da tag; não há rollup
-  de `#projeto` incluindo as filhas.
-- **Criar ou deletar tag por API.** O `TagsController` não tem POST nem DELETE de propósito: o texto as
-  cria, a varredura as remove.
+- **Renomear em todas as páginas** (§1).
+- **Hierarquia de tags:** `projeto/pandora` é uma tag; `projeto` não a inclui.
+- **Endpoints de criar/apagar tag:** as páginas criam, a varredura remove.

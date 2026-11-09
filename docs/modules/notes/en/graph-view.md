@@ -1,6 +1,6 @@
 # Graph View
 
-[← Back to index](../README.md) · Related: [Wikilinks & Backlinks](wikilinks-and-backlinks.md), [Tags](tags.md)
+[← Back to index](../README.md) · Related: [Links & Backlinks](links-and-backlinks.md), [Tags](tags.md)
 
 Nodes are pages, edges are `PageLink`. Because the data already exists, the graph is essentially a
 **visualization** — the backend work is one query.

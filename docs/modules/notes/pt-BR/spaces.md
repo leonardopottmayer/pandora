@@ -6,13 +6,13 @@
 
 ## 1. O que é um espaço
 
-Um **espaço** agrupa pages como um espaço do Confluence: "Pessoal", "Trabalho", "Estudos". Toda page
-pertence a exatamente um (`nte001_page.space_id`), e a sidebar mostra a árvore de um espaço por vez.
+Um **espaço** agrupa pages como um espaço do Confluence: "Pessoal", "Trabalho", "Estudos". Toda page e pasta
+pertence a exatamente um (`space_id`), e a sidebar mostra a árvore de um espaço por vez.
 Fora isso o espaço é só organização — ele **não isola** nada:
 
-- **Tags** são do usuário, não do espaço. `#pandora` junta pages de qualquer espaço; quem quer só um
+- **Tags** são do usuário, não do espaço. `pandora` junta pages de qualquer espaço; quem quer só um
   usa o filtro de espaço da busca ou do grafo.
-- **`[[Wikilinks]]`** alcançam qualquer espaço (ver §4).
+- **Menções e links de página** alcançam qualquer espaço (ver §4).
 - **Busca e grafo** começam no espaço da tela e podem abrir para todos.
 
 ## 2. O espaço padrão
@@ -36,17 +36,15 @@ espaço arquivado que vira padrão volta do arquivo.
   `spaceId` põe a page na raiz daquele espaço; mover para debaixo de uma page de outro espaço também
   muda o espaço. Nos dois casos o `MovePageCommandHandler` percorre a subárvore
   (`PageHierarchy.Subtree`) e muda o espaço de todas.
-- **Excluir um espaço** só é aceito com ele vazio — sem page viva, arquivadas incluídas
+- **Pastas** também ficam num espaço só; uma page numa pasta está no espaço da pasta.
+- **Excluir um espaço** só é aceito com ele vazio — sem page viva nem pasta, arquivadas incluídas
   (`Spaces.NotEmpty`, 409). A exclusão é soft, e a FK `fk_nte001_space` garante que nenhuma page
   aponte para um espaço que não existe.
 
-## 4. Wikilinks entre espaços
+## 4. Links entre espaços
 
-O `PageLinkSynchronizer` continua resolvendo título antes de slug, mas, entre pages com o mesmo
-título, **a do espaço da page que linka vence**. Dois espaços podem ter cada um a sua "Reunião", e
-`[[Reunião]]` aponta para a do próprio espaço; um título que só existe em outro espaço ainda resolve
-para lá. O `buildPageIndex` do frontend segue a mesma ordem, para o preview resolver o que o save vai
-resolver.
+Uma menção ou link de página guarda o id da page de destino, então alcança uma page de qualquer espaço e
+nunca precisa ser resolvido.
 
 ## 5. Commands e queries
 
@@ -65,7 +63,7 @@ resolver.
   pages e quando foi a última edição. O menu de cada card edita, torna padrão, arquiva e exclui — o
   padrão não oferece arquivar nem excluir, e um espaço com pages mostra "Excluir" desligado.
 - **`/notes/s/:spaceId`** abre o espaço: a sidebar com a árvore dele e, no lugar da page, a visão do
-  espaço (`components/SpaceOverview.tsx`) com as pages da raiz.
+  espaço (`components/SpaceOverview.tsx`): contagens, páginas recentes, e as pastas e pages em cartões ou árvore.
 - **`/notes/:id`** abre uma page; o espaço vem da própria page.
 - **O seletor no topo da sidebar** troca de espaço ou volta para todos. O menu de cada page ganhou
   "Mover para o espaço".

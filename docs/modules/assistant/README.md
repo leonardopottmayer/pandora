@@ -22,8 +22,7 @@ Start with the **Overview** for the principles and vocabulary, then the topic yo
 | 3 | [Data Model](en/data-model.md) | Schema catalog (`ast001`–`ast004` + outbox): columns, constraints, statuses |
 | 4 | [API Reference](en/api-reference.md) | Every endpoint under `/api/v{n}/assistant` |
 | 5 | [Implementation Status](en/implementation-status.md) | What is built, what changed from the plan, open points |
-| 6 | [Product Plan](en/product-plan.md) | What is still missing (OpenAI, eval set, audio retention, open questions) |
-| 7 | [Execution plan](en/execution-plan.md) | Historical: the order the module was built in (Step 0 → A4) |
+| 6 | [Product Plan](en/product-plan.md) | What is still missing (OpenAI, eval set, audio retention, persona and voice, open questions) |
 
 The end-to-end Telegram sequence is in [Telegram flow](../../architecture/en/telegram-assistant-flow.md).
 
@@ -37,5 +36,5 @@ The end-to-end Telegram sequence is in [Telegram flow](../../architecture/en/tel
 - **API base:** `/api/v{version}/assistant`, authenticated, scoped to the token's user.
 - **Frontend:** `client-web/src/modules/assistant` — `/assistant` (chat + history) and `/settings/assistant`.
 - **LLM provider:** Gemini via `Tars.Ai.Chat.Gemini`; model and key per call; the key is the user's API-key account in [Integrations](../integrations/README.md) (`ast001.chat_account_id`).
-- **Tools:** 25, contributed by [Agenda](../agenda/README.md), [Notes](../notes/README.md) and [Finances](../finances/README.md) as `IAssistantTool`s in their `Application/Assistant` folders; Finances also takes shared files through `IAssistantFileQueue`.
+- **Tools:** 26, contributed by [Agenda](../agenda/README.md), [Notes](../notes/README.md) and [Finances](../finances/README.md) as `IAssistantTool`s in their `Application/Assistant` folders; Finances also takes shared files through `IAssistantFileQueue`.
 - **Surfaces:** web (inline in the request) and Telegram (integration-event subscribers on [Channels](../channels/README.md) inbound; replies through the Assistant outbox — [Messaging](../../architecture/en/messaging.md)).

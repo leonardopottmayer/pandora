@@ -1,111 +1,126 @@
 # Architecture
 
-[← Back to index](../README.md) · Related: [Data Model](data-model.md), [Overview](overview.md)
+[← Back to index](../README.md) · Related: [Data Model](data-model.md), [Blocks & Editor](blocks.md)
 
 ---
 
 ## 1. Project layout
 
-The module mirrors the Finances module, split into layered projects under
-`backend/src/Modules/Notes/`:
+The module mirrors the other modules, split into layered projects under `backend/src/Modules/Notes/`:
 
 ```
 Pottmayer.Pandora.Modules.Notes.
-  Abstractions      → NotesModule (name, database key, schema) shared across the layers
-  Application       → Commands, Queries, Dtos, Services, DI
-  Contracts         → IntegrationEvents (empty — the module publishes none)
+  Abstractions      → NotesModule, NotesFeatures, NotesPermissions, and the ports other modules call:
+                      INoteImporter (Communications' "save to Notes"), INoteCapture (Telegram /nota)
+  Application       → Commands, Queries, Dtos, Services, Assistant tools, DI
+  Contracts         → empty: the module publishes no integration events
   Domain            → Aggregates, ValueObjects, Errors, Ports (Repositories)
-  Infrastructure    → DI (no jobs and no external parsers — the module has neither)
-  Persistence       → EntityConfigs, Repositories, Storage, NotesDbContext, DI
+  Infrastructure    → ImageSharp thumbnails, the link previewer (HTTP, SSRF-guarded)
+  Persistence       → EntityConfigs, Repositories, the version interceptor, NotesDbContext, DI
   Presentation      → Controllers, Requests, DI
 ```
 
-Design style: **DDD aggregates** with private constructors + static factories, a `TimeProvider`
-injected for all time reads, and a **command/query** application layer (one folder per use case).
-Every write goes through a command handler inside a unit of work; reads go through query handlers
-returning DTOs.
+DDD aggregates with private constructors and static factories, a `TimeProvider` for every time read,
+and one folder per use case in the application layer. Every write goes through a command handler in a
+unit of work; reads go through query handlers returning DTOs. The module has **no background jobs**.
 
-Frontend: `client-web/src/modules/notes`, split into `pages/` (routes), `components/`, `hooks/`
-(TanStack Query), `services/` (HTTP), `lib/` (pure logic, unit-tested) and `models.ts` (DTO mirrors).
+Frontend: `client-web/src/modules/notes`, split into `pages/` (routes), `components/` (with
+`components/visual/` for the editor and `components/library/` for media), `hooks/`, `services/`,
+`lib/` (pure logic, unit-tested) and `models.ts`.
 
 ## 2. Domain building blocks
 
 ### Aggregates (`Domain/Aggregates`)
 
-| Aggregate root | Responsibility / key invariants |
+| Aggregate | Responsibility / key invariants |
 |---|---|
-| **Page** | The markdown document. Slug fixed at creation (a rename never breaks a link); `Move` guards the trivial self-parent case and delegates the real cycle check to `PageHierarchy`; archive and delete are timestamps, not booleans. |
-| **PageLink** | An edge of the wiki graph. Created and removed, never edited — so it carries only `CreatedAt`. Cycles allowed. |
-| **Tag** | A user label. Identity is the `Slug`; `Name` records the first spelling; `Color` is the only mutable field, and `HasUserMetadata` is what makes an empty tag worth keeping. |
-| **PageTag** | The fact that a page carries a tag. Derived, immutable, like `PageLink`. |
-| **MediaItem** | A library item (image or file) + the `(StorageBackend, StorageKey)` pair locating the bytes. |
-| **MediaFolder** | A virtual folder of the library, in a tree. |
-| **MediaRendition** | A version derived from an item, with bytes of its own (the thumbnail). Write-once. |
+| **Space** | A group of pages; at most one default per user. |
+| **Folder** | A container in one space, in a tree by `parent_id`; never inside a page. |
+| **Page** | The block document plus title, icon, slug (fixed at creation), place in the tree, states (favorite, archived, deleted, template) and settings (appearance, lock, verification, viewed at, public token). `history_number` counts its versions. |
+| **PageVersion** | An immutable snapshot of a page after a save that changed it. |
+| **PageLink** | A derived edge between two pages, kind `wikilink` or `embed`. |
+| **Tag** / **PageTag** | A user label and the derived fact that a page carries it. |
+| **PageMedia** | The derived fact that a page uses a library item. |
+| **BlockStamp** | When a block was written and last edited, and the source of that edit. |
+| **PageComment** | A comment or a reply, anchored to a block and optionally to quoted words. |
+| **MediaItem**, **MediaFolder**, **MediaRendition** | The library: items, their folders, their thumbnails. |
+| **NotesPreferences** | The daily template and the daily folder. |
+| **DailyNote** | Which page is the daily note of a date, per user. |
+| **NoteCapture** | A receipt per Telegram capture, so a redelivered event appends nothing. |
 
-Two of these are **pure helpers**, not aggregates — stateless logic that needs the whole set rather
-than one row, kept in the domain so it stays unit-testable:
-
-- `PageHierarchy.WouldCreateCycle` — walks upward from the prospective parent over a map of parent
-  links; a cycle exists if the walk ever reaches the moving page.
-- `PageGraph.Neighborhood` — undirected BFS with a visited set, returning the pages within N hops.
+Two **pure helpers** sit beside them, kept in the domain so they stay unit-testable:
+`PageHierarchy` (cycle check, subtree walk) and `PageGraph.Neighborhood` (undirected BFS for the
+local graph).
 
 ### Value objects (`Domain/ValueObjects`)
 
 | Type | Role |
 |---|---|
+| `PageContent` | Parses and validates a document, and derives in one walk: the search text, mentioned page ids, linked page ids (page-link and synced-ref blocks), tags, media ids, block fingerprints, page properties, and a readable text for the Assistant. Also builds a document from plain text, appends documents, and copies a template with fresh ids. |
+| `PageAppearance` | Cover (library image or gradient, position), width, font, small text. |
+| `PageSnapshot` | What a version stores. |
+| `PageVersionSource` | `initial`, `edit`, `assistant`, `restore`. |
 | `PageLinkKind` | `wikilink` \| `embed`. |
-| `Slugger` | Title → slug: lower-cased, accents stripped, non-alphanumerics collapsed to single hyphens, capped at 80 chars. Uniqueness is the caller's job (it needs the repository). |
-| `WikilinkParser` | Body → `WikilinkReference(Target, Kind)` list, deduplicated per (target, kind). |
-| `TagName` | Tag text → slug. Keeps `/`, `-` and `_` (unlike `Slugger`), caps at 50, and requires at least one letter so `#123` is not a tag. |
-| `TagParser` | Body → `TagReference(Name, Slug)` list. Strips fenced and inline code first. |
-| `PageSearch` | What the user typed → `tsquery` (`word:*` joined by `&`), plus the excerpt cut around the first match (160 chars). |
+| `PageProperty` | One row of a properties block, as plain text. |
+| `Slugger` | Title → slug: lower-case, accents stripped, non-alphanumerics collapsed to hyphens, 80 chars at most. |
+| `TagName` | Tag text → slug: lower-case, accents stripped, keeps `/`, `-` and `_`, 50 chars at most, needs a letter. |
+| `PageSearch` | The search box → a safe prefix `tsquery`, plus the excerpt around the first match. |
+| `NoteQuestionSearch` | A question → an OR `tsquery` without common question words, for ask your notes. |
+| `MediaKind` | `image`, `file`, `video` (video refused on upload for now). |
 
-### Ports (`Domain/Ports/Repositories`)
+### Ports
 
-`IPageRepository`, `IPageLinkRepository`, `ITagRepository`, `IPageTagRepository`,
-`IMediaItemRepository`, `IMediaFolderRepository`, `IMediaRenditionRepository`, and `IImageProcessor`
-(ImageSharp, in `Infrastructure`). Storage is the shared `IFileStorage` port (`Shared.Domain/Storage`), consumed by
-the application keyed by `NotesModule.DatabaseKey`; its `DatabaseFileStorage` lives in
-`Shared.Persistence/Storage` over the module's `nte003_file_blob` table (see [Media Library](media-library.md)).
-
-The module declares **no domain services and no jobs** — nothing here runs on a schedule.
+`I…Repository` per aggregate in `Domain/Ports/Repositories`, plus `IImageProcessor` (ImageSharp) and
+the link previewer. Bytes go through the shared `IFileStorage` port keyed by `NotesModule.DatabaseKey`;
+its database backend writes `nte003_file_blob`. AI calls go through `ITextCompletion` in
+`Assistant.Abstractions`.
 
 ### Application services (`Application/Services`)
 
 | Service | Role |
 |---|---|
-| `PageLinkSynchronizer` | Rebuilds the edges leaving a page from its body, by diff against what is stored. |
-| `PageTagSynchronizer` | The same for tags, plus **creating** tags the text invented and **sweeping** the ones it abandoned. |
-| `PageTagReader` | Reads a page's tags for the handlers that did not touch the body (open, move, favorite, archive). |
-| `TagFilter` | Resolves "which pages carry all of these tags?" — the one rule shared by the sidebar, the search and the graph. |
+| `PageLinkSynchronizer` | Rebuilds the edges leaving a page from its document, by diff. |
+| `PageTagSynchronizer` | The same for tags, creating tags the document introduced and sweeping uncolored ones no page carries any more. |
+| `PageMediaSynchronizer` | The same for media use (blocks and the cover). |
+| `BlockStampSynchronizer` | Compares each block's fingerprint with the stored one and stamps new and edited blocks. |
+| `PageDeletion` | Trash and delete-for-good for a page and its sub-pages. |
+| `SpaceResolver`, `SpaceValidation` | The default space, and the checks for a page's or folder's space. |
+| `TagFilter` | "Which pages carry all of these tags?" — one rule for the sidebar, search and graph. |
+| `PageTagReader` | The page's tags for handlers that did not touch the document. |
+| `NoteImporter`, `NoteCaptureService` | The `INoteImporter` and `INoteCapture` ports. |
+| `NoteAnswerParser` | Validates the model's answer for ask your notes. |
+
+### Versions without a call in every handler
+
+`PageVersionSaveChangesInterceptor` (Persistence) watches the unit of work: whenever a page's
+versioned fields change, it adds a snapshot in the same transaction and bumps `history_number`. So
+every path writes history the same way: the editor, the Assistant, moves of a subtree, a restore, a
+capture.
 
 ## 3. Key design decisions
 
 | # | Decision | Rationale (rejected alternative) |
 |---|---|---|
-| **D1** | Links and tags are **written in the markdown**, parsed by the backend on save. | Keeps the body portable and the frontend simple. Rejected authoring them through forms/junction CRUD, which would strand the metadata outside the exported file. |
-| **D2** | Derived rows are reconciled by **diff**, not wiped and re-inserted. | Same idempotent result, and it never trips the unique index by deleting and re-inserting the same row inside one transaction. |
-| **D3** | The tree and the graph are separate systems over one `Page`. | The tree is a filing decision (acyclic), the graph is meaning (cyclic). Rejected modelling links as tree edges. |
-| **D4** | The slug is frozen at creation. | A rename must not break `[[links]]` or URLs. Rejected re-slugging on rename. |
-| **D5** | Delete is a **soft delete of the whole subtree**, done in the command rather than by a DB cascade. | No child is left pointing at a deleted parent, and the rows survive for history. Rejected `ON DELETE CASCADE` (a hard delete of history). |
-| **D6** | `search_vector` is a **generated STORED column**, not maintained by application code. | Postgres keeps it in sync, so no save path can forget it. Configuration `simple` (lower-case only, no stemming) because the notebook mixes PT-BR and EN. |
-| **D7** | The blob store sits behind `IFileStorage`, with the backend and key recorded **on each media row**. | Adding S3 later needs no migration and no rewrite of old rows — reads are self-describing. |
-| **D8** | The local graph is cut **in memory**, not with a recursive SQL walk. | A personal notebook is small; loading the user's pages and edges and running BFS keeps depth logic out of SQL and unit-testable. |
-| **D9** | A tag row survives losing its last page **only if it has a color**. | Color is the one thing the text cannot recover; without it, an unused tag is just noise in the filters. |
-| **D10** | Multi-tag filters **intersect** (AND), identically on all three surfaces. | "Keep narrowing" is the expected behaviour, and one rule everywhere beats OR here and AND there. |
-| **D11** | Media are served by an **authenticated endpoint**, never by a direct path. | The bytes are the user's. The consequence is that the browser cannot fetch them on its own — see [Media Library](media-library.md#7-serving-the-bytes). |
+| **D1** | One `jsonb` document per page, stable id per block. | A page loads and saves as one unit, and derived data is rebuilt from it. Rejected one row per block. |
+| **D2** | TipTap in the frontend, with a converter (`lib/blocks.ts`) between TipTap's JSON and Pandora's blocks. | The database does not depend on the editor. Rejected writing an editor engine. |
+| **D3** | Derived rows are reconciled by **diff**, not wiped and re-inserted. | Same idempotent result, and it never trips a unique index inside one transaction. |
+| **D4** | Links point at page ids. | A rename never breaks a link; nothing resolves titles. |
+| **D5** | The backend validates the shape, not each block type. | New blocks are frontend-only work. |
+| **D6** | The tree (folders, parent pages) and the links are separate systems. | The tree is filing (acyclic), links are meaning (cyclic). |
+| **D7** | Deleting is soft and goes to the trash, done in the command, not by a database cascade. | Sub-pages leave and come back together, and history survives. |
+| **D8** | `search_vector` is a generated column over `title` and `content_text`. | Postgres keeps it in sync; configuration `simple` because the notebook mixes Portuguese and English. |
+| **D9** | Bytes sit behind `IFileStorage`, with backend and key on each media row. | Adding a bucket later needs no migration. |
+| **D10** | The local graph is cut in memory. | A personal notebook is small; BFS in C# stays testable. |
+| **D11** | Media are served by an authenticated endpoint; a public page serves only the items it uses. | The bytes are the user's. |
+| **D12** | A synced copy is read-only; the original is edited where it lives. | Two pages never write the same block. |
+| **D13** | Live blocks (Agenda, Finances) store only their configuration. | Figures never enter the document, its versions or a public page. |
 
 ## 4. Cross-cutting rules
 
-- **Multi-tenant by user.** `nte001_page`, `nte005_tag`, `nte007_space`, `nte002_media` and
-  `nte008_media_folder` carry `user_id NOT NULL` (a media item belongs to no page); the
-  derived tables reach the owner through their page. Every endpoint is authenticated and scoped to the
-  token's user; another user's resource returns **404** (not 403).
-- **`TimeProvider` everywhere.** No aggregate reads `DateTime.Now` directly, which is what makes the
-  archive/delete timestamps testable.
-- **No audit event log.** Unlike Finances, the module has no `audit_event` table. `Page` and `Tag`
-  are `IAuditable` (`created_by/at`, `updated_by/at`); the derived edge tables carry only
-  `created_at`, because they are rewritten rather than edited.
-- **Frontend mirrors of backend parsers.** `lib/wikilinks.ts` and `lib/tags.ts` reimplement the
-  backend parsers so the preview resolves a reference exactly the way the next save will. They are
-  deliberate duplication, each covered by its own unit tests.
+- **Multi-tenant by user.** Every aggregate table carries `user_id`, or reaches it through its page.
+  Every endpoint is scoped to the token's user; another user's resource returns **404**.
+- **Permissions and features.** Every command and query declares its `notes.*` permission
+  (`NotesPermissions`) and the Notes feature; actions that touch another module also need that
+  module's permission and feature. See [Admin](../../admin/README.md).
+- **`TimeProvider` everywhere.** No aggregate reads `DateTime.Now`.
+- **Limits.** A document is at most 2 MB, 10,000 blocks and 24 levels deep.

@@ -73,7 +73,7 @@ Built today (M1, connect and read; M2, organize; M3, send):
 
 ### In scope (implemented — see [Implementation Status](implementation-status.md))
 
-The `communications` schema (`com001`–`com005` + outbox); the Gmail and IMAP adapters; backfill and
+The `communications` schema (`com001`–`com006` + outbox); the Gmail and IMAP adapters; backfill and
 incremental sync; the content cache and attachments; the mailbox, label and message endpoints; labels both ways and batch actions; sending;
 `MailMessageReceived`; rules; the `mail`, `mail/accounts` and `mail/rules` screens.
 

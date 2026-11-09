@@ -6,13 +6,13 @@
 
 ## 1. What a space is
 
-A **space** groups pages the way a Confluence space does: "Personal", "Work", "Studies". Every page
-belongs to exactly one (`nte001_page.space_id`), and the sidebar shows one space's tree at a time.
+A **space** groups pages the way a Confluence space does: "Personal", "Work", "Studies". Every page and folder
+belongs to exactly one (`space_id`), and the sidebar shows one space's tree at a time.
 Beyond that a space is only organization — it **isolates nothing**:
 
-- **Tags** belong to the user, not to the space. `#pandora` gathers pages from any space; to see one
+- **Tags** belong to the user, not to the space. `pandora` gathers pages from any space; to see one
   space only, use the space filter of search or the graph.
-- **`[[Wikilinks]]`** reach any space (see §4).
+- **Mentions and page links** reach any space (see §4).
 - **Search and graph** start in the space on screen and can widen to all of them.
 
 ## 2. The default space
@@ -36,16 +36,15 @@ Agenda's default calendar. An archived space made the default comes back from th
   `spaceId` puts the page at the top of that space; moving it under a page of another space changes
   its space too. Either way `MovePageCommandHandler` walks the subtree (`PageHierarchy.Subtree`) and
   moves all of it.
-- **Deleting a space** is only accepted once it is empty — no live page, archived ones included
+- **Folders** live in one space too; a page in a folder is in the folder's space.
+- **Deleting a space** is only accepted once it is empty — no live page or folder, archived pages included
   (`Spaces.NotEmpty`, 409). The delete is soft, and the `fk_nte001_space` foreign key makes sure no
   page points at a space that does not exist.
 
-## 4. Wikilinks across spaces
+## 4. Links across spaces
 
-`PageLinkSynchronizer` still resolves title before slug, but among pages sharing a title, **the one
-in the linking page's own space wins**. Two spaces may each hold their own "Meeting", and `[[Meeting]]`
-points at the one next to it; a title that only exists in another space still resolves there. The
-frontend's `buildPageIndex` follows the same order, so the preview resolves what the save will.
+A mention or page link stores the target page's id, so it reaches a page in any space and never
+needs resolving.
 
 ## 5. Commands and queries
 
@@ -64,7 +63,7 @@ frontend's `buildPageIndex` follows the same order, so the preview resolves what
   pages and when one was last edited. Each card's menu edits, makes default, archives and deletes —
   the default offers neither archive nor delete, and a space with pages shows "Delete" disabled.
 - **`/notes/s/:spaceId`** opens the space: the sidebar with its tree and, where a page would be, the
-  space overview (`components/SpaceOverview.tsx`) listing its top-level pages.
+  space overview (`components/SpaceOverview.tsx`): counts, recent pages, and its folders and pages as cards or a tree.
 - **`/notes/:id`** opens a page; the space comes from the page itself.
 - **The switcher at the top of the sidebar** changes space or goes back to all of them. Each page's
   menu gained "Move to space".

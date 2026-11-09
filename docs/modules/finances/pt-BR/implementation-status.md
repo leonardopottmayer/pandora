@@ -72,7 +72,7 @@ O catálogo de layouts tem busca por nome/banco/código, filtros de formato e de
 | **Relatórios** | Endpoints de fluxo de caixa, por categoria, histórico de saldo e agenda de vencimentos não implementados — só existe a timeline de auditoria. |
 | **Eventos de integração com Channels** | O projeto `Contracts` está vazio; `StatementClosed`/`StatementDueSoon`/`StatementOverdue`/`ImportCompleted`/`PendingTransactionsGenerated` não são publicados, e não há subscribers/templates no Channels. |
 | **Layouts de importação criados pelo usuário** | Só há seed de layouts de sistema; layouts do usuário + endpoint de preview estão reservados para uma fase futura. |
-| **Split de transação, orçamentos, metas, anexos, snapshots de saldo, consolidação multi-moeda, open finance, household multiusuário** | Futuro — o modelo deixa espaço sem reescrever o core. |
+| **Split de transação, orçamentos, metas, snapshots de saldo, consolidação multi-moeda, open finance, household multiusuário** | Futuro — o modelo deixa espaço sem reescrever o core. |
 
 ## Pontos em aberto conhecidos
 
@@ -88,10 +88,3 @@ O catálogo de layouts tem busca por nome/banco/código, filtros de formato e de
 5. **Backfill de parcelas passadas** — quando um plano é criado a partir da parcela N via importação,
    se gerar opcionalmente as parcelas 1..N−1 (default: não).
 
-## Resumos no Notes
-
-Notes incorpora saldos de conta, limites de cartão e despesas mensais brutas efetivadas por
-categoria, separadas por moeda, somente leitura. Reutiliza APIs autenticadas, hooks e query keys
-existentes, sem dependência backend ou endpoint novo. Configuração salva apenas IDs/mês; página
-pública não consulta/exibe valores. Ver status de implementação do Notes para permissões, datas e
-privacidade das exportações.
