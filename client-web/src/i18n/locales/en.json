@@ -1980,6 +1980,37 @@
     }
   },
   "agenda": {
+    "google": {
+      "title": "Google Calendar",
+      "intro": "Bring calendars from a Google account. Each one becomes a calendar here, synced every two minutes. Their events are edited in Google, and their Google reminders ring through Pandora.",
+      "addLabel": "Add calendars",
+      "addDesc": "Pick the Google account, then the calendars to bring.",
+      "primary": "Primary",
+      "allBound": "Every calendar of this account is already here.",
+      "bring_one": "Bring {{count}} calendar",
+      "bring_other": "Bring {{count}} calendars",
+      "bound_one": "{{count}} calendar linked. Bringing its events…",
+      "bound_other": "{{count}} calendars linked. Bringing their events…",
+      "bindError": "Could not link the calendars.",
+      "listError": "Could not read the calendars of this account.",
+      "lastSynced": "Synced {{when}}",
+      "neverSynced": "Not synced yet",
+      "syncNow": "Sync now",
+      "synced": "Synced.",
+      "syncError": "Could not sync.",
+      "unlink": "Unlink",
+      "unlinkTitle": "Stop syncing this calendar?",
+      "unlinkDesc": "It stays here with its events, as a calendar you can edit. Nothing changes in Google.",
+      "unlinked": "Calendar unlinked.",
+      "unlinkError": "Could not unlink the calendar.",
+      "readOnlyEvent": "This event comes from Google Calendar. Edit it there; the change shows here within two minutes.",
+      "openGoogle": "Open Google Calendar",
+      "status": {
+        "ok": "Syncing",
+        "needs-reconnect": "Reconnect the account",
+        "error": "Stopped"
+      }
+    },
     "settings": {
       "title": "Agenda settings",
       "intro": "Defaults for new agenda items.",

@@ -7,7 +7,7 @@ frente está em [product-plan.md](product-plan.md).
 
 ---
 
-## Implementado (fases 1–4, frontend, ferramentas do Assistant)
+## Implementado (fases 1–4, sincronização Google → Pandora, frontend, ferramentas do Assistant)
 
 | Área | Notas |
 |---|---|
@@ -18,10 +18,11 @@ frente está em [product-plan.md](product-plan.md).
 | **Alertas** | `agd007` polimórfico + ledger de disparo `agd008`; sujeitos `Task` e `Event` ligados; `TaskAlertSweepBackgroundService` + `EventAlertSweepBackgroundService`. |
 | **Calendário e eventos** | Calendários `agd001`, eventos `agd002` (ocorrências calculadas), exceções `agd003`; escopos de edição esta / esta e futuras / todas. |
 | **Preferências** | `agd013_preferences`: o tempo padrão do alerta. Fuso e início da semana vêm do Identity. |
+| **Google Agenda (5a)** | Vínculos `agd009` + links `agd010`; `GoogleCalendarSync` (listagem completa de um ano para trás, depois as mudanças pelo `syncToken`, 410 ⇒ completa de novo, completa mensal); `GoogleEventMapper` (com hora, dia inteiro, RRULE + EXDATE, exceções como overrides, lembretes como alertas); séries que o Pandora não expande vêm como instâncias; trava de somente leitura; `GoogleCalendarSyncBackgroundService` a cada 2 minutos; revogada ⇒ `needs-reconnect`, desconectada ⇒ desvinculado; `AgendaAccountUsageSource`; a seção nas configurações. Ver [Calendário e Eventos §6](calendar-and-events.md#6-google-agenda-google--pandora). |
 | **Hoje** | `GET /agenda/today`, leitura unificada (eventos + tarefas + lembretes). |
 | **Botões de entrada** | `InboundInteractionReceivedHandler` + `TaskInteractionHandler` para `task_done` / `snooze_*` vindos do Channels. |
 | **Ferramentas do Assistant** | 15 `IAssistantTool` em `Application/Assistant`: `create_reminder`, `list_reminders`, `rename_reminder`, `reschedule_reminder`, `cancel_reminder`, `create_task`, `list_tasks`, `update_task`, `complete_task`, `reopen_task`, `delete_task`, `create_event`, `update_event`, `delete_event`, `list_agenda`. O Assistant resolve datas relativas; o Agenda não interpreta nada. |
-| **API** | Controllers de lembretes, listas de tarefas, tarefas, calendários, eventos, alertas, preferências e hoje. Ver [Referência da API](api-reference.md). |
+| **API** | Controllers de lembretes, listas de tarefas, tarefas, calendários, eventos, alertas, preferências, hoje e Google. Ver [Referência da API](api-reference.md). |
 | **Frontend** | `client-web/src/modules/agenda`: Hoje, Lembretes, Tarefas, Calendário (mês, semana e dia) e Configurações (`/agenda/settings`). Os formulários são modais de 640 px que empilham no celular; as telas distinguem falha de requisição de resultado vazio. |
 
 O Notes mostra dados do Agenda no bloco Agenda ao vivo, que lê os endpoints do próprio Agenda; ver os
@@ -51,7 +52,7 @@ docs do Notes.
 
 | Área | Status | Fase |
 |---|---|---|
-| **Sincronização com o Google Calendar** | `agd009`–`agd012` (vínculo/link/cursor/conflito), `ICalendarSyncProvider` + implementação Google, push/supressão de eco, log de conflito — nada construído. Depende da I1 do [Integrations](../../integrations/pt-BR/README.md) (pronta). | 5 |
+| **Pandora → Google (5b)** | Escrita no Google, supressão de eco, conflitos na `agd011`. Ver [product-plan.md](product-plan.md). | 5b |
 | **Sincronização com o Google Tasks** | `ITaskSyncProvider` reaproveitando o mecanismo de sincronização. | 6 |
 | **Além** | Vínculo nota↔evento, criação rápida em linguagem natural, tempo de deslocamento, alertas por localização, ICS/CalDAV, provedores Microsoft/Apple, vencimentos do Finances na visão do dia. | — |
 

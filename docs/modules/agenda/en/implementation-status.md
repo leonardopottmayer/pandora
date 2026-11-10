@@ -7,7 +7,7 @@ in [product-plan.md](product-plan.md).
 
 ---
 
-## Implemented (phases 1–4, frontend, Assistant tools)
+## Implemented (phases 1–4, Google → Pandora sync, frontend, Assistant tools)
 
 | Area | Notes |
 |---|---|
@@ -18,10 +18,11 @@ in [product-plan.md](product-plan.md).
 | **Alerts** | `agd007` polymorphic + `agd008` dispatch ledger; `Task` and `Event` subjects wired; `TaskAlertSweepBackgroundService` + `EventAlertSweepBackgroundService`. |
 | **Calendar & events** | `agd001` calendars, `agd002` events (computed occurrences), `agd003` overrides; this / this-and-future / all edit scopes. |
 | **Preferences** | `agd013_preferences`: the default alert offset. The time zone and week start come from Identity. |
+| **Google Calendar (5a)** | `agd009` bindings + `agd010` links; `GoogleCalendarSync` (full listing a year back, then `syncToken` changes, 410 ⇒ full again, monthly full); `GoogleEventMapper` (timed, all-day, RRULE + EXDATE, exceptions as overrides, reminders as alerts); series Pandora cannot expand brought as instances; read-only guard; `GoogleCalendarSyncBackgroundService` every 2 minutes; revoked ⇒ `needs-reconnect`, disconnected ⇒ unlinked; `AgendaAccountUsageSource`; the settings section. See [Calendar & Events §6](calendar-and-events.md#6-google-calendar-google--pandora). |
 | **Today** | `GET /agenda/today` unified read (events + tasks + reminders). |
 | **Inbound buttons** | `InboundInteractionReceivedHandler` + `TaskInteractionHandler` for `task_done` / `snooze_*` from Channels. |
 | **Assistant tools** | 15 `IAssistantTool`s in `Application/Assistant`: `create_reminder`, `list_reminders`, `rename_reminder`, `reschedule_reminder`, `cancel_reminder`, `create_task`, `list_tasks`, `update_task`, `complete_task`, `reopen_task`, `delete_task`, `create_event`, `update_event`, `delete_event`, `list_agenda`. The Assistant resolves relative dates; Agenda parses nothing. |
-| **API** | Reminders, task-lists, tasks, calendars, events, alerts, preferences, today controllers. See [API Reference](api-reference.md). |
+| **API** | Reminders, task-lists, tasks, calendars, events, alerts, preferences, today and Google controllers. See [API Reference](api-reference.md). |
 | **Frontend** | `client-web/src/modules/agenda`: Today, Reminders, Tasks, Calendar (month, week and day) and Settings (`/agenda/settings`). Forms are 640 px modals that stack on phones; screens tell a failed request from an empty result. |
 
 Notes shows Agenda data in its live Agenda block, which reads Agenda's own endpoints; see the Notes
@@ -50,7 +51,7 @@ docs.
 
 | Area | Status | Phase |
 |---|---|---|
-| **Google Calendar sync** | `agd009`–`agd012` (binding/link/cursor/conflict), `ICalendarSyncProvider` + Google impl, push/echo suppression, conflict log — none built. Depends on [Integrations](../../integrations/README.md) I1 (done). | 5 |
+| **Pandora → Google (5b)** | Writes to Google, echo suppression, conflicts in `agd011`. See [product-plan.md](product-plan.md). | 5b |
 | **Google Tasks sync** | `ITaskSyncProvider` reusing the sync machinery. | 6 |
 | **Beyond** | Note↔event links, NL quick-add, travel time, location alerts, ICS/CalDAV, Microsoft/Apple providers, Finances due dates in the day view. | — |
 

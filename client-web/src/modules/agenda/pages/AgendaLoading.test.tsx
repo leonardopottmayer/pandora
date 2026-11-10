@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw'
 import { screen } from '@testing-library/react'
 import i18n from '@/i18n'
 import { server } from '@/test/msw/server'
-import { AGENDA_BASE } from '@/test/constants'
+import { AGENDA_BASE, TEST_API_BASE } from '@/test/constants'
 import { renderWithProviders } from '@/test/utils'
 import { TodayPage } from './today/TodayPage'
 import { CalendarPage } from './calendar/CalendarPage'
@@ -24,6 +24,8 @@ describe('Agenda loading failures', () => {
     server.use(
       http.get(`${AGENDA_BASE}/${path}`, () => HttpResponse.json({ success: false, errorCode: 'Unavailable', errorMessage: 'Service unavailable', fieldErrors: null, traceId: null }, { status: 500 })),
       http.get(`${AGENDA_BASE}/*`, () => HttpResponse.json({ success: true, data: [] })),
+      // The settings page lists the Google accounts for its Google Calendar section.
+      http.get(`${TEST_API_BASE}/api/v1.0/integrations/accounts`, () => HttpResponse.json({ success: true, data: [] })),
     )
     renderWithProviders(<Page />)
     expect(await screen.findByRole('alert')).toHaveTextContent('Service unavailable')

@@ -1,5 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Pottmayer.Pandora.Modules.Agenda.Application.Assistant;
+using Pottmayer.Pandora.Modules.Agenda.Application.Google;
+using Pottmayer.Pandora.Modules.Agenda.Application.Integrations;
+using Pottmayer.Pandora.Modules.Integrations.Abstractions.Ports;
 using Pottmayer.Pandora.Modules.Assistant.Abstractions.Commands;
 using Pottmayer.Tars.Core.Mediator.DI;
 using Pottmayer.Tars.Messaging.DI;
@@ -35,6 +38,11 @@ public static class ApplicationDI
         services.AddScoped<IAssistantTool, CancelReminderTool>();
         services.AddScoped<IAssistantTool, RenameReminderTool>();
         services.AddScoped<IAssistantTool, ListRemindersTool>();
+
+        // Google Calendar sync (the HTTP client is Infrastructure's); the bound calendars as account usages.
+        services.AddSingleton<CalendarSyncGates>();
+        services.AddScoped<GoogleCalendarSync>();
+        services.AddScoped<IExternalAccountUsageSource, AgendaAccountUsageSource>();
 
         // What an administrator can switch off and grant in this module (see the Admin module).
         services.AddTarsFeatureFlagDefinitions(f => f.Add(AgendaFeatures.Agenda));

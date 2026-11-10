@@ -53,3 +53,54 @@ Calendários: `CreateCalendar`, `UpdateCalendar`, `DeleteCalendar` (apagar um ca
 recusado — arquive). Eventos: `CreateEvent`, `UpdateEvent` (com escopo de edição), `DeleteEvent`. HTTP:
 ver [Referência de API](api-reference.md) — `/agenda/calendars`, `/agenda/events` (o endpoint de lista é
 a query de intervalo com expansão em memória), `/agenda/today`.
+
+## 6. Google Agenda (Google → Pandora)
+
+O usuário escolhe uma conta Google e alguns calendários dela nas configurações do Agenda; cada um vira um
+calendário próprio no Pandora (`origin = External`), com o nome e a cor do Google, no fuso dele. Um
+**vínculo** (`agd009`) liga os dois e guarda o sync token do Google; um **link** (`agd010`) liga cada
+evento do Pandora ao evento do Google.
+
+**Ciclo.** O `GoogleCalendarSyncBackgroundService` roda um ciclo por vínculo em `ok` a cada
+`Pandora:Agenda:GoogleSyncInterval` (2 minutos); "Sincronizar agora" roda um na hora. O
+`GoogleCalendarSync`:
+
+1. lê a entrada do calendário (fuso e lembretes padrão) e os eventos, pelo `IGoogleCalendarClient`
+   (REST, com o token da conta vindo do Integrations);
+2. lista tudo de um ano para trás quando o vínculo não tem token, depois de um 410 do Google, e a cada
+   30 dias; nos outros casos, só as mudanças desde o token, cancelamentos incluídos;
+3. busca, para cada série que o motor de recorrência do Pandora não lê (`BYSETPOS`, `RDATE`…), as
+   instâncias dos próximos 12 meses;
+4. aplica tudo numa unit of work só, e guarda o token novo.
+
+**Mapeamento** (`GoogleEventMapper`, uma função pura testada contra JSON do Google):
+
+| Google | Pandora |
+|---|---|
+| `summary`, `description`, `location` | título (`(sem título)` quando vazio), descrição, local |
+| `hangoutLink` ou o ponto de entrada de vídeo | `url` |
+| `start`/`end` com `dateTime`, ou `date` no dia inteiro | instantes; dia inteiro vai da meia-noite à meia-noite seguinte (exclusiva) no fuso do calendário |
+| `status` `tentative` / `cancelled` | `Tentative` / exclusão soft |
+| Linha `RRULE:` | `rrule` |
+| Linhas `EXDATE` | overrides cancelados (`agd003`) |
+| Uma exceção (`recurringEventId` + `originalStartTime`) | um override daquela ocorrência (editado ou cancelado) |
+| `reminders.overrides`, ou os `defaultReminders` do calendário | alertas (`agd007`), `offset = -minutos` |
+
+Uma série que o Pandora não expande chega como eventos únicos, um por instância, cada um ligado ao id da
+série (`series_remote_id`). Os alertas só são reescritos quando os lembretes do evento mudam no Google
+(comparados por hash), então um alerta que o usuário tira aqui continua tirado até lá.
+
+**Somente leitura.** Criar, editar, mover ou excluir um evento num calendário do Google responde
+`Agenda.CalendarReadOnly`; mover um evento local para um deles também. As telas escondem essas ações e
+apontam para o Google. Um calendário vinculado não pode ser excluído (`Agenda.CalendarBound`);
+desvincule antes.
+
+**Falhas.** Um token recusado, que não renova, ou sem escopo de calendário deixa o vínculo em
+`needs-reconnect`; qualquer outra falha conta, e cinco seguidas o deixam em `error`. Nenhum dos dois roda
+de novo até "Sincronizar agora". O `ExternalAccountRevoked` deixa os vínculos da conta em
+`needs-reconnect` (o usuário é avisado pelo aviso de revogação do próprio Integrations); o
+`ExternalAccountDisconnected` os desvincula.
+
+**Desvincular** remove o vínculo e os links e devolve o calendário a calendário local: os eventos ficam e
+passam a ser editáveis. Nada muda no Google. A tela de conexões lista cada vínculo como uso da conta
+("Agenda · nome do calendário").

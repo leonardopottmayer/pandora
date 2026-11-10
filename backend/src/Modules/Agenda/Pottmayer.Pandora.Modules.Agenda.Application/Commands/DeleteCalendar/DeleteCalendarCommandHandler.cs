@@ -23,6 +23,8 @@ public sealed class DeleteCalendarCommandHandler(IUnitOfWorkFactory factory)
             if (calendar is null)
                 return Outcome.Missing;
 
+            if (await context.AcquireRepository<ICalendarBindingRepository>().IsCalendarBoundAsync(input.CalendarId, token))
+                return Outcome.Bound;
             if (await events.HasLiveEventsAsync(input.UserId, input.CalendarId, token))
                 return Outcome.NotEmpty;
 
@@ -34,9 +36,10 @@ public sealed class DeleteCalendarCommandHandler(IUnitOfWorkFactory factory)
         {
             Outcome.Missing => Fail(CalendarErrors.NotFound),
             Outcome.NotEmpty => Fail(CalendarErrors.NotEmpty),
+            Outcome.Bound => Fail(CalendarErrors.Bound),
             _ => Ok(true),
         };
     }
 
-    private enum Outcome { Missing, NotEmpty, Deleted }
+    private enum Outcome { Missing, NotEmpty, Bound, Deleted }
 }

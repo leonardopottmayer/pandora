@@ -82,3 +82,16 @@ Per-occurrence acknowledge/snooze for recurring reminders are `AcknowledgeOccurr
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/agenda/today` | The unified day read: events (expanded) + due tasks + reminders. |
+
+## Google Calendar — `/agenda/google`
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/agenda/google/calendars?accountId=` | The calendars a connected Google account can see, each with the `bindingId` that already brings it, if any. |
+| GET | `/agenda/google/bindings` | The user's Google calendar links: calendar, account, status (`ok`, `needs-reconnect`, `error`), last sync, last error. |
+| POST | `/agenda/google/bindings` | `{ accountId, calendarIds }`: one Pandora calendar per Google calendar. A calendar already linked is skipped. |
+| POST | `/agenda/google/bindings/{id}/sync` | Sync now, resuming a stopped link; returns the link afterwards. |
+| DELETE | `/agenda/google/bindings/{id}` | Unlink: the calendar and its events stay, as a local calendar. |
+
+Events of a linked calendar are read-only: event writes answer `Agenda.CalendarReadOnly` (409), and
+deleting a linked calendar answers `Agenda.CalendarBound` (409).

@@ -252,3 +252,28 @@ export interface CreateAlertRequest {
   offsetMinutes: number
   channels?: string[] | null
 }
+
+/** A Pandora calendar fed by a Google calendar (Google -> Pandora only). */
+export type CalendarBindingStatus = 'ok' | 'needs-reconnect' | 'error'
+
+export interface CalendarBindingDto {
+  id: string
+  calendarId: string
+  calendarName: string
+  calendarColor?: string | null
+  externalAccountId: string
+  remoteCalendarId: string
+  status: CalendarBindingStatus
+  lastSyncedAt?: string | null
+  lastError?: string | null
+}
+
+/** A calendar the Google account can see; bindingId is set when it already feeds Pandora. */
+export interface GoogleCalendarDto {
+  id: string
+  name: string
+  color?: string | null
+  isPrimary: boolean
+  accessRole?: string | null
+  bindingId?: string | null
+}

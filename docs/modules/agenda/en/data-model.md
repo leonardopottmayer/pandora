@@ -23,7 +23,9 @@ Migrations live in `migrations/migrations/agenda/`.
 | agd006x | `reminder_dispatch` | Per-occurrence dispatch ledger for recurring reminders |
 | agd007 | `alert` | Polymorphic "notify me about *subject*" primitive |
 | agd008 | `alert_dispatch` | Idempotency ledger for alert firing |
-| agd009–agd012 | *(reserved)* | Calendar binding / sync link / cursor / conflict — **not yet implemented** (phases 5–6) |
+| agd009 | `calendar_binding` | A Pandora calendar fed by a Google calendar |
+| agd010 | `event_link` | A Pandora event linked to its Google event |
+| agd011 | *(reserved)* | Sync conflicts — phase 5b |
 | agd013 | `preferences` | What a user prefers about the Agenda itself |
 
 ---
@@ -193,7 +195,38 @@ What a user prefers about the Agenda itself, one row per user. No row means the 
 | `default_alert_offset_minutes` | int NOT NULL DEFAULT -15 | signed, relative to the item; what the alert editor starts from |
 | `created_by`, `created_at`, `updated_by`, `updated_at` | | audit |
 
-## agd009–agd012 *(reserved — not implemented)*
+## agd009_calendar_binding
 
-Google sync (phases 5–6): `calendar_binding`, `sync_link` (`remote_id`, `etag`, hashes),
-`sync_cursor`, `sync_conflict`. See [product-plan.md](product-plan.md).
+One Pandora calendar fed by one Google calendar of one Integrations account. See
+[Calendar & Events §6](calendar-and-events.md#6-google-calendar-google--pandora).
+
+| Column | Type | Notes |
+|---|---|---|
+| `id`, `user_id` | uuid | |
+| `calendar_id` | uuid → agd001 | unique (`uq_agd009_calendar`) |
+| `external_account_id` | uuid | the Integrations account; no FK (another module) |
+| `remote_calendar_id` | varchar(255) | unique per account (`uq_agd009_account_remote`) |
+| `direction` | varchar(20) DEFAULT 'read' | `read \| read-write`; only `read` until phase 5b |
+| `sync_token` | text NULL | Google's cursor; NULL ⇒ the next cycle lists everything |
+| `full_synced_at` / `last_synced_at` | timestamptz NULL | a full listing runs again after 30 days |
+| `status` | varchar(20) DEFAULT 'ok' | `ok \| needs-reconnect \| error` |
+| `failure_count` / `last_error` | int / varchar(1000) | five failures in a row ⇒ `error` |
+
+## agd010_event_link
+
+One Pandora event ↔ one Google event of a binding: what keeps a sync from duplicating.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `binding_id` | uuid → agd009 | |
+| `event_id` | uuid → agd002 | unique (`uq_agd010_event`) |
+| `remote_event_id` | varchar(1024) | unique per binding (`uq_agd010_binding_remote`) |
+| `series_remote_id` | varchar(1024) NULL | set on the single events made from the instances of a series Pandora cannot expand |
+| `etag` / `remote_updated_at` | | what Google said last |
+| `reminders_hash` | varchar(64) NULL | the Google reminders the event's alerts were written from |
+| `created_at` | timestamptz | |
+
+## agd011 *(reserved — phase 5b)*
+
+`sync_conflict`: the losing side of a two-way conflict. See [product-plan.md](product-plan.md).

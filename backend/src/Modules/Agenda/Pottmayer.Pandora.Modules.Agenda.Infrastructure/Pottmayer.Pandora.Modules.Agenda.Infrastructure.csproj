@@ -15,6 +15,13 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
     <!-- Tars: Core (mediator ISender for the sweep command) -->
     <PackageReference Include="Pottmayer.Tars.Core.Mediator" Version="0.1.0" />
+    <!-- Google Calendar over HTTP, with the Google account's token from Integrations -->
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.14" />
+    <ProjectReference Include="../../Integrations/Pottmayer.Pandora.Modules.Integrations.Abstractions/Pottmayer.Pandora.Modules.Integrations.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pottmayer.Pandora.Modules.Agenda.Tests" />
   </ItemGroup>
 
 </Project>

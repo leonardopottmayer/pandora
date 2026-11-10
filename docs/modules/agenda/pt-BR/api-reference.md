@@ -82,3 +82,16 @@ Reconhecer/soneca por ocorrência para lembretes recorrentes são os comandos `A
 | Método | Caminho | Propósito |
 |---|---|---|
 | GET | `/agenda/today` | A leitura unificada do dia: eventos (expandidos) + tarefas devidas + lembretes. |
+
+## Google Agenda — `/agenda/google`
+
+| Método | Caminho | Propósito |
+|---|---|---|
+| GET | `/agenda/google/calendars?accountId=` | Os calendários que uma conta Google conectada vê, cada um com o `bindingId` que já o traz, se houver. |
+| GET | `/agenda/google/bindings` | Os vínculos do usuário com o Google: calendário, conta, status (`ok`, `needs-reconnect`, `error`), última sincronização, último erro. |
+| POST | `/agenda/google/bindings` | `{ accountId, calendarIds }`: um calendário do Pandora por calendário do Google. Um calendário já vinculado é pulado. |
+| POST | `/agenda/google/bindings/{id}/sync` | Sincroniza agora, retomando um vínculo parado; devolve o vínculo depois. |
+| DELETE | `/agenda/google/bindings/{id}` | Desvincula: o calendário e os eventos ficam, como calendário local. |
+
+Os eventos de um calendário vinculado são somente leitura: escritas de evento respondem
+`Agenda.CalendarReadOnly` (409), e excluir um calendário vinculado responde `Agenda.CalendarBound` (409).

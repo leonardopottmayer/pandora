@@ -17,4 +17,7 @@ public sealed class AgendaOptions
     /// missed rather than replayed, so waking up does not flood.
     /// </summary>
     public int SweepGraceMinutes { get; set; } = 15;
+
+    /// <summary>How often each Google calendar binding is synced.</summary>
+    public TimeSpan GoogleSyncInterval { get; set; } = TimeSpan.FromMinutes(2);
 }

@@ -35,7 +35,9 @@ export function EventFormModal({ open, calendars, defaultStart, onClose }: Event
   const [wasOpen, setWasOpen] = useState(open)
   const createMutation = useCreateEvent()
 
-  const defaultCalendarId = calendars.find((c) => c.isDefault)?.id ?? calendars[0]?.id
+  // Calendars fed by Google take their events from Google only.
+  const writable = calendars.filter((c) => c.origin !== 'External')
+  const defaultCalendarId = writable.find((c) => c.isDefault)?.id ?? writable[0]?.id
 
   // Reset the recurrence on open — adjusting state on the prop change, not in an effect.
   if (open !== wasOpen) {
@@ -103,7 +105,7 @@ export function EventFormModal({ open, calendars, defaultStart, onClose }: Event
           label={t('agenda.events.calendar')}
           rules={[{ required: true, message: t('agenda.events.calendarRequired') }]}
         >
-          <Select options={calendars.map((c) => ({ value: c.id, label: c.name }))} />
+          <Select options={writable.map((c) => ({ value: c.id, label: c.name }))} />
         </Form.Item>
 
         <Form.Item

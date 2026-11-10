@@ -12,6 +12,10 @@ export const agendaKeys = {
   calendars: () => [...agendaKeys.all, 'calendars'] as const,
   calendarList: () => [...agendaKeys.calendars(), 'list'] as const,
 
+  google: () => [...agendaKeys.all, 'google'] as const,
+  googleBindings: () => [...agendaKeys.google(), 'bindings'] as const,
+  googleCalendars: (accountId: string) => [...agendaKeys.google(), 'calendars', accountId] as const,
+
   events: () => [...agendaKeys.all, 'events'] as const,
   eventList: (filters: EventFilters) => [...agendaKeys.events(), 'list', filters] as const,
   event: (id: string) => [...agendaKeys.events(), 'detail', id] as const,

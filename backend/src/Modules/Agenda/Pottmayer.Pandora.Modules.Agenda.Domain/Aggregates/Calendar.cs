@@ -81,6 +81,12 @@ public sealed class Calendar : AggregateRoot<Guid>, IAuditable
 
     public void SetDefault(bool isDefault) => IsDefault = isDefault;
 
+    /// <summary>A calendar fed by Google sync. Its events are written by the sync only.</summary>
+    public bool IsExternal => Origin == CalendarOrigin.External;
+
+    /// <summary>The binding is gone (unlinked, or the account disconnected): the calendar and its events stay, as an ordinary local calendar.</summary>
+    public void Detach() => Origin = CalendarOrigin.Local;
+
     public void Archive(TimeProvider timeProvider) => ArchivedAt ??= timeProvider.GetUtcNow();
 
     /// <summary>The calendar's zone as a <see cref="TimeZoneInfo"/>, throwing on an unknown IANA id.</summary>

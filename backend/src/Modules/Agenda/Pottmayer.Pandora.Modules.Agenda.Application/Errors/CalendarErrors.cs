@@ -13,6 +13,13 @@ public static class CalendarErrors
     public static Error NotEmpty =>
         Error.Conflict("Agenda.CalendarNotEmpty", "This calendar still has events. Archive it, or move its events first.");
 
+    /// <summary>The calendar is fed by Google: its events change in Google, and come here on the next sync.</summary>
+    public static Error ReadOnly =>
+        Error.Conflict("Agenda.CalendarReadOnly", "This calendar comes from Google Calendar. Edit its events in Google; they sync here.");
+
+    public static Error Bound =>
+        Error.Conflict("Agenda.CalendarBound", "This calendar is linked to Google Calendar. Unlink it in the Agenda settings first.");
+
     public static Error InvalidTimeZone(string detail) =>
         Error.Validation("Agenda.CalendarInvalidTimeZone", detail);
 }

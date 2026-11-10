@@ -162,6 +162,33 @@ public sealed class Event : AggregateRoot<Guid>, IAuditable
         RecurrenceEndsAt = RecurrenceRule.Parse(Rrule).ComputeEndsAt(StartsAt, ResolveZone());
     }
 
+    /// <summary>
+    /// Overwrites the whole event with what a sync brought, recurrence and zone included, and brings a
+    /// soft-deleted event back. Unlike <see cref="Update"/>, the rule may change or go away.
+    /// </summary>
+    public void ApplyRemote(
+        string title, string? description, string? location, string? url,
+        DateTimeOffset startsAt, DateTimeOffset endsAt, bool isAllDay, string timeZone, string? rrule,
+        EventStatus status)
+    {
+        var replacement = Create(
+            UserId, CalendarId, title, description, location, url, startsAt, endsAt, isAllDay, timeZone,
+            rrule, status, TimeProvider.System);
+
+        Title = replacement.Title;
+        Description = replacement.Description;
+        Location = replacement.Location;
+        Url = replacement.Url;
+        StartsAt = replacement.StartsAt;
+        EndsAt = replacement.EndsAt;
+        IsAllDay = replacement.IsAllDay;
+        TimeZone = replacement.TimeZone;
+        Rrule = replacement.Rrule;
+        RecurrenceEndsAt = replacement.RecurrenceEndsAt;
+        Status = replacement.Status;
+        DeletedAt = null;
+    }
+
     /// <summary>Soft-deletes the event (the <c>all</c> delete scope).</summary>
     public void Delete(TimeProvider timeProvider) => DeletedAt ??= timeProvider.GetUtcNow();
 

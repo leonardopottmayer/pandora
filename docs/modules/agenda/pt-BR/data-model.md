@@ -23,7 +23,9 @@ As migrations ficam em `migrations/migrations/agenda/`.
 | agd006x | `reminder_dispatch` | Ledger de dispatch por ocorrência para lembretes recorrentes |
 | agd007 | `alert` | Primitivo polimórfico "me avise sobre *sujeito*" |
 | agd008 | `alert_dispatch` | Ledger de idempotência do disparo de alerta |
-| agd009–agd012 | *(reservadas)* | Calendar binding / sync link / cursor / conflict — **não implementadas** (fases 5–6) |
+| agd009 | `calendar_binding` | Um calendário do Pandora alimentado por um calendário do Google |
+| agd010 | `event_link` | Um evento do Pandora ligado ao evento do Google |
+| agd011 | *(reservada)* | Conflitos de sincronização — fase 5b |
 | agd013 | `preferences` | O que o usuário prefere na própria Agenda |
 
 ---
@@ -196,7 +198,38 @@ O que o usuário prefere na própria Agenda, uma linha por usuário. Sem linha, 
 | `default_alert_offset_minutes` | int NOT NULL DEFAULT -15 | com sinal, relativo ao item; é de onde o editor de alertas parte |
 | `created_by`, `created_at`, `updated_by`, `updated_at` | | auditoria |
 
-## agd009–agd012 *(reservadas — não implementadas)*
+## agd009_calendar_binding
 
-Sync Google (fases 5–6): `calendar_binding`, `sync_link` (`remote_id`, `etag`, hashes), `sync_cursor`,
-`sync_conflict`. Ver [product-plan.md](product-plan.md).
+Um calendário do Pandora alimentado por um calendário do Google de uma conta do Integrations. Ver
+[Calendário e Eventos §6](calendar-and-events.md#6-google-agenda-google--pandora).
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id`, `user_id` | uuid | |
+| `calendar_id` | uuid → agd001 | único (`uq_agd009_calendar`) |
+| `external_account_id` | uuid | a conta do Integrations; sem FK (outro módulo) |
+| `remote_calendar_id` | varchar(255) | único por conta (`uq_agd009_account_remote`) |
+| `direction` | varchar(20) DEFAULT 'read' | `read \| read-write`; só `read` até a fase 5b |
+| `sync_token` | text NULL | o cursor do Google; NULL ⇒ o próximo ciclo lista tudo |
+| `full_synced_at` / `last_synced_at` | timestamptz NULL | uma listagem completa roda de novo depois de 30 dias |
+| `status` | varchar(20) DEFAULT 'ok' | `ok \| needs-reconnect \| error` |
+| `failure_count` / `last_error` | int / varchar(1000) | cinco falhas seguidas ⇒ `error` |
+
+## agd010_event_link
+
+Um evento do Pandora ↔ um evento do Google de um vínculo: o que impede a sincronização de duplicar.
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | |
+| `binding_id` | uuid → agd009 | |
+| `event_id` | uuid → agd002 | único (`uq_agd010_event`) |
+| `remote_event_id` | varchar(1024) | único por vínculo (`uq_agd010_binding_remote`) |
+| `series_remote_id` | varchar(1024) NULL | preenchido nos eventos únicos feitos das instâncias de uma série que o Pandora não expande |
+| `etag` / `remote_updated_at` | | o que o Google disse por último |
+| `reminders_hash` | varchar(64) NULL | os lembretes do Google de que os alertas do evento foram escritos |
+| `created_at` | timestamptz | |
+
+## agd011 *(reservada — fase 5b)*
+
+`sync_conflict`: o lado perdedor de um conflito nos dois sentidos. Ver [product-plan.md](product-plan.md).

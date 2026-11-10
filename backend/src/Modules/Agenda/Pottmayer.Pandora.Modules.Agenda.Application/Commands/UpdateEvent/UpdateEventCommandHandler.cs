@@ -1,6 +1,7 @@
 using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 using Pottmayer.Pandora.Modules.Agenda.Application.Dtos;
 using Pottmayer.Pandora.Modules.Agenda.Application.Errors;
+using Pottmayer.Pandora.Modules.Agenda.Application.Google;
 using Pottmayer.Pandora.Modules.Agenda.Application.Mapping;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Ports.Repositories;
@@ -34,6 +35,9 @@ public sealed class UpdateEventCommandHandler(IUnitOfWorkFactory factory, TimePr
             var ev = await events.FindAsync(input.UserId, input.EventId, token);
             if (ev is null)
                 return Result<EventDto>.Failure([EventErrors.NotFound]);
+            if (await ExternalCalendars.IsReadOnlyAsync(context, input.UserId, ev.CalendarId, token)
+                || (input.CalendarId is { } target && await ExternalCalendars.IsReadOnlyAsync(context, input.UserId, target, token)))
+                return Result<EventDto>.Failure([CalendarErrors.ReadOnly]);
 
             try
             {

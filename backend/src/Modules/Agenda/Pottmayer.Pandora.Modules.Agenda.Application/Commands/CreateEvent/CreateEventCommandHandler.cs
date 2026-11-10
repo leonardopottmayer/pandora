@@ -35,6 +35,8 @@ public sealed class CreateEventCommandHandler(
             var calendar = await calendars.FindAsync(input.UserId, input.CalendarId, token);
             if (calendar is null)
                 return Result<EventDto>.Failure([EventErrors.CalendarNotFound]);
+            if (calendar.IsExternal)
+                return Result<EventDto>.Failure([CalendarErrors.ReadOnly]);
 
             Event created;
             try

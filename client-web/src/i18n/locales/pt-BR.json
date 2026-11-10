@@ -1980,6 +1980,37 @@
     }
   },
   "agenda": {
+    "google": {
+      "title": "Google Agenda",
+      "intro": "Traga calendários de uma conta Google. Cada um vira um calendário aqui, sincronizado a cada dois minutos. Os eventos deles são editados no Google, e os lembretes do Google tocam pelo Pandora.",
+      "addLabel": "Adicionar calendários",
+      "addDesc": "Escolha a conta Google e depois os calendários que quer trazer.",
+      "primary": "Principal",
+      "allBound": "Todos os calendários desta conta já estão aqui.",
+      "bring_one": "Trazer {{count}} calendário",
+      "bring_other": "Trazer {{count}} calendários",
+      "bound_one": "{{count}} calendário vinculado. Trazendo os eventos…",
+      "bound_other": "{{count}} calendários vinculados. Trazendo os eventos…",
+      "bindError": "Não foi possível vincular os calendários.",
+      "listError": "Não foi possível ler os calendários desta conta.",
+      "lastSynced": "Sincronizado {{when}}",
+      "neverSynced": "Ainda não sincronizado",
+      "syncNow": "Sincronizar agora",
+      "synced": "Sincronizado.",
+      "syncError": "Não foi possível sincronizar.",
+      "unlink": "Desvincular",
+      "unlinkTitle": "Parar de sincronizar este calendário?",
+      "unlinkDesc": "Ele continua aqui com os eventos, como um calendário que você pode editar. Nada muda no Google.",
+      "unlinked": "Calendário desvinculado.",
+      "unlinkError": "Não foi possível desvincular o calendário.",
+      "readOnlyEvent": "Este evento vem do Google Agenda. Edite lá; a mudança aparece aqui em até dois minutos.",
+      "openGoogle": "Abrir o Google Agenda",
+      "status": {
+        "ok": "Sincronizando",
+        "needs-reconnect": "Reconecte a conta",
+        "error": "Parado"
+      }
+    },
     "settings": {
       "title": "Configurações da Agenda",
       "intro": "Padrões para novos itens da agenda.",

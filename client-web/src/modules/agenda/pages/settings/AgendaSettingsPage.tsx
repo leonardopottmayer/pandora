@@ -9,6 +9,7 @@ import type { WeekStartsOn } from '@/modules/identity/models'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { useAgendaPreferences, useSaveAgendaPreferences } from '../../hooks/useAgendaPreferences'
 import { useCalendars, useUpdateCalendar } from '../../hooks/useCalendars'
+import { GoogleCalendarSection } from './GoogleCalendarSection'
 
 export function AgendaSettingsPage() {
   const { t } = useTranslation()
@@ -99,6 +100,8 @@ export function AgendaSettingsPage() {
           }
         />
       </SettingsSection>
+
+      <GoogleCalendarSection />
 
       <SettingsSection title={t('agenda.settings.groupInherited')}>
         <SettingRow

@@ -142,6 +142,9 @@ export function EventDetailModal({ open, occurrence, calendars, onClose }: Event
   ]
 
   const color = calendars.find((c) => c.id === occurrence.calendarId)?.color ?? token.colorPrimary
+  // A calendar fed by Google is written by the sync only: its events are edited in Google.
+  const fromGoogle = calendars.find((c) => c.id === occurrence.calendarId)?.origin === 'External'
+  const movableTo = calendars.filter((c) => c.origin !== 'External')
   const line = (icon: ReactNode, content: ReactNode) => (
     <div className="flex items-start gap-3">
       <span className="w-4 shrink-0 pt-0.5 text-center" style={{ color: token.colorTextTertiary }}>
@@ -198,7 +201,18 @@ export function EventDetailModal({ open, occurrence, calendars, onClose }: Event
             line(<AlignLeftOutlined />, <span className="whitespace-pre-wrap">{occurrence.description}</span>)}
           {line(<BellOutlined />, <AlertsEditor subjectType="event" subjectId={occurrence.eventId} />)}
 
-          {choosingDeleteScope ? (
+          {fromGoogle ? (
+            <Alert
+              type="info"
+              showIcon
+              title={t('agenda.google.readOnlyEvent')}
+              action={
+                <Typography.Link href="https://calendar.google.com/" target="_blank" rel="noreferrer">
+                  {t('agenda.google.openGoogle')}
+                </Typography.Link>
+              }
+            />
+          ) : choosingDeleteScope ? (
             <div className="flex flex-col gap-2 rounded-lg p-3" style={{ background: token.colorFillQuaternary }}>
               <Typography.Text strong>{t('agenda.events.deleteWhich')}</Typography.Text>
               <div className="flex flex-wrap gap-2">
@@ -240,7 +254,7 @@ export function EventDetailModal({ open, occurrence, calendars, onClose }: Event
             <Input maxLength={200} />
           </Form.Item>
           <Form.Item name="calendarId" label={t('agenda.events.calendar')} rules={[{ required: true, message: t('agenda.events.calendarRequired') }]}>
-            <Select options={calendars.map((c) => ({ value: c.id, label: c.name }))} />
+            <Select options={movableTo.map((c) => ({ value: c.id, label: c.name }))} />
           </Form.Item>
           <Form.Item name="range" label={t('agenda.events.startsAt')} rules={[{ required: true, message: t('agenda.events.startRequired') }]}>
             <DatePicker.RangePicker format="DD/MM/YYYY HH:mm" showTime={{ format: 'HH:mm' }} style={{ width: '100%' }} />

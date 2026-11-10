@@ -73,13 +73,13 @@ dispatch por ocorrência; o motor de recorrência RRULE (parse + expand, ciente 
 listas, subtarefas, prioridade, vencimentos, concluir/reabrir, materialização recorrente e alertas;
 calendários e eventos com ocorrências calculadas, overrides e os escopos de edição esta /
 esta-e-futuras / todas; o alerta polimórfico com três sweeps de background; a leitura unificada
-`GET /agenda/today`; botões inline do Telegram roteados de volta pelo Channels; as 15 ferramentas do Assistant; e o frontend (Hoje,
+`GET /agenda/today`; botões inline do Telegram roteados de volta pelo Channels; a sincronização Google → Pandora (`agd009`, `agd010`); as 15 ferramentas do Assistant; e o frontend (Hoje,
 Lembretes, Tarefas, Calendário, Configurações).
 
 ### Fora do escopo / futuro (ver [product-plan.md](product-plan.md))
 
 | Recurso | Status |
 |---|---|
-| **Sync Google Calendar** (fase 5) | Não implementado — tabelas de sync (`agd009`–`agd012`), provedores, cursores, log de conflito ausentes. Depende de [Integrations](../../integrations/pt-BR/overview.md). |
+| **Sync Pandora → Google** (fase 5b) | Não implementado — calendários do Google são somente leitura aqui. Ver [product-plan.md](product-plan.md). |
 | **Sync Google Tasks** (fase 6) | Não implementado. |
 | **Além** | Links Nota↔evento, quick-add em linguagem natural, tempo de deslocamento, ICS/CalDAV, provedores Microsoft/Apple, vencimentos do Finances na visão do dia. |
