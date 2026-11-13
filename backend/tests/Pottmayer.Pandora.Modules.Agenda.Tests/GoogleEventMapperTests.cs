@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Pottmayer.Pandora.Modules.Agenda.Application.Google;
+using Pottmayer.Pandora.Modules.Agenda.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Agenda.Domain.ValueObjects;
 using Xunit;
 
@@ -123,5 +124,57 @@ public sealed class GoogleEventMapperTests
 
         Assert.Equal(new DateTimeOffset(2026, 11, 9, 12, 0, 0, TimeSpan.Zero), GoogleEventMapper.OriginalStart(exception, Zone));
         Assert.Equal(GoogleEventMapper.UntitledTitle, GoogleEventMapper.Map(exception, Zone).Title);
+    }
+    // ── Pandora → Google ──
+
+    private static Event NewEvent(DateTimeOffset start, DateTimeOffset end, bool allDay, string? rrule = null) =>
+        Event.Create(Guid.NewGuid(), Guid.NewGuid(), "Plantão", null, null, null, start, end, allDay, Zone, rrule,
+            EventStatus.Confirmed, TimeProvider.System);
+
+    [Fact]
+    public void An_all_day_event_goes_as_local_dates_with_an_exclusive_end()
+    {
+        // 15 Nov in São Paulo is 03:00 UTC.
+        var ev = NewEvent(new(2026, 11, 15, 3, 0, 0, TimeSpan.Zero), new(2026, 11, 16, 3, 0, 0, TimeSpan.Zero), allDay: true);
+
+        var write = GoogleEventMapper.ToGoogle(ev, [], id: null, isInstance: false);
+
+        Assert.Equal("2026-11-15", write.Start!.Date);
+        Assert.Equal("2026-11-16", write.End!.Date);
+        Assert.Null(write.Start.DateTime);
+        Assert.Empty(write.Recurrence!); // no rule: a rule removed in Pandora goes away in Google too
+        Assert.Equal("", write.Description);
+    }
+
+    [Fact]
+    public void A_series_goes_with_its_rule_and_an_instance_without_one()
+    {
+        var ev = NewEvent(new(2026, 11, 2, 12, 0, 0, TimeSpan.Zero), new(2026, 11, 2, 13, 0, 0, TimeSpan.Zero), false, "FREQ=WEEKLY;BYDAY=MO");
+
+        Assert.Equal(["RRULE:FREQ=WEEKLY;BYDAY=MO"], GoogleEventMapper.ToGoogle(ev, [], null, isInstance: false).Recurrence);
+        Assert.Null(GoogleEventMapper.ToGoogle(ev, [], null, isInstance: true).Recurrence);
+        Assert.Equal(Zone, GoogleEventMapper.ToGoogle(ev, [], null, false).Start!.TimeZone);
+    }
+
+    [Fact]
+    public void Instance_ids_follow_googles_shape()
+    {
+        var timed = NewEvent(new(2026, 11, 2, 12, 0, 0, TimeSpan.Zero), new(2026, 11, 2, 13, 0, 0, TimeSpan.Zero), false, "FREQ=DAILY");
+        var allDay = NewEvent(new(2026, 11, 2, 3, 0, 0, TimeSpan.Zero), new(2026, 11, 3, 3, 0, 0, TimeSpan.Zero), true, "FREQ=DAILY");
+
+        Assert.Equal("s1_20261109T120000Z", GoogleEventMapper.InstanceId("s1", timed, new(2026, 11, 9, 12, 0, 0, TimeSpan.Zero)));
+        Assert.Equal("s1_20261109", GoogleEventMapper.InstanceId("s1", allDay, new(2026, 11, 9, 3, 0, 0, TimeSpan.Zero)));
+    }
+
+    [Fact]
+    public void Alerts_become_at_most_five_popup_reminders_before_the_start()
+    {
+        var reminders = GoogleEventMapper.Reminders([10, -5, -5, -60, -1440, -15, -30, -120, -50000]);
+
+        Assert.False(reminders.UseDefault);
+        Assert.Equal([5, 15, 30, 60, 120], reminders.Overrides!.Select(r => r.Minutes));
+        Assert.All(reminders.Overrides!, r => Assert.Equal("popup", r.Method));
+        // They come back from Google as the same alerts, so the hash matches the reading side's.
+        Assert.Equal(GoogleEventMapper.HashOffsets([-120, -60, -30, -15, -5]), GoogleEventMapper.HashReminders(reminders));
     }
 }

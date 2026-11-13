@@ -14,13 +14,17 @@ public sealed class GetCalendarsQueryHandler(IUnitOfWorkFactory factory)
     protected override async Task<Result<IReadOnlyList<CalendarDto>>> HandleAsync(
         GetCalendarsQuery request, CancellationToken cancellationToken)
     {
-        var calendars = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, ct) =>
+        var (calendars, writable) = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, ct) =>
         {
-            var repo = context.AcquireRepository<ICalendarRepository>();
-            return await repo.GetByUserAsync(request.Input.UserId, ct);
+            var userId = request.Input.UserId;
+            // A Google calendar is read-only here unless its binding sends Pandora's edits there.
+            var writable = (await context.AcquireRepository<ICalendarBindingRepository>().GetByUserAsync(userId, ct))
+                .Where(b => b.CanWrite).Select(b => b.CalendarId).ToHashSet();
+            return (await context.AcquireRepository<ICalendarRepository>().GetByUserAsync(userId, ct), writable);
         }, cancellationToken: cancellationToken);
 
-        IReadOnlyList<CalendarDto> dtos = [.. calendars.Select(c => c.ToDto())];
+        IReadOnlyList<CalendarDto> dtos =
+            [.. calendars.Select(c => c.ToDto(isReadOnly: c.IsExternal && !writable.Contains(c.Id)))];
         return Ok(dtos);
     }
 }

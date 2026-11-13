@@ -5,7 +5,8 @@ namespace Pottmayer.Pandora.Modules.Agenda.Application.Mapping;
 
 internal static class CalendarMapper
 {
-    public static CalendarDto ToDto(this Calendar calendar) => new(
+    /// <summary><paramref name="isReadOnly"/> comes from the calendar's binding; unknown, an external calendar counts as read-only.</summary>
+    public static CalendarDto ToDto(this Calendar calendar, bool? isReadOnly = null) => new(
         calendar.Id,
         calendar.Name,
         calendar.Color,
@@ -13,7 +14,8 @@ internal static class CalendarMapper
         calendar.IsVisible,
         calendar.TimeZone,
         calendar.Origin.ToString(),
-        calendar.ArchivedAt);
+        calendar.ArchivedAt,
+        isReadOnly ?? calendar.IsExternal);
 
     public static EventDto ToDto(this Event ev) => new(
         ev.Id,

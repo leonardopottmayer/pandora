@@ -55,3 +55,18 @@ public sealed record GoogleEvent(
 
 /// <summary>Every page of one <c>events.list</c>, and the cursor Google gave on its last page.</summary>
 public sealed record GoogleEventListing(IReadOnlyList<GoogleEvent> Events, string? NextSyncToken);
+
+/// <summary>
+/// What Pandora sends on an insert or a patch. A null field is left out of the JSON, so a patch keeps
+/// what Pandora does not hold (attendees, conference, colors); an empty string or list clears a field.
+/// </summary>
+public sealed record GoogleEventWrite(
+    string? Id,
+    string? Status,
+    string? Summary,
+    string? Description,
+    string? Location,
+    GoogleEventTime? Start,
+    GoogleEventTime? End,
+    IReadOnlyList<string>? Recurrence,
+    GoogleEventReminders? Reminders);

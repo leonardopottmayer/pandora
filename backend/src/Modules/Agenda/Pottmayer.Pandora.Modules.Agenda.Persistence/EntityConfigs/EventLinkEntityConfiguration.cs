@@ -20,6 +20,7 @@ internal sealed class EventLinkEntityConfiguration : IEntityTypeConfiguration<Ev
         builder.Property(l => l.Etag).HasColumnName("etag").HasMaxLength(255);
         builder.Property(l => l.RemoteUpdatedAt).HasColumnName("remote_updated_at");
         builder.Property(l => l.RemindersHash).HasColumnName("reminders_hash").HasMaxLength(64);
+        builder.Property(l => l.PendingPushAt).HasColumnName("pending_push_at");
         builder.Property(l => l.CreatedAt).HasColumnName("created_at").IsRequired();
 
         // Declared so EF orders an event's insert before its link's, and a link's delete before its binding's.

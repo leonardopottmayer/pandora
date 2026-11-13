@@ -25,7 +25,7 @@ As migrations ficam em `migrations/migrations/agenda/`.
 | agd008 | `alert_dispatch` | Ledger de idempotência do disparo de alerta |
 | agd009 | `calendar_binding` | Um calendário do Pandora alimentado por um calendário do Google |
 | agd010 | `event_link` | Um evento do Pandora ligado ao evento do Google |
-| agd011 | *(reservada)* | Conflitos de sincronização — fase 5b |
+| agd011 | `sync_conflict` | Eventos mudados dos dois lados; a versão que perdeu |
 | agd013 | `preferences` | O que o usuário prefere na própria Agenda |
 
 ---
@@ -201,7 +201,7 @@ O que o usuário prefere na própria Agenda, uma linha por usuário. Sem linha, 
 ## agd009_calendar_binding
 
 Um calendário do Pandora alimentado por um calendário do Google de uma conta do Integrations. Ver
-[Calendário e Eventos §6](calendar-and-events.md#6-google-agenda-google--pandora).
+[Calendário e Eventos §6](calendar-and-events.md#6-google-agenda).
 
 | Coluna | Tipo | Notas |
 |---|---|---|
@@ -209,7 +209,7 @@ Um calendário do Pandora alimentado por um calendário do Google de uma conta d
 | `calendar_id` | uuid → agd001 | único (`uq_agd009_calendar`) |
 | `external_account_id` | uuid | a conta do Integrations; sem FK (outro módulo) |
 | `remote_calendar_id` | varchar(255) | único por conta (`uq_agd009_account_remote`) |
-| `direction` | varchar(20) DEFAULT 'read' | `read \| read-write`; só `read` até a fase 5b |
+| `direction` | varchar(20) DEFAULT 'read' | `read \| read-write`; `read-write` quando a conta tem ou pode editar o calendário do Google |
 | `sync_token` | text NULL | o cursor do Google; NULL ⇒ o próximo ciclo lista tudo |
 | `full_synced_at` / `last_synced_at` | timestamptz NULL | uma listagem completa roda de novo depois de 30 dias |
 | `status` | varchar(20) DEFAULT 'ok' | `ok \| needs-reconnect \| error` |
@@ -228,8 +228,22 @@ Um evento do Pandora ↔ um evento do Google de um vínculo: o que impede a sinc
 | `series_remote_id` | varchar(1024) NULL | preenchido nos eventos únicos feitos das instâncias de uma série que o Pandora não expande |
 | `etag` / `remote_updated_at` | | o que o Google disse por último |
 | `reminders_hash` | varchar(64) NULL | os lembretes do Google de que os alertas do evento foram escritos |
+| `pending_push_at` | timestamptz NULL | quando o Pandora mudou o evento pela última vez sem o Google ter recebido; índice parcial `ix_agd010_binding_pending` |
 | `created_at` | timestamptz | |
 
-## agd011 *(reservada — fase 5b)*
+`etag` NULL num link pendente ⇒ o evento nasceu no Pandora e ainda não está no Google; o
+`remote_event_id` é o id com que o Pandora vai inseri-lo.
 
-`sync_conflict`: o lado perdedor de um conflito nos dois sentidos. Ver [product-plan.md](product-plan.md).
+## agd011_sync_conflict
+
+Um evento que os dois lados mudaram entre duas sincronizações: venceu a edição mais recente, a outra fica
+aqui. Um log, sem chaves estrangeiras, então sobrevive a um calendário desvinculado.
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id`, `user_id` | uuid | índice `ix_agd011_user_detected (user_id, detected_at DESC)` |
+| `binding_id`, `event_id` | uuid | |
+| `title` | varchar(200) | o título do evento no Pandora quando o conflito foi detectado |
+| `losing_side` | varchar(20) | `pandora \| google` |
+| `losing_version` | jsonb | a versão que perdeu, no formato de evento do Google |
+| `detected_at` | timestamptz | |

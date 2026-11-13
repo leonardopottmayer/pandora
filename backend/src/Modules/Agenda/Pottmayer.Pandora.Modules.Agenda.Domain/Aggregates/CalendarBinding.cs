@@ -7,7 +7,8 @@ namespace Pottmayer.Pandora.Modules.Agenda.Domain.Aggregates;
 /// <summary>
 /// One Pandora <see cref="Calendar"/> bound to one Google calendar of one Integrations account (doc
 /// agd009). It carries the sync cursor: Google's <see cref="SyncToken"/>, null until the first full
-/// sync. Only Google → Pandora exists today, so a bound calendar is read-only in Pandora.
+/// sync. A <see cref="CalendarBindingDirection.Read"/> binding keeps the calendar read-only in Pandora;
+/// a <see cref="CalendarBindingDirection.ReadWrite"/> one sends Pandora's edits to Google too.
 /// </summary>
 public sealed class CalendarBinding : AggregateRoot<Guid>, IAuditable
 {
@@ -20,6 +21,10 @@ public sealed class CalendarBinding : AggregateRoot<Guid>, IAuditable
     public Guid CalendarId { get; private set; }
     public Guid ExternalAccountId { get; private set; }
     public string RemoteCalendarId { get; private set; } = string.Empty;
+    public CalendarBindingDirection Direction { get; private set; } = CalendarBindingDirection.Read;
+
+    /// <summary>Whether Pandora's edits in this calendar go to Google.</summary>
+    public bool CanWrite => Direction == CalendarBindingDirection.ReadWrite;
 
     /// <summary>Google's cursor for the next incremental listing. Null ⇒ the next cycle lists everything.</summary>
     public string? SyncToken { get; private set; }
@@ -40,7 +45,8 @@ public sealed class CalendarBinding : AggregateRoot<Guid>, IAuditable
     private CalendarBinding() { }
 
     public static CalendarBinding Create(
-        Guid userId, Guid calendarId, Guid externalAccountId, string remoteCalendarId, TimeProvider timeProvider)
+        Guid userId, Guid calendarId, Guid externalAccountId, string remoteCalendarId,
+        CalendarBindingDirection direction, TimeProvider timeProvider)
     {
         if (string.IsNullOrWhiteSpace(remoteCalendarId))
             throw new ArgumentException("A binding needs the remote calendar's id.", nameof(remoteCalendarId));
@@ -52,6 +58,7 @@ public sealed class CalendarBinding : AggregateRoot<Guid>, IAuditable
             CalendarId = calendarId,
             ExternalAccountId = externalAccountId,
             RemoteCalendarId = remoteCalendarId,
+            Direction = direction,
             CreatedAt = timeProvider.GetUtcNow()
         };
     }
@@ -87,6 +94,12 @@ public sealed class CalendarBinding : AggregateRoot<Guid>, IAuditable
         LastError = Trim(error);
         Status = CalendarBindingStatus.NeedsReconnect;
     }
+
+    /// <summary>
+    /// Some of Pandora's edits did not reach Google this cycle; they are retried on the next. Shown, not
+    /// counted: the reading side worked, so the binding keeps running.
+    /// </summary>
+    public void NotePushFailure(string error) => LastError = Trim(error);
 
     /// <summary>"Sync now": a stopped binding tries again from where it was.</summary>
     public void Resume()

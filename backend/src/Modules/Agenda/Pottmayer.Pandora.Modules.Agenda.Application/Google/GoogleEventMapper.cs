@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using Pottmayer.Pandora.Modules.Agenda.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Recurrence;
 using Pottmayer.Pandora.Modules.Agenda.Domain.ValueObjects;
 
@@ -21,7 +22,7 @@ public sealed record MappedEvent(
     EventStatus Status);
 
 /// <summary>
-/// Google event → Pandora event, as a pure function: no clock, no I/O, so it is tested against real
+/// Google event ↔ Pandora event, as pure functions: no clock, no I/O, so they are tested against real
 /// Google JSON. All-day dates become midnights in the event's zone with an exclusive end, like Pandora's
 /// own all-day events; <c>EXDATE</c> lines become the starts of cancelled occurrences.
 /// </summary>
@@ -114,6 +115,75 @@ public static class GoogleEventMapper
         var text = string.Join(',', offsets.Select(o => o.ToString(CultureInfo.InvariantCulture)));
         return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)))[..32];
     }
+
+    /// <summary>Google keeps at most this many reminder overrides on an event.</summary>
+    public const int MaxReminders = 5;
+
+    /// <summary>Google's longest reminder: four weeks.</summary>
+    private const int MaxReminderMinutes = 40320;
+
+    /// <summary>
+    /// Pandora event → what Google gets. An instance (one occurrence of a series Pandora holds as single
+    /// events) sends no recurrence; a single event sends an empty one, so a rule removed in Pandora goes
+    /// away in Google too. The meeting link stays Google's: Google has no plain field for it.
+    /// </summary>
+    public static GoogleEventWrite ToGoogle(Event ev, IEnumerable<int> alertOffsets, string? id, bool isInstance) => new(
+        id,
+        ev.Status == EventStatus.Tentative ? "tentative" : ev.Status == EventStatus.Cancelled ? "cancelled" : "confirmed",
+        ev.Title,
+        ev.Description ?? string.Empty,
+        ev.Location ?? string.Empty,
+        TimeOf(ev.StartsAt, ev.IsAllDay, ev.TimeZone),
+        TimeOf(ev.EndsAt, ev.IsAllDay, ev.TimeZone),
+        isInstance ? null
+            : ev.Rrule is null ? []
+            : [ev.Rrule.StartsWith("RRULE:", StringComparison.OrdinalIgnoreCase) ? ev.Rrule : "RRULE:" + ev.Rrule],
+        Reminders(alertOffsets));
+
+    /// <summary>One edited occurrence of a series, as a patch of its Google instance. A null field takes the series'.</summary>
+    public static GoogleEventWrite ToGoogle(EventOccurrenceOverride occurrence, Event series)
+    {
+        var start = occurrence.StartsAt ?? occurrence.OriginalStartsAt;
+        var end = occurrence.EndsAt ?? start + series.Duration;
+        return new GoogleEventWrite(
+            null, null,
+            occurrence.Title ?? series.Title,
+            occurrence.Description ?? series.Description ?? string.Empty,
+            occurrence.Location ?? series.Location ?? string.Empty,
+            TimeOf(start, series.IsAllDay, series.TimeZone),
+            TimeOf(end, series.IsAllDay, series.TimeZone),
+            null, null);
+    }
+
+    /// <summary>
+    /// Google's id for one occurrence of a series: the series id, <c>_</c>, and the original start — the
+    /// local date for an all-day series, the UTC instant otherwise.
+    /// </summary>
+    public static string InstanceId(string seriesRemoteId, Event series, DateTimeOffset originalStart) =>
+        series.IsAllDay
+            ? $"{seriesRemoteId}_{TimeZoneInfo.ConvertTime(originalStart, series.ResolveZone()):yyyyMMdd}"
+            : $"{seriesRemoteId}_{originalStart.UtcDateTime.ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture)}";
+
+    /// <summary>
+    /// Pandora's alerts as Google popup reminders: only those before the start (Google has no "after"),
+    /// up to four weeks, the <see cref="MaxReminders"/> nearest.
+    /// </summary>
+    public static GoogleEventReminders Reminders(IEnumerable<int> alertOffsets) => new(
+        false,
+        alertOffsets.Where(o => o <= 0).Select(o => -o).Where(m => m <= MaxReminderMinutes)
+            .Distinct().Order().Take(MaxReminders)
+            .Select(m => new GoogleReminder("popup", m)).ToList());
+
+    /// <summary>The hash <see cref="HashOffsets"/> gives the alerts these reminders come back as.</summary>
+    public static string HashReminders(GoogleEventReminders reminders) =>
+        HashOffsets((reminders.Overrides ?? []).Select(r => -Math.Max(0, r.Minutes)).Distinct().Order().ToList());
+
+    private static GoogleEventTime TimeOf(DateTimeOffset instant, bool isAllDay, string zone) =>
+        isAllDay
+            ? new GoogleEventTime(
+                TimeZoneInfo.ConvertTime(instant, TimeZoneInfo.FindSystemTimeZoneById(zone)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                null, null)
+            : new GoogleEventTime(null, instant.ToUniversalTime(), zone);
 
     private static string? MeetingUrl(GoogleEvent google) =>
         google.HangoutLink

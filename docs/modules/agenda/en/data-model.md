@@ -25,7 +25,7 @@ Migrations live in `migrations/migrations/agenda/`.
 | agd008 | `alert_dispatch` | Idempotency ledger for alert firing |
 | agd009 | `calendar_binding` | A Pandora calendar fed by a Google calendar |
 | agd010 | `event_link` | A Pandora event linked to its Google event |
-| agd011 | *(reserved)* | Sync conflicts — phase 5b |
+| agd011 | `sync_conflict` | Events both sides changed; the version that lost |
 | agd013 | `preferences` | What a user prefers about the Agenda itself |
 
 ---
@@ -198,7 +198,7 @@ What a user prefers about the Agenda itself, one row per user. No row means the 
 ## agd009_calendar_binding
 
 One Pandora calendar fed by one Google calendar of one Integrations account. See
-[Calendar & Events §6](calendar-and-events.md#6-google-calendar-google--pandora).
+[Calendar & Events §6](calendar-and-events.md#6-google-calendar).
 
 | Column | Type | Notes |
 |---|---|---|
@@ -206,7 +206,7 @@ One Pandora calendar fed by one Google calendar of one Integrations account. See
 | `calendar_id` | uuid → agd001 | unique (`uq_agd009_calendar`) |
 | `external_account_id` | uuid | the Integrations account; no FK (another module) |
 | `remote_calendar_id` | varchar(255) | unique per account (`uq_agd009_account_remote`) |
-| `direction` | varchar(20) DEFAULT 'read' | `read \| read-write`; only `read` until phase 5b |
+| `direction` | varchar(20) DEFAULT 'read' | `read \| read-write`; `read-write` when the account owns or may edit the Google calendar |
 | `sync_token` | text NULL | Google's cursor; NULL ⇒ the next cycle lists everything |
 | `full_synced_at` / `last_synced_at` | timestamptz NULL | a full listing runs again after 30 days |
 | `status` | varchar(20) DEFAULT 'ok' | `ok \| needs-reconnect \| error` |
@@ -225,8 +225,22 @@ One Pandora event ↔ one Google event of a binding: what keeps a sync from dupl
 | `series_remote_id` | varchar(1024) NULL | set on the single events made from the instances of a series Pandora cannot expand |
 | `etag` / `remote_updated_at` | | what Google said last |
 | `reminders_hash` | varchar(64) NULL | the Google reminders the event's alerts were written from |
+| `pending_push_at` | timestamptz NULL | when Pandora last changed the event without Google having it; partial index `ix_agd010_binding_pending` |
 | `created_at` | timestamptz | |
 
-## agd011 *(reserved — phase 5b)*
+`etag` NULL on a pending link ⇒ the event was born in Pandora and is not in Google yet; its
+`remote_event_id` is the id Pandora will insert it with.
 
-`sync_conflict`: the losing side of a two-way conflict. See [product-plan.md](product-plan.md).
+## agd011_sync_conflict
+
+An event both sides changed between two syncs: the newer edit won, the other is kept here. A log, with
+no foreign keys, so it outlives an unlinked calendar.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id`, `user_id` | uuid | index `ix_agd011_user_detected (user_id, detected_at DESC)` |
+| `binding_id`, `event_id` | uuid | |
+| `title` | varchar(200) | the event's title in Pandora when detected |
+| `losing_side` | varchar(20) | `pandora \| google` |
+| `losing_version` | jsonb | the version that lost, in Google's event shape |
+| `detected_at` | timestamptz | |

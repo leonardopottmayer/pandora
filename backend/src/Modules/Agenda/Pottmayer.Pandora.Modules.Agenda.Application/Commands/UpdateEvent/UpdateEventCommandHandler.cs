@@ -7,6 +7,7 @@ using Pottmayer.Pandora.Modules.Agenda.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Ports.Repositories;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
+using Pottmayer.Tars.Data.Abstractions.DataContext;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Commands.UpdateEvent;
@@ -38,15 +39,24 @@ public sealed class UpdateEventCommandHandler(IUnitOfWorkFactory factory, TimePr
             if (await ExternalCalendars.IsReadOnlyAsync(context, input.UserId, ev.CalendarId, token)
                 || (input.CalendarId is { } target && await ExternalCalendars.IsReadOnlyAsync(context, input.UserId, target, token)))
                 return Result<EventDto>.Failure([CalendarErrors.ReadOnly]);
+            // An event lives in one Google calendar: moving it in or out would be a delete there and an insert elsewhere.
+            if (input.CalendarId is { } moveTo && moveTo != ev.CalendarId
+                && (await ExternalCalendars.IsBoundAsync(context, ev.CalendarId, token)
+                    || await ExternalCalendars.IsBoundAsync(context, moveTo, token)))
+                return Result<EventDto>.Failure([CalendarErrors.MoveAcrossGoogle]);
 
             try
             {
-                return input.Scope switch
+                var result = input.Scope switch
                 {
                     EventEditScope.This => await EditOccurrenceAsync(ev, input, overrides, token),
-                    EventEditScope.ThisAndFuture => await SplitAsync(ev, input, events, token),
+                    EventEditScope.ThisAndFuture => await SplitAsync(ev, input, events, context, token),
                     _ => await EditSeriesAsync(ev, input, events, token),
                 };
+
+                if (result.IsSuccess)
+                    await ExternalCalendars.MarkChangedAsync(context, ev, timeProvider, token);
+                return result;
             }
             catch (ArgumentException ex)
             {
@@ -83,7 +93,7 @@ public sealed class UpdateEventCommandHandler(IUnitOfWorkFactory factory, TimePr
 
     // ── this-and-future: end the original before the cut, spawn a new event for the tail ──
     private async Task<Result<EventDto>> SplitAsync(
-        Event ev, UpdateEventInput input, IEventRepository events, CancellationToken token)
+        Event ev, UpdateEventInput input, IEventRepository events, IDataContext context, CancellationToken token)
     {
         if (!ev.IsRecurring)
             return Result<EventDto>.Failure([EventErrors.NotRecurring]);
@@ -117,6 +127,7 @@ public sealed class UpdateEventCommandHandler(IUnitOfWorkFactory factory, TimePr
             timeProvider);
 
         await events.AddAsync(tail, token);
+        await ExternalCalendars.MarkChangedAsync(context, tail, timeProvider, token);
         return Result<EventDto>.Success(tail.ToDto());
     }
 

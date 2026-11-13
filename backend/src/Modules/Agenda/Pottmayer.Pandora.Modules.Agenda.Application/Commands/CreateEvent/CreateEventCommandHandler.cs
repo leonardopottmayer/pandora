@@ -1,6 +1,7 @@
 using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 using Pottmayer.Pandora.Modules.Agenda.Application.Dtos;
 using Pottmayer.Pandora.Modules.Agenda.Application.Errors;
+using Pottmayer.Pandora.Modules.Agenda.Application.Google;
 using Pottmayer.Pandora.Modules.Agenda.Application.Mapping;
 using Pottmayer.Pandora.Modules.Agenda.Application.Preferences;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Aggregates;
@@ -35,7 +36,7 @@ public sealed class CreateEventCommandHandler(
             var calendar = await calendars.FindAsync(input.UserId, input.CalendarId, token);
             if (calendar is null)
                 return Result<EventDto>.Failure([EventErrors.CalendarNotFound]);
-            if (calendar.IsExternal)
+            if (await ExternalCalendars.IsReadOnlyAsync(context, input.UserId, calendar.Id, token))
                 return Result<EventDto>.Failure([CalendarErrors.ReadOnly]);
 
             Event created;
@@ -53,6 +54,7 @@ public sealed class CreateEventCommandHandler(
             }
 
             await events.AddAsync(created, token);
+            await ExternalCalendars.MarkChangedAsync(context, created, timeProvider, token);
             return Result<EventDto>.Success(created.ToDto());
         }, cancellationToken: ct);
 

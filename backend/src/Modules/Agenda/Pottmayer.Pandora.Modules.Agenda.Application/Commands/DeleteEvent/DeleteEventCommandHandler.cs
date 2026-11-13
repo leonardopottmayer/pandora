@@ -51,6 +51,8 @@ public sealed class DeleteEventCommandHandler(IUnitOfWorkFactory factory, TimePr
                         await events.UpdateAsync(ev, token);
                         break;
                 }
+
+                await ExternalCalendars.MarkChangedAsync(context, ev, timeProvider, token);
             }
             catch (ArgumentException ex)
             {

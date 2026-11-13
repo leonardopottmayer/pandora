@@ -19,7 +19,8 @@ public sealed class CalendarSyncGates
 }
 
 /// <summary>
-/// One sync cycle of a binding, Google → Pandora. Reads Google first (the calendar's default reminders,
+/// One sync cycle of a binding. A <c>read-write</c> binding first sends Pandora's edits
+/// (<see cref="GoogleCalendarPush"/>). Then Google → Pandora: reads Google first (the calendar's default reminders,
 /// the events, the instances of series Pandora cannot expand), then applies everything in one unit of
 /// work: events, cancelled and edited occurrences, alerts, links, and the binding's new cursor.
 /// </summary>
@@ -49,10 +50,23 @@ public sealed class GoogleCalendarSync(
 
         try
         {
-            var binding = await factory.ExecuteAsync(AgendaModule.DatabaseKey, (context, token) =>
-                context.AcquireRepository<ICalendarBindingRepository>().GetAsync(bindingId, token), cancellationToken: ct);
+            var binding = await LoadAsync(bindingId, ct);
             if (binding is null)
                 return Result<bool>.Failure([GoogleCalendarErrors.BindingNotFound]);
+
+            // Pandora's edits go first, so the reading half sees them come back instead of overwriting them.
+            string? pushFailure = null;
+            if (binding.CanWrite)
+            {
+                var pushed = await new GoogleCalendarPush(factory, google, timeProvider).PushAsync(binding, ct);
+                if (pushed.Fatal is { } fatal)
+                {
+                    await RecordFailureAsync(bindingId, fatal, ct);
+                    return Result<bool>.Success(false);
+                }
+                pushFailure = pushed.Failure;
+                binding = await LoadAsync(bindingId, ct) ?? binding; // a conflict Google won resets the cursor
+            }
 
             var fetched = await FetchAsync(binding, ct);
             if (!fetched.IsSuccess)
@@ -62,7 +76,7 @@ public sealed class GoogleCalendarSync(
             }
 
             await factory.ExecuteAsync(AgendaModule.DatabaseKey, (context, token) =>
-                new Applier(context, binding, fetched.Value!, timeProvider).ApplyAsync(token), cancellationToken: ct);
+                new Applier(context, binding, fetched.Value!, pushFailure, timeProvider).ApplyAsync(token), cancellationToken: ct);
             return Result<bool>.Success(true);
         }
         finally
@@ -70,6 +84,10 @@ public sealed class GoogleCalendarSync(
             gate.Release();
         }
     }
+
+    private Task<CalendarBinding?> LoadAsync(Guid bindingId, CancellationToken ct) =>
+        factory.ExecuteAsync(AgendaModule.DatabaseKey, (context, token) =>
+            context.AcquireRepository<ICalendarBindingRepository>().GetAsync(bindingId, token), cancellationToken: ct);
 
     private async Task<Result<Fetched>> FetchAsync(CalendarBinding binding, CancellationToken ct)
     {
@@ -140,6 +158,7 @@ public sealed class GoogleCalendarSync(
         private readonly ICalendarBindingRepository bindings;
         private readonly CalendarBinding binding;
         private readonly Fetched fetched;
+        private readonly string? pushFailure;
         private readonly TimeProvider timeProvider;
         private readonly string zone;
 
@@ -150,8 +169,9 @@ public sealed class GoogleCalendarSync(
         /// <summary>Overrides touched this cycle: a lookup must see one added a moment ago, which the database does not have yet.</summary>
         private readonly Dictionary<(Guid EventId, DateTimeOffset Start), EventOccurrenceOverride> touchedOverrides = [];
 
-        public Applier(IDataContext context, CalendarBinding binding, Fetched fetched, TimeProvider timeProvider)
+        public Applier(IDataContext context, CalendarBinding binding, Fetched fetched, string? pushFailure, TimeProvider timeProvider)
         {
+            this.pushFailure = pushFailure;
             events = context.AcquireRepository<IEventRepository>();
             overrides = context.AcquireRepository<IEventOccurrenceOverrideRepository>();
             alerts = context.AcquireRepository<IAlertRepository>();
@@ -181,6 +201,8 @@ public sealed class GoogleCalendarSync(
 
             var current = await bindings.GetAsync(binding.Id, ct) ?? binding;
             current.RecordSuccess(fetched.Listing.NextSyncToken, fetched.IsFull, fetched.Now);
+            if (pushFailure is not null)
+                current.NotePushFailure(pushFailure);
             await bindings.UpdateAsync(current, ct);
         }
 
@@ -306,10 +328,17 @@ public sealed class GoogleCalendarSync(
                 }
                 else
                 {
+                    // Pandora's edit not sent yet: the next push compares the two and the newer wins.
+                    if (link!.IsPending)
+                        return ev;
+                    // Pandora's own change coming back.
+                    if (google.Etag is not null && link.Etag == google.Etag)
+                        return ev;
+
                     ev.ApplyRemote(mapped.Title, mapped.Description, mapped.Location, mapped.Url, mapped.StartsAt,
                         mapped.EndsAt, mapped.IsAllDay, mapped.TimeZone, rrule, mapped.Status);
                     await events.UpdateAsync(ev, ct);
-                    link!.Touch(google.Etag, google.Updated);
+                    link.Touch(google.Etag, google.Updated);
                     await SyncAlertsAsync(ev, link, google, ct);
                     await linkRepository.UpdateAsync(link, ct);
                 }
@@ -398,7 +427,8 @@ public sealed class GoogleCalendarSync(
         /// </summary>
         private async Task RemoveVanishedAsync(CancellationToken ct)
         {
-            var vanished = links.Values.Where(l => !seen.Contains(l.RemoteEventId)).ToList();
+            // A pending link may be an event born in Pandora that Google does not have yet.
+            var vanished = links.Values.Where(l => !seen.Contains(l.RemoteEventId) && !l.IsPending).ToList();
             foreach (var link in vanished)
             {
                 if (eventsById.TryGetValue(link.EventId, out var ev) && LastEnd(ev) is { } end && end < fetched.TimeMin)

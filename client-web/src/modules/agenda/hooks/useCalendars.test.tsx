@@ -26,6 +26,7 @@ const calendar = {
   isVisible: true,
   timeZone: 'UTC',
   origin: 'Local',
+  isReadOnly: false,
   archivedAt: null,
 }
 

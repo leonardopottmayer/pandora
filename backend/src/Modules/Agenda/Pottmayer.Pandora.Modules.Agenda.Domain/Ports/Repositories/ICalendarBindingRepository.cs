@@ -14,4 +14,6 @@ public interface ICalendarBindingRepository : IStandardRepository<CalendarBindin
     Task<IReadOnlyList<Guid>> ListSyncableIdsAsync(CancellationToken ct = default);
 
     Task<bool> IsCalendarBoundAsync(Guid calendarId, CancellationToken ct = default);
+
+    Task<CalendarBinding?> FindByCalendarAsync(Guid calendarId, CancellationToken ct = default);
 }

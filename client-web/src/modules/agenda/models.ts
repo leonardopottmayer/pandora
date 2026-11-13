@@ -52,6 +52,8 @@ export interface CalendarDto {
   timeZone: string
   origin: CalendarOrigin
   archivedAt?: string | null
+  /** Fed by a Google calendar Pandora cannot write to: its events are edited in Google. */
+  isReadOnly: boolean
 }
 
 export interface EventDto {
@@ -256,6 +258,18 @@ export interface CreateAlertRequest {
 /** A Pandora calendar fed by a Google calendar (Google -> Pandora only). */
 export type CalendarBindingStatus = 'ok' | 'needs-reconnect' | 'error'
 
+export type CalendarBindingDirection = 'read' | 'read-write'
+
+/** An event both sides changed between two syncs; losingVersion is the version that lost, as JSON. */
+export interface SyncConflictDto {
+  id: string
+  eventId: string
+  title: string
+  losingSide: 'pandora' | 'google'
+  losingVersion: string
+  detectedAt: string
+}
+
 export interface CalendarBindingDto {
   id: string
   calendarId: string
@@ -263,6 +277,8 @@ export interface CalendarBindingDto {
   calendarColor?: string | null
   externalAccountId: string
   remoteCalendarId: string
+  /** read: Google → Pandora only; read-write: Pandora's edits go to Google too. */
+  direction: CalendarBindingDirection
   status: CalendarBindingStatus
   lastSyncedAt?: string | null
   lastError?: string | null

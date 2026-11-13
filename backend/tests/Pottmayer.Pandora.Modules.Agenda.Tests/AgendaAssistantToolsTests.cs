@@ -120,7 +120,7 @@ public sealed class AgendaAssistantToolsTests
     [InlineData("2026-09-12", true, 24)]
     public async Task Create_event_lasts_an_hour_or_the_whole_day(string startsAt, bool allDay, int hours)
     {
-        var calendar = new CalendarDto(Guid.NewGuid(), "Pessoal", null, true, true, "UTC", "local", null);
+        var calendar = new CalendarDto(Guid.NewGuid(), "Pessoal", null, true, true, "UTC", "local", null, false);
         var created = new EventDto(Guid.NewGuid(), calendar.Id, "Dentista", null, null, null,
             DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, allDay, "UTC", null, null, "Confirmed");
         var sender = new ScriptedSender(List(calendar), Result<EventDto>.Success(created));

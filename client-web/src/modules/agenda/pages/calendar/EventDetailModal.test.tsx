@@ -9,7 +9,7 @@ import { renderWithProviders } from '@/test/utils'
 import type { CalendarDto, EventOccurrenceDto } from '../../models'
 import { EventDetailModal } from './EventDetailModal'
 
-const calendar: CalendarDto = { id: 'c1', name: 'Work', color: null, isDefault: true, isVisible: true, timeZone: 'UTC', origin: 'Local', archivedAt: null }
+const calendar: CalendarDto = { id: 'c1', name: 'Work', color: null, isDefault: true, isVisible: true, timeZone: 'UTC', origin: 'Local', archivedAt: null, isReadOnly: false }
 const occurrence: EventOccurrenceDto = { eventId: 'e1', calendarId: 'c1', title: 'Meeting', startsAt: '2026-11-04T12:00:00Z', originalStartsAt: '2026-11-04T12:00:00Z', endsAt: '2026-11-04T13:00:00Z', isAllDay: false, description: null, location: null, url: null, status: 'Confirmed' }
 beforeAll(async () => { await i18n.changeLanguage('en') })
 function mockAuxiliary() {

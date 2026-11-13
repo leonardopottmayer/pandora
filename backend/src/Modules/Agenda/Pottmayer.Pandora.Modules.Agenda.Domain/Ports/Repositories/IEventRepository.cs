@@ -1,4 +1,4 @@
-﻿using Pottmayer.Pandora.Modules.Agenda.Domain.Aggregates;
+using Pottmayer.Pandora.Modules.Agenda.Domain.Aggregates;
 using Pottmayer.Tars.Data.Abstractions.Repositories;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Domain.Ports.Repositories;
@@ -25,4 +25,7 @@ public interface IEventRepository : IStandardRepository<Event, Guid>
     /// event alerts it is firing. A deleted or cancelled event is simply absent.
     /// </summary>
     Task<IReadOnlyList<Event>> GetLiveByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default);
+
+    /// <summary>Events by id, soft-deleted ones included: the push sends a deletion to Google.</summary>
+    Task<IReadOnlyList<Event>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default);
 }

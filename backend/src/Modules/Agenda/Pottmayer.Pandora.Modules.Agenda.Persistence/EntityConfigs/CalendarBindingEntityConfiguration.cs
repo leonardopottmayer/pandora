@@ -18,6 +18,8 @@ internal sealed class CalendarBindingEntityConfiguration : IEntityTypeConfigurat
         builder.Property(b => b.CalendarId).HasColumnName("calendar_id").IsRequired();
         builder.Property(b => b.ExternalAccountId).HasColumnName("external_account_id").IsRequired();
         builder.Property(b => b.RemoteCalendarId).HasColumnName("remote_calendar_id").HasMaxLength(255).IsRequired();
+        builder.Property(b => b.Direction).HasColumnName("direction").HasMaxLength(20).IsRequired()
+               .HasConversion(d => d.Value, v => CalendarBindingDirection.FromValue(v));
         builder.Property(b => b.SyncToken).HasColumnName("sync_token");
         builder.Property(b => b.FullSyncedAt).HasColumnName("full_synced_at");
         builder.Property(b => b.LastSyncedAt).HasColumnName("last_synced_at");

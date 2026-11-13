@@ -49,7 +49,11 @@ public sealed class BindGoogleCalendarsCommandHandler(
                     KnownZoneOrUtc(entry.TimeZone), CalendarOrigin.External, timeProvider);
                 await calendars.AddAsync(calendar, token);
 
-                var binding = CalendarBinding.Create(input.UserId, calendar.Id, input.AccountId, id, timeProvider);
+                // Pandora writes where the account can: its own calendars and those shared with it for editing.
+                var direction = entry.AccessRole is "owner" or "writer"
+                    ? CalendarBindingDirection.ReadWrite
+                    : CalendarBindingDirection.Read;
+                var binding = CalendarBinding.Create(input.UserId, calendar.Id, input.AccountId, id, direction, timeProvider);
                 await bindings.AddAsync(binding, token);
                 created.Add(binding.ToDto(calendar));
             }

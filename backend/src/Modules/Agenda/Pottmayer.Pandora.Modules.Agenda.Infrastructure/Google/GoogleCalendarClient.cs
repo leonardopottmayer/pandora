@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Pottmayer.Pandora.Modules.Agenda.Application.Errors;
 using Pottmayer.Pandora.Modules.Agenda.Application.Google;
 using Pottmayer.Pandora.Modules.Integrations.Abstractions.Ports;
@@ -23,7 +24,11 @@ internal sealed class GoogleCalendarClient(HttpClient http, IExternalCredentialP
 
     private const int PageSize = 250;
 
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
+    {
+        // A patch must leave out what Pandora does not hold, not send it as null.
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
 
     private static readonly string[] RateLimitReasons = ["rateLimitExceeded", "userRateLimitExceeded"];
 
@@ -101,6 +106,49 @@ internal sealed class GoogleCalendarClient(HttpClient http, IExternalCredentialP
             return all;
         }, ct);
 
+    public Task<Result<GoogleEvent>> GetEventAsync(
+        Guid userId, Guid accountId, string calendarId, string eventId, CancellationToken ct = default) =>
+        RunAsync(userId, accountId, (token, c) =>
+            SendAsync<GoogleEvent>(token, HttpMethod.Get, EventPath(calendarId, eventId), null, null, c, EventStatus), ct);
+
+    public Task<Result<GoogleEvent>> InsertEventAsync(
+        Guid userId, Guid accountId, string calendarId, GoogleEventWrite body, CancellationToken ct = default) =>
+        RunAsync(userId, accountId, (token, c) =>
+            SendAsync<GoogleEvent>(token, HttpMethod.Post, $"calendars/{Uri.EscapeDataString(calendarId)}/events", body, null, c,
+                status => status == HttpStatusCode.Conflict ? GoogleCalendarErrors.EventExists : EventStatus(status)), ct);
+
+    public Task<Result<GoogleEvent>> PatchEventAsync(
+        Guid userId, Guid accountId, string calendarId, string eventId, GoogleEventWrite body, string? ifMatch,
+        CancellationToken ct = default) =>
+        RunAsync(userId, accountId, (token, c) =>
+            SendAsync<GoogleEvent>(token, HttpMethod.Patch, EventPath(calendarId, eventId), body, ifMatch, c, EventStatus), ct);
+
+    public Task<Result<bool>> DeleteEventAsync(
+        Guid userId, Guid accountId, string calendarId, string eventId, CancellationToken ct = default) =>
+        RunAsync(userId, accountId, async (token, c) =>
+        {
+            try
+            {
+                await SendAsync<JsonElement?>(token, HttpMethod.Delete, EventPath(calendarId, eventId), null, null, c, EventStatus);
+            }
+            catch (GoogleCalendarException ex) when (ex.Error.Code == GoogleCalendarErrors.EventNotFound.Code)
+            {
+                // Already gone: what the delete wanted.
+            }
+            return true;
+        }, ct);
+
+    private static string EventPath(string calendarId, string eventId) =>
+        $"calendars/{Uri.EscapeDataString(calendarId)}/events/{Uri.EscapeDataString(eventId)}";
+
+    /// <summary>The answers specific to one event: missing or deleted, and changed since the etag sent.</summary>
+    private static Error? EventStatus(HttpStatusCode status) => status switch
+    {
+        HttpStatusCode.NotFound or HttpStatusCode.Gone => GoogleCalendarErrors.EventNotFound,
+        HttpStatusCode.PreconditionFailed => GoogleCalendarErrors.EventChanged,
+        _ => null
+    };
+
     private static string PageParam(string? pageToken) =>
         pageToken is null ? string.Empty : "&pageToken=" + Uri.EscapeDataString(pageToken);
 
@@ -127,26 +175,37 @@ internal sealed class GoogleCalendarClient(HttpClient http, IExternalCredentialP
         }
     }
 
-    private async Task<T> GetAsync<T>(string token, string path, CancellationToken ct, Error? notFound = null)
+    private Task<T> GetAsync<T>(string token, string path, CancellationToken ct, Error? notFound = null) =>
+        SendAsync<T>(token, HttpMethod.Get, path, null, null, ct, status => status == HttpStatusCode.NotFound ? notFound : null);
+
+    private async Task<T> SendAsync<T>(
+        string token, HttpMethod method, string path, object? body, string? ifMatch, CancellationToken ct,
+        Func<HttpStatusCode, Error?> specific)
     {
         for (var attempt = 0; ; attempt++)
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, BaseUrl + path);
+            using var request = new HttpRequestMessage(method, BaseUrl + path);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            if (body is not null)
+                request.Content = JsonContent.Create(body, body.GetType(), options: Json);
+            if (ifMatch is not null)
+                request.Headers.TryAddWithoutValidation("If-Match", ifMatch); // Google's etags come already quoted
             using var response = await http.SendAsync(request, ct);
 
+            if (response.StatusCode == HttpStatusCode.NoContent)
+                return default!;
             if (response.IsSuccessStatusCode)
                 return (await response.Content.ReadFromJsonAsync<T>(Json, ct))!;
 
-            var body = await response.Content.ReadAsStringAsync(ct);
-            var throttled = IsRateLimited(response.StatusCode, body) || (int)response.StatusCode >= 500;
+            var text = await response.Content.ReadAsStringAsync(ct);
+            var throttled = IsRateLimited(response.StatusCode, text) || (int)response.StatusCode >= 500;
             if (throttled && attempt < RetryDelays.Count)
             {
                 await Task.Delay(response.Headers.RetryAfter?.Delta ?? RetryDelays[attempt], ct);
                 continue;
             }
 
-            throw new GoogleCalendarException(ToError(response.StatusCode, body, path, notFound));
+            throw new GoogleCalendarException(specific(response.StatusCode) ?? ToError(response.StatusCode, text, path));
         }
     }
 
@@ -154,13 +213,12 @@ internal sealed class GoogleCalendarClient(HttpClient http, IExternalCredentialP
         status == HttpStatusCode.TooManyRequests
         || (status == HttpStatusCode.Forbidden && RateLimitReasons.Any(r => body.Contains(r, StringComparison.Ordinal)));
 
-    private static Error ToError(HttpStatusCode status, string body, string path, Error? notFound) => status switch
+    private static Error ToError(HttpStatusCode status, string body, string path) => status switch
     {
         HttpStatusCode.Gone => GoogleCalendarErrors.SyncTokenExpired,
         HttpStatusCode.Unauthorized => GoogleCalendarErrors.AuthFailed("Google rejected the access token."),
         HttpStatusCode.Forbidden when body.Contains("insufficientPermissions", StringComparison.Ordinal)
             || body.Contains("ACCESS_TOKEN_SCOPE_INSUFFICIENT", StringComparison.Ordinal) => GoogleCalendarErrors.MissingScope,
-        HttpStatusCode.NotFound when notFound is not null => notFound,
         _ => GoogleCalendarErrors.Failed($"Google Calendar answered {(int)status} on {path.Split('?')[0]}.")
     };
 

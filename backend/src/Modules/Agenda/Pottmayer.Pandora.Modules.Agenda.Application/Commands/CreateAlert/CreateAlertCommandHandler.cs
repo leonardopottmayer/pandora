@@ -1,6 +1,7 @@
 using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 using Pottmayer.Pandora.Modules.Agenda.Application.Dtos;
 using Pottmayer.Pandora.Modules.Agenda.Application.Errors;
+using Pottmayer.Pandora.Modules.Agenda.Application.Google;
 using Pottmayer.Pandora.Modules.Agenda.Application.Mapping;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Ports.Repositories;
@@ -45,6 +46,8 @@ public sealed class CreateAlertCommandHandler(IUnitOfWorkFactory factory, TimePr
                 var ev = await context.AcquireRepository<IEventRepository>().FindAsync(input.UserId, input.SubjectId, token);
                 if (ev is null)
                     return Result<AlertDto>.Failure([AlertErrors.SubjectNotFound]);
+                // A Google event's alerts are its reminders there.
+                await ExternalCalendars.MarkChangedAsync(context, ev, timeProvider, token);
             }
 
             var alert = Alert.Create(

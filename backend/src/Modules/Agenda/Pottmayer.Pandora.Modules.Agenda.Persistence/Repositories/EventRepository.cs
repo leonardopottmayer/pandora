@@ -47,4 +47,7 @@ public sealed class EventRepository(IDataContextAccessor accessor)
             .Where(e => ids.Contains(e.Id) && e.DeletedAt == null && e.Status != EventStatus.Cancelled)
             .ToListAsync(ct);
     }
+
+    public async Task<IReadOnlyList<Event>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default) =>
+        ids.Count == 0 ? [] : await Queryable().Where(e => ids.Contains(e.Id)).ToListAsync(ct);
 }

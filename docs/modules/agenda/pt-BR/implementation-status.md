@@ -7,7 +7,7 @@ frente está em [product-plan.md](product-plan.md).
 
 ---
 
-## Implementado (fases 1–4, sincronização Google → Pandora, frontend, ferramentas do Assistant)
+## Implementado (fases 1–5, frontend, ferramentas do Assistant)
 
 | Área | Notas |
 |---|---|
@@ -18,7 +18,7 @@ frente está em [product-plan.md](product-plan.md).
 | **Alertas** | `agd007` polimórfico + ledger de disparo `agd008`; sujeitos `Task` e `Event` ligados; `TaskAlertSweepBackgroundService` + `EventAlertSweepBackgroundService`. |
 | **Calendário e eventos** | Calendários `agd001`, eventos `agd002` (ocorrências calculadas), exceções `agd003`; escopos de edição esta / esta e futuras / todas. |
 | **Preferências** | `agd013_preferences`: o tempo padrão do alerta. Fuso e início da semana vêm do Identity. |
-| **Google Agenda (5a)** | Vínculos `agd009` + links `agd010`; `GoogleCalendarSync` (listagem completa de um ano para trás, depois as mudanças pelo `syncToken`, 410 ⇒ completa de novo, completa mensal); `GoogleEventMapper` (com hora, dia inteiro, RRULE + EXDATE, exceções como overrides, lembretes como alertas); séries que o Pandora não expande vêm como instâncias; trava de somente leitura; `GoogleCalendarSyncBackgroundService` a cada 2 minutos; revogada ⇒ `needs-reconnect`, desconectada ⇒ desvinculado; `AgendaAccountUsageSource`; a seção nas configurações. Ver [Calendário e Eventos §6](calendar-and-events.md#6-google-agenda-google--pandora). |
+| **Google Agenda (5)** | Vínculos `agd009` (`read` / `read-write` pelo acesso da conta) + links `agd010` + conflitos `agd011`; `GoogleCalendarSync` (listagem completa de um ano para trás, depois as mudanças pelo `syncToken`, 410 ⇒ completa de novo, completa mensal); `GoogleEventMapper` (com hora, dia inteiro, RRULE + EXDATE, exceções como overrides, lembretes como alertas); séries que o Pandora não expande vêm como instâncias; `GoogleCalendarPush` (links pendentes inseridos, com patch e `If-Match` ou excluídos, ocorrências como patch da instância, alertas como lembretes popup, supressão de eco pelo etag, vence a edição mais recente e a perdedora vai para o log); trava de somente leitura nos vínculos `read`; `GoogleCalendarSyncBackgroundService` a cada 2 minutos; revogada ⇒ `needs-reconnect`, desconectada ⇒ desvinculado; `AgendaAccountUsageSource`; a seção nas configurações, com direção e conflitos. Ver [Calendário e Eventos §6](calendar-and-events.md#6-google-agenda). |
 | **Hoje** | `GET /agenda/today`, leitura unificada (eventos + tarefas + lembretes). |
 | **Botões de entrada** | `InboundInteractionReceivedHandler` + `TaskInteractionHandler` para `task_done` / `snooze_*` vindos do Channels. |
 | **Ferramentas do Assistant** | 15 `IAssistantTool` em `Application/Assistant`: `create_reminder`, `list_reminders`, `rename_reminder`, `reschedule_reminder`, `cancel_reminder`, `create_task`, `list_tasks`, `update_task`, `complete_task`, `reopen_task`, `delete_task`, `create_event`, `update_event`, `delete_event`, `list_agenda`. O Assistant resolve datas relativas; o Agenda não interpreta nada. |
@@ -52,7 +52,6 @@ docs do Notes.
 
 | Área | Status | Fase |
 |---|---|---|
-| **Pandora → Google (5b)** | Escrita no Google, supressão de eco, conflitos na `agd011`. Ver [product-plan.md](product-plan.md). | 5b |
 | **Sincronização com o Google Tasks** | `ITaskSyncProvider` reaproveitando o mecanismo de sincronização. | 6 |
 | **Além** | Vínculo nota↔evento, criação rápida em linguagem natural, tempo de deslocamento, alertas por localização, ICS/CalDAV, provedores Microsoft/Apple, vencimentos do Finances na visão do dia. | — |
 

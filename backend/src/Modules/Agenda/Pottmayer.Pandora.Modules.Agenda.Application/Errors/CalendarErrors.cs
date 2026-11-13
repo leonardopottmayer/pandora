@@ -17,6 +17,9 @@ public static class CalendarErrors
     public static Error ReadOnly =>
         Error.Conflict("Agenda.CalendarReadOnly", "This calendar comes from Google Calendar. Edit its events in Google; they sync here.");
 
+    public static Error MoveAcrossGoogle =>
+        Error.Conflict("Agenda.EventMoveAcrossGoogle", "An event in a Google calendar stays in it, and an event cannot move into one. Create it again in the other calendar.");
+
     public static Error Bound =>
         Error.Conflict("Agenda.CalendarBound", "This calendar is linked to Google Calendar. Unlink it in the Agenda settings first.");
 

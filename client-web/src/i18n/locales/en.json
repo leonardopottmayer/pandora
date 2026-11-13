@@ -1982,7 +1982,7 @@
   "agenda": {
     "google": {
       "title": "Google Calendar",
-      "intro": "Bring calendars from a Google account. Each one becomes a calendar here, synced every two minutes. Their events are edited in Google, and their Google reminders ring through Pandora.",
+      "intro": "Bring calendars from a Google account. Each one becomes a calendar here, synced both ways every two minutes: what you change here goes to Google, and Google's reminders ring through Pandora. Calendars the account can only see stay read-only.",
       "addLabel": "Add calendars",
       "addDesc": "Pick the Google account, then the calendars to bring.",
       "primary": "Primary",
@@ -2003,8 +2003,20 @@
       "unlinkDesc": "It stays here with its events, as a calendar you can edit. Nothing changes in Google.",
       "unlinked": "Calendar unlinked.",
       "unlinkError": "Could not unlink the calendar.",
-      "readOnlyEvent": "This event comes from Google Calendar. Edit it there; the change shows here within two minutes.",
+      "readOnlyEvent": "This Google calendar is read-only for this account. Edit the event in Google; the change shows here within two minutes.",
       "openGoogle": "Open Google Calendar",
+      "conflictsLabel": "Conflicts",
+      "conflictsDesc": "Events changed here and in Google between two syncs. The newer edit stayed; the other is shown as discarded.",
+      "conflictsError": "Could not load the conflicts.",
+      "conflictDiscarded": "Discarded: {{title}}",
+      "conflictWinner": {
+        "pandora": "Google won",
+        "google": "Pandora won"
+      },
+      "direction": {
+        "read": "Read only",
+        "read-write": "Read and write"
+      },
       "status": {
         "ok": "Syncing",
         "needs-reconnect": "Reconnect the account",

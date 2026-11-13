@@ -36,7 +36,7 @@ export function EventFormModal({ open, calendars, defaultStart, onClose }: Event
   const createMutation = useCreateEvent()
 
   // Calendars fed by Google take their events from Google only.
-  const writable = calendars.filter((c) => c.origin !== 'External')
+  const writable = calendars.filter((c) => !c.isReadOnly)
   const defaultCalendarId = writable.find((c) => c.isDefault)?.id ?? writable[0]?.id
 
   // Reset the recurrence on open — adjusting state on the prop change, not in an effect.

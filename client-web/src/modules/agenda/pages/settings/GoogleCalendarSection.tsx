@@ -8,12 +8,13 @@ import { toErrorMessage } from '@/lib/api/envelope'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { AccountSelect } from '@/modules/integrations/components/AccountSelect'
 import { formatDateTime } from '../../lib/datetime'
-import type { CalendarBindingDto, CalendarBindingStatus } from '../../models'
+import type { CalendarBindingDto, CalendarBindingStatus, SyncConflictDto } from '../../models'
 import {
   useBindGoogleCalendars,
   useCalendarBindings,
   useGoogleCalendars,
   useSyncBinding,
+  useSyncConflicts,
   useUnlinkBinding,
 } from '../../hooks/useGoogleCalendar'
 
@@ -27,8 +28,9 @@ const STATUS_COLOR: Record<CalendarBindingStatus, string> = {
 }
 
 /**
- * Google Calendar → Pandora: pick a Google account, tick its calendars, and each one becomes a
- * read-only Pandora calendar that syncs every two minutes.
+ * Google Calendar ↔ Pandora: pick a Google account, tick its calendars, and each one becomes a Pandora
+ * calendar that syncs every two minutes, both ways where the account can write. Below the links, the
+ * events both sides changed at once, with the version that lost.
  */
 export function GoogleCalendarSection() {
   const { t } = useTranslation()
@@ -66,6 +68,7 @@ export function GoogleCalendarSection() {
       {(bindings ?? []).map((binding) => (
         <BindingRow key={binding.id} binding={binding} />
       ))}
+      <ConflictList />
 
       <SettingRow
         vertical
@@ -128,6 +131,48 @@ export function GoogleCalendarSection() {
   )
 }
 
+/** The title the losing version carried; both sides' JSON name it `summary`. */
+function discardedTitle(conflict: SyncConflictDto): string {
+  try {
+    const version = JSON.parse(conflict.losingVersion) as { summary?: string }
+    return version.summary || conflict.title
+  } catch {
+    return conflict.title
+  }
+}
+
+function ConflictList() {
+  const { t } = useTranslation()
+  const { timeZone } = usePreferences()
+  const { data: conflicts, error } = useSyncConflicts()
+
+  if (error) return <Alert type="error" showIcon title={toErrorMessage(error, t('agenda.google.conflictsError'))} />
+  if (!conflicts?.length) return null
+
+  return (
+    <SettingRow
+      vertical
+      label={t('agenda.google.conflictsLabel')}
+      description={t('agenda.google.conflictsDesc')}
+      control={
+        <ul className="m-0 flex list-none flex-col gap-2 p-0">
+          {conflicts.map((conflict) => (
+            <li key={conflict.id} className="flex min-w-0 flex-col">
+              <span className="break-words">
+                {conflict.title} · {t(`agenda.google.conflictWinner.${conflict.losingSide}`)}
+              </span>
+              <Typography.Text type="secondary" className="break-words">
+                {formatDateTime(conflict.detectedAt, timeZone)} ·{' '}
+                {t('agenda.google.conflictDiscarded', { title: discardedTitle(conflict) })}
+              </Typography.Text>
+            </li>
+          ))}
+        </ul>
+      }
+    />
+  )
+}
+
 function BindingRow({ binding }: { binding: CalendarBindingDto }) {
   const { t } = useTranslation()
   const { message } = App.useApp()
@@ -172,6 +217,7 @@ function BindingRow({ binding }: { binding: CalendarBindingDto }) {
           <Tag color={STATUS_COLOR[binding.status]} className="!m-0">
             {t(`agenda.google.status.${binding.status}`)}
           </Tag>
+          <Tag className="!m-0">{t(`agenda.google.direction.${binding.direction}`)}</Tag>
         </span>
       }
       description={description}

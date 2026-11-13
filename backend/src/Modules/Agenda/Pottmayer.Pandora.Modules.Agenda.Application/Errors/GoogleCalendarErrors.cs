@@ -19,6 +19,17 @@ public static class GoogleCalendarErrors
     public static Error CalendarNotFound =>
         Error.NotFound("Agenda.GoogleCalendarNotFound", "This Google calendar does not exist or the account cannot see it any more.");
 
+    public static Error EventNotFound =>
+        Error.NotFound("Agenda.GoogleEventNotFound", "This event no longer exists in Google Calendar.");
+
+    /// <summary>An insert with an id Google already has: the earlier attempt got there.</summary>
+    public static Error EventExists =>
+        Error.Conflict("Agenda.GoogleEventExists", "Google Calendar already has this event.");
+
+    /// <summary>Google's 412: the event changed in Google since Pandora last saw it.</summary>
+    public static Error EventChanged =>
+        Error.Conflict("Agenda.GoogleEventChanged", "The event changed in Google Calendar.");
+
     public static Error Failed(string detail) =>
         Error.Validation("Agenda.GoogleFailed", detail);
 

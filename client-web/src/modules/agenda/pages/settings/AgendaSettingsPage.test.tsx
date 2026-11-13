@@ -19,6 +19,7 @@ function calendar(overrides: Partial<CalendarDto>): CalendarDto {
     isVisible: true,
     timeZone: 'UTC',
     origin: 'Local',
+    isReadOnly: false,
     archivedAt: null,
     ...overrides,
   }

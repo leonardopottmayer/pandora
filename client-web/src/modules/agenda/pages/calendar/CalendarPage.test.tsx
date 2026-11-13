@@ -18,6 +18,7 @@ const calendar: CalendarDto = {
   isVisible: true,
   timeZone: 'UTC',
   origin: 'Local',
+  isReadOnly: false,
   archivedAt: null,
 }
 

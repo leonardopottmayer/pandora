@@ -142,9 +142,11 @@ export function EventDetailModal({ open, occurrence, calendars, onClose }: Event
   ]
 
   const color = calendars.find((c) => c.id === occurrence.calendarId)?.color ?? token.colorPrimary
-  // A calendar fed by Google is written by the sync only: its events are edited in Google.
-  const fromGoogle = calendars.find((c) => c.id === occurrence.calendarId)?.origin === 'External'
-  const movableTo = calendars.filter((c) => c.origin !== 'External')
+  const eventCalendar = calendars.find((c) => c.id === occurrence.calendarId)
+  // A read-only Google calendar is written by the sync only: its events are edited in Google.
+  const readOnly = eventCalendar?.isReadOnly === true
+  // An event in a Google calendar stays in it, and none moves into one.
+  const movableTo = eventCalendar?.origin === 'External' ? [eventCalendar] : calendars.filter((c) => c.origin !== 'External')
   const line = (icon: ReactNode, content: ReactNode) => (
     <div className="flex items-start gap-3">
       <span className="w-4 shrink-0 pt-0.5 text-center" style={{ color: token.colorTextTertiary }}>
@@ -201,7 +203,7 @@ export function EventDetailModal({ open, occurrence, calendars, onClose }: Event
             line(<AlignLeftOutlined />, <span className="whitespace-pre-wrap">{occurrence.description}</span>)}
           {line(<BellOutlined />, <AlertsEditor subjectType="event" subjectId={occurrence.eventId} />)}
 
-          {fromGoogle ? (
+          {readOnly ? (
             <Alert
               type="info"
               showIcon

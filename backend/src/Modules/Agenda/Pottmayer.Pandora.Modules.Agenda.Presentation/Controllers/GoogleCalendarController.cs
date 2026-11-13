@@ -6,6 +6,7 @@ using Pottmayer.Pandora.Modules.Agenda.Application.Commands.SyncCalendarBinding;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.UnlinkCalendar;
 using Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetCalendarBindings;
 using Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetGoogleCalendars;
+using Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetSyncConflicts;
 using Pottmayer.Pandora.Shared.Domain;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using Pottmayer.Tars.UserContext.Abstractions.Context;
@@ -37,6 +38,14 @@ public sealed class GoogleCalendarController(
     public async Task<IActionResult> GetBindingsAsync(CancellationToken ct)
     {
         var result = await sender.Send(new GetCalendarBindingsQuery(new GetCalendarBindingsInput(UserId)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>Events both sides changed between two syncs, newest first, with the version that lost.</summary>
+    [HttpGet("conflicts")]
+    public async Task<IActionResult> GetConflictsAsync(CancellationToken ct)
+    {
+        var result = await sender.Send(new GetSyncConflictsQuery(new GetSyncConflictsInput(UserId)), ct);
         return result.ToActionResult(errorMapper);
     }
 

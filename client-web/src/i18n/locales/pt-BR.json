@@ -1982,7 +1982,7 @@
   "agenda": {
     "google": {
       "title": "Google Agenda",
-      "intro": "Traga calendários de uma conta Google. Cada um vira um calendário aqui, sincronizado a cada dois minutos. Os eventos deles são editados no Google, e os lembretes do Google tocam pelo Pandora.",
+      "intro": "Traga calendários de uma conta Google. Cada um vira um calendário aqui, sincronizado nos dois sentidos a cada dois minutos: o que você muda aqui vai para o Google, e os lembretes do Google tocam pelo Pandora. Calendários que a conta só pode ver ficam só para leitura.",
       "addLabel": "Adicionar calendários",
       "addDesc": "Escolha a conta Google e depois os calendários que quer trazer.",
       "primary": "Principal",
@@ -2003,8 +2003,20 @@
       "unlinkDesc": "Ele continua aqui com os eventos, como um calendário que você pode editar. Nada muda no Google.",
       "unlinked": "Calendário desvinculado.",
       "unlinkError": "Não foi possível desvincular o calendário.",
-      "readOnlyEvent": "Este evento vem do Google Agenda. Edite lá; a mudança aparece aqui em até dois minutos.",
+      "readOnlyEvent": "Este calendário do Google é só para leitura nesta conta. Edite o evento no Google; a mudança aparece aqui em até dois minutos.",
       "openGoogle": "Abrir o Google Agenda",
+      "conflictsLabel": "Conflitos",
+      "conflictsDesc": "Eventos mudados aqui e no Google entre duas sincronizações. Ficou a edição mais recente; a outra aparece como descartada.",
+      "conflictsError": "Não foi possível ler os conflitos.",
+      "conflictDiscarded": "Descartada: {{title}}",
+      "conflictWinner": {
+        "pandora": "Venceu o Google",
+        "google": "Venceu o Pandora"
+      },
+      "direction": {
+        "read": "Só leitura",
+        "read-write": "Leitura e escrita"
+      },
       "status": {
         "ok": "Sincronizando",
         "needs-reconnect": "Reconecte a conta",

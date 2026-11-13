@@ -9,6 +9,13 @@ export function useCalendarBindings() {
   })
 }
 
+export function useSyncConflicts() {
+  return useQuery({
+    queryKey: agendaKeys.googleConflicts(),
+    queryFn: () => googleService.listConflicts(),
+  })
+}
+
 export function useGoogleCalendars(accountId: string | null) {
   return useQuery({
     queryKey: agendaKeys.googleCalendars(accountId ?? ''),

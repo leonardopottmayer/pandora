@@ -71,12 +71,11 @@ dispatch ledger; the RRULE recurrence engine (parse + expand, DST-aware); tasks 
 priority, due dates, complete/reopen, recurring materialization and alerts; calendars and events with
 computed occurrences, overrides and the this / this-and-future / all edit scopes; the polymorphic
 alert with three background sweeps; the `GET /agenda/today` unified read; inline Telegram buttons
-routed back from Channels; Google → Pandora calendar sync (`agd009`, `agd010`); the 15 Assistant tools; and the frontend (Today, Reminders, Tasks, Calendar, Settings).
+routed back from Channels; two-way Google Calendar sync (`agd009`–`agd011`); the 15 Assistant tools; and the frontend (Today, Reminders, Tasks, Calendar, Settings).
 
 ### Out of scope / future (see [product-plan.md](product-plan.md))
 
 | Feature | Status |
 |---|---|
-| **Pandora → Google sync** (phase 5b) | Not implemented — Google calendars are read-only here. See [product-plan.md](product-plan.md). |
 | **Google Tasks sync** (phase 6) | Not implemented. |
 | **Beyond** | Note ↔ event links, natural-language quick-add, travel time, ICS/CalDAV, Microsoft/Apple providers, Finances due dates in the day view. |

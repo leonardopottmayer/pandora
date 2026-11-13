@@ -54,16 +54,19 @@ recusado — arquive). Eventos: `CreateEvent`, `UpdateEvent` (com escopo de edi�
 ver [Referência de API](api-reference.md) — `/agenda/calendars`, `/agenda/events` (o endpoint de lista é
 a query de intervalo com expansão em memória), `/agenda/today`.
 
-## 6. Google Agenda (Google → Pandora)
+## 6. Google Agenda
 
 O usuário escolhe uma conta Google e alguns calendários dela nas configurações do Agenda; cada um vira um
 calendário próprio no Pandora (`origin = External`), com o nome e a cor do Google, no fuso dele. Um
 **vínculo** (`agd009`) liga os dois e guarda o sync token do Google; um **link** (`agd010`) liga cada
-evento do Pandora ao evento do Google.
+evento do Pandora ao evento do Google. Um calendário que a conta tem ou pode editar (`accessRole`
+`owner` ou `writer`) é vinculado como `read-write`: as edições vão nos dois sentidos. Um que ela só pode
+ver é vinculado como `read`.
 
 **Ciclo.** O `GoogleCalendarSyncBackgroundService` roda um ciclo por vínculo em `ok` a cada
 `Pandora:Agenda:GoogleSyncInterval` (2 minutos); "Sincronizar agora" roda um na hora. O
-`GoogleCalendarSync`:
+`GoogleCalendarSync` primeiro manda as edições do Pandora (vínculo `read-write`, ver **Escrita** abaixo)
+e depois:
 
 1. lê a entrada do calendário (fuso e lembretes padrão) e os eventos, pelo `IGoogleCalendarClient`
    (REST, com o token da conta vindo do Integrations);
@@ -90,10 +93,38 @@ Uma série que o Pandora não expande chega como eventos únicos, um por instân
 série (`series_remote_id`). Os alertas só são reescritos quando os lembretes do evento mudam no Google
 (comparados por hash), então um alerta que o usuário tira aqui continua tirado até lá.
 
-**Somente leitura.** Criar, editar, mover ou excluir um evento num calendário do Google responde
-`Agenda.CalendarReadOnly`; mover um evento local para um deles também. As telas escondem essas ações e
-apontam para o Google. Um calendário vinculado não pode ser excluído (`Agenda.CalendarBound`);
-desvincule antes.
+Uma mudança do Google num evento cujo link ainda está pendente fica para o envio resolver (ver
+conflitos abaixo), e uma mudança com o mesmo `etag` do link é a do próprio Pandora voltando: nenhuma
+das duas sobrescreve nada.
+
+**Escrita** (vínculos `read-write`, `GoogleCalendarPush`). Toda escrita de evento num calendário
+vinculado — criar, editar em qualquer escopo, excluir, pôr ou tirar um alerta — marca o link do evento
+como pendente (`pending_push_at`) na mesma transação; um evento novo ganha o link ali, com um id do
+Google escolhido pelo Pandora, então um insert repetido acha o próprio evento em vez de duplicar. O
+ciclo seguinte manda cada evento pendente:
+
+| Pandora | Google |
+|---|---|
+| um evento novo | `insert` com o id do Pandora |
+| um evento editado | `patch` com `If-Match` no último etag: só os campos que o Pandora tem, então convidados e a reunião ficam |
+| um evento excluído | `delete` (já sumido conta como feito) |
+| "esta e as próximas" | a série original com o `UNTIL` no patch, a cauda inserida |
+| uma ocorrência editada ou cancelada | patch ou delete da instância `<id da série>_<início original>` |
+| alertas | lembretes `popup`: os cinco mais próximos antes do início, até quatro semanas |
+
+O etag da resposta vai para o link, e é assim que a leitura reconhece a mudança. O que falha continua
+pendente para o próximo ciclo, e o vínculo mostra a mensagem sem parar.
+
+**Conflitos.** O 412 do Google num patch quer dizer que o evento mudou lá também. Vence a edição mais
+recente: o `updated` do Google contra a hora da última edição no Pandora. Se o Pandora vence, o patch é
+refeito sem `If-Match`; se o Google vence, o cursor é zerado, então o mesmo ciclo lista tudo e traz a
+versão do Google por cima da do Pandora. A versão perdedora vai para a `agd011` em JSON e para a lista
+de conflitos nas configurações.
+
+**O que não muda.** Um evento não entra nem sai de um calendário do Google
+(`Agenda.EventMoveAcrossGoogle`). Num vínculo `read`, criar, editar ou excluir um evento responde
+`Agenda.CalendarReadOnly`, e as telas apontam para o Google. Um calendário vinculado não pode ser
+excluído (`Agenda.CalendarBound`); desvincule antes.
 
 **Falhas.** Um token recusado, que não renova, ou sem escopo de calendário deixa o vínculo em
 `needs-reconnect`; qualquer outra falha conta, e cinco seguidas o deixam em `error`. Nenhum dos dois roda

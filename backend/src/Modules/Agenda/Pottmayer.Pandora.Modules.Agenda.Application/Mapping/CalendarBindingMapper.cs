@@ -12,7 +12,11 @@ internal static class CalendarBindingMapper
         calendar.Color,
         binding.ExternalAccountId,
         binding.RemoteCalendarId,
+        binding.Direction.Value,
         binding.Status.Value,
         binding.LastSyncedAt,
         binding.LastError);
+
+    public static SyncConflictDto ToDto(this SyncConflict conflict) => new(
+        conflict.Id, conflict.EventId, conflict.Title, conflict.LosingSide.Value, conflict.LosingVersion, conflict.DetectedAt);
 }

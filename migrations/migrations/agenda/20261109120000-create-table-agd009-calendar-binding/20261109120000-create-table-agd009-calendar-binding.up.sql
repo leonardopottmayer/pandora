@@ -1,7 +1,7 @@
 -- 20261109120000-create-table-agd009-calendar-binding.up.sql
 
 -- One Pandora calendar bound to one Google calendar, on one Integrations account. The sync cursor
--- (Google's syncToken) lives here. direction: read (Google -> Pandora); read-write arrives with 5b.
+-- (Google's syncToken) lives here. direction: read (Google -> Pandora only), read-write (Pandora's edits go to Google too).
 -- status: ok, needs-reconnect (waits for the user), error (stopped after repeated failures).
 CREATE TABLE agenda.agd009_calendar_binding (
 	id uuid NOT NULL DEFAULT uuid_generate_v7(),

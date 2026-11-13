@@ -27,4 +27,7 @@ public sealed class CalendarBindingRepository(IDataContextAccessor accessor)
 
     public Task<bool> IsCalendarBoundAsync(Guid calendarId, CancellationToken ct = default) =>
         Queryable().AnyAsync(b => b.CalendarId == calendarId, ct);
+
+    public Task<CalendarBinding?> FindByCalendarAsync(Guid calendarId, CancellationToken ct = default) =>
+        Queryable().FirstOrDefaultAsync(b => b.CalendarId == calendarId, ct);
 }

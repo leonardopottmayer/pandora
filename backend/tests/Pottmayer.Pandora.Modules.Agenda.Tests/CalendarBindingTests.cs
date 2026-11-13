@@ -9,7 +9,7 @@ public sealed class CalendarBindingTests
     private static readonly DateTimeOffset Now = new(2026, 11, 9, 12, 0, 0, TimeSpan.Zero);
 
     private static CalendarBinding NewBinding() =>
-        CalendarBinding.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "primary", new FixedTimeProvider(Now));
+        CalendarBinding.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "primary", CalendarBindingDirection.ReadWrite, new FixedTimeProvider(Now));
 
     [Fact]
     public void A_new_binding_lists_everything_then_only_changes_until_a_month_passes()

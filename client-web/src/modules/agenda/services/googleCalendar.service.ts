@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/api/client'
-import type { CalendarBindingDto, GoogleCalendarDto } from '../models'
+import type { CalendarBindingDto, GoogleCalendarDto, SyncConflictDto } from '../models'
 
 const BASE = '/api/v1.0/agenda/google'
 
@@ -10,6 +10,11 @@ export async function listGoogleCalendars(accountId: string): Promise<GoogleCale
 
 export async function listBindings(): Promise<CalendarBindingDto[]> {
   const { data } = await apiClient.get<CalendarBindingDto[]>(`${BASE}/bindings`)
+  return data
+}
+
+export async function listConflicts(): Promise<SyncConflictDto[]> {
+  const { data } = await apiClient.get<SyncConflictDto[]>(`${BASE}/conflicts`)
   return data
 }
 

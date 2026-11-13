@@ -1,6 +1,9 @@
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Dtos;
 
-/// <summary>A calendar as shown in the sidebar and returned after a change.</summary>
+/// <summary>
+/// A calendar as shown in the sidebar and returned after a change. <see cref="IsReadOnly"/>: fed by a
+/// Google calendar Pandora cannot write to, so its events are edited in Google.
+/// </summary>
 public sealed record CalendarDto(
     Guid Id,
     string Name,
@@ -9,4 +12,5 @@ public sealed record CalendarDto(
     bool IsVisible,
     string TimeZone,
     string Origin,
-    DateTimeOffset? ArchivedAt);
+    DateTimeOffset? ArchivedAt,
+    bool IsReadOnly);

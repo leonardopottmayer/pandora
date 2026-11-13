@@ -11,4 +11,11 @@ public sealed class EventLinkRepository(IDataContextAccessor accessor)
 {
     public async Task<IReadOnlyList<EventLink>> GetByBindingAsync(Guid bindingId, CancellationToken ct = default) =>
         await Queryable().Where(l => l.BindingId == bindingId).ToListAsync(ct);
+
+    public Task<EventLink?> FindByEventAsync(Guid eventId, CancellationToken ct = default) =>
+        Queryable().FirstOrDefaultAsync(l => l.EventId == eventId, ct);
+
+    public async Task<IReadOnlyList<EventLink>> GetPendingAsync(Guid bindingId, CancellationToken ct = default) =>
+        await Queryable().Where(l => l.BindingId == bindingId && l.PendingPushAt != null)
+            .OrderBy(l => l.PendingPushAt).ToListAsync(ct);
 }

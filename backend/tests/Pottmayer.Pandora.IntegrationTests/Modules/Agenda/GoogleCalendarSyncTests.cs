@@ -7,6 +7,9 @@ using Npgsql;
 using Pottmayer.Pandora.IntegrationTests.Support;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.BindGoogleCalendars;
+using Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateAlert;
+using Pottmayer.Pandora.Modules.Agenda.Application.Commands.CreateEvent;
+using Pottmayer.Pandora.Modules.Agenda.Application.Commands.DeleteEvent;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.SyncCalendarBinding;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.UnlinkCalendar;
 using Pottmayer.Pandora.Modules.Agenda.Application.Commands.UpdateEvent;
@@ -15,6 +18,7 @@ using Pottmayer.Pandora.Modules.Agenda.Application.Errors;
 using Pottmayer.Pandora.Modules.Agenda.Application.Google;
 using Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetCalendars;
 using Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetEvents;
+using Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetSyncConflicts;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Cqrs.Queries;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
@@ -58,6 +62,7 @@ public sealed class GoogleCalendarSyncTests : IAsyncLifetime
     [Fact]
     public async Task Google_events_come_in_follow_changes_stay_read_only_and_survive_an_expired_token()
     {
+        _google.AccessRole = "reader"; // shared for reading only: Pandora does not write there
         _google.Put("""
             { "id": "e1", "status": "confirmed", "summary": "Dentista", "etag": "1",
               "start": { "dateTime": "2026-11-10T09:00:00-03:00", "timeZone": "America/Sao_Paulo" },
@@ -108,6 +113,7 @@ public sealed class GoogleCalendarSyncTests : IAsyncLifetime
         Assert.Equal(new[] { -30 }, await AlertOffsetsAsync(dentist.EventId));
 
         // Read-only in Pandora.
+        Assert.True(calendar.IsReadOnly);
         var edit = await SendAsync(new UpdateEventCommand(new UpdateEventInput(
             _userId, dentist.EventId, EventEditScope.All, null, "Mine", null, null, null, null, null, null, null)));
         Assert.Equal(CalendarErrors.ReadOnly.Code, Assert.Single(edit.Errors).Code);
@@ -176,6 +182,94 @@ public sealed class GoogleCalendarSyncTests : IAsyncLifetime
         Assert.Contains("refresh rejected", result.LastError);
     }
 
+    [Fact]
+    public async Task Pandora_edits_reach_google_and_come_back_as_no_change()
+    {
+        var binding = Assert.Single((await SendAsync(new BindGoogleCalendarsCommand(
+            new BindGoogleCalendarsInput(_userId, _accountId, ["primary"])))).Value!);
+        Assert.Equal("read-write", binding.Direction);
+        await SyncAsync(binding.Id);
+        var calendar = Assert.Single((await QueryAsync(new GetCalendarsQuery(new GetCalendarsInput(_userId)))).Value!);
+        Assert.False(calendar.IsReadOnly);
+
+        // Created in Pandora: weekly, with a 15-minute alert.
+        var created = (await SendAsync(new CreateEventCommand(new CreateEventInput(
+            _userId, calendar.Id, "Academia", null, "Clube", null,
+            new DateTimeOffset(2026, 11, 3, 21, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 11, 3, 22, 0, 0, TimeSpan.Zero),
+            false, Zone, "FREQ=WEEKLY;BYDAY=TU", null)))).Value!;
+        Assert.True((await SendAsync(new CreateAlertCommand(new CreateAlertInput(_userId, "event", created.Id, -15, null)))).IsSuccess);
+        await SyncAsync(binding.Id);
+
+        var remote = Assert.Single(_google.All, e => e.Summary == "Academia");
+        Assert.Equal(["RRULE:FREQ=WEEKLY;BYDAY=TU"], remote.Recurrence);
+        Assert.Equal(15, Assert.Single(remote.Reminders!.Overrides!).Minutes);
+        Assert.Equal(Zone, remote.Start!.TimeZone);
+        Assert.Equal("Clube", remote.Location);
+
+        // Edited in Pandora: Google follows, and the change coming back neither duplicates nor overwrites.
+        await SendAsync(new UpdateEventCommand(new UpdateEventInput(
+            _userId, created.Id, EventEditScope.All, null, "Academia (perna)", null, null, null, null, null, null, null)));
+        await SyncAsync(binding.Id);
+        await SyncAsync(binding.Id);
+        Assert.Equal("Academia (perna)", _google.Find(remote.Id)!.Summary);
+        Assert.Equal(1, await LiveEventRowsAsync());
+        Assert.Equal(new[] { -15 }, await AlertOffsetsAsync(created.Id));
+        Assert.Empty(await ConflictsAsync());
+
+        // Deleted in Pandora: gone from Google.
+        await SendAsync(new DeleteEventCommand(new DeleteEventInput(_userId, created.Id, EventEditScope.All, null)));
+        await SyncAsync(binding.Id);
+        Assert.True(_google.Find(remote.Id)!.IsCancelled);
+    }
+
+    [Fact]
+    public async Task When_both_sides_edit_the_newer_edit_wins_and_the_other_is_logged()
+    {
+        const string meeting = """
+            { "id": "e1", "status": "confirmed", "summary": "Reunião",
+              "start": { "dateTime": "2026-11-10T09:00:00-03:00", "timeZone": "America/Sao_Paulo" },
+              "end": { "dateTime": "2026-11-10T10:00:00-03:00", "timeZone": "America/Sao_Paulo" } }
+            """;
+        _google.Put(meeting);
+        var binding = Assert.Single((await SendAsync(new BindGoogleCalendarsCommand(
+            new BindGoogleCalendarsInput(_userId, _accountId, ["primary"])))).Value!);
+        await SyncAsync(binding.Id);
+        var eventId = Assert.Single(await OccurrencesAsync()).EventId;
+
+        // Google's edit is the newer one: it stays on both sides, Pandora's goes to the log.
+        await RenameAsync(eventId, "Reunião (Pandora)");
+        _google.Put(Event(meeting) with { Summary = "Reunião (Google)", Updated = DateTimeOffset.UtcNow.AddHours(1) });
+        await SyncAsync(binding.Id);
+
+        Assert.Equal("Reunião (Google)", Assert.Single(await OccurrencesAsync()).Title);
+        Assert.Equal("Reunião (Google)", _google.Find("e1")!.Summary);
+        var lost = Assert.Single(await ConflictsAsync());
+        Assert.Equal("pandora", lost.LosingSide);
+        Assert.Contains("(Pandora)", lost.LosingVersion);
+
+        // Pandora's edit is the newer one: Google takes it, Google's goes to the log.
+        _google.Put(_google.Find("e1")! with { Summary = "Reunião (Google, antes)", Updated = DateTimeOffset.UtcNow.AddHours(-1) });
+        await RenameAsync(eventId, "Reunião (Pandora, depois)");
+        await SyncAsync(binding.Id);
+
+        Assert.Equal("Reunião (Pandora, depois)", Assert.Single(await OccurrencesAsync()).Title);
+        Assert.Equal("Reunião (Pandora, depois)", _google.Find("e1")!.Summary);
+        var conflicts = await ConflictsAsync();
+        Assert.Equal(2, conflicts.Count);
+        Assert.Equal("google", conflicts[0].LosingSide);
+        Assert.Contains("(Google, antes)", conflicts[0].LosingVersion);
+    }
+
+    private Task RenameAsync(Guid eventId, string title) =>
+        SendAsync(new UpdateEventCommand(new UpdateEventInput(
+            _userId, eventId, EventEditScope.All, null, title, null, null, null, null, null, null, null)));
+
+    private Task<Result<bool>> SyncAsync(Guid bindingId) =>
+        SendAsync(new SyncCalendarBindingCommand(new SyncCalendarBindingInput(bindingId)));
+
+    private async Task<IReadOnlyList<SyncConflictDto>> ConflictsAsync() =>
+        (await QueryAsync(new GetSyncConflictsQuery(new GetSyncConflictsInput(_userId)))).Value!;
+
     private static GoogleEvent Event(string json) =>
         JsonSerializer.Deserialize<GoogleEvent>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
 
@@ -231,16 +325,71 @@ public sealed class GoogleCalendarSyncTests : IAsyncLifetime
         public Dictionary<string, IReadOnlyList<GoogleEvent>> Instances { get; } = [];
         public Error? Failure { get; set; }
 
-        private static readonly GoogleCalendarListEntry Calendar = new(
-            "primary", "Work", null, "#039be5", Zone, "owner", true, [new GoogleReminder("popup", 30)]);
+        public string AccessRole { get; set; } = "owner";
 
-        public void Put(string json)
+        private GoogleCalendarListEntry Calendar =>
+            new("primary", "Work", null, "#039be5", Zone, AccessRole, true, [new GoogleReminder("popup", 30)]);
+
+        public IEnumerable<GoogleEvent> All => _events.Values.Select(e => e.Event);
+
+        public GoogleEvent? Find(string id) => _events.TryGetValue(id, out var e) ? e.Event : null;
+
+        public void Put(string json) => Put(Event(json));
+
+        /// <summary>Stores a version: a new etag each time, and <c>updated</c> now unless the event says when.</summary>
+        public GoogleEvent Put(GoogleEvent ev)
         {
-            var ev = Event(json);
-            _events[ev.Id] = (ev, ++_version);
+            var version = ++_version;
+            ev = ev with { Etag = $"\"{version}\"", Updated = ev.Updated ?? DateTimeOffset.UtcNow };
+            _events[ev.Id] = (ev, version);
+            return ev;
         }
 
-        public void Cancel(string id) => _events[id] = (_events[id].Event with { Status = "cancelled" }, ++_version);
+        public void Cancel(string id) => Put(_events[id].Event with { Status = "cancelled", Updated = null });
+
+        public Task<Result<GoogleEvent>> GetEventAsync(Guid userId, Guid accountId, string calendarId, string eventId, CancellationToken ct = default) =>
+            Task.FromResult(Find(eventId) is { IsCancelled: false } ev
+                ? Result<GoogleEvent>.Success(ev)
+                : Result<GoogleEvent>.Failure([GoogleCalendarErrors.EventNotFound]));
+
+        public Task<Result<GoogleEvent>> InsertEventAsync(Guid userId, Guid accountId, string calendarId, GoogleEventWrite body, CancellationToken ct = default)
+        {
+            if (_events.ContainsKey(body.Id!))
+                return Task.FromResult(Result<GoogleEvent>.Failure([GoogleCalendarErrors.EventExists]));
+            var blank = new GoogleEvent(body.Id!, "confirmed", null, null, null, null, null, null, null, null, null, null, null, null, null);
+            return Task.FromResult(Result<GoogleEvent>.Success(Put(Apply(blank, body))));
+        }
+
+        public Task<Result<GoogleEvent>> PatchEventAsync(
+            Guid userId, Guid accountId, string calendarId, string eventId, GoogleEventWrite body, string? ifMatch, CancellationToken ct = default)
+        {
+            if (Find(eventId) is not { IsCancelled: false } current)
+                return Task.FromResult(Result<GoogleEvent>.Failure([GoogleCalendarErrors.EventNotFound]));
+            if (ifMatch is not null && ifMatch != current.Etag)
+                return Task.FromResult(Result<GoogleEvent>.Failure([GoogleCalendarErrors.EventChanged]));
+            return Task.FromResult(Result<GoogleEvent>.Success(Put(Apply(current, body))));
+        }
+
+        public Task<Result<bool>> DeleteEventAsync(Guid userId, Guid accountId, string calendarId, string eventId, CancellationToken ct = default)
+        {
+            if (Find(eventId) is { IsCancelled: false })
+                Cancel(eventId);
+            return Task.FromResult(Result<bool>.Success(true));
+        }
+
+        /// <summary>A patch: what the body carries replaces, what it leaves out stays.</summary>
+        private static GoogleEvent Apply(GoogleEvent ev, GoogleEventWrite body) => ev with
+        {
+            Status = body.Status ?? ev.Status,
+            Summary = body.Summary ?? ev.Summary,
+            Description = body.Description ?? ev.Description,
+            Location = body.Location ?? ev.Location,
+            Start = body.Start ?? ev.Start,
+            End = body.End ?? ev.End,
+            Recurrence = body.Recurrence ?? ev.Recurrence,
+            Reminders = body.Reminders ?? ev.Reminders,
+            Updated = null
+        };
 
         public void ExpireTokens() => _expired = true;
 

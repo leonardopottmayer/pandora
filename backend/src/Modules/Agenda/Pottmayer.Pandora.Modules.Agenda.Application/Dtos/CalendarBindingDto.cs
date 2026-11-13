@@ -8,9 +8,19 @@ public sealed record CalendarBindingDto(
     string? CalendarColor,
     Guid ExternalAccountId,
     string RemoteCalendarId,
+    string Direction,
     string Status,
     DateTimeOffset? LastSyncedAt,
     string? LastError);
+
+/// <summary>An event both sides changed; <see cref="LosingVersion"/> is the version that lost, as JSON.</summary>
+public sealed record SyncConflictDto(
+    Guid Id,
+    Guid EventId,
+    string Title,
+    string LosingSide,
+    string LosingVersion,
+    DateTimeOffset DetectedAt);
 
 /// <summary>A calendar the Google account can see, and the Pandora calendar it is bound to, if any.</summary>
 public sealed record GoogleCalendarDto(
