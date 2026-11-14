@@ -1,7 +1,9 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { App, DatePicker, Form, Input, InputNumber, Modal, Radio, Select } from 'antd'
-import dayjs, { type Dayjs } from 'dayjs'
+import type { Dayjs } from 'dayjs'
+import { todayIn } from '@/lib/today'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { type TransactionKind } from '../../models'
 import { transactionKindLabelKey } from '../../lib/enums'
@@ -58,6 +60,7 @@ interface TransactionFormModalProps {
 }
 
 export function TransactionFormModal({ open, onClose, defaultAccountId }: TransactionFormModalProps) {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const { message } = App.useApp()
   const [form] = Form.useForm<TransactionFormValues>()
@@ -81,9 +84,9 @@ export function TransactionFormModal({ open, onClose, defaultAccountId }: Transa
       kind: 'expense',
       installments: 1,
       accountId: defaultAccountId,
-      occurredOn: dayjs(),
+      occurredOn: todayIn(timeZone),
     })
-  }, [open, form, defaultAccountId])
+  }, [open, form, defaultAccountId, timeZone])
 
   const kindOptions = (target === 'account' ? ACCOUNT_KINDS : CARD_KINDS).map((k) => ({
     value: k,

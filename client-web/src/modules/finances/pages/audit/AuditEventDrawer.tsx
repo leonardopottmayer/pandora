@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Drawer, Typography } from 'antd'
 import type { AuditEventDto } from '../../models'
 import { formatDateTime } from '../../lib/format'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 
 function prettyJson(data: string) {
   try { return JSON.stringify(JSON.parse(data), null, 2) }
@@ -9,10 +10,11 @@ function prettyJson(data: string) {
 }
 
 export function AuditEventDrawer({ event, onClose }: { event: AuditEventDto | null; onClose: () => void }) {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const details: [string, string | null][] = event ? [
     ['finances.audit.eventId', event.id],
-    ['finances.audit.occurredAt', formatDateTime(event.occurredAt)],
+    ['finances.audit.occurredAt', formatDateTime(event.occurredAt, timeZone)],
     ['finances.audit.eventCode', event.eventType],
     ['finances.audit.entityType', t(`finances.audit.entityTypes.${event.entityType}`, { defaultValue: event.entityType })],
     ['finances.audit.entityId', event.entityId],

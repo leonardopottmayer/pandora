@@ -82,7 +82,7 @@ public sealed class TaskItem : AggregateRoot<Guid>, IAuditable
             throw new ArgumentException("A task needs a title.", nameof(title));
 
         var zone = string.IsNullOrWhiteSpace(timeZone) ? "UTC" : timeZone;
-        dueAt = dueAt?.ToUniversalTime();
+        dueAt = NormalizeDue(dueAt, dueHasTime, zone);
         var storedRrule = NormalizeRrule(rrule, dueAt, zone);
 
         return new TaskItem
@@ -132,7 +132,7 @@ public sealed class TaskItem : AggregateRoot<Guid>, IAuditable
             ParentTaskId = parent.Id,
             Title = TrimTitle(title),
             Notes = notes,
-            DueAt = dueAt?.ToUniversalTime(),
+            DueAt = NormalizeDue(dueAt, dueHasTime, parent.TimeZone),
             DueHasTime = dueHasTime,
             Priority = priority,
             Status = TaskItemStatus.Todo,
@@ -154,7 +154,7 @@ public sealed class TaskItem : AggregateRoot<Guid>, IAuditable
 
         Title = TrimTitle(title);
         Notes = notes;
-        DueAt = dueAt?.ToUniversalTime();
+        DueAt = NormalizeDue(dueAt, dueHasTime, TimeZone);
         DueHasTime = dueHasTime;
         Priority = priority;
     }
@@ -221,6 +221,19 @@ public sealed class TaskItem : AggregateRoot<Guid>, IAuditable
         Position = Position,
         CreatedAt = timeProvider.GetUtcNow()
     };
+
+    /// <summary>The date the task is due on in its own zone, or null without a due date.</summary>
+    public DateOnly? LocalDueDate() =>
+        DueAt is { } due ? DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(due, ResolveZone()).DateTime) : null;
+
+    /// <summary>
+    /// A due with a time is an instant; a date-only due is the start of its date in the task's zone
+    /// (<see cref="AllDayDates"/>), so the clock time a date picker carries along never moves it.
+    /// </summary>
+    private static DateTimeOffset? NormalizeDue(DateTimeOffset? dueAt, bool dueHasTime, string zone) =>
+        dueAt is not { } due ? null
+        : dueHasTime ? due.ToUniversalTime()
+        : AllDayDates.Snap(due, ResolveZone(zone));
 
     /// <summary>The task's zone as a <see cref="TimeZoneInfo"/>, throwing on an unknown IANA id.</summary>
     public TimeZoneInfo ResolveZone() => ResolveZone(TimeZone);

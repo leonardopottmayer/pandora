@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { App, Button, Dropdown, Empty, Skeleton, Typography, theme } from 'antd'
 import { DownOutlined, EllipsisOutlined, PlusOutlined, RightOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import { todayIn } from '@/lib/today'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { PageHeading } from '@/components/settings/PageHeading'
 import { toErrorMessage } from '@/lib/api/envelope'
 import type { RecurringTransactionDto } from '../../models'
@@ -33,6 +35,7 @@ function add(map: Map<string, Sums>, currency: string, direction: 'in' | 'out', 
 }
 
 export function RecurringTransactionsListPage() {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const { message, modal } = App.useApp()
   const { token } = theme.useToken()
@@ -57,7 +60,7 @@ export function RecurringTransactionsListPage() {
       (r.cardId ? byCard.get(r.cardId) : r.accountId ? byAccount.get(r.accountId) : undefined) ?? 'BRL'
   }, [accounts, cards])
 
-  const today = dayjs().startOf('day')
+  const today = todayIn(timeZone)
   const all = data ?? []
   const byNext = (a: RecurringTransactionDto, b: RecurringTransactionDto) => a.nextOccurrenceOn.localeCompare(b.nextOccurrenceOn)
   const active = all.filter((r) => r.status === 'active').sort(byNext)

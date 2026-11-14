@@ -18,11 +18,16 @@ module fell back to UTC. How it works now:
   Assistant and Channels' quiet hours all go through it.
 - **The preference is captured.** `PreferencesProvider` saves the browser's zone on the first
   authenticated load when the account has no preferences row.
-- **"Today" is the user's day.** Agenda (`GetToday`, `GetTasks`) and the per-user Finances commands
-  take "today" in the user's zone (`ResolveTodayAsync` / `DayBoundary`); the global Finances jobs anchor
-  on the default zone (`ResolveDefault()`).
-- **Display uses the account zone** on the Agenda screens. Finances is the exception: see
-  [KI-003](#ki-003--finances-shows-instants-in-the-devices-zone).
+- **"Today" is the user's day.** Agenda (`GetToday`, `GetTasks`), the per-user Finances commands and
+  the Finances daily jobs take "today" in each user's zone (`ResolveTodayAsync` / `DayBoundary` /
+  `UserDays`). The jobs run hourly, so a day turns near each user's own midnight.
+- **All-day values are dates** *(2026-11-13)*. A date-only task due and an all-day event are stored at
+  the midnight that starts their date in the item's zone and read back at the same date's midnight in
+  the viewer's zone (`AllDayDates`), so they stay on their date for a viewer in any zone.
+- **Forms and display use the account zone.** Agenda's pickers show and send the account zone's wall
+  clock (`toPicker` / `fromPicker`, ISO with that zone's offset), Finances' date fields default to the
+  account's today (`todayIn`), and every screen formats timestamps in the account zone (see
+  [KI-003](#ki-003--timestamps-shown-in-the-devices-zone-fixed-2026-11-13)).
 
 ---
 
@@ -55,14 +60,10 @@ A **required-configuration gate** on the web home, evaluated right after registr
 
 ---
 
-## KI-003 — Finances shows instants in the device's zone
+## KI-003 — Timestamps shown in the device's zone *(fixed 2026-11-13)*
 
-**Status:** open, low stakes.
-
-Finances' `formatDateTime` (`client-web/src/modules/finances/lib/format.ts`) formats with
-`Intl.DateTimeFormat` and no `timeZone`, so instants show in the device's zone, not the account's.
-Calendar dates (`DateOnly`) are not affected. It shows on the audit screen, the audit drawer and the
-import detail. On a device set to another zone, those times differ from what the rest of Pandora shows.
-
-**Fix:** pass the account zone from `usePreferences()` into the formatter, as Agenda's `datetime.ts`
-does.
+Some screens formatted instants with `toLocaleString()` or a device-zone `dayjs()`, so on a device set
+to another zone they differed from the rest of Pandora. How it works now: every timestamp formatter takes
+the account zone from `usePreferences()` (`{ timeZone }` on `toLocale*String`/`Intl.DateTimeFormat`, or
+`.tz(timeZone)` on dayjs), and "today"/"yesterday" labels compare days in that zone (`todayIn`). Notes
+chip dates are wall-clock strings the user typed, not instants, so they are shown as written.

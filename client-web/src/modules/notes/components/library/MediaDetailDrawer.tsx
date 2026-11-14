@@ -10,6 +10,7 @@ import { useDeleteMedia, useMediaUsages, useMoveMedia, useRenameMedia } from '..
 import { folderOptions, fromFolderOption, toFolderOption } from '../../lib/mediaFolders'
 import { downloadMedia } from '../../services/media.service'
 import { MediaPicture } from './MediaCard'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 
 interface MediaDetailDrawerProps {
   item: MediaItemDto | null
@@ -19,6 +20,7 @@ interface MediaDetailDrawerProps {
 
 /** One item up close: the picture, what it is, and what can be done with it. */
 export function MediaDetailDrawer({ item, folders, onClose }: MediaDetailDrawerProps) {
+  const { timeZone } = usePreferences()
   const { t, i18n } = useTranslation()
   const { message, modal } = App.useApp()
   const { token } = theme.useToken()
@@ -149,7 +151,7 @@ export function MediaDetailDrawer({ item, folders, onClose }: MediaDetailDrawerP
             {row(t('notes.library.size'), formatBytes(item.sizeBytes))}
             {row(t('notes.library.dimensions'), item.width && item.height ? `${item.width} × ${item.height}` : null)}
             {row(t('notes.library.originalName'), item.originalFileName)}
-            {row(t('notes.library.uploadedAt'), new Date(item.createdAt).toLocaleString(i18n.language))}
+            {row(t('notes.library.uploadedAt'), new Date(item.createdAt).toLocaleString(i18n.language, { timeZone }))}
           </div>
         </div>
       )}

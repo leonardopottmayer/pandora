@@ -81,13 +81,12 @@ public sealed class Event : AggregateRoot<Guid>, IAuditable
         if (string.IsNullOrWhiteSpace(title))
             throw new ArgumentException("An event needs a title.", nameof(title));
 
-        startsAt = startsAt.ToUniversalTime();
-        endsAt = endsAt.ToUniversalTime();
         if (endsAt < startsAt)
             throw new ArgumentException("An event cannot end before it starts.", nameof(endsAt));
 
         var zone = string.IsNullOrWhiteSpace(timeZone) ? "UTC" : timeZone;
         var resolvedZone = ResolveZone(zone);
+        (startsAt, endsAt) = NormalizeSpan(startsAt, endsAt, isAllDay, resolvedZone);
 
         string? storedRrule = null;
         DateTimeOffset? recurrenceEndsAt = null;
@@ -127,10 +126,9 @@ public sealed class Event : AggregateRoot<Guid>, IAuditable
         if (string.IsNullOrWhiteSpace(title))
             throw new ArgumentException("An event needs a title.", nameof(title));
 
-        startsAt = startsAt.ToUniversalTime();
-        endsAt = endsAt.ToUniversalTime();
         if (endsAt < startsAt)
             throw new ArgumentException("An event cannot end before it starts.", nameof(endsAt));
+        (startsAt, endsAt) = NormalizeSpan(startsAt, endsAt, isAllDay, ResolveZone());
 
         Title = TrimTitle(title);
         Description = description;
@@ -194,6 +192,27 @@ public sealed class Event : AggregateRoot<Guid>, IAuditable
 
     /// <summary>The event's zone as a <see cref="TimeZoneInfo"/>, throwing on an unknown IANA id.</summary>
     public TimeZoneInfo ResolveZone() => ResolveZone(TimeZone);
+
+    /// <summary>
+    /// A start (and end) for one occurrence of this event. On an all-day event they snap to whole days
+    /// in the event's zone like the series does; a lone end is left as given.
+    /// </summary>
+    public (DateTimeOffset? Start, DateTimeOffset? End) NormalizeOccurrence(DateTimeOffset? start, DateTimeOffset? end)
+    {
+        if (!IsAllDay || start is not { } s)
+            return (start, end);
+        if (end is { } e)
+        {
+            var (a, b) = AllDayDates.SnapSpan(s, e, ResolveZone());
+            return (a, b);
+        }
+        return (AllDayDates.Snap(s, ResolveZone()), null);
+    }
+
+    /// <summary>A timed span is two instants; an all-day one is whole days in the event's zone (<see cref="AllDayDates"/>).</summary>
+    private static (DateTimeOffset Start, DateTimeOffset End) NormalizeSpan(
+        DateTimeOffset start, DateTimeOffset end, bool isAllDay, TimeZoneInfo zone) =>
+        isAllDay ? AllDayDates.SnapSpan(start, end, zone) : (start.ToUniversalTime(), end.ToUniversalTime());
 
     private static TimeZoneInfo ResolveZone(string timeZone)
     {

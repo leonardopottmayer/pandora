@@ -9,12 +9,14 @@ import { formatDateTime } from '../../lib/format'
 import { useAllAuditTimeline } from '../../hooks/useAudit'
 import { EntityIdSelect } from './EntityIdSelect'
 import { AuditEventDrawer } from './AuditEventDrawer'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 
 // The audit log has its own entity vocabulary, distinct from TaggableEntityType.
 const ENTITY_TYPES = ['account', 'card', 'statement', 'transaction', 'recurring-transaction', 'pending-transaction', 'user-category', 'tag']
 type Mode = 'entity' | 'correlation'
 
 export function AuditPage() {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const { token } = theme.useToken()
   const [mode, setMode] = useState<Mode>('entity')
@@ -39,10 +41,10 @@ export function AuditPage() {
           <span className="truncate">{t(`finances.audit.events.${value}`, { defaultValue: value })}</span>
         </Button>
         <Typography.Text type="secondary" className="truncate text-xs" title={event.entityId}>{entityLabel(event.entityType)} · {event.entityId}</Typography.Text>
-        <Typography.Text type="secondary" className="text-xs tabular-nums md:hidden">{formatDateTime(event.occurredAt)}</Typography.Text>
+        <Typography.Text type="secondary" className="text-xs tabular-nums md:hidden">{formatDateTime(event.occurredAt, timeZone)}</Typography.Text>
       </div>,
     },
-    { title: t('finances.audit.occurredAt'), dataIndex: 'occurredAt', width: 180, responsive: ['md'], render: (value: string) => <span className="tabular-nums">{formatDateTime(value)}</span> },
+    { title: t('finances.audit.occurredAt'), dataIndex: 'occurredAt', width: 180, responsive: ['md'], render: (value: string) => <span className="tabular-nums">{formatDateTime(value, timeZone)}</span> },
   ]
   return (
     <div className="flex min-w-0 flex-col gap-6 lg:h-[calc(100dvh-112px)]">

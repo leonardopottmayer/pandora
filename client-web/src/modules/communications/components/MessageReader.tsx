@@ -11,6 +11,7 @@ import { mailSrcDoc, prepareMailHtml } from '../lib/prepareMailHtml'
 import { MailActions } from './MailActions'
 import { SaveMessageToNotesModal } from './SaveMessageToNotesModal'
 import { useFeature, usePermission } from '@/modules/identity/hooks/useAccess'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 
 function addresses(list: MailAddress[]): string {
   return list.map((a) => (a.name ? `${a.name} <${a.address}>` : a.address)).join(', ')
@@ -33,6 +34,7 @@ export function MessageReader({
   /** On a narrow screen the reader replaces the list, and this goes back to it. */
   onBack?: () => void
 }) {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const { message: toast } = App.useApp()
   const { token } = theme.useToken()
@@ -145,13 +147,13 @@ export function MessageReader({
                       {t('mail.cc')}: {addresses(summary.cc)}
                     </span>
                   )}
-                  <span>{new Date(summary.sentAt).toLocaleString()}</span>
+                  <span>{new Date(summary.sentAt).toLocaleString(undefined, { timeZone })}</span>
                 </div>
               </details>
             )}
           </div>
           <Typography.Text type="secondary" className="shrink-0 text-xs tabular-nums">
-            {shortDate(summary.sentAt)}
+            {shortDate(summary.sentAt, timeZone)}
           </Typography.Text>
         </div>
 
@@ -194,7 +196,7 @@ export function MessageReader({
                     {addressLabel(m.from)}
                   </span>
                   <span className="shrink-0 text-xs tabular-nums" style={{ color: token.colorTextTertiary }}>
-                    {shortDate(m.sentAt)}
+                    {shortDate(m.sentAt, timeZone)}
                   </span>
                 </button>
               ))}

@@ -4,6 +4,7 @@ import { App, Button, Checkbox, Descriptions, Drawer, Empty, Input, Select, Skel
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { formatDateTime } from '@/modules/finances/lib/format'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { usePermission } from '@/modules/identity/hooks/useAccess'
 import { EXCEPTION_EFFECTS, type AdminUserDetailDto, type RoleDto, type UserException } from '../../models'
 import {
@@ -42,6 +43,7 @@ export function UserDetailDrawer({ userId, roles, onClose }: UserDetailDrawerPro
 }
 
 function DrawerBody({ detail, roles }: { detail: AdminUserDetailDto; roles: RoleDto[] }) {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const { message } = App.useApp()
   const canManage = usePermission('admin.users.manage')
@@ -90,11 +92,11 @@ function DrawerBody({ detail, roles }: { detail: AdminUserDetailDto; roles: Role
             label: t('admin.users.mfa'),
             children: user.mfaEnabled ? t('admin.users.mfaOn') : <Tag color="gold">{t('admin.users.mfaOff')}</Tag>,
           },
-          { key: 'created', label: t('admin.users.createdAt'), children: formatDateTime(user.createdAt) },
+          { key: 'created', label: t('admin.users.createdAt'), children: formatDateTime(user.createdAt, timeZone) },
           {
             key: 'last',
             label: t('admin.users.lastSignIn'),
-            children: user.lastSignInAt ? formatDateTime(user.lastSignInAt) : '—',
+            children: user.lastSignInAt ? formatDateTime(user.lastSignInAt, timeZone) : '—',
           },
         ]}
       />

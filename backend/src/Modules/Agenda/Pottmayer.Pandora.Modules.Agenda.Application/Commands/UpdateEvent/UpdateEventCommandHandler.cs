@@ -75,16 +75,17 @@ public sealed class UpdateEventCommandHandler(IUnitOfWorkFactory factory, TimePr
             return Result<EventDto>.Failure([EventErrors.OccurrenceRequired]);
 
         var normalized = occurrence.ToUniversalTime();
+        var (startsAt, endsAt) = ev.NormalizeOccurrence(input.StartsAt, input.EndsAt);
         var existing = await overrides.FindAsync(ev.Id, normalized, token);
         if (existing is null)
         {
             var created = EventOccurrenceOverride.Create(ev.Id, ev.UserId, normalized, timeProvider);
-            created.Edit(input.StartsAt, input.EndsAt, input.Title, input.Description, input.Location);
+            created.Edit(startsAt, endsAt, input.Title, input.Description, input.Location);
             await overrides.AddAsync(created, token);
         }
         else
         {
-            existing.Edit(input.StartsAt, input.EndsAt, input.Title, input.Description, input.Location);
+            existing.Edit(startsAt, endsAt, input.Title, input.Description, input.Location);
             await overrides.UpdateAsync(existing, token);
         }
 
@@ -105,8 +106,9 @@ public sealed class UpdateEventCommandHandler(IUnitOfWorkFactory factory, TimePr
         // Capture the full rule before truncating the original, so the tail keeps recurring the same way.
         var tailRrule = ev.Rrule;
 
-        var newStart = (input.StartsAt ?? cut).ToUniversalTime();
-        var newEnd = (input.EndsAt ?? newStart + ev.Duration).ToUniversalTime();
+        // Offsets are kept: an all-day tail reads its date on the caller's clock (Event.Create snaps it).
+        var newStart = input.StartsAt ?? cut;
+        var newEnd = input.EndsAt ?? newStart + ev.Duration;
 
         ev.EndSeriesBefore(cut);
         await events.UpdateAsync(ev, token);

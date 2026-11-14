@@ -6,6 +6,30 @@ import type { WeekStartsOn } from '@/modules/identity/models'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
+const WALL = 'YYYY-MM-DDTHH:mm:ss'
+
+/**
+ * A stored instant as a date-picker value. Pickers work in the device's zone, so the value holds the
+ * account zone's wall clock as a plain Dayjs: a phone set to Lisbon still shows São Paulo's 10:00.
+ */
+export function toPicker(iso: string, timeZone: string): Dayjs {
+  return dayjs(dayjs(iso).tz(timeZone).format(WALL))
+}
+
+/** Now in the account zone, as a picker value (see `toPicker`). */
+export function nowPicker(timeZone: string): Dayjs {
+  return dayjs(dayjs().tz(timeZone).format(WALL))
+}
+
+/**
+ * A picker value back to an instant: the wall clock it shows, read in the account zone, as ISO-8601 with
+ * that zone's offset ("2026-11-14T10:00:00-03:00"). The offset also carries the date the user picked,
+ * which is what the backend keeps for a date-only due or an all-day event.
+ */
+export function fromPicker(value: Dayjs, timeZone: string): string {
+  return dayjs.tz(value.format(WALL), timeZone).format()
+}
+
 /** Start-of-day of the week containing `date`, honouring the user's `weekStartsOn` preference. */
 export function startOfWeek(date: Dayjs, weekStartsOn: WeekStartsOn): Dayjs {
   const startIdx = weekStartsOn === 'monday' ? 1 : 0

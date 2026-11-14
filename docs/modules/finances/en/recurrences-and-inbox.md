@@ -40,7 +40,7 @@ Two connected ideas:
 
 ### Generation (the job)
 
-The `RecurrenceGenerationService` job runs daily (and on demand): for each active recurrence with
+The `RecurrenceGenerationService` job runs hourly, on each user's own day (and on demand): for each active recurrence with
 occurrences inside the horizon (default 30 days), it generates a `PendingTransaction`
 (source = recurrence) — or **posts directly** if `auto_post` — then advances the cursor.
 **Idempotent:** the unique index `(recurring_transaction_id, occurred_on)` guarantees a given

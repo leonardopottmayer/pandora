@@ -18,6 +18,7 @@ import {
   useInvocations,
 } from '../hooks/useAssistant'
 import { toWav, useVoiceRecorder, voiceSupported } from '../hooks/useVoiceRecorder'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 
 const STATUS_COLOR: Record<InvocationStatus, string> = {
   executed: 'green',
@@ -63,6 +64,7 @@ function InvocationDetails({ invocation }: { invocation: Invocation }) {
 }
 
 export function AssistantPage() {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const { message } = App.useApp()
   const { token } = theme.useToken()
@@ -335,7 +337,7 @@ export function AssistantPage() {
       title: t('assistant.bar.colWhen'),
       dataIndex: 'createdAt',
       width: 170,
-      render: (value: string) => <Typography.Text type="secondary">{new Date(value).toLocaleString()}</Typography.Text>,
+      render: (value: string) => <Typography.Text type="secondary">{new Date(value).toLocaleString(undefined, { timeZone })}</Typography.Text>,
     },
     {
       title: t('assistant.bar.colRequest'),

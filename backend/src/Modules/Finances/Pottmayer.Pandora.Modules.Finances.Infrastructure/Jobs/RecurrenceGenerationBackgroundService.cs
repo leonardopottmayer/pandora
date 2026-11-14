@@ -2,14 +2,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.RunRecurrenceGeneration;
-using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Infrastructure.Jobs;
 
 public sealed class RecurrenceGenerationBackgroundService : BackgroundService
 {
-    private static readonly TimeSpan Interval = TimeSpan.FromHours(24);
+    // Hourly, not daily: each user's day turns at their own midnight, and every step is idempotent.
+    private static readonly TimeSpan Interval = TimeSpan.FromHours(1);
 
     private readonly IServiceProvider _serviceProvider;
     private readonly TimeProvider _timeProvider;
@@ -75,11 +75,8 @@ public sealed class RecurrenceGenerationBackgroundService : BackgroundService
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        // A global daily pass has no single user, so it anchors "today" on the configured account
-        // default zone rather than UTC (the doc's sanctioned fallback for jobs that span every user).
-        var zone = scope.ServiceProvider.GetRequiredService<IEffectiveTimeZoneResolver>().ResolveDefault();
-        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(_timeProvider.GetUtcNow(), zone).DateTime);
-        var result = await sender.Send(new RunRecurrenceGenerationCommand(new RunRecurrenceGenerationInput(today)), ct);
+        // No date: the handler takes each user's own day in their zone.
+        var result = await sender.Send(new RunRecurrenceGenerationCommand(new RunRecurrenceGenerationInput()), ct);
 
         if (result.IsFailure)
         {

@@ -6,6 +6,7 @@ using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
+using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
@@ -15,15 +16,16 @@ namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.RunRecurrenceG
 public sealed class RunRecurrenceGenerationCommandHandler(
     IUnitOfWorkFactory factory,
     IStatementResolver resolver,
+    IEffectiveTimeZoneResolver timeZones,
     TimeProvider timeProvider)
     : CommandHandlerBase<RunRecurrenceGenerationCommand, int>
 {
     protected override async Task<Result<int>> HandleAsync(
         RunRecurrenceGenerationCommand request, CancellationToken ct)
     {
-        var today = request.Input.Today;
-        var horizon = today.AddDays(request.Input.HorizonDays);
         var now = timeProvider.GetUtcNow();
+        var days = new UserDays(timeZones, now, request.Input.Today);
+        var horizonDays = request.Input.HorizonDays;
         var generated = 0;
 
         var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
@@ -36,9 +38,12 @@ public sealed class RunRecurrenceGenerationCommandHandler(
             var statementRepo = ctx.AcquireRepository<ICardStatementRepository>();
 
             // 1. Post pending account-targeted transactions whose date has been reached (phase-04 pendency)
-            var duePending = await transactionRepo.GetDuePendingAsync(today, token);
+            var duePending = await transactionRepo.GetDuePendingAsync(days.Latest, token);
             foreach (var tx in duePending)
             {
+                if (tx.OccurredOn > await days.TodayAsync(tx.UserId, token))
+                    continue;
+
                 tx.Post(timeProvider);
                 await transactionRepo.UpdateAsync(tx, token);
                 await ctx.RecordAsync(tx.UserId, null, TransactionEvents.EntityType, tx.Id,
@@ -47,10 +52,14 @@ public sealed class RunRecurrenceGenerationCommandHandler(
             }
 
             // 2. Generate pending / auto-post for active recurring transactions within the horizon
-            var candidates = await recurringRepo.GetActiveWithOccurrencesBeforeAsync(horizon, token);
+            var candidates = await recurringRepo.GetActiveWithOccurrencesBeforeAsync(days.Latest.AddDays(horizonDays), token);
 
             foreach (var recurring in candidates)
             {
+                var horizon = (await days.TodayAsync(recurring.UserId, token)).AddDays(horizonDays);
+                if (recurring.NextOccurrenceOn > horizon)
+                    continue;
+
                 var rule = recurring.GetRule();
                 var cursor = recurring.NextOccurrenceOn;
 

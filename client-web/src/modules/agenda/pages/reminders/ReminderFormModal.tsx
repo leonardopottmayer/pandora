@@ -4,6 +4,7 @@ import { App, DatePicker, Form, Input, Modal } from 'antd'
 import type { Dayjs } from 'dayjs'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
+import { fromPicker } from '../../lib/datetime'
 import { RecurrencePicker } from '../../components/RecurrencePicker'
 import { useCreateReminder } from '../../hooks/useReminders'
 
@@ -41,7 +42,7 @@ export function ReminderFormModal({ open, onClose }: ReminderFormModalProps) {
       await createMutation.mutateAsync({
         title: values.title,
         notes: values.notes ?? null,
-        remindAt: values.remindAt.toISOString(),
+        remindAt: fromPicker(values.remindAt, timeZone),
         timeZone,
         rrule,
       })

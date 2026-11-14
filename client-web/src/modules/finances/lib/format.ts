@@ -41,11 +41,12 @@ export function formatDay(isoDate: string): string {
 }
 
 /** Formats a `DateTimeOffset` (ISO 8601) as date+time in the current locale. */
-export function formatDateTime(iso: string | null | undefined): string {
+/** An instant as date + time on the account zone's clock (the Identity preference), not the device's. */
+export function formatDateTime(iso: string | null | undefined, timeZone: string): string {
   if (!iso) return ''
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return iso
-  return new Intl.DateTimeFormat(currentLocale(), { dateStyle: 'short', timeStyle: 'short' }).format(d)
+  return new Intl.DateTimeFormat(currentLocale(), { dateStyle: 'short', timeStyle: 'short', timeZone }).format(d)
 }
 
 /** Formats a statement reference month ("yyyy-MM" or "yyyy-MM-dd") as month/year. */

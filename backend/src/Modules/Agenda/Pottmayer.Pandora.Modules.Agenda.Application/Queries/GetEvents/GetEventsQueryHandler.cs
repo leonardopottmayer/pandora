@@ -5,6 +5,7 @@ using Pottmayer.Pandora.Modules.Agenda.Application.Mapping;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Recurrence;
+using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
 using Pottmayer.Tars.Core.Cqrs.Queries;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
@@ -14,9 +15,10 @@ namespace Pottmayer.Pandora.Modules.Agenda.Application.Queries.GetEvents;
 /// <summary>
 /// Expands the events overlapping the window into concrete occurrences (not rows), overlaying overrides
 /// (cancellations vanish, edits win), DST-aware in each event's own zone. The window is capped so a
-/// pathological rule cannot expand unbounded.
+/// pathological rule cannot expand unbounded. All-day occurrences come back on their own dates in the
+/// user's zone.
 /// </summary>
-public sealed class GetEventsQueryHandler(IUnitOfWorkFactory factory)
+public sealed class GetEventsQueryHandler(IUnitOfWorkFactory factory, IEffectiveTimeZoneResolver timeZones)
     : QueryHandlerBase<GetEventsQuery, IReadOnlyList<EventOccurrenceDto>>
 {
     private static readonly TimeSpan MaxRange = TimeSpan.FromDays(366);
@@ -31,6 +33,7 @@ public sealed class GetEventsQueryHandler(IUnitOfWorkFactory factory)
         if (input.To - input.From > MaxRange)
             return Fail(EventErrors.RangeTooLarge);
 
+        var zone = await timeZones.ResolveAsync(input.UserId, ct: cancellationToken);
         var occurrences = await factory.ExecuteAsync(AgendaModule.DatabaseKey, async (context, ct) =>
         {
             var events = context.AcquireRepository<IEventRepository>();
@@ -39,7 +42,7 @@ public sealed class GetEventsQueryHandler(IUnitOfWorkFactory factory)
             var rows = await events.GetOverlappingAsync(
                 input.UserId,
                 input.CalendarIds is { Count: > 0 } ids ? ids : null,
-                input.From, input.To, ct);
+                input.From.AddDays(-1), input.To.AddDays(1), ct); // all-day dates sit up to a day apart across zones
             if (rows.Count == 0)
                 return new List<EventOccurrence>();
 
@@ -52,7 +55,7 @@ public sealed class GetEventsQueryHandler(IUnitOfWorkFactory factory)
             foreach (var ev in rows)
             {
                 var forEvent = overridesByEvent.TryGetValue(ev.Id, out var list) ? list : [];
-                expanded.AddRange(EventExpander.Expand(ev, forEvent, input.From, input.To));
+                expanded.AddRange(EventExpander.Expand(ev, forEvent, input.From, input.To, zone));
             }
 
             return expanded;

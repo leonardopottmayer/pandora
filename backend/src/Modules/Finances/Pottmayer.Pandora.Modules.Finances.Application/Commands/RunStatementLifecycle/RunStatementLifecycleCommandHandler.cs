@@ -3,6 +3,8 @@ using Pottmayer.Pandora.Modules.Finances.Application.Auditing;
 using Pottmayer.Pandora.Modules.Finances.Application.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Services;
+using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
+using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
@@ -12,13 +14,14 @@ namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.RunStatementLi
 public sealed class RunStatementLifecycleCommandHandler(
     IUnitOfWorkFactory factory,
     IStatementResolver resolver,
+    IEffectiveTimeZoneResolver timeZones,
     TimeProvider timeProvider)
     : CommandHandlerBase<RunStatementLifecycleCommand, int>
 {
     protected override async Task<Result<int>> HandleAsync(RunStatementLifecycleCommand request, CancellationToken ct)
     {
-        var today = request.Input.Today;
         var now = timeProvider.GetUtcNow();
+        var days = new UserDays(timeZones, now, request.Input.Today);
 
         var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
@@ -33,6 +36,7 @@ public sealed class RunStatementLifecycleCommandHandler(
             // purchases never have nowhere to land.
             foreach (var card in activeCards)
             {
+                var today = await days.TodayAsync(card.UserId, token);
                 var current = resolver.Resolve(card, today);
                 if (await statements.FindByCardAndReferenceMonthAsync(card.Id, card.UserId, current.ReferenceMonth, token) is null)
                 {
@@ -68,9 +72,16 @@ public sealed class RunStatementLifecycleCommandHandler(
 
             // Candidates are statements past their closing or due date that still need a status
             // transition (close, mark paid/partially-paid, or flag overdue).
-            var lifecycleCandidates = await statements.GetLifecycleCandidatesAsync(today, token);
+            // Fetched up to the latest day any user can be on, then held to each owner's own day.
+            var lifecycleCandidates = await statements.GetLifecycleCandidatesAsync(days.Latest, token);
             foreach (var statement in lifecycleCandidates)
             {
+                var today = await days.TodayAsync(statement.UserId, token);
+                var due = (statement.Status == StatementStatus.Open && statement.ClosingDate <= today)
+                    || (statement.Status != StatementStatus.Paid && statement.Status != StatementStatus.Overdue && statement.DueDate < today);
+                if (!due)
+                    continue;
+
                 var changed = false;
                 if (statement.Close(timeProvider))
                 {

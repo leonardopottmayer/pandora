@@ -4,6 +4,7 @@ import type { ImportRowDto } from '../../models'
 import { formatDate, formatDateTime } from '../../lib/format'
 import { CurrencyAmount } from '../../components/CurrencyAmount'
 import { formatImportPayload, importRowPreview } from './importRowPreview'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 
 interface ImportRowDrawerProps {
   row: ImportRowDto | null
@@ -14,6 +15,7 @@ interface ImportRowDrawerProps {
 }
 
 export function ImportRowDrawer({ row, onClose, onLink, onViewTransaction, onViewInbox }: ImportRowDrawerProps) {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const preview = row ? importRowPreview(row) : null
   const details: [string, string | number | null][] = row ? [
@@ -26,7 +28,7 @@ export function ImportRowDrawer({ row, onClose, onLink, onViewTransaction, onVie
     ['finances.imports.matchedTransactionId', row.matchedTransactionId],
     ['finances.imports.matchedSuggestionId', row.matchedPendingTransactionId],
     ['finances.imports.installment', row.installmentNumber && row.installmentCount ? `${row.installmentNumber}/${row.installmentCount}` : null],
-    ['finances.imports.rowCreatedAt', formatDateTime(row.createdAt)],
+    ['finances.imports.rowCreatedAt', formatDateTime(row.createdAt, timeZone)],
   ] : []
   return <Drawer open={!!row} onClose={onClose} size={560} destroyOnHidden title={t('finances.imports.rowDetails')}
     footer={row && <Space wrap>

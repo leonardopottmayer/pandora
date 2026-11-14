@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { App, Checkbox, DatePicker, Form, Input, Modal, Select } from 'antd'
-import dayjs, { type Dayjs } from 'dayjs'
+import type { Dayjs } from 'dayjs'
 import { toErrorMessage } from '@/lib/api/envelope'
 import type { CalendarDto } from '../../models'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
+import { fromPicker, nowPicker } from '../../lib/datetime'
 import { RecurrencePicker } from '../../components/RecurrencePicker'
 import { useCreateEvent } from '../../hooks/useEvents'
 
@@ -48,13 +49,13 @@ export function EventFormModal({ open, calendars, defaultStart, onClose }: Event
   useEffect(() => {
     if (!open) return
     form.resetFields()
-    const start = defaultStart ?? dayjs().minute(0).second(0)
+    const start = defaultStart ?? nowPicker(timeZone).minute(0).second(0)
     form.setFieldsValue({
       calendarId: defaultCalendarId,
       isAllDay: false,
       range: [start, start.add(1, 'hour')],
     })
-  }, [open, defaultStart, defaultCalendarId, form])
+  }, [open, defaultStart, defaultCalendarId, form, timeZone])
 
   async function handleSubmit(values: EventFormValues) {
     try {
@@ -62,8 +63,8 @@ export function EventFormModal({ open, calendars, defaultStart, onClose }: Event
       await createMutation.mutateAsync({
         calendarId: values.calendarId,
         title: values.title,
-        startsAt: start.toISOString(),
-        endsAt: end.toISOString(),
+        startsAt: fromPicker(start, timeZone),
+        endsAt: fromPicker(end, timeZone),
         isAllDay: values.isAllDay,
         description: values.description ?? null,
         location: values.location ?? null,

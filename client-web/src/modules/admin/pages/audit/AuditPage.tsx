@@ -4,6 +4,7 @@ import { Button, Segmented, Table, Typography, theme } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { PageHeading } from '@/components/settings/PageHeading'
 import { formatDateTime } from '@/modules/finances/lib/format'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import type { AuditEntryDto } from '../../models'
 import { useAudit } from '../../hooks/useAdmin'
 import { featureLabel } from '../../lib/labels'
@@ -33,6 +34,7 @@ function useDescribe() {
 }
 
 export function AuditPage() {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const { token } = theme.useToken()
   const [target, setTarget] = useState<string>('')
@@ -51,7 +53,7 @@ export function AuditPage() {
       title: t('admin.audit.when'),
       dataIndex: 'occurredAt',
       width: 150,
-      render: (value: string) => <span className="tabular-nums">{formatDateTime(value)}</span>,
+      render: (value: string) => <span className="tabular-nums">{formatDateTime(value, timeZone)}</span>,
     },
     {
       title: t('admin.audit.change'),

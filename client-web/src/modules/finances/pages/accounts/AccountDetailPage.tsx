@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { App, Breadcrumb, Button, Dropdown, Empty, Skeleton, Spin, Tag, Typography, theme } from 'antd'
 import { EllipsisOutlined, PlusOutlined } from '@ant-design/icons'
-import dayjs, { type Dayjs } from 'dayjs'
+import type { Dayjs } from 'dayjs'
+import { todayIn } from '@/lib/today'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { SUPPORTED_BANKS, type TransactionDto } from '../../models'
@@ -26,13 +28,14 @@ import { TransactionFormModal } from '../transactions/TransactionFormModal'
 import { AccountFormModal } from './AccountFormModal'
 
 export function AccountDetailPage() {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const { message, modal } = App.useApp()
   const { token } = theme.useToken()
   const navigate = useNavigate()
   const { id = '' } = useParams<{ id: string }>()
 
-  const [month, setMonth] = useState<Dayjs>(() => dayjs().startOf('month'))
+  const [month, setMonth] = useState<Dayjs>(() => todayIn(timeZone).startOf('month'))
   const [editing, setEditing] = useState(false)
   const [adding, setAdding] = useState(false)
   const [detailId, setDetailId] = useState<string | null>(null)

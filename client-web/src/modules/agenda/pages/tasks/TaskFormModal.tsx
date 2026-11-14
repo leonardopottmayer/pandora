@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { App, Checkbox, DatePicker, Divider, Form, Input, Modal, Select, Typography } from 'antd'
-import dayjs, { type Dayjs } from 'dayjs'
+import type { Dayjs } from 'dayjs'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { TASK_PRIORITIES, type TaskDto, type TaskPriority } from '../../models'
 import { TASK_PRIORITY_META } from '../../lib/enums'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
+import { fromPicker, toPicker } from '../../lib/datetime'
 import { RecurrencePicker } from '../../components/RecurrencePicker'
 import { AlertsEditor } from '../../components/AlertsEditor'
 import { useCreateTask, useUpdateTask } from '../../hooks/useTasks'
@@ -66,7 +67,7 @@ export function TaskFormModal({
         title: task.title,
         notes: task.notes ?? undefined,
         priority: task.priority,
-        dueAt: task.dueAt ? dayjs(task.dueAt) : null,
+        dueAt: task.dueAt ? toPicker(task.dueAt, timeZone) : null,
         dueHasTime: task.dueHasTime,
       })
     } else {
@@ -77,7 +78,7 @@ export function TaskFormModal({
         dueHasTime: false,
       })
     }
-  }, [open, task, defaultListId, form])
+  }, [open, task, defaultListId, form, timeZone])
 
   async function handleSubmit(values: TaskFormValues) {
     try {
@@ -88,7 +89,7 @@ export function TaskFormModal({
             title: values.title,
             notes: values.notes ?? null,
             priority: values.priority,
-            dueAt: values.dueAt ? values.dueAt.toISOString() : null,
+            dueAt: values.dueAt ? fromPicker(values.dueAt, timeZone) : null,
             dueHasTime: values.dueHasTime,
           },
         })
@@ -100,7 +101,7 @@ export function TaskFormModal({
           notes: values.notes ?? null,
           parentTaskId: parentTaskId ?? null,
           priority: values.priority,
-          dueAt: values.dueAt ? values.dueAt.toISOString() : null,
+          dueAt: values.dueAt ? fromPicker(values.dueAt, timeZone) : null,
           dueHasTime: values.dueHasTime,
           timeZone,
           rrule,

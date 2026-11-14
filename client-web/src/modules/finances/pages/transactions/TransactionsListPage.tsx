@@ -4,6 +4,8 @@ import { App, Badge, Button, DatePicker, Dropdown, Input, InputNumber, Select, S
 import type { ColumnsType } from 'antd/es/table'
 import { EllipsisOutlined, FilterOutlined, PaperClipOutlined, PlusOutlined, SwapOutlined } from '@ant-design/icons'
 import dayjs, { type Dayjs } from 'dayjs'
+import { todayIn } from '@/lib/today'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { PageHeading } from '@/components/settings/PageHeading'
 import { toErrorMessage } from '@/lib/api/envelope'
 import {
@@ -61,11 +63,12 @@ function flattenCats(cats: Array<SystemCategoryDto | UserCategoryDto>): Array<{ 
 }
 
 export function TransactionsListPage() {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const { message, modal } = App.useApp()
   const { token } = theme.useToken()
 
-  const [month, setMonth] = useState<Dayjs>(() => dayjs().startOf('month'))
+  const [month, setMonth] = useState<Dayjs>(() => todayIn(timeZone).startOf('month'))
   const [text, setText] = useState('')
   const [places, setPlaces] = useState<string[]>([])
   const [categoryIds, setCategoryIds] = useState<string[]>([])

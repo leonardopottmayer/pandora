@@ -9,11 +9,11 @@ import {
   LinkOutlined,
   RetweetOutlined,
 } from '@ant-design/icons'
-import dayjs, { type Dayjs } from 'dayjs'
+import type { Dayjs } from 'dayjs'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
 import type { CalendarDto, EventOccurrenceDto, EventScope } from '../../models'
-import { formatEventRange } from '../../lib/datetime'
+import { formatEventRange, fromPicker, toPicker } from '../../lib/datetime'
 import { AlertsEditor } from '../../components/AlertsEditor'
 import { useDeleteEvent, useEvent, useUpdateEvent } from '../../hooks/useEvents'
 
@@ -65,7 +65,7 @@ export function EventDetailModal({ open, occurrence, calendars, onClose }: Event
     if (editing && occurrence) {
       form.setFieldsValue({
         title: occurrence.title,
-        range: [dayjs(occurrence.startsAt), dayjs(occurrence.endsAt)],
+        range: [toPicker(occurrence.startsAt, timeZone), toPicker(occurrence.endsAt, timeZone)],
         isAllDay: occurrence.isAllDay,
         calendarId: occurrence.calendarId,
         location: occurrence.location ?? undefined,
@@ -73,7 +73,7 @@ export function EventDetailModal({ open, occurrence, calendars, onClose }: Event
         description: occurrence.description ?? undefined,
       })
     }
-  }, [editing, occurrence, form])
+  }, [editing, occurrence, form, timeZone])
 
   if (!occurrence) return null
   const calendarName = calendars.find((c) => c.id === occurrence.calendarId)?.name
@@ -88,8 +88,8 @@ export function EventDetailModal({ open, occurrence, calendars, onClose }: Event
         occurrenceStart: occurrence.originalStartsAt,
         body: {
           title: values.title,
-          startsAt: start.toISOString(),
-          endsAt: end.toISOString(),
+          startsAt: fromPicker(start, timeZone),
+          endsAt: fromPicker(end, timeZone),
           isAllDay: values.isAllDay,
           calendarId: values.calendarId,
           location: values.location ?? null,

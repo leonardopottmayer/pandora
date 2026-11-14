@@ -12,9 +12,15 @@ Três `BackgroundService`s hospedados dirigem o comportamento automático do mó
 
 | Job | Intervalo | Responsabilidade |
 |---|---|---|
-| `RecurrenceGenerationBackgroundService` | a cada 24h (+ sob demanda) | Para cada recorrência ativa com ocorrências dentro do horizonte (default 30 dias), gera uma `PendingTransaction` — ou posta direto quando `auto_post`. Também posta transações `pending` agendadas cuja data chegou. Idempotente via índice único `(recurring_transaction_id, occurred_on)`. |
-| `StatementLifecycleBackgroundService` | a cada 24h | Cria faturas próximas, fecha faturas com `closing_date <= hoje` e marca `overdue` após o vencimento com saldo em aberto. Idempotente (rodar duas vezes não duplica nem re-fecha). |
+| `RecurrenceGenerationBackgroundService` | a cada hora (+ sob demanda) | Para cada recorrência ativa com ocorrências dentro do horizonte (default 30 dias), gera uma `PendingTransaction` — ou posta direto quando `auto_post`. Também posta transações `pending` agendadas cuja data chegou. Idempotente via índice único `(recurring_transaction_id, occurred_on)`. |
+| `StatementLifecycleBackgroundService` | a cada hora | Cria faturas próximas, fecha faturas com `closing_date <= hoje` e marca `overdue` após o vencimento com saldo em aberto. Idempotente (rodar duas vezes não duplica nem re-fecha). |
 | `ImportParsingBackgroundService` | a cada 30s (polling de fila) | Pega arquivos de importação `received` e faz o parsing de forma assíncrona. A falha de uma linha não aborta o arquivo. |
+
+**"Hoje" é o dia de cada usuário.** Os dois jobs guiados por data processam todos os usuários numa
+passada, mas cada linha segue o dia do seu dono no fuso dele (`UserDays`, via
+`IEffectiveTimeZoneResolver`): às 16:00 UTC um usuário em Tóquio já está no dia seguinte e um em São
+Paulo, não. Rodam a cada hora para o dia virar perto da meia-noite de cada usuário. Os comandos aceitam
+um `Today` opcional que aplica uma data só para todos (testes, execução manual).
 
 Os comandos on-demand correspondentes (`RunRecurrenceGeneration`, `RunStatementLifecycle`,
 `RunImportParsing`, `GenerateRecurringTransactionOccurrence`) permitem disparar a mesma lógica de forma

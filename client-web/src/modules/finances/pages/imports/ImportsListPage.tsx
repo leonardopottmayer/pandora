@@ -12,10 +12,12 @@ import { useAccounts } from '../../hooks/useAccounts'
 import { useCards } from '../../hooks/useCards'
 import { useAbortImportFile, useAllImportFiles, useRetryImportFile } from '../../hooks/useImports'
 import { ImportUploadModal } from './ImportUploadModal'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 
 const STATUS_COLORS: Record<ImportStatus, string> = { received: 'blue', parsing: 'processing', completed: 'green', failed: 'red', aborted: 'default' }
 
 export function ImportsListPage() {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const { message, modal } = App.useApp()
   const { token } = theme.useToken()
@@ -77,10 +79,10 @@ export function ImportsListPage() {
           {file.errorRows > 0 && <Tag color="red">{t('finances.imports.errorCount', { count: file.errorRows })}</Tag>}
         </div>}
         {file.status === 'failed' && file.errorMessage && <Typography.Text className="truncate text-xs" style={{ color: token.colorError }} title={file.errorMessage}>{file.errorMessage}</Typography.Text>}
-        <Typography.Text type="secondary" className="text-xs tabular-nums md:hidden">{formatDateTime(file.createdAt)}</Typography.Text>
+        <Typography.Text type="secondary" className="text-xs tabular-nums md:hidden">{formatDateTime(file.createdAt, timeZone)}</Typography.Text>
       </div>,
     },
-    { title: t('finances.imports.createdAt'), dataIndex: 'createdAt', width: 180, responsive: ['md'], render: (value: string) => <span className="tabular-nums">{formatDateTime(value)}</span> },
+    { title: t('finances.imports.createdAt'), dataIndex: 'createdAt', width: 180, responsive: ['md'], render: (value: string) => <span className="tabular-nums">{formatDateTime(value, timeZone)}</span> },
     {
       key: 'actions', width: 48, align: 'right',
       render: (_, file) => <span onClick={(event) => event.stopPropagation()}>

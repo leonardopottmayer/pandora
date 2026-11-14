@@ -2,6 +2,8 @@ import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, DatePicker, Descriptions, Input, Modal } from 'antd'
 import dayjs from 'dayjs'
+import { todayIn } from '@/lib/today'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import type { PendingTransactionDto } from '../../models'
 import { kindDirection } from '../../lib/enums'
 import { CurrencyAmount } from '../../components/CurrencyAmount'
@@ -27,11 +29,12 @@ export function TransferFromPendingModal({
   onClose,
   onConfirm,
 }: TransferFromPendingModalProps) {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const descriptionId = useId()
   const dateId = useId()
   const [description, setDescription] = useState('')
-  const [occurredOn, setOccurredOn] = useState(dayjs())
+  const [occurredOn, setOccurredOn] = useState(() => todayIn(timeZone))
 
   // Seed the editable fields from the outflow leg when the modal opens.
   // Adjusting state during render (guarded by an open-transition check) instead

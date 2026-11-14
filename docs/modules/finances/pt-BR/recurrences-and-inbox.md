@@ -40,7 +40,7 @@ Duas ideias conectadas:
 
 ### Geração (o job)
 
-O job `RecurrenceGenerationService` roda diariamente (e sob demanda): para cada recorrência ativa com
+O job `RecurrenceGenerationService` roda a cada hora, no dia de cada usuário (e sob demanda): para cada recorrência ativa com
 ocorrências dentro do horizonte (default 30 dias), gera uma `PendingTransaction` (source = recurrence)
 — ou **posta direto** se `auto_post` — e avança o cursor. **Idempotente:** o índice único
 `(recurring_transaction_id, occurred_on)` garante que uma recorrência nunca gere a mesma data duas

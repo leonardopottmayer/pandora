@@ -17,6 +17,7 @@ import { filesKeys, useFilesAgent, useRoots } from '../hooks/useFiles'
 import { shortTime } from '../lib/format'
 import * as filesService from '../services/files.service'
 import type { Root, Scan, ScanProgress } from '../models'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 
 /** Devices and their roots: what each device catalogs, how its scans went, and the scans waiting for a decision. */
 export function RootsPage() {
@@ -112,6 +113,7 @@ function Roots() {
 }
 
 function RootRow({ root, onEdit, onSelect }: { root: Root; onEdit: () => void; onSelect: () => void }) {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const { message } = App.useApp()
   const queryClient = useQueryClient()
@@ -138,7 +140,7 @@ function RootRow({ root, onEdit, onSelect }: { root: Root; onEdit: () => void; o
     root.scanTime ? t('files.roots.dailyAt', { time: shortTime(root.scanTime) }) : t('files.roots.manualOnly'),
     t('files.roots.entries', { count: root.entryCount }),
     root.lastCompletedScanAt
-      ? t('files.roots.lastScan', { when: new Date(root.lastCompletedScanAt).toLocaleString() })
+      ? t('files.roots.lastScan', { when: new Date(root.lastCompletedScanAt).toLocaleString(undefined, { timeZone }) })
       : t('files.roots.neverScanned'),
   ]
 
@@ -190,6 +192,7 @@ function ScanRunning({ progress }: { progress: ScanProgress }) {
 }
 
 function LatestScan({ scan }: { scan: Scan }) {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const { message } = App.useApp()
   const queryClient = useQueryClient()
@@ -199,7 +202,7 @@ function LatestScan({ scan }: { scan: Scan }) {
     onError: (e) => message.error(toErrorMessage(e, t('files.scan.resolveError'))),
   })
   const counts = t('files.scan.counts', {
-    when: new Date(scan.finishedAt ?? scan.startedAt).toLocaleString(),
+    when: new Date(scan.finishedAt ?? scan.startedAt).toLocaleString(undefined, { timeZone }),
     seen: scan.seen,
     created: scan.created,
     changed: scan.changed,
@@ -232,6 +235,6 @@ function LatestScan({ scan }: { scan: Scan }) {
   if (scan.status === 'aborted')
     return <Typography.Text type="danger">{t('files.scan.aborted', { error: t(`files.scan.reason.${scan.error}`, { defaultValue: scan.error ?? '—' }) })}</Typography.Text>
   if (scan.status === 'running')
-    return <Typography.Text type="secondary">{t('files.scan.runningElsewhere', { when: new Date(scan.startedAt).toLocaleString() })}</Typography.Text>
+    return <Typography.Text type="secondary">{t('files.scan.runningElsewhere', { when: new Date(scan.startedAt).toLocaleString(undefined, { timeZone }) })}</Typography.Text>
   return <Typography.Text type="secondary">{counts}</Typography.Text>
 }

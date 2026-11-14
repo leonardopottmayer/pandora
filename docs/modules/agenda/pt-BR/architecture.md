@@ -53,6 +53,14 @@ uso), e toda ação do usuário expressa como comando para o
 `EventAlertExpansion` (expande os alertas de um sujeito para instantes-âncora). A recorrência expande no
 `time_zone` IANA do próprio item, então "toda segunda às 09:00" sobrevive a uma troca de DST.
 
+**Valores de dia inteiro são datas** (`AllDayDates`). Um prazo só com data e um evento de dia inteiro são
+presos, na gravação, à meia-noite que começa a data no fuso do item; a data é lida no relógio de quem
+envia quando o valor traz offset, e no fuso do item quando vem em UTC (linhas gravadas). Na leitura
+(`GetToday`, `GetTasks`, `GetEvents`), voltam à meia-noite da mesma data no fuso de **quem vê** e são
+comparados por data, então um feriado de 14/11 num calendário de Tóquio fica em 14/11 para quem está em
+São Paulo. Um item com hora continua sendo um instante e cai no dia de quem vê para aquele instante.
+`EventOccurrence.OriginalStartsAt` nunca é reancorado: é a chave das edições de uma ocorrência.
+
 ### Portas (`Domain/Ports`)
 
 Repositórios, um por agregado: `ICalendarRepository`, `IEventRepository`,

@@ -2,9 +2,9 @@ using Pottmayer.Tars.Core.Cqrs.Commands;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.RunRecurrenceGeneration;
 
-/// <param name="Today">Date used as the upper bound baseline; typically UTC today.</param>
+/// <param name="Today">One date for every user (tests, a manual run); null takes each user's own day in their zone.</param>
 /// <param name="HorizonDays">How many days beyond today to generate occurrences for.</param>
-public sealed record RunRecurrenceGenerationInput(DateOnly Today, int HorizonDays = 30);
+public sealed record RunRecurrenceGenerationInput(DateOnly? Today = null, int HorizonDays = 30);
 
 /// <summary>
 /// Daily job that posts scheduled pending account transactions whose date has arrived, then walks

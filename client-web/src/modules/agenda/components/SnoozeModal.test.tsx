@@ -31,6 +31,6 @@ describe('SnoozeModal', () => {
     expect(screen.getByRole('textbox')).toHaveValue(format('2026-11-06T13:00:00Z'))
     await user.click(screen.getByRole('button', { name: 'Snooze' }))
     await waitFor(() => expect(onClose).toHaveBeenCalled())
-    expect(body).toEqual({ until: '2026-11-06T13:00:00.000Z' })
+    expect(body).toEqual({ until: '2026-11-06T10:00:00-03:00' }) // São Paulo's wall clock, with its offset
   })
 })

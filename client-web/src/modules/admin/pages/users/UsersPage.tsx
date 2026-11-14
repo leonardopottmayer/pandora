@@ -6,6 +6,7 @@ import { SearchOutlined } from '@ant-design/icons'
 import { PageHeading } from '@/components/settings/PageHeading'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { formatDateTime } from '@/modules/finances/lib/format'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { usePermission } from '@/modules/identity/hooks/useAccess'
 import type { AdminUserDto } from '../../models'
 import { useAdminUsers, useApproveUsers, useChangeUserRoles, useRoles } from '../../hooks/useAdmin'
@@ -13,6 +14,7 @@ import { AdminError } from '../../components/AdminError'
 import { UserDetailDrawer } from './UserDetailDrawer'
 
 export function UsersPage() {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const { message } = App.useApp()
   const { token } = theme.useToken()
@@ -108,7 +110,7 @@ export function UsersPage() {
       width: 160,
       responsive: ['lg'],
       render: (value: string | null) => (
-        <span className="tabular-nums">{value ? formatDateTime(value) : '—'}</span>
+        <span className="tabular-nums">{value ? formatDateTime(value, timeZone) : '—'}</span>
       ),
     },
   ]

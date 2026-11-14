@@ -11,6 +11,7 @@ import { filesKeys, useFilesAgent, useRoots } from '../hooks/useFiles'
 import { formatBytes, formatDuration, localPathOf } from '../lib/format'
 import * as filesService from '../services/files.service'
 import type { Entry, EntryStatus, FileCategory, FileMetadata, Page, Resolution, Root, SearchCriteria } from '../models'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 
 const CATEGORIES: FileCategory[] = ['video', 'audio', 'image', 'document', 'ebook', 'archive', 'code', 'other']
 const STATUSES: (EntryStatus | 'all')[] = ['present', 'missing', 'excluded', 'all']
@@ -196,6 +197,7 @@ function Entries({
   showLocation?: boolean
   onOpenFolder: (entry: Entry) => void
 }) {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const { message } = App.useApp()
   const { agent, isHere } = useFilesAgent()
@@ -262,7 +264,7 @@ function Entries({
           },
           {
             title: t('files.catalog.modified'),
-            render: (_, e) => (e.modifiedAt ? new Date(e.modifiedAt).toLocaleString() : ''),
+            render: (_, e) => (e.modifiedAt ? new Date(e.modifiedAt).toLocaleString(undefined, { timeZone }) : ''),
           },
           {
             title: '',
@@ -300,9 +302,10 @@ function Entries({
 
 /** What the bytes say about a file, in one line under its name, with a map link when it has a place. */
 function MetadataLine({ metadata: m }: { metadata: FileMetadata }) {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const facts = [
-    m.takenAt && new Date(m.takenAt).toLocaleString(),
+    m.takenAt && new Date(m.takenAt).toLocaleString(undefined, { timeZone }),
     m.camera,
     m.width && m.height && `${m.width}×${m.height}`,
     m.durationSeconds && formatDuration(m.durationSeconds),

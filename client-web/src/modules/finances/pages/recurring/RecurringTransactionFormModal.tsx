@@ -2,6 +2,8 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { App, Alert, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Radio, Select, Space, Switch, Typography, theme } from 'antd'
 import dayjs, { type Dayjs } from 'dayjs'
+import { todayIn } from '@/lib/today'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { toErrorMessage } from '@/lib/api/envelope'
 import {
   RECURRENCE_FREQUENCIES,
@@ -97,6 +99,7 @@ export function RecurringTransactionFormModal({
   recurring,
   onClose,
 }: RecurringTransactionFormModalProps) {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const { message } = App.useApp()
   const [form] = Form.useForm<RecurringFormValues>()
@@ -159,13 +162,13 @@ export function RecurringTransactionFormModal({
         amountIsEstimate: false,
         frequency: 'monthly',
         interval: 1,
-        startDate: dayjs(),
+        startDate: todayIn(timeZone),
         endMode: 'never',
         autoPost: false,
         autoGenerate: true,
       })
     }
-  }, [open, recurring, form])
+  }, [open, recurring, form, timeZone])
 
   const kindOptions = (target === 'account' ? ACCOUNT_KINDS : CARD_KINDS).map((k) => ({
     value: k,

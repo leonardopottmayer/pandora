@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { App, Button, DatePicker, Modal, Typography } from 'antd'
-import dayjs, { type Dayjs } from 'dayjs'
+import type { Dayjs } from 'dayjs'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
-import { formatDue } from '../lib/datetime'
+import { formatDue, fromPicker, nowPicker } from '../lib/datetime'
 import { useSnoozeReminder } from '../hooks/useReminders'
 
 interface SnoozeModalProps {
@@ -18,15 +18,15 @@ export function SnoozeModal({ open, reminderId, onClose }: SnoozeModalProps) {
   const { t, i18n } = useTranslation()
   const { message } = App.useApp()
   const { timeZone } = usePreferences()
-  const [until, setUntil] = useState<Dayjs | null>(() => dayjs().tz(timeZone).add(1, 'hour'))
+  const [until, setUntil] = useState<Dayjs | null>(() => nowPicker(timeZone).add(1, 'hour'))
   const [previous, setPrevious] = useState({ open, reminderId })
   if (open !== previous.open || reminderId !== previous.reminderId) {
     setPrevious({ open, reminderId })
-    if (open) setUntil(dayjs().tz(timeZone).add(1, 'hour'))
+    if (open) setUntil(nowPicker(timeZone).add(1, 'hour'))
   }
   const snoozeMutation = useSnoozeReminder()
 
-  const now = dayjs().tz(timeZone)
+  const now = nowPicker(timeZone)
   const shortcuts: { key: string; until: Dayjs }[] = [
     { key: 'in10m', until: now.add(10, 'minute') },
     { key: 'in1h', until: now.add(1, 'hour') },
@@ -36,11 +36,12 @@ export function SnoozeModal({ open, reminderId, onClose }: SnoozeModalProps) {
 
   async function snooze(to: Dayjs) {
     if (!reminderId) return
+    const instant = fromPicker(to, timeZone)
     try {
-      await snoozeMutation.mutateAsync({ id: reminderId, until: to.toISOString() })
+      await snoozeMutation.mutateAsync({ id: reminderId, until: instant })
       // Says when it comes back, since nothing on screen moves to show it.
       message.success(
-        t('agenda.reminders.snoozedTo', { when: formatDue(to.toISOString(), true, timeZone, i18n.language) }),
+        t('agenda.reminders.snoozedTo', { when: formatDue(instant, true, timeZone, i18n.language) }),
       )
       onClose()
     } catch (err) {

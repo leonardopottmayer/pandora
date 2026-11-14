@@ -53,6 +53,14 @@ it directly (D6).
 `EventAlertExpansion` (expands a subject's alerts to anchor instants). Recurrence expands in the
 item's own IANA `time_zone`, so "every Monday at 09:00" survives a DST change.
 
+**All-day values are dates** (`AllDayDates`). A date-only task due and an all-day event are snapped on
+write to the midnight that starts their date in the item's zone; the date is read on the caller's own
+clock when the value carries an offset, in the item's zone when it is UTC (stored rows). On read
+(`GetToday`, `GetTasks`, `GetEvents`), they come back at the midnight of the same date in the
+**viewer's** zone and are matched by date, so a Nov 14 holiday in a Tokyo calendar is on Nov 14 for a
+viewer in São Paulo. A timed item stays an instant and lands on the viewer's day for that instant.
+`EventOccurrence.OriginalStartsAt` is never re-anchored: it is the key for per-occurrence edits.
+
 ### Ports (`Domain/Ports`)
 
 Repositories, one per aggregate: `ICalendarRepository`, `IEventRepository`,

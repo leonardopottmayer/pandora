@@ -12,6 +12,7 @@ import { GMAIL_SCOPE, type Mailbox, type MailboxStatus, type MailProvider } from
 import { useDeleteMailbox, useMailboxes, useSyncMailbox, useUpdateMailbox } from '../hooks/useMail'
 import { ConnectMailboxModal } from '../components/ConnectMailboxModal'
 import { FixConnectionModal } from '../components/FixConnectionModal'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 
 const STATUS_COLOR: Record<MailboxStatus, string> = {
   active: 'green',
@@ -23,6 +24,7 @@ const STATUS_COLOR: Record<MailboxStatus, string> = {
 const PROVIDER_LABEL: Record<MailProvider, string> = { gmail: 'Gmail', titan: 'Titan', imap: 'IMAP' }
 
 export function MailAccountsPage() {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const { message, modal } = App.useApp()
   const { token } = theme.useToken()
@@ -126,7 +128,7 @@ export function MailAccountsPage() {
     const summary = [
       mailbox.displayName && mailbox.address,
       t('mail.accounts.messages', { count: mailbox.messageCount }),
-      mailbox.lastSyncedAt && t('mail.accounts.lastSynced', { when: new Date(mailbox.lastSyncedAt).toLocaleString() }),
+      mailbox.lastSyncedAt && t('mail.accounts.lastSynced', { when: new Date(mailbox.lastSyncedAt).toLocaleString(undefined, { timeZone }) }),
     ]
       .filter(Boolean)
       .join(' · ')

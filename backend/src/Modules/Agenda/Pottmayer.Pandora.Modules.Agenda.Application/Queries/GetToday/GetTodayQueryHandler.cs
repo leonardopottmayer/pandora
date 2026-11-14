@@ -1,5 +1,6 @@
 using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 using Pottmayer.Pandora.Modules.Agenda.Application.Dtos;
+using Pottmayer.Pandora.Modules.Agenda.Application.Mapping;
 using Pottmayer.Pandora.Modules.Agenda.Application.Preferences;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Ports.Repositories;
@@ -40,7 +41,9 @@ public sealed class GetTodayQueryHandler(
             // ── Events ──
             var events = context.AcquireRepository<IEventRepository>();
             var overrides = context.AcquireRepository<IEventOccurrenceOverrideRepository>();
-            var eventRows = await events.GetOverlappingAsync(request.Input.UserId, null, dayStart, expandTo, ct);
+            // A day wider each way: an all-day event elsewhere sits on the same date up to a day apart.
+            var eventRows = await events.GetOverlappingAsync(
+                request.Input.UserId, null, dayStart.AddDays(-1), expandTo.AddDays(1), ct);
             if (eventRows.Count > 0)
             {
                 var overrideRows = await overrides.GetByEventsAsync([.. eventRows.Select(e => e.Id)], ct);
@@ -51,7 +54,7 @@ public sealed class GetTodayQueryHandler(
                 foreach (var ev in eventRows)
                 {
                     var forEvent = byEvent.TryGetValue(ev.Id, out var list) ? list : [];
-                    foreach (var occ in EventExpander.Expand(ev, forEvent, dayStart, expandTo))
+                    foreach (var occ in EventExpander.Expand(ev, forEvent, dayStart, expandTo, zone))
                         result.Add(new TodayItemDto(
                             "event", occ.EventId, occ.Title, occ.Description, occ.StartsAt, occ.EndsAt,
                             occ.IsAllDay, occ.CalendarId, occ.Status.ToString()));
@@ -62,9 +65,13 @@ public sealed class GetTodayQueryHandler(
             var tasks = context.AcquireRepository<ITaskRepository>();
             foreach (var task in await tasks.GetByUserAsync(request.Input.UserId, null, null, ct))
             {
-                if (task.DueAt is { } due && due >= dayStart && due < dayEnd)
+                if (task.DueAt is not { } due)
+                    continue;
+                // A date-only due is its own date wherever it was set, shown at the start of that day here.
+                if (task.DueHasTime ? due >= dayStart && due < dayEnd
+                    : task.LocalDueDate() is { } date && date >= firstDay && date <= lastDay)
                     result.Add(new TodayItemDto(
-                        "task", task.Id, task.Title, task.Notes, due, null, !task.DueHasTime, null,
+                        "task", task.Id, task.Title, task.Notes, task.ToDto(zone).DueAt!.Value, null, !task.DueHasTime, null,
                         task.Status.ToString()));
             }
 

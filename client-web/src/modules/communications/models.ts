@@ -177,10 +177,11 @@ export function addressLabel(a: MailAddress | null): string {
   return a ? a.name || a.address : ''
 }
 
-/** Today's messages show the time, older ones the date. */
-export function shortDate(iso: string): string {
+/** Today's messages show the time, older ones the date — both on the account zone's clock. */
+export function shortDate(iso: string, timeZone: string, now: Date = new Date()): string {
   const date = new Date(iso)
-  return date.toDateString() === new Date().toDateString()
-    ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : date.toLocaleDateString()
+  const day = (d: Date) => d.toLocaleDateString('en-CA', { timeZone })
+  return day(date) === day(now)
+    ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone })
+    : date.toLocaleDateString(undefined, { timeZone })
 }

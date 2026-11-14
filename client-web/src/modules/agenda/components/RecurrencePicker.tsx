@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Checkbox, DatePicker, InputNumber, Radio, Select, Space } from 'antd'
-import dayjs from 'dayjs'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
+import { fromPicker, toPicker } from '../lib/datetime'
 import {
   buildRrule,
   parseRrule,
@@ -23,6 +24,7 @@ const FREQUENCIES: Frequency[] = ['none', 'daily', 'weekly', 'monthly', 'yearly'
 
 /** Simple RFC 5545 subset picker shared by events, tasks and reminders. */
 export function RecurrencePicker({ value, onChange, allowCount = true }: RecurrencePickerProps) {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const [state, setState] = useState<RecurrenceValue>(() => parseRrule(value))
   const [seededFrom, setSeededFrom] = useState<string | null | undefined>(value)
@@ -93,8 +95,9 @@ export function RecurrencePicker({ value, onChange, allowCount = true }: Recurre
           {state.endMode === 'until' && (
             <DatePicker
               format="DD/MM/YYYY"
-              value={state.until ? dayjs(state.until) : null}
-              onChange={(d) => update({ until: d ? d.toISOString() : null })}
+              value={state.until ? toPicker(state.until, timeZone) : null}
+              // Until the end of the picked day in the account zone, so that day's occurrence is kept.
+              onChange={(d) => update({ until: d ? fromPicker(d.endOf('day'), timeZone) : null })}
               style={{ width: '100%' }}
               aria-label={t('agenda.recurrence.endUntil')}
             />

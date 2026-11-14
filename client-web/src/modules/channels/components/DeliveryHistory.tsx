@@ -6,6 +6,8 @@ import dayjs from 'dayjs'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { channelLabel, NOTIFICATION_STATUSES, type ChannelId, type NotificationHistoryItem, type NotificationStatus } from '../models'
 import { useDeliveryHistory } from '../hooks/useChannels'
+import { todayIn } from '@/lib/today'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 
 const STATUS_COLOR: Record<NotificationStatus, string> = {
   Pending: 'default',
@@ -16,16 +18,20 @@ const STATUS_COLOR: Record<NotificationStatus, string> = {
 }
 
 export function DeliveryHistory() {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const [status, setStatus] = useState<NotificationStatus | undefined>(undefined)
   const { data: history, isLoading, isError } = useDeliveryHistory({ status })
 
+  // On the account zone's clock, so "today" is the account's day, not the device's.
   function when(value: string): string {
-    const date = dayjs(value)
-    const time = date.format('HH:mm')
-    if (date.isSame(dayjs(), 'day')) return t('notifications.today', { time })
-    if (date.isSame(dayjs().subtract(1, 'day'), 'day')) return t('notifications.yesterday', { time })
-    return `${date.toDate().toLocaleDateString()} ${time}`
+    const local = dayjs(value).tz(timeZone)
+    const time = local.format('HH:mm')
+    const day = local.format('YYYY-MM-DD')
+    const today = todayIn(timeZone)
+    if (day === today.format('YYYY-MM-DD')) return t('notifications.today', { time })
+    if (day === today.subtract(1, 'day').format('YYYY-MM-DD')) return t('notifications.yesterday', { time })
+    return `${new Date(value).toLocaleDateString(undefined, { timeZone })} ${time}`
   }
 
   const columns: ColumnsType<NotificationHistoryItem> = [

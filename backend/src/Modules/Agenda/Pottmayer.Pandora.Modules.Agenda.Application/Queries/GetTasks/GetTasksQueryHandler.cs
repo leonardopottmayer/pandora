@@ -26,38 +26,35 @@ public sealed class GetTasksQueryHandler(
             return await repo.GetByUserAsync(input.UserId, input.ListId, input.Status, ct);
         }, cancellationToken: cancellationToken);
 
+        // Buckets divide on the user's calendar day, not the UTC day, so a task due late tonight is
+        // "today" for a UTC−3 user rather than tomorrow. A date-only due is compared as a date.
+        var zone = await timeZones.ResolveAsync(input.UserId, ct: cancellationToken);
         IEnumerable<TaskItem> filtered = tasks;
         if (input.Due is { } bucket)
         {
-            // Buckets divide on the user's calendar day, not the UTC day, so a task due late tonight
-            // is "today" for a UTC−3 user rather than tomorrow.
-            var zone = await timeZones.ResolveAsync(input.UserId, ct: cancellationToken);
             var today = DayBoundary.LocalToday(zone, timeProvider.GetUtcNow());
-            var todayStart = DayBoundary.StartOfDay(zone, today);
-            var tomorrowStart = DayBoundary.StartOfDay(zone, today.AddDays(1));
-            var weekEnd = DayBoundary.StartOfDay(zone, today.AddDays(7));
-            filtered = tasks.Where(t => MatchesBucket(t, bucket, todayStart, tomorrowStart, weekEnd));
+            filtered = tasks.Where(t => MatchesBucket(t, bucket, zone, today));
         }
 
-        IReadOnlyList<TaskDto> dtos = [.. filtered.Select(t => t.ToDto())];
+        IReadOnlyList<TaskDto> dtos = [.. filtered.Select(t => t.ToDto(zone))];
         return Ok(dtos);
     }
 
-    private static bool MatchesBucket(
-        TaskItem task, TaskDueBucket bucket,
-        DateTimeOffset todayStart, DateTimeOffset tomorrowStart, DateTimeOffset weekEnd)
+    private static bool MatchesBucket(TaskItem task, TaskDueBucket bucket, TimeZoneInfo zone, DateOnly today)
     {
         if (bucket == TaskDueBucket.None)
             return task.DueAt is null;
         if (task.DueAt is not { } due)
             return false;
 
+        // A timed due falls on the viewer's day; a date-only due is its own date wherever it was set.
+        var day = task.DueHasTime ? DayBoundary.LocalToday(zone, due) : task.LocalDueDate()!.Value;
         return bucket switch
         {
-            TaskDueBucket.Overdue => due < todayStart,
-            TaskDueBucket.Today => due >= todayStart && due < tomorrowStart,
-            TaskDueBucket.Week => due >= todayStart && due < weekEnd,
-            TaskDueBucket.Later => due >= weekEnd,
+            TaskDueBucket.Overdue => day < today,
+            TaskDueBucket.Today => day == today,
+            TaskDueBucket.Week => day >= today && day < today.AddDays(7),
+            TaskDueBucket.Later => day >= today.AddDays(7),
             _ => false,
         };
     }

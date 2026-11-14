@@ -15,10 +15,12 @@ import { LinkTransactionModal } from '../../components/LinkTransactionModal'
 import { importRowPreview } from './importRowPreview'
 import { ImportRowDrawer } from './ImportRowDrawer'
 import { ImportRowsTable } from './ImportRowsTable'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 
 const STATUS_COLORS: Record<ImportStatus, string> = { received: 'blue', parsing: 'processing', completed: 'green', failed: 'red', aborted: 'default' }
 
 export function ImportDetailPage() {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const { message, modal } = App.useApp()
   const { token } = theme.useToken()
@@ -82,8 +84,8 @@ export function ImportDetailPage() {
   if (!file) return <Empty description={t('finances.imports.notFound')}><Link to="/finances/imports">{t('finances.imports.title')}</Link></Empty>
   const processing = file.status === 'received' || file.status === 'parsing'
   const metadata: [string, string | number | null][] = [
-    ['finances.imports.createdAt', formatDateTime(file.createdAt)],
-    ['finances.imports.completedAt', file.completedAt ? formatDateTime(file.completedAt) : null],
+    ['finances.imports.createdAt', formatDateTime(file.createdAt, timeZone)],
+    ['finances.imports.completedAt', file.completedAt ? formatDateTime(file.completedAt, timeZone) : null],
     ['finances.imports.cutoffDate', file.cutoffDate ? formatDate(file.cutoffDate) : null],
     [file.accountId ? 'finances.imports.account' : 'finances.imports.card', file.accountId ?? file.cardId],
     ['finances.imports.retryCount', file.retryCount],

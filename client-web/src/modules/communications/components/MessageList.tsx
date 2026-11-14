@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Button, Checkbox, Empty, Spin, theme } from 'antd'
 import { PaperClipOutlined, StarFilled } from '@ant-design/icons'
 import { addressLabel, shortDate, type MessageSummary } from '../models'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 
 interface MessageListProps {
   messages: MessageSummary[]
@@ -27,6 +28,7 @@ export function MessageList({
   loadingMore,
   onLoadMore,
 }: MessageListProps) {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
   const { token } = theme.useToken()
 
@@ -100,7 +102,7 @@ export function MessageList({
                 >
                   {m.hasAttachments && <PaperClipOutlined />}
                   {m.isStarred && <StarFilled style={{ color: token.colorWarning }} />}
-                  {shortDate(m.sentAt)}
+                  {shortDate(m.sentAt, timeZone)}
                 </span>
               </span>
               <span className="truncate text-sm" style={{ fontWeight: m.isUnread ? 600 : 400 }}>
