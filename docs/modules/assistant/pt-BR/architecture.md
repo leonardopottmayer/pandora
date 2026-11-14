@@ -96,7 +96,7 @@ o usuário tem (e cujas features estão ligadas), e os casos de uso ainda as ver
 
 | Módulo | Tool | Política | Notas |
 |---|---|---|---|
-| Agenda | `create_reminder`, `create_task`, `create_event` | WhenAmbiguous | |
+| Agenda | `create_reminder`, `create_task`, `create_event` | WhenAmbiguous | recorrência opcional; lista / calendário pelo nome; uma tarefa pode ir dentro de outra |
 | Agenda | `complete_task`, `reopen_task`, `update_task` | WhenAmbiguous | targeted |
 | Agenda | `update_event` | WhenAmbiguous | targeted; uma ocorrência, salvo "e as seguintes" / "todas" |
 | Agenda | `reschedule_reminder`, `rename_reminder` | WhenAmbiguous | targeted |

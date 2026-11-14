@@ -133,6 +133,73 @@ public sealed class AgendaAssistantToolsTests
         Assert.Equal(TimeSpan.FromHours(hours), input.EndsAt - input.StartsAt);
     }
 
+    [Fact]
+    public async Task Create_task_goes_to_the_named_list_with_notes_and_a_recurrence()
+    {
+        var groceries = new TaskListDto(Guid.NewGuid(), "Compras", IsDefault: false, 1, null);
+        var sender = new ScriptedSender(
+            List(new TaskListDto(Guid.NewGuid(), "Entrada", true, 0, null), groceries),
+            Result<TaskDto>.Success(Task("Pagar a luz")));
+
+        var outcome = await new CreateTaskTool(sender).ExecuteAsync(Context, Args("""
+            { "title": "Pagar a luz", "due": "2026-09-10", "list": "compras", "notes": "boleto no e-mail",
+              "recurrence": "RRULE:FREQ=MONTHLY;BYMONTHDAY=10" }
+            """));
+
+        var input = sender.Sent.OfType<CreateTaskCommand>().Single().Input;
+        Assert.Equal(groceries.Id, input.ListId);
+        Assert.Equal("boleto no e-mail", input.Notes);
+        Assert.Equal("FREQ=MONTHLY;BYMONTHDAY=10", input.Rrule);
+        Assert.Equal("Tarefa \"Pagar a luz\" criada em Compras para 10/09/2026 (repete).", outcome.Message);
+    }
+
+    [Fact]
+    public async Task Create_task_under_a_parent_goes_in_the_parents_list_and_an_unknown_list_creates_nothing()
+    {
+        var work = new TaskListDto(Guid.NewGuid(), "Trabalho", false, 1, null);
+        var trip = Task("Viagem para Floripa") with { ListId = work.Id };
+        var sender = new ScriptedSender(
+            List(new TaskListDto(Guid.NewGuid(), "Entrada", true, 0, null), work),
+            List(trip, Task("Viagem antiga", status: "Done")),
+            Result<TaskDto>.Success(Task("Reservar hotel")));
+
+        var outcome = await new CreateTaskTool(sender).ExecuteAsync(
+            Context, Args("""{ "title": "Reservar hotel", "parent": "viagem" }"""));
+
+        var input = sender.Sent.OfType<CreateTaskCommand>().Single().Input;
+        Assert.Equal(trip.Id, input.ParentTaskId);
+        Assert.Equal(work.Id, input.ListId);
+        Assert.Equal("Tarefa \"Reservar hotel\" criada dentro de \"Viagem para Floripa\".", outcome.Message);
+
+        var missing = new ScriptedSender(List(new TaskListDto(Guid.NewGuid(), "Entrada", true, 0, null)));
+        var refused = await new CreateTaskTool(missing).ExecuteAsync(
+            Context, Args("""{ "title": "Leite", "list": "mercado" }"""));
+        Assert.False(refused.Success);
+        Assert.Empty(missing.Sent.OfType<CreateTaskCommand>());
+    }
+
+    [Fact]
+    public async Task Create_event_goes_to_the_named_writable_calendar_and_repeats()
+    {
+        var personal = new CalendarDto(Guid.NewGuid(), "Pessoal", null, true, true, "UTC", "Local", null, false);
+        var sharedReadOnly = new CalendarDto(Guid.NewGuid(), "Futebol do clube", null, false, true, "UTC", "External", null, true);
+        var football = new CalendarDto(Guid.NewGuid(), "Futebol", null, false, true, "UTC", "Local", null, false);
+        var created = new EventDto(Guid.NewGuid(), football.Id, "Futebol", null, null, null,
+            DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, false, "UTC", "FREQ=WEEKLY;BYDAY=TH", null, "Confirmed");
+        var sender = new ScriptedSender(List(personal, sharedReadOnly, football), Result<EventDto>.Success(created));
+
+        // "futebol" alone would match the read-only one too; it is left out, so only one remains.
+        await new CreateEventTool(sender).ExecuteAsync(Context, Args("""
+            { "title": "Futebol", "startsAt": "2026-09-10T19:00:00-03:00", "calendar": "futebol",
+              "description": "levar a chuteira", "recurrence": "FREQ=WEEKLY;BYDAY=TH" }
+            """));
+
+        var input = sender.Sent.OfType<CreateEventCommand>().Single().Input;
+        Assert.Equal(football.Id, input.CalendarId);
+        Assert.Equal("FREQ=WEEKLY;BYDAY=TH", input.Rrule);
+        Assert.Equal("levar a chuteira", input.Description);
+    }
+
     // São Paulo is UTC-3.
     private static TodayItemDto Item(string kind, string title, string at, string? endsAt = null, bool allDay = false, string status = "Scheduled") =>
         new(kind, Guid.NewGuid(), title, null, DateTimeOffset.Parse(at), endsAt is null ? null : DateTimeOffset.Parse(endsAt),

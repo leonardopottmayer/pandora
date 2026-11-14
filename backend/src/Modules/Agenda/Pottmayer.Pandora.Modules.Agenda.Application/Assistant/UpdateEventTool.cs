@@ -20,7 +20,7 @@ public sealed class UpdateEventTool(ISender sender, TimeProvider timeProvider) :
 
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "update_event",
-        Description: "Changes one of the user's calendar events: its title, time or place. You cannot see the events: point at it by its number on the last list, or pass the words the user used to name it.",
+        Description: "Changes one of the user's calendar events: its title, time, place or description. You cannot see the events: point at it by its number on the last list, or pass the words the user used to name it.",
         ParametersJsonSchema: $$"""
         {
           "type": "object",
@@ -30,7 +30,8 @@ public sealed class UpdateEventTool(ISender sender, TimeProvider timeProvider) :
             "startsAt": { "type": "string", "description": "The new start when the user gave a day: an ISO-8601 timestamp with offset, or a bare date for an all-day event." },
             "time": { "type": "string", "description": "The new start time (\"20:00\") when the user gave only a time — the event keeps its day." },
             "endsAt": { "type": "string", "description": "The new end (ISO-8601 with offset), only when the user said it; otherwise the length is kept." },
-            "location": { "type": "string", "description": "The new place, only when the user said it." }
+            "location": { "type": "string", "description": "The new place, only when the user said it." },
+            "description": { "type": "string", "description": "The event's new description, only when the user gave it (it replaces the old one)." }
           }
         }
         """,
@@ -65,7 +66,8 @@ public sealed class UpdateEventTool(ISender sender, TimeProvider timeProvider) :
     public async Task<AssistantCommandOutcome> ExecuteAsync(AssistantToolContext context, JsonElement arguments, CancellationToken ct = default)
     {
         var change = Parse(context, arguments);
-        if (change.Title is null && change.Start is null && change.Time is null && change.EndsAt is null && change.Location is null)
+        if (change.Title is null && change.Start is null && change.Time is null && change.EndsAt is null && change.Location is null
+            && change.Description is null)
             return AssistantCommandOutcome.Failed(context.Text("O que devo mudar no evento?", "What should I change on the event?"));
 
         var (target, problem) = await EventTarget.FindAsync(sender, context, arguments, timeProvider.GetUtcNow(), ct);
@@ -87,7 +89,7 @@ public sealed class UpdateEventTool(ISender sender, TimeProvider timeProvider) :
 
         var result = await sender.Send(new UpdateEventCommand(new UpdateEventInput(
             context.UserId, occurrence.EventId, target.Scope, target.OccurrenceStart,
-            change.Title, Description: null, change.Location, Url: null, startsAt, endsAt, isAllDay, CalendarId: null)), ct);
+            change.Title, change.Description, change.Location, Url: null, startsAt, endsAt, isAllDay, CalendarId: null)), ct);
         if (!result.IsSuccess)
             return AssistantCommandOutcome.Failed(string.Join("; ", result.Errors.Select(e => e.Message)));
 
@@ -98,7 +100,8 @@ public sealed class UpdateEventTool(ISender sender, TimeProvider timeProvider) :
     }
 
     private sealed record Change(
-        string? Title, (DateTimeOffset At, bool HasTime)? Start, TimeOnly? Time, DateTimeOffset? EndsAt, string? Location);
+        string? Title, (DateTimeOffset At, bool HasTime)? Start, TimeOnly? Time, DateTimeOffset? EndsAt, string? Location,
+        string? Description);
 
     private static Change Parse(AssistantToolContext context, JsonElement arguments) => new(
         OptionalString(arguments, "title"),
@@ -107,7 +110,8 @@ public sealed class UpdateEventTool(ISender sender, TimeProvider timeProvider) :
             ? TimeOnly.ParseExact(time, ["HH:mm", "H:mm", "HH:mm:ss"], CultureInfo.InvariantCulture)
             : null,
         OptionalInstant(arguments, "endsAt"),
-        OptionalString(arguments, "location"));
+        OptionalString(arguments, "location"),
+        OptionalString(arguments, "description"));
 
     /// <summary><paramref name="time"/> on the local day the occurrence starts, in the user's zone.</summary>
     private static (DateTimeOffset At, bool HasTime)? OnSameDay(AssistantToolContext context, DateTimeOffset occurrence, TimeOnly? time)
@@ -132,6 +136,8 @@ public sealed class UpdateEventTool(ISender sender, TimeProvider timeProvider) :
             parts.Add(context.Text("até ", "until ") + context.FormatDateTime(end));
         if (change.Location is { } location)
             parts.Add(context.Text($"em {location}", $"at {location}"));
+        if (change.Description is not null)
+            parts.Add(context.Text("descrição nova", "new description"));
         return parts.Count == 0 ? "" : ": " + string.Join(", ", parts);
     }
 

@@ -98,7 +98,7 @@ the user holds (and whose features are on), and the use cases still check them w
 
 | Module | Tool | Policy | Notes |
 |---|---|---|---|
-| Agenda | `create_reminder`, `create_task`, `create_event` | WhenAmbiguous | |
+| Agenda | `create_reminder`, `create_task`, `create_event` | WhenAmbiguous | optional recurrence; task list / calendar by name; a task may go under a parent |
 | Agenda | `complete_task`, `reopen_task`, `update_task` | WhenAmbiguous | targeted |
 | Agenda | `update_event` | WhenAmbiguous | targeted; one occurrence unless "and the following" / "all" |
 | Agenda | `reschedule_reminder`, `rename_reminder` | WhenAmbiguous | targeted |

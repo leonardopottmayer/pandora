@@ -19,13 +19,14 @@ public sealed class CreateReminderTool(ISender sender) : IAssistantTool
 
     public AssistantCommandDescriptor Descriptor { get; } = new(
         Name: "create_reminder",
-        Description: "Creates a one-off reminder with a title and a time. Use when the user asks to be reminded of something.",
-        ParametersJsonSchema: """
+        Description: "Creates a reminder with a title and a time, once or repeating. Use when the user asks to be reminded of something.",
+        ParametersJsonSchema: $$"""
         {
           "type": "object",
           "properties": {
             "title": { "type": "string", "description": "What to be reminded of, in a few words." },
-            "remindAt": { "type": "string", "description": "When to remind, as an absolute ISO-8601 timestamp with offset (e.g. 2026-09-05T10:00:00-03:00)." }
+            "remindAt": { "type": "string", "description": "When to remind, as an absolute ISO-8601 timestamp with offset (e.g. 2026-09-05T10:00:00-03:00). For a repeating reminder, the first time." },
+            {{AgendaToolArguments.RecurrenceSchema}}
           },
           "required": ["title", "remindAt"]
         }
@@ -39,23 +40,28 @@ public sealed class CreateReminderTool(ISender sender) : IAssistantTool
             new AssistantCommandExample(
                 "reminder to pay the rent on the 5th at 10am",
                 """{ "title": "Pay the rent", "remindAt": "2026-09-05T10:00:00-03:00" }"""),
+            new AssistantCommandExample(
+                "remind me to take the medicine every day at 8am",
+                """{ "title": "Take the medicine", "remindAt": "2026-09-05T08:00:00-03:00", "recurrence": "FREQ=DAILY" }"""),
         ]);
 
     public string Describe(AssistantToolContext context, JsonElement arguments)
     {
         var (title, remindAt) = Parse(arguments);
         var when = context.FormatDateTime(remindAt);
+        var repeats = AgendaToolArguments.Repeats(context, AgendaToolArguments.Recurrence(arguments));
         return context.Text(
-            $"Criar o lembrete \"{title}\" para {when}?",
-            $"Create the reminder \"{title}\" for {when}?");
+            $"Criar o lembrete \"{title}\" para {when}{repeats}?",
+            $"Create the reminder \"{title}\" for {when}{repeats}?");
     }
 
     public async Task<AssistantCommandOutcome> ExecuteAsync(AssistantToolContext context, JsonElement arguments, CancellationToken ct = default)
     {
         var (title, remindAt) = Parse(arguments);
+        var rrule = AgendaToolArguments.Recurrence(arguments);
 
         var command = new CreateReminderCommand(new CreateReminderInput(
-            context.UserId, title, Notes: null, remindAt, TimeZone: null));
+            context.UserId, title, Notes: null, remindAt, TimeZone: null, rrule));
         var result = await sender.Send(command, ct);
 
         if (!result.IsSuccess)
@@ -63,9 +69,10 @@ public sealed class CreateReminderTool(ISender sender) : IAssistantTool
 
         var dto = result.Value!;
         var when = context.FormatDateTime(dto.RemindAt);
+        var repeats = AgendaToolArguments.Repeats(context, rrule);
         return AssistantCommandOutcome.Ok(context.Text(
-            $"Lembrete \"{dto.Title}\" criado para {when}.",
-            $"Reminder \"{dto.Title}\" created for {when}."));
+            $"Lembrete \"{dto.Title}\" criado para {when}{repeats}.",
+            $"Reminder \"{dto.Title}\" created for {when}{repeats}."));
     }
 
     private static (string Title, DateTimeOffset RemindAt) Parse(JsonElement arguments)
