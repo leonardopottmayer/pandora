@@ -20,6 +20,7 @@ public static class InfrastructureDI
         builder.Services.AddHostedService<EventAlertSweepBackgroundService>();
 
         builder.Services.AddHttpClient<IGoogleCalendarClient, GoogleCalendarClient>();
+        builder.Services.AddHttpClient<IGoogleTasksClient, GoogleTasksClient>();
         builder.Services.AddHostedService<GoogleCalendarSyncBackgroundService>();
 
         return builder;

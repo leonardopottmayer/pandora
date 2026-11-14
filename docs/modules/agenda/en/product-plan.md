@@ -1,8 +1,8 @@
 # Agenda Module — Roadmap (remaining work)
 
 > **Status:** phases **1–4** (reminders, recurrence, tasks, calendar/events), the frontend and the
-> Assistant tools are implemented, and two-way Google Calendar sync (phase 5). This file tracks only what is
-> **not yet built**: the hand checks of phase 5 and Google Tasks. For
+> Assistant tools are implemented, and two-way sync with Google Calendar (phase 5) and Google Tasks (phase 6). This file
+> tracks only what is **not yet built**: the hand checks of phase 6. For
 > what exists, see the module docs: [README](../README.md) · [Overview](overview.md) ·
 > [Architecture](architecture.md) · [Data Model](data-model.md) · [Reminders](reminders.md) ·
 > [Tasks](tasks.md) · [Calendar & Events](calendar-and-events.md) · [Alerts & Sweep](alerts-and-sweep.md) ·
@@ -15,38 +15,35 @@
 
 ---
 
-## Phase 5 — Google Calendar sync *(built 2026-11-13; checks by hand left)*
+## Phase 6 — Google Tasks sync *(built 2026-11-13; checks by hand left)*
 
-Two-way sync with Google calendars is built: see
-[Calendar & Events §6](calendar-and-events.md#6-google-calendar). The decisions it followed: the user
-picks Google calendars, each becoming its own Pandora calendar; Google's reminders become alerts and
-alerts become popup reminders; polling every 2 minutes with `syncToken` (push notifications need public
-HTTPS); the newer edit wins a conflict and the other goes to a conflict list.
+Two-way sync with Google task lists is built: see [Tasks §6](tasks.md#6-google-tasks). It reuses the
+calendars' pattern (binding, link, pending mark, conflict log, the same job) in its own tables
+(`agd012`, `agd014`); `agd011` now logs tasks too (`subject_type`).
 
-Different from the first design: no `local_hash` (the pending mark and the etag are enough); an event
-cannot move into or out of a Google calendar; the push runs at the start of the next cycle, not right
-after the commit; a calendar's direction comes from the account's access to it.
+Different from the first design: no `ITaskSyncProvider` (one provider, so no interface); Google Tasks has
+no sync token, so the cursor is `updatedMin`; it takes no `If-Match`, so an update reads the task first;
+Google picks the ids, so an insert whose answer is lost can duplicate a task.
+
+Google Calendar (phase 5) was checked by hand against a real account on 2026-11-13.
 
 ### Still to check by hand
 
-Against a real Google account:
+Against a real Google account, after reconnecting it so it grants `auth/tasks` (and with the Google Tasks
+API enabled in the Cloud project):
 
-- **Reading:** binding calendars; an event created, edited, moved and cancelled in Google showing within
-  one cycle; a recurring event with one occurrence changed; an all-day event; a Google reminder ringing
-  through Pandora.
-- **Writing:** an event created, edited and deleted in Pandora showing in Google within one cycle, with
-  its recurrence and reminders; "this occurrence" and "this and future" on a series; editing the same
-  event on both sides between two cycles, ending with the newer version and a row in the conflict list;
-  a calendar shared read-only staying read-only.
+- linking task lists, and their tasks (with subtasks and completed ones) showing within one cycle;
+- a task created, edited, completed and deleted in Google showing in Pandora, and the same from Pandora
+  to Google;
+- a due time and a priority set in Pandora surviving a Google edit of the title;
+- completing a recurring task, here and in Google, and the next instance reaching Google;
+- editing the same task on both sides between two cycles, ending with the newer version and a row in
+  the conflict list.
 
 ### Out of scope
 
-Attendees and RSVP, attachments, per-event colors, publishing a calendar born in Pandora to Google,
-Google push notifications, and Google Tasks (phase 6).
-## Phase 6 — Google Tasks sync
-
-- `ITaskSyncProvider` reusing the binding, link and conflict machinery.
-- **Done when:** the same guarantees hold for task lists and tasks.
+Attendees and RSVP, attachments, per-event colors, publishing a calendar or list born in Pandora to
+Google, Google push notifications, moving tasks between lists or under another parent, and task order.
 
 ## Beyond *(not scheduled)*
 

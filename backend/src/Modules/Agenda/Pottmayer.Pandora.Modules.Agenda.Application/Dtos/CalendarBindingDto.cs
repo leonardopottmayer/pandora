@@ -13,10 +13,11 @@ public sealed record CalendarBindingDto(
     DateTimeOffset? LastSyncedAt,
     string? LastError);
 
-/// <summary>An event both sides changed; <see cref="LosingVersion"/> is the version that lost, as JSON.</summary>
+/// <summary>An event or task both sides changed; <see cref="LosingVersion"/> is the version that lost, as JSON.</summary>
 public sealed record SyncConflictDto(
     Guid Id,
-    Guid EventId,
+    string SubjectType,
+    Guid SubjectId,
     string Title,
     string LosingSide,
     string LosingVersion,

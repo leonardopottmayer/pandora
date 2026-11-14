@@ -1,5 +1,6 @@
 using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 using Pottmayer.Pandora.Modules.Agenda.Application.Errors;
+using Pottmayer.Pandora.Modules.Agenda.Application.Google;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Ports.Repositories;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
@@ -23,6 +24,7 @@ public sealed class DeleteTaskCommandHandler(IUnitOfWorkFactory factory, TimePro
 
             task.Delete(timeProvider);
             await tasks.UpdateAsync(task, token);
+            await ExternalTaskLists.MarkChangedAsync(context, task, timeProvider, token);
             return true;
         }, cancellationToken: ct);
 

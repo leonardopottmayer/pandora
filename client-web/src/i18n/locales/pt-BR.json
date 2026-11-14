@@ -2006,7 +2006,7 @@
       "readOnlyEvent": "Este calendário do Google é só para leitura nesta conta. Edite o evento no Google; a mudança aparece aqui em até dois minutos.",
       "openGoogle": "Abrir o Google Agenda",
       "conflictsLabel": "Conflitos",
-      "conflictsDesc": "Eventos mudados aqui e no Google entre duas sincronizações. Ficou a edição mais recente; a outra aparece como descartada.",
+      "conflictsDesc": "Eventos e tarefas mudados aqui e no Google entre duas sincronizações. Ficou a edição mais recente; a outra aparece como descartada.",
       "conflictsError": "Não foi possível ler os conflitos.",
       "conflictDiscarded": "Descartada: {{title}}",
       "conflictWinner": {
@@ -2022,6 +2022,23 @@
         "needs-reconnect": "Reconecte a conta",
         "error": "Parado"
       }
+    },
+    "googleTasks": {
+      "title": "Google Tasks",
+      "intro": "Traga listas de tarefas de uma conta Google. Cada uma vira uma lista aqui, sincronizada nos dois sentidos a cada dois minutos. O Google guarda só o título, as notas, a data de entrega e se está feita; a hora, a prioridade, os alertas e a recorrência ficam no Pandora.",
+      "addLabel": "Adicionar listas de tarefas",
+      "addDesc": "Escolha a conta Google e depois as listas que quer trazer.",
+      "allBound": "Todas as listas desta conta já estão aqui.",
+      "bring_one": "Trazer {{count}} lista",
+      "bring_other": "Trazer {{count}} listas",
+      "bound_one": "{{count}} lista vinculada. Trazendo as tarefas…",
+      "bound_other": "{{count}} listas vinculadas. Trazendo as tarefas…",
+      "bindError": "Não foi possível vincular as listas.",
+      "listError": "Não foi possível ler as listas desta conta.",
+      "unlinkTitle": "Parar de sincronizar esta lista?",
+      "unlinkDesc": "Ela continua aqui com as tarefas. Nada muda no Google.",
+      "unlinked": "Lista desvinculada.",
+      "unlinkError": "Não foi possível desvincular a lista."
     },
     "settings": {
       "title": "Configurações da Agenda",

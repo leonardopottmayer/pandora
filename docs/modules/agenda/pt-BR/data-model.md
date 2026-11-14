@@ -25,7 +25,9 @@ As migrations ficam em `migrations/migrations/agenda/`.
 | agd008 | `alert_dispatch` | Ledger de idempotência do disparo de alerta |
 | agd009 | `calendar_binding` | Um calendário do Pandora alimentado por um calendário do Google |
 | agd010 | `event_link` | Um evento do Pandora ligado ao evento do Google |
-| agd011 | `sync_conflict` | Eventos mudados dos dois lados; a versão que perdeu |
+| agd011 | `sync_conflict` | Eventos e tarefas mudados dos dois lados; a versão que perdeu |
+| agd012 | `task_list_binding` | Uma lista de tarefas do Pandora sincronizada com uma lista do Google Tasks |
+| agd014 | `task_link` | Uma tarefa do Pandora ligada à tarefa do Google |
 | agd013 | `preferences` | O que o usuário prefere na própria Agenda |
 
 ---
@@ -236,14 +238,42 @@ Um evento do Pandora ↔ um evento do Google de um vínculo: o que impede a sinc
 
 ## agd011_sync_conflict
 
-Um evento que os dois lados mudaram entre duas sincronizações: venceu a edição mais recente, a outra fica
+Um evento ou tarefa que os dois lados mudaram entre duas sincronizações: venceu a edição mais recente, a outra fica
 aqui. Um log, sem chaves estrangeiras, então sobrevive a um calendário desvinculado.
 
 | Coluna | Tipo | Notas |
 |---|---|---|
 | `id`, `user_id` | uuid | índice `ix_agd011_user_detected (user_id, detected_at DESC)` |
-| `binding_id`, `event_id` | uuid | |
-| `title` | varchar(200) | o título do evento no Pandora quando o conflito foi detectado |
+| `binding_id` | uuid | um vínculo `agd009` ou `agd012` |
+| `subject_type`, `subject_id` | varchar(20), uuid | `event` (`agd002`) ou `task` (`agd005`) |
+| `title` | varchar(200) | o título do evento ou da tarefa no Pandora quando o conflito foi detectado |
 | `losing_side` | varchar(20) | `pandora \| google` |
-| `losing_version` | jsonb | a versão que perdeu, no formato de evento do Google |
+| `losing_version` | jsonb | a versão que perdeu, no formato de evento ou tarefa do Google |
 | `detected_at` | timestamptz | |
+
+## agd012_task_list_binding
+
+Uma lista de tarefas do Pandora sincronizada com uma lista do Google Tasks de uma conta do Integrations,
+sempre nos dois sentidos. Ver [Tarefas §6](tasks.md#6-google-tasks).
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id`, `user_id`, `external_account_id` | uuid | índice `ix_agd012_user_id` |
+| `list_id` | uuid → agd004 | único (`uq_agd012_list`) |
+| `remote_list_id` | varchar(255) | único por conta (`uq_agd012_account_remote`) |
+| `updated_cursor` | timestamptz NULL | quando começou a última listagem; a próxima pede o que mudou desde então. NULL ⇒ o próximo ciclo lista tudo |
+| `full_synced_at`, `last_synced_at` | timestamptz NULL | |
+| `status`, `failure_count`, `last_error` | | como na `agd009` |
+
+## agd014_task_link
+
+Uma tarefa do Pandora ↔ uma tarefa do Google de um vínculo.
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid | |
+| `binding_id` | uuid → agd012 | |
+| `task_id` | uuid → agd005 | único (`uq_agd014_task`) |
+| `remote_task_id` | varchar(1024) NULL | único por vínculo (`uq_agd014_binding_remote`); NULL até uma tarefa nascida no Pandora ser inserida (quem escolhe o id é o Google) |
+| `etag` / `remote_updated_at` | | o que o Google disse por último |
+| `pending_push_at` | timestamptz NULL | quando o Pandora mudou a tarefa pela última vez sem o Google ter recebido; índice parcial `ix_agd014_binding_pending` |

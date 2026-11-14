@@ -2006,7 +2006,7 @@
       "readOnlyEvent": "This Google calendar is read-only for this account. Edit the event in Google; the change shows here within two minutes.",
       "openGoogle": "Open Google Calendar",
       "conflictsLabel": "Conflicts",
-      "conflictsDesc": "Events changed here and in Google between two syncs. The newer edit stayed; the other is shown as discarded.",
+      "conflictsDesc": "Events and tasks changed here and in Google between two syncs. The newer edit stayed; the other is shown as discarded.",
       "conflictsError": "Could not load the conflicts.",
       "conflictDiscarded": "Discarded: {{title}}",
       "conflictWinner": {
@@ -2022,6 +2022,23 @@
         "needs-reconnect": "Reconnect the account",
         "error": "Stopped"
       }
+    },
+    "googleTasks": {
+      "title": "Google Tasks",
+      "intro": "Bring task lists from a Google account. Each one becomes a list here, synced both ways every two minutes. Google keeps only the title, notes, due date and done; the due time, priority, alerts and recurrence stay in Pandora.",
+      "addLabel": "Add task lists",
+      "addDesc": "Pick the Google account, then the task lists to bring.",
+      "allBound": "Every task list of this account is already here.",
+      "bring_one": "Bring {{count}} list",
+      "bring_other": "Bring {{count}} lists",
+      "bound_one": "{{count}} list linked. Bringing its tasks…",
+      "bound_other": "{{count}} lists linked. Bringing their tasks…",
+      "bindError": "Could not link the task lists.",
+      "listError": "Could not read the task lists of this account.",
+      "unlinkTitle": "Stop syncing this list?",
+      "unlinkDesc": "It stays here with its tasks. Nothing changes in Google.",
+      "unlinked": "List unlinked.",
+      "unlinkError": "Could not unlink the list."
     },
     "settings": {
       "title": "Agenda settings",

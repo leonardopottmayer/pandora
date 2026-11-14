@@ -89,7 +89,7 @@ Reconhecer/soneca por ocorrência para lembretes recorrentes são os comandos `A
 |---|---|---|
 | GET | `/agenda/google/calendars?accountId=` | Os calendários que uma conta Google conectada vê, cada um com o `bindingId` que já o traz, se houver. |
 | GET | `/agenda/google/bindings` | Os vínculos do usuário com o Google: calendário, conta, `direction` (`read`, `read-write`), status (`ok`, `needs-reconnect`, `error`), última sincronização, último erro. |
-| GET | `/agenda/google/conflicts` | Os 50 últimos eventos mudados dos dois lados: título, `losingSide` (`pandora`, `google`), `losingVersion` (JSON), `detectedAt`. |
+| GET | `/agenda/google/conflicts` | Os 50 últimos eventos e tarefas mudados dos dois lados: `subjectType` (`event`, `task`), `subjectId`, título, `losingSide` (`pandora`, `google`), `losingVersion` (JSON), `detectedAt`. |
 | POST | `/agenda/google/bindings` | `{ accountId, calendarIds }`: um calendário do Pandora por calendário do Google. Um calendário já vinculado é pulado. |
 | POST | `/agenda/google/bindings/{id}/sync` | Sincroniza agora, retomando um vínculo parado; devolve o vínculo depois. |
 | DELETE | `/agenda/google/bindings/{id}` | Desvincula: o calendário e os eventos ficam, como calendário local. |
@@ -98,3 +98,16 @@ O `isReadOnly` de um calendário (em `/agenda/calendars`) é verdadeiro num vín
 evento dele respondem `Agenda.CalendarReadOnly` (409). Mover um evento para dentro ou para fora de um
 calendário vinculado responde `Agenda.EventMoveAcrossGoogle` (409), e excluir um calendário vinculado
 `Agenda.CalendarBound` (409).
+
+## Google Tasks — `/agenda/google`
+
+| Método | Caminho | Propósito |
+|---|---|---|
+| GET | `/agenda/google/task-lists?accountId=` | As listas de tarefas de uma conta Google conectada, cada uma com o `bindingId` que já a sincroniza, se houver. |
+| GET | `/agenda/google/task-list-bindings` | Os vínculos do usuário com listas do Google Tasks: lista, conta, status, última sincronização, último erro. |
+| POST | `/agenda/google/task-list-bindings` | `{ accountId, listIds }`: uma lista do Pandora por lista do Google. Uma lista já vinculada é pulada. |
+| POST | `/agenda/google/task-list-bindings/{id}/sync` | Sincroniza agora, retomando um vínculo parado; devolve o vínculo depois. |
+| DELETE | `/agenda/google/task-list-bindings/{id}` | Desvincula: a lista e as tarefas ficam. |
+
+Excluir uma lista vinculada responde `Agenda.TaskListBound` (409). Uma conta sem o escopo do Tasks
+responde `Agenda.GoogleTasksMissingScope`.

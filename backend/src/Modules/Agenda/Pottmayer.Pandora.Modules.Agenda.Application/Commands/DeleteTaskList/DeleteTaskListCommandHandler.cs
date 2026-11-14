@@ -23,6 +23,9 @@ public sealed class DeleteTaskListCommandHandler(IUnitOfWorkFactory factory)
             if (list is null)
                 return Outcome.Missing;
 
+            if (await context.AcquireRepository<ITaskListBindingRepository>().FindByListAsync(input.ListId, token) is not null)
+                return Outcome.Bound;
+
             var live = await tasks.GetByUserAsync(input.UserId, input.ListId, null, token);
             if (live.Count > 0)
                 return Outcome.NotEmpty;
@@ -35,9 +38,10 @@ public sealed class DeleteTaskListCommandHandler(IUnitOfWorkFactory factory)
         {
             Outcome.Missing => Fail(TaskErrors.ListNotFound),
             Outcome.NotEmpty => Fail(TaskErrors.ListNotEmpty),
+            Outcome.Bound => Fail(TaskErrors.ListBound),
             _ => Ok(true),
         };
     }
 
-    private enum Outcome { Missing, NotEmpty, Deleted }
+    private enum Outcome { Missing, NotEmpty, Bound, Deleted }
 }

@@ -228,7 +228,7 @@ internal sealed class GoogleCalendarPush(IUnitOfWorkFactory factory, IGoogleCale
         }, cancellationToken: ct);
 
     private SyncConflict ConflictOf(CalendarBinding binding, Event ev, SyncConflictSide losing, string version) =>
-        SyncConflict.Create(binding.UserId, binding.Id, ev.Id, ev.Title, losing, version, timeProvider);
+        SyncConflict.Create(binding.UserId, binding.Id, SyncConflictSubject.Event, ev.Id, ev.Title, losing, version, timeProvider);
 
     private static bool Is<T>(Result<T> result, Error error) =>
         !result.IsSuccess && result.Errors[0].Code == error.Code;

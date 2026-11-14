@@ -10,6 +10,7 @@ import { toErrorMessage } from '@/lib/api/envelope'
 import { useAgendaPreferences, useSaveAgendaPreferences } from '../../hooks/useAgendaPreferences'
 import { useCalendars, useUpdateCalendar } from '../../hooks/useCalendars'
 import { GoogleCalendarSection } from './GoogleCalendarSection'
+import { GoogleTasksSection } from './GoogleTasksSection'
 
 export function AgendaSettingsPage() {
   const { t } = useTranslation()
@@ -102,6 +103,8 @@ export function AgendaSettingsPage() {
       </SettingsSection>
 
       <GoogleCalendarSection />
+
+      <GoogleTasksSection />
 
       <SettingsSection title={t('agenda.settings.groupInherited')}>
         <SettingRow

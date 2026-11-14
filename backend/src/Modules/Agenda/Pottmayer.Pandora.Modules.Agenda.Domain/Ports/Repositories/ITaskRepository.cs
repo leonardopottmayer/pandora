@@ -21,4 +21,7 @@ public interface ITaskRepository : IStandardRepository<TaskItem, Guid>
     /// </summary>
     Task<IReadOnlyList<TaskItem>> GetLiveDueByIdsAsync(
         IReadOnlyCollection<Guid> ids, CancellationToken ct = default);
+
+    /// <summary>Tasks by id in any state, soft-deleted included (the Google sync sends the deletions).</summary>
+    Task<IReadOnlyList<TaskItem>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default);
 }

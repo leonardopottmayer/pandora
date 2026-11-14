@@ -1,6 +1,7 @@
 using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 using Pottmayer.Pandora.Modules.Agenda.Application.Dtos;
 using Pottmayer.Pandora.Modules.Agenda.Application.Errors;
+using Pottmayer.Pandora.Modules.Agenda.Application.Google;
 using Pottmayer.Pandora.Modules.Agenda.Application.Mapping;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Ports.Repositories;
 using Pottmayer.Tars.Core.Cqrs.Commands;
@@ -9,7 +10,7 @@ using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 
 namespace Pottmayer.Pandora.Modules.Agenda.Application.Commands.UpdateTask;
 
-public sealed class UpdateTaskCommandHandler(IUnitOfWorkFactory factory)
+public sealed class UpdateTaskCommandHandler(IUnitOfWorkFactory factory, TimeProvider timeProvider)
     : CommandHandlerBase<UpdateTaskCommand, TaskDto>
 {
     protected override async Task<Result<TaskDto>> HandleAsync(UpdateTaskCommand request, CancellationToken ct)
@@ -37,6 +38,7 @@ public sealed class UpdateTaskCommandHandler(IUnitOfWorkFactory factory)
             }
 
             await tasks.UpdateAsync(task, token);
+            await ExternalTaskLists.MarkChangedAsync(context, task, timeProvider, token);
             return Result<TaskDto>.Success(task.ToDto());
         }, cancellationToken: ct);
 

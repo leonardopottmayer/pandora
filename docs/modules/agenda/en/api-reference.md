@@ -89,7 +89,7 @@ Per-occurrence acknowledge/snooze for recurring reminders are `AcknowledgeOccurr
 |---|---|---|
 | GET | `/agenda/google/calendars?accountId=` | The calendars a connected Google account can see, each with the `bindingId` that already brings it, if any. |
 | GET | `/agenda/google/bindings` | The user's Google calendar links: calendar, account, `direction` (`read`, `read-write`), status (`ok`, `needs-reconnect`, `error`), last sync, last error. |
-| GET | `/agenda/google/conflicts` | The latest 50 events both sides changed: title, `losingSide` (`pandora`, `google`), `losingVersion` (JSON), `detectedAt`. |
+| GET | `/agenda/google/conflicts` | The latest 50 events and tasks both sides changed: `subjectType` (`event`, `task`), `subjectId`, title, `losingSide` (`pandora`, `google`), `losingVersion` (JSON), `detectedAt`. |
 | POST | `/agenda/google/bindings` | `{ accountId, calendarIds }`: one Pandora calendar per Google calendar. A calendar already linked is skipped. |
 | POST | `/agenda/google/bindings/{id}/sync` | Sync now, resuming a stopped link; returns the link afterwards. |
 | DELETE | `/agenda/google/bindings/{id}` | Unlink: the calendar and its events stay, as a local calendar. |
@@ -97,3 +97,16 @@ Per-occurrence acknowledge/snooze for recurring reminders are `AcknowledgeOccurr
 A calendar's `isReadOnly` (in `/agenda/calendars`) is true for a `read` link: its event writes answer
 `Agenda.CalendarReadOnly` (409). Moving an event into or out of a linked calendar answers
 `Agenda.EventMoveAcrossGoogle` (409), and deleting a linked calendar `Agenda.CalendarBound` (409).
+
+## Google Tasks — `/agenda/google`
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/agenda/google/task-lists?accountId=` | The task lists of a connected Google account, each with the `bindingId` that already syncs it, if any. |
+| GET | `/agenda/google/task-list-bindings` | The user's Google task list links: list, account, status, last sync, last error. |
+| POST | `/agenda/google/task-list-bindings` | `{ accountId, listIds }`: one Pandora list per Google task list. A list already linked is skipped. |
+| POST | `/agenda/google/task-list-bindings/{id}/sync` | Sync now, resuming a stopped link; returns the link afterwards. |
+| DELETE | `/agenda/google/task-list-bindings/{id}` | Unlink: the list and its tasks stay. |
+
+Deleting a linked list answers `Agenda.TaskListBound` (409). An account without the Tasks scope answers
+`Agenda.GoogleTasksMissingScope`.

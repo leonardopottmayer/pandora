@@ -60,3 +60,54 @@ export function useUnlinkBinding() {
     onSuccess: invalidate,
   })
 }
+
+export function useTaskListBindings() {
+  return useQuery({
+    queryKey: agendaKeys.googleTaskListBindings(),
+    queryFn: () => googleService.listTaskListBindings(),
+  })
+}
+
+export function useGoogleTaskLists(accountId: string | null) {
+  return useQuery({
+    queryKey: agendaKeys.googleTaskLists(accountId ?? ''),
+    queryFn: () => googleService.listGoogleTaskLists(accountId!),
+    enabled: accountId !== null,
+  })
+}
+
+/** A task sync changes lists and tasks. */
+function useInvalidateAfterTaskSync() {
+  const queryClient = useQueryClient()
+  return () => {
+    queryClient.invalidateQueries({ queryKey: agendaKeys.google() })
+    queryClient.invalidateQueries({ queryKey: agendaKeys.taskLists() })
+    queryClient.invalidateQueries({ queryKey: agendaKeys.tasks() })
+    queryClient.invalidateQueries({ queryKey: agendaKeys.today() })
+  }
+}
+
+export function useBindGoogleTaskLists() {
+  const invalidate = useInvalidateAfterTaskSync()
+  return useMutation({
+    mutationFn: ({ accountId, listIds }: { accountId: string; listIds: string[] }) =>
+      googleService.bindTaskLists(accountId, listIds),
+    onSuccess: invalidate,
+  })
+}
+
+export function useSyncTaskListBinding() {
+  const invalidate = useInvalidateAfterTaskSync()
+  return useMutation({
+    mutationFn: (id: string) => googleService.syncTaskListBinding(id),
+    onSettled: invalidate,
+  })
+}
+
+export function useUnlinkTaskListBinding() {
+  const invalidate = useInvalidateAfterTaskSync()
+  return useMutation({
+    mutationFn: (id: string) => googleService.unlinkTaskListBinding(id),
+    onSuccess: invalidate,
+  })
+}

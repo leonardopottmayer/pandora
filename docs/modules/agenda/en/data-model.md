@@ -25,7 +25,9 @@ Migrations live in `migrations/migrations/agenda/`.
 | agd008 | `alert_dispatch` | Idempotency ledger for alert firing |
 | agd009 | `calendar_binding` | A Pandora calendar fed by a Google calendar |
 | agd010 | `event_link` | A Pandora event linked to its Google event |
-| agd011 | `sync_conflict` | Events both sides changed; the version that lost |
+| agd011 | `sync_conflict` | Events and tasks both sides changed; the version that lost |
+| agd012 | `task_list_binding` | A Pandora task list synced with a Google Tasks list |
+| agd014 | `task_link` | A Pandora task linked to its Google task |
 | agd013 | `preferences` | What a user prefers about the Agenda itself |
 
 ---
@@ -233,14 +235,42 @@ One Pandora event ↔ one Google event of a binding: what keeps a sync from dupl
 
 ## agd011_sync_conflict
 
-An event both sides changed between two syncs: the newer edit won, the other is kept here. A log, with
+An event or task both sides changed between two syncs: the newer edit won, the other is kept here. A log, with
 no foreign keys, so it outlives an unlinked calendar.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id`, `user_id` | uuid | index `ix_agd011_user_detected (user_id, detected_at DESC)` |
-| `binding_id`, `event_id` | uuid | |
-| `title` | varchar(200) | the event's title in Pandora when detected |
+| `binding_id` | uuid | an `agd009` or `agd012` binding |
+| `subject_type`, `subject_id` | varchar(20), uuid | `event` (`agd002`) or `task` (`agd005`) |
+| `title` | varchar(200) | the event's or task's title in Pandora when detected |
 | `losing_side` | varchar(20) | `pandora \| google` |
-| `losing_version` | jsonb | the version that lost, in Google's event shape |
+| `losing_version` | jsonb | the version that lost, in Google's event or task shape |
 | `detected_at` | timestamptz | |
+
+## agd012_task_list_binding
+
+One Pandora task list synced with one Google Tasks list of one Integrations account, always both ways.
+See [Tasks §6](tasks.md#6-google-tasks).
+
+| Column | Type | Notes |
+|---|---|---|
+| `id`, `user_id`, `external_account_id` | uuid | index `ix_agd012_user_id` |
+| `list_id` | uuid → agd004 | unique (`uq_agd012_list`) |
+| `remote_list_id` | varchar(255) | unique per account (`uq_agd012_account_remote`) |
+| `updated_cursor` | timestamptz NULL | when the last listing started; the next asks for what changed since. NULL ⇒ the next cycle lists everything |
+| `full_synced_at`, `last_synced_at` | timestamptz NULL | |
+| `status`, `failure_count`, `last_error` | | as in `agd009` |
+
+## agd014_task_link
+
+One Pandora task ↔ one Google task of a binding.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid | |
+| `binding_id` | uuid → agd012 | |
+| `task_id` | uuid → agd005 | unique (`uq_agd014_task`) |
+| `remote_task_id` | varchar(1024) NULL | unique per binding (`uq_agd014_binding_remote`); NULL until a task born in Pandora is inserted (Google picks the id) |
+| `etag` / `remote_updated_at` | | what Google said last |
+| `pending_push_at` | timestamptz NULL | when Pandora last changed the task without Google having it; partial index `ix_agd014_binding_pending` |

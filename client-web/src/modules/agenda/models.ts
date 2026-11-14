@@ -260,10 +260,11 @@ export type CalendarBindingStatus = 'ok' | 'needs-reconnect' | 'error'
 
 export type CalendarBindingDirection = 'read' | 'read-write'
 
-/** An event both sides changed between two syncs; losingVersion is the version that lost, as JSON. */
+/** An event or task both sides changed between two syncs; losingVersion is the version that lost, as JSON. */
 export interface SyncConflictDto {
   id: string
-  eventId: string
+  subjectType: 'event' | 'task'
+  subjectId: string
   title: string
   losingSide: 'pandora' | 'google'
   losingVersion: string
@@ -282,6 +283,25 @@ export interface CalendarBindingDto {
   status: CalendarBindingStatus
   lastSyncedAt?: string | null
   lastError?: string | null
+}
+
+/** A Pandora task list synced both ways with a Google Tasks list. */
+export interface TaskListBindingDto {
+  id: string
+  listId: string
+  listName: string
+  externalAccountId: string
+  remoteListId: string
+  status: CalendarBindingStatus
+  lastSyncedAt?: string | null
+  lastError?: string | null
+}
+
+/** A task list of the Google account; bindingId is set when it already syncs with Pandora. */
+export interface GoogleTaskListDto {
+  id: string
+  name: string
+  bindingId?: string | null
 }
 
 /** A calendar the Google account can see; bindingId is set when it already feeds Pandora. */

@@ -20,13 +20,14 @@ public sealed class GoogleOAuthOptions
 
     /// <summary>
     /// Scopes requested by default. <c>openid</c>/<c>email</c> yield the id token that identifies the
-    /// account; the calendar scopes cover Agenda phase 5. Tasks is added in phase 6.
+    /// account; the calendar scopes cover Agenda phase 5, the tasks scope phase 6.
     /// </summary>
     public string[] Scopes { get; set; } =
     [
         "openid",
         "email",
         "https://www.googleapis.com/auth/calendar",
-        "https://www.googleapis.com/auth/calendar.events"
+        "https://www.googleapis.com/auth/calendar.events",
+        "https://www.googleapis.com/auth/tasks"
     ];
 }

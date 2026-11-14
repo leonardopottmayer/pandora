@@ -23,7 +23,8 @@ const binding: CalendarBindingDto = {
 
 const conflict: SyncConflictDto = {
   id: 'x1',
-  eventId: 'e1',
+  subjectType: 'event',
+  subjectId: 'e1',
   title: 'Reunião',
   losingSide: 'pandora',
   losingVersion: '{"summary":"Reunião (Pandora)"}',

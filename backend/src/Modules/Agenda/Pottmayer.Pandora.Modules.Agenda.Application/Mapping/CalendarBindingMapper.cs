@@ -17,6 +17,17 @@ internal static class CalendarBindingMapper
         binding.LastSyncedAt,
         binding.LastError);
 
+    public static TaskListBindingDto ToDto(this TaskListBinding binding, TaskList list) => new(
+        binding.Id,
+        binding.ListId,
+        list.Name,
+        binding.ExternalAccountId,
+        binding.RemoteListId,
+        binding.Status.Value,
+        binding.LastSyncedAt,
+        binding.LastError);
+
     public static SyncConflictDto ToDto(this SyncConflict conflict) => new(
-        conflict.Id, conflict.EventId, conflict.Title, conflict.LosingSide.Value, conflict.LosingVersion, conflict.DetectedAt);
+        conflict.Id, conflict.SubjectType.Value, conflict.SubjectId, conflict.Title, conflict.LosingSide.Value,
+        conflict.LosingVersion, conflict.DetectedAt);
 }

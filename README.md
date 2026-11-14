@@ -13,7 +13,7 @@ data access, the mediator, messaging, security, AI clients and observability.
 |---|---|
 | **Finances** | Accounts, cards and statements, a ledger with transfers and installments, bank imports (OFX/CSV), recurring transactions, an inbox to review, a full audit trail |
 | **Notes** | A Notion-style knowledge base: spaces, folders, pages made of blocks, links and backlinks, tags, search, graph, version history, comments, templates, daily notes |
-| **Agenda** | Reminders, tasks and a calendar with recurring events and alerts, synced both ways with Google calendars |
+| **Agenda** | Reminders, tasks and a calendar with recurring events and alerts, synced both ways with Google Calendar and Google Tasks |
 | **Communications** | An email inbox for Gmail and any IMAP server: read, organize, send, and rules |
 | **Assistant** | Natural language (typed or spoken, on the web or Telegram) turned into actions in the other modules, through Gemini |
 | **Channels** | How Pandora talks to the user: email and Telegram notifications, quiet hours, the Telegram bots |

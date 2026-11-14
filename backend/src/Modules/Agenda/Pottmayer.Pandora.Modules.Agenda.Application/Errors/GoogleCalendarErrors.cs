@@ -44,5 +44,5 @@ public static class GoogleCalendarErrors
 
     /// <summary>Whether the failure needs the user (reconnect), rather than a retry.</summary>
     public static bool NeedsReconnect(Error error) =>
-        error.Code is "Agenda.GoogleAuthFailed" or "Agenda.GoogleMissingScope";
+        error.Code is "Agenda.GoogleAuthFailed" or "Agenda.GoogleMissingScope" or GoogleTasksErrors.MissingScopeCode;
 }

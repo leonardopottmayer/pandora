@@ -1,6 +1,7 @@
 using Pottmayer.Pandora.Modules.Agenda.Abstractions;
 using Pottmayer.Pandora.Modules.Agenda.Application.Dtos;
 using Pottmayer.Pandora.Modules.Agenda.Application.Errors;
+using Pottmayer.Pandora.Modules.Agenda.Application.Google;
 using Pottmayer.Pandora.Modules.Agenda.Application.Mapping;
 using Pottmayer.Pandora.Modules.Agenda.Application.Preferences;
 using Pottmayer.Pandora.Modules.Agenda.Domain.Aggregates;
@@ -70,6 +71,7 @@ public sealed class CreateTaskCommandHandler(
             }
 
             await tasks.AddAsync(created, token);
+            await ExternalTaskLists.MarkChangedAsync(context, created, timeProvider, token);
             return Result<TaskDto>.Success(created.ToDto());
         }, cancellationToken: ct);
 

@@ -22,6 +22,9 @@ public static class TaskErrors
     public static Error ListNotEmpty =>
         Error.Conflict("Agenda.TaskListNotEmpty", "This list still has tasks. Archive it, or move its tasks first.");
 
+    public static Error ListBound =>
+        Error.Conflict("Agenda.TaskListBound", "This list is linked to Google Tasks. Unlink it in the Agenda settings first.");
+
     public static Error InvalidRecurrence(string detail) =>
         Error.Validation("Agenda.TaskInvalidRecurrence", detail);
 }

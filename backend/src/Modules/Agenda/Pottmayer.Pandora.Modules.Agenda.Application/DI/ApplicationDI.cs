@@ -39,9 +39,10 @@ public static class ApplicationDI
         services.AddScoped<IAssistantTool, RenameReminderTool>();
         services.AddScoped<IAssistantTool, ListRemindersTool>();
 
-        // Google Calendar sync (the HTTP client is Infrastructure's); the bound calendars as account usages.
+        // Google Calendar and Tasks sync (the HTTP clients are Infrastructure's); the bound calendars and lists as account usages.
         services.AddSingleton<CalendarSyncGates>();
         services.AddScoped<GoogleCalendarSync>();
+        services.AddScoped<GoogleTasksSync>();
         services.AddScoped<IExternalAccountUsageSource, AgendaAccountUsageSource>();
 
         // What an administrator can switch off and grant in this module (see the Admin module).

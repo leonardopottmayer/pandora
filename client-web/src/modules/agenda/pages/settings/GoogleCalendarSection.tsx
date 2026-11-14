@@ -131,11 +131,11 @@ export function GoogleCalendarSection() {
   )
 }
 
-/** The title the losing version carried; both sides' JSON name it `summary`. */
+/** The title the losing version carried: `summary` on an event, `title` on a task. */
 function discardedTitle(conflict: SyncConflictDto): string {
   try {
-    const version = JSON.parse(conflict.losingVersion) as { summary?: string }
-    return version.summary || conflict.title
+    const version = JSON.parse(conflict.losingVersion) as { summary?: string; title?: string }
+    return version.summary || version.title || conflict.title
   } catch {
     return conflict.title
   }

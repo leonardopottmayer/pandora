@@ -23,7 +23,7 @@ All in [console.cloud.google.com](https://console.cloud.google.com), with the pr
 the top.
 
 1. **Enable the APIs.** *APIs & Services → Library* (*APIs e serviços → Biblioteca*): enable
-   **Gmail API** and **Google Calendar API**. Without them the token works but every call answers 403.
+   **Gmail API**, **Google Calendar API** and **Google Tasks API**. Without them the token works but every call answers 403.
 2. **Create the consent screen.** *Google Auth Platform → Overview → Get started* (*Visão geral →
    Começar*):
    1. *App information* (*Informações do app*): app name (`Pandora`) and the support email.
@@ -39,7 +39,7 @@ the top.
    | Scope | Why |
    |---|---|
    | `openid`, `.../auth/userinfo.email` | Identify which Google account was connected |
-   | `https://www.googleapis.com/auth/calendar`, `.../auth/calendar.events` | Pandora's default scopes (Agenda) |
+   | `https://www.googleapis.com/auth/calendar`, `.../auth/calendar.events`, `.../auth/tasks` | Pandora's default scopes (Agenda) |
    | `https://www.googleapis.com/auth/gmail.modify` | Communications: read mail and change labels |
 
    A scope missing from the list can be pasted in the manual field at the bottom of the dialog.

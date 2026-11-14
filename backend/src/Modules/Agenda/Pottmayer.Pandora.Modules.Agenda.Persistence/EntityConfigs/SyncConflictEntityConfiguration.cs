@@ -16,7 +16,9 @@ internal sealed class SyncConflictEntityConfiguration : IEntityTypeConfiguration
         builder.Property(c => c.Id).HasColumnName("id").ValueGeneratedNever();
         builder.Property(c => c.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(c => c.BindingId).HasColumnName("binding_id").IsRequired();
-        builder.Property(c => c.EventId).HasColumnName("event_id").IsRequired();
+        builder.Property(c => c.SubjectType).HasColumnName("subject_type").HasMaxLength(20).IsRequired()
+               .HasConversion(s => s.Value, v => SyncConflictSubject.FromValue(v));
+        builder.Property(c => c.SubjectId).HasColumnName("subject_id").IsRequired();
         builder.Property(c => c.Title).HasColumnName("title").HasMaxLength(200).IsRequired();
         builder.Property(c => c.LosingSide).HasColumnName("losing_side").HasMaxLength(20).IsRequired()
                .HasConversion(s => s.Value, v => SyncConflictSide.FromValue(v));

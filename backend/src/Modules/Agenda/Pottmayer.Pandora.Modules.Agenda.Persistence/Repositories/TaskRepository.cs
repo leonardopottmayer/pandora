@@ -42,4 +42,7 @@ public sealed class TaskRepository(IDataContextAccessor accessor)
                         && (t.Status == TaskItemStatus.Todo || t.Status == TaskItemStatus.InProgress))
             .ToListAsync(ct);
     }
+
+    public async Task<IReadOnlyList<TaskItem>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default) =>
+        ids.Count == 0 ? [] : await Queryable().Where(t => ids.Contains(t.Id)).ToListAsync(ct);
 }
