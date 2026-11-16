@@ -73,7 +73,8 @@ Every phase was checked by hand against a real Gmail (about 64,000 messages) and
    Fine for one user. The first thing to change with several: a separate backfill queue with limited concurrency.
 2. **Single instance.** The gate is in process; several instances would need a lease in the database.
 3. **Testing mode on Google.** The Gmail refresh token expires after 7 days, so the mailbox asks to reconnect about
-   once a week. Going past 100 users would need Google's verification of a restricted scope.
+   once a week. Going past 100 users would need Google's verification of a restricted scope. Accepted
+   for 1.0 (decided 2026-11-16): one person, and Pandora already asks to reconnect.
 4. **Search** uses `ILIKE` with no index, and does not read bodies. Fine at one person's volume.
 5. **Attachment download** fetches the whole raw message again.
 6. **A move straddling the IMAP walk**, from a folder not read yet to one already read, spans two cycles, so it is not stitched and can fire a false event.

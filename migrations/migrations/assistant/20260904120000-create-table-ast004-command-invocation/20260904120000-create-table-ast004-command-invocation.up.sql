@@ -3,7 +3,7 @@
 -- The assistant's audit trail: one row per interpreted utterance. Records what the user said, the tool
 -- call the model produced (command_name + arguments), and how it ended (status), plus the provider,
 -- model, latency and token cost of the call. Most rows are terminal at write time; a
--- 'pending_confirmation' row awaits a confirm/cancel (until expires_at) and then transitions.
+-- 'pending-confirmation' row awaits a confirm/cancel (until expires_at) and then transitions.
 CREATE TABLE assistant.ast004_command_invocation (
 	id uuid NOT NULL DEFAULT uuid_generate_v7(),
 	user_id uuid NOT NULL,

@@ -11,7 +11,7 @@ Plano para rodar Pandora (front + back + Postgres) na máquina homelab (Windows,
 | Backend (.NET) | homelab, container Docker | imagem buildada via CI (GitHub Actions), publicada no GHCR |
 | Frontend (client-web) | homelab, container Docker (nginx) | serve estático + proxy `/api` -> backend (mesma origem, sem CORS) |
 | Acesso público (fase 2) | Cloudflare Tunnel | `cloudflared` na máquina, sem porta aberta no roteador, com Cloudflare Access na frente |
-| Backup do banco | `pg_dump` semanal -> subpasta dedicada na área já monitorada pelo iDrive | 3-2-1 já coberto pelo iDrive existente |
+| Backup do banco | `pg_dump` diário (14 cópias) -> subpasta dedicada na área já monitorada pelo iDrive | 3-2-1 já coberto pelo iDrive existente; scripts no repo homelab |
 | Secrets/config | arquivo `.env.<ambiente>` ao lado do `docker-compose.yml`, cópia guardada no Bitwarden | `docker compose --env-file .env.<ambiente> up -d` injeta tudo |
 
 Princípio de isolamento: nada do Docker/Postgres usa volume dentro das pastas de arquivos pessoais do HD de 20TB (exceto a subpasta de backup). Tailscale fora do escopo por enquanto.
@@ -51,9 +51,13 @@ Nesta fase, `Cors:AllowedOrigins`, `ActivationUrlTemplate` e `PasswordResetUrlTe
 
 ### 1.3 Backup
 
-- Script `pg_dump -Fc` por banco, semanal, via Task Scheduler do Windows.
-- Grava numa subpasta nova dentro da área já monitorada pelo iDrive.
-- Script de retenção apaga dumps além do limite acordado.
+O banco `prod-db` é compartilhado entre apps, então o backup fica no repo **homelab**
+(`backup/`, guia em `docs/05-backups.md`):
+
+- `Backup-TierDatabases.ps1`: `pg_dump -Fc` de cada banco do tier, **diário** às 03:30 via Task
+  Scheduler, mantendo os **14** mais recentes por banco, numa subpasta monitorada pelo iDrive.
+- `Test-Restore.ps1`: restaura o dump mais recente num banco descartável e conta as tabelas. Rodar uma
+  vez por mês e depois de qualquer mudança no backup.
 - Confirmar que o iDrive está monitorando essa subpasta específica.
 
 ### 1.4 CI / deploy — ✅ implementado (workflow)
@@ -70,7 +74,7 @@ Nesta fase, `Cors:AllowedOrigins`, `ActivationUrlTemplate` e `PasswordResetUrlTe
 - [ ] Gerar e guardar no Bitwarden os secrets de **produção** (`.env.prod`).
 - [ ] `docker login ghcr.io` no homelab com o PAT `read:packages` (imagens são privadas).
 - [ ] Config local (não versionada) do `migris` no homelab com as conexões prod/staging apontando pra `127.0.0.1:<DB_PORT>` (staging 5433, prod 5432) — não commitar senha de prod no `migrations/config.json` (repo público).
-- [ ] Backup: adiado (pulado por ora).
+- [ ] Backup: agendar o `homelab-db-backup` (repo homelab, `docs/05-backups.md`) e rodar o `Test-Restore.ps1` uma vez.
 
 ---
 

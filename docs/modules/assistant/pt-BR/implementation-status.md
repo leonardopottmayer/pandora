@@ -57,10 +57,10 @@ porque existe" de "documentado como plano" ([Product plan](product-plan.md)).
 1. **`WhenAmbiguous` se comporta como `Never` no `balanced`.** Nenhum sinal de confiança é lido; só o
    deslocamento do nível (`strict`) faz ela confirmar. Nenhuma tool declara `Always`, então o `balanced`
    só retém exclusões.
-2. **Sem varredura de expiração.** Uma chamada retida sem resposta fica `pending-confirmation` depois de
-   `expires_at` até um confirmar transformá-la em `expired`; a aba Histórico mostra como pendente.
+2. **Sem varredura de expiração, por decisão.** Uma chamada retida sem resposta continua
+   `pending-confirmation` na linha depois de `expires_at` até um confirmar transformá-la em `expired`; o
+   histórico já a mostra como `expired` (`GetInvocations`), então nenhum job é necessário.
 3. **Duas listas num turno.** O `last_listing` guarda só a última (marcado com `ponytail:` no
    `InterpretCommandHandler`).
-4. **Retenção de conversas e mensagens.** `ast002`–`ast004` nunca são expurgadas.
-5. O comentário da migration do `ast004` ainda diz `'pending_confirmation'`; o CHECK e o código usam
-   `pending-confirmation`.
+4. **Conversas, mensagens e invocações ficam guardadas para sempre** (decidido em 2026-11-16). O volume
+   de uma pessoa é pequeno, e o `ast004` é a trilha de auditoria. Rever quando houver mais usuários.

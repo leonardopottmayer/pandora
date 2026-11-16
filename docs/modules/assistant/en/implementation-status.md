@@ -58,10 +58,10 @@ because it exists" from "documented as a plan" ([Product plan](product-plan.md))
 1. **`WhenAmbiguous` behaves like `Never` under `balanced`.** No confidence signal is read; only the
    level shift (`strict`) makes it confirm. No tool declares `Always`, so `balanced` holds only
    deletions.
-2. **No expiry sweep.** An unanswered held call stays `pending-confirmation` past `expires_at` until a
-   confirm turns it into `expired`; the history tab shows it as pending.
+2. **No expiry sweep, by design.** An unanswered held call keeps `pending-confirmation` in the row past
+   `expires_at` until a confirm turns it into `expired`; the history reads it as `expired` already
+   (`GetInvocations`), so nothing needs a job.
 3. **Two lists in one turn.** `last_listing` keeps only the last one (marked `ponytail:` in
    `InterpretCommandHandler`).
-4. **Conversation and message retention.** `ast002`–`ast004` are never purged.
-5. The `ast004` migration comment still says `'pending_confirmation'`; the CHECK and the code use
-   `pending-confirmation`.
+4. **Conversations, messages and invocations are kept for good** (decided 2026-11-16). One person's
+   volume is small, and `ast004` is the audit trail. Revisit with more users.

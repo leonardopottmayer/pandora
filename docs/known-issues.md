@@ -31,32 +31,13 @@ module fell back to UTC. How it works now:
 
 ---
 
-## KI-002 — No mandatory-configuration gate after register/login
+## KI-002 — No mandatory-configuration gate after register/login *(closed 2026-11-16, not needed yet)*
 
-**Status:** idea, not built.
-
-### Problem
-
-Some settings are effectively required for the system to behave correctly, and nothing forces the user
-to set them. The time zone was the first; KI-001's default zone now covers it, but the next required
-setting will have no such fallback.
-
-### Proposed shape
-
-A **required-configuration gate** on the web home, evaluated right after registration or login:
-
-- Maintain a registry of *required settings*, each with a predicate ("is it satisfied for this user?")
-  and the screen that satisfies it.
-- After login, if any required setting is unmet, route the user into a blocking setup flow and
-  **prevent using the rest of the system** until every required setting is satisfied.
-- Adding a new required setting later re-gates existing users the next time they log in.
-
-### Considerations
-
-- This gates the **web** entry point. A user whose first contact is Telegram is not gated, so every
-  required setting still needs a backend fallback, or linking a channel must require finishing the web
-  setup first.
-- Keep the gate to genuinely required settings; optional preferences must not trap the user.
+The idea: a blocking setup flow after the first web login, until every *required* setting is
+satisfied. Not built, because no setting is required today: the time zone, the only candidate, falls
+back to `Pandora:DefaultTimeZone` (KI-001). Build it when the first setting appears that has no safe
+fallback. It would gate the web only, so a user who starts on Telegram still needs a backend fallback,
+or linking a channel must require finishing the web setup first.
 
 ---
 

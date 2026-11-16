@@ -74,6 +74,7 @@ Cada fase foi verificada à mão com um Gmail real (cerca de 64.000 mensagens) e
 2. **Uma instância só.** A trava fica no processo; várias instâncias precisariam de um lease no banco.
 3. **Modo de teste no Google.** O refresh token do Gmail expira em 7 dias, então a caixa pede reconexão mais ou menos
    uma vez por semana. Passar de 100 usuários exigiria a verificação do Google para um escopo restrito.
+   Aceito para a 1.0 (decidido em 2026-11-16): uma pessoa só, e o Pandora já pede a reconexão.
 4. **A busca** usa `ILIKE` sem índice e não lê os corpos. Serve no volume de uma pessoa.
 5. **O download de anexo** busca a mensagem bruta inteira de novo.
 6. **Uma movimentação que atravessa a varredura do IMAP**, de uma pasta ainda não lida para uma já lida, cai em dois ciclos, então não é juntada e pode disparar um evento falso.
