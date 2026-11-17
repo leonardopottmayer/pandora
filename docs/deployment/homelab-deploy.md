@@ -11,7 +11,7 @@ Plano para rodar Pandora (front + back + Postgres) na máquina homelab (Windows,
 | Backend (.NET) | homelab, container Docker | imagem buildada via CI (GitHub Actions), publicada no GHCR |
 | Frontend (client-web) | homelab, container Docker (nginx) | serve estático + proxy `/api` -> backend (mesma origem, sem CORS) |
 | Acesso público (fase 2) | Cloudflare Tunnel | `cloudflared` na máquina, sem porta aberta no roteador, com Cloudflare Access na frente |
-| Backup do banco | `pg_dump` diário (14 cópias) -> subpasta dedicada na área já monitorada pelo iDrive | 3-2-1 já coberto pelo iDrive existente; scripts no repo homelab |
+| Backup do banco | `pg_dump` diário (90 cópias) -> subpasta dedicada na área já monitorada pelo iDrive | 3-2-1 já coberto pelo iDrive existente; scripts no repo homelab |
 | Secrets/config | arquivo `.env.<ambiente>` ao lado do `docker-compose.yml`, cópia guardada no Bitwarden | `docker compose --env-file .env.<ambiente> up -d` injeta tudo |
 
 Princípio de isolamento: nada do Docker/Postgres usa volume dentro das pastas de arquivos pessoais do HD de 20TB (exceto a subpasta de backup). Tailscale fora do escopo por enquanto.

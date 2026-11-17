@@ -117,6 +117,9 @@ files it uses:
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Pandora's own role + database in the shared DB (all three connection strings). |
 | `JWT_SIGNING_KEY` | Overrides `Tars:Security:Identity:Jwt:SigningKey`. |
 | `MFA_ENCRYPTION_KEY` | Overrides `Pandora:Identity:Mfa:EncryptionKey`. |
+| `DATA_PROTECTION_KEY` | Overrides `Tars:Security:DataProtection:Keys:v1`, which encrypts the credentials users connect (Google tokens, API keys, mailbox passwords). **Required**: compose refuses to start without it, since the default in `appsettings.json` is public. Never change it once set. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | The Google OAuth client ([Google and Gemini setup](google-and-gemini-setup.md)). Empty leaves Google off. The redirect URI is `${APP_BASE_URL}/api/v1/integrations/google/callback`. |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_BOT_USERNAME` / `TELEGRAM_ASSISTANT_BOT_TOKEN` | The notifications bot (token and @username) and the Assistant bot. One pair of bots per environment. Empty leaves Telegram off. |
 | `ADMIN_EMAIL` | Overrides `Pandora:Admin:BootstrapEmails:0`: the account promoted to the `admin` role at startup and when it is activated. |
 | `REVERSE_PROXY_FORWARD_LIMIT` | Overrides `Pandora:ReverseProxy:ForwardLimit` (default `1`): proxies in front of the backend that append to `X-Forwarded-For`. See [Reverse proxy readiness](#reverse-proxy-readiness). |
 | `REQUIRE_ACCOUNT_APPROVAL` | Overrides `Pandora:Identity:AccountApproval:Required` (default `false`): new accounts sign in only after an administrator approves them; `ADMIN_EMAIL` is exempt. |
@@ -213,9 +216,10 @@ function New-Secret([int]$bytes, [string]$fmt = 'base64') {
 New-Secret 24 hex   # Pandora DB role password (POSTGRES_PASSWORD)
 New-Secret 48       # JWT_SIGNING_KEY
 New-Secret 32       # MFA_ENCRYPTION_KEY
+New-Secret 32       # DATA_PROTECTION_KEY
 ```
 
-Save all three in Bitwarden. (`hex` for the DB password avoids `+/=` breaking the
+Save all four in Bitwarden. (`hex` for the DB password avoids `+/=` breaking the
 connection string.)
 
 ### 2. Provision Pandora's database + role (once per tier)
@@ -239,7 +243,8 @@ Copy-Item .env.example .env.staging
 #   COMPOSE_PROJECT_NAME=pandora-staging  ASPNETCORE_ENVIRONMENT=Production
 #   COMPOSE_PROFILES=mailhog  TIER_NETWORK=staging  DB_HOST=staging-db
 #   POSTGRES_USER=pandora  POSTGRES_PASSWORD=<Pandora DB role secret>  POSTGRES_DB=pandora
-#   JWT_SIGNING_KEY=<secret>  MFA_ENCRYPTION_KEY=<secret>
+#   JWT_SIGNING_KEY=<secret>  MFA_ENCRYPTION_KEY=<secret>  DATA_PROTECTION_KEY=<secret>
+#   (Google and Telegram: optional, see the table above)
 #   SMTP_HOST=mailhog  SMTP_PORT=1025  MAILHOG_UI_PORT=8732  HTTP_PORT=8731
 #   (APP_BASE_URL optional — defaults to http://localhost:<HTTP_PORT>)
 ```

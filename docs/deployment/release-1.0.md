@@ -23,6 +23,8 @@ Staging runs `:latest`, and prod runs a pinned tag. So the order is: `dev` → `
 - [ ] Merge `dev` into `main` and push; the CI goes green and publishes `:latest`.
 - [ ] On the homelab: `docker login ghcr.io` (if not done yet) and the local `migris` config (see
       [homelab-deploy.md §1.5](homelab-deploy.md)).
+- [ ] Bring `.env.staging` up to `.env.example`: `DATA_PROTECTION_KEY` (required, new secret), the
+      Google client, and a staging pair of Telegram bots with `TELEGRAM_BOT_USERNAME`. Save it in Bitwarden.
 - [ ] **Recreate the staging database from scratch.** Before 1.0, migrations were edited in place, so an
       old database does not match them: drop and recreate the `pandora` database in `staging-db`
       ([deployment.md, step 2](deployment.md#2-provision-pandoras-database--role-once-per-tier)), then

@@ -88,9 +88,9 @@ committing that file, stage only the hunks that belong to the change.
 
 **Homelab / production.** Add the production callback
 `https://<domain>/api/v1/integrations/google/callback` to the same client (a client takes several
-redirect URIs), leave `SpaBaseUrl` empty (nginx serves SPA and API on one origin), and pass the values
-as environment variables in the compose file: `Pandora__Integrations__Google__ClientId`,
-`Pandora__Integrations__Google__ClientSecret`, `Pandora__Integrations__Google__RedirectUri`.
+redirect URIs), leave `SpaBaseUrl` empty (nginx serves SPA and API on one origin), and set
+`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in the environment's `.env` file. The compose file passes
+them on and builds the redirect URI from `APP_BASE_URL`.
 
 ### 1.3 Check
 
