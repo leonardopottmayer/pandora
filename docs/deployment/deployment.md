@@ -115,8 +115,8 @@ files it uses:
 | `COMPOSE_PROFILES` | `mailhog` to run the email catcher (staging); empty in prod. |
 | `TIER_NETWORK` / `DB_HOST` | Which shared tier DB to use (`staging`/`staging-db`, `prod`/`prod-db`). |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Pandora's own role + database in the shared DB (all three connection strings). |
-| `JWT_SIGNING_KEY` | Overrides `Tars:Security:Identity:Jwt:SigningKey`. |
-| `MFA_ENCRYPTION_KEY` | Overrides `Pandora:Identity:Mfa:EncryptionKey`. |
+| `JWT_SIGNING_KEY` | Overrides `Tars:Security:Identity:Jwt:SigningKey`. **Required** (the default in `appsettings.json` is public). |
+| `MFA_ENCRYPTION_KEY` | Overrides `Pandora:Identity:Mfa:EncryptionKey`. **Required** (the default is public); never change it once set, or every MFA secret becomes unreadable. |
 | `DATA_PROTECTION_KEY` | Overrides `Tars:Security:DataProtection:Keys:v1`, which encrypts the credentials users connect (Google tokens, API keys, mailbox passwords). **Required**: compose refuses to start without it, since the default in `appsettings.json` is public. Never change it once set. |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | The Google OAuth client ([Google and Gemini setup](google-and-gemini-setup.md)). Empty leaves Google off. The redirect URI is `${APP_BASE_URL}/api/v1/integrations/google/callback`. |
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_BOT_USERNAME` / `TELEGRAM_ASSISTANT_BOT_TOKEN` | The notifications bot (token and @username) and the Assistant bot. One pair of bots per environment. Empty leaves Telegram off. |

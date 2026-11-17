@@ -35,8 +35,8 @@ services:
       Pandora__Identity__AccountApproval__Required: ${REQUIRE_ACCOUNT_APPROVAL:-false}
       # Proxies appending to X-Forwarded-For: 1 for the bundled nginx, 2 with Cloudflare/Traefik in front.
       Pandora__ReverseProxy__ForwardLimit: ${REVERSE_PROXY_FORWARD_LIMIT:-1}
-      Tars__Security__Identity__Jwt__SigningKey: ${JWT_SIGNING_KEY}
-      Pandora__Identity__Mfa__EncryptionKey: ${MFA_ENCRYPTION_KEY}
+      Tars__Security__Identity__Jwt__SigningKey: ${JWT_SIGNING_KEY:?JWT_SIGNING_KEY is required}
+      Pandora__Identity__Mfa__EncryptionKey: ${MFA_ENCRYPTION_KEY:?MFA_ENCRYPTION_KEY is required}
       # Encrypts the credentials users connect (Google tokens, API keys, mailbox passwords). Required:
       # the default in appsettings.json is public. Same value forever, or those credentials become unreadable.
       Tars__Security__DataProtection__Keys__v1: ${DATA_PROTECTION_KEY:?DATA_PROTECTION_KEY is required}
