@@ -11,6 +11,7 @@ import { toErrorMessage } from '@/lib/api/envelope'
 import { AttachmentsPanel } from './AttachmentsPanel'
 import { CategorySelect, type CategorySelection } from './CategorySelect'
 import { CurrencyAmount } from './CurrencyAmount'
+import { EntityTags } from './EntityTags'
 
 interface DetailForm {
   description: string
@@ -168,6 +169,11 @@ export function TransactionDetailDrawer({ transactionId, onClose }: { transactio
               <Input.TextArea rows={3} maxLength={2000} />
             </Form.Item>
           </Form>
+
+          <div className="flex flex-col gap-2">
+            <Typography.Text>{t('finances.tags.label')}</Typography.Text>
+            <EntityTags entityType="transaction" entityId={tx.id} />
+          </div>
 
           <Descriptions column={1} size="small">
             <Descriptions.Item label={t('finances.transactions.kind')}>{t(transactionKindLabelKey(tx.kind))}</Descriptions.Item>

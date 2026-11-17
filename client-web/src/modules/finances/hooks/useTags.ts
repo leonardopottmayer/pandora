@@ -1,7 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { financeKeys } from './queryKeys'
-import type { CreateTagRequest, UpdateTagRequest } from '../models'
+import type { CreateTagRequest, TaggableEntityType, UpdateTagRequest } from '../models'
 import * as tagsService from '../services/tags.service'
+import { setAccountTags } from '../services/accounts.service'
+import { setCardTags } from '../services/cards.service'
+import { setStatementTags } from '../services/statements.service'
+import { setTransactionTags } from '../services/transactions.service'
 
 export function useTags() {
   return useQuery({
@@ -45,5 +49,31 @@ export function useDeleteTag() {
   return useMutation({
     mutationFn: (id: string) => tagsService.deleteTag(id),
     onSuccess: invalidate,
+  })
+}
+
+export function useEntityTags(entityType: TaggableEntityType, id: string) {
+  return useQuery({
+    queryKey: financeKeys.entityTags(entityType, id),
+    queryFn: () => tagsService.getEntityTags(entityType, id),
+    enabled: !!id,
+  })
+}
+
+const SETTERS: Record<TaggableEntityType, ((id: string, body: { tagIds: string[] }) => Promise<void>) | undefined> = {
+  account: setAccountTags,
+  card: setCardTags,
+  'card-statement': setStatementTags,
+  transaction: setTransactionTags,
+  'recurring-transaction': undefined,
+  'pending-transaction': undefined,
+}
+
+/** Replaces an entity's tags; refreshes everything in Finances so tag filters see the change. */
+export function useSetEntityTags(entityType: TaggableEntityType, id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (tagIds: string[]) => SETTERS[entityType]!(id, { tagIds }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: financeKeys.all }),
   })
 }

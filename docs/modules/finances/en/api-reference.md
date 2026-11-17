@@ -80,6 +80,7 @@ user. A resource owned by another user returns **404** (not 403). Controllers li
 | GET / POST | `/tags` | List / create |
 | PUT / DELETE | `/tags/{id}` | Update / delete |
 | GET | `/tags/{id}/links` | Links of a tag |
+| GET | `/tags/entities/{entityType}/{entityId}` | Tag ids on one entity |
 | POST | `/tags/{id}/links` | Add a link |
 | DELETE | `/tags/{id}/links/{entityType}/{entityId}` | Remove a link |
 

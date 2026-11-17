@@ -17,6 +17,7 @@ import {
 } from '../../lib/enums'
 import { formatDate, formatMoney, formatReferenceMonth } from '../../lib/format'
 import { CurrencyAmount } from '../../components/CurrencyAmount'
+import { EntityTags } from '../../components/EntityTags'
 import { EnumTag } from '../../components/EnumTag'
 import { AttachmentsPanel } from '../../components/AttachmentsPanel'
 import { StatTile } from '../../components/StatTile'
@@ -221,6 +222,7 @@ export function StatementDetailPage() {
       <div className="min-w-0 flex-1">
         <PageHeading title={formatReferenceMonth(statement.referenceMonth)} description={t('finances.statements.cycleDates', { closing: formatDate(statement.closingDate), due: formatDate(statement.dueDate) })} />
         <div className="mt-2"><EnumTag meta={STATEMENT_STATUS_META[statement.status]} /></div>
+        <div className="mt-2 max-w-md"><EntityTags entityType="card-statement" entityId={statement.id} /></div>
       </div>
       <Space wrap>
         {canPay && <Button type="primary" onClick={() => setPayOpen(true)}>{t('finances.statements.pay')}</Button>}

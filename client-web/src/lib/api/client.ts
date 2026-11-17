@@ -15,6 +15,8 @@ const baseURL = getBaseURL()
 export const apiClient = axios.create({
   baseURL,
   headers: { 'Content-Type': 'application/json' },
+  // Arrays as repeated keys (tags=a&tags=b), the form ASP.NET binds; axios' default tags[]=a is ignored.
+  paramsSerializer: { indexes: null },
 })
 
 let onUnauthorized: (() => void) | null = null

@@ -12,6 +12,7 @@ import { SUPPORTED_BANKS, type TransactionDto } from '../../models'
 import { ACCOUNT_TYPE_META, kindDirection, transactionKindLabelKey } from '../../lib/enums'
 import { formatDay, formatMoney } from '../../lib/format'
 import { CurrencyAmount } from '../../components/CurrencyAmount'
+import { EntityTags } from '../../components/EntityTags'
 import { EnumTag } from '../../components/EnumTag'
 import { MonthNavigator } from '../../components/MonthNavigator'
 import { StatTile } from '../../components/StatTile'
@@ -151,6 +152,9 @@ export function AccountDetailPage() {
               {account.description}
             </Typography.Text>
           )}
+          <div className="mt-1 w-full max-w-md">
+            <EntityTags entityType="account" entityId={account.id} />
+          </div>
         </div>
         <span className="flex items-center gap-1">
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setAdding(true)}>

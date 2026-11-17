@@ -80,12 +80,19 @@ prévia conforme os valores mudam. Limpar a cor envia `null`. No desktop, o pain
 interna e cabeçalho fixo; no celular, a página rola sem transbordamento horizontal. Lista vazia e
 busca sem resultados têm mensagens diferentes. Contratos de API permanecem iguais.
 
+### Aplicar etiquetas
+
+As páginas de conta, cartão e fatura e o painel do lançamento têm um seletor de etiquetas que salva
+assim que a seleção muda (`EntityTags`). As listas de contas e cartões, e "Mais filtros" na lista de
+lançamentos, filtram por etiqueta (qualquer uma das escolhidas).
+
 ### API
 
 | Método | Rota | Propósito |
 |---|---|---|
 | GET / POST / PUT / DELETE | `/tags`, `/tags/{id}` | CRUD |
 | GET | `/tags/{id}/links` | Vínculos de uma tag |
+| GET | `/tags/entities/{entityType}/{entityId}` | Ids das tags de uma entidade |
 | POST | `/tags/{id}/links` | Adicionar vínculo |
 | DELETE | `/tags/{id}/links/{entityType}/{entityId}` | Remover vínculo |
 | PUT | `/{entity}/{id}/tags` | Substituir o conjunto inteiro de tags de uma conta/cartão/fatura/lançamento |

@@ -47,6 +47,7 @@ export const financeKeys = {
   tags: () => [...financeKeys.all, 'tags'] as const,
   tagList: () => [...financeKeys.tags(), 'list'] as const,
   tagLinks: (id: string) => [...financeKeys.tags(), 'links', id] as const,
+  entityTags: (entityType: string, id: string) => [...financeKeys.tags(), 'entity', entityType, id] as const,
 
   audit: () => [...financeKeys.all, 'audit'] as const,
   auditTimeline: (params: object = {}) =>

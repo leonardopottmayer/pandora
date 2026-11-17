@@ -79,12 +79,19 @@ the name and swatch as they change. Clearing a color sends `null`. Desktop uses 
 scrolling panel with a sticky header; phones use page scrolling without horizontal overflow.
 Empty lists and searches have distinct messages. API contracts remain unchanged.
 
+### Applying tags
+
+The account, card and statement pages and the transaction drawer have a tag picker that saves as
+soon as the selection changes (`EntityTags`). The accounts and cards lists, and "More filters" on the
+transactions list, filter by tag (any of the chosen tags).
+
 ### API
 
 | Method | Route | Purpose |
 |---|---|---|
 | GET / POST / PUT / DELETE | `/tags`, `/tags/{id}` | CRUD |
 | GET | `/tags/{id}/links` | Links of a tag |
+| GET | `/tags/entities/{entityType}/{entityId}` | Tag ids on one entity |
 | POST | `/tags/{id}/links` | Add a link |
 | DELETE | `/tags/{id}/links/{entityType}/{entityId}` | Remove a link |
 | PUT | `/{entity}/{id}/tags` | Replace the whole tag set of an account/card/statement/transaction |

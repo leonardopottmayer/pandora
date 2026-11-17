@@ -11,6 +11,7 @@ import type { AccountBalanceDto, AccountDto } from '../../models'
 import { ACCOUNT_TYPE_META } from '../../lib/enums'
 import { formatMoney } from '../../lib/format'
 import { EnumTag } from '../../components/EnumTag'
+import { TagPicker } from '../../components/TagPicker'
 import { StatTile } from '../../components/StatTile'
 import { useAccountBalances, useAccounts, useDeleteAccount, useSetAccountArchived } from '../../hooks/useAccounts'
 import { AccountFormModal } from './AccountFormModal'
@@ -23,7 +24,8 @@ export function AccountsListPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<AccountDto | null>(null)
 
-  const { data, isLoading } = useAccounts({ includeArchived })
+  const [tagIds, setTagIds] = useState<string[]>([])
+  const { data, isLoading } = useAccounts({ includeArchived, tags: tagIds })
   const accounts = data ?? []
   const balanceQueries = useAccountBalances(accounts.map((a) => a.id))
   const balanceOf = new Map<string, AccountBalanceDto>()
@@ -180,10 +182,13 @@ export function AccountsListPage() {
 
       <SettingsSection
         extra={
-          <label className="flex cursor-pointer items-center gap-2 text-sm" style={{ color: token.colorTextSecondary }}>
-            <Switch size="small" checked={includeArchived} onChange={setIncludeArchived} />
-            {t('finances.accounts.showArchived')}
-          </label>
+          <span className="flex flex-wrap items-center gap-3">
+            <TagPicker className="w-52" aria-label={t('finances.tags.filter')} placeholder={t('finances.tags.filter')} value={tagIds} onChange={setTagIds} />
+            <label className="flex cursor-pointer items-center gap-2 text-sm" style={{ color: token.colorTextSecondary }}>
+              <Switch size="small" checked={includeArchived} onChange={setIncludeArchived} />
+              {t('finances.accounts.showArchived')}
+            </label>
+          </span>
         }
       >
         <Table

@@ -35,6 +35,7 @@ function serveCards() {
   server.use(
     http.get(`${FINANCES_BASE}/cards`, () => HttpResponse.json({ success: true, data: [card] })),
     http.get(`${FINANCES_BASE}/accounts`, () => HttpResponse.json({ success: true, data: [{ id: 'a1', name: 'Conta', currency: 'BRL' }] })),
+    http.get(`${FINANCES_BASE}/tags`, () => HttpResponse.json({ success: true, data: [] })),
   )
 }
 
@@ -57,7 +58,8 @@ describe('CardsListPage', () => {
     await user.click(await screen.findByRole('button', { name: 'More actions for Nubank' }))
     expect(screen.getByTestId('location')).toHaveTextContent('/')
     await user.click(screen.getByRole('menuitem', { name: 'Edit' }))
-    expect(await screen.findByRole('dialog', { name: 'Edit card' })).toBeInTheDocument()
+    // In tests antd gives every component the same id, so the tag filter steals the modal's aria-labelledby.
+    expect(within(await screen.findByRole('dialog')).getByText('Edit card')).toBeInTheDocument()
     expect(screen.getByTestId('location')).toHaveTextContent('/')
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     await user.click(screen.getByRole('row', { name: /Nubank/ }))

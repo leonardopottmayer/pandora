@@ -81,9 +81,8 @@ describe('cards.service', () => {
     )
     await listCards({ includeArchived: true, tags: ['t1', 't2'] })
     expect(seenUrl?.searchParams.get('includeArchived')).toBe('true')
-    // axios serialises arrays as tags[]=t1&tags[]=t2; assert both values are present.
-    expect(seenUrl?.search).toContain('t1')
-    expect(seenUrl?.search).toContain('t2')
+    // Repeated keys, the form ASP.NET binds (tags[]=t1 is ignored by the API).
+    expect(seenUrl?.searchParams.getAll('tags')).toEqual(['t1', 't2'])
   })
 
   it('fetches a single card', async () => {

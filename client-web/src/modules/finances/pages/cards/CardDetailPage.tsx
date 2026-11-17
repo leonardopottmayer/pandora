@@ -5,6 +5,7 @@ import { Breadcrumb, Button, Empty, Skeleton, Tabs, Tag, theme } from 'antd'
 import { EditOutlined } from '@ant-design/icons'
 import { PageHeading } from '@/components/settings/PageHeading'
 import { formatMoney } from '../../lib/format'
+import { EntityTags } from '../../components/EntityTags'
 import { StatTile } from '../../components/StatTile'
 import { useCard, useCardAvailableLimit, useCardInstallmentPlans, useCardStatements } from '../../hooks/useCards'
 import { CardFormModal } from './CardFormModal'
@@ -43,6 +44,7 @@ export function CardDetailPage() {
         <div className="min-w-0 flex-1 break-words">
           <PageHeading title={card.name} description={description} />
           {card.archivedAt && <Tag className="mt-2">{t('finances.accounts.archivedStatus')}</Tag>}
+          <div className="mt-2 max-w-md"><EntityTags entityType="card" entityId={card.id} /></div>
         </div>
         <Button icon={<EditOutlined />} onClick={() => setEditing(true)}>{t('finances.cards.editTitle')}</Button>
       </div>

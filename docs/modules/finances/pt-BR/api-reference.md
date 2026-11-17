@@ -79,6 +79,7 @@ recurso de outro usuário retorna **404** (não 403). Os controllers ficam em `P
 | GET / POST | `/tags` | Listar / criar |
 | PUT / DELETE | `/tags/{id}` | Atualizar / excluir |
 | GET | `/tags/{id}/links` | Vínculos de uma tag |
+| GET | `/tags/entities/{entityType}/{entityId}` | Ids das tags de uma entidade |
 | POST | `/tags/{id}/links` | Adicionar vínculo |
 | DELETE | `/tags/{id}/links/{entityType}/{entityId}` | Remover vínculo |
 

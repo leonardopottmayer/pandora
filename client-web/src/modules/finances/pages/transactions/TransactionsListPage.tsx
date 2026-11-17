@@ -27,6 +27,7 @@ import { useAccounts, useAccountNames } from '../../hooks/useAccounts'
 import { useCards, useCardNames } from '../../hooks/useCards'
 import { useCategoryNames, useSystemCategories, useUserCategories } from '../../hooks/useCategories'
 import { useAllTransactions, usePostTransaction, useUnvoidTransaction, useVoidTransaction } from '../../hooks/useTransactions'
+import { TagPicker } from '../../components/TagPicker'
 import { TransactionFormModal } from './TransactionFormModal'
 import { TransferFormModal } from './TransferFormModal'
 
@@ -39,6 +40,7 @@ interface MoreFilters {
   dueDateTo?: string
   amountMin?: number
   amountMax?: number
+  tagIds?: string[]
   /** A range of its own replaces the month. */
   from?: string
   to?: string
@@ -82,8 +84,8 @@ export function TransactionsListPage() {
   const customRange = !!(more.from || more.to)
   const { data, isLoading } = useAllTransactions(
     customRange
-      ? { from: more.from, to: more.to }
-      : { from: month.format('YYYY-MM-DD'), to: month.endOf('month').format('YYYY-MM-DD') },
+      ? { from: more.from, to: more.to, tags: more.tagIds }
+      : { from: month.format('YYYY-MM-DD'), to: month.endOf('month').format('YYYY-MM-DD'), tags: more.tagIds },
   )
   const { data: accounts } = useAccounts()
   const { data: cards } = useCards()
@@ -114,6 +116,7 @@ export function TransactionsListPage() {
   const moreCount = [
     more.statuses,
     more.kinds,
+    more.tagIds,
     more.referenceMonths,
     more.dueDateFrom || more.dueDateTo,
     more.amountMin != null || more.amountMax != null,
@@ -468,6 +471,13 @@ export function TransactionsListPage() {
               value={more.referenceMonths ?? []}
               onChange={(v: string[]) => setMoreFilter('referenceMonths', v)}
               options={referenceMonthOptions}
+            />
+            <TagPicker
+              className="w-full"
+              aria-label={t('finances.tags.filter')}
+              placeholder={t('finances.tags.filter')}
+              value={more.tagIds ?? []}
+              onChange={(v) => setMoreFilter('tagIds', v)}
             />
             <DatePicker.RangePicker
               placeholder={[t('finances.filters.dueFrom'), t('finances.filters.dueTo')]}

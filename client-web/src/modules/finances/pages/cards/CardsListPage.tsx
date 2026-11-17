@@ -9,6 +9,7 @@ import { toErrorMessage } from '@/lib/api/envelope'
 import type { CardDto } from '../../models'
 import { formatMoney } from '../../lib/format'
 import { useCards, useDeleteCard, useSetCardArchived } from '../../hooks/useCards'
+import { TagPicker } from '../../components/TagPicker'
 import { CardFormModal } from './CardFormModal'
 
 export function CardsListPage() {
@@ -21,7 +22,8 @@ export function CardsListPage() {
   const [editing, setEditing] = useState<CardDto | null>(null)
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null)
 
-  const { data: cards = [], isLoading } = useCards({ includeArchived })
+  const [tagIds, setTagIds] = useState<string[]>([])
+  const { data: cards = [], isLoading } = useCards({ includeArchived, tags: tagIds })
   const deleteMutation = useDeleteCard()
   const archiveMutation = useSetCardArchived()
 
@@ -154,10 +156,13 @@ export function CardsListPage() {
           {t('finances.cards.new')}
         </Button>
       </div>
-      <label className="flex w-fit shrink-0 cursor-pointer items-center gap-2 text-sm" style={{ color: token.colorTextSecondary }}>
-        <Switch size="small" checked={includeArchived} onChange={setIncludeArchived} />
-        {t('finances.accounts.showArchived')}
-      </label>
+      <div className="flex shrink-0 flex-wrap items-center gap-3">
+        <TagPicker className="w-52" aria-label={t('finances.tags.filter')} placeholder={t('finances.tags.filter')} value={tagIds} onChange={setTagIds} />
+        <label className="flex w-fit cursor-pointer items-center gap-2 text-sm" style={{ color: token.colorTextSecondary }}>
+          <Switch size="small" checked={includeArchived} onChange={setIncludeArchived} />
+          {t('finances.accounts.showArchived')}
+        </label>
+      </div>
       <div
         className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl"
         style={{ border: `1px solid ${token.colorBorderSecondary}`, background: token.colorBgContainer }}
