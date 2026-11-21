@@ -162,7 +162,7 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
 
     /// <summary>
     /// Walks up from the test output directory to the repository root (the folder that holds
-    /// <c>migrations/config.json</c>) and returns its <c>migrations/migrations</c> folder.
+    /// <c>migrations/config.example.json</c>, which is versioned) and returns its <c>migrations/migrations</c> folder.
     /// Override with the <c>PANDORA_MIGRATIONS_PATH</c> environment variable (e.g. in CI).
     /// </summary>
     private static string ResolveMigrationsPath()
@@ -173,7 +173,7 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
 
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
         {
-            if (File.Exists(Path.Combine(dir.FullName, "migrations", "config.json")))
+            if (File.Exists(Path.Combine(dir.FullName, "migrations", "config.example.json")))
                 return Path.Combine(dir.FullName, "migrations", "migrations");
         }
 

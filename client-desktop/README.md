@@ -75,7 +75,9 @@ uploads to GitHub Releases:
 
 - **Run it from the Actions tab** → a **draft** release. No tag is created and installed apps do not
   see it — use it to test the pipeline and download the CI's `Setup.exe`, then delete the draft.
-- **Push a tag `v<VERSION>`** (it must match `/VERSION`) → a published release.
+- **Published releases are paused.** Release tags (`v<VERSION>`) are created by the release bot
+  ([releasing](../docs/deployment/releasing.md)) and no longer start this workflow: the desktop is left
+  out of the automated releases for now, so installed apps get no update until it joins.
 
 Installed apps check the published releases at startup and every 6 hours, download a newer version
 in the background, and switch to it on the next start.

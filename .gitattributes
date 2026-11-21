@@ -1,0 +1,6 @@
+# Store text files with LF in the repository, whatever the OS of who commits them.
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf

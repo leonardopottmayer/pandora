@@ -129,7 +129,7 @@ public sealed class AssistantLiveFactory : WebApplicationFactory<Program>, IAsyn
     {
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
         {
-            if (!File.Exists(Path.Combine(dir.FullName, "migrations", "config.json")))
+            if (!File.Exists(Path.Combine(dir.FullName, "migrations", "config.example.json")))
                 continue;
             var path = Path.Combine([dir.FullName, .. parts]);
             return File.Exists(path) || Directory.Exists(path) ? path : null;

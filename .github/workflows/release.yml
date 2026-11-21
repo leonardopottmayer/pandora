@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+# Every job asks for what it needs; the default is read-only.
+permissions:
+  contents: read
+
+# One release at a time. A second merge waits for the first release to finish.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+# Actions are pinned to commit hashes: this job handles the release bot's key.
+# The tag it pushes (v1.2.3) starts build-images.yml, which publishes the Docker images.
+jobs:
+  release:
+    name: Release
+    # The bot's own release commit triggers this workflow again; there's nothing to release in it.
+    if: github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'chore(release):')
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.semantic-release.outputs.version }}
+
+    steps:
+      # The release bot (a GitHub App) can push to main and opens pull requests that trigger CI.
+      - name: Get the release bot token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: lts/*
+
+      # Computes the version, writes it to the source files and CHANGELOG.md, commits to main, tags, creates the GitHub Release.
+      # The preset's major must match the changelog writer bundled with semantic-release: v8 for semantic-release 25.
+      - name: Run semantic-release
+        id: semantic-release
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: >-
+          npx --yes
+          -p semantic-release@25
+          -p @semantic-release/changelog@7
+          -p @semantic-release/exec@7
+          -p @semantic-release/git@11
+          -p conventional-changelog-conventionalcommits@8
+          semantic-release
+
+      # Brings the release commit back to dev. Merged automatically once CI passes.
+      - name: Open the main → dev pull request
+        if: steps.semantic-release.outputs.version != ''
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ steps.semantic-release.outputs.version }}
+        run: |
+          if [ -n "$(gh pr list --base dev --head main --state open --json number --jq '.[].number')" ]; then
+            echo "A main → dev pull request is already open; it carries this release too."
+            exit 0
+          fi
+          url=$(gh pr create --base dev --head main \
+            --title "chore: sync main into dev after v$VERSION" \
+            --body "Brings the release commit of v$VERSION back to dev. Merged automatically, with a merge commit, once CI passes.")
+          gh pr merge "$url" --auto --merge

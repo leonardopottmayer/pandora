@@ -78,9 +78,12 @@ public sealed class StartConnectionCommandHandler(
         return Ok(url.ToString());
     }
 
+    // A single leading slash already rules out a scheme ("https:"). Not Uri.TryCreate(Absolute): on Linux
+    // it reads "/x" as the file URI file:///x and refused every path. Browsers treat "\" like "/", so
+    // "/\evil.com" would be protocol-relative too.
     private static bool IsRelativePath(string value) =>
         !string.IsNullOrWhiteSpace(value)
         && value.StartsWith('/')
         && !value.StartsWith("//", StringComparison.Ordinal)
-        && !Uri.TryCreate(value, UriKind.Absolute, out _);
+        && !value.Contains('\\');
 }
