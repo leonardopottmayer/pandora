@@ -119,6 +119,20 @@ public sealed class OAuthCallbackTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData("https://evil.example/")]
+    [InlineData("//evil.example/")]
+    [InlineData("/\\evil.example/")]
+    [InlineData("integrations")]
+    public async Task Connect_refuses_a_redirect_that_leaves_the_app(string redirectAfter)
+    {
+        await IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, "alice@example.com", "alice");
+
+        var response = await _client.PostAsJsonAsync(ConnectUrl, new { redirectAfter });
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+    }
+
     /// <summary>Starts a connection, completes the callback with <paramref name="code"/>, and returns where the browser lands.</summary>
     private async Task<string> ConnectAsync(string code, Guid? accountId = null)
     {
