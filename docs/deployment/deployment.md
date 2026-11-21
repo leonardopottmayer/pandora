@@ -24,14 +24,14 @@ same origin and nginx forwards `/api` to the backend.
 ### Database topology
 
 Postgres is **not** in the app stack, and not in this repo. Each homelab **tier**
-(staging, prod) runs one shared Postgres, set up from the **homelab repo**
-(`G:\dev\homelab`), that every app in that tier connects to — each with its own
-database and role:
+(staging, prod) runs its shared servers in one Compose project named after the tier
+(homelab repo `G:\dev\homelab`, folder `tier/`): containers `<tier>-<engine>`, today one
+Postgres that every app in that tier connects to — each with its own database and role:
 
 | Tier | Container | Network | Host alias | Localhost port |
 |---|---|---|---|---|
-| Staging | `staging-db` | `staging` | `staging-db` | `5433` |
-| Production | `prod-db` | `prod` | `prod-db` | `5432` |
+| Staging | `staging-postgres` | `staging` | `staging-postgres` | `5433` (`5435` on the PC) |
+| Production | `prod-postgres` | `prod` | `prod-postgres` | `5432` |
 
 The app's `backend` joins the tier network and connects to `${DB_HOST}` using
 Pandora's own role (`POSTGRES_USER`/`POSTGRES_PASSWORD`) and database
@@ -127,7 +127,7 @@ files it uses:
 | `COMPOSE_PROJECT_NAME` | Isolates the app stack per environment (`pandora-staging`, `pandora-prod`). |
 | `ASPNETCORE_ENVIRONMENT` | ASP.NET Core environment (`Production` for real deploys). |
 | `COMPOSE_PROFILES` | `mailhog` to run the email catcher (staging); empty in prod. |
-| `TIER_NETWORK` / `DB_HOST` | Which shared tier DB to use (`staging`/`staging-db`, `prod`/`prod-db`). |
+| `TIER_NETWORK` / `DB_HOST` | Which shared tier DB to use (`staging`/`staging-postgres`, `prod`/`prod-postgres`). |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Pandora's own role + database in the shared DB (all three connection strings). |
 | `JWT_SIGNING_KEY` | Overrides `Tars:Security:Identity:Jwt:SigningKey`. **Required** (the default in `appsettings.json` is public). |
 | `MFA_ENCRYPTION_KEY` | Overrides `Pandora:Identity:Mfa:EncryptionKey`. **Required** (the default is public); never change it once set, or every MFA secret becomes unreadable. |
@@ -204,7 +204,7 @@ root. The worked example is **staging**; per-tier values:
 | | staging | prod |
 |---|---|---|
 | Tier network | `staging` | `prod` |
-| DB container / host alias | `staging-db` | `prod-db` |
+| DB container / host alias | `staging-postgres` | `prod-postgres` |
 | DB localhost port | `5433` (`5435` on the PC) | `5432` |
 | App env file | `.env.staging` | `.env.prod` |
 | Frontend port | `8731` | `8730` |
@@ -216,11 +216,11 @@ and `docker login ghcr.io` (see One-time setup).
 ### 0. Ensure the homelab tier is up
 
 The tier network + shared Postgres come from the **homelab repo**
-(`G:\dev\homelab`): create the `staging` network and bring up `staging-db` per its
+(`G:\dev\homelab`): create the `staging` network and bring up `staging-postgres` per its
 docs. Confirm the container is running before continuing:
 
 ```powershell
-docker ps --filter name=staging-db
+docker ps --filter name=staging-postgres
 ```
 
 ### 1. Generate secrets
@@ -248,7 +248,7 @@ password from step 1:
 
 ```powershell
 Get-Content deploy/bootstrap-pandora.sql | `
-  docker exec -i staging-db psql -U postgres -d postgres -v pandora_password='<Pandora DB role secret>'
+  docker exec -i staging-postgres psql -U postgres -d postgres -v pandora_password='<Pandora DB role secret>'
 ```
 
 (Or paste `deploy/bootstrap-pandora.sql` into the tier server's Query Tool in
@@ -260,7 +260,7 @@ pgAdmin.)
 Copy-Item .env.example .env.staging
 # Edit .env.staging:
 #   COMPOSE_PROJECT_NAME=pandora-staging  ASPNETCORE_ENVIRONMENT=Production
-#   COMPOSE_PROFILES=mailhog  TIER_NETWORK=staging  DB_HOST=staging-db
+#   COMPOSE_PROFILES=mailhog  TIER_NETWORK=staging  DB_HOST=staging-postgres
 #   POSTGRES_USER=pandora  POSTGRES_PASSWORD=<Pandora DB role secret>  POSTGRES_DB=pandora
 #   JWT_SIGNING_KEY=<secret>  MFA_ENCRYPTION_KEY=<secret>  DATA_PROTECTION_KEY=<secret>
 #   (Google and Telegram: optional, see the table above)

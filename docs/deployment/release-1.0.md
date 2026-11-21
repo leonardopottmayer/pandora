@@ -33,10 +33,10 @@ listens on `5435` there, not `5433`.
 
 ## 2b. Staging
 
-- [ ] Tier up (homelab repo, guides 01 to 03): networks `staging` and `prod`, `staging-db`, `prod-db`,
+- [ ] Tier up (homelab repo, guides 01 to 03): networks `staging` and `prod`, `staging-postgres`, `prod-postgres`,
       pgAdmin.
 - [ ] `docker login ghcr.io` and the local `migris` config (see [deployment](deployment.md)).
-- [ ] Pandora's role and database in `staging-db`, then `migris init staging` and
+- [ ] Pandora's role and database in `staging-postgres`, then `migris init staging` and
       `migris apply staging -y` ([deployment, steps 2 to 5](deployment.md#creating-an-environment-step-by-step)).
 - [ ] `.env.staging` up to `.env.example`: `DATA_PROTECTION_KEY` (required, new secret), images `:dev`,
       the Google client, and a staging pair of Telegram bots with `TELEGRAM_BOT_USERNAME`. Save it in
@@ -115,7 +115,7 @@ Write down what fails. The rest stays as is.
 - [ ] Brevo account (SMTP) for prod's e-mails.
 - [ ] Generate the `.env.prod` secrets, images pinned to `:1.0.0`, SMTP pointing at Brevo,
       `COMPOSE_PROFILES` empty. Save it in Bitwarden.
-- [ ] Pandora's role and database in `prod-db`, `migris init prod`, `migris apply prod -y`.
+- [ ] Pandora's role and database in `prod-postgres`, `migris init prod`, `migris apply prod -y`.
 - [ ] `pull` and `up -d`.
 - [ ] Schedule `homelab-db-backup`, run it once and run `Test-Restore.ps1` (homelab
       `docs/05-backups.md`). Confirm iDrive is watching the folder.
