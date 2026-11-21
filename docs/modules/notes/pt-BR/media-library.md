@@ -52,9 +52,11 @@ A geração mora atrás do port `IImageProcessor`, implementado com **ImageSharp
 
 - **Rotação EXIF.** Foto de celular costuma guardar o "gire 90°" nos metadados, não nos pixels. As
   dimensões e a miniatura já saem de pé.
-- **Por que 3.1 e não 4.x.** A 4.x verifica uma chave de licença no build e **falha o build em
-  Release** sem ela. A 3.1 tem a mesma licença (Six Labors Split: Apache 2.0 abaixo de US$ 1 milhão
-  de receita) sem essa verificação. É código .NET puro — nada nativo na imagem Docker.
+- **Por que 3.1 e não 3.2 ou 4.x.** A 3.2 e a 4.x verificam uma chave de licença no build e **falham o
+  build em Release** sem ela. A 3.1 tem a mesma licença (Six Labors Split: Apache 2.0 abaixo de US$ 1
+  milhão de receita) sem essa verificação. É código .NET puro — nada nativo na imagem Docker.
+- **Só PNG, JPEG, GIF e WebP são lidos.** A 3.1 tem falhas nos decoders corrigidas só na 3.2, a maioria
+  em TIFF; qualquer outro formato conta como "não é imagem" (sem dimensões, sem miniatura).
 
 ## 5. Pastas
 

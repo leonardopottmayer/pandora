@@ -49,6 +49,18 @@ public sealed class ImageSharpProcessorTests
         Assert.Null(_processor.Thumbnail(bytes, 400));
     }
 
+    [Fact]
+    public void Does_not_decode_tiff()
+    {
+        using var image = new Image<Rgba32>(40, 30);
+        using var output = new MemoryStream();
+        image.SaveAsTiff(output);
+        var tiff = output.ToArray();
+
+        Assert.Null(_processor.Inspect(tiff));
+        Assert.Null(_processor.Thumbnail(tiff, 400));
+    }
+
     [Theory]
     [InlineData("image/png", "image")]
     [InlineData("IMAGE/JPEG", "image")]

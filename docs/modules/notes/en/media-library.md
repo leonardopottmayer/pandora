@@ -50,9 +50,11 @@ The work sits behind the `IImageProcessor` port, implemented with **ImageSharp 3
 
 - **EXIF rotation.** Phone photos often keep "turn 90°" in their metadata instead of in the pixels.
   Dimensions and thumbnail come out upright.
-- **Why 3.1 and not 4.x.** 4.x checks for a license key at build time and **fails a Release build**
-  without one. 3.1 carries the same license (Six Labors Split: Apache 2.0 below 1M USD of revenue)
-  without that check. It is pure .NET code — nothing native in the Docker image.
+- **Why 3.1 and not 3.2 or 4.x.** 3.2 and 4.x check for a license key at build time and **fail a
+  Release build** without one. 3.1 carries the same license (Six Labors Split: Apache 2.0 below 1M USD
+  of revenue) without that check. It is pure .NET code — nothing native in the Docker image.
+- **Only PNG, JPEG, GIF and WebP are decoded.** 3.1 has decoder bugs fixed only in 3.2, mostly in TIFF;
+  any other format is treated as "not an image" (no dimensions, no thumbnail).
 
 ## 5. Folders
 
