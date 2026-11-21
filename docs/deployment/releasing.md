@@ -88,7 +88,12 @@ gh api repos/{owner}/{repo}/rulesets --jq '.[].name'
 ```
 
 Each ruleset: changes only through a pull request (zero approvals), both checks green, no force push,
-no deletion.
+no deletion. They were created after the CI adoption PR merged into `dev` (its checks had to exist
+first): `main` is ruleset 27805250, `dev` 27805252. To check one:
+
+```bash
+gh api repos/{owner}/{repo}/rulesets/<id> --jq '{name, include: .conditions.ref_name.include, checks: [.rules[]|select(.type=="required_status_checks")|.parameters.required_status_checks[].context], rules: [.rules[].type], bypass: .bypass_actors}'
+```
 
 ### 2. CI secrets
 
@@ -110,7 +115,8 @@ serves devkit and tars. For Pandora:
    Get-Content "path\to\the-key.pem" -Raw | gh secret set RELEASE_APP_PRIVATE_KEY
    gh secret list
    ```
-4. The bot bypasses the `main` ruleset (only `main`; it reaches `dev` through its pull request):
+4. The bot bypasses the `main` ruleset (only `main`; it reaches `dev` through its pull request).
+   `<APP_ID>` is the App's numeric ID from its settings page (not the Client ID): `5465863`.
    ```bash
    id=$(gh api repos/{owner}/{repo}/rulesets --jq '.[] | select(.name == "main") | .id')
    gh api repos/{owner}/{repo}/rulesets/$id --jq '{name, target, enforcement, conditions, rules, bypass_actors: (.bypass_actors + [{actor_id: <APP_ID>, actor_type: "Integration", bypass_mode: "always"}])}' > /tmp/main-ruleset.json
