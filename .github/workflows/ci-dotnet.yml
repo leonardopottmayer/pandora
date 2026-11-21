@@ -51,5 +51,9 @@ jobs:
         run: dotnet build Pottmayer.Pandora.slnx --no-restore --configuration Release
 
       # The integration tests start Postgres with Testcontainers; the runner has Docker.
+      # Every test host watches appsettings*.json for changes; hundreds of hosts exhaust Linux's inotify
+      # instances (128 on the runner). Polling watchers use none.
       - name: Test
+        env:
+          DOTNET_USE_POLLING_FILE_WATCHER: "true"
         run: dotnet test Pottmayer.Pandora.slnx --no-build --configuration Release
