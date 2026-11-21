@@ -27,14 +27,14 @@ Princípio de isolamento: nada do Docker/Postgres usa volume dentro das pastas d
 Guia operacional (build/run/ambientes): [deployment.md](deployment.md).
 
 Decisões tomadas na implementação:
-- **Ambientes:** `prod` (porta 8730, tag fixa) e `staging` (porta 8731, `:latest`), cada um um stack completo isolado por `COMPOSE_PROJECT_NAME`. Só o nginx publica porta no host; Postgres/backend ficam internos. Mesma imagem serve os dois; só o `.env.<ambiente>` muda.
+- **Ambientes:** `prod` (porta 8730, tag fixa) e `staging` (porta 8731, `:dev`), cada um um stack completo isolado por `COMPOSE_PROJECT_NAME`. Só o nginx publica porta no host; Postgres/backend ficam internos. Mesma imagem serve os dois; só o `.env.<ambiente>` muda.
 - **Banco:** Postgres compartilhado por tier (`staging-db`/`prod-db`), provisionado no repo **homelab**, numa rede Docker do tier (`staging`/`prod`). O Pandora tem role+banco próprios (ambos `pandora`, criados via `deploy/bootstrap-pandora.sql`); as 3 connection strings apontam pro mesmo DB com schemas separados. Superusuário do banco é separado, só pra provisionar apps.
 - **Feed NuGet privado:** os pacotes `Pottmayer.Tars.*` vêm do GitHub Packages; o build do backend autentica via build secret (`github_token`, PAT com `read:packages`).
 - **E-mail:** `mailhog` como serviço sob profile do Compose (`COMPOSE_PROFILES=mailhog`) — sobe no staging (captura, UI na LAN em 8732), fica de fora do prod. SMTP host/porta do backend vêm do `.env`; prod aponta pra provedor real (fase 2).
 
 Itens criados:
 
-1. `VERSION` na raiz (fonte única de versão) + `Directory.Build.props` lendo ele.
+1. `VERSION` na raiz (fonte única de versão, escrita pelo robô de release) + `Directory.Build.props` lendo ele.
 2. `Dockerfile` do backend (multi-stage build .NET SDK -> runtime).
 3. `Dockerfile` do client-web (build Vite -> nginx servindo estático + proxy `/api`).
 4. `docker-compose.yml`: backend + frontend (+ mailhog no staging), conectando no Postgres compartilhado do tier pela rede externa; variáveis lidas de um `.env`.
@@ -55,14 +55,14 @@ O banco `prod-db` é compartilhado entre apps, então o backup fica no repo **ho
 (`backup/`, guia em `docs/05-backups.md`):
 
 - `Backup-TierDatabases.ps1`: `pg_dump -Fc` de cada banco do tier, **diário** às 03:30 via Task
-  Scheduler, mantendo os **14** mais recentes por banco, numa subpasta monitorada pelo iDrive.
+  Scheduler, mantendo os **90** mais recentes por banco, numa subpasta monitorada pelo iDrive.
 - `Test-Restore.ps1`: restaura o dump mais recente num banco descartável e conta as tabelas. Rodar uma
   vez por mês e depois de qualquer mudança no backup.
 - Confirmar que o iDrive está monitorando essa subpasta específica.
 
 ### 1.4 CI / deploy — ✅ implementado (workflow)
 
-- Workflow `.github/workflows/build-images.yml` builda backend + frontend e publica no GHCR a cada push na `main`. Tags: `latest`, versão do `VERSION` e `sha-<commit>`.
+- Workflow `.github/workflows/build-images.yml` builda backend + frontend e publica no GHCR: `:dev` a cada push no `dev` (o staging roda essa), `:<versão>` + `:latest` a cada tag de release `v*` criada pelo robô (o prod fixa a versão), e sempre `:sha-<commit>`. Fluxo de release em [releasing.md](releasing.md).
 - Push no GHCR usa o `GITHUB_TOKEN` automático; o restore dos `Pottmayer.Tars.*` (repo separado) usa o secret **`NUGET_GITHUB_TOKEN`** (PAT com `read:packages`).
 - No homelab: `docker compose --env-file .env.<ambiente> pull && ... up -d` manual, seguido de `migris apply <ambiente>` quando houver migração nova.
 

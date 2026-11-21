@@ -42,6 +42,7 @@ organized by module plus a few cross-cutting concerns.
 - **Deployment**, not module behavior:
   - [Deployment](deployment/deployment.md)
   - [Homelab deploy](deployment/homelab-deploy.md)
+  - [Releasing](deployment/releasing.md) — branches, CI, the release bot and the image tags; every command of the GitHub setup.
   - [Release 1.0](deployment/release-1.0.md) — the release checklist and the manual script against real accounts.
   - [Google OAuth and Gemini setup](deployment/google-and-gemini-setup.md) — the OAuth client Gmail needs, the Gemini key the Assistant needs, and how to undo both.
 

@@ -4,9 +4,13 @@
 and the manual script for checking against real accounts what the tests only cover with fakes. Tick each
 item as you go.
 
-The pipeline: the CI only builds images on a push to `main` (`:latest`, `:<VERSION>`, `:sha-…`).
-Staging runs `:latest`, and prod runs a pinned tag. So the order is: `dev` → `main` → staging checked →
-`VERSION` 1.0.0 → prod.
+The pipeline ([releasing](releasing.md)): every push to `dev` builds the `:dev` images, which staging
+runs. Merging `dev` into `main` is the release: the bot writes `1.0.0` (Pandora has no earlier tag),
+tags `v1.0.0`, and the tag builds `:1.0.0`, which prod pins. So the order is: repository set up →
+staging on `:dev` checked → `dev` → `main` → prod.
+
+For now the homelab runs on the everyday PC (homelab repo, `docs/06-move-host.md`): staging's database
+listens on `5435` there, not `5433`.
 
 ---
 
@@ -18,19 +22,27 @@ Staging runs `:latest`, and prod runs a pinned tag. So the order is: `dev` → `
 - [x] KI-002 closed (not needed yet); Gmail testing mode accepted.
 - [x] Daily backup and restore check written (repo **homelab**, `docs/05-backups.md`).
 
-## 2. Staging
+## 2. Repository (devkit stage 3)
 
-- [ ] Merge `dev` into `main` and push; the CI goes green and publishes `:latest`.
-- [ ] On the homelab: `docker login ghcr.io` (if not done yet) and the local `migris` config (see
-      [homelab-deploy.md §1.5](homelab-deploy.md)).
-- [ ] Bring `.env.staging` up to `.env.example`: `DATA_PROTECTION_KEY` (required, new secret), the
-      Google client, and a staging pair of Telegram bots with `TELEGRAM_BOT_USERNAME`. Save it in Bitwarden.
-- [ ] **Recreate the staging database from scratch.** Before 1.0, migrations were edited in place, so an
-      old database does not match them: drop and recreate the `pandora` database in `staging-db`
-      ([deployment.md, step 2](deployment.md#2-provision-pandoras-database--role-once-per-tier)), then
-      `migris apply staging`.
+- [ ] CI, release and Dependabot files reach `dev` through a pull request.
+- [ ] Merge and security settings, rulesets on `main` and `dev`
+      ([releasing §1](releasing.md#1-merge-security-and-ruleset-settings)).
+- [ ] `NUGET_GITHUB_TOKEN` also as a Dependabot secret.
+- [ ] Release bot installed on the repository, its variable and secret set, bypass on `main`
+      ([releasing §3](releasing.md#3-the-release-bot)).
+
+## 2b. Staging
+
+- [ ] Tier up (homelab repo, guides 01 to 03): networks `staging` and `prod`, `staging-db`, `prod-db`,
+      pgAdmin.
+- [ ] `docker login ghcr.io` and the local `migris` config (see [deployment](deployment.md)).
+- [ ] Pandora's role and database in `staging-db`, then `migris init staging` and
+      `migris apply staging -y` ([deployment, steps 2 to 5](deployment.md#creating-an-environment-step-by-step)).
+- [ ] `.env.staging` up to `.env.example`: `DATA_PROTECTION_KEY` (required, new secret), images `:dev`,
+      the Google client, and a staging pair of Telegram bots with `TELEGRAM_BOT_USERNAME`. Save it in
+      Bitwarden.
 - [ ] `docker compose --env-file .env.staging pull && docker compose --env-file .env.staging up -d`.
-- [ ] Run the script in §3 against `http://<homelab>:8731`.
+- [ ] Run the script in §3 against `http://<host>:8731`. Fixes go to `dev`; staging pulls `:dev` again.
 
 ## 3. Manual script (staging, real accounts)
 
@@ -91,20 +103,27 @@ Write down what fails. The rest stays as is.
 **Admin**
 - [ ] A role with a permission denied blocks the action; a feature flag hides its feature.
 
-## 4. Production
+## 4. Release
 
-- [ ] Generate the `.env.prod` secrets and save them in Bitwarden.
-- [ ] `prod-db` up, `pandora` database and role created, `migris apply prod`.
-- [ ] Set `VERSION` to `1.0.0` on `main`, push, and wait for the CI to publish `:1.0.0`.
-- [ ] Pin `:1.0.0` in `.env.prod`, `pull` and `up -d`.
+- [ ] `gh pr create --base main --head dev`; the release preview comment says **v1.0.0**.
+- [ ] Merge it with a merge commit. The bot commits `chore(release): 1.0.0`, tags `v1.0.0`, publishes
+      the GitHub Release and opens the `main` → `dev` pull request, which merges itself.
+- [ ] The tag's `build-images` run publishes `:1.0.0` and `:latest`.
+
+## 4b. Production
+
+- [ ] Brevo account (SMTP) for prod's e-mails.
+- [ ] Generate the `.env.prod` secrets, images pinned to `:1.0.0`, SMTP pointing at Brevo,
+      `COMPOSE_PROFILES` empty. Save it in Bitwarden.
+- [ ] Pandora's role and database in `prod-db`, `migris init prod`, `migris apply prod -y`.
+- [ ] `pull` and `up -d`.
 - [ ] Schedule `homelab-db-backup`, run it once and run `Test-Restore.ps1` (homelab
       `docs/05-backups.md`). Confirm iDrive is watching the folder.
 - [ ] Connect the real accounts (Google, Gemini, Telegram, mailboxes).
-- [ ] `git tag v1.0.0` on the released commit and push the tag.
 
 ## 5. After 1.0
 
 - [ ] The "edit the original `CREATE TABLE`" rule ends: from here on, schema changes are new `ALTER`
       migrations. Update [coding-standards](../architecture/en/coding-standards.md) (en/pt-BR).
-- [ ] Every new version: bump `VERSION`, push to `main`, pin the new tag in prod, `migris apply prod`
-      before the `up -d` when there are migrations.
+- [ ] Every new version: release through the `dev` → `main` pull request ([releasing](releasing.md)), pin
+      the new tag in prod, `migris apply prod` before the `up -d` when there are migrations.
