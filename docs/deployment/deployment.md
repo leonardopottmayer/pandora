@@ -24,14 +24,14 @@ same origin and nginx forwards `/api` to the backend.
 ### Database topology
 
 Postgres is **not** in the app stack, and not in this repo. Each homelab **tier**
-(staging, prod) runs one shared Postgres, set up from the **homelab repo**
-(`G:\dev\homelab`), that every app in that tier connects to — each with its own
-database and role:
+(staging, prod) runs its shared servers in one Compose project named after the tier
+(homelab repo `G:\dev\homelab`, folder `tier/`): containers `<tier>-<engine>`, today one
+Postgres that every app in that tier connects to — each with its own database and role:
 
 | Tier | Container | Network | Host alias | Localhost port |
 |---|---|---|---|---|
-| Staging | `staging-db` | `staging` | `staging-db` | `5433` |
-| Production | `prod-db` | `prod` | `prod-db` | `5432` |
+| Staging | `staging-postgres` | `staging` | `staging-postgres` | `5433` (`5435` on the PC) |
+| Production | `prod-postgres` | `prod` | `prod-postgres` | `5432` |
 
 The app's `backend` joins the tier network and connects to `${DB_HOST}` using
 Pandora's own role (`POSTGRES_USER`/`POSTGRES_PASSWORD`) and database
@@ -47,7 +47,7 @@ e.g. `Tars__Data__Connections__identity__ConnectionString` — it overrides
 
 | File | Purpose |
 |---|---|
-| `VERSION` | Single source of truth for the version string. |
+| `VERSION` | Single source of truth for the version string. Written by the release bot, never by hand ([releasing](releasing.md)). |
 | `backend/Directory.Build.props` | Reads `VERSION` into the MSBuild `Version` of every backend project. |
 | `backend/Dockerfile` | Multi-stage build (SDK -> runtime). Restores the private NuGet feed using a build secret. |
 | `backend/nuget.config` | Declares the package sources: nuget.org + the private GitHub feed. |
@@ -56,7 +56,9 @@ e.g. `Tars__Data__Connections__identity__ConnectionString` — it overrides
 | `docker-compose.yml` | The Pandora app stack. Project name, ports, secrets from an env file. |
 | `.env.example` | Template for the per-environment app env files. |
 | `deploy/bootstrap-pandora.sql` | Creates Pandora's role + database in the tier's shared Postgres. |
-| `.github/workflows/build-images.yml` | CI: builds both images and pushes to GHCR on push to `main`. |
+| `.github/workflows/build-images.yml` | Builds both images and pushes to GHCR: `:dev` on push to `dev`, `:<version>` + `:latest` on a release tag. |
+| `.github/workflows/ci-dotnet.yml`, `ci-node.yml` | CI on every pull request and push to `dev`/`main`: build, lint, tests. Required checks of the rulesets. |
+| `.github/workflows/release.yml`, `release-preview.yml`, `.releaserc.json` | Automated releases with semantic-release ([releasing](releasing.md)). |
 | `.dockerignore`, `client-web/.dockerignore` | Keep build contexts small; **exclude `.env`** so no dev config is baked in. |
 
 ---
@@ -89,6 +91,18 @@ The `Pottmayer.Tars.*` packages live in a **different** repo, so the automatic
    with scope **`read:packages`**.
 2. Pandora repo → Settings → Secrets and variables → **Actions** →
    **Repository secret** named exactly `NUGET_GITHUB_TOKEN`.
+3. The same token as a **Dependabot** secret (Settings → Secrets and variables → **Dependabot**), with
+   the same name: Dependabot's pull requests read only Dependabot secrets, and their CI restores the
+   Tars packages too. From the repo folder, in your own terminal (the value never goes through chat):
+
+   ```powershell
+   gh secret set NUGET_GITHUB_TOKEN              # paste the PAT when asked
+   gh secret set NUGET_GITHUB_TOKEN --app dependabot
+   gh secret list; gh secret list --app dependabot
+   ```
+
+When the PAT expires, the backend jobs fail at `dotnet restore` with a `401`: generate a new one and set
+both secrets again.
 
 The workflow passes it to the backend build as the Docker build secret
 `github_token` (never baked into the image or printed in logs).
@@ -113,7 +127,7 @@ files it uses:
 | `COMPOSE_PROJECT_NAME` | Isolates the app stack per environment (`pandora-staging`, `pandora-prod`). |
 | `ASPNETCORE_ENVIRONMENT` | ASP.NET Core environment (`Production` for real deploys). |
 | `COMPOSE_PROFILES` | `mailhog` to run the email catcher (staging); empty in prod. |
-| `TIER_NETWORK` / `DB_HOST` | Which shared tier DB to use (`staging`/`staging-db`, `prod`/`prod-db`). |
+| `TIER_NETWORK` / `DB_HOST` | Which shared tier DB to use (`staging`/`staging-postgres`, `prod`/`prod-postgres`). |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Pandora's own role + database in the shared DB (all three connection strings). |
 | `JWT_SIGNING_KEY` | Overrides `Tars:Security:Identity:Jwt:SigningKey`. **Required** (the default in `appsettings.json` is public). |
 | `MFA_ENCRYPTION_KEY` | Overrides `Pandora:Identity:Mfa:EncryptionKey`. **Required** (the default is public); never change it once set, or every MFA secret becomes unreadable. |
@@ -126,7 +140,7 @@ files it uses:
 | `SMTP_HOST` / `SMTP_PORT` | Backend SMTP target. Staging: `mailhog`/`1025`; prod: real provider. |
 | `MAILHOG_UI_PORT` | Host port for the Mailhog web UI (only when the profile is on). |
 | `APP_BASE_URL` | Public base URL for emailed activation/reset links. Optional — defaults to `http://localhost:${HTTP_PORT}`; set it for a LAN IP or real domain. |
-| `BACKEND_IMAGE` / `FRONTEND_IMAGE` | Which image tag to run (prod: pinned; staging: `:latest`). |
+| `BACKEND_IMAGE` / `FRONTEND_IMAGE` | Which image tag to run (prod: a pinned version, `:1.0.0`; staging: `:dev`). |
 | `HTTP_PORT` | The LAN-visible frontend port. Unique per env. |
 
 The shared tier Postgres (the `${DB_HOST}` the app connects to) is **not** part of
@@ -140,8 +154,9 @@ Keep a copy of every env file in Bitwarden. **Never** commit real secrets.
 ## Versioning
 
 `VERSION` at the repo root is the single source of truth;
-`backend/Directory.Build.props` injects it into every backend project. Bump it
-before cutting a release, so the CI publishes images tagged with the new version.
+`backend/Directory.Build.props` injects it into every backend project (and the desktop's). It is
+written by the release bot when `dev` is merged into `main`; never edit it by hand. See
+[releasing](releasing.md).
 
 ---
 
@@ -152,8 +167,8 @@ only the env file differs. Each is isolated by its Compose project name.
 
 | Environment | `COMPOSE_PROJECT_NAME` | `HTTP_PORT` | Image tag | Data |
 |---|---|---|---|---|
-| Production | `pandora-prod` | `8730` | pinned (e.g. `:0.1.0`) | real, backed up |
-| Staging | `pandora-staging` | `8731` | `:latest` | disposable |
+| Production | `pandora-prod` | `8730` | pinned (e.g. `:1.0.0`) | real, backed up |
+| Staging | `pandora-staging` | `8731` | `:dev` (what the next release ships) | disposable |
 
 `HTTP_PORT` is the app stack's only LAN-visible port (plus `MAILHOG_UI_PORT` in
 staging). The DB port lives in the tier DB stack (see Database topology). In
@@ -163,11 +178,15 @@ phase 2, app access moves to a hostname via Cloudflare Tunnel.
 
 ## CI (GitHub Actions)
 
-`.github/workflows/build-images.yml` runs on every push to `main` (and manual
-dispatch):
+Pull requests and pushes to `dev`/`main` run `ci-dotnet.yml` and `ci-node.yml` (build, lint, all
+tests); releases run `release.yml` ([releasing](releasing.md)).
+
+`.github/workflows/build-images.yml` runs on every push to `dev`, on every release tag `v*` (pushed by
+the release bot), and on manual dispatch:
 
 - Builds `backend` and `frontend` in parallel and pushes to GHCR.
-- Tags per image: `latest`, the `VERSION` value (e.g. `0.1.0`), and `sha-<commit>`.
+- Tags per image: `dev` (push to `dev`), the version and `latest` (release tag, e.g. `1.0.0`), and
+  `sha-<commit>` always.
 - GHCR push uses the automatic `GITHUB_TOKEN` (`packages: write`).
 - The backend restore uses the `NUGET_GITHUB_TOKEN` repo secret (see setup above).
 - Layer cache via `type=gha` speeds up later builds.
@@ -185,8 +204,8 @@ root. The worked example is **staging**; per-tier values:
 | | staging | prod |
 |---|---|---|
 | Tier network | `staging` | `prod` |
-| DB container / host alias | `staging-db` | `prod-db` |
-| DB localhost port | `5433` | `5432` |
+| DB container / host alias | `staging-postgres` | `prod-postgres` |
+| DB localhost port | `5433` (`5435` on the PC) | `5432` |
 | App env file | `.env.staging` | `.env.prod` |
 | Frontend port | `8731` | `8730` |
 | Mailhog | yes (UI `8732`) | no |
@@ -197,11 +216,11 @@ and `docker login ghcr.io` (see One-time setup).
 ### 0. Ensure the homelab tier is up
 
 The tier network + shared Postgres come from the **homelab repo**
-(`G:\dev\homelab`): create the `staging` network and bring up `staging-db` per its
+(`G:\dev\homelab`): create the `staging` network and bring up `staging-postgres` per its
 docs. Confirm the container is running before continuing:
 
 ```powershell
-docker ps --filter name=staging-db
+docker ps --filter name=staging-postgres
 ```
 
 ### 1. Generate secrets
@@ -229,7 +248,7 @@ password from step 1:
 
 ```powershell
 Get-Content deploy/bootstrap-pandora.sql | `
-  docker exec -i staging-db psql -U postgres -d postgres -v pandora_password='<Pandora DB role secret>'
+  docker exec -i staging-postgres psql -U postgres -d postgres -v pandora_password='<Pandora DB role secret>'
 ```
 
 (Or paste `deploy/bootstrap-pandora.sql` into the tier server's Query Tool in
@@ -241,11 +260,12 @@ pgAdmin.)
 Copy-Item .env.example .env.staging
 # Edit .env.staging:
 #   COMPOSE_PROJECT_NAME=pandora-staging  ASPNETCORE_ENVIRONMENT=Production
-#   COMPOSE_PROFILES=mailhog  TIER_NETWORK=staging  DB_HOST=staging-db
+#   COMPOSE_PROFILES=mailhog  TIER_NETWORK=staging  DB_HOST=staging-postgres
 #   POSTGRES_USER=pandora  POSTGRES_PASSWORD=<Pandora DB role secret>  POSTGRES_DB=pandora
 #   JWT_SIGNING_KEY=<secret>  MFA_ENCRYPTION_KEY=<secret>  DATA_PROTECTION_KEY=<secret>
 #   (Google and Telegram: optional, see the table above)
 #   SMTP_HOST=mailhog  SMTP_PORT=1025  MAILHOG_UI_PORT=8732  HTTP_PORT=8731
+#   BACKEND_IMAGE=ghcr.io/leonardopottmayer/pandora-backend:dev  (and FRONTEND_IMAGE …:dev)
 #   (APP_BASE_URL optional — defaults to http://localhost:<HTTP_PORT>)
 ```
 
@@ -256,7 +276,9 @@ Copy-Item .env.example .env.staging
 Copy-Item migrations/config.example.json migrations/config.json   # skip if it exists
 ```
 
-Add a `staging` entry under `environments` in `migrations/config.json`:
+Add a `staging` entry under `environments` in `migrations/config.json`. The port is the tier DB's
+`DB_PORT` (homelab repo): `5433` on the homelab, `5435` on the everyday PC, where the development
+Postgres already uses `5433`.
 
 ```json
 "staging": {
@@ -268,19 +290,25 @@ Add a `staging` entry under `environments` in `migrations/config.json`:
 }
 ```
 
-### 5. Deploy the app
+### 5. Run migrations
+
+On a new database, `migris init` creates migris's own `migrations` table first (`apply` fails with
+`relation "migrations" does not exist` without it). It only touches that table, so running it again is
+harmless.
+
+```powershell
+cd migrations
+migris init staging
+migris apply staging -y
+migris check staging    # "All migrations are up to date"
+cd ..
+```
+
+### 6. Deploy the app
 
 ```powershell
 docker compose --env-file .env.staging pull
 docker compose --env-file .env.staging up -d
-```
-
-### 6. Run migrations
-
-```powershell
-cd migrations
-migris apply staging -y
-cd ..
 ```
 
 ### 7. Verify
@@ -294,7 +322,7 @@ Open the app at `http://<homelab-ip>:8731` and Mailhog at `http://<homelab-ip>:8
 
 **Production deltas:** use the `prod` column above, leave `COMPOSE_PROFILES` empty
 (no Mailhog) and point `SMTP_HOST`/`SMTP_PORT` at a real provider, and pin
-`BACKEND_IMAGE` / `FRONTEND_IMAGE` to a version tag instead of `:latest`.
+`BACKEND_IMAGE` / `FRONTEND_IMAGE` to a version tag instead of `:dev`.
 
 ### Building images locally (optional)
 
@@ -362,8 +390,8 @@ run at once on different ports.
 > tier's shared Postgres (homelab repo). The Postgres volume is deleted only by
 > `down -v` on that DB stack, never by Pandora app-stack commands.
 
-For reproducible prod deploys, pin `BACKEND_IMAGE` / `FRONTEND_IMAGE` to the
-`VERSION` tag rather than `:latest`.
+For reproducible prod deploys, pin `BACKEND_IMAGE` / `FRONTEND_IMAGE` to a release
+version (`:1.0.0`) rather than `:latest`.
 
 ---
 
@@ -374,8 +402,8 @@ For reproducible prod deploys, pin `BACKEND_IMAGE` / `FRONTEND_IMAGE` to the
 - **Secrets never enter Git.** Env files are gitignored; the values in
   `appsettings.json` are dev defaults that prod overrides via the env file.
 - The CI/pull token is limited to `read:packages` (read-only, packages only).
-- The workflow triggers on `push`/`workflow_dispatch` only, so fork pull
-  requests never receive the secret.
+- `build-images.yml` triggers on `push`/`workflow_dispatch` only. The CI workflows also run on pull
+  requests, where GitHub withholds secrets from forks (and gives Dependabot only its own secrets).
 
 ---
 

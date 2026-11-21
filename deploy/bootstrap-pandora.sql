@@ -4,8 +4,8 @@
 --
 -- CLI (from the Pandora repo root, on the homelab host):
 --   Get-Content deploy/bootstrap-pandora.sql | `
---     docker exec -i staging-db psql -U postgres -d postgres -v pandora_password='<PANDORA_DB_PASSWORD>'
---   (use prod-db for prod)
+--     docker exec -i staging-postgres psql -U postgres -d postgres -v pandora_password='<PANDORA_DB_PASSWORD>'
+--   (use prod-postgres for prod)
 --
 -- Or paste it into the tier server's Query Tool in pgAdmin.
 --

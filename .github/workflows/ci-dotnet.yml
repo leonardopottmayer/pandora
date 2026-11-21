@@ -1,0 +1,55 @@
+name: CI (.NET)
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+# CI only reads the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-dotnet-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # This name is the required check in the main and dev rulesets. Rename both together.
+    name: Build & Test (.NET)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # No global.json: the machines that build Pandora run newer SDKs that still target net10.0.
+      - name: Setup .NET
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: 10.0.x
+
+      # The Pottmayer.Tars.* packages come from GitHub Packages: a PAT with read:packages.
+      # Dependabot's pull requests read Dependabot secrets, so the same token is stored there too.
+      - name: Authenticate the GitHub Packages feed
+        env:
+          NUGET_GITHUB_TOKEN: ${{ secrets.NUGET_GITHUB_TOKEN }}
+        run: >-
+          dotnet nuget update source github --configfile nuget.config
+          --username ci --password "$NUGET_GITHUB_TOKEN" --store-password-in-clear-text
+
+      - name: Restore
+        run: dotnet restore Pottmayer.Pandora.slnx
+
+      - name: Build
+        run: dotnet build Pottmayer.Pandora.slnx --no-restore --configuration Release
+
+      # The integration tests start Postgres with Testcontainers; the runner has Docker.
+      - name: Test
+        run: dotnet test Pottmayer.Pandora.slnx --no-build --configuration Release

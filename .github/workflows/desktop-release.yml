@@ -3,12 +3,11 @@ name: Desktop release
 # Builds Pandora Desktop and uploads it to GitHub Releases with Velopack: the Setup.exe people
 # download, and the packages installed apps update themselves from (Updater.cs reads this repo's
 # releases).
-#   - push a tag v<VERSION>  → a published release, which installed apps update to;
 #   - run it from Actions    → a DRAFT release: no tag is created, apps do not see it, delete it after.
 #     Use it to test the pipeline and download the Setup.exe.
+# Release tags (v<VERSION>) belong to the release bot (release.yml) and no longer start this workflow:
+# the desktop is left out of the automated releases for now. The tag steps below stay for when it joins.
 on:
-  push:
-    tags: ['v*']
   workflow_dispatch:
 
 concurrency:

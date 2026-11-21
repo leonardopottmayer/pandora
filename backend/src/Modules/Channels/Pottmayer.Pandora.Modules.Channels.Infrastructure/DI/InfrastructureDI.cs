@@ -50,7 +50,14 @@ public static class InfrastructureDI
         // Telegram client stack (Tars.Communication.Telegram): always registered. The factory and its
         // sender are inert until a bot is actually resolved by name, so they cost nothing when Telegram is
         // unconfigured — and they keep the always-scanned assistant-reply subscriber constructible.
-        builder.AddTarsTelegramOptions();
+        // An empty BotToken means "this bot is off" (appsettings.json and the compose file always name both
+        // bots). Tars validates every bot it is given, so the empty ones are dropped before that.
+        builder.AddTarsTelegramOptions(configure: options =>
+        {
+            foreach (var name in options.Bots.Where(bot => string.IsNullOrWhiteSpace(bot.Value?.BotToken))
+                         .Select(bot => bot.Key).ToList())
+                options.Bots.Remove(name);
+        });
         builder.Services.AddTarsTelegramHttpClient();
         builder.Services.AddTarsTelegramClientFactory();
 

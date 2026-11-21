@@ -2,9 +2,10 @@
 # environment gets its own isolated containers and network.
 name: ${COMPOSE_PROJECT_NAME:-pandora}
 
-# The database lives in a shared per-tier stack (set up from the homelab repo),
-# reachable on the external "${TIER_NETWORK}" network as "${DB_HOST}". Bring that
-# up first.
+# The database lives in the tier's shared servers (homelab repo, tier/), reachable
+# on the external "${TIER_NETWORK}" network as "${DB_HOST}" (staging-postgres,
+# prod-postgres). Bring that up first. The development servers (Postgres, Mailhog,
+# the Aspire dashboard for OpenTelemetry) are the homelab repo's local/ stack.
 
 services:
   backend:
@@ -78,22 +79,6 @@ services:
     ports:
       # Web UI, exposed to the LAN. SMTP (1025) stays internal to the network.
       - "${MAILHOG_UI_PORT:-8025}:8025"
-
-  # OpenTelemetry backend for dev: receives OTLP and shows traces, metrics and
-  # logs in one UI. Only starts with the "observability" profile
-  # (COMPOSE_PROFILES=observability). Point the backend's
-  # Tars__Observability__OtlpEndpoint at http://aspire-dashboard:18889 (in the
-  # network) or http://localhost:${ASPIRE_OTLP_PORT} (from the host).
-  aspire-dashboard:
-    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.0
-    restart: unless-stopped
-    profiles: ["observability"]
-    environment:
-      # Dev only: no login token on the UI, no API key on OTLP ingest.
-      DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: "true"
-    ports:
-      - "${ASPIRE_DASHBOARD_PORT:-18888}:18888"  # web UI
-      - "${ASPIRE_OTLP_PORT:-4317}:18889"        # OTLP ingest (gRPC)
 
 networks:
   # Shared per-tier network where the DB stack lives. Created once:
