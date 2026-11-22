@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/leonardopottmayer/pandora/compare/v1.0.0...v1.0.1) (2026-11-22)
+
+### Bug Fixes
+
+* **communications:** read Gmail's empty filter list as no filters ([#10](https://github.com/leonardopottmayer/pandora/issues/10)) ([609b33f](https://github.com/leonardopottmayer/pandora/commit/609b33f01ebd37e0eb3aab3cd92cf3f960ac1cb8))
+
 ## 1.0.0 (2026-11-22)
 
 ### Features
