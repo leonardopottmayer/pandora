@@ -229,7 +229,7 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
     public Task<Result<IReadOnlyList<RemoteFilter>>> ListFiltersAsync(Mailbox mailbox, CancellationToken ct = default) =>
         RunAsync<IReadOnlyList<RemoteFilter>>(mailbox, async (token, c) =>
         {
-            var response = await GetAsync<FilterList>(token, "settings/filters", c);
+            var response = await SendAsync(HttpMethod.Get, token, "settings/filters", null, ReadFilterList, c);
             return (response.Filter ?? []).Select(GmailFilterMapper.ToRemote).ToList();
         }, ct);
 
@@ -306,6 +306,13 @@ internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialP
 
     private static async Task<T> ReadJson<T>(HttpContent content, CancellationToken ct) =>
         (await content.ReadFromJsonAsync<T>(Json, ct))!;
+
+    /// <summary>An account without filters gets an empty body, not <c>{}</c>.</summary>
+    private static async Task<FilterList> ReadFilterList(HttpContent content, CancellationToken ct)
+    {
+        var body = await content.ReadAsStringAsync(ct);
+        return string.IsNullOrWhiteSpace(body) ? new FilterList(null) : JsonSerializer.Deserialize<FilterList>(body, Json)!;
+    }
 
     /// <summary>For the answers with nothing to read (<c>batchModify</c> and <c>labels.delete</c> have an empty body).</summary>
     private static Task<bool> Done(HttpContent content, CancellationToken ct) => Task.FromResult(true);
