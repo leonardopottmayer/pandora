@@ -1,3 +1,9 @@
+## [1.0.2](https://github.com/leonardopottmayer/pandora/compare/v1.0.1...v1.0.2) (2026-11-22)
+
+### Bug Fixes
+
+* **deploy:** pass SMTP login, STARTTLS and sender through compose ([#18](https://github.com/leonardopottmayer/pandora/issues/18)) ([9583a11](https://github.com/leonardopottmayer/pandora/commit/9583a116a650f56cc3d122d05621a97b4d28c707))
+
 ## [1.0.1](https://github.com/leonardopottmayer/pandora/compare/v1.0.0...v1.0.1) (2026-11-22)
 
 ### Bug Fixes
