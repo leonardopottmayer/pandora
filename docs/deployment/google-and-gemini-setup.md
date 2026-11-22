@@ -94,14 +94,16 @@ them on and builds the redirect URI from `APP_BASE_URL`.
 
 ### 1.2b One project per environment (staging, prod)
 
-Development keeps the project above. Staging and prod each get their **own Google account and own
-Google Cloud project**, so their clients, consent screens and quotas never mix with development, and
-deleting one environment never touches another. Decided on 2026-11-22.
+Development keeps the project above. Staging and prod each get their **own Google Cloud project**,
+both owned by **one Google account made only for Pandora's environments**, so their clients, consent
+screens and quotas never mix with development or with each other, and deleting one environment's
+project never touches another. Decided on 2026-11-22 (a first try used one account per environment;
+one owner for both is simpler to keep).
 
 | Environment | Owner account | Project | App name (consent screen) | Redirect URI |
 |---|---|---|---|---|
-| Staging | a new Google account just for Pandora staging | `pandora-staging` | `Pandora Staging` | `http://localhost:8731/api/v1/integrations/google/callback` |
-| Prod | a new Google account just for Pandora prod | `pandora-prod` | `Pandora` | `http://localhost:8730/api/v1/integrations/google/callback` |
+| Staging | the environments' account | `pandora-staging` | `Pandora Staging` | `http://localhost:8731/api/v1/integrations/google/callback` |
+| Prod | the environments' account | `pandora-prod` | `Pandora` | `http://localhost:8730/api/v1/integrations/google/callback` |
 
 The redirect URI is `${APP_BASE_URL}/api/v1/integrations/google/callback`; with no `APP_BASE_URL`
 the compose file uses `http://localhost:${HTTP_PORT}`. When an environment moves to a LAN IP or a
@@ -109,9 +111,8 @@ domain, add that URI to its client too.
 
 For each environment:
 
-1. **The owner account.** [accounts.google.com/signup](https://accounts.google.com/signup) → a new
-   account (for example `pandora.staging.<you>@gmail.com`). Turn on 2-step verification. Save the
-   login in Bitwarden.
+1. **The owner account** (once, for both environments). [accounts.google.com/signup](https://accounts.google.com/signup)
+   → a new account. Turn on 2-step verification. Save the login in Bitwarden.
 2. **The project.** Signed in with that account, [console.cloud.google.com](https://console.cloud.google.com)
    → accept the terms → project picker at the top → *New project* (*Novo projeto*) → name
    `pandora-staging` (or `pandora-prod`), no organization → *Create* (*Criar*). Select it at the top.
@@ -129,6 +130,10 @@ For each environment:
    then, from the Pandora repo, `docker compose --env-file .env.staging up -d backend` (or
    `.env.prod`). Check: Integrations → *Connect Google account* opens Google's screen with the app
    name of that environment.
+
+Replacing an environment's client (a new project) invalidates the Google accounts connected with
+the old one: after the new keys are in `.env`, reconnect them in Integrations, then delete the old
+project (*IAM & Admin → Settings → Shut down*).
 
 The project needs no billing: the Gmail, Calendar and Tasks APIs are free within their quotas. The
 app stays in **Testing**, with the 7-day refresh token limit described above.
