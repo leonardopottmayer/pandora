@@ -24,84 +24,109 @@ listens on `5435` there, not `5433`.
 
 ## 2. Repository (devkit stage 3)
 
-- [ ] CI, release and Dependabot files reach `dev` through a pull request.
-- [ ] Merge and security settings, rulesets on `main` and `dev`
+- [x] CI, release and Dependabot files reach `dev` through a pull request.
+- [x] Merge and security settings, rulesets on `main` and `dev`
       ([releasing §1](releasing.md#1-merge-security-and-ruleset-settings)).
-- [ ] `NUGET_GITHUB_TOKEN` also as a Dependabot secret.
-- [ ] Release bot installed on the repository, its variable and secret set, bypass on `main`
+- [x] `NUGET_GITHUB_TOKEN` also as a Dependabot secret.
+- [x] Release bot installed on the repository, its variable and secret set, bypass on `main`
       ([releasing §3](releasing.md#3-the-release-bot)).
 
 ## 2b. Staging
 
-- [ ] Tier up (homelab repo, guides 01 to 03): networks `staging` and `prod`, `staging-postgres`, `prod-postgres`,
+- [x] Tier up (homelab repo, guides 01 to 03): networks `staging` and `prod`, `staging-postgres`, `prod-postgres`,
       pgAdmin.
-- [ ] `docker login ghcr.io` and the local `migris` config (see [deployment](deployment.md)).
-- [ ] Pandora's role and database in `staging-postgres`, then `migris init staging` and
+- [x] `docker login ghcr.io` and the local `migris` config (see [deployment](deployment.md)).
+- [x] Pandora's role and database in `staging-postgres`, then `migris init staging` and
       `migris apply staging -y` ([deployment, steps 2 to 5](deployment.md#creating-an-environment-step-by-step)).
-- [ ] `.env.staging` up to `.env.example`: `DATA_PROTECTION_KEY` (required, new secret), images `:dev`,
+- [x] `.env.staging` up to `.env.example`: `DATA_PROTECTION_KEY` (required, new secret), images `:dev`,
       the Google client, and a staging pair of Telegram bots with `TELEGRAM_BOT_USERNAME`. Save it in
       Bitwarden.
-- [ ] `docker compose --env-file .env.staging pull && docker compose --env-file .env.staging up -d`.
+- [x] `docker compose --env-file .env.staging pull && docker compose --env-file .env.staging up -d`.
 - [ ] Run the script in §3 against `http://<host>:8731`. Fixes go to `dev`; staging pulls `:dev` again.
 
 ## 3. Manual script (staging, real accounts)
 
 Write down what fails. The rest stays as is.
 
+Staging starts with Telegram and Google off (empty keys), so the script runs in three rounds. Each
+round only adds what the next sections need:
+
+| Round | Sections | Needs first |
+|---|---|---|
+| 1 | Identity, Agenda (without Telegram and Google), Assistant on the web, Finances (without Telegram), Notes (without `/nota`), Admin | nothing; the Gemini key is entered in the UI (Integrations) |
+| 2 | Channels, the Telegram items of the other sections | a staging pair of bots |
+| 3 | Integrations, Google Calendar and Tasks, Communications | the Google OAuth client |
+
+The first account to sign up with `ADMIN_EMAIL` (`.env.staging`) is the administrator. Activation and
+reset e-mails land in staging's MailHog, `http://localhost:8732`.
+
+Round 2, the bots (each token stays in `.env.staging`, never in chat or git):
+
+1. Telegram → `@BotFather` → `/newbot` twice: a notifications bot and an assistant bot, named apart
+   from the development ones (for example `pandora_staging_bot` and `pandora_staging_assistant_bot`).
+2. In `.env.staging`: `TELEGRAM_BOT_TOKEN` and `TELEGRAM_BOT_USERNAME` (the notifications bot, username
+   without `@`), `TELEGRAM_ASSISTANT_BOT_TOKEN` (the assistant bot).
+3. Recreate the backend: `docker compose --env-file .env.staging up -d`.
+
+A bot token polls from one place only: the development backend must not use the same bots.
+
+Round 3, Google: staging's own Google account, project and OAuth client ([Google and Gemini setup, 1.2b](google-and-gemini-setup.md#12b-one-project-per-environment-staging-prod)),
+its client ID and secret in `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in `.env.staging`, then the
+backend recreated as above. Prod repeats it with its own account and project (§4b).
+
 **Identity**
-- [ ] Sign up, activation e-mail in Mailhog (`:8732`), sign in.
-- [ ] Turn on MFA (TOTP), sign out, sign in with the code. Password reset through the e-mail.
-- [ ] Preferences: zone, language, theme. Change the zone and see the Agenda times move.
+- [x] Sign up, activation e-mail in Mailhog (`:8732`), sign in.
+- [x] Turn on MFA (TOTP), sign out, sign in with the code. Password reset through the e-mail.
+- [x] Preferences: zone, language, theme. Change the zone and see the Agenda times move.
 
 **Integrations (I5)**
-- [ ] Connect three Google accounts and two Gemini keys, each with a name.
-- [ ] The Assistant uses the key picked in its settings.
-- [ ] Disconnecting a key in use shows "Used by: Assistant · chat" and still disconnects; the Assistant
+- [x] Connect three Google accounts and two Gemini keys, each with a name.
+- [x] The Assistant uses the key picked in its settings.
+- [x] Disconnecting a key in use shows "Used by: Assistant · chat" and still disconnects; the Assistant
       then asks for an account.
 
 **Channels**
-- [ ] Link Telegram, send the test message.
-- [ ] Quiet hours: turn them on around the current time and see a notification held or dropped as set.
+- [x] Link Telegram, send the test message.
+- [x] Quiet hours: turn them on around the current time and see a notification held or dropped as set.
 
 **Agenda**
-- [ ] Create a task with only a date late at night (after 21:00): it stays on the chosen day.
-- [ ] A browser in another zone (DevTools → Sensors → Location, or the system's zone): the forms show
+- [x] Create a task with only a date late at night (after 21:00): it stays on the chosen day.
+- [x] A browser in another zone (DevTools → Sensors → Location, or the system's zone): the forms show
       and save the account zone's times.
-- [ ] Reminder and task alert arriving on Telegram at the right time.
-- [ ] Google Calendar: link a calendar; an event created/edited/deleted on each side shows on the other.
+- [x] Reminder and task alert arriving on Telegram at the right time.
+- [x] Google Calendar: link a calendar; an event created/edited/deleted on each side shows on the other.
       An all-day event from Google stays on its date.
-- [ ] Google Tasks: link lists (subtasks and completed ones show up); create/edit/complete/delete on each
+- [x] Google Tasks: link lists (subtasks and completed ones show up); create/edit/complete/delete on each
       side; a due time and priority set in Pandora survive a title edit in Google; completing a recurring
       task creates the next one in Google; editing the same task on both sides between two cycles keeps
       the newer one and logs a conflict.
 
 **Assistant (web and Telegram)**
-- [ ] "lembra de pagar a luz amanhã às 9h", "o que tem pra hoje", "cria a tarefa X toda segunda".
-- [ ] Deleting something asks for confirmation; leave it unanswered for 10 minutes: the history shows it
+- [x] "lembra de pagar a luz amanhã às 9h", "o que tem pra hoje", "cria a tarefa X toda segunda".
+- [x] Deleting something asks for confirmation; leave it unanswered for 10 minutes: the history shows it
       as expired.
-- [ ] Voice message on Telegram becomes a command.
+- [x] Voice message on Telegram becomes a command.
 
 **Finances**
 - [ ] Account, card, a card purchase and an installment purchase; the statement closes on the closing day
       (the job runs hourly).
-- [ ] Import a real bank file; approve the suggestions in the inbox.
-- [ ] A recurring transaction creates its occurrence on the day.
-- [ ] Attachment via Telegram lands in the queue.
+- [x] Import a real bank file; approve the suggestions in the inbox.
+- [x] A recurring transaction creates its occurrence on the day.
+- [x] Attachment via Telegram lands in the queue.
 
 **Notes**
-- [ ] AI actions (summarize, translate, ask your notes) with the real Gemini key.
-- [ ] `/nota` on Telegram creates the capture.
-- [ ] Agenda and Finances blocks show real data.
+- [x] AI actions (summarize, translate, ask your notes) with the real Gemini key.
+- [x] `/nota` on Telegram creates the capture.
+- [x] Agenda and Finances blocks show real data.
 
 **Communications**
-- [ ] Connect Gmail and Titan; sync, read, move, send with an attachment, a rule.
-- [ ] Note the connection date: about 7 days later, Gmail asks to reconnect (testing mode, expected).
+- [x] Connect Gmail and Titan; sync, read, move, send with an attachment, a rule.
+- [x] Note the connection date (2026-11-22): about 7 days later, Gmail asks to reconnect (testing mode, expected).
 
-**Files and Desktop**
-- [ ] F1's "done when" check on the homelab ([Files product-plan](../modules/files/en/product-plan.md)).
+**Files and Desktop**: out of 1.0 (the Desktop ships later); F1's "done when" check waits for it.
 
 **Admin**
-- [ ] A role with a permission denied blocks the action; a feature flag hides its feature.
+- [x] A role with a permission denied blocks the action; a feature flag hides its feature.
 
 ## 4. Release
 
@@ -119,6 +144,7 @@ Write down what fails. The rest stays as is.
 - [ ] `pull` and `up -d`.
 - [ ] Schedule `homelab-db-backup`, run it once and run `Test-Restore.ps1` (homelab
       `docs/05-backups.md`). Confirm iDrive is watching the folder.
+- [ ] Prod's Google account, project and OAuth client ([Google and Gemini setup, 1.2b](google-and-gemini-setup.md#12b-one-project-per-environment-staging-prod)), and a prod pair of Telegram bots, in `.env.prod`.
 - [ ] Connect the real accounts (Google, Gemini, Telegram, mailboxes).
 
 ## 5. After 1.0
