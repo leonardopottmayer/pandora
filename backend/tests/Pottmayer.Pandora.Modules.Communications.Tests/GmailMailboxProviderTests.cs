@@ -492,9 +492,12 @@ public sealed class GmailMailboxProviderTests
             filter.Actions);
     }
 
-    [Fact]
-    public async Task No_filters_is_an_empty_list() =>
-        Assert.Empty(Value(await Provider(Routes(("settings/filters", Ok("{}")))).ListFiltersAsync(_mailbox)));
+    // Gmail answers an account without filters with an empty body, not "{}".
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("")]
+    public async Task No_filters_is_an_empty_list(string body) =>
+        Assert.Empty(Value(await Provider(Routes(("settings/filters", Ok(body)))).ListFiltersAsync(_mailbox)));
 
     [Theory]
     [InlineData("""{ "from": "a" }""", """{ "forward": "bo@mail.test" }""")]
