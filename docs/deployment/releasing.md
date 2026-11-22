@@ -44,6 +44,7 @@ dev ◀── PR (merge commit, auto-merged) ── main   (bot: brings the vers
 | Stage 4 publishes packages | Docker images on GHCR, built by `build-images.yml` from the release tag | Pandora is an app, not a library |
 | — | The CI restore needs `NUGET_GITHUB_TOKEN` (repository **and** Dependabot secret) | The `Pottmayer.Tars.*` packages live on GitHub Packages |
 | — | Dependabot ignores `SixLabors.ImageSharp` 3.2 and later | They fail the Release build without a license key |
+| — | Dependabot ignores TypeScript majors | `typescript-eslint` 8 supports TypeScript below 6.1; TypeScript 7 broke `npm ci` |
 | — | The desktop is left out of the releases: `desktop-release.yml` runs only by hand (draft) | Decided for 1.0; to revisit when the desktop is shipped |
 
 ## Workflows
