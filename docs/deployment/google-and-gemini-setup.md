@@ -92,6 +92,47 @@ redirect URIs), leave `SpaBaseUrl` empty (nginx serves SPA and API on one origin
 `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in the environment's `.env` file. The compose file passes
 them on and builds the redirect URI from `APP_BASE_URL`.
 
+### 1.2b One project per environment (staging, prod)
+
+Development keeps the project above. Staging and prod each get their **own Google account and own
+Google Cloud project**, so their clients, consent screens and quotas never mix with development, and
+deleting one environment never touches another. Decided on 2026-11-22.
+
+| Environment | Owner account | Project | App name (consent screen) | Redirect URI |
+|---|---|---|---|---|
+| Staging | a new Google account just for Pandora staging | `pandora-staging` | `Pandora Staging` | `http://localhost:8731/api/v1/integrations/google/callback` |
+| Prod | a new Google account just for Pandora prod | `pandora-prod` | `Pandora` | `http://localhost:8730/api/v1/integrations/google/callback` |
+
+The redirect URI is `${APP_BASE_URL}/api/v1/integrations/google/callback`; with no `APP_BASE_URL`
+the compose file uses `http://localhost:${HTTP_PORT}`. When an environment moves to a LAN IP or a
+domain, add that URI to its client too.
+
+For each environment:
+
+1. **The owner account.** [accounts.google.com/signup](https://accounts.google.com/signup) → a new
+   account (for example `pandora.staging.<you>@gmail.com`). Turn on 2-step verification. Save the
+   login in Bitwarden.
+2. **The project.** Signed in with that account, [console.cloud.google.com](https://console.cloud.google.com)
+   → accept the terms → project picker at the top → *New project* (*Novo projeto*) → name
+   `pandora-staging` (or `pandora-prod`), no organization → *Create* (*Criar*). Select it at the top.
+3. **APIs, consent screen, test users, scopes, client:** steps 1 to 5 of [1.1](#11-google-cloud-console),
+   with the app name, the support e-mail of the owner account, and the redirect URI from the table.
+   The client type is **Web application**, named `pandora-staging-web` (or `pandora-prod-web`).
+   Test users are the Google accounts that will be **connected** in Pandora (yours), not the owner.
+4. **Client ID and secret:** in the client creation dialog, *Download JSON* (*Fazer download do
+   JSON*) and save both values in Bitwarden, next to the owner's login.
+5. **Pandora.** By hand in the environment's `.env` file (never in chat or git):
+   ```
+   GOOGLE_CLIENT_ID=<client id>.apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=<client secret>
+   ```
+   then, from the Pandora repo, `docker compose --env-file .env.staging up -d backend` (or
+   `.env.prod`). Check: Integrations → *Connect Google account* opens Google's screen with the app
+   name of that environment.
+
+The project needs no billing: the Gmail, Calendar and Tasks APIs are free within their quotas. The
+app stays in **Testing**, with the 7-day refresh token limit described above.
+
 ### 1.3 Check
 
 1. Open `/mail/accounts` → **Add mailbox** (*Adicionar caixa*): Gmail is enabled.
