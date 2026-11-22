@@ -137,14 +137,14 @@ backend recreated as above. Prod repeats it with its own account and project (§
 
 ## 4b. Production
 
-- [ ] Brevo account (SMTP) for prod's e-mails.
-- [ ] Generate the `.env.prod` secrets, images pinned to `:1.0.0`, SMTP pointing at Brevo,
+- [x] Brevo account (SMTP) for prod's e-mails.
+- [x] Generate the `.env.prod` secrets, images pinned to `:1.0.1` (1.0.0 + the Gmail filters fix), SMTP pointing at Brevo,
       `COMPOSE_PROFILES` empty. Save it in Bitwarden.
-- [ ] Pandora's role and database in `prod-postgres`, `migris init prod`, `migris apply prod -y`.
-- [ ] `pull` and `up -d`.
-- [ ] Schedule `homelab-db-backup`, run it once and run `Test-Restore.ps1` (homelab
+- [x] Pandora's role and database in `prod-postgres`, `migris init prod`, `migris apply prod -y`.
+- [x] `pull` and `up -d`.
+- [x] Schedule `homelab-db-backup`, run it once and run `Test-Restore.ps1` (homelab
       `docs/05-backups.md`). Confirm iDrive is watching the folder.
-- [ ] Prod's Google account, project and OAuth client ([Google and Gemini setup, 1.2b](google-and-gemini-setup.md#12b-one-project-per-environment-staging-prod)), and a prod pair of Telegram bots, in `.env.prod`.
+- [x] Prod's Google account, project and OAuth client ([Google and Gemini setup, 1.2b](google-and-gemini-setup.md#12b-one-project-per-environment-staging-prod)), and a prod pair of Telegram bots, in `.env.prod`.
 - [ ] Connect the real accounts (Google, Gemini, Telegram, mailboxes).
 
 ## 5. After 1.0
