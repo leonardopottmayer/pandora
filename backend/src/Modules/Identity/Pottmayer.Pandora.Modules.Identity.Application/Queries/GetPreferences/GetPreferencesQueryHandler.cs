@@ -14,7 +14,7 @@ public sealed class GetPreferencesQueryHandler(IUnitOfWorkFactory factory)
     protected override async Task<Result<UserPreferencesDto>> HandleAsync(
         GetPreferencesQuery request, CancellationToken cancellationToken)
     {
-        var user = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, ct) =>
+        var user = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, ct) =>
         {
             var repo = ctx.AcquireRepository<IUserRepository>();
             return await repo.FindByIdWithPreferencesAsync(request.Input.UserId, ct);
@@ -26,6 +26,13 @@ public sealed class GetPreferencesQueryHandler(IUnitOfWorkFactory factory)
         if (user.Preferences is null)
             return Fail(UserErrors.PreferencesNotFound);
 
-        return Ok(new UserPreferencesDto(user.Preferences.Theme.Value, user.Preferences.Language.Value));
+        var prefs = user.Preferences;
+        return Ok(new UserPreferencesDto(
+            prefs.Theme.Value,
+            prefs.Language.Value,
+            prefs.TimeZone,
+            prefs.WeekStartsOn.ToString().ToLowerInvariant(),
+            prefs.Palette.Value,
+            prefs.AccentColor));
     }
 }

@@ -27,7 +27,7 @@ internal sealed class CardEntityConfiguration : IEntityTypeConfiguration<Card>
             .HasConversion(c => c.Value, v => CurrencyCode.Create(v))
             .HasMaxLength(10)
             .IsRequired();
-        builder.Property(c => c.DefaultPaymentAccountId).HasColumnName("default_payment_account_id");
+        builder.Property(c => c.AccountId).HasColumnName("account_id").IsRequired();
         builder.Property(c => c.ArchivedAt).HasColumnName("archived_at");
 
         builder.Property(c => c.CreatedAt).HasColumnName("created_at").IsRequired();

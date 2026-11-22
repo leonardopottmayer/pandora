@@ -18,7 +18,7 @@ public sealed class SetCardArchivedCommandHandler(IUnitOfWorkFactory factory, Ti
         var input = request.Input;
         var now = timeProvider.GetUtcNow();
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<ICardRepository>();
             var card = await repo.FindByIdForUserAsync(input.CardId, input.UserId, token);

@@ -28,7 +28,7 @@ public sealed class ChangePasswordCommandHandler(
 
         var now = timeProvider.GetUtcNow();
 
-        var result = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
             var users = ctx.AcquireRepository<IUserRepository>();
             var user = await users.GetByIdAsync(input.UserId, token);
@@ -44,20 +44,18 @@ public sealed class ChangePasswordCommandHandler(
             await ctx.AcquireRepository<IRefreshTokenRepository>()
                      .RevokeAllForSubjectAsync(user.Id.ToString(), token);
 
-            return Result<string>.Success(user.Email.Value);
-        }, cancellationToken: ct);
-
-        if (result.IsSuccess)
-        {
+            // Published inside the unit of work: the outbox row commits with the password change
+            // (transactional outbox).
             var changed = new PasswordChanged(
                 EventId: Guid.CreateVersion7(),
                 OccurredAt: now,
                 UserId: input.UserId,
-                Email: result.Value,
+                Email: user.Email.Value,
                 Locale: CultureInfo.CurrentUICulture.Name);
+            await integrationEventBus.PublishAsync(changed, token);
 
-            await integrationEventBus.PublishAsync(changed, ct);
-        }
+            return Result<string>.Success(user.Email.Value);
+        }, cancellationToken: ct);
 
         return result.IsSuccess ? Ok(true) : Fail([.. result.Errors]);
     }

@@ -24,4 +24,13 @@ public static class PendingTransactionErrors
 
     public static Error SameTransferAccount =>
         Error.Validation("PendingTransactions.SameTransferAccount", "A transfer needs two different accounts.");
+
+    public static Error SingleTargetRequired =>
+        Error.Validation("PendingTransactions.SingleTargetRequired", "Choose exactly one account or card.");
+
+    public static Error InvalidAmount =>
+        Error.Validation("PendingTransactions.InvalidAmount", "The amount must be positive.");
+
+    public static Error DescriptionRequired =>
+        Error.Validation("PendingTransactions.DescriptionRequired", "A description is required.");
 }

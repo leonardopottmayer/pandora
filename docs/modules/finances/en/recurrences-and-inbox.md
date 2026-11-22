@@ -40,7 +40,7 @@ Two connected ideas:
 
 ### Generation (the job)
 
-The `RecurrenceGenerationService` job runs daily (and on demand): for each active recurrence with
+The `RecurrenceGenerationService` job runs hourly, on each user's own day (and on demand): for each active recurrence with
 occurrences inside the horizon (default 30 days), it generates a `PendingTransaction`
 (source = recurrence) — or **posts directly** if `auto_post` — then advances the cursor.
 **Idempotent:** the unique index `(recurring_transaction_id, occurred_on)` guarantees a given
@@ -57,7 +57,9 @@ outcome is terminal.
 
 - **`original_payload` is immutable** — a JSON snapshot of the initial suggestion, never mutated.
   The editable payload lives in the regular columns; the diff between the two is always available.
-- Source is `recurrence` (⇒ `recurring_transaction_id`) or `import` (⇒ `import_row_id`).
+- Source is `recurrence` (⇒ `recurring_transaction_id`), `import` (⇒ `import_row_id`) or `manual`
+  (typed by the user through the assistant's `record_expense`: an expense on exactly one account or
+  card, in its currency; approving it creates a `manual`-origin transaction linked back to it).
 - Status `pending → approved | rejected` is terminal (`Approve`/`Reject` return `false` if already
   decided).
 
@@ -85,6 +87,13 @@ outcome is terminal.
 
 Suggestions from imports carry dedup/reconciliation badges (duplicate/suspected/matched) and links
 to the related transaction; see [Imports](imports.md).
+
+### Transfer confirmation
+
+The inbox transfer confirmation keeps its account/amount summary and seeds description/date
+from the outflow suggestion. Editable labels are associated with their inputs; the date displays
+DD/MM/YYYY and is submitted as YYYY-MM-DD. An incomplete pair or blank description keeps confirm
+disabled. The 640 px modal has a scrolling body for narrow or short screens.
 
 ## API
 

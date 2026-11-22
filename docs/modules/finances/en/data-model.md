@@ -29,6 +29,8 @@ Migrations live in `migrations/migrations/finances/`.
 | fin014 | `import_row` | Parsed rows |
 | fin015 | *(reserved)* | Categorization rules — **not yet implemented** |
 | fin016 | `audit_event` | Append-only audit log |
+| fin017 | `attachment` | Files on a transaction, a suggestion or a statement (boleto, receipt, invoice), or queued |
+| fin018 | `file_blob` | The bytes behind fin017 |
 
 ---
 
@@ -94,11 +96,11 @@ Same shape as fin002 but scoped to `user_id`, no `code`/`is_other`/`notes`, self
 | `closing_day` | int NOT NULL | **1..28** |
 | `due_day` | int NOT NULL | **1..28** |
 | `currency` | varchar(10) NOT NULL | immutable |
-| `default_payment_account_id` | uuid NULL → fin001 | |
+| `account_id` | uuid NOT NULL → fin001 | the account the card belongs to; its bank routes imports |
 | `archived_at` | timestamptz NULL | |
 
 Constraints: `uq_fin006_user_name`, `ck_fin006_closing_day/due_day (BETWEEN 1 AND 28)`,
-`ck_fin006_credit_limit`, `fk_fin006_default_payment_account_id`. Index `(user_id, archived_at)`.
+`ck_fin006_credit_limit`, `fk_fin006_account_id`. Indexes `(user_id, archived_at)`, `(account_id)`.
 
 > The 1..28 range avoids month-length ambiguity (no card closes on the 30th of February).
 
@@ -171,9 +173,9 @@ The central table. Built up across several migrations; final shape:
 | Column | Type | Notes |
 |---|---|---|
 | `id` / `user_id` / `card_id → fin006` | uuid | |
-| `origin` | varchar(10) DEFAULT 'manual' | `manual\|import` |
+| `origin` | varchar(10) DEFAULT 'manual' | `manual\|import` — only `manual` is ever written today; `import` is schema-reserved (see [Installments](installments.md)) |
 | `total_amount` | numeric(20,8) | `> 0` |
-| `total_is_estimate` | boolean DEFAULT false | true for import-inferred plans |
+| `total_is_estimate` | boolean DEFAULT false | reserved for import-inferred plans (not yet produced) |
 | `installment_count` | smallint | `>= 2` |
 | `first_reference_month` | varchar(7) | `yyyy-MM` |
 | `description` | varchar(255) | |
@@ -273,6 +275,23 @@ Indexes `(user_id, status)`, partial `(status, created_at) WHERE status='receive
 FKs to fin011/fin008 are **logical only** (no physical FK) to avoid cross-import coupling. Indexes
 `(import_file_id)`, partial `(dedup_key)`, `(external_id)`, `(pending_transaction_id)`.
 
+## fin017_attachment / fin018_file_blob — attachments
+
+A file (image or PDF, up to 25 MB) on **at most one** of `transaction_id` (fin008),
+`pending_transaction_id` (fin011) or `card_statement_id` (fin007) — `ck_fin017_one_owner`. With none it is
+**queued**: a file shared with the assistant bot (`FinancesFileQueue`), waiting for the user to file it
+(`POST /attachments/{id}/assign`, once); `note` keeps the caption it came with, and the partial index
+`ix_fin017_queued` serves the queue. `kind` ∈ `bill` · `receipt` · `invoice` · `other`.
+`storage_backend` + `storage_key` say where the bytes are: today `Database`, a row id in `fin018_file_blob`
+(the module's own blob table, through the shared `IFileStorage` keyed `finances`); rows written before an
+S3 backend keep reading from the database with no migration.
+
+A month's boleto is attached to the suggestion its recurrence produced; **approving**, **linking** or
+**transferring** the suggestion moves its attachments to the transaction, where the receipt joins them.
+Rejecting keeps them on the rejected suggestion. Transactions are never hard-deleted (void keeps the
+files). Adding/removing (and filing a queued file) records `transaction.attachment-added|removed` (or
+`pending.…`, `statement.…`) on the owner; a queued file has no owner and no trail.
+
 ## fin016_audit_event — append-only
 
 | Column | Type | Notes |
@@ -307,4 +326,7 @@ erDiagram
     IMPORT_FILE }o--o| IMPORT_LAYOUT : "parsed with"
     TAG ||--o{ TAG_LINK : ""
     TRANSACTION ||--o{ TAG_LINK : "polymorphic"
+    TRANSACTION ||--o{ ATTACHMENT : "files"
+    PENDING_TRANSACTION ||--o{ ATTACHMENT : "files (move on approval)"
+    CARD_STATEMENT ||--o{ ATTACHMENT : "files"
 ```

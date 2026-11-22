@@ -9,5 +9,11 @@ internal sealed class FakePasswordHasher : IPasswordHasher
 
     public string Hash(string plainText) => Prefix + plainText;
 
-    public bool Verify(string plainText, string hash) => hash == Prefix + plainText;
+    public int VerifyCount { get; private set; }
+
+    public bool Verify(string plainText, string hash)
+    {
+        VerifyCount++;
+        return hash == Prefix + plainText;
+    }
 }

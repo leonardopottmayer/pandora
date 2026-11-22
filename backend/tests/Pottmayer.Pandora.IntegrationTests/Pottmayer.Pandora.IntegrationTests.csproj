@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -24,11 +24,16 @@
     <ProjectReference Include="../../src/Host/Pottmayer.Pandora.Host/Pottmayer.Pandora.Host.csproj" />
     <!-- Finances: write audit events through the real unit of work in tests -->
     <ProjectReference Include="../../src/Modules/Finances/Pottmayer.Pandora.Modules.Finances.Application/Pottmayer.Pandora.Modules.Finances.Application.csproj" />
+    <!-- Agenda: drive the reminder sweep command directly in tests -->
+    <ProjectReference Include="../../src/Modules/Agenda/Pottmayer.Pandora.Modules.Agenda.Application/Pottmayer.Pandora.Modules.Agenda.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- Tars: Data (IUnitOfWorkFactory) -->
-    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.0.4" />
+    <PackageReference Include="Pottmayer.Tars.Data.Abstractions" Version="0.1.0" />
+    <!-- Tars: outbox â€” drive the relay explicitly and dispatch events in tests -->
+    <PackageReference Include="Pottmayer.Tars.Messaging.EntityFrameworkCore" Version="0.1.0" />
+    <PackageReference Include="Pottmayer.Tars.Messaging.Broker" Version="0.1.0" />
   </ItemGroup>
 
 </Project>

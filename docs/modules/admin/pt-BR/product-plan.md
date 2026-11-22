@@ -1,0 +1,406 @@
+# Módulo Admin — Plano de Produto
+
+> **Status:** design aprovado (2026-11-06); A1–A4 construídas (pacotes do Tars, módulo Admin e
+> aplicação das regras na §9, o painel na §10). Cobre os pacotes do Tars
+> de que ele precisa (feature flags e autorização) e o módulo do Pandora que os usa.
+> 🇺🇸 [English version](../en/product-plan.md)
+>
+> Relacionados: [Identity](../../identity/pt-BR/README.md) · [Tars wiring](../../../architecture/pt-BR/tars-wiring.md)
+
+---
+
+## 1. O que o módulo faz
+
+O **Admin** decide o que está ligado no sistema e o que cada usuário pode fazer, e dá ao
+administrador master um lugar só para gerenciar isso quando o Pandora for publicado.
+
+São dois eixos independentes, checados nesta ordem em toda requisição:
+
+```
+requisição ──► 1. A feature está ligada no sistema?        não ► 404 (ninguém, nem o admin)
+                │ sim
+                ▼
+              2. O usuário tem a permissão da ação?         não ► 403
+                │ sim
+                ▼
+              o handler roda
+```
+
+- **Feature flags** são interruptores globais: um módulo inteiro (`finances`) ou uma capacidade
+  (`finances.import`). Não dependem de quem é o usuário.
+- **Permissões** são por ação: `finances.cards.read`, `finances.cards.create`,
+  `finances.cards.delete`, `finances.imports.run` e assim por diante. O usuário as recebe por
+  **papéis** e por **exceções** individuais de permitir ou negar.
+
+### O que ele não é
+
+- **Não é autenticação.** Login, tokens, MFA e os próprios usuários continuam no
+  [Identity](../../identity/pt-BR/README.md). O Admin só responde "isso é permitido?".
+- **Não é dono dos dados.** Cada módulo continua filtrando os dados por `UserId`. A permissão diz que
+  o usuário pode excluir *cartões*; nunca deixa ele mexer no cartão de outra pessoa.
+- **Não é multitenancy.** Uma instalação, um conjunto de papéis. Permissões por tenant ficam fora.
+
+---
+
+## 2. Nomes e coordenadas
+
+| Item | Valor |
+|---|---|
+| Pacotes do Tars | `Pottmayer.Tars.FeatureFlags{,.Abstractions,.AspNetCore}`, `Pottmayer.Tars.Security.Authorization{,.Abstractions,.AspNetCore}` |
+| Projetos do backend | `Pottmayer.Pandora.Modules.Admin.{Abstractions,Contracts,Domain,Application,Infrastructure,Persistence,Presentation}` |
+| Schema PostgreSQL | `admin` |
+| Prefixo de tabela | `admXXX_`, PK `uuid_generate_v7()` |
+| Seção de options | `Pandora:Admin` |
+| Base da API | `/api/v{version}/admin`, JWT, cada endpoint protegido por uma permissão `admin.*` |
+| Frontend | `client-web/src/modules/admin`, rotas `admin/users`, `admin/roles`, `admin/features`, `admin/audit` |
+| Migrations | `migrations/migrations/admin/` |
+
+---
+
+## 3. Princípios
+
+1. **Declarado no código, alterado no banco.** Flags e permissões são declaradas pelo módulo dono,
+   com seus padrões. O banco guarda só o que um administrador mudou. Uma chave nunca existe no banco
+   sem existir no código.
+2. **Um ponto de checagem.** A checagem roda num pipeline behavior do mediator, então HTTP, bot do
+   Telegram, Assistant e jobs passam todos por ela. O atributo de controller existe só para os poucos
+   endpoints que não passam pelo mediator.
+3. **A negação vence.** Permissões efetivas = papéis ∪ permissões diretas − negações diretas.
+4. **Flag vence permissão.** Uma feature desligada fica desligada para todos, inclusive o admin
+   master.
+5. **Mudanças valem na hora.** O conjunto efetivo fica em cache na memória e é descartado a cada
+   mudança; nunca vai dentro do JWT.
+6. **Erro de digitação derruba a subida.** Ao subir, toda chave usada em `[RequiresPermission]`
+   precisa existir no catálogo, ou o host não sobe.
+7. **Esconder no frontend é só conforto.** Quem decide é o backend; o cliente esconde botões e rotas
+   para o usuário não esbarrar num 403.
+
+---
+
+## 4. Tars: feature flags
+
+`Pottmayer.Tars.FeatureFlags`
+
+- **Catálogo.** Cada módulo contribui suas flags com um padrão e uma chave i18n de rótulo:
+  ```csharp
+  flags.Add("finances", defaultOn: true);
+  flags.Add("finances.import", defaultOn: true, parent: "finances");
+  ```
+  Uma flag filha fica desligada sempre que a mãe está desligada.
+- **Store.** `IFeatureFlagStore` só lê as alterações; quem grava é a aplicação (junto com a entrada
+  de auditoria), que depois chama `IFeatureFlags.Invalidate()`. O Tars traz uma store em memória; o
+  Pandora implementa uma no Postgres (`adm001`).
+- **Uso.** `IFeatureFlags.IsEnabled(key)` no código; `[RequiresFeature(key)]` no controller (do
+  `.AspNetCore`). Uma feature desligada devolve `Error.NotFound("feature.disabled", …)`.
+- **Cache.** O mapa de flags é pequeno: fica todo na memória e é recarregado quando uma alteração
+  muda.
+
+## 5. Tars: autorização
+
+`Pottmayer.Tars.Security.Authorization`
+
+### 5.1 Catálogo
+
+Cada módulo declara suas permissões com um builder curto. O atalho CRUD gera as quatro ações de
+sempre:
+
+```csharp
+catalog.Module(FinancesPermissions.Module, feature: FinancesFeatures.Finances)
+    .Resource(FinancesPermissions.Cards.Resource).Crud()            // finances.cards.read/create/update/delete
+    .Resource(FinancesPermissions.Imports.Resource, feature: FinancesFeatures.Import)
+        .Read().Actions(FinancesPermissions.Actions.Run)
+    .Resource(FinancesPermissions.Statements.Resource).Read().Actions(FinancesPermissions.Actions.Close);
+```
+
+As chaves ficam como constantes no `Abstractions` de cada módulo (`FinancesFeatures`,
+`FinancesPermissions`), montadas a partir do `PermissionActions` do tars nas ações padrão, então a
+declaração, as marcações das requisições e as tools do Assistant usam as mesmas.
+
+Cada permissão carrega:
+- uma chave i18n de rótulo, montada a partir da chave por convenção;
+- sua **feature**: a permissão só é checada depois dessa flag;
+- suas **dependências**: `create`, `update` e `delete` exigem `read`, então o painel recusa dar
+  `delete` sem `read`.
+
+### 5.2 Concessões
+
+- **Papel**: um conjunto nomeado de padrões de permissão. Um padrão é uma chave exata ou um coringa
+  (`finances.*`, `finances.cards.*`). Coringas cobrem também permissões criadas em versões futuras.
+- **Papéis do usuário**: um usuário pode ter quantos papéis quiser.
+- **Exceções do usuário**: `allow` ou `deny` num padrão para um usuário.
+- **Papéis de sistema**: `admin` tem `*` e não pode ser editado nem excluído. Um papel é marcado como
+  **padrão** e vai para toda conta nova.
+
+### 5.3 Resolução e checagem
+
+- `IPermissionChecker.HasAsync(userId, key)` expande os papéis e exceções do usuário contra o
+  catálogo num conjunto plano de chaves, em cache por usuário. Qualquer mudança num papel, nos
+  papéis de um usuário ou nas exceções dele descarta as entradas afetadas (mudou o papel → todos que
+  o têm).
+- `AuthorizationBehavior<TRequest, TResponse>` roda para requisições marcadas com
+  `[RequiresPermission(FinancesPermissions.Cards.Delete)]`:
+  1. a feature da permissão está ligada, senão `Error.NotFound("feature.disabled")`;
+  2. o ator tem a chave, senão `Error.Forbidden("permission.denied")`;
+  3. senão, chama o handler.
+
+  Os dois voltam como falha de `Result`, então o `DefaultHttpErrorMapper` que já existe transforma em
+  404/403, e o bot ou o Assistant podem responder com uma mensagem.
+- **Quem é o ator** vem de `IAuthorizationActorResolver.Resolve(request)`, registrado pela aplicação; o
+  sujeito é uma string (o `sub` do JWT). O do
+  Pandora lê `Input.UserId`, que todo command de usuário já carrega (o controller preenche a partir do
+  token, o bot a partir do usuário vinculado). Requisições sem `[RequiresPermission]`, como jobs de
+  sistema (`RunRecurrenceGeneration`), não são checadas.
+- O `.AspNetCore` traz um filtro MVC global que aplica o mesmo `[RequiresPermission]` em
+  controllers e actions, lendo o sujeito da claim `sub`.
+
+### 5.4 Store
+
+`IAuthorizationStore.GetGrantsAsync(subjectId)` devolve os padrões dos papéis do sujeito, as
+permissões diretas e as negações diretas. Ela só lê; o Pandora a implementa sobre `adm002`–`adm005`
+na própria persistência e grava as concessões (com a auditoria) ele mesmo, depois chama
+`Invalidate(subjectId)` ou `InvalidateAll()`. O Tars não traz store EF Core: uma consulta no Pandora
+resolve, e uma genérica fica para quando uma segunda aplicação precisar.
+
+---
+
+## 6. Pandora: o módulo Admin
+
+### 6.1 Modelo de dados
+
+| Tabela | Guarda |
+|---|---|
+| `adm001_feature_flag` | `key` (PK), `enabled`, `updated_by`, `updated_at`: só as flags alteradas |
+| `adm002_role` | `id`, `name`, `description`, `is_system`, `is_default` |
+| `adm003_role_permission` | `role_id`, `pattern` |
+| `adm004_user_role` | `user_id`, `role_id` |
+| `adm005_user_permission` | `user_id`, `pattern`, `effect` (`allow` / `deny`) |
+| `adm006_audit_entry` | `id`, `actor_id`, `action`, `target_type`, `target_id`, `before` jsonb, `after` jsonb, `occurred_at` |
+
+Padrões que sobraram no banco para uma chave que não existe mais são ignorados e sinalizados no
+painel.
+
+### 6.2 Catálogos
+
+Cada módulo declara suas flags e permissões no seu `ApplicationDI` e marca suas requisições com as
+constantes das suas classes `<Módulo>Features` e `<Módulo>Permissions` (§9). O Admin declara as dele: `admin.users.read`, `admin.users.manage`,
+`admin.roles.manage`, `admin.features.manage`, `admin.audit.read`. O acesso ao Admin também é uma
+permissão, então dá para delegar sem entregar `*`.
+
+### 6.3 Bootstrap do admin master
+
+- `Pandora:Admin:BootstrapEmails` lista os emails que precisam ter o papel `admin`.
+- Ao subir, e sempre que uma conta é ativada (`AccountActivated`), um usuário da lista recebe o papel
+  se ainda não tiver. É idempotente e funciona no Docker por variável de ambiente.
+- Proteções: o último dono do `admin` não pode perdê-lo nem ser desativado, e quem tem `admin`
+  precisa ter MFA ligado (o login manda configurar antes).
+
+### 6.4 Entrada na instalação atual
+
+A primeira migration cria:
+- o papel de sistema `admin` (`*`);
+- um papel `member` marcado como padrão, com um coringa por módulo de usuário (`finances.*`,
+  `notes.*`, `agenda.*`, …), nunca `admin.*`;
+- o `member` para todo usuário que já existe.
+
+Nada muda para ninguém até um administrador editar um papel.
+
+### 6.5 O que os outros módulos consomem
+
+- **O Admin consome o Identity** por uma porta no `Identity.Abstractions`: listar e buscar usuários,
+  desativar/ativar, derrubar sessões. O Identity continua dono dos usuários.
+- **Os módulos consomem o Admin** só pelas abstrações do Tars (`IFeatureFlags`,
+  `IPermissionChecker`) e pelas próprias marcas `[RequiresPermission]`. Nenhum módulo referencia os
+  projetos do Admin.
+- **O Assistant** filtra as ferramentas que oferece ao modelo pelas permissões do usuário, então nunca
+  propõe uma ação que seria recusada.
+
+### 6.6 API
+
+`GET /identity/me` ganha `features: string[]` (chaves ligadas) e `permissions: string[]` (as chaves
+efetivas do usuário, com os coringas expandidos). O resto fica em `/api/v{version}/admin`:
+
+| Método | Rota | Para quê |
+|---|---|---|
+| GET | `/catalog` | Módulos → recursos → ações, com rótulos, features e dependências |
+| GET | `/features` | Todas as features com estado e padrão |
+| PUT | `/features/{key}` | Liga ou desliga uma feature |
+| GET · POST | `/roles` | Lista os papéis com padrões e quem tem; cria um |
+| PUT · DELETE | `/roles/{id}` | Altera ou exclui um papel |
+| GET | `/users` | Lista os usuários, com filtros |
+| GET | `/users/{id}` | Detalhe com **as permissões efetivas e a origem de cada uma** |
+| POST | `/users/roles` | Adiciona ou remove um papel de vários usuários de uma vez |
+| POST | `/users/approve` | Aprova contas pendentes (§11) |
+| PUT | `/users/{id}/exceptions` | Substitui as exceções allow/deny do usuário |
+| PUT | `/users/{id}/disabled` | Desativa ou ativa o usuário |
+| POST | `/users/{id}/revoke-sessions` | Derruba as sessões do usuário em todo lugar |
+| GET | `/audit` | Lista paginada, filtrada por ator, alvo e período |
+
+Toda escrita vai para o `adm006` com o estado de antes e de depois.
+### 6.7 Frontend
+
+- `usePermission(key)`, `useFeature(key)` e `<Can permission="…">` leem do `/me`. O menu mostra um
+  módulo quando a flag dele está ligada e o usuário tem alguma permissão nele; as rotas fazem o mesmo
+  e mostram uma página de 403 no caso contrário.
+- **Tela de papéis**: uma matriz com módulo → recurso nas linhas e ações nas colunas. As linhas de
+  módulo e de recurso têm um checkbox de três estados que marca tudo abaixo. Busca por nome,
+  permissões de uma feature desligada em cinza, quantos usuários têm o papel, aviso quando falta uma
+  dependência.
+- **Tela de usuários**: a lista padrão (ocupa a altura da janela, painel agrupado), seleção múltipla
+  com *adicionar papel* / *remover papel* em lote. A gaveta de detalhe lista as permissões efetivas
+  com a origem ("via Finanças – leitura", "exceção direta") e edita as exceções ali mesmo.
+- **Tela de features**: a árvore de flags com interruptores; desligar uma mãe mostra o que vai junto.
+- **Tela de auditoria**: linha do tempo só de leitura.
+
+---
+
+## 7. Entrega
+
+| Etapa | Repositório | Conteúdo | Pronto quando |
+|---|---|---|---|
+| A1 | tars | `FeatureFlags` (catálogo, stores, `IFeatureFlags`, `[RequiresFeature]`) | testes verdes, docs em `docs/feature-flags/` |
+| A2 | tars | `Security.Authorization` (builder do catálogo, resolução com coringas e negação, cache, behavior, filtro MVC) | testes verdes, docs em `docs/security/` |
+| A3 | pandora | Módulo Admin, `adm001`–`adm006`, catálogos de todos os módulos, `[RequiresPermission]` em todo command e query de usuário, resolvedor de ator do Pandora, bootstrap, `/me` com features e permissões, filtro de ferramentas do Assistant | testes atuais verdes, testes novos para 403/404 e bootstrap; nada muda para o usuário atual |
+| A4 | pandora | Hooks do frontend, guardas do menu e das rotas, telas de papéis, usuários, features e auditoria | conferido no navegador pelo user |
+
+## 8. Decisões
+
+| Decisão | Escolha |
+|---|---|
+| Modelo de permissão | Papéis + permitir/negar por usuário, a negação vence |
+| Onde a checagem roda | Pipeline behavior do mediator, atributo de controller só para o resto |
+| Store das flags | Banco, liga/desliga no painel |
+| Bootstrap do admin master | `Pandora:Admin:BootstrapEmails`, aplicado ao subir e na ativação |
+| Atualização | Consulta no banco com cache em memória, descartado a cada mudança; nada no JWT |
+| Resposta quando desligado / negado | 404 `feature.disabled` / 403 `permission.denied` |
+
+Fora por enquanto: "entrar como" outro usuário, números de uso por módulo, página de saúde do
+sistema, permissões por tenant, planos ou cobrança.
+
+---
+
+## 9. O que a A3 construiu (2026-11-06)
+
+- **Módulo Admin**: `Abstractions`, `Domain`, `Application`, `Persistence`, `Infrastructure` (ainda sem
+  `Contracts` e `Presentation`; os endpoints do painel vêm com a A4). Migrations `adm001`–`adm006` mais
+  o seed de `admin` (`*`) e `member` (padrão, um curinga por módulo de usuário), e `member` para toda
+  conta que já existia.
+- **Stores**: `FeatureFlagStore` (`adm001`) e `AuthorizationStore` (`adm003`–`adm005`), só de leitura,
+  atrás do serviço de flags e do verificador de permissões do Tars.
+- **Checkpoint**: `AddAdminInfrastructure` registra os catálogos, os serviços com cache, o gate, o
+  resolvedor de ator (`InputUserIdActorResolver`, que lê `Input.UserId`) e o behavior de autorização.
+  Cada módulo declara suas flags e permissões no próprio `ApplicationDI`, com `CheckUsagesIn` no seu
+  assembly.
+- **Marcações**: `[RequiresPermission]` em todo command e query de usuário de Finances, Notes, Agenda,
+  Channels, Communications, Files, Integrations e Assistant.
+- **Bootstrap**: `AdminBootstrapper` no startup e `AccountActivatedHandler` (papel padrão, mais `admin`
+  para um e-mail de bootstrap), cada concessão auditada no `adm006` sem ator. Docker: `ADMIN_EMAIL`.
+- **`/me`** devolve `features` (chaves ligadas) e `permissions` (chaves efetivas).
+- **Assistant**: `IAssistantTool.Permissions`; o `Interpret` oferece ao modelo só as tools que o
+  usuário pode usar.
+- **Identity** ganhou a porta `IUserDirectory` (achar uma conta ativada pelo e-mail).
+
+O catálogo como foi declarado:
+
+| Módulo (flag) | Recursos e ações |
+|---|---|
+| `finances` | `accounts`, `cards`, `recurrences`, `attachments`: CRUD · `statements`: read, close, pay · `transactions`: read, create, update, post, reverse, void · `pending`: read, create, update, approve, reject · `categories`: read, create, update · `tags`: CRUD, assign · `imports` (flag `finances.import`): read, run · `audit`: read |
+| `notes` | `spaces`, `pages`, `media`: CRUD · `tags`: read, update |
+| `agenda` | `calendars`, `events`, `reminders`, `lists`, `tasks`: CRUD · `alerts`: read, create, delete · `preferences`: read, update |
+| `channels` | `channels`: read, create, delete, test · `notifications`: read, update |
+| `communications` | `mailboxes`: CRUD · `messages`: read, update, send · `labels`, `rules`: read, update |
+| `files` | `roots`: CRUD · `scans`: read, run · `entries`: read · `review`: read, update · `filters`: read, update, delete · `preferences`: read, update |
+| `integrations` | `accounts`: CRUD |
+| `assistant` | `commands`: read, run · `profile`: read, update |
+| — (sem flag) | `admin.users`, `admin.roles`: read, manage · `admin.features`: manage · `admin.audit`: read |
+
+Decisões tomadas na construção:
+
+1. **As chaves são constantes** por módulo: `<Módulo>Features` e `<Módulo>Permissions` no
+   `Abstractions`, uma classe aninhada por recurso (`FinancesPermissions.Cards.Delete`), com as ações
+   padrão do `PermissionActions` do tars e as do próprio módulo em `<Módulo>Permissions.Actions`. O
+   `CheckUsagesIn` continua impedindo o host de subir com uma marcação que o catálogo não declara.
+2. **O autoatendimento do Identity não tem permissão**: senha, MFA, dispositivos, preferências e `/me`
+   ficam abertos a toda conta logada, para o usuário sempre conseguir cuidar da própria conta. Login,
+   cadastro, tokens e jobs não carregam usuário e não são marcados.
+3. **Jobs ignoram flags**: um job manda commands de sistema sem marcação, então um módulo desligado
+   continua com os jobs rodando; o que desliga são as requisições do usuário e as tools do Assistant.
+4. **Contas novas ganham `member` quando o outbox entrega o `AccountActivated`**, alguns segundos
+   depois de abrir o link de ativação.
+5. **Foi para a A4**: os endpoints do painel, a exigência de MFA para quem tem `admin` e a trava no
+   último `admin`. Até lá a única escrita é a do bootstrap; mudar concessões é editar as tabelas e
+   reiniciar (os caches são por processo).
+
+---
+
+## 10. O que a A4 construiu (2026-11-06)
+
+- **API** (`Admin.Presentation`, `AdminController` em `/api/v1/admin`), cada requisição marcada com a
+  sua permissão `admin.*`:
+
+  | Endpoint | Permissão |
+  |---|---|
+  | `GET catalog` | `admin.roles.read` |
+  | `GET features` · `PUT features/{key}` | `admin.features.manage` |
+  | `GET roles` | `admin.roles.read` |
+  | `POST roles` · `PUT roles/{id}` · `DELETE roles/{id}` | `admin.roles.manage` |
+  | `GET users` · `GET users/{id}` | `admin.users.read` |
+  | `POST users/roles` (dar/tirar em lote) · `PUT users/{id}/exceptions` · `PUT users/{id}/disabled` · `POST users/{id}/revoke-sessions` | `admin.users.manage` |
+  | `GET audit?targetType&targetId&actorId&before&limit` | `admin.audit.read` |
+
+  O `admin.roles.read` entrou para a tela de usuários listar os papéis sem poder gerenciá-los. Toda
+  escrita é auditada no `adm006` com o antes e o depois, e depois descarta os caches afetados.
+- **MFA para o painel**: o `RequireMfaFilter` recusa toda requisição do painel com 403
+  `Admin.MfaRequired` enquanto a conta de quem chama não tiver verificação em duas etapas. A checagem
+  fica no painel, não no login, para o Identity não precisar saber de papéis; um admin sem MFA continua
+  usando os outros módulos. `Pandora:Admin:RequireMfa` (padrão `true`) desliga a checagem; o
+  `appsettings.Development.json` a deixa `false` para o desenvolvimento local.
+- **Último admin**: tirar o `admin` do último titular ativado e ativo, ou desativá-lo, é 409
+  `Admin.LastAdmin`.
+- **Identity**: o `IUserDirectory` lista, busca, desativa/reativa (encerrando as sessões) e encerra as
+  sessões das contas; `User.Disable`/`Enable`. Os dois encerram só os refresh tokens: o access token já
+  emitido vale até expirar (JWT sem estado), então o usuário cai em alguns minutos, não na hora.
+- **Frontend**:
+  - `useFeature`, `usePermission`, `useAllows` e `<Can>` (`modules/identity`) leem o `/me`; enquanto ele
+    não é conhecido, nada é escondido.
+  - Cada entrada de `layouts/navigation.tsx` declara sua `feature` e `permission`. O menu tira o que o
+    usuário não pode abrir; uma rota sob uma feature desligada mostra a página 404, uma sem a permissão
+    mostra a 403.
+  - Telas em `modules/admin`: **Usuários** (busca, filtro por papel, dar/tirar papel em lote, gaveta de
+    detalhe com papéis, exceções e as permissões efetivas com a origem, desativar/reativar, encerrar
+    sessões), **Papéis** (lista e um modal com a matriz módulo → recurso → ação, grupos com três estados,
+    aviso para ação sem o `read`, recursos sob flag desligada em cinza), **Funcionalidades** (a árvore de
+    flags com chaves, confirmando antes de desligar) e **Auditoria** (mais recentes primeiro, por tipo
+    de alvo, carregando páginas mais antigas).
+
+Não construído: copiar permissões de outro usuário, sinalizar no painel um padrão que sobrou de uma
+chave removida, escolher qual papel é o padrão e paginar a lista de usuários (todas as contas vêm de
+uma vez).
+
+---
+
+## 11. Aprovação de contas (2026-11-06)
+
+Uma opção que a instalação pode ligar para que uma conta nova só consiga entrar depois que um
+administrador aprová-la, dando tempo de ajustar papéis e exceções antes.
+
+- **Opção**: `Pandora:Identity:AccountApproval:Required` (Docker: `REQUIRE_ACCOUNT_APPROVAL`),
+  desligada por padrão.
+- **Fluxo**: cadastro e ativação seguem como hoje; o e-mail de ativação avisa que um administrador
+  ainda precisa aprovar a conta. Na ativação a conta fica marcada como aguardando aprovação
+  (`idt001.awaiting_approval_since`) e recebe o papel padrão normalmente. Entrar com a senha certa
+  responde 403 `Identity.PendingApproval`. Aprovar tira a marca e manda um e-mail ao usuário; recusar
+  desativa a conta, então o endereço não consegue se cadastrar de novo.
+- **Quando a regra vale**: decidido na ativação. Contas que já existiam, e contas ativadas com a opção
+  desligada, nunca são marcadas. Desligar a opção depois não libera quem já está esperando: esses são
+  aprovados no painel.
+- **E-mails de bootstrap** já nascem aprovados. O Identity pergunta por uma porta dele,
+  `IAccountApprovalPolicy`, que o Admin implementa com `Pandora:Admin:BootstrapEmails`, então o
+  Identity não fica sabendo de papéis. O bootstrap do startup também aprova uma conta de bootstrap que
+  esteja esperando.
+- **Os administradores são avisados**: uma ativação pendente manda e-mail aos endereços de bootstrap.
+- **Painel**: a tela de Usuários mostra primeiro as contas esperando, com um aviso contando quantas, um
+  *Aprovar* em lote e *Aprovar* / *Recusar* na gaveta de detalhe. Aprovar usa `admin.users.manage`;
+  cada aprovação é auditada (`user.approved`).
+- **Eventos** (publicados pelo Identity no outbox dele): `AccountActivationRequested` ganha
+  `RequiresApproval`; novos `AccountApprovalRequested` (com os endereços de quem aprova) e
+  `AccountApproved`. O Channels transforma em e-mails.

@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.Mfa.Challenge;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.Mfa.Disable;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.Mfa.Enable;
@@ -77,6 +78,7 @@ public sealed class MfaController(
 
     [AllowAnonymous]
     [HttpPost("challenge")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> ChallengeAsync(MfaChallengeRequest request, CancellationToken ct)
     {
         var command = new CompleteMfaChallengeCommand(new CompleteMfaChallengeInput(request.Ticket, request.Code));

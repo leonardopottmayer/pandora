@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Pottmayer.Pandora.Modules.Identity.Abstractions;
 using Pottmayer.Pandora.Modules.Identity.Application.Dtos;
 using Pottmayer.Pandora.Modules.Identity.Domain.Errors;
@@ -23,10 +24,25 @@ public sealed class UpsertPreferencesCommandHandler(IUnitOfWorkFactory factory)
         if (!AppLanguage.IsSupported(input.Language))
             return Fail(UserErrors.InvalidLanguage(input.Language));
 
+        if (!TimeZoneInfo.TryFindSystemTimeZoneById(input.TimeZone, out _))
+            return Fail(UserErrors.InvalidTimeZone(input.TimeZone));
+
+        if (!Enum.TryParse<DayOfWeek>(input.WeekStartsOn, ignoreCase: true, out var weekStartsOn)
+            || !weekStartsOn.ToString().Equals(input.WeekStartsOn, StringComparison.OrdinalIgnoreCase))
+            return Fail(UserErrors.InvalidWeekStartsOn(input.WeekStartsOn));
+
+        if (!AppPalette.IsSupported(input.Palette))
+            return Fail(UserErrors.InvalidPalette(input.Palette));
+
+        if (input.AccentColor is not null && !Regex.IsMatch(input.AccentColor, "^#[0-9a-fA-F]{6}$"))
+            return Fail(UserErrors.InvalidAccentColor(input.AccentColor));
+
         var theme = AppTheme.FromValue(input.Theme);
+        var palette = AppPalette.FromValue(input.Palette);
+        var accentColor = input.AccentColor?.ToLowerInvariant();
         var language = AppLanguage.FromValue(input.Language);
 
-        var user = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
+        var user = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IUserRepository>();
 
@@ -34,7 +50,7 @@ public sealed class UpsertPreferencesCommandHandler(IUnitOfWorkFactory factory)
             if (user is null)
                 return null;
 
-            user.UpdatePreferences(theme, language);
+            user.UpdatePreferences(theme, language, input.TimeZone, weekStartsOn, palette, accentColor);
             await repo.UpdateAsync(user, token);
             return user;
         }, cancellationToken: ct);
@@ -42,6 +58,13 @@ public sealed class UpsertPreferencesCommandHandler(IUnitOfWorkFactory factory)
         if (user is null)
             return Fail(UserErrors.NotFound);
 
-        return Ok(new UserPreferencesDto(user.Preferences!.Theme.Value, user.Preferences!.Language.Value));
+        var prefs = user.Preferences!;
+        return Ok(new UserPreferencesDto(
+            prefs.Theme.Value,
+            prefs.Language.Value,
+            prefs.TimeZone,
+            prefs.WeekStartsOn.ToString().ToLowerInvariant(),
+            prefs.Palette.Value,
+            prefs.AccentColor));
     }
 }

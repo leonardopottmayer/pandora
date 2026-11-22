@@ -28,7 +28,7 @@ public sealed class RunImportParsingCommandHandler(
     protected override async Task<Result<bool>> HandleAsync(
         RunImportParsingCommand request, CancellationToken ct)
     {
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             // Claiming locks the file to this run; a null result means there is nothing to do right now.
             var fileRepo = ctx.AcquireRepository<IImportFileRepository>();

@@ -49,6 +49,47 @@ describe('RecurringTransactionFormModal', () => {
     expect(posted).toBe(false)
   })
 
+  it('fills the description from the name until it is typed in', async () => {
+    server.use(...lookupHandlers())
+    const user = userEvent.setup()
+    renderWithProviders(<RecurringTransactionFormModal open onClose={vi.fn()} />)
+
+    await user.type(screen.getByRole('textbox', { name: 'Name' }), 'Aluguel')
+    const description = screen.getByRole('textbox', { name: 'Description' })
+    expect(description).toHaveValue('Aluguel')
+
+    await user.clear(description)
+    await user.type(description, 'Aluguel do apê')
+    await user.type(screen.getByRole('textbox', { name: 'Name' }), ' 2')
+    expect(description).toHaveValue('Aluguel do apê')
+  })
+
+  it('previews the next dates, and ends one way at a time', async () => {
+    let body: Record<string, unknown> | undefined
+    server.use(
+      ...lookupHandlers(),
+      http.put(`${FINANCES_BASE}/recurring-transactions/r1`, async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ success: true, data: recurring })
+      }),
+    )
+    const onClose = vi.fn()
+    const user = userEvent.setup()
+    renderWithProviders(
+      <RecurringTransactionFormModal open recurring={{ ...recurring, endDate: '2026-12-31' }} onClose={onClose} />,
+    )
+
+    // From the next occurrence, monthly, up to the end date.
+    expect(await screen.findByText(/Next: 7\/10\/2026, 8\/10\/2026, 9\/10\/2026/)).toBeInTheDocument()
+
+    await user.click(screen.getByText('After a number of times'))
+    await user.type(await screen.findByRole('spinbutton', { name: /Max occurrences/ }), '12')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    expect(body).toMatchObject({ endDate: null, maxOccurrences: 12 })
+  })
+
   it('updates an existing recurrence (immutable fields pre-filled) via PUT', async () => {
     let body: Record<string, unknown> | undefined
     const onClose = vi.fn()

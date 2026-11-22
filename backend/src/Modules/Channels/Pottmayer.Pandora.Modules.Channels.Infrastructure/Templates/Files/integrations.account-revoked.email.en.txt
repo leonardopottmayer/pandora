@@ -1,0 +1,4 @@
+Reconnect your {{provider}} account
+Pandora lost access to your {{provider}} account — the provider rejected its credentials, so anything that relied on it has stopped.
+
+Reconnect it under Settings → Integrations to resume.

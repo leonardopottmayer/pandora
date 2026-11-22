@@ -10,6 +10,9 @@ CREATE TABLE finances.fin013_import_file (
     layout_id       uuid          NULL,      -- NULL when detection failed
     account_id      uuid          NULL,      -- XOR with card_id
     card_id         uuid          NULL,
+    -- Onboarding cutoff: rows dated before this are skipped during parsing so importing historical
+    -- bank files at go-live does not flood the inbox. NULL means no cutoff (import everything).
+    cutoff_date     date          NULL,
     file_name       varchar(255)  NOT NULL,
     file_hash       varchar(64)   NOT NULL,  -- sha256 hex, informational only
     file_content    bytea         NOT NULL,

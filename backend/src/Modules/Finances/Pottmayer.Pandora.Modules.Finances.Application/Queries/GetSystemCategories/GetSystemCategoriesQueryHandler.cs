@@ -17,7 +17,7 @@ public sealed class GetSystemCategoriesQueryHandler(IUnitOfWorkFactory factory, 
     {
         var input = request.Input;
 
-        var all = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var all = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var reader = ctx.AcquireRepository<ISystemCategoryReader>();
             return await reader.GetAllAsync(input.Nature, input.IncludeInactive, token);

@@ -1,6 +1,7 @@
 using Pottmayer.Pandora.Modules.Finances.Abstractions;
 using Pottmayer.Pandora.Modules.Finances.Application.Auditing;
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
+using Pottmayer.Pandora.Modules.Finances.Application.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
@@ -27,7 +28,7 @@ public sealed class LinkPendingTransactionCommandHandler(
         var input = request.Input;
         var now = timeProvider.GetUtcNow();
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var pendingRepo = ctx.AcquireRepository<IPendingTransactionRepository>();
             var txRepo = ctx.AcquireRepository<ITransactionRepository>();
@@ -53,6 +54,8 @@ public sealed class LinkPendingTransactionCommandHandler(
 
             pending.MarkLinkedToExisting(tx.Id, input.UserId, timeProvider);
             await pendingRepo.UpdateAsync(pending, token);
+            await PendingAttachments.MoveToTransactionAsync(
+                ctx.AcquireRepository<IAttachmentRepository>(), input.UserId, pending.Id, tx.Id, token);
 
             await ctx.RecordAsync(input.UserId, input.UserId, PendingTransactionEvents.EntityType, pending.Id,
                 PendingTransactionEvents.Linked, now, new { transactionId = tx.Id }, ct: token);

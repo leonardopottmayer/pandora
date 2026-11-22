@@ -28,7 +28,7 @@ public sealed class CreateTransferCommandHandler(IUnitOfWorkFactory factory, Tim
         if (input.FromAccountId == input.ToAccountId)
             return Fail(TransactionErrors.SameAccountTransfer);
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var accounts = ctx.AcquireRepository<IAccountRepository>();
 

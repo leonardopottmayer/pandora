@@ -16,7 +16,7 @@ public sealed class GetCardsQueryHandler(IUnitOfWorkFactory factory)
         var input = request.Input;
         var tagIds = input.TagIds?.Distinct().ToList();
 
-        var cards = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var cards = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var all = await ctx.AcquireRepository<ICardRepository>()
                 .GetAllForUserAsync(input.UserId, input.IncludeArchived, token);

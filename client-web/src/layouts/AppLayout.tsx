@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { Outlet, useNavigate, useLocation, useNavigation } from 'react-router-dom'
 import { Layout, Menu, Dropdown, Avatar, Button, Drawer, Tooltip, theme, type MenuProps } from 'antd'
 import {
   MenuFoldOutlined,
@@ -15,7 +15,13 @@ import {
 } from '@ant-design/icons'
 import { useAuth } from '@/modules/identity/context/auth-context'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
+import { onAccent } from '@/app/theme'
+import { useAccess } from '@/modules/identity/hooks/useAccess'
+import { NotFoundPage } from '@/pages/NotFoundPage'
+import { ForbiddenPage } from '@/pages/ForbiddenPage'
 import { navigationModules } from './navigation'
+import { routeAccess, visibleModules } from './navigationAccess'
+import { loadCollapsed, loadOpenModules, saveCollapsed, saveOpenModules } from './sidebarState'
 
 const { Header, Sider, Content } = Layout
 
@@ -30,9 +36,16 @@ export function AppLayout() {
   const { isDark, setTheme } = usePreferences()
   const navigate = useNavigate()
   const location = useLocation()
+  // Uma tela aberta pela primeira vez baixa o próprio pedaço do app; a tela atual fica enquanto isso.
+  const loadingScreen = useNavigation().state === 'loading'
   const { token } = theme.useToken()
+  const access = useAccess()
+  const modules = visibleModules(navigationModules, access)
+  const currentAccess = routeAccess(navigationModules, location.pathname, access)
 
-  const [siderCollapsed, setSiderCollapsed] = useState(false)
+  const [siderCollapsed, setSiderCollapsed] = useState(loadCollapsed)
+  const [openModules, setOpenModules] = useState(() => loadOpenModules(navigationModules.map((m) => m.key)))
+  const [popupKeys, setPopupKeys] = useState<string[]>([])
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT,
@@ -49,7 +62,7 @@ export function AppLayout() {
     navigate('/login', { replace: true })
   }
 
-  const menuItems: MenuProps['items'] = navigationModules.map((mod) => ({
+  const menuItems: MenuProps['items'] = modules.map((mod) => ({
     key: mod.key,
     icon: mod.icon,
     label: t(mod.labelKey),
@@ -64,12 +77,30 @@ export function AppLayout() {
     })),
   }))
 
-  const selectedKeys = navigationModules
+  const selectedKeys = modules
     .flatMap((m) => m.screens)
     .filter((s) => s.path === location.pathname)
     .map((s) => s.path)
 
-  const defaultOpenKeys = navigationModules.map((m) => m.key)
+  const moduleKeys = navigationModules.map((m) => m.key)
+
+  const isCollapsed = !isMobile && siderCollapsed
+
+  // Collapsed, an open key is a hover popup, not the user's choice of what stays open: they are kept apart.
+  function handleOpenChange(openKeys: string[]) {
+    if (isCollapsed) {
+      setPopupKeys(openKeys)
+      return
+    }
+    setOpenModules(openKeys)
+    saveOpenModules(moduleKeys, openKeys)
+  }
+
+  function toggleCollapsed() {
+    saveCollapsed(!siderCollapsed)
+    setSiderCollapsed(!siderCollapsed)
+    setPopupKeys([])
+  }
 
   const userMenuItems: MenuProps['items'] = [
     { key: 'profile', icon: <ProfileOutlined />, label: t('nav.profile'), onClick: () => navigate('/account') },
@@ -95,14 +126,16 @@ export function AppLayout() {
     <Menu
       mode="inline"
       selectedKeys={selectedKeys}
-      defaultOpenKeys={defaultOpenKeys}
+      openKeys={isCollapsed ? popupKeys : openModules}
+      onOpenChange={handleOpenChange}
       items={menuItems}
       style={{ height: '100%', borderRight: 0, paddingTop: 8 }}
     />
   )
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    // dvh, not vh: on a phone 100vh counts the address bar too, and the page always scrolls by its height.
+    <Layout style={{ minHeight: '100dvh' }}>
       <Header
         style={{
           position: 'sticky',
@@ -122,16 +155,17 @@ export function AppLayout() {
           <Button
             type="text"
             icon={!isMobile && !siderCollapsed ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
-            onClick={() => (isMobile ? setMobileDrawerOpen(true) : setSiderCollapsed((c) => !c))}
+            onClick={() => (isMobile ? setMobileDrawerOpen(true) : toggleCollapsed())}
             style={{ fontSize: 16 }}
           />
           <div className="flex items-center gap-2 select-none">
             <div
-              className="flex items-center justify-center rounded-lg text-white font-bold text-sm"
+              className="flex items-center justify-center rounded-lg font-bold text-sm"
               style={{
                 width: 32,
                 height: 32,
                 background: `linear-gradient(135deg, ${token.colorPrimary}, ${token.colorPrimaryActive})`,
+                color: onAccent(token.colorPrimary),
                 flexShrink: 0,
               }}
             >
@@ -164,7 +198,7 @@ export function AppLayout() {
               <Avatar
                 size="small"
                 icon={<UserOutlined />}
-                style={{ background: token.colorPrimary, flexShrink: 0 }}
+                style={{ background: token.colorPrimary, color: onAccent(token.colorPrimary), flexShrink: 0 }}
               />
               <span
                 className="hidden sm:block text-sm font-medium max-w-[160px] truncate"
@@ -186,7 +220,7 @@ export function AppLayout() {
             style={{
               position: 'sticky',
               top: HEADER_HEIGHT,
-              height: `calc(100vh - ${HEADER_HEIGHT}px)`,
+              height: `calc(100dvh - ${HEADER_HEIGHT}px)`,
               overflow: 'auto',
               flexShrink: 0,
               background: token.colorBgContainer,
@@ -207,11 +241,12 @@ export function AppLayout() {
             title={
               <div className="flex items-center gap-2">
                 <div
-                  className="flex items-center justify-center rounded-lg text-white font-bold text-sm"
+                  className="flex items-center justify-center rounded-lg font-bold text-sm"
                   style={{
                     width: 28,
                     height: 28,
                     background: `linear-gradient(135deg, ${token.colorPrimary}, ${token.colorPrimaryActive})`,
+                    color: onAccent(token.colorPrimary),
                   }}
                 >
                   P
@@ -228,11 +263,20 @@ export function AppLayout() {
           style={{
             padding: 24,
             background: token.colorBgLayout,
-            minHeight: `calc(100vh - ${HEADER_HEIGHT}px)`,
+            minHeight: `calc(100dvh - ${HEADER_HEIGHT}px)`,
             overflow: 'auto',
           }}
         >
-          <Outlet />
+          {loadingScreen && (
+            <div
+              aria-hidden
+              className="fixed left-0 top-0 z-[1100] h-0.5 w-full animate-pulse"
+              style={{ background: token.colorPrimary }}
+            />
+          )}
+          {currentAccess === 'allowed' && <Outlet />}
+          {currentAccess === 'feature-off' && <NotFoundPage />}
+          {currentAccess === 'forbidden' && <ForbiddenPage />}
         </Content>
       </Layout>
     </Layout>

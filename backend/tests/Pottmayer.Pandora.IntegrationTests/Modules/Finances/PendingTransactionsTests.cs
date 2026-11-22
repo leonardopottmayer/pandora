@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using Pottmayer.Pandora.IntegrationTests.Support;
+using Pottmayer.Pandora.Modules.Finances.Application.Commands.CreatePendingExpense;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.RunRecurrenceGeneration;
 using Pottmayer.Tars.Core.Mediator.Abstractions;
 using Xunit;
@@ -16,6 +18,7 @@ namespace Pottmayer.Pandora.IntegrationTests.Modules.Finances;
 public sealed class PendingTransactionsTests : IAsyncLifetime
 {
     private const string Accounts = "/api/v1/finances/accounts";
+    private const string Cards = "/api/v1/finances/cards";
     private const string RecurringTransactions = "/api/v1/finances/recurring-transactions";
     private const string PendingTransactions = "/api/v1/finances/pending-transactions";
     private const string Transactions = "/api/v1/finances/transactions";
@@ -52,6 +55,50 @@ public sealed class PendingTransactionsTests : IAsyncLifetime
 
         var txList = (await _client.GetFromJsonAsync<ListEnvelope<TxNode>>($"{Transactions}?accountId={account}"))!.Data;
         Assert.Single(txList, t => t.Id == createdTx.Id);
+    }
+
+    [Fact]
+    public async Task A_manual_expense_lands_in_the_inbox_and_approves_into_a_manual_transaction()
+    {
+        await AuthAsync("pending-manual");
+        var account = await CreateAccountAsync();
+        var userId = await UserIdAsync("pending-manual@example.com");
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var created = await scope.ServiceProvider.GetRequiredService<ISender>().Send(new CreatePendingExpenseCommand(
+                new CreatePendingExpenseInput(userId, account, null, 45.9m, new DateOnly(2026, 6, 1), "Mercado")));
+            Assert.True(created.IsSuccess);
+        }
+
+        var entry = Assert.Single(await ListPendingAsync());
+        Assert.Equal(45.9m, entry.Amount);
+
+        var approve = await _client.PostAsJsonAsync($"{PendingTransactions}/{entry.Id}/approve", new { });
+        Assert.Equal(HttpStatusCode.OK, approve.StatusCode);
+        var tx = (await approve.Content.ReadFromJsonAsync<SingleEnvelope<OriginTxNode>>())!.Data;
+        Assert.Equal("manual", tx.Origin);
+    }
+
+    [Fact]
+    public async Task A_manual_card_expense_approves_onto_a_statement_created_on_the_spot()
+    {
+        await AuthAsync("pending-manual-card");
+        var account = await CreateAccountAsync();
+        var card = await CreateCardAsync(account);
+        var userId = await UserIdAsync("pending-manual-card@example.com");
+
+        // No statement exists yet for the purchase date: approving must insert it, not update it.
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var created = await scope.ServiceProvider.GetRequiredService<ISender>().Send(new CreatePendingExpenseCommand(
+                new CreatePendingExpenseInput(userId, null, card, 120m, new DateOnly(2026, 6, 10), "Posto")));
+            Assert.True(created.IsSuccess);
+        }
+
+        var entry = Assert.Single(await ListPendingAsync());
+        var approve = await _client.PostAsJsonAsync($"{PendingTransactions}/{entry.Id}/approve", new { });
+        Assert.Equal(HttpStatusCode.OK, approve.StatusCode);
     }
 
     [Fact]
@@ -181,6 +228,21 @@ public sealed class PendingTransactionsTests : IAsyncLifetime
         return (await response.Content.ReadFromJsonAsync<SingleEnvelope<IdNode>>())!.Data.Id;
     }
 
+    private async Task<Guid> CreateCardAsync(Guid accountId)
+    {
+        var response = await _client.PostAsJsonAsync(Cards, new
+        {
+            name = "Nubank",
+            closingDay = 28,
+            dueDay = 5,
+            currency = "BRL",
+            creditLimit = 1000m,
+            accountId
+        });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync<SingleEnvelope<IdNode>>())!.Data.Id;
+    }
+
     private async Task SeedRecurringAndGenerateAsync(Guid accountId, DateOnly startDate)
     {
         await CreateRecurringAsync(new
@@ -205,6 +267,15 @@ public sealed class PendingTransactionsTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
+    private async Task<Guid> UserIdAsync(string email)
+    {
+        await using var conn = new NpgsqlConnection(_factory.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new NpgsqlCommand("SELECT id FROM identity.idt001_user WHERE email = $1", conn);
+        cmd.Parameters.AddWithValue(email);
+        return (Guid)(await cmd.ExecuteScalarAsync())!;
+    }
+
     private async Task<IReadOnlyList<PendingNode>> ListPendingAsync() =>
         (await _client.GetFromJsonAsync<ListEnvelope<PendingNode>>(PendingTransactions))!.Data;
 
@@ -223,4 +294,5 @@ public sealed class PendingTransactionsTests : IAsyncLifetime
     private sealed record IdNode(Guid Id);
     private sealed record PendingNode(Guid Id, string Status, Guid? TransactionId, decimal? Amount, string Description);
     private sealed record TxNode(Guid Id, string Status, DateOnly OccurredOn);
+    private sealed record OriginTxNode(Guid Id, string Origin);
 }

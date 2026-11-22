@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.UpdateTransaction;
 
@@ -14,5 +16,6 @@ public sealed record UpdateTransactionInput(
     Guid? UserCategoryId);
 
 /// <summary>Edits a transaction's cosmetic fields. Fails on a voided transaction.</summary>
+[RequiresPermission(FinancesPermissions.Transactions.Update)]
 public sealed class UpdateTransactionCommand(UpdateTransactionInput input)
     : CommandBase<UpdateTransactionInput, TransactionDto>(input);

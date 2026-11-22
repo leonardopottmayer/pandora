@@ -72,6 +72,25 @@ required.
 - Jobs record with `actor_user_id = user_id` for user-owned data but represent system action; a NULL
   actor denotes pure system events.
 
+## Audit screen
+
+The page follows the shared screen patterns: a heading and responsive entity/correlation filters
+above one chronological list. Only the selected entity type mounts its options query; statement
+selection loads cards first, then the chosen card's statements. Switching cards clears the selected
+statement. Entity and correlation inputs remain independent when switching modes.
+
+The complete result is fetched in 200-event batches with `skip`/`take`, using a separate query key
+from paged reads. The API's ordering is preserved (newest first for an entity, oldest first for a
+correlation). A later-page failure reports an error instead of displaying a partial result as complete.
+The list has a count footer and a sticky header inside the scrolling desktop panel; phones use page
+scrolling, with date/time below the event and no horizontal overflow.
+
+Known event codes have English and Portuguese descriptions; unknown codes remain visible as-is.
+Clicking a row or its event button opens a read-only drawer with full IDs, actor, correlation,
+timestamp, original event code and pretty-printed JSON. Non-JSON data is displayed unchanged and
+missing data has an explicit message. The UI does not infer a before/after diff from the payload.
+No backend contracts or audit-writing rules change.
+
 ## API
 
 | Method | Route | Purpose |

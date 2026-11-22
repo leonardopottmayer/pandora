@@ -6,8 +6,8 @@ namespace Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 
 /// <summary>
 /// A suggested movement awaiting the user's decision before it becomes a real
-/// <see cref="Transaction"/>: generated from a <see cref="RecurringTransaction"/> occurrence or from
-/// an imported file row. The payload stays editable while pending; once approved, rejected, or
+/// <see cref="Transaction"/>: generated from a <see cref="RecurringTransaction"/> occurrence, from
+/// an imported file row, or typed by the user through the assistant (<see cref="EntryOrigin.Manual"/>). The payload stays editable while pending; once approved, rejected, or
 /// linked to an existing transaction, the decision is terminal.
 /// </summary>
 public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
@@ -56,6 +56,7 @@ public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
 
     public bool IsPending => Status == PendingTransactionStatus.Pending;
     public bool IsImportSource => Source == EntryOrigin.Import;
+    public bool IsManualSource => Source == EntryOrigin.Manual;
 
     private PendingTransaction() { }
 
@@ -140,6 +141,45 @@ public sealed class PendingTransaction : AggregateRoot<Guid>, IAuditable
             DuplicateOfPendingId = duplicateOfPendingId,
             InstallmentNumber = installmentNumber,
             InstallmentCount = installmentCount,
+            OriginalPayload = originalPayload,
+            Status = PendingTransactionStatus.Pending,
+            CreatedAt = timeProvider.GetUtcNow()
+        };
+    }
+
+    /// <summary>
+    /// Builds a suggestion the user typed (e.g. "gastei 45 no mercado" to the assistant), held in the
+    /// inbox for review like any other. No recurrence or import provenance.
+    /// </summary>
+    public static PendingTransaction CreateManual(
+        Guid userId,
+        Guid? accountId,
+        Guid? cardId,
+        string kind,
+        decimal amount,
+        string currency,
+        DateOnly occurredOn,
+        string description,
+        string originalPayload,
+        TimeProvider timeProvider)
+    {
+        if ((accountId is null) == (cardId is null))
+            throw new ArgumentException("A manual pending transaction targets exactly one account or card.");
+        if (amount <= 0)
+            throw new ArgumentOutOfRangeException(nameof(amount), amount, "The amount must be positive.");
+
+        return new PendingTransaction
+        {
+            Id = Guid.CreateVersion7(),
+            UserId = userId,
+            Source = EntryOrigin.Manual,
+            AccountId = accountId,
+            CardId = cardId,
+            Kind = kind,
+            Amount = amount,
+            Currency = currency,
+            OccurredOn = occurredOn,
+            Description = description.Trim(),
             OriginalPayload = originalPayload,
             Status = PendingTransactionStatus.Pending,
             CreatedAt = timeProvider.GetUtcNow()

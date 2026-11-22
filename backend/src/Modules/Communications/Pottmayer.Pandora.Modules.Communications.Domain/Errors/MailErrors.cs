@@ -1,0 +1,117 @@
+using Pottmayer.Tars.Core.Primitives.Outcomes;
+
+namespace Pottmayer.Pandora.Modules.Communications.Domain.Errors;
+
+public static class MailErrors
+{
+    /// <summary>The server refused the credential. The mailbox goes <c>needs-reconnect</c>.</summary>
+    public static Error MailboxAuthFailed(string detail) =>
+        Error.Validation("Communications.MailboxAuthFailed", $"The mail server refused the login: {detail}");
+
+    /// <summary>The Google account was connected without the Gmail scopes. The screen asks to reconnect.</summary>
+    public static Error MissingScopes =>
+        Error.Validation("Communications.MissingScopes", "This Google account has not granted access to Gmail.");
+
+    /// <summary>Only writing filters needs this consent, so unlike <see cref="MissingScopes"/> the mailbox goes on.</summary>
+    public static Error MissingFilterScope =>
+        Error.Validation("Communications.MissingFilterScope", "This Google account has not granted access to change Gmail filters.");
+
+    /// <summary>The provider no longer knows the sync cursor (Gmail history expired, IMAP UIDVALIDITY changed).</summary>
+    public static Error SyncCursorExpired =>
+        Error.Validation("Communications.SyncCursorExpired", "The mailbox must be read again from the start.");
+
+    /// <summary>Anything else the provider answered with; the next cycle retries.</summary>
+    public static Error ProviderFailed(string detail) =>
+        Error.Validation("Communications.ProviderFailed", detail);
+
+    /// <summary>The cycle threw instead of answering; the details are in the server log. The next cycle retries.</summary>
+    public static Error SyncFailed =>
+        Error.Validation("Communications.SyncFailed", "The sync stopped on an unexpected error. The server log has the details.");
+
+    /// <summary>Deleting an IMAP folder deletes what is inside it, so only an empty one can go.</summary>
+    public static Error LabelNotEmpty =>
+        Error.Conflict("Communications.LabelNotEmpty", "This folder still has messages or subfolders.");
+
+    public static Error SystemLabel =>
+        Error.Validation("Communications.SystemLabel", "A system label cannot be changed.");
+
+    public static Error LabelNameInvalid =>
+        Error.Validation("Communications.LabelNameInvalid", "This name cannot be used for a label.");
+
+    public static Error NoTrashFolder =>
+        Error.Validation("Communications.NoTrashFolder", "This mailbox has no trash folder.");
+
+    public static Error NoArchiveFolder =>
+        Error.Validation("Communications.NoArchiveFolder", "This mailbox has no archive folder.");
+
+    public static Error MessageCountInvalid =>
+        Error.Validation("Communications.MessageCountInvalid", "An action takes between 1 and 100 messages.");
+
+    public static Error LabelNotFound =>
+        Error.NotFound("Communications.LabelNotFound", "This label does not exist.");
+
+    public static Error ActionNotSupported =>
+        Error.Validation("Communications.ActionNotSupported", "This mailbox does not support this action.");
+
+    /// <summary>The answer was lost after the mail was handed over. It must not be sent again without looking.</summary>
+    public static Error SendUncertain =>
+        Error.Validation("Communications.SendUncertain", "The mail server did not confirm this message. It may have been sent: check the Sent folder before sending it again.");
+
+    public static Error AlreadySent =>
+        Error.Conflict("Communications.AlreadySent", "This message was already handed to the mail server.");
+
+    public static Error RecipientsInvalid =>
+        Error.Validation("Communications.RecipientsInvalid", "The message needs at least one recipient, at most 100, and valid addresses.");
+
+    public static Error MessageTooLarge =>
+        Error.Validation("Communications.MessageTooLarge", "The message is over the size limit.");
+
+    public static Error RuleNameInvalid =>
+        Error.Validation("Communications.RuleNameInvalid", "A rule needs a name of at most 100 characters.");
+
+    public static Error RuleConditionsInvalid =>
+        Error.Validation("Communications.RuleConditionsInvalid", "A rule needs at least one condition, each with a value this mailbox supports.");
+
+    public static Error RuleActionsInvalid =>
+        Error.Validation("Communications.RuleActionsInvalid", "A rule needs at least one action this mailbox supports, and on Gmail at most one label.");
+
+    public static Error RuleReadOnly =>
+        Error.Validation("Communications.RuleReadOnly", "This filter does more than a rule can hold. Edit it in Gmail.");
+
+    public static Error RuleNotFound =>
+        Error.NotFound("Communications.RuleNotFound", "This rule does not exist.");
+
+    public static Error MailboxNotFound =>
+        Error.NotFound("Communications.MailboxNotFound", "This mailbox does not exist.");
+
+    public static Error MessageNotFound =>
+        Error.NotFound("Communications.MessageNotFound", "This message does not exist.");
+
+    public static Error AttachmentNotFound =>
+        Error.NotFound("Communications.AttachmentNotFound", "This attachment does not exist.");
+
+    /// <summary>The same answer for a missing account and someone else's.</summary>
+    public static Error AccountNotFound =>
+        Error.NotFound("Communications.AccountNotFound", "This connected account does not exist.");
+
+    public static Error UnsupportedProvider(string? provider) =>
+        Error.Validation("Communications.UnsupportedProvider", $"'{provider}' is not a mail provider.");
+
+    public static Error AccountProviderMismatch(string provider) =>
+        Error.Validation("Communications.AccountProviderMismatch", $"This account cannot be used as a '{provider}' mailbox.");
+
+    public static Error AddressRequired =>
+        Error.Validation("Communications.AddressRequired", "The mailbox needs an email address.");
+
+    public static Error ServerSettingsInvalid =>
+        Error.Validation("Communications.ServerSettingsInvalid", "The mailbox needs valid IMAP and SMTP hosts and ports.");
+
+    public static Error DisplayNameTooLong =>
+        Error.Validation("Communications.DisplayNameTooLong", $"Use at most {Entities.Mailbox.DisplayNameMaxLength} characters.");
+
+    public static Error AlreadyConnected =>
+        Error.Conflict("Communications.AlreadyConnected", "This account already has a mailbox.");
+
+    public static Error InvalidCursor =>
+        Error.Validation("Communications.InvalidCursor", "The page cursor is not valid.");
+}

@@ -20,6 +20,14 @@ internal sealed class UserPreferencesEntityConfiguration : IEntityTypeConfigurat
             tb.HasCheckConstraint(
                 "chk_idt003_language",
                 "language IN ('pt-BR', 'en')");
+
+            tb.HasCheckConstraint(
+                "chk_idt003_palette",
+                "palette IN ('default', 'claude', 'reddit')");
+
+            tb.HasCheckConstraint(
+                "chk_idt003_week_starts_on",
+                "week_starts_on IN ('sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday')");
         });
 
         builder.HasKey(p => p.Id)
@@ -48,6 +56,27 @@ internal sealed class UserPreferencesEntityConfiguration : IEntityTypeConfigurat
                .HasConversion(new AppLanguageConverter())
                .HasMaxLength(10)
                .IsRequired();
+
+        builder.Property(p => p.TimeZone)
+               .HasColumnName("time_zone")
+               .HasMaxLength(64)
+               .IsRequired();
+
+        builder.Property(p => p.WeekStartsOn)
+               .HasColumnName("week_starts_on")
+               .HasConversion(new WeekStartConverter())
+               .HasMaxLength(10)
+               .IsRequired();
+
+        builder.Property(p => p.Palette)
+               .HasColumnName("palette")
+               .HasConversion(new AppPaletteConverter())
+               .HasMaxLength(20)
+               .IsRequired();
+
+        builder.Property(p => p.AccentColor)
+               .HasColumnName("accent_color")
+               .HasMaxLength(7);
 
         builder.Property(p => p.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(p => p.CreatedBy).HasColumnName("created_by");

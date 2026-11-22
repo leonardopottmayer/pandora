@@ -92,17 +92,29 @@ export function GenerateOccurrenceModal({ open, recurring, onClose }: GenerateOc
           />
         </Form.Item>
 
+        {/* What the generating does to the schedule goes with where it goes. */}
         <Form.Item
-          name="occurredOn"
-          label={t('finances.transactions.occurredOn')}
-          rules={[{ required: true, message: t('finances.transactions.occurredOnRequired') }]}
+          name="advanceSchedule"
+          label={t('finances.recurring.advanceSchedule')}
+          extra={t('finances.recurring.advanceScheduleHint')}
+          valuePropName="checked"
         >
-          <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+          <Switch />
         </Form.Item>
 
-        <Form.Item name="amount" label={t('finances.transactions.amount')}>
-          <InputNumber style={{ width: '100%' }} min={0.01} step={0.01} />
-        </Form.Item>
+        <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+          <Form.Item
+            name="occurredOn"
+            label={t('finances.transactions.occurredOn')}
+            rules={[{ required: true, message: t('finances.transactions.occurredOnRequired') }]}
+          >
+            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+          </Form.Item>
+
+          <Form.Item name="amount" label={t('finances.transactions.amount')}>
+            <InputNumber style={{ width: '100%' }} min={0.01} step={0.01} />
+          </Form.Item>
+        </div>
 
         <Form.Item
           name="description"
@@ -116,17 +128,8 @@ export function GenerateOccurrenceModal({ open, recurring, onClose }: GenerateOc
           <Input maxLength={120} />
         </Form.Item>
 
-        <Form.Item name="notes" label={t('finances.transactions.notes')}>
+        <Form.Item name="notes" label={t('finances.transactions.notes')} className="!mb-0">
           <Input.TextArea rows={2} maxLength={500} />
-        </Form.Item>
-
-        <Form.Item
-          name="advanceSchedule"
-          label={t('finances.recurring.advanceSchedule')}
-          tooltip={t('finances.recurring.advanceScheduleHint')}
-          valuePropName="checked"
-        >
-          <Switch />
         </Form.Item>
       </Form>
     </Modal>

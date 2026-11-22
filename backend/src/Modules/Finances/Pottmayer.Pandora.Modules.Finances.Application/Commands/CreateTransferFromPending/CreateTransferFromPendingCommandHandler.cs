@@ -1,6 +1,7 @@
 using Pottmayer.Pandora.Modules.Finances.Abstractions;
 using Pottmayer.Pandora.Modules.Finances.Application.Auditing;
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
+using Pottmayer.Pandora.Modules.Finances.Application.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
@@ -28,7 +29,7 @@ public sealed class CreateTransferFromPendingCommandHandler(IUnitOfWorkFactory f
         if (input.OutflowPendingId == input.InflowPendingId)
             return Fail(PendingTransactionErrors.InvalidTransferDirections);
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var pendingRepo = ctx.AcquireRepository<IPendingTransactionRepository>();
             var accountRepo = ctx.AcquireRepository<IAccountRepository>();
@@ -92,6 +93,9 @@ public sealed class CreateTransferFromPendingCommandHandler(IUnitOfWorkFactory f
             inflow.Approve(inLeg.Id, input.UserId, timeProvider);
             await pendingRepo.UpdateAsync(outflow, token);
             await pendingRepo.UpdateAsync(inflow, token);
+            var attachments = ctx.AcquireRepository<IAttachmentRepository>();
+            await PendingAttachments.MoveToTransactionAsync(attachments, input.UserId, outflow.Id, outLeg.Id, token);
+            await PendingAttachments.MoveToTransactionAsync(attachments, input.UserId, inflow.Id, inLeg.Id, token);
 
             var correlationId = outLeg.TransferGroupId!.Value;
             foreach (var leg in new[] { outLeg, inLeg })

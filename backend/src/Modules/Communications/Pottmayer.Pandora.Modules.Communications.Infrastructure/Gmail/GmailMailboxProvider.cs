@@ -1,0 +1,501 @@
+using System.Collections.Concurrent;
+using System.Globalization;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using MimeKit;
+using Pottmayer.Pandora.Modules.Communications.Domain.Entities;
+using Pottmayer.Pandora.Modules.Communications.Domain.Errors;
+using Pottmayer.Pandora.Modules.Communications.Domain.Ports;
+using Pottmayer.Pandora.Modules.Communications.Domain.ValueObjects;
+using Pottmayer.Pandora.Modules.Integrations.Abstractions.Ports;
+using Pottmayer.Tars.Core.Primitives.Outcomes;
+
+namespace Pottmayer.Pandora.Modules.Communications.Infrastructure.Gmail;
+
+/// <summary>
+/// Gmail through its REST API, with the access token of the mailbox's Google account. Owns the wire
+/// mapping only: <c>UNREAD</c>/<c>STARRED</c> become flags, every other label id goes to the message's
+/// label set, and <c>threadId</c> is the thread key.
+/// </summary>
+/// <remarks>
+/// The sync cursor is Gmail's <c>historyId</c>; the backfill cursor is a <c>messages.list</c> page token
+/// (<see cref="FirstPage"/> for the first page).
+/// </remarks>
+internal sealed class GmailMailboxProvider(HttpClient http, IExternalCredentialProvider credentials) : IMailboxProvider
+{
+    internal const string BaseUrl = "https://gmail.googleapis.com/gmail/v1/users/me/";
+    internal const string SendUrl = "https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=multipart";
+    internal const string FirstPage = "first";
+
+    /// <summary>Read and change mail and labels, send, and list filters.</summary>
+    internal static readonly string[] AcceptedScopes =
+        ["https://www.googleapis.com/auth/gmail.modify", "https://mail.google.com/"];
+
+    /// <summary>The only scope <c>filters.create</c> and <c>filters.delete</c> accept.</summary>
+    internal const string FilterWriteScope = "https://www.googleapis.com/auth/gmail.settings.basic";
+
+    // ponytail: one GET per message, two at a time — four drew frequent rate-limit 403s on a real
+    // 64k-message backfill. The quota is 6,000 units per user per minute and a get costs 20, so at most 5 per
+    // second whatever is done here. Gmail's batch endpoint (100 per request) if the backfill is too slow.
+    internal const int ParallelGets = 2;
+
+    /// <summary>Roughly how many messages one part of a backlog reads: at 5 per second, the most a click waits.</summary>
+    internal const int ChangesBatch = 100;
+
+    private const int HistoryPageSize = 100;
+
+    private static readonly string[] MetadataHeaders = ["From", "To", "Cc", "Subject", "Message-ID"];
+    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+
+    /// <summary>A 404 on one message is an answer (it was deleted), not a failure.</summary>
+    private static readonly Error MessageGone = MailErrors.ProviderFailed("Gmail message not found.");
+
+    /// <summary>The 403 reasons Gmail uses for "slow down"; with 429 and 5xx they are retried after a pause.</summary>
+    private static readonly string[] RateLimitReasons = ["rateLimitExceeded", "userRateLimitExceeded"];
+
+    /// <summary>Pause before each retry of a throttled request; the server's <c>Retry-After</c> wins when sent.</summary>
+    internal IReadOnlyList<TimeSpan> RetryDelays { get; init; } =
+        [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(8), TimeSpan.FromSeconds(16)];
+
+    public MailboxCapabilities Capabilities { get; } = new(MultipleLabels: true, ServerFilters: true, NativeThreads: true);
+
+    public Task<Result<bool>> TestConnectionAsync(Mailbox mailbox, CancellationToken ct = default) =>
+        RunAsync(mailbox, async (token, c) =>
+        {
+            await GetAsync<Profile>(token, "profile", c);
+            return true;
+        }, ct);
+
+    public Task<Result<IReadOnlyList<RemoteLabel>>> ListLabelsAsync(Mailbox mailbox, CancellationToken ct = default) =>
+        RunAsync<IReadOnlyList<RemoteLabel>>(mailbox, async (token, c) =>
+        {
+            var response = await GetAsync<LabelList>(token, "labels", c);
+            return response.Labels.Where(l => !IsFlag(l.Id)).Select(ToLabel).ToList();
+        }, ct);
+
+    public Task<Result<BackfillStart>> StartBackfillAsync(Mailbox mailbox, CancellationToken ct = default) =>
+        RunAsync(mailbox, async (token, c) =>
+        {
+            var profile = await GetAsync<Profile>(token, "profile", c);
+            return new BackfillStart(profile.HistoryId, profile.MessagesTotal > 0 ? FirstPage : null, profile.MessagesTotal);
+        }, ct);
+
+    public Task<Result<BackfillBatch>> FetchBackfillBatchAsync(
+        Mailbox mailbox, string backfillCursor, int batchSize, CancellationToken ct = default) =>
+        RunAsync(mailbox, async (token, c) =>
+        {
+            var url = $"messages?includeSpamTrash=true&maxResults={Math.Clamp(batchSize, 1, 500)}";
+            if (backfillCursor != FirstPage)
+                url += "&pageToken=" + Uri.EscapeDataString(backfillCursor);
+
+            var page = await GetAsync<MessageList>(token, url, c);
+            var messages = await GetMetadataAsync(token, (page.Messages ?? []).Select(m => m.Id), c);
+            return new BackfillBatch(messages.Values.OrderByDescending(m => m.SentAt).ToList(), page.NextPageToken);
+        }, ct);
+
+    /// <summary>
+    /// Every message the history touched is read again in full (a 404 means it is gone), so a label change
+    /// and an arrival are the same thing to the engine: an upsert. A long backlog stops after
+    /// <see cref="ChangesBatch"/> messages, with the cursor on the last record read: history comes in increasing
+    /// <c>historyId</c>, so the rest starts there. The response's own <c>historyId</c> is the mailbox's current one,
+    /// and only means "up to date" once the last page has been read.
+    /// </summary>
+    public Task<Result<RemoteChanges>> FetchChangesAsync(Mailbox mailbox, string syncCursor, CancellationToken ct = default) =>
+        RunAsync(mailbox, async (token, c) =>
+        {
+            var touched = new HashSet<string>();
+            var deleted = new HashSet<string>();
+            var cursor = syncCursor;
+            string? pageToken = null;
+            string? lastRecord = null;
+            var hasMore = false;
+
+            do
+            {
+                var url = $"history?startHistoryId={Uri.EscapeDataString(syncCursor)}&maxResults={HistoryPageSize}";
+                if (pageToken is not null)
+                    url += "&pageToken=" + Uri.EscapeDataString(pageToken);
+
+                var page = await GetAsync<HistoryList>(token, url, c, notFound: MailErrors.SyncCursorExpired);
+                foreach (var record in page.History ?? [])
+                {
+                    lastRecord = record.Id ?? lastRecord;
+                    foreach (var m in record.Messages ?? [])
+                        touched.Add(m.Id);
+                    foreach (var d in record.MessagesDeleted ?? [])
+                        deleted.Add(d.Message.Id);
+                }
+
+                pageToken = page.NextPageToken;
+                if (pageToken is null)
+                {
+                    cursor = page.HistoryId ?? cursor;
+                }
+                else if (touched.Count + deleted.Count >= ChangesBatch && lastRecord is not null)
+                {
+                    cursor = lastRecord;
+                    hasMore = true;
+                    break;
+                }
+            } while (pageToken is not null);
+
+            touched.ExceptWith(deleted);
+            var current = await GetMetadataAsync(token, touched, c);
+            deleted.UnionWith(touched.Where(id => !current.ContainsKey(id)));
+
+            return new RemoteChanges(current.Values.ToList(), deleted.ToList(), [], cursor, hasMore);
+        }, ct);
+
+    public Task<Result<byte[]>> GetRawMessageAsync(Mailbox mailbox, string providerMessageId, CancellationToken ct = default) =>
+        RunAsync(mailbox, async (token, c) =>
+        {
+            var message = await GetAsync<RawMessage>(token, $"messages/{Uri.EscapeDataString(providerMessageId)}?format=raw", c);
+            return DecodeBase64Url(message.Raw);
+        }, ct);
+
+    public Task<Result<RemoteLabel>> CreateLabelAsync(Mailbox mailbox, string name, CancellationToken ct = default) =>
+        RunAsync(mailbox, async (token, c) =>
+            ToLabel(await SendAsync(HttpMethod.Post, token, "labels", new { name }, ReadJson<Label>, c)), ct);
+
+    public Task<Result<bool>> RenameLabelAsync(Mailbox mailbox, string providerLabelId, string newName, CancellationToken ct = default) =>
+        RunAsync(mailbox, (token, c) => SendAsync(
+            HttpMethod.Patch, token, $"labels/{Uri.EscapeDataString(providerLabelId)}", new { name = newName }, Done, c), ct);
+
+    /// <summary>The messages only lose the label: unlike an IMAP folder, nothing else goes with it.</summary>
+    public Task<Result<bool>> DeleteLabelAsync(Mailbox mailbox, string providerLabelId, CancellationToken ct = default) =>
+        RunAsync(mailbox, (token, c) => SendAsync(
+            HttpMethod.Delete, token, $"labels/{Uri.EscapeDataString(providerLabelId)}", null, Done, c), ct);
+
+    public Task<Result<bool>> SetFlagsAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, bool? isUnread, bool? isStarred, CancellationToken ct = default)
+    {
+        List<string> add = [];
+        List<string> remove = [];
+        if (isUnread is { } unread)
+            (unread ? add : remove).Add("UNREAD");
+        if (isStarred is { } starred)
+            (starred ? add : remove).Add("STARRED");
+
+        return ChangeLabelsAsync(mailbox, providerMessageIds, add, remove, ct);
+    }
+
+    public Task<Result<bool>> ChangeLabelsAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, IReadOnlyCollection<string> add, IReadOnlyCollection<string> remove,
+        CancellationToken ct = default) =>
+        RunAsync(mailbox, (token, c) => BatchModifyAsync(token, providerMessageIds, add, remove, c), ct);
+
+    /// <summary>The id does not change. Gmail has no folders: moving is taking the label and leaving the inbox.</summary>
+    public Task<Result<IReadOnlyDictionary<string, string?>>> MoveAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, string targetProviderLabelId, CancellationToken ct = default) =>
+        RunAsync<IReadOnlyDictionary<string, string?>>(mailbox, async (token, c) =>
+        {
+            await BatchModifyAsync(
+                token, providerMessageIds, [targetProviderLabelId], targetProviderLabelId == "INBOX" ? [] : ["INBOX"], c);
+            return providerMessageIds.ToDictionary(id => id, id => (string?)id);
+        }, ct);
+
+    /// <summary>
+    /// No batch form, so one call per message. A message already gone is what was asked for. If one fails midway the
+    /// others stay in the trash, and the next cycle shows them there. <c>messages.delete</c> is never called.
+    /// </summary>
+    public Task<Result<IReadOnlyDictionary<string, string?>>> TrashAsync(
+        Mailbox mailbox, IReadOnlyCollection<string> providerMessageIds, CancellationToken ct = default) =>
+        RunAsync<IReadOnlyDictionary<string, string?>>(mailbox, async (token, c) =>
+        {
+            await Parallel.ForEachAsync(providerMessageIds, new ParallelOptions { MaxDegreeOfParallelism = ParallelGets, CancellationToken = c },
+                async (id, inner) =>
+                {
+                    try
+                    {
+                        await SendAsync(HttpMethod.Post, token, $"messages/{Uri.EscapeDataString(id)}/trash", null, Done, inner, MessageGone);
+                    }
+                    catch (GmailException ex) when (ReferenceEquals(ex.Error, MessageGone))
+                    {
+                    }
+                });
+            return providerMessageIds.ToDictionary(id => id, id => (string?)id);
+        }, ct);
+
+    /// <summary>The multipart upload, since it carries the thread with the message. Gmail keeps its own sent copy.</summary>
+    public Task<Result<SentMessage>> SendAsync(Mailbox mailbox, byte[] rawMessage, string? threadKey, CancellationToken ct = default) =>
+        RunAsync(mailbox, async (token, c) =>
+        {
+            await PostMessageAsync(token, rawMessage, threadKey, c);
+            return new SentMessage(CopySaved: true);
+        }, ct);
+
+    public Task<Result<IReadOnlyList<RemoteFilter>>> ListFiltersAsync(Mailbox mailbox, CancellationToken ct = default) =>
+        RunAsync<IReadOnlyList<RemoteFilter>>(mailbox, async (token, c) =>
+        {
+            var response = await GetAsync<FilterList>(token, "settings/filters", c);
+            return (response.Filter ?? []).Select(GmailFilterMapper.ToRemote).ToList();
+        }, ct);
+
+    public Task<Result<RemoteFilter>> CreateFilterAsync(
+        Mailbox mailbox, IReadOnlyCollection<MailRuleCondition> conditions, IReadOnlyCollection<RemoteRuleAction> actions, CancellationToken ct = default) =>
+        RunAsync(mailbox, async (token, c) => GmailFilterMapper.ToRemote(await SendAsync(
+            HttpMethod.Post, token, "settings/filters", GmailFilterMapper.ToPayload(conditions, actions), ReadJson<JsonElement>, c)),
+            ct, FilterWriteScope);
+
+    public Task<Result<bool>> DeleteFilterAsync(Mailbox mailbox, string providerFilterId, CancellationToken ct = default) =>
+        RunAsync(mailbox, async (token, c) =>
+        {
+            try
+            {
+                return await SendAsync(HttpMethod.Delete, token, $"settings/filters/{Uri.EscapeDataString(providerFilterId)}", null, Done, c, MessageGone);
+            }
+            catch (GmailException ex) when (ReferenceEquals(ex.Error, MessageGone))
+            {
+                return true;
+            }
+        }, ct, FilterWriteScope);
+
+    private async Task<bool> BatchModifyAsync(
+        string token, IReadOnlyCollection<string> ids, IReadOnlyCollection<string> add, IReadOnlyCollection<string> remove, CancellationToken ct)
+    {
+        if (ids.Count == 0 || (add.Count == 0 && remove.Count == 0))
+            return true;
+
+        return await SendAsync(
+            HttpMethod.Post, token, "messages/batchModify", new { ids, addLabelIds = add, removeLabelIds = remove }, Done, ct);
+    }
+
+    private static RemoteLabel ToLabel(Label label) =>
+        new(label.Id, label.Name, label.Type == "system" ? LabelKind.System : LabelKind.User,
+            LabelRole.FromGmailLabelId(label.Id), IsExclusive: false);
+
+    /// <summary>Gets the token, checks the scope, runs <paramref name="work"/> and maps Gmail's answers to the port's errors.</summary>
+    /// <param name="writeScope">
+    /// What this one call needs beyond the mailbox's scopes. Lacking it stops only this call, whether the token says so or Gmail
+    /// does, and the second can happen: the scopes on record are the ones granted when the token was issued.
+    /// </param>
+    private async Task<Result<T>> RunAsync<T>(Mailbox mailbox, Func<string, CancellationToken, Task<T>> work, CancellationToken ct, string? writeScope = null)
+    {
+        var token = await credentials.GetAccessTokenAsync(mailbox.UserId, mailbox.ExternalAccountId, ct);
+        if (!token.IsSuccess)
+            return Result<T>.Failure(MailErrors.MailboxAuthFailed(string.Join("; ", token.Errors.Select(e => e.Message))));
+
+        if (!token.Value.Scopes.Any(s => AcceptedScopes.Contains(s)))
+            return Result<T>.Failure(MailErrors.MissingScopes);
+
+        if (writeScope is not null && !token.Value.Scopes.Contains(writeScope))
+            return Result<T>.Failure(MailErrors.MissingFilterScope);
+
+        try
+        {
+            return Result<T>.Success(await work(token.Value.Token, ct));
+        }
+        catch (GmailException ex) when (writeScope is not null && ex.Error.Code == MailErrors.MissingScopes.Code)
+        {
+            return Result<T>.Failure(MailErrors.MissingFilterScope);
+        }
+        catch (GmailException ex)
+        {
+            return Result<T>.Failure(ex.Error);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException && !ct.IsCancellationRequested)
+        {
+            return Result<T>.Failure(MailErrors.ProviderFailed(ex.Message));
+        }
+    }
+
+    private Task<T> GetAsync<T>(string token, string path, CancellationToken ct, Error? notFound = null) =>
+        SendAsync(HttpMethod.Get, token, path, null, ReadJson<T>, ct, notFound);
+
+    private static async Task<T> ReadJson<T>(HttpContent content, CancellationToken ct) =>
+        (await content.ReadFromJsonAsync<T>(Json, ct))!;
+
+    /// <summary>For the answers with nothing to read (<c>batchModify</c> and <c>labels.delete</c> have an empty body).</summary>
+    private static Task<bool> Done(HttpContent content, CancellationToken ct) => Task.FromResult(true);
+
+    /// <summary>Retrying a write is safe: each one ends in the same state, and a second create of a label is refused.</summary>
+    private async Task<T> SendAsync<T>(
+        HttpMethod method, string token, string path, object? payload, Func<HttpContent, CancellationToken, Task<T>> read,
+        CancellationToken ct, Error? notFound = null)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            using var request = new HttpRequestMessage(method, BaseUrl + path);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            if (payload is not null)
+                request.Content = JsonContent.Create(payload, payload.GetType(), options: Json);
+            using var response = await http.SendAsync(request, ct);
+
+            if (response.IsSuccessStatusCode)
+                return await read(response.Content, ct);
+
+            var body = await response.Content.ReadAsStringAsync(ct);
+            var throttled = IsRateLimited(response.StatusCode, body) || (int)response.StatusCode >= 500;
+            if (throttled && attempt < RetryDelays.Count)
+            {
+                await Task.Delay(response.Headers.RetryAfter?.Delta ?? RetryDelays[attempt], ct);
+                continue;
+            }
+
+            throw new GmailException(ToError(response.StatusCode, body, path, notFound));
+        }
+    }
+
+    /// <summary>
+    /// Unlike every other write, this one cannot be repeated on a doubt: a 5xx, a timeout or a dropped connection may
+    /// come after Gmail took the mail. Only a rate limit certainly means it did not go.
+    /// </summary>
+    private async Task<bool> PostMessageAsync(string token, byte[] rawMessage, string? threadKey, CancellationToken ct)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, SendUrl);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Content = new MultipartContent("related")
+            {
+                JsonContent.Create(
+                    threadKey is null ? new Dictionary<string, string>() : new Dictionary<string, string> { ["threadId"] = threadKey },
+                    options: Json),
+                new ByteArrayContent(rawMessage) { Headers = { ContentType = new MediaTypeHeaderValue("message/rfc822") } },
+            };
+
+            HttpResponseMessage answer;
+            try
+            {
+                answer = await http.SendAsync(request, ct);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+            {
+                throw new GmailException(MailErrors.SendUncertain);
+            }
+
+            using var response = answer;
+            if (response.IsSuccessStatusCode)
+                return true;
+            if ((int)response.StatusCode >= 500)
+                throw new GmailException(MailErrors.SendUncertain);
+
+            var body = await response.Content.ReadAsStringAsync(ct);
+            if (IsRateLimited(response.StatusCode, body) && attempt < RetryDelays.Count)
+            {
+                await Task.Delay(response.Headers.RetryAfter?.Delta ?? RetryDelays[attempt], ct);
+                continue;
+            }
+
+            throw new GmailException(ToError(response.StatusCode, body, "messages/send", null));
+        }
+    }
+
+    private static bool IsRateLimited(HttpStatusCode status, string body) =>
+        status is HttpStatusCode.TooManyRequests
+        || (status == HttpStatusCode.Forbidden && RateLimitReasons.Any(r => body.Contains(r, StringComparison.Ordinal)));
+
+    private static Error ToError(HttpStatusCode status, string body, string path, Error? notFound) => status switch
+    {
+        HttpStatusCode.Unauthorized => MailErrors.MailboxAuthFailed("Gmail rejected the access token."),
+        HttpStatusCode.Forbidden when body.Contains("insufficientPermissions", StringComparison.Ordinal)
+            || body.Contains("ACCESS_TOKEN_SCOPE_INSUFFICIENT", StringComparison.Ordinal) => MailErrors.MissingScopes,
+        HttpStatusCode.NotFound when notFound is not null => notFound,
+        _ => MailErrors.ProviderFailed($"Gmail answered {(int)status}{Reason(body)} on {path.Split('?')[0]}.")
+    };
+
+    /// <summary>Gmail's own reason for an error (<c>error.errors[0].reason</c>, else <c>error.status</c>), for the mailbox's last error.</summary>
+    private static string Reason(string body)
+    {
+        try
+        {
+            using var json = JsonDocument.Parse(body);
+            var error = json.RootElement.GetProperty("error");
+            var reason = error.TryGetProperty("errors", out var errors) && errors.GetArrayLength() > 0
+                         && errors[0].TryGetProperty("reason", out var r) ? r.GetString()
+                : error.TryGetProperty("status", out var status) ? status.GetString()
+                : null;
+            return reason is null ? string.Empty : $" ({reason})";
+        }
+        catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException)
+        {
+            return string.Empty;
+        }
+    }
+
+    /// <summary>The messages that still exist, by id; a 404 leaves the id out.</summary>
+    private async Task<Dictionary<string, RemoteMessage>> GetMetadataAsync(
+        string token, IEnumerable<string> ids, CancellationToken ct)
+    {
+        var headers = string.Concat(MetadataHeaders.Select(h => "&metadataHeaders=" + h));
+        var found = new ConcurrentDictionary<string, RemoteMessage>();
+
+        await Parallel.ForEachAsync(ids, new ParallelOptions { MaxDegreeOfParallelism = ParallelGets, CancellationToken = ct },
+            async (id, c) =>
+            {
+                try
+                {
+                    var message = await GetAsync<Message>(
+                        token, $"messages/{Uri.EscapeDataString(id)}?format=metadata{headers}", c, notFound: MessageGone);
+                    found[id] = ToRemote(message);
+                }
+                catch (GmailException ex) when (ReferenceEquals(ex.Error, MessageGone))
+                {
+                }
+            });
+
+        return new Dictionary<string, RemoteMessage>(found);
+    }
+
+    internal static RemoteMessage ToRemote(Message message)
+    {
+        var headers = (message.Payload?.Headers ?? [])
+            .GroupBy(h => h.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().Value, StringComparer.OrdinalIgnoreCase);
+        var labels = message.LabelIds ?? [];
+
+        return new RemoteMessage(
+            ProviderMessageId: message.Id,
+            ThreadKey: message.ThreadId,
+            Rfc822MessageId: headers.TryGetValue("Message-ID", out var messageId) ? messageId.Trim().Trim('<', '>') : null,
+            From: Addresses(headers.GetValueOrDefault("From")).FirstOrDefault(),
+            To: Addresses(headers.GetValueOrDefault("To")),
+            Cc: Addresses(headers.GetValueOrDefault("Cc")),
+            Subject: headers.GetValueOrDefault("Subject") ?? string.Empty,
+            Snippet: WebUtility.HtmlDecode(message.Snippet ?? string.Empty),
+            SentAt: DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(message.InternalDate, CultureInfo.InvariantCulture)),
+            IsUnread: labels.Contains("UNREAD"),
+            IsStarred: labels.Contains("STARRED"),
+            HasAttachments: string.Equals(message.Payload?.MimeType, "multipart/mixed", StringComparison.OrdinalIgnoreCase),
+            SizeBytes: message.SizeEstimate,
+            ProviderLabelIds: labels.Where(l => !IsFlag(l)).ToList());
+    }
+
+    private static List<MailAddress> Addresses(string? header) =>
+        header is not null && InternetAddressList.TryParse(header, out var list)
+            ? list.Mailboxes.Select(m => new MailAddress(string.IsNullOrWhiteSpace(m.Name) ? null : m.Name, m.Address)).ToList()
+            : [];
+
+    private static bool IsFlag(string labelId) => labelId is "UNREAD" or "STARRED";
+
+    private static byte[] DecodeBase64Url(string value)
+    {
+        var base64 = value.Replace('-', '+').Replace('_', '/');
+        return Convert.FromBase64String(base64.PadRight(base64.Length + (4 - base64.Length % 4) % 4, '='));
+    }
+
+    private sealed class GmailException(Error error) : Exception(error.Message)
+    {
+        public Error Error { get; } = error;
+    }
+
+    // Wire shapes (only the fields read).
+    internal sealed record Profile(string EmailAddress, int MessagesTotal, string HistoryId);
+    internal sealed record LabelList(List<Label> Labels);
+    internal sealed record Label(string Id, string Name, string? Type);
+    internal sealed record MessageList(List<MessageRef>? Messages, string? NextPageToken);
+    internal sealed record MessageRef(string Id);
+    internal sealed record HistoryList(List<HistoryRecord>? History, string? NextPageToken, string? HistoryId);
+    internal sealed record HistoryRecord(string? Id, List<MessageRef>? Messages, List<MessageDeleted>? MessagesDeleted);
+    internal sealed record MessageDeleted(MessageRef Message);
+    internal sealed record Message(
+        string Id, string ThreadId, List<string>? LabelIds, string? Snippet, long SizeEstimate, string InternalDate, Payload? Payload);
+    internal sealed record Payload(string? MimeType, List<Header>? Headers);
+    internal sealed record Header(string Name, string Value);
+    internal sealed record RawMessage(string Raw);
+
+    /// <summary>Kept as JSON: what does not fit a rule has to be saved as Gmail sent it.</summary>
+    internal sealed record FilterList(List<JsonElement>? Filter);
+}

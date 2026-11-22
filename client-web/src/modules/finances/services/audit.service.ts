@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api/client'
+import { fetchAllPages } from './transactions.service'
 import type { AuditEventDto } from '../models'
 
 const BASE = '/api/v1.0/finances/audit'
@@ -24,4 +25,9 @@ export async function listAuditTimeline(
     },
   })
   return data
+}
+
+/** Every event matching an entity or correlation, across all API pages. */
+export function listAllAuditTimeline(params: Omit<AuditTimelineParams, 'skip' | 'take'>): Promise<AuditEventDto[]> {
+  return fetchAllPages((skip, take) => listAuditTimeline({ ...params, skip, take }))
 }

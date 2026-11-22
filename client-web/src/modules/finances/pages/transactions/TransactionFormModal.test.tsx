@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import dayjs from 'dayjs'
 import i18n from '@/i18n'
 import { server } from '@/test/msw/server'
 import { FINANCES_BASE } from '@/test/constants'
@@ -39,6 +40,14 @@ describe('TransactionFormModal', () => {
     expect(await screen.findByText('Select an account.')).toBeInTheDocument()
     expect(await screen.findByText('Enter the description.')).toBeInTheDocument()
     expect(posted).toBe(false)
+  })
+
+  it('starts on today, with payee and notes folded away', async () => {
+    server.use(...lookupHandlers())
+    renderWithProviders(<TransactionFormModal open onClose={vi.fn()} />)
+
+    expect(await screen.findByDisplayValue(dayjs().format('DD/MM/YYYY'))).toBeInTheDocument()
+    expect(screen.getByText('Payee and notes').closest('details')).not.toHaveAttribute('open')
   })
 
   it('switches to a card target, revealing the installments field', async () => {

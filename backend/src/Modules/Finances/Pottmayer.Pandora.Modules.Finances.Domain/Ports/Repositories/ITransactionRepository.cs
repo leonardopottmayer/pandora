@@ -1,5 +1,5 @@
-using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
-using Pottmayer.Tars.Data.Relational.Abstractions.Repositories;
+﻿using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
+using Pottmayer.Tars.Data.Abstractions.Repositories;
 
 namespace Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 
@@ -33,10 +33,10 @@ public interface ITransactionRepository : IStandardRepository<Transaction, Guid>
     Task<IReadOnlyList<Transaction>> QueryAsync(
         Guid userId, TransactionFilter filter, CancellationToken ct = default);
 
-    /// <summary>Signed sum of the account's <c>posted</c> entries — the current balance (D1).</summary>
+    /// <summary>Signed sum of the account's <c>posted</c> entries â€” the current balance (D1).</summary>
     Task<decimal> GetPostedBalanceAsync(Guid accountId, Guid userId, CancellationToken ct = default);
 
-    /// <summary>Balance including <c>pending</c> (scheduled/future) entries — the projected balance.</summary>
+    /// <summary>Balance including <c>pending</c> (scheduled/future) entries â€” the projected balance.</summary>
     Task<decimal> GetProjectedBalanceAsync(Guid accountId, Guid userId, CancellationToken ct = default);
 
     Task<IReadOnlyList<Transaction>> GetByStatementAsync(Guid statementId, Guid userId, CancellationToken ct = default);

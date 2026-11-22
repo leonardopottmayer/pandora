@@ -18,7 +18,7 @@ public sealed class GetTransactionQueryHandler(IUnitOfWorkFactory factory, IMess
     {
         var input = request.Input;
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var tx = await ctx.AcquireRepository<ITransactionRepository>()
                 .FindByIdForUserAsync(input.Id, input.UserId, token);

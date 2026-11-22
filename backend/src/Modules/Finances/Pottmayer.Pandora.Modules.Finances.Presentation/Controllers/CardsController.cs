@@ -54,7 +54,7 @@ public sealed class CardsController(
     {
         var command = new CreateCardCommand(new CreateCardInput(
             UserId, request.Name, request.Brand, request.LastFour, request.CreditLimit,
-            request.ClosingDay, request.DueDay, request.Currency, request.DefaultPaymentAccountId));
+            request.ClosingDay, request.DueDay, request.Currency, request.AccountId));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
@@ -64,7 +64,7 @@ public sealed class CardsController(
     {
         var command = new UpdateCardCommand(new UpdateCardInput(
             UserId, id, request.Name, request.Brand, request.LastFour, request.CreditLimit,
-            request.ClosingDay, request.DueDay, request.DefaultPaymentAccountId));
+            request.ClosingDay, request.DueDay, request.AccountId));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }

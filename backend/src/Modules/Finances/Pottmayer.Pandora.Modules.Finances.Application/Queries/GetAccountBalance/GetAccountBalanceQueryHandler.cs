@@ -16,7 +16,7 @@ public sealed class GetAccountBalanceQueryHandler(IUnitOfWorkFactory factory)
     {
         var input = request.Input;
 
-        var dto = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var dto = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var accounts = ctx.AcquireRepository<IAccountRepository>();
             var account = await accounts.FindByIdForUserAsync(input.AccountId, input.UserId, token);

@@ -26,6 +26,9 @@ public sealed class SignInCommandHandler(
     TimeProvider timeProvider)
     : CommandHandlerBase<SignInCommand, SignInResultDto>
 {
+    // Hashed on the first unknown-user sign-in, then reused (the app has a single hasher).
+    private static string? DummyPasswordHash;
+
     private sealed record SignInOutcome(Guid UserId, bool MfaRequired, string? Ticket, DateTimeOffset ChallengeExpiresAt);
 
     protected override async Task<Result<SignInResultDto>> HandleAsync(SignInCommand request, CancellationToken ct)
@@ -35,7 +38,7 @@ public sealed class SignInCommandHandler(
 
         // Verify credentials within a single transaction. MFA accounts get a challenge ticket instead of
         // tokens and only have their sign-in stamped once the second factor is completed.
-        var outcome = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
+        var outcome = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
             var users = ctx.AcquireRepository<IUserRepository>();
 
@@ -43,11 +46,22 @@ public sealed class SignInCommandHandler(
                 ? await users.FindByEmailAsync(email!, token)
                 : await users.FindByUsernameAsync(input.EmailOrUsername, token);
 
-            if (user is null || !user.VerifyPassword(input.Password, passwordHasher))
+            if (user is null)
+            {
+                // Hash anyway so that an unknown username takes as long as a wrong password.
+                passwordHasher.Verify(input.Password, DummyPasswordHash ??= passwordHasher.Hash("pandora-dummy-password"));
+                return Result<SignInOutcome>.Failure([IdentityErrors.InvalidCredentials]);
+            }
+
+            if (!user.VerifyPassword(input.Password, passwordHasher))
                 return Result<SignInOutcome>.Failure([IdentityErrors.InvalidCredentials]);
 
             if (!user.CanAuthenticate)
                 return Result<SignInOutcome>.Failure([IdentityErrors.AccountNotActive]);
+
+            // Only after the right password, so the answer reveals nothing to someone guessing.
+            if (user.IsAwaitingApproval)
+                return Result<SignInOutcome>.Failure([IdentityErrors.PendingApproval]);
 
             if (user.MfaEnabled)
             {

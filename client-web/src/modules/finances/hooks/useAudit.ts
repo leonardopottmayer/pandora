@@ -11,3 +11,12 @@ export function useAuditTimeline(params: AuditTimelineParams = {}, enabled = tru
     enabled,
   })
 }
+
+/** Complete timeline for the current filter; kept separate from paged query results. */
+export function useAllAuditTimeline(params: Omit<AuditTimelineParams, 'skip' | 'take'>, enabled: boolean) {
+  return useQuery({
+    queryKey: financeKeys.auditTimeline({ ...params, take: -1 }),
+    queryFn: () => auditService.listAllAuditTimeline(params),
+    enabled,
+  })
+}

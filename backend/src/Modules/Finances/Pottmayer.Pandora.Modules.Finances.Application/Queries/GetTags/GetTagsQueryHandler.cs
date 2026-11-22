@@ -12,7 +12,7 @@ public sealed class GetTagsQueryHandler(IUnitOfWorkFactory factory)
 {
     protected override async Task<Result<IReadOnlyList<TagDto>>> HandleAsync(GetTagsQuery request, CancellationToken ct)
     {
-        var tags = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var tags = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             return await ctx.AcquireRepository<ITagRepository>().GetAllForUserAsync(request.Input.UserId, token);
         }, cancellationToken: ct);

@@ -29,6 +29,8 @@ Migrations em `migrations/migrations/finances/`.
 | fin014 | `import_row` | Linhas parseadas |
 | fin015 | *(reservado)* | Regras de categorização — **ainda não implementado** |
 | fin016 | `audit_event` | Log de auditoria append-only |
+| fin017 | `attachment` | Arquivos de um lançamento, sugestão ou fatura (boleto, comprovante, nota fiscal), ou na fila |
+| fin018 | `file_blob` | Os bytes por trás da fin017 |
 
 ---
 
@@ -94,11 +96,11 @@ auto-referenciando `fin003`. Único `uq_fin003_user_name_parent (user_id, name, 
 | `closing_day` | int NOT NULL | **1..28** |
 | `due_day` | int NOT NULL | **1..28** |
 | `currency` | varchar(10) NOT NULL | imutável |
-| `default_payment_account_id` | uuid NULL → fin001 | |
+| `account_id` | uuid NOT NULL → fin001 | conta a que o cartão pertence; o banco dela roteia imports |
 | `archived_at` | timestamptz NULL | |
 
 Constraints: `uq_fin006_user_name`, `ck_fin006_closing_day/due_day (BETWEEN 1 AND 28)`,
-`ck_fin006_credit_limit`, `fk_fin006_default_payment_account_id`. Índice `(user_id, archived_at)`.
+`ck_fin006_credit_limit`, `fk_fin006_account_id`. Índices `(user_id, archived_at)`, `(account_id)`.
 
 > A faixa 1..28 evita ambiguidade com o tamanho do mês (nenhum cartão fecha no dia 30 de fevereiro).
 
@@ -171,9 +173,9 @@ A tabela central. Construída ao longo de várias migrations; forma final:
 | Coluna | Tipo | Notas |
 |---|---|---|
 | `id` / `user_id` / `card_id → fin006` | uuid | |
-| `origin` | varchar(10) DEFAULT 'manual' | `manual\|import` |
+| `origin` | varchar(10) DEFAULT 'manual' | `manual\|import` — hoje só `manual` é gravado; `import` está reservado no schema (ver [Parcelamento](installments.md)) |
 | `total_amount` | numeric(20,8) | `> 0` |
-| `total_is_estimate` | boolean DEFAULT false | true para planos inferidos de importação |
+| `total_is_estimate` | boolean DEFAULT false | reservado para planos inferidos de importação (ainda não produzido) |
 | `installment_count` | smallint | `>= 2` |
 | `first_reference_month` | varchar(7) | `yyyy-MM` |
 | `description` | varchar(255) | |
@@ -273,6 +275,24 @@ sinal, `installmentPatterns`). Populado com layouts para Viacredi, Nubank, Banco
 FKs para fin011/fin008 são **lógicas** (sem FK física) para evitar acoplamento entre importações.
 Índices `(import_file_id)`, parcial `(dedup_key)`, `(external_id)`, `(pending_transaction_id)`.
 
+## fin017_attachment / fin018_file_blob — anexos
+
+Um arquivo (imagem ou PDF, até 25 MB) em **no máximo um** de `transaction_id` (fin008),
+`pending_transaction_id` (fin011) ou `card_statement_id` (fin007) — `ck_fin017_one_owner`. Sem nenhum ele
+está **na fila**: um arquivo mandado ao bot do assistente (`FinancesFileQueue`), esperando o usuário
+atribuí-lo (`POST /attachments/{id}/assign`, uma vez só); `note` guarda a legenda com que chegou, e o
+índice parcial `ix_fin017_queued` atende a fila. `kind` ∈ `bill` (boleto) · `receipt`
+(comprovante) · `invoice` (nota fiscal) · `other`. `storage_backend` + `storage_key` dizem onde estão os
+bytes: hoje `Database`, um id de linha na `fin018_file_blob` (a tabela de blobs do próprio módulo, via o
+`IFileStorage` compartilhado com a chave `finances`); linhas gravadas antes de um backend S3 continuam
+lendo do banco, sem migration.
+
+O boleto do mês é anexado à sugestão que a recorrência gerou; **aprovar**, **vincular** ou **transferir**
+a sugestão leva os anexos para o lançamento, onde o comprovante se junta a eles. Rejeitar os mantém na
+sugestão rejeitada. Lançamentos nunca são excluídos de fato (cancelar mantém os arquivos). Adicionar/remover
+(e atribuir um arquivo da fila) grava `transaction.attachment-added|removed` (ou `pending.…`, `statement.…`)
+no dono; um arquivo na fila não tem dono nem trilha.
+
 ## fin016_audit_event — append-only
 
 | Coluna | Tipo | Notas |
@@ -307,4 +327,7 @@ erDiagram
     IMPORT_FILE }o--o| IMPORT_LAYOUT : "parseada com"
     TAG ||--o{ TAG_LINK : ""
     TRANSACTION ||--o{ TAG_LINK : "polimórfico"
+    TRANSACTION ||--o{ ATTACHMENT : "arquivos"
+    PENDING_TRANSACTION ||--o{ ATTACHMENT : "arquivos (vão na aprovação)"
+    CARD_STATEMENT ||--o{ ATTACHMENT : "arquivos"
 ```

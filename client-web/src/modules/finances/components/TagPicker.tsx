@@ -6,21 +6,26 @@ interface TagPickerProps {
   value?: string[]
   onChange?: (value: string[]) => void
   disabled?: boolean
+  placeholder?: string
+  className?: string
+  'aria-label'?: string
 }
 
-/** Multi-select tag picker for the user (returns the list of tagIds). */
-export function TagPicker({ value, onChange, disabled }: TagPickerProps) {
+/** Multi-select tag picker for the user (returns the list of tagIds). Full width unless given a className. */
+export function TagPicker({ value, onChange, disabled, placeholder, className, 'aria-label': ariaLabel }: TagPickerProps) {
   const { t } = useTranslation()
   const { data: tags, isLoading } = useTags()
 
   return (
     <Select
       mode="multiple"
-      style={{ width: '100%' }}
+      className={className}
+      style={className ? undefined : { width: '100%' }}
+      aria-label={ariaLabel}
       disabled={disabled}
       loading={isLoading}
       allowClear
-      placeholder={t('finances.tags.selectPlaceholder')}
+      placeholder={placeholder ?? t('finances.tags.selectPlaceholder')}
       value={value}
       onChange={onChange}
       optionFilterProp="label"

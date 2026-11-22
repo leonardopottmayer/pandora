@@ -7,6 +7,7 @@ using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
+using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.DataContext;
@@ -17,6 +18,7 @@ namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateTransact
 public sealed class CreateTransactionCommandHandler(
     IUnitOfWorkFactory factory,
     IStatementResolver statementResolver,
+    IEffectiveTimeZoneResolver timeZones,
     TimeProvider timeProvider)
     : CommandHandlerBase<CreateTransactionCommand, TransactionDto>
 {
@@ -25,7 +27,7 @@ public sealed class CreateTransactionCommandHandler(
     {
         var input = request.Input;
         var now = timeProvider.GetUtcNow();
-        var today = DateOnly.FromDateTime(now.UtcDateTime);
+        var today = await timeZones.ResolveTodayAsync(input.UserId, now, ct);
 
         if (string.IsNullOrWhiteSpace(input.Description))
             return Fail(TransactionErrors.InvalidDescription);
@@ -64,7 +66,7 @@ public sealed class CreateTransactionCommandHandler(
 
         if (input.AccountId is not null)
         {
-            var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+            var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
             {
                 var transactions = ctx.AcquireRepository<ITransactionRepository>();
                 var accounts = ctx.AcquireRepository<IAccountRepository>();
@@ -117,7 +119,7 @@ public sealed class CreateTransactionCommandHandler(
 
         // Resolving/creating the statement runs in its own unit of work, separate from the
         // transaction write below, so its "statement.created" event (if any) is recorded up front.
-        var statementResult = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var statementResult = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var cards = ctx.AcquireRepository<ICardRepository>();
             var statements = ctx.AcquireRepository<ICardStatementRepository>();
@@ -157,7 +159,7 @@ public sealed class CreateTransactionCommandHandler(
         var cardContext = prepared.Card;
         var statementContext = prepared.Statement.Statement;
 
-        var transactionResult = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var transactionResult = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var statements = ctx.AcquireRepository<ICardStatementRepository>();
             var transactions = ctx.AcquireRepository<ITransactionRepository>();
@@ -217,7 +219,7 @@ public sealed class CreateTransactionCommandHandler(
     {
         var count = input.Installments;
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var cards = ctx.AcquireRepository<ICardRepository>();
             var statements = ctx.AcquireRepository<ICardStatementRepository>();

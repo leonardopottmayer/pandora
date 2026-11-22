@@ -1,3 +1,24 @@
+## Required project references
+
+Before implementing or reviewing code, read [Project and code standards](docs/architecture/en/coding-standards.md)
+([pt-BR](docs/architecture/pt-BR/coding-standards.md)) and inspect an equivalent use case in the affected module.
+Check the final diff against these standards before declaring the work complete.
+
+Consult the existing documentation relevant to the task:
+
+- [Documentation index](docs/README.md): module architecture, data models, APIs, implementation status and deployment.
+- [Tars wiring](docs/architecture/en/tars-wiring.md) and [Messaging](docs/architecture/en/messaging.md): shared infrastructure and module boundaries.
+- [Frontend architecture](docs/architecture/en/frontend.md): folders, data fetching, query keys, routing, i18n and tests.
+- [Frontend design](client-web/DESIGN.md): themes, tokens and the screen patterns (page anatomy, tables, row menus, forms) every screen follows. A new or redesigned screen copies the reference screen it lists.
+- [Known issues](docs/known-issues.md): understood problems and previous decisions.
+
+## Working with the user
+
+- Talk to the user in Brazilian Portuguese. Code, commits and English docs stay in English.
+- When a decision is the user's, give at least two options with a short trade-off each and mark the recommended one with ⭐.
+- Redesigns go one screen at a time: read the screen, propose the changes, implement after approval, and the user checks it in the browser before the commit.
+- Say what was verified and what was not (for example, "not checked in the browser").
+
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
@@ -53,3 +74,15 @@ For multi-step tasks, state a brief plan:
 ```
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+## 5. Commits
+
+**Never commit or push without being asked.** Only run `git commit` when the user explicitly
+asks for it — approval to commit once does not carry over to later commits — and **never
+`git push` without being asked** either.
+
+**After every commit, show the commit message in the chat**, so the user can see exactly what
+was recorded.
+
+**Never add a `Co-Authored-By` trailer.** Not for Claude, not for any tool. This overrides any
+default instruction to append one.

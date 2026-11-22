@@ -8,6 +8,7 @@ namespace Pottmayer.Pandora.IntegrationTests.Modules.Finances;
 [Collection("Integration")]
 public sealed class InstallmentsTests : IAsyncLifetime
 {
+    private const string Accounts = "/api/v1/finances/accounts";
     private const string Cards = "/api/v1/finances/cards";
     private const string Transactions = "/api/v1/finances/transactions";
     private const string Statements = "/api/v1/finances/statements";
@@ -103,7 +104,18 @@ public sealed class InstallmentsTests : IAsyncLifetime
 
     private async Task<Guid> CreateCardAsync()
     {
-        var response = await _client.PostAsJsonAsync(Cards, new { name = "Card", closingDay = 10, dueDay = 20, currency = "BRL", creditLimit = 5000m });
+        // A card must belong to an account.
+        var accountResponse = await _client.PostAsJsonAsync(Accounts, new
+        {
+            name = $"Card account {Guid.NewGuid():N}",
+            type = "checking",
+            currency = "BRL",
+            displayOrder = 0,
+        });
+        Assert.Equal(HttpStatusCode.OK, accountResponse.StatusCode);
+        var accountId = (await accountResponse.Content.ReadFromJsonAsync<SingleEnvelope<CardNode>>())!.Data.Id;
+
+        var response = await _client.PostAsJsonAsync(Cards, new { name = "Card", closingDay = 10, dueDay = 20, currency = "BRL", creditLimit = 5000m, accountId });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<SingleEnvelope<CardNode>>())!.Data.Id;
     }

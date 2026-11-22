@@ -3,6 +3,7 @@ using Pottmayer.Pandora.Modules.Identity.Abstractions;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.Activation;
 using Pottmayer.Pandora.Modules.Identity.Application.Options;
 using Pottmayer.Pandora.Modules.Identity.Application.Security;
+using Pottmayer.Pandora.Modules.Identity.Application.Services;
 using Pottmayer.Pandora.Modules.Identity.Contracts.IntegrationEvents;
 using Pottmayer.Pandora.Modules.Identity.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Identity.Domain.Entities;
@@ -23,6 +24,7 @@ public sealed class SignUpCommandHandler(
     IPasswordHasher passwordHasher,
     IIntegrationEventBus integrationEventBus,
     IOptions<AccountActivationOptions> activationOptions,
+    AccountApprovalRule approvalRule,
     TimeProvider timeProvider)
     : CommandHandlerBase<SignUpCommand, SignUpResult>
 {
@@ -49,7 +51,7 @@ public sealed class SignUpCommandHandler(
         var activationToken = ActivationTokens.Generate();
         var now = timeProvider.GetUtcNow();
 
-        var result = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
             var users = ctx.AcquireRepository<IUserRepository>();
 
@@ -69,22 +71,21 @@ public sealed class SignUpCommandHandler(
                 now + activationOptions.Value.TokenLifetime);
             await ctx.AcquireRepository<IActivationTokenRepository>().AddAsync(activation, token);
 
-            return Ok(new SignUpResult(user.Id));
-        }, cancellationToken: ct);
-
-        // After commit, ask Notifications to send the activation e-mail (in-process; broker-ready).
-        if (result.IsSuccess && result.Value is { } signUp)
-        {
+            // Ask Channels to send the activation e-mail. Published inside the unit of work: the
+            // outbox row commits with the new user and activation token, so the account and its
+            // "send the activation e-mail" fact can never disagree (transactional outbox).
             var activationRequested = new AccountActivationRequested(
                 EventId: Guid.CreateVersion7(),
                 OccurredAt: now,
-                UserId: signUp.UserId,
+                UserId: user.Id,
                 Email: email!.Value,
                 Token: activationToken,
-                Locale: CultureInfo.CurrentUICulture.Name);
+                Locale: CultureInfo.CurrentUICulture.Name,
+                RequiresApproval: approvalRule.Applies(email.Value));
+            await integrationEventBus.PublishAsync(activationRequested, token);
 
-            await integrationEventBus.PublishAsync(activationRequested, ct);
-        }
+            return Ok(new SignUpResult(user.Id));
+        }, cancellationToken: ct);
 
         return result;
     }

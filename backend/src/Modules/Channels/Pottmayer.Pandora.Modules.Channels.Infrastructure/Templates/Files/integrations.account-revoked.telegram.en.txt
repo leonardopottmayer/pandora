@@ -1,0 +1,1 @@
+⚠️ Pandora lost access to your {{provider}} account. Reconnect it under Settings → Integrations to resume.

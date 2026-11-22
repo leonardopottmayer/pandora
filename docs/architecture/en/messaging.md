@@ -1,0 +1,183 @@
+# Messaging — Integration Event Bus
+
+> **Status:** Decided. Everything runs in-process, in one deployable. There is no broker and there
+> are no separate workers.
+> 🇧🇷 [Versão em português](../pt-BR/messaging.md)
+>
+> Cross-cutting document: it describes a decision no single module owns.
+> Affected modules: every one that publishes or handles an event — Identity, Channels, Agenda,
+> Integrations, Assistant, Communications — and every one with a background job (§3).
+> See also: [How Pandora is wired to Tars](tars-wiring.md) for the concrete `AddTars*` calls behind everything below.
+
+---
+
+## 1. Where we are
+
+Tars already abstracts the transport. `IIntegrationEventBus` is implemented by
+`OutboxIntegrationEventBus` (`Pottmayer.Tars.Messaging.EntityFrameworkCore`): publishing writes a row
+in the producer's own transaction, and a relay per producing database drains it to the in-process
+handlers in a fresh DI scope. Routing happens by the logical `IntegrationEventName`, not by the .NET
+type. See [tars/docs/messaging](../../../../tars/docs/messaging/overview.md) for the mechanism itself
+and [tars/docs/messaging/outbox.md](../../../../tars/docs/messaging/outbox.md) for the outbox; the
+wiring for Pandora specifically is in
+[`OutboxRegistration.cs`](../../../backend/src/Host/Pottmayer.Pandora.Host/OutboxRegistration.cs).
+
+That is the whole mechanism. A producer publishes a fact, the row lands in its database's outbox
+table, the relay for that database picks it up, and the handlers registered for that name run.
+Nothing crosses a network boundary.
+
+---
+
+## 2. The decision: in-process, one process
+
+Pandora is a modular monolith and stays one. Modules talk through the in-process bus and through
+synchronous ports; nothing crosses a network boundary to reach another module.
+
+The reasoning is the size of the problem. This is a personal system with one user and one deploy. A
+broker buys durability across process restarts and back-pressure across machines — neither of which
+is a problem here — and charges infrastructure to run, a second delivery path to keep working, and a
+class of failure (a message stuck in a queue nobody is watching) that is harder to debug than the
+exception it replaced. The modules that would have consumed from queues are in the same process as
+the ones publishing to them.
+
+What this does **not** give up is the seam. Producers and consumers only know
+`IIntegrationEventBus` and a logical event name. If the shape of the problem changes, a different
+transport is a composition-root change and no handler moves. That is what makes this decision cheap
+to revisit rather than a wall — see §6.
+
+---
+
+## 3. Asynchrony without a broker
+
+Some work genuinely cannot happen inside the request that triggered it: an HTTP handler that must
+answer quickly, or a task that takes tens of seconds. The answer is a **job in the module that owns
+the work**, over that module's own table — not a queue in front of another process.
+
+The shape is in every module that has work to do later:
+
+| Module | Table | Job |
+|---|---|---|
+| Identity | `idt002_stored_refresh_token` | `RefreshTokenPurgeBackgroundService` purges old refresh tokens |
+| Channels | `chn006_notification` | `NotificationDispatcherBackgroundService` drains what is due |
+| Channels | `chn004_inbound_update` | `InboundUpdateRetentionBackgroundService` clears aged raw payloads |
+| Finances | `fin011_pending_transaction` | `RecurrenceGenerationBackgroundService` generates what came due |
+| Finances | `fin007_card_statement` | `StatementLifecycleBackgroundService` closes statements on their closing date and marks the overdue ones |
+| Finances | `fin013_import_file` + `fin014_import_row` | `ImportParsingBackgroundService` parses uploaded files |
+| Agenda | `agd006_reminder` + `agd006x_reminder_dispatch` | `ReminderSweepBackgroundService` fires what is due |
+| Agenda | `agd007_alert` + `agd008_alert_dispatch` | `TaskAlertSweepBackgroundService` and `EventAlertSweepBackgroundService` fire what is due |
+| Communications | `com001_mailbox` and the mail tables | `MailboxSyncBackgroundService` syncs each mailbox, then trims the content cache |
+| Files | `fil003_scan` | `ScanExpiryBackgroundService` aborts scans whose agent went quiet |
+
+(Channels' `TelegramLongPollingService` is also a hosted service, but it is the inbound transport, not
+a job over a table.)
+
+The pattern each time: the caller writes a durable row in the same transaction as its state change
+and returns; a `PeriodicTimer` in a `BackgroundService` picks the row up in a fresh scope, does the
+work, and records the outcome. Retry with backoff, attempt counters and a dead state live in the
+table, which is exactly the durability a queue would have offered — with the difference that the
+state is a row you can query, correct and retry by hand.
+
+Two rules keep this from turning into a private broker per module:
+
+- **The table belongs to the module that does the work**, not to the one that asked for it. Channels
+  owns the notification queue because Channels sends; Agenda owns the alert sweep because Agenda
+  decides when.
+- **A job is not a scheduler for someone else's domain.** It drains what is due in its own tables
+  and publishes facts; it does not accept "run this for me later" from another module.
+
+---
+
+## 4. Idempotency
+
+The outbox relay delivers **at-least-once**: a crash between dispatch and marking the row processed
+replays it on the next poll. Handlers must be idempotent on `EventId`, same as they would be behind a
+broker — see [the relay's at-least-once guarantee](../../../../tars/docs/messaging/outbox.md#the-relay)
+for the mechanism. The same at-least-once discipline is needed wherever a **job retries**, which is
+everywhere in §3.
+
+Where natural idempotency exists, it does the work and no extra table is needed:
+
+- `chn006_notification` deduplicates by `(correlation_id, channel)`.
+- `chn004_inbound_update` has a unique index on `(provider, provider_update_id)` — reprocessing a
+  Telegram update is harmless by construction.
+- `chn003_interaction` has `consumed_at` — a button acts once.
+- `nte015_note_capture` uses the Channels inbound `EventId` as its PK. Direct `/nota` capture saves
+  the receipt with the page and history; replay never appends twice, even after page purge. Receipts
+  contain ids/time only and deliberately have no page FK. The serial Channels relay is the capture
+  writer; ordinary page writers retain Notes' optimistic history concurrency checks.
+- `agd008_alert_dispatch` has a unique index on `(alert_id, occurrence_starts_at)` — resweeping the
+  same occurrence does not double-fire.
+
+Every one of these is a natural key on the work itself, which is the form to prefer. A generic
+processed-events table is a fallback for when no such key exists, and so far none of the modules has
+needed one.
+
+---
+
+## 5. What does not go through the bus
+
+**Scheduling.** "Remind me at 14:00" is not an event to be delayed; it is a row with a due time.
+Scheduling lives in the owning module's table-backed job (Agenda's `ReminderSweepBackgroundService`,
+`TaskAlertSweepBackgroundService` and `EventAlertSweepBackgroundService`), which publishes **at the
+moment it fires**. A reminder is exactly the thing whose time changes, and a
+row can be rescheduled, cancelled or corrected when the user changes timezone. This is Agenda's
+principle D3 and Channels' C1, and both are right.
+
+**Request/response.** Asking Integrations for a valid token, or Channels for an audio's bytes, is a
+question with an immediate answer, not a fact that happened. That is a synchronous port call.
+
+**Reads.** No module replicates another's data via events in order to read it. Whoever needs to read
+calls the port.
+
+---
+
+## 6. Dropped, and why — and what was later reinstated
+
+Three things were planned here and dropped; one of them was later reinstated in a different form.
+
+**A RabbitMQ broker** — two topic exchanges, one queue per logical consumer, a shared DLX. Still
+dropped: the problems it was brought in to solve are handled by §3 at a fraction of the cost. A fast
+webhook ack becomes a row plus a job, slow Assistant work becomes a row plus a job, and a lost event
+becomes a row with an attempt count. What a broker adds beyond that is infrastructure to run and
+watch, which this system has no volume to justify.
+
+**The outbox pattern — reinstated, without a broker.** The original reasoning ("with no broker there
+is no second commit to lose") turned out to be wrong: dispatch itself is not free of a second commit.
+Without an outbox, a producer that commits its own state change and then calls
+`IIntegrationEventBus.PublishAsync` in-process can still crash between the two — the state change
+survives, the fact never gets published, and nothing records that it should have. The outbox closes
+exactly that gap, broker or not: `Pottmayer.Tars.Messaging.EntityFrameworkCore` writes the event as a
+row in the *same transaction* as the state change, and a `BackgroundService` relay per producing
+database drains it to the local handlers. Pandora adopted this in tars 0.0.8 — see
+[`OutboxRegistration.cs`](../../../backend/src/Host/Pottmayer.Pandora.Host/OutboxRegistration.cs),
+wired into Identity, Channels, Agenda, Integrations, Assistant and Communications (the modules that
+publish). Full mechanism:
+[tars/docs/messaging/outbox.md](../../../../tars/docs/messaging/outbox.md). This does **not**
+reintroduce a broker or a second process — the relay runs in the same deployable and hands off to the
+same in-process handlers as before; only the last-mile dispatch changed.
+
+**Extraction as a service** — Assistant first, then Channels. Still dropped as a goal. The modules
+keep the properties that would have made it possible, because those properties are worth having on
+their own merits: each owns its `DbContext`, touches nobody else's schema, publishes POCO contracts,
+and talks through ports. That is good modular design, not staging for a split. Notably, the outbox
+above is also what tars' own docs point to as the thing that stays put when a module *is* later
+extracted — see the remark in `OutboxRegistration.cs`: the transport swap
+(`AddTarsMassTransitRabbitMq`) replaces this one registration method, and the contracts, producers and
+consumers are reused as-is.
+
+None of this is a door that locked. Producers and consumers know a bus interface and a logical event
+name, so the day a real reason appears — sustained load, a genuinely separate deploy cadence, work
+that needs a machine this one is not — the transport changes at the composition root. The reason
+should appear first.
+
+---
+
+## 7. Open questions
+
+1. **Contract versioning.** `IntegrationEventName` already carries a version suffix
+   (`identity.account-activation.v1`). Missing is the rule for when to bump it. Less pressing
+   in-process, where producer and consumers deploy together, but the suffix is in the contracts and
+   should mean something. Decide when the first contract actually changes.
+2. **Failure visibility.** An exception in an in-process handler surfaces in the caller's flow, which
+   is honest but not always where anyone is looking. The job tables carry `last_error` and a dead
+   state; what is missing is one place that answers "what failed recently" across modules.

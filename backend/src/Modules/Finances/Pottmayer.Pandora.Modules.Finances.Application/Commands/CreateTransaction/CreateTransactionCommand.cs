@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateTransaction;
 
@@ -24,5 +26,6 @@ public sealed record CreateTransactionInput(
 /// purchase split across that many consecutive card statements. Transfers are created through
 /// <c>CreateTransfer</c> instead, never through this command.
 /// </summary>
+[RequiresPermission(FinancesPermissions.Transactions.Create)]
 public sealed class CreateTransactionCommand(CreateTransactionInput input)
     : CommandBase<CreateTransactionInput, TransactionDto>(input);

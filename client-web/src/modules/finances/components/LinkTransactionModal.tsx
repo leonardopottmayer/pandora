@@ -15,6 +15,9 @@ interface LinkTransactionModalProps {
   /** Restricts the candidate list to a single account, when the suggestion targets one. */
   accountId?: string | null
   loading?: boolean
+  /** Defaults to the import wording ("Link to an existing transaction"). */
+  title?: string
+  okText?: string
   onClose: () => void
   onPick: (transactionId: string) => void
 }
@@ -25,6 +28,8 @@ export function LinkTransactionModal({
   defaultSearch,
   accountId,
   loading,
+  title,
+  okText,
   onClose,
   onPick,
 }: LinkTransactionModalProps) {
@@ -55,18 +60,23 @@ export function LinkTransactionModal({
       title: t('finances.transactions.occurredOn'),
       dataIndex: 'occurredOn',
       width: 110,
+      responsive: ['md'],
       render: (v: string) => formatDate(v),
     },
     {
       title: t('finances.transactions.description'),
       dataIndex: 'description',
       ellipsis: true,
+      render: (value: string, row) => <div className="min-w-0">
+        <div className="truncate" title={value}>{value}</div>
+        <div className="text-xs md:hidden">{formatDate(row.occurredOn)}</div>
+      </div>,
     },
     {
       title: t('finances.transactions.amount'),
       dataIndex: 'amount',
       align: 'right',
-      width: 140,
+      width: 124,
       render: (_, r) => (
         <CurrencyAmount amount={r.amount} currency={r.currency} direction={kindDirection(r.kind)} />
       ),
@@ -76,10 +86,10 @@ export function LinkTransactionModal({
   return (
     <Modal
       open={open}
-      title={t('finances.imports.linkTitle')}
+      title={title ?? t('finances.imports.linkTitle')}
       onCancel={onClose}
       onOk={() => selected && onPick(selected)}
-      okText={t('finances.imports.linkConfirm')}
+      okText={okText ?? t('finances.imports.linkConfirm')}
       okButtonProps={{ disabled: !selected, loading }}
       cancelText={t('common.cancel')}
       width={640}
@@ -95,6 +105,7 @@ export function LinkTransactionModal({
       <Table<TransactionDto>
         rowKey="id"
         size="small"
+        tableLayout="fixed"
         columns={columns}
         dataSource={data}
         loading={isLoading}

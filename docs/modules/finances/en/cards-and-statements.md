@@ -15,12 +15,56 @@ Debit cards are **not** modeled — a debit is a direct account entry.
 
 ## Card
 
-- **Config:** name (unique per user), brand, last four digits, `credit_limit` (`>= 0`, optional),
-  `closing_day`, `due_day`, currency, `default_payment_account_id`.
+- **Config:** name (unique per user), brand, last four digits, `account_id` (the account the card
+  belongs to, **required**; its `bank_code` routes card-bill imports to the right layout — see
+  [Imports](imports.md#routing-by-the-destinations-bank)), `credit_limit` (`>= 0`, optional),
+  `closing_day`, `due_day`, currency.
 - **`closing_day` / `due_day` ∈ 1..28** — enforced by CHECK to avoid month-length ambiguity.
 - **Currency is fixed** at creation (immutable, like accounts).
 - **Archiving** works like accounts: archived card is hidden, rejects business mutations, keeps
   history, is reversible via unarchive.
+
+### Cards screen
+
+The cards list follows the Accounts screen: a heading and New card action above one bordered panel.
+Rows combine the name, brand and last digits; the billing cycle moves beneath the name on small
+screens, and the configured credit limit stays right-aligned. Clicking a row opens its detail page;
+the named ellipsis menu offers Edit, Archive/Unarchive and Delete without navigating. Only archived
+rows carry a status tag. Archiving and deletion ask for confirmation naming the card.
+
+Show archived remains available above the list. Desktop holds the table inside the viewport with
+a sticky header and a count footer; phones scroll the page without horizontal overflow. Empty
+lists explain what is missing. This screen does not calculate available credit or total limits.
+
+The create/edit modal places required identity/account/currency and billing days first, in paired
+fields from `sm` up. Brand, last digits and credit limit fold into additional options, initially open
+when editing a card with any of those values. The limit shows the selected currency; currency stays
+locked when editing. Long forms scroll inside the modal. Defaults, validation and request contracts
+remain unchanged.
+
+### Card detail screen
+
+The detail uses the same heading and StatTile figures as account details: card name, brand/final,
+billing days, configured and available limits, and an Edit card action reusing the existing form.
+Archived cards carry a status tag. Limits remain informational; missing values show a dash and
+negative available credit uses the error token.
+
+Statements and installment plans are separate tabs, starting on Statements. Each keeps its filters
+and sorting while switching tabs. Status and due-date range stay visible for statements; description
+and category stay visible for plans. Amount ranges open in an elevated overlay above the table,
+with an active-filter badge and a Clear filters action scoped to that tab. Zero bounds are valid.
+Dates display as DD/MM/YYYY while filtering compares ISO dates.
+
+Statement rows combine month and status; due date and remaining amount move into secondary lines
+on small screens. Clicking the row or its month opens the existing statement page. Installment rows
+combine description/category with paid/total progress, total and remaining amounts. Each tab has
+one bordered table, a count footer and a sticky header with internal scrolling on desktop. On
+phones the page scrolls without horizontal overflow. Empty results and unavailable cards have
+explicit messages. No backend contracts or statement detail/payment flows change.
+
+The statement detail table also adapts to phones: description and amount remain as columns,
+while date, installment, category, kind and status move below the description as their columns
+hide. Long descriptions truncate; header actions wrap and summary figures stack on phones.
 
 ### Available limit
 
@@ -84,6 +128,10 @@ closed | partially-paid | overdue ──reopen──▶ (status recomputed)
 - Audit: `transaction.created` + `statement.payment-received`, plus `statement.paid` when this
   payment was the one that fully cleared it.
 
+The payment form pairs the required account and amount and folds optional date/description
+under a named section. It keeps the remaining balance pre-filled and sends null for optional
+fields left empty. The 640 px modal stacks on phones and has a scrolling body when needed.
+
 ## Settling without cash (onboarding write-off)
 
 `POST /statements/{id}/settle` → `SettleStatementCommand`:
@@ -105,6 +153,21 @@ is a `refund` (statement sign −1) that reduces the total. A `closed` statement
 (they roll to the next). The statement's `total_amount` cache is recomputed transactionally on every
 mutation through `StatementAmountSync` and always equals the sum of its transactions. See
 [Transactions](transactions.md) and [Installments](installments.md).
+
+## Statement detail screen
+
+The detail follows the shared screen patterns: reference month, closing/due dates and status in the
+heading, total/paid/remaining figures, and a compact transaction table. Payment remains the primary
+action; closing, reopening and confirmed cashless settlement preserve their existing availability.
+Totals use the card currency, including statements with no transactions.
+
+Search, period and status stay visible. Kind, category and amount bounds fold into an overlay with
+an active-filter count. Filters are controlled, survive closing the overlay and clear together.
+The table retains multi-column sorting, shows all filtered entries with a count footer, and holds
+its header in the desktop scroll panel. Phones scroll the page and show secondary metadata below
+the description. Attachments open in a separate drawer and load only when requested; the existing
+upload, queue-assignment, opening and removal actions remain available there. Attachment controls
+wrap on narrow screens; long filenames and notes truncate while retaining their full title text.
 
 ## API
 

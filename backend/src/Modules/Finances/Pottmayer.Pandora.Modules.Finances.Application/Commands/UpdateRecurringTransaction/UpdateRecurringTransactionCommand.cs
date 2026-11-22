@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.UpdateRecurringTransaction;
 
@@ -23,5 +25,6 @@ public sealed record UpdateRecurringTransactionInput(
 /// anchors and start date are intentionally absent: they're fixed at creation to keep past
 /// occurrences consistent.
 /// </summary>
+[RequiresPermission(FinancesPermissions.Recurrences.Update)]
 public sealed class UpdateRecurringTransactionCommand(UpdateRecurringTransactionInput input)
     : CommandBase<UpdateRecurringTransactionInput, RecurringTransactionDto>(input);

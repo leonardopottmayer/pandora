@@ -4,7 +4,17 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
+using Pottmayer.Pandora.Modules.Admin.Application.Authorization;
+using Pottmayer.Tars.Communication.Email.Abstractions;
+using Pottmayer.Tars.Communication.Email.DI;
+using Pottmayer.Tars.Messaging.Broker.Dispatch;
+using Pottmayer.Tars.Messaging.Broker.Registry;
+using Pottmayer.Tars.Messaging.EntityFrameworkCore.Options;
+using Pottmayer.Tars.Messaging.EntityFrameworkCore.Outbox;
+using Pottmayer.Tars.Messaging.EntityFrameworkCore.Relay;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
 using Respawn;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -42,14 +52,17 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
         // Resets only the module schemas; the migration tracking table lives in "public" and is left intact.
         // fin002 (system categories) and fin012 (import layouts) hold seeded reference data the
         // migrations create once — preserve them across resets or imports can't detect a layout.
+        // adm002/adm003 hold the seeded admin and member roles every user is given.
         _respawner = await Respawner.CreateAsync(_connection, new RespawnerOptions
         {
             DbAdapter = DbAdapter.Postgres,
-            SchemasToInclude = ["identity", "notifications", "finances"],
+            SchemasToInclude = ["identity", "channels", "finances", "notes", "agenda", "integrations", "assistant", "files", "communications", "admin"],
             TablesToIgnore =
             [
                 new Respawn.Graph.Table("finances", "fin002_system_category"),
-                new Respawn.Graph.Table("finances", "fin012_import_layout")
+                new Respawn.Graph.Table("finances", "fin012_import_layout"),
+                new Respawn.Graph.Table("admin", "adm002_role"),
+                new Respawn.Graph.Table("admin", "adm003_role_permission")
             ]
         });
     }
@@ -63,21 +76,82 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Tars:Data:Connections:identity:ConnectionString"] = ConnectionString,
-                ["Tars:Data:Connections:notifications:ConnectionString"] = ConnectionString,
+                ["Tars:Data:Connections:channels:ConnectionString"] = ConnectionString,
                 ["Tars:Data:Connections:finances:ConnectionString"] = ConnectionString,
-                // Deliver e-mails to the log (always succeeds) instead of SMTP — no Mailpit needed.
-                ["Tars:Communication:Email:Provider"] = "logging",
+                ["Tars:Data:Connections:notes:ConnectionString"] = ConnectionString,
+                ["Tars:Data:Connections:agenda:ConnectionString"] = ConnectionString,
+                ["Tars:Data:Connections:integrations:ConnectionString"] = ConnectionString,
+                ["Tars:Data:Connections:assistant:ConnectionString"] = ConnectionString,
+                ["Tars:Data:Connections:files:ConnectionString"] = ConnectionString,
+                ["Tars:Data:Connections:communications:ConnectionString"] = ConnectionString,
+                ["Tars:Data:Connections:admin:ConnectionString"] = ConnectionString,
+                // The master admin bootstrap promotes this account (see AdminAuthorizationTests).
+                // Tests sign in many times from one address; RateLimitingTests turns it back on.
+                ["Pandora:RateLimiting:Enabled"] = "false",
+                // Pinned off whatever appsettings.json says; AdminPanelTests sets the waiting state itself.
+                ["Pandora:Identity:AccountApproval:Required"] = "false",
+                ["Pandora:Admin:BootstrapEmails:0"] = "boss@pandora.test",
+                // A bot username is all the linking flow needs; no token, because nothing calls Telegram here.
+                ["Pandora:Channels:Telegram:BotUsername"] = "pandora_test_bot",
+                // Test users have no zone preference, so "today" falls back to this default. Pinned to UTC so it
+                // matches the tests' DateTime.UtcNow dates instead of the host's America/Sao_Paulo, which put the
+                // server a day behind between 21:00 and midnight there.
+                ["Pandora:DefaultTimeZone"] = "UTC",
                 // Fixed AES-256 key (Base64 of 32 bytes) so MFA secrets can be encrypted in tests.
                 ["Pandora:Identity:Mfa:EncryptionKey"] = "7Mzi45PyKOyGH1hWmXvnDKCVOY9qKeEB8P8NTuZe3T4="
             });
         });
 
-        // Drop the periodic dispatcher: tests drive dispatch explicitly so timing is deterministic.
-        builder.ConfigureServices(services => services.RemoveAll<IHostedService>());
+        builder.ConfigureServices(services =>
+        {
+            // Drop the periodic dispatcher: tests drive dispatch explicitly so timing is deterministic.
+            services.RemoveAll<IHostedService>();
+
+            // Force the logging e-mail sender. The module picks its provider at registration time
+            // from configuration (appsettings says "mailkit"), which runs before the test's in-memory
+            // config is layered on — so overriding "Provider" there cannot switch it. Swapping the
+            // resolved service here is the override point that actually takes effect, and keeps the
+            // suite off a live SMTP server.
+            services.RemoveAll<IEmailSender>();
+            services.AddTarsLoggingEmailSender();
+
+            // Made-up user ids are members, as every real account is (see SyntheticUsersAreMembersStore).
+            services.RemoveAll<IAuthorizationStore>();
+            services.AddScoped<AuthorizationStore>();
+            services.AddScoped<IAuthorizationStore>(sp =>
+                new SyntheticUsersAreMembersStore(sp.GetRequiredService<AuthorizationStore>(), ConnectionString));
+        });
     }
 
     /// <summary>Wipes business data so each test starts from a clean slate.</summary>
     public Task ResetDatabaseAsync() => _respawner.ResetAsync(_connection);
+
+    /// <summary>
+    /// Drains the transactional outbox synchronously, standing in for the background relay (which the
+    /// harness removes for determinism). After a producing action, call this before asserting on the
+    /// downstream effect — the outbox row is written in the producer's transaction, and this delivers
+    /// it to the handlers here and now.
+    /// </summary>
+    public async Task DrainOutboxAsync(params string[] databaseKeys)
+    {
+        var keys = databaseKeys.Length > 0 ? databaseKeys : ["identity", "channels", "agenda"];
+
+        foreach (var key in keys)
+        {
+            var processor = new OutboxRelayProcessor(
+                Services.GetRequiredService<IServiceScopeFactory>(),
+                Services.GetRequiredService<IIntegrationEventTypeRegistry>(),
+                Services.GetService<IOutboxRelayDelivery>()
+                    ?? new LocalHandlerOutboxDelivery(Services.GetRequiredService<IIntegrationEventDispatcher>()),
+                Services.GetRequiredService<IIntegrationEventSerializer>(),
+                Services.GetRequiredService<TimeProvider>(),
+                NullLogger.Instance,
+                new OutboxDatabaseOptions(key) { PurgeEnabled = false });
+
+            // Drain until the outbox is empty: a batch-sized pass may leave more behind.
+            while (await processor.DrainOnceAsync() > 0) { }
+        }
+    }
 
     public new async Task DisposeAsync()
     {
@@ -88,7 +162,7 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
 
     /// <summary>
     /// Walks up from the test output directory to the repository root (the folder that holds
-    /// <c>migrations/config.json</c>) and returns its <c>migrations/migrations</c> folder.
+    /// <c>migrations/config.example.json</c>, which is versioned) and returns its <c>migrations/migrations</c> folder.
     /// Override with the <c>PANDORA_MIGRATIONS_PATH</c> environment variable (e.g. in CI).
     /// </summary>
     private static string ResolveMigrationsPath()
@@ -99,7 +173,7 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
 
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
         {
-            if (File.Exists(Path.Combine(dir.FullName, "migrations", "config.json")))
+            if (File.Exists(Path.Combine(dir.FullName, "migrations", "config.example.json")))
                 return Path.Combine(dir.FullName, "migrations", "migrations");
         }
 

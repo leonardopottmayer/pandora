@@ -29,7 +29,7 @@ public sealed class UpdateCardCommandHandler(IUnitOfWorkFactory factory, TimePro
             return Fail(CardErrors.InvalidDueDay);
 
         var now = timeProvider.GetUtcNow();
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<ICardRepository>();
             var card = await repo.FindByIdForUserAsync(input.CardId, input.UserId, token);
@@ -40,16 +40,14 @@ public sealed class UpdateCardCommandHandler(IUnitOfWorkFactory factory, TimePro
             if (await repo.ExistsWithNameAsync(input.UserId, input.Name, input.CardId, token))
                 return Result<Card>.Failure([CardErrors.NameAlreadyExists]);
 
-            if (input.DefaultPaymentAccountId is not null)
-            {
-                var account = await ctx.AcquireRepository<IAccountRepository>()
-                    .FindByIdForUserAsync(input.DefaultPaymentAccountId.Value, input.UserId, token);
-                if (account is null)
-                    return Result<Card>.Failure([CardErrors.DefaultPaymentAccountNotFound]);
-            }
+            // The card must belong to one of the user's accounts.
+            var account = await ctx.AcquireRepository<IAccountRepository>()
+                .FindByIdForUserAsync(input.AccountId, input.UserId, token);
+            if (account is null)
+                return Result<Card>.Failure([CardErrors.AccountNotFound]);
 
             // The aggregate itself refuses the update once archived.
-            if (!card.Update(input.Name, input.Brand, input.LastFour, input.CreditLimit, input.ClosingDay, input.DueDay, input.DefaultPaymentAccountId))
+            if (!card.Update(input.Name, input.Brand, input.LastFour, input.CreditLimit, input.ClosingDay, input.DueDay, input.AccountId))
                 return Result<Card>.Failure([CardErrors.Archived]);
 
             await repo.UpdateAsync(card, token);

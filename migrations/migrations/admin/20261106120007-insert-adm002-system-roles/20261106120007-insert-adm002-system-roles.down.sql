@@ -1,0 +1,4 @@
+-- 20261106120007-insert-adm002-system-roles.down.sql
+
+DELETE FROM admin.adm004_user_role;
+DELETE FROM admin.adm002_role WHERE id IN ('019a5a00-0000-7000-8000-000000000001', '019a5a00-0000-7000-8000-000000000002');

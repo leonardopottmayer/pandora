@@ -10,6 +10,9 @@ public static class IdentityErrors
     public static Error AccountNotActive =>
         Error.Unauthorized("Identity.AccountNotActive", "The account is not active.");
 
+    public static Error PendingApproval =>
+        Error.Forbidden("Identity.PendingApproval", "Your account is waiting for an administrator to approve it.");
+
     public static Error InvalidActivationToken =>
         Error.Validation("Identity.InvalidActivationToken", "The activation token is invalid or has expired.");
 
@@ -42,4 +45,19 @@ public static class IdentityErrors
 
     public static Error InvalidMfaChallenge =>
         Error.Unauthorized("Identity.InvalidMfaChallenge", "The MFA challenge is invalid or has expired.");
+
+    public static Error InvalidDeviceName =>
+        Error.Validation("Identity.InvalidDeviceName", "The device name is required and must be at most 100 characters.");
+
+    public static Error InvalidDevicePlatform =>
+        Error.Validation("Identity.InvalidDevicePlatform", "The device platform must be one of: windows, linux, macos, android, ios.");
+
+    public static Error InvalidDeviceForm =>
+        Error.Validation("Identity.InvalidDeviceForm", "The device form must be one of: desktop, headless, mobile.");
+
+    public static Error InvalidDeviceScope =>
+        Error.Validation("Identity.InvalidDeviceScope", "Device scopes are lower-case, dot-separated names such as 'files.agent'.");
+
+    public static Error DeviceNotFound =>
+        Error.NotFound("Identity.DeviceNotFound", "The device was not found.");
 }

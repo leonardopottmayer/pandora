@@ -467,6 +467,7 @@ public sealed class ImportsTests : IAsyncLifetime
 
     private async Task<Guid> CreateCardAsync()
     {
+        var accountId = await CreateAccountAsync();
         var r = await _client.PostAsJsonAsync(Cards, new
         {
             name = $"Card-{Guid.NewGuid():N}",
@@ -474,7 +475,8 @@ public sealed class ImportsTests : IAsyncLifetime
             currency = "BRL",
             displayOrder = 0,
             closingDay = 20,
-            dueDay = 10
+            dueDay = 10,
+            accountId
         });
         Assert.Equal(HttpStatusCode.OK, r.StatusCode);
         return (await r.Content.ReadFromJsonAsync<SingleEnvelope<IdNode>>())!.Data.Id;

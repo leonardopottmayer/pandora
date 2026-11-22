@@ -20,7 +20,7 @@ public sealed class RefreshTokenCommandHandler(
     protected override async Task<Result<TokenDto>> HandleAsync(RefreshTokenCommand request, CancellationToken ct)
     {
         // 1. Check for reuse before consuming
-        var reuseSubject = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
+        var reuseSubject = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IRefreshTokenRepository>();
             return await repo.TryGetSubjectForReuseAsync(request.Input.RefreshToken, token);

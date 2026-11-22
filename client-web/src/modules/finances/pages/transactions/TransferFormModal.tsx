@@ -64,47 +64,45 @@ export function TransferFormModal({ open, onClose }: TransferFormModalProps) {
       okText={t('common.save')}
       cancelText={t('common.cancel')}
       destroyOnHidden
+      width={640}
+      styles={{ body: { maxHeight: 'calc(100dvh - 260px)', overflowY: 'auto', paddingRight: 8 } }}
     >
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
-        <Form.Item
-          name="fromAccountId"
-          label={t('finances.transactions.fromAccount')}
-          rules={[{ required: true, message: t('finances.transactions.accountRequired') }]}
-        >
-          <AccountSelect />
-        </Form.Item>
+        <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
+          <Form.Item
+            name="fromAccountId"
+            label={t('finances.transactions.fromAccount')}
+            rules={[{ required: true, message: t('finances.transactions.accountRequired') }]}
+          >
+            <AccountSelect />
+          </Form.Item>
 
-        <Form.Item
-          name="toAccountId"
-          label={t('finances.transactions.toAccount')}
-          rules={[{ required: true, message: t('finances.transactions.accountRequired') }]}
-        >
-          <AccountSelect excludeIds={fromAccountId ? [fromAccountId] : []} />
-        </Form.Item>
+          <Form.Item
+            name="toAccountId"
+            label={t('finances.transactions.toAccount')}
+            rules={[{ required: true, message: t('finances.transactions.accountRequired') }]}
+          >
+            <AccountSelect excludeIds={fromAccountId ? [fromAccountId] : []} />
+          </Form.Item>
+        </div>
 
-        <Form.Item
-          name="amountOut"
-          label={t('finances.transactions.amountOut')}
-          rules={[{ required: true, message: t('finances.transactions.amountRequired') }]}
-        >
-          <InputNumber style={{ width: '100%' }} min={0.01} step={0.01} />
-        </Form.Item>
+        <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
+          <Form.Item
+            name="amountOut"
+            label={t('finances.transactions.amountOut')}
+            rules={[{ required: true, message: t('finances.transactions.amountRequired') }]}
+          >
+            <InputNumber style={{ width: '100%' }} min={0.01} step={0.01} />
+          </Form.Item>
 
-        <Form.Item
-          name="amountIn"
-          label={t('finances.transactions.amountIn')}
-          tooltip={t('finances.transactions.amountInHint')}
-        >
-          <InputNumber style={{ width: '100%' }} min={0.01} step={0.01} />
-        </Form.Item>
-
-        <Form.Item
-          name="occurredOn"
-          label={t('finances.transactions.occurredOn')}
-          rules={[{ required: true, message: t('finances.transactions.occurredOnRequired') }]}
-        >
-          <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
-        </Form.Item>
+          <Form.Item
+            name="occurredOn"
+            label={t('finances.transactions.occurredOn')}
+            rules={[{ required: true, message: t('finances.transactions.occurredOnRequired') }]}
+          >
+            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+          </Form.Item>
+        </div>
 
         <Form.Item
           name="description"
@@ -113,6 +111,18 @@ export function TransferFormModal({ open, onClose }: TransferFormModalProps) {
         >
           <Input maxLength={200} />
         </Form.Item>
+
+        <details>
+          <summary className="mb-3 w-fit cursor-pointer select-none text-sm">{t('finances.transactions.amountIn')}</summary>
+          <Form.Item
+            name="amountIn"
+            label={t('finances.transactions.amountIn')}
+            extra={t('finances.transactions.amountInHint')}
+            className="!mb-0"
+          >
+            <InputNumber style={{ width: '100%' }} min={0.01} step={0.01} />
+          </Form.Item>
+        </details>
       </Form>
     </Modal>
   )

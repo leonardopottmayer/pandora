@@ -1,0 +1,45 @@
+# Preferências
+
+[← Voltar ao índice](README.md) · Relacionados: [Modelo de dados](data-model.md)
+
+---
+
+As preferências por usuário (`idt003`, uma linha por usuário) guardam escolhas de UI **e** os padrões
+de agendamento que outros módulos leem.
+
+| Campo | Valores | Consumido por |
+|---|---|---|
+| `theme` | `light` \| `dark` \| `system` | O cliente web. |
+| `language` | `pt-BR` \| `en` | O cliente web; o locale carregado nas notificações. |
+| `palette` | `default` \| `claude` \| `reddit` | As cores do cliente web, em qualquer modo. Ver `client-web/DESIGN.md`. |
+| `accent_color` | `#rrggbb`, ou nulo para a do próprio tema | O cliente web. |
+| `time_zone` | IANA (padrão `America/Sao_Paulo`) | O fuso **padrão a nível de usuário**. |
+| `week_starts_on` | `sunday`…`saturday` | Renderização da semana no calendário. |
+
+## API
+
+- `GET /identity/preferences` — leitura (`GetPreferences`). Falha com erro de não encontrado se o
+  usuário nunca salvou preferências ainda — a linha é criada de forma preguiçosa (lazy), não no cadastro.
+- `PUT /identity/preferences` — upsert (`UpsertPreferences`): cria a linha `idt003` na primeira chamada,
+  atualiza depois. Exige os cinco campos no corpo da requisição (sem atualização parcial). Valida tema e
+  idioma contra os conjuntos suportados, o início da semana contra os nomes de `DayOfWeek`, e o fuso com
+  `TimeZoneInfo.TryFindSystemTimeZoneById`.
+
+Nota: os valores padrão de coluna na migration do `idt003` (`en`, `America/Sao_Paulo`, `sunday`, `-15`)
+só se aplicariam a uma linha inserida sem essas colunas — na prática a aplicação sempre informa todos os
+campos no primeiro `PUT`, então um usuário que nunca abriu a tela de preferências **não tem** nenhuma
+linha em `idt003`, e não uma linha com esses padrões.
+
+## Nota entre módulos
+
+O Identity **carrega** o fuso IANA e o início da semana do usuário, que o plano da Agenda chamava de
+pré-requisito de "fase 0". Uma preferência que só um módulo usa fica nesse módulo: o offset de alerta
+padrão está na `agd013_preferences`, da Agenda. Duas peças consumidoras restam em outros
+módulos:
+
+- **Agenda** guarda um `time_zone` em cada item porque a recorrência precisa expandir no fuso do
+  *próprio item* (que pode diferir do padrão do usuário); ligar a preferência do Identity como o padrão
+  de novos itens é um follow-up pequeno.
+- As **quiet hours** do Channels ainda não foram construídas; precisam deste fuso, que agora está
+  disponível — então estão desbloqueadas, não bloqueadas. Ver
+  [product-plan do Channels](../../channels/pt-BR/product-plan.md).

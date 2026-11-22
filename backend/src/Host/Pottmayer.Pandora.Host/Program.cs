@@ -4,27 +4,58 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using Pottmayer.Pandora.Host;
 using Pottmayer.Pandora.Host.Localization;
+using Pottmayer.Pandora.Host.RateLimiting;
 using Pottmayer.Pandora.Modules.Identity.Application.DI;
 using Pottmayer.Pandora.Modules.Identity.Infrastructure.DI;
 using Pottmayer.Pandora.Modules.Identity.Persistence.DI;
 using Pottmayer.Pandora.Modules.Identity.Presentation.DI;
-using Pottmayer.Pandora.Modules.Notifications.Application.DI;
-using Pottmayer.Pandora.Modules.Notifications.Infrastructure.DI;
-using Pottmayer.Pandora.Modules.Notifications.Persistence.DI;
+using Pottmayer.Pandora.Modules.Channels.Application.DI;
+using Pottmayer.Pandora.Modules.Channels.Infrastructure.DI;
+using Pottmayer.Pandora.Modules.Channels.Persistence.DI;
+using Pottmayer.Pandora.Modules.Channels.Presentation.DI;
 using Pottmayer.Pandora.Modules.Finances.Application.DI;
 using Pottmayer.Pandora.Modules.Finances.Infrastructure.DI;
 using Pottmayer.Pandora.Modules.Finances.Persistence.DI;
 using Pottmayer.Pandora.Modules.Finances.Presentation.DI;
+using Pottmayer.Pandora.Modules.Notes.Application.DI;
+using Pottmayer.Pandora.Modules.Notes.Infrastructure.DI;
+using Pottmayer.Pandora.Modules.Notes.Persistence.DI;
+using Pottmayer.Pandora.Modules.Notes.Presentation.DI;
+using Pottmayer.Pandora.Modules.Agenda.Application.DI;
+using Pottmayer.Pandora.Modules.Agenda.Infrastructure.DI;
+using Pottmayer.Pandora.Modules.Agenda.Persistence.DI;
+using Pottmayer.Pandora.Modules.Agenda.Presentation.DI;
+using Pottmayer.Pandora.Modules.Integrations.Application.DI;
+using Pottmayer.Pandora.Modules.Integrations.Infrastructure.DI;
+using Pottmayer.Pandora.Modules.Integrations.Persistence.DI;
+using Pottmayer.Pandora.Modules.Integrations.Presentation.DI;
+using Pottmayer.Pandora.Modules.Assistant.Application.DI;
+using Pottmayer.Pandora.Modules.Assistant.Infrastructure.DI;
+using Pottmayer.Pandora.Modules.Assistant.Persistence.DI;
+using Pottmayer.Pandora.Modules.Assistant.Presentation.DI;
+using Pottmayer.Pandora.Modules.Communications.Application.DI;
+using Pottmayer.Pandora.Modules.Communications.Infrastructure.DI;
+using Pottmayer.Pandora.Modules.Communications.Persistence.DI;
+using Pottmayer.Pandora.Modules.Communications.Presentation.DI;
+using Pottmayer.Pandora.Modules.Files.Application.DI;
+using Pottmayer.Pandora.Modules.Files.Infrastructure.DI;
+using Pottmayer.Pandora.Modules.Files.Persistence.DI;
+using Pottmayer.Pandora.Modules.Files.Presentation.DI;
+using Pottmayer.Pandora.Modules.Admin.Application.DI;
+using Pottmayer.Pandora.Modules.Admin.Infrastructure.DI;
+using Pottmayer.Pandora.Modules.Admin.Persistence.DI;
+using Pottmayer.Pandora.Modules.Admin.Presentation.DI;
 using Pottmayer.Pandora.Shared.Infrastructure.DI;
 using Pottmayer.Pandora.Shared.Persistence.DI;
 using Pottmayer.Tars.Core.Localization.DI;
+using Pottmayer.Tars.Observability.AspNetCore.DI;
 using Pottmayer.Tars.UserContext.AspNetCore;
 using Pottmayer.Tars.Web.Http.AspNetCore.DI;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Shared
+// Shared (registers observability too — see AddPandoraSharedInfrastructure)
 builder.AddPandoraSharedInfrastructure();
 builder.AddPandoraSharedPersistence();
 
@@ -33,13 +64,45 @@ builder.Services.AddIdentityPersistence();
 builder.AddIdentityInfrastructure();
 builder.Services.AddIdentityApplication();
 
-builder.Services.AddNotificationsPersistence();
-builder.AddNotificationsInfrastructure();
-builder.Services.AddNotificationsApplication();
+builder.Services.AddChannelsPersistence();
+builder.AddChannelsInfrastructure();
+builder.Services.AddChannelsApplication();
 
 builder.Services.AddFinancesPersistence();
 builder.AddFinancesInfrastructure();
 builder.Services.AddFinancesApplication();
+
+builder.Services.AddNotesPersistence();
+builder.AddNotesInfrastructure();
+builder.Services.AddNotesApplication();
+
+builder.Services.AddAgendaPersistence();
+builder.AddAgendaInfrastructure();
+builder.Services.AddAgendaApplication();
+
+builder.Services.AddIntegrationsPersistence();
+builder.AddIntegrationsInfrastructure();
+builder.Services.AddIntegrationsApplication();
+
+builder.Services.AddAssistantPersistence();
+builder.AddAssistantInfrastructure();
+builder.Services.AddAssistantApplication();
+
+builder.Services.AddCommunicationsPersistence();
+builder.AddCommunicationsInfrastructure();
+builder.Services.AddCommunicationsApplication();
+
+builder.Services.AddFilesPersistence();
+builder.AddFilesInfrastructure();
+builder.Services.AddFilesApplication();
+
+builder.Services.AddAdminPersistence();
+builder.AddAdminInfrastructure();
+builder.Services.AddAdminApplication();
+
+// The monolith's messaging transport — the in-process transactional outbox, wired in one place.
+// Registered after the modules so every contract assembly and database key is known.
+builder.AddPandoraOutbox();
 
 // Web HTTP
 builder.Services.AddTarsLocalization();
@@ -47,10 +110,21 @@ builder.Services.AddPandoraLocalization();
 builder.Services.AddFinancesLocalization();
 builder.Services.AddTarsProblemDetails();
 
+// Rate limiting: every /api request, the auth endpoints and the Assistant (see RateLimitingRegistration).
+builder.Services.AddPandoraRateLimiting();
+
 // Presentation
 builder.Services.AddControllers()
                 .AddIdentityPresentationPart()
-                .AddFinancesPresentationPart();
+                .AddChannelsPresentationPart()
+                .AddFinancesPresentationPart()
+                .AddNotesPresentationPart()
+                .AddAgendaPresentationPart()
+                .AddIntegrationsPresentationPart()
+                .AddAssistantPresentationPart()
+                .AddCommunicationsPresentationPart()
+                .AddFilesPresentationPart()
+                .AddAdminPresentationPart();
 
 // API Versioning
 builder.Services.AddApiVersioning(options =>
@@ -80,6 +154,10 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     // The proxy is not on a fixed address inside the Docker network; trust it.
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
+    // How many proxies append to X-Forwarded-For: 1 for the bundled nginx. The client IP (what rate
+    // limiting counts by) is the entry that many hops from the end; one more proxy in front (Cloudflare,
+    // Traefik) needs 2, or every user would share that proxy's address.
+    options.ForwardLimit = builder.Configuration.GetValue("Pandora:ReverseProxy:ForwardLimit", 1);
 });
 
 // CORS
@@ -109,6 +187,10 @@ var app = builder.Build();
 
 // Must run first so downstream middleware sees the real scheme/host.
 app.UseForwardedHeaders();
+
+// Correlation id early, so every downstream log and span inherits it.
+if (builder.Configuration.GetValue("Tars:Observability:Enabled", true))
+    app.UseTarsCorrelationId();
 
 // Swagger UI
 if (app.Environment.IsDevelopment())
@@ -147,6 +229,8 @@ if (app.Environment.IsDevelopment())
 app.UseCors("PandoraClient");
 
 app.UseAuthentication();
+// After authentication, so the per-user limits know the user.
+app.UseRateLimiter();
 app.UseAuthorization();
 app.UseTarsUserContext();
 

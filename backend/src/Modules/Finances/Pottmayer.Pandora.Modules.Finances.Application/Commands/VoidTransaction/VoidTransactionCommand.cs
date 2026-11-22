@@ -1,5 +1,7 @@
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Finances.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.VoidTransaction;
 
@@ -10,5 +12,6 @@ public sealed record VoidTransactionInput(Guid UserId, Guid TransactionId, strin
 /// a pair; an installment can be voided alone or, via <see cref="VoidTransactionInput.VoidEntirePlan"/>,
 /// together with every other still-open installment of its plan.
 /// </summary>
+[RequiresPermission(FinancesPermissions.Transactions.Void)]
 public sealed class VoidTransactionCommand(VoidTransactionInput input)
     : CommandBase<VoidTransactionInput, TransactionDto>(input);

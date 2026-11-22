@@ -7,4 +7,5 @@ public sealed record UpdateAccountRequest(
     string? Description,
     string? Color,
     string? Icon,
-    int DisplayOrder);
+    int DisplayOrder,
+    string? BankCode = null);

@@ -20,6 +20,9 @@ never stored** — it is the signed sum of its posted transactions (design decis
   so it can never change. Rationale: changing an account's currency would invalidate every entry's
   currency and the derived balance.
 - **Name** is unique per user (`uq_fin001_user_name`).
+- **Bank** (`bank_code`, optional): the COMPE code of the account's bank (`Bank` registry;
+  077/085/260/341). Used to route statement imports to the right layout — see
+  [Imports](imports.md#routing-by-the-destinations-bank).
 - **Type is editable**, but **currency is not** (both are absent from the update path in the design;
   in the current aggregate `Update` re-accepts `type` but not `currency`).
 - **Archiving** (`archived_at`): a soft retirement. An archived account:

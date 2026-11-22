@@ -25,6 +25,7 @@ CREATE TABLE finances.fin010_recurring_transaction (
 	-- execution
 	status varchar(10) NOT NULL DEFAULT 'active',
 	auto_post boolean NOT NULL DEFAULT false,
+	auto_generate boolean NOT NULL DEFAULT true,
 	next_occurrence_on date NOT NULL,
 	occurrences_count int NOT NULL DEFAULT 0,
 	-- audit

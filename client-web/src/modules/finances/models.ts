@@ -55,7 +55,7 @@ export type RecurringStatus = (typeof RECURRING_STATUSES)[number]
 export const PENDING_STATUSES = ['pending', 'approved', 'rejected'] as const
 export type PendingStatus = (typeof PENDING_STATUSES)[number]
 
-export const PENDING_SOURCES = ['recurrence', 'import'] as const
+export const PENDING_SOURCES = ['recurrence', 'import', 'manual'] as const
 export type PendingSource = (typeof PENDING_SOURCES)[number]
 
 export const IMPORT_STATUSES = ['received', 'parsing', 'completed', 'failed', 'aborted'] as const
@@ -81,12 +81,31 @@ export type TaggableEntityType = (typeof TAGGABLE_ENTITY_TYPES)[number]
 // Response DTOs
 // ---------------------------------------------------------------------------
 
+export interface BankOption {
+  code: string
+  name: string
+}
+
+/** Supported banks (Brazilian COMPE codes). Mirrors the backend Bank registry. */
+export const SUPPORTED_BANKS: BankOption[] = [
+  { code: '077', name: 'Banco Inter' },
+  { code: '085', name: 'Viacredi' },
+  { code: '260', name: 'Nubank' },
+  { code: '341', name: 'Itaú' },
+]
+
+export function bankName(code: string | null | undefined): string | null {
+  if (!code) return null
+  return SUPPORTED_BANKS.find((b) => b.code === code)?.name ?? code
+}
+
 export interface AccountDto {
   id: string
   name: string
   type: AccountType
   currency: string
   institution: string | null
+  bankCode: string | null
   description: string | null
   color: string | null
   icon: string | null
@@ -130,6 +149,7 @@ export interface TransactionDto {
   voidReason: string | null
   statementReferenceMonth: string | null
   statementDueDate: string | null
+  attachmentCount: number
 }
 
 export interface CardDto {
@@ -141,7 +161,7 @@ export interface CardDto {
   closingDay: number
   dueDay: number
   currency: string
-  defaultPaymentAccountId: string | null
+  accountId: string
   archivedAt: string | null
 }
 
@@ -303,6 +323,35 @@ export interface PendingTransactionDto {
   duplicateOfTransactionId: string | null
   createdAt: string
   updatedAt: string | null
+  attachmentCount: number
+}
+
+export type AttachmentKind = 'bill' | 'receipt' | 'invoice' | 'other'
+
+/**
+ * Where a file is attached — one transaction, inbox suggestion or card statement — or the queue of files
+ * shared with the assistant bot, waiting to be filed under one of them.
+ */
+export type AttachmentOwner =
+  | { transactionId: string }
+  | { pendingTransactionId: string }
+  | { cardStatementId: string }
+  | { queued: true }
+
+export interface AttachmentDto {
+  id: string
+  transactionId: string | null
+  pendingTransactionId: string | null
+  cardStatementId: string | null
+  kind: AttachmentKind
+  fileName: string
+  contentType: string
+  sizeBytes: number
+  /** What the user wrote with the file when they shared it with the bot. */
+  note: string | null
+  /** Authenticated path of the bytes; fetch it through the API client (see `openAttachment`). */
+  url: string
+  createdAt: string
 }
 
 // ---------------------------------------------------------------------------
@@ -314,6 +363,7 @@ export interface CreateAccountRequest {
   type: AccountType
   currency: string
   institution?: string | null
+  bankCode?: string | null
   description?: string | null
   color?: string | null
   icon?: string | null
@@ -325,6 +375,7 @@ export interface UpdateAccountRequest {
   name: string
   type: AccountType
   institution?: string | null
+  bankCode?: string | null
   description?: string | null
   color?: string | null
   icon?: string | null
@@ -339,7 +390,7 @@ export interface CreateCardRequest {
   closingDay: number
   dueDay: number
   currency: string
-  defaultPaymentAccountId?: string | null
+  accountId: string
 }
 
 export interface UpdateCardRequest {
@@ -349,7 +400,7 @@ export interface UpdateCardRequest {
   creditLimit?: number | null
   closingDay: number
   dueDay: number
-  defaultPaymentAccountId?: string | null
+  accountId: string
 }
 
 export interface CreateTransactionRequest {
@@ -542,6 +593,7 @@ export interface ImportLayoutDto {
   layoutCode: string
   name: string
   bankName: string | null
+  bankCode: string | null
   fileFormat: string
   accountType: string
   isSystemLayout: boolean

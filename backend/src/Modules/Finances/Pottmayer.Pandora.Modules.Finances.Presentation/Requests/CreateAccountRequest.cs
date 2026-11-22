@@ -9,4 +9,5 @@ public sealed record CreateAccountRequest(
     string? Color,
     string? Icon,
     int DisplayOrder,
-    decimal? OpeningBalance);
+    decimal? OpeningBalance,
+    string? BankCode = null);

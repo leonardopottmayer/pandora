@@ -32,7 +32,7 @@ public sealed class SetEntityTagsCommandHandler(IUnitOfWorkFactory factory, Time
         var entityType = TaggableEntityType.FromValue(input.EntityType);
         var desiredIds = input.TagIds.Distinct().ToList();
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var tags = ctx.AcquireRepository<ITagRepository>();
             var links = ctx.AcquireRepository<ITagLinkRepository>();

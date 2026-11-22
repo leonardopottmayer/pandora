@@ -40,7 +40,7 @@ Duas ideias conectadas:
 
 ### Geração (o job)
 
-O job `RecurrenceGenerationService` roda diariamente (e sob demanda): para cada recorrência ativa com
+O job `RecurrenceGenerationService` roda a cada hora, no dia de cada usuário (e sob demanda): para cada recorrência ativa com
 ocorrências dentro do horizonte (default 30 dias), gera uma `PendingTransaction` (source = recurrence)
 — ou **posta direto** se `auto_post` — e avança o cursor. **Idempotente:** o índice único
 `(recurring_transaction_id, occurred_on)` garante que uma recorrência nunca gere a mesma data duas
@@ -56,7 +56,9 @@ desfecho é terminal.
 
 - **`original_payload` é imutável** — um snapshot JSON da sugestão inicial, nunca alterado. O payload
   editável fica nas colunas normais; o diff entre os dois está sempre disponível.
-- Source é `recurrence` (⇒ `recurring_transaction_id`) ou `import` (⇒ `import_row_id`).
+- Source é `recurrence` (⇒ `recurring_transaction_id`), `import` (⇒ `import_row_id`) ou `manual`
+  (digitada pelo usuário via `record_expense` do assistente: uma despesa em exatamente uma conta ou
+  cartão, na moeda dele; aprovar cria uma transação de origem `manual` ligada a ela).
 - Status `pending → approved | rejected` é terminal (`Approve`/`Reject` retornam `false` se já
   decidido).
 
@@ -83,6 +85,13 @@ desfecho é terminal.
 
 Sugestões vindas de importação carregam badges de dedup/conciliação (duplicata/suspeita/casada) e
 links para a transação relacionada; ver [Importação](imports.md).
+
+### Confirmação de transferência
+
+A confirmação pela inbox preserva o resumo de contas/valores e preenche descrição/data pela
+sugestão de saída. Os rótulos editáveis são associados aos campos; a data aparece em DD/MM/AAAA
+e é enviada em YYYY-MM-DD. Par incompleto ou descrição vazia mantêm a confirmação desabilitada.
+O modal de 640 px tem rolagem interna em telas estreitas ou baixas.
 
 ## API
 

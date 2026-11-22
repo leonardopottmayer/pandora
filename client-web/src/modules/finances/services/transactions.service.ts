@@ -36,6 +36,24 @@ export async function listTransactions(filters: TransactionFilters = {}): Promis
   return data
 }
 
+/** The most the API returns per request; asking for more gets its default of 50. */
+export const PAGE_SIZE = 200
+
+/** Every page of a list, asked for until one comes back short. */
+export async function fetchAllPages<T>(fetchPage: (skip: number, take: number) => Promise<T[]>): Promise<T[]> {
+  const all: T[] = []
+  for (;;) {
+    const page = await fetchPage(all.length, PAGE_SIZE)
+    all.push(...page)
+    if (page.length < PAGE_SIZE) return all
+  }
+}
+
+/** Every transaction matching the filters, whatever their number; pair it with a period. */
+export function listAllTransactions(filters: Omit<TransactionFilters, 'skip' | 'take'>): Promise<TransactionDto[]> {
+  return fetchAllPages((skip, take) => listTransactions({ ...filters, skip, take }))
+}
+
 /** Creates a transaction entry. May return N transactions when `installments > 1`. */
 export async function createTransaction(
   body: CreateTransactionRequest,
@@ -67,6 +85,11 @@ export async function voidTransaction(
   body?: VoidTransactionRequest,
 ): Promise<TransactionDto> {
   const { data } = await apiClient.post<TransactionDto>(`${BASE}/${id}/void`, body ?? {})
+  return data
+}
+
+export async function unvoidTransaction(id: string): Promise<TransactionDto> {
+  const { data } = await apiClient.post<TransactionDto>(`${BASE}/${id}/unvoid`, {})
   return data
 }
 

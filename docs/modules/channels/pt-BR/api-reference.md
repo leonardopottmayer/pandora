@@ -1,0 +1,97 @@
+# Referência de API
+
+[← Voltar ao índice](README.md) · Relacionados: [Entrada e Vínculo](inbound-and-linking.md)
+
+Caminho base: **`/api/v{version}/channels`**. Todos os endpoints são autenticados e escopo do usuário
+do token. O tráfego de entrada do Telegram **não** chega aqui — é ingerido pelo serviço de background de
+long-polling, não por um endpoint HTTP. Erros vêm de falhas tipadas `Result`.
+
+---
+
+## Endpoints
+
+| Método | Caminho | Propósito |
+|---|---|---|
+| GET | `/` | Os endereços do usuário (vinculados ou desabilitados), para a tela de configurações. |
+| POST | `/{channel}/link` | Inicia o handshake de vínculo; devolve o deep link que o usuário toca. |
+| DELETE | `/{channel}/link` | Esquece o endereço neste canal. |
+| POST | `/{channel}/test` | Enfileira uma mensagem de teste ao próprio endereço do usuário neste canal. |
+| GET | `/notifications` | Histórico de entrega, mais recentes primeiro — filtrável por status, canal, categoria, data; paginado. |
+| GET | `/preferences` | As escolhas de canal do usuário por categoria. |
+| PUT | `/preferences/{category}` | Define os canais em que uma categoria sai (lista vazia silencia; canais desconhecidos são rejeitados). |
+| GET | `/notification-settings` | Os ajustes do usuário entre categorias (quiet hours). |
+| PUT | `/notification-settings` | Define quiet hours (ligar/desligar, janela, comportamento). |
+
+### GET `/`
+
+Devolve as linhas `chn001` do usuário: canal, endereço, flags verificado/habilitado, metadados — a
+lista de configurações.
+
+### POST `/{channel}/link`
+
+Para o Telegram, devolve `{ url, expiresAt }`: `url` é o deep link `https://t.me/<bot>?start=<token>`
+que o usuário toca (o token em texto puro viaja só dentro dele, nunca como campo separado); `expiresAt`
+é quando o handshake expira. O chat id chega depois, do Telegram, carregando o token que este emitiu.
+
+### DELETE `/{channel}/link`
+
+Remove o endereço `chn001` do canal.
+
+### POST `/{channel}/test`
+
+Enfileira uma notificação de teste ao próprio endereço verificado do usuário no canal — o teste "o
+vínculo funcionou?".
+
+### GET `/notifications?status=&channel=&category=&from=&to=&skip=&take=`
+
+A leitura do histórico de entrega (`GetDeliveryHistory`), apoiada por `ix_chn006_user_created_at`.
+Responde "meu lembrete realmente saiu?".
+
+### GET `/preferences`
+
+Devolve as preferências `chn005` do usuário por categoria.
+
+### PUT `/preferences/{category}`
+
+```json
+{ "channels": ["telegram", "email"] }
+```
+
+Define a lista ordenada de canais de uma categoria. Uma lista vazia a silencia; canais desconhecidos são
+rejeitados. Categorias `identity.*` são obrigatórias e não configuráveis.
+
+### GET `/notification-settings`
+
+Retorna os ajustes `chn007` do usuário. Quando quiet hours estão desligadas os campos de horário/
+comportamento são nulos:
+
+```json
+{ "quietHoursEnabled": false, "quietHoursStart": null, "quietHoursEnd": null, "quietHoursBehaviour": null }
+```
+
+### PUT `/notification-settings`
+
+```json
+{ "quietHoursEnabled": true, "quietHoursStart": "22:00", "quietHoursEnd": "07:00", "quietHoursBehaviour": "suppress" }
+```
+
+Define a janela global de quiet hours. Horários são `HH:mm` de relógio de parede **no fuso do próprio
+usuário**; o fim pode ser menor que o início (a janela vira a meia-noite). `quietHoursBehaviour` é
+`suppress` (descarta a entrega) ou `deliver-anyway` (mantém a janela registrada mas ainda envia). Com
+`quietHoursEnabled: false` a janela é limpa e os outros campos são ignorados. Início e fim iguais são
+rejeitados. Quiet hours nunca se aplicam a notificações `identity.*` (segurança).
+
+---
+
+## Contratos (eventos in-process)
+
+Não são HTTP, mas a superfície pública do módulo no bus:
+
+| Direção | Evento | Significado |
+|---|---|---|
+| in | `NotifyUserRequested` | Notificação com botões, de responsabilidade do chamador (agenda.*, assistant.*). |
+| in | `SendNotificationRequested` | Envio endereçado ad-hoc. |
+| in | Fatos do Identity (`PasswordResetRequested`, `AccountActivationRequested`, `MfaEnabled`, …) | Mapeados para templates pelos subscribers deste módulo. |
+| out | `InboundInteractionReceived` | Um toque de botão inline, roteado ao módulo dono. |
+| out | `InboundMessageReceived` | Uma mensagem de texto/voz, para o Assistant. |
+| out | `UserChannelDisabled` | Um canal desabilitado após falha permanente. |

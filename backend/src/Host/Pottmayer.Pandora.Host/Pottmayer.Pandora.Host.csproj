@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -15,31 +15,72 @@
     <ProjectReference Include="../../Modules/Identity/Pottmayer.Pandora.Modules.Identity.Infrastructure/Pottmayer.Pandora.Modules.Identity.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Identity/Pottmayer.Pandora.Modules.Identity.Persistence/Pottmayer.Pandora.Modules.Identity.Persistence.csproj" />
     <ProjectReference Include="../../Modules/Identity/Pottmayer.Pandora.Modules.Identity.Presentation/Pottmayer.Pandora.Modules.Identity.Presentation.csproj" />
-    <!-- Notifications module -->
-    <ProjectReference Include="../../Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Application/Pottmayer.Pandora.Modules.Notifications.Application.csproj" />
-    <ProjectReference Include="../../Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Infrastructure/Pottmayer.Pandora.Modules.Notifications.Infrastructure.csproj" />
-    <ProjectReference Include="../../Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Persistence/Pottmayer.Pandora.Modules.Notifications.Persistence.csproj" />
+    <!-- Channels module -->
+    <ProjectReference Include="../../Modules/Channels/Pottmayer.Pandora.Modules.Channels.Application/Pottmayer.Pandora.Modules.Channels.Application.csproj" />
+    <ProjectReference Include="../../Modules/Channels/Pottmayer.Pandora.Modules.Channels.Infrastructure/Pottmayer.Pandora.Modules.Channels.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Channels/Pottmayer.Pandora.Modules.Channels.Persistence/Pottmayer.Pandora.Modules.Channels.Persistence.csproj" />
+    <ProjectReference Include="../../Modules/Channels/Pottmayer.Pandora.Modules.Channels.Presentation/Pottmayer.Pandora.Modules.Channels.Presentation.csproj" />
     <!-- Finances module -->
     <ProjectReference Include="../../Modules/Finances/Pottmayer.Pandora.Modules.Finances.Application/Pottmayer.Pandora.Modules.Finances.Application.csproj" />
     <ProjectReference Include="../../Modules/Finances/Pottmayer.Pandora.Modules.Finances.Infrastructure/Pottmayer.Pandora.Modules.Finances.Infrastructure.csproj" />
     <ProjectReference Include="../../Modules/Finances/Pottmayer.Pandora.Modules.Finances.Persistence/Pottmayer.Pandora.Modules.Finances.Persistence.csproj" />
     <ProjectReference Include="../../Modules/Finances/Pottmayer.Pandora.Modules.Finances.Presentation/Pottmayer.Pandora.Modules.Finances.Presentation.csproj" />
+    <!-- Notes module -->
+    <ProjectReference Include="../../Modules/Notes/Pottmayer.Pandora.Modules.Notes.Application/Pottmayer.Pandora.Modules.Notes.Application.csproj" />
+    <ProjectReference Include="../../Modules/Notes/Pottmayer.Pandora.Modules.Notes.Infrastructure/Pottmayer.Pandora.Modules.Notes.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Notes/Pottmayer.Pandora.Modules.Notes.Persistence/Pottmayer.Pandora.Modules.Notes.Persistence.csproj" />
+    <ProjectReference Include="../../Modules/Notes/Pottmayer.Pandora.Modules.Notes.Presentation/Pottmayer.Pandora.Modules.Notes.Presentation.csproj" />
+    <!-- Agenda module -->
+    <ProjectReference Include="../../Modules/Agenda/Pottmayer.Pandora.Modules.Agenda.Application/Pottmayer.Pandora.Modules.Agenda.Application.csproj" />
+    <ProjectReference Include="../../Modules/Agenda/Pottmayer.Pandora.Modules.Agenda.Infrastructure/Pottmayer.Pandora.Modules.Agenda.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Agenda/Pottmayer.Pandora.Modules.Agenda.Persistence/Pottmayer.Pandora.Modules.Agenda.Persistence.csproj" />
+    <ProjectReference Include="../../Modules/Agenda/Pottmayer.Pandora.Modules.Agenda.Presentation/Pottmayer.Pandora.Modules.Agenda.Presentation.csproj" />
+    <!-- Integrations module -->
+    <ProjectReference Include="../../Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Application/Pottmayer.Pandora.Modules.Integrations.Application.csproj" />
+    <ProjectReference Include="../../Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Infrastructure/Pottmayer.Pandora.Modules.Integrations.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Persistence/Pottmayer.Pandora.Modules.Integrations.Persistence.csproj" />
+    <ProjectReference Include="../../Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Presentation/Pottmayer.Pandora.Modules.Integrations.Presentation.csproj" />
+    <!-- Assistant module -->
+    <ProjectReference Include="../../Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Application/Pottmayer.Pandora.Modules.Assistant.Application.csproj" />
+    <ProjectReference Include="../../Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Infrastructure/Pottmayer.Pandora.Modules.Assistant.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Persistence/Pottmayer.Pandora.Modules.Assistant.Persistence.csproj" />
+    <ProjectReference Include="../../Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Presentation/Pottmayer.Pandora.Modules.Assistant.Presentation.csproj" />
+    <!-- Communications module -->
+    <ProjectReference Include="../../Modules/Communications/Pottmayer.Pandora.Modules.Communications.Application/Pottmayer.Pandora.Modules.Communications.Application.csproj" />
+    <ProjectReference Include="../../Modules/Communications/Pottmayer.Pandora.Modules.Communications.Infrastructure/Pottmayer.Pandora.Modules.Communications.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Communications/Pottmayer.Pandora.Modules.Communications.Persistence/Pottmayer.Pandora.Modules.Communications.Persistence.csproj" />
+    <ProjectReference Include="../../Modules/Communications/Pottmayer.Pandora.Modules.Communications.Presentation/Pottmayer.Pandora.Modules.Communications.Presentation.csproj" />
+    <!-- Files module -->
+    <ProjectReference Include="../../Modules/Files/Pottmayer.Pandora.Modules.Files.Application/Pottmayer.Pandora.Modules.Files.Application.csproj" />
+    <ProjectReference Include="../../Modules/Files/Pottmayer.Pandora.Modules.Files.Infrastructure/Pottmayer.Pandora.Modules.Files.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Files/Pottmayer.Pandora.Modules.Files.Persistence/Pottmayer.Pandora.Modules.Files.Persistence.csproj" />
+    <ProjectReference Include="../../Modules/Files/Pottmayer.Pandora.Modules.Files.Presentation/Pottmayer.Pandora.Modules.Files.Presentation.csproj" />
+    <!-- Admin module -->
+    <ProjectReference Include="../../Modules/Admin/Pottmayer.Pandora.Modules.Admin.Application/Pottmayer.Pandora.Modules.Admin.Application.csproj" />
+    <ProjectReference Include="../../Modules/Admin/Pottmayer.Pandora.Modules.Admin.Infrastructure/Pottmayer.Pandora.Modules.Admin.Infrastructure.csproj" />
+    <ProjectReference Include="../../Modules/Admin/Pottmayer.Pandora.Modules.Admin.Persistence/Pottmayer.Pandora.Modules.Admin.Persistence.csproj" />
+    <ProjectReference Include="../../Modules/Admin/Pottmayer.Pandora.Modules.Admin.Presentation/Pottmayer.Pandora.Modules.Admin.Presentation.csproj" />
     <!-- Tars: Core -->
-    <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.0.4" />
+    <PackageReference Include="Pottmayer.Tars.Core.Localization" Version="0.1.0" />
     <!-- Tars: Web -->
-    <PackageReference Include="Pottmayer.Tars.Web.Http" Version="0.0.4" />
-    <PackageReference Include="Pottmayer.Tars.Web.Http.AspNetCore" Version="0.0.4" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http" Version="0.1.0" />
+    <PackageReference Include="Pottmayer.Tars.Web.Http.AspNetCore" Version="0.1.0" />
     <!-- Tars: UserContext -->
-    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.0.4" />
-    <!-- Tars: Caching -->
-    <PackageReference Include="Pottmayer.Tars.Caching.Core" Version="0.0.4" />
-    <PackageReference Include="Pottmayer.Tars.Caching.Memory" Version="0.0.4" />
+    <PackageReference Include="Pottmayer.Tars.UserContext.AspNetCore" Version="0.1.0" />
+    <!-- Tars: Observability â€” DI wiring lives in Shared.Infrastructure; the host only needs the
+         correlation-id middleware. -->
+    <PackageReference Include="Pottmayer.Tars.Observability.AspNetCore" Version="0.1.0" />
+    <!-- Tars: in-process transactional outbox â€” the monolith's messaging transport, wired in the host. -->
+    <PackageReference Include="Pottmayer.Tars.Messaging.EntityFrameworkCore" Version="0.1.0" />
+    <PackageReference Include="Pottmayer.Tars.Messaging.Broker" Version="0.1.0" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.1" />
     <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.2" />
+    <!-- Pins Swashbuckle's transitive Microsoft.OpenApi past GHSA-v5pm-xwqc-g5wc (fixed in 2.7.5). -->
+    <PackageReference Include="Microsoft.OpenApi" Version="2.7.6" />
   </ItemGroup>
 
 </Project>

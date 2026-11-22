@@ -1,0 +1,42 @@
+# Implementation Status
+
+[← Back to index](../README.md)
+
+A snapshot of what is built in the codebase versus what is designed but not yet implemented.
+
+---
+
+## Implemented
+
+| Area | Notes |
+|---|---|
+| **Frontend review** | Security and password-change pages follow PageHeading/SettingsSection, with wrapping recovery-code actions. Devices distinguish failed queries from empty results and format last-seen dates using the application language and time zone. Alerts and spacing use the current Ant Design API. |
+| **Module scaffold** | Seven layered projects; `identity` schema; `idt001`–`idt009`. |
+| **User + password** | `User` aggregate; Argon2id hashing (`Argon2PasswordHasher`); unique username/email. |
+| **Sign-up + activation** | `SignUp`; `AccountActivationRequested` → email; `activate` consumes `idt004`; `AccountActivated`. |
+| **Sign-in** | Argon2id verify; uniform failure; JWT access token + rotating refresh token (`idt002`), via Tars. |
+| **Refresh + sign-out** | `refresh` rotates single-use tokens (`consumed_at`); `signout` consumes; `RefreshTokenPurgeBackgroundService` cleans up. |
+| **Password reset/change** | `forgot` (uniform) → `PasswordResetRequested`; `reset` consumes `idt005`; authenticated `change`; `PasswordChanged`. |
+| **MFA (TOTP)** | `setup`/`enable`/`disable`/`status`; secret encrypted (`idt006`, `ISecretProtector`); recovery codes hashed single-use (`idt007`); sign-in challenge (`idt008`); `MfaEnabled`/`MfaDisabled`. |
+| **Preferences** | `idt003` — theme, language, **time zone, week start**; `GET`/`PUT` with validation. |
+| **Devices** | `idt009`; pair/list/revoke + `devices/me`; keys hashed, `X-Api-Key` scheme (Tars) beside JWT; `DeviceAuthorization` + on-demand scope policies for other modules. See [Devices](devices.md). |
+| **Contracts** | Six security events consumed by Channels' subscribers. |
+| **Frontend** | `client-web/src/modules/identity` — sign-in, sign-up, MFA, preferences, connected devices (pairs this computer inside Pandora Desktop). |
+
+## Notable facts for other modules
+
+- **Identity carries the IANA time zone and week start** (`idt003`), the pair
+  the Agenda plan listed as a "phase 0" prerequisite. It is **built and exposed** via
+  `PUT /identity/preferences`. Consuming it fully (Agenda item defaults, Channels quiet hours) is
+  follow-up work in *those* modules, not here. See [Preferences](preferences.md). The default alert
+  offset moved to the Agenda's own `agd013_preferences` on 2026-11-01.
+- **Security emails** flow entirely through Channels' fact→template path; Identity names no template.
+
+## Not yet implemented (future)
+
+| Area | Status |
+|---|---|
+| **Social / OAuth login** (e.g. Google sign-in) | Not implemented. (Distinct from [Integrations](../../integrations/en/overview.md), which is Pandora calling Google *as* the user.) |
+| **Session management UI** | Refresh tokens are stored + purged, but there is no list of signed-in sessions to revoke one by one. (Paired *devices* do have one — see [Devices](devices.md).) |
+| **WebAuthn / passkeys** | Future — MFA is TOTP-only today. |
+| **Roles / permissions** | Owned by the [Admin](../../admin/README.md) module (roles, per-action permissions, feature flags), not by Identity. |

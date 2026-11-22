@@ -81,6 +81,19 @@ public sealed class SignInCommandHandlerTests
 
         Assert.True(result.IsFailure);
         Assert.Equal("Identity.InvalidCredentials", result.Errors[0].Code);
+        Assert.Equal(1, _hasher.VerifyCount); // dummy verification keeps the timing of a wrong password
+    }
+
+    [Fact]
+    public async Task An_account_waiting_for_approval_is_told_so_after_the_right_password()
+    {
+        var (handler, _, _) = Build(new FakeUserRepository(TestUsers.AwaitingApproval(_hasher, Password)));
+
+        var waiting = await handler.Handle(Command("alice"), CancellationToken.None);
+        var wrongPassword = await handler.Handle(Command("alice", "wrong"), CancellationToken.None);
+
+        Assert.Equal("Identity.PendingApproval", waiting.Errors[0].Code);
+        Assert.Equal("Identity.InvalidCredentials", wrongPassword.Errors[0].Code);
     }
 
     [Fact]

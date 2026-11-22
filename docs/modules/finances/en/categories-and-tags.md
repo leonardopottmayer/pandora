@@ -38,6 +38,24 @@ system codes referenced by the app include `credit-card-payment` (used on statem
 
 Audit: `category.created`, `category.updated`, `category.activated`, `category.deactivated`.
 
+### Categories screen
+
+The page follows the shared screen patterns: a heading and New category action, then My categories
+and System categories tabs. Each tab preserves its own search, nature filter and expanded groups.
+Search ignores accents and case, retains the parent of a matching child and opens matching groups;
+a matching parent includes its children. Clear filters applies only to the current tab.
+
+Both tabs use compact hierarchical rows, with nature below the name and a count including children
+in the footer. Personal rows open editing and offer Edit and Activate/Deactivate in a named menu;
+inactive categories appear only when requested and carry an Inactive tag. System rows are read-only.
+The panel scrolls internally with a sticky header on desktop; phones use page scrolling without
+horizontal overflow. Loading and empty states stay inside the panel.
+
+The form puts name first, nature and optional parent side by side on wider screens, and display
+order under More options (open for an existing nonzero order). Changing nature clears the chosen
+parent. Nature and parent remain immutable after creation. API contracts and hierarchy rules stay
+unchanged.
+
 ## Tags (`fin004_tag` / `fin005_tag_link`)
 
 - **Free labels** owned by the user: `name` (unique per user), `color`.
@@ -49,12 +67,31 @@ Audit: `category.created`, `category.updated`, `category.activated`, `category.d
 - Deleting a tag **cascades** its links (`ON DELETE CASCADE`), audited.
 - Filterable in listings (e.g. `GET /transactions?tags=`).
 
+### Tags screen
+
+The compact list follows the shared screen patterns: a heading, New tag action, accent-insensitive
+name search, named row menus and a count footer. Clicking a row opens editing. Names keep theme
+text colors; a bordered swatch carries the selected color so even white or yellow tags stay readable.
+Delete asks for confirmation with the tag name and warns that its links will be removed.
+
+The form keeps name and optional color visible, offers Choose color and Clear color, and previews
+the name and swatch as they change. Clearing a color sends `null`. Desktop uses an internally
+scrolling panel with a sticky header; phones use page scrolling without horizontal overflow.
+Empty lists and searches have distinct messages. API contracts remain unchanged.
+
+### Applying tags
+
+The account, card and statement pages and the transaction drawer have a tag picker that saves as
+soon as the selection changes (`EntityTags`). The accounts and cards lists, and "More filters" on the
+transactions list, filter by tag (any of the chosen tags).
+
 ### API
 
 | Method | Route | Purpose |
 |---|---|---|
 | GET / POST / PUT / DELETE | `/tags`, `/tags/{id}` | CRUD |
 | GET | `/tags/{id}/links` | Links of a tag |
+| GET | `/tags/entities/{entityType}/{entityId}` | Tag ids on one entity |
 | POST | `/tags/{id}/links` | Add a link |
 | DELETE | `/tags/{id}/links/{entityType}/{entityId}` | Remove a link |
 | PUT | `/{entity}/{id}/tags` | Replace the whole tag set of an account/card/statement/transaction |

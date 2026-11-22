@@ -1,27 +1,13 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { App, Button, Card, Flex, Space, Switch, Table, Tree, Typography } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
-import type { DataNode } from 'antd/es/tree'
+import { App, Button, Tabs } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
+import { PageHeading } from '@/components/settings/PageHeading'
 import { toErrorMessage } from '@/lib/api/envelope'
-import type { SystemCategoryDto, UserCategoryDto } from '../../models'
-import { TRANSACTION_NATURE_META } from '../../lib/enums'
-import { EnumTag } from '../../components/EnumTag'
-import {
-  useSetUserCategoryActive,
-  useSystemCategories,
-  useUserCategories,
-} from '../../hooks/useCategories'
+import type { UserCategoryDto } from '../../models'
+import { useSetUserCategoryActive, useSystemCategories, useUserCategories } from '../../hooks/useCategories'
 import { CategoryFormModal } from './CategoryFormModal'
-
-function systemTree(cats: SystemCategoryDto[]): DataNode[] {
-  return cats.map((c) => ({
-    key: c.id,
-    title: c.name,
-    children: c.children?.length ? systemTree(c.children) : undefined,
-  }))
-}
+import { CategoryListTab } from './CategoryListTab'
 
 export function CategoriesListPage() {
   const { t } = useTranslation()
@@ -29,10 +15,14 @@ export function CategoriesListPage() {
   const [includeInactive, setIncludeInactive] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<UserCategoryDto | null>(null)
-
   const { data: userCategories, isLoading } = useUserCategories(includeInactive)
-  const { data: systemCategories } = useSystemCategories()
+  const { data: systemCategories, isLoading: loadingSystem } = useSystemCategories()
   const activeMutation = useSetUserCategoryActive()
+
+  function openEdit(category: UserCategoryDto) {
+    setEditing(category)
+    setModalOpen(true)
+  }
 
   async function toggleActive(category: UserCategoryDto) {
     const active = !category.isActive
@@ -44,78 +34,24 @@ export function CategoriesListPage() {
     }
   }
 
-  const columns: ColumnsType<UserCategoryDto> = [
-    { title: t('finances.categories.name'), dataIndex: 'name' },
-    {
-      title: t('finances.categories.nature'),
-      dataIndex: 'nature',
-      render: (_, c) => <EnumTag meta={TRANSACTION_NATURE_META[c.nature]} />,
-    },
-    {
-      title: t('finances.categories.active'),
-      dataIndex: 'isActive',
-      render: (isActive: boolean, c) => (
-        <Switch checked={isActive} onChange={() => toggleActive(c)} size="small" />
-      ),
-    },
-    {
-      title: t('common.actions'),
-      key: 'actions',
-      align: 'right',
-      render: (_, c) => (
-        <Button
-          size="small"
-          onClick={() => {
-            setEditing(c)
-            setModalOpen(true)
-          }}
-        >
-          {t('common.edit')}
-        </Button>
-      ),
-    },
-  ]
-
   return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <Flex justify="space-between" align="center" wrap gap="small" className="mb-4">
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            {t('finances.categories.userTitle')}
-          </Typography.Title>
-          <Space>
-            <Switch checked={includeInactive} onChange={setIncludeInactive} size="small" />
-            <span>{t('finances.categories.showInactive')}</span>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => {
-                setEditing(null)
-                setModalOpen(true)
-              }}
-            >
-              {t('finances.categories.new')}
-            </Button>
-          </Space>
-        </Flex>
-
-        <Table
-          rowKey="id"
-          loading={isLoading}
-          dataSource={userCategories}
-          columns={columns}
-          pagination={false}
-          expandable={{ childrenColumnName: 'children' }}
-        />
-      </Card>
-
-      <Card title={t('finances.categories.systemTitle')}>
-        <Typography.Paragraph type="secondary">
-          {t('finances.categories.systemDesc')}
-        </Typography.Paragraph>
-        <Tree treeData={systemTree(systemCategories ?? [])} selectable={false} />
-      </Card>
-
+    <div className="flex min-w-0 flex-col gap-6 lg:h-[calc(100dvh-112px)]">
+      <div className="flex shrink-0 flex-wrap items-start justify-between gap-3">
+        <PageHeading title={t('nav.categories')} description={t('finances.categories.subtitle')} />
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); setModalOpen(true) }}>{t('finances.categories.new')}</Button>
+      </div>
+      <Tabs
+        className="min-h-0 flex-1 [&_.ant-tabs-content]:lg:h-full" defaultActiveKey="mine" destroyOnHidden={false} animated={false}
+        items={[
+          { key: 'mine', label: t('finances.categories.userTitle'), className: 'lg:h-full', children: (
+            <CategoryListTab categories={userCategories ?? []} loading={isLoading} includeInactive={includeInactive} onIncludeInactiveChange={setIncludeInactive}
+              onEdit={openEdit} onToggleActive={toggleActive} changingActive={activeMutation.isPending} />
+          ) },
+          { key: 'system', label: t('finances.categories.systemTitle'), className: 'lg:h-full', children: (
+            <CategoryListTab categories={systemCategories ?? []} loading={loadingSystem} />
+          ) },
+        ]}
+      />
       <CategoryFormModal open={modalOpen} category={editing} onClose={() => setModalOpen(false)} />
     </div>
   )

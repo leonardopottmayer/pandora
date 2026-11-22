@@ -16,7 +16,7 @@ public sealed class DeleteTagCommandHandler(IUnitOfWorkFactory factory, TimeProv
         var input = request.Input;
         var now = timeProvider.GetUtcNow();
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var tags = ctx.AcquireRepository<ITagRepository>();
             var links = ctx.AcquireRepository<ITagLinkRepository>();

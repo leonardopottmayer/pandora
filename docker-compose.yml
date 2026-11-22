@@ -2,9 +2,10 @@
 # environment gets its own isolated containers and network.
 name: ${COMPOSE_PROJECT_NAME:-pandora}
 
-# The database lives in a shared per-tier stack (set up from the homelab repo),
-# reachable on the external "${TIER_NETWORK}" network as "${DB_HOST}". Bring that
-# up first.
+# The database lives in the tier's shared servers (homelab repo, tier/), reachable
+# on the external "${TIER_NETWORK}" network as "${DB_HOST}" (staging-postgres,
+# prod-postgres). Bring that up first. The development servers (Postgres, Mailhog,
+# the Aspire dashboard for OpenTelemetry) are the homelab repo's local/ stack.
 
 services:
   backend:
@@ -20,17 +21,43 @@ services:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ASPNETCORE_HTTP_PORTS: "8080"
       Tars__Data__Connections__identity__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
-      Tars__Data__Connections__notifications__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Tars__Data__Connections__channels__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       Tars__Data__Connections__finances__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
-      Tars__Security__Identity__Jwt__SigningKey: ${JWT_SIGNING_KEY}
-      Pandora__Identity__Mfa__EncryptionKey: ${MFA_ENCRYPTION_KEY}
+      Tars__Data__Connections__notes__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Tars__Data__Connections__agenda__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Tars__Data__Connections__integrations__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Tars__Data__Connections__assistant__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Tars__Data__Connections__files__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Tars__Data__Connections__communications__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Tars__Data__Connections__admin__ConnectionString: "Host=${DB_HOST};Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      # The account(s) promoted to master administrator at startup and on activation.
+      Pandora__Admin__BootstrapEmails__0: ${ADMIN_EMAIL:-}
+      # New accounts wait for an administrator's approval before they can sign in.
+      Pandora__Identity__AccountApproval__Required: ${REQUIRE_ACCOUNT_APPROVAL:-false}
+      # Proxies appending to X-Forwarded-For: 1 for the bundled nginx, 2 with Cloudflare/Traefik in front.
+      Pandora__ReverseProxy__ForwardLimit: ${REVERSE_PROXY_FORWARD_LIMIT:-1}
+      Tars__Security__Identity__Jwt__SigningKey: ${JWT_SIGNING_KEY:?JWT_SIGNING_KEY is required}
+      Pandora__Identity__Mfa__EncryptionKey: ${MFA_ENCRYPTION_KEY:?MFA_ENCRYPTION_KEY is required}
+      # Encrypts the credentials users connect (Google tokens, API keys, mailbox passwords). Required:
+      # the default in appsettings.json is public. Same value forever, or those credentials become unreadable.
+      Tars__Security__DataProtection__Keys__v1: ${DATA_PROTECTION_KEY:?DATA_PROTECTION_KEY is required}
+      # Google OAuth client (Agenda/Communications sync). Empty ClientId leaves Google off.
+      Pandora__Integrations__Google__ClientId: ${GOOGLE_CLIENT_ID:-}
+      Pandora__Integrations__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
+      Pandora__Integrations__Google__RedirectUri: "${APP_BASE_URL:-http://localhost:${HTTP_PORT:-80}}/api/v1/integrations/google/callback"
       # SMTP target. Staging -> mailhog (capture); prod -> a real provider.
       Tars__Communication__Email__Smtp__Host: ${SMTP_HOST:-mailhog}
       Tars__Communication__Email__Smtp__Port: ${SMTP_PORT:-1025}
       # Public base URL for emailed links. Defaults to localhost + the frontend
       # port; override APP_BASE_URL for a LAN IP or a real domain. {token} is literal.
-      Pandora__Notifications__ActivationUrlTemplate: "${APP_BASE_URL:-http://localhost:${HTTP_PORT:-80}}/activate?token={token}"
-      Pandora__Notifications__PasswordResetUrlTemplate: "${APP_BASE_URL:-http://localhost:${HTTP_PORT:-80}}/reset-password?token={token}"
+      Pandora__Channels__ActivationUrlTemplate: "${APP_BASE_URL:-http://localhost:${HTTP_PORT:-80}}/activate?token={token}"
+      Pandora__Channels__PasswordResetUrlTemplate: "${APP_BASE_URL:-http://localhost:${HTTP_PORT:-80}}/reset-password?token={token}"
+      # Telegram bot tokens (from BotFather). Secret. LongPolling lives in appsettings.json.
+      # One pair of bots per environment: Telegram gives a token's updates to one reader only.
+      Tars__Communication__Telegram__Bots__notifications__BotToken: ${TELEGRAM_BOT_TOKEN:-}
+      Tars__Communication__Telegram__Bots__assistant__BotToken: ${TELEGRAM_ASSISTANT_BOT_TOKEN:-}
+      # The notifications bot's @username, shown when linking an account. Empty disables the channel.
+      Pandora__Channels__Telegram__BotUsername: ${TELEGRAM_BOT_USERNAME:-}
 
   frontend:
     image: ${FRONTEND_IMAGE:-ghcr.io/leonardopottmayer/pandora-frontend:latest}

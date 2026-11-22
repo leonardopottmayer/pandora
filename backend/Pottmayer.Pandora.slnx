@@ -13,13 +13,14 @@
     <Project Path="src/Modules/Identity/Pottmayer.Pandora.Modules.Identity.Persistence/Pottmayer.Pandora.Modules.Identity.Persistence.csproj" Id="b0000003-0000-0000-0000-000000000004" />
     <Project Path="src/Modules/Identity/Pottmayer.Pandora.Modules.Identity.Presentation/Pottmayer.Pandora.Modules.Identity.Presentation.csproj" Id="b0000003-0000-0000-0000-000000000005" />
   </Folder>
-  <Folder Name="/src/Modules/Notifications/">
-    <Project Path="src/Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Abstractions/Pottmayer.Pandora.Modules.Notifications.Abstractions.csproj" Id="b0000005-0000-0000-0000-000000000006" />
-    <Project Path="src/Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Contracts/Pottmayer.Pandora.Modules.Notifications.Contracts.csproj" Id="b0000005-0000-0000-0000-000000000000" />
-    <Project Path="src/Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Domain/Pottmayer.Pandora.Modules.Notifications.Domain.csproj" Id="b0000005-0000-0000-0000-000000000001" />
-    <Project Path="src/Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Application/Pottmayer.Pandora.Modules.Notifications.Application.csproj" Id="b0000005-0000-0000-0000-000000000002" />
-    <Project Path="src/Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Infrastructure/Pottmayer.Pandora.Modules.Notifications.Infrastructure.csproj" Id="b0000005-0000-0000-0000-000000000003" />
-    <Project Path="src/Modules/Notifications/Pottmayer.Pandora.Modules.Notifications.Persistence/Pottmayer.Pandora.Modules.Notifications.Persistence.csproj" Id="b0000005-0000-0000-0000-000000000004" />
+  <Folder Name="/src/Modules/Channels/">
+    <Project Path="src/Modules/Channels/Pottmayer.Pandora.Modules.Channels.Abstractions/Pottmayer.Pandora.Modules.Channels.Abstractions.csproj" Id="b0000005-0000-0000-0000-000000000006" />
+    <Project Path="src/Modules/Channels/Pottmayer.Pandora.Modules.Channels.Contracts/Pottmayer.Pandora.Modules.Channels.Contracts.csproj" Id="b0000005-0000-0000-0000-000000000000" />
+    <Project Path="src/Modules/Channels/Pottmayer.Pandora.Modules.Channels.Domain/Pottmayer.Pandora.Modules.Channels.Domain.csproj" Id="b0000005-0000-0000-0000-000000000001" />
+    <Project Path="src/Modules/Channels/Pottmayer.Pandora.Modules.Channels.Application/Pottmayer.Pandora.Modules.Channels.Application.csproj" Id="b0000005-0000-0000-0000-000000000002" />
+    <Project Path="src/Modules/Channels/Pottmayer.Pandora.Modules.Channels.Infrastructure/Pottmayer.Pandora.Modules.Channels.Infrastructure.csproj" Id="b0000005-0000-0000-0000-000000000003" />
+    <Project Path="src/Modules/Channels/Pottmayer.Pandora.Modules.Channels.Persistence/Pottmayer.Pandora.Modules.Channels.Persistence.csproj" Id="b0000005-0000-0000-0000-000000000004" />
+    <Project Path="src/Modules/Channels/Pottmayer.Pandora.Modules.Channels.Presentation/Pottmayer.Pandora.Modules.Channels.Presentation.csproj" Id="b0000005-0000-0000-0000-000000000005" />
   </Folder>
   <Folder Name="/src/Modules/Finances/">
     <Project Path="src/Modules/Finances/Pottmayer.Pandora.Modules.Finances.Abstractions/Pottmayer.Pandora.Modules.Finances.Abstractions.csproj" Id="b0000007-0000-0000-0000-000000000006" />
@@ -30,13 +31,80 @@
     <Project Path="src/Modules/Finances/Pottmayer.Pandora.Modules.Finances.Persistence/Pottmayer.Pandora.Modules.Finances.Persistence.csproj" Id="b0000007-0000-0000-0000-000000000004" />
     <Project Path="src/Modules/Finances/Pottmayer.Pandora.Modules.Finances.Presentation/Pottmayer.Pandora.Modules.Finances.Presentation.csproj" Id="b0000007-0000-0000-0000-000000000005" />
   </Folder>
+  <Folder Name="/src/Modules/Notes/">
+    <Project Path="src/Modules/Notes/Pottmayer.Pandora.Modules.Notes.Abstractions/Pottmayer.Pandora.Modules.Notes.Abstractions.csproj" Id="b0000008-0000-0000-0000-000000000006" />
+    <Project Path="src/Modules/Notes/Pottmayer.Pandora.Modules.Notes.Contracts/Pottmayer.Pandora.Modules.Notes.Contracts.csproj" Id="b0000008-0000-0000-0000-000000000000" />
+    <Project Path="src/Modules/Notes/Pottmayer.Pandora.Modules.Notes.Domain/Pottmayer.Pandora.Modules.Notes.Domain.csproj" Id="b0000008-0000-0000-0000-000000000001" />
+    <Project Path="src/Modules/Notes/Pottmayer.Pandora.Modules.Notes.Application/Pottmayer.Pandora.Modules.Notes.Application.csproj" Id="b0000008-0000-0000-0000-000000000002" />
+    <Project Path="src/Modules/Notes/Pottmayer.Pandora.Modules.Notes.Infrastructure/Pottmayer.Pandora.Modules.Notes.Infrastructure.csproj" Id="b0000008-0000-0000-0000-000000000003" />
+    <Project Path="src/Modules/Notes/Pottmayer.Pandora.Modules.Notes.Persistence/Pottmayer.Pandora.Modules.Notes.Persistence.csproj" Id="b0000008-0000-0000-0000-000000000004" />
+    <Project Path="src/Modules/Notes/Pottmayer.Pandora.Modules.Notes.Presentation/Pottmayer.Pandora.Modules.Notes.Presentation.csproj" Id="b0000008-0000-0000-0000-000000000005" />
+  </Folder>
+  <Folder Name="/src/Modules/Agenda/">
+    <Project Path="src/Modules/Agenda/Pottmayer.Pandora.Modules.Agenda.Abstractions/Pottmayer.Pandora.Modules.Agenda.Abstractions.csproj" Id="b0000009-0000-0000-0000-000000000006" />
+    <Project Path="src/Modules/Agenda/Pottmayer.Pandora.Modules.Agenda.Domain/Pottmayer.Pandora.Modules.Agenda.Domain.csproj" Id="b0000009-0000-0000-0000-000000000001" />
+    <Project Path="src/Modules/Agenda/Pottmayer.Pandora.Modules.Agenda.Application/Pottmayer.Pandora.Modules.Agenda.Application.csproj" Id="b0000009-0000-0000-0000-000000000002" />
+    <Project Path="src/Modules/Agenda/Pottmayer.Pandora.Modules.Agenda.Infrastructure/Pottmayer.Pandora.Modules.Agenda.Infrastructure.csproj" Id="b0000009-0000-0000-0000-000000000003" />
+    <Project Path="src/Modules/Agenda/Pottmayer.Pandora.Modules.Agenda.Persistence/Pottmayer.Pandora.Modules.Agenda.Persistence.csproj" Id="b0000009-0000-0000-0000-000000000004" />
+    <Project Path="src/Modules/Agenda/Pottmayer.Pandora.Modules.Agenda.Presentation/Pottmayer.Pandora.Modules.Agenda.Presentation.csproj" Id="b0000009-0000-0000-0000-000000000005" />
+  </Folder>
+  <Folder Name="/src/Modules/Integrations/">
+    <Project Path="src/Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Abstractions/Pottmayer.Pandora.Modules.Integrations.Abstractions.csproj" />
+    <Project Path="src/Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Contracts/Pottmayer.Pandora.Modules.Integrations.Contracts.csproj" />
+    <Project Path="src/Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Domain/Pottmayer.Pandora.Modules.Integrations.Domain.csproj" />
+    <Project Path="src/Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Application/Pottmayer.Pandora.Modules.Integrations.Application.csproj" />
+    <Project Path="src/Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Infrastructure/Pottmayer.Pandora.Modules.Integrations.Infrastructure.csproj" />
+    <Project Path="src/Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Persistence/Pottmayer.Pandora.Modules.Integrations.Persistence.csproj" />
+    <Project Path="src/Modules/Integrations/Pottmayer.Pandora.Modules.Integrations.Presentation/Pottmayer.Pandora.Modules.Integrations.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Assistant/">
+    <Project Path="src/Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Abstractions/Pottmayer.Pandora.Modules.Assistant.Abstractions.csproj" />
+    <Project Path="src/Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Contracts/Pottmayer.Pandora.Modules.Assistant.Contracts.csproj" />
+    <Project Path="src/Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Domain/Pottmayer.Pandora.Modules.Assistant.Domain.csproj" />
+    <Project Path="src/Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Application/Pottmayer.Pandora.Modules.Assistant.Application.csproj" />
+    <Project Path="src/Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Infrastructure/Pottmayer.Pandora.Modules.Assistant.Infrastructure.csproj" />
+    <Project Path="src/Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Persistence/Pottmayer.Pandora.Modules.Assistant.Persistence.csproj" />
+    <Project Path="src/Modules/Assistant/Pottmayer.Pandora.Modules.Assistant.Presentation/Pottmayer.Pandora.Modules.Assistant.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Communications/">
+    <Project Path="src/Modules/Communications/Pottmayer.Pandora.Modules.Communications.Abstractions/Pottmayer.Pandora.Modules.Communications.Abstractions.csproj" />
+    <Project Path="src/Modules/Communications/Pottmayer.Pandora.Modules.Communications.Contracts/Pottmayer.Pandora.Modules.Communications.Contracts.csproj" />
+    <Project Path="src/Modules/Communications/Pottmayer.Pandora.Modules.Communications.Domain/Pottmayer.Pandora.Modules.Communications.Domain.csproj" />
+    <Project Path="src/Modules/Communications/Pottmayer.Pandora.Modules.Communications.Application/Pottmayer.Pandora.Modules.Communications.Application.csproj" />
+    <Project Path="src/Modules/Communications/Pottmayer.Pandora.Modules.Communications.Infrastructure/Pottmayer.Pandora.Modules.Communications.Infrastructure.csproj" />
+    <Project Path="src/Modules/Communications/Pottmayer.Pandora.Modules.Communications.Persistence/Pottmayer.Pandora.Modules.Communications.Persistence.csproj" />
+    <Project Path="src/Modules/Communications/Pottmayer.Pandora.Modules.Communications.Presentation/Pottmayer.Pandora.Modules.Communications.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Files/">
+    <Project Path="src/Modules/Files/Pottmayer.Pandora.Modules.Files.Abstractions/Pottmayer.Pandora.Modules.Files.Abstractions.csproj" />
+    <Project Path="src/Modules/Files/Pottmayer.Pandora.Modules.Files.Agent/Pottmayer.Pandora.Modules.Files.Agent.csproj" />
+    <Project Path="src/Modules/Files/Pottmayer.Pandora.Modules.Files.Domain/Pottmayer.Pandora.Modules.Files.Domain.csproj" />
+    <Project Path="src/Modules/Files/Pottmayer.Pandora.Modules.Files.Application/Pottmayer.Pandora.Modules.Files.Application.csproj" />
+    <Project Path="src/Modules/Files/Pottmayer.Pandora.Modules.Files.Infrastructure/Pottmayer.Pandora.Modules.Files.Infrastructure.csproj" />
+    <Project Path="src/Modules/Files/Pottmayer.Pandora.Modules.Files.Persistence/Pottmayer.Pandora.Modules.Files.Persistence.csproj" />
+    <Project Path="src/Modules/Files/Pottmayer.Pandora.Modules.Files.Presentation/Pottmayer.Pandora.Modules.Files.Presentation.csproj" />
+  </Folder>
   <Folder Name="/src/Host/">
     <Project Path="src/Host/Pottmayer.Pandora.Host/Pottmayer.Pandora.Host.csproj" Id="b0000004-0000-0000-0000-000000000001" />
   </Folder>
+  <Folder Name="/src/Modules/Admin/">
+    <Project Path="src/Modules/Admin/Pottmayer.Pandora.Modules.Admin.Abstractions/Pottmayer.Pandora.Modules.Admin.Abstractions.csproj" />
+    <Project Path="src/Modules/Admin/Pottmayer.Pandora.Modules.Admin.Domain/Pottmayer.Pandora.Modules.Admin.Domain.csproj" />
+    <Project Path="src/Modules/Admin/Pottmayer.Pandora.Modules.Admin.Application/Pottmayer.Pandora.Modules.Admin.Application.csproj" />
+    <Project Path="src/Modules/Admin/Pottmayer.Pandora.Modules.Admin.Infrastructure/Pottmayer.Pandora.Modules.Admin.Infrastructure.csproj" />
+    <Project Path="src/Modules/Admin/Pottmayer.Pandora.Modules.Admin.Persistence/Pottmayer.Pandora.Modules.Admin.Persistence.csproj" />
+    <Project Path="src/Modules/Admin/Pottmayer.Pandora.Modules.Admin.Presentation/Pottmayer.Pandora.Modules.Admin.Presentation.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Pottmayer.Pandora.Modules.Identity.Tests/Pottmayer.Pandora.Modules.Identity.Tests.csproj" Id="b0000006-0000-0000-0000-000000000001" />
-    <Project Path="tests/Pottmayer.Pandora.Modules.Notifications.Tests/Pottmayer.Pandora.Modules.Notifications.Tests.csproj" Id="b0000006-0000-0000-0000-000000000002" />
+    <Project Path="tests/Pottmayer.Pandora.Modules.Channels.Tests/Pottmayer.Pandora.Modules.Channels.Tests.csproj" Id="b0000006-0000-0000-0000-000000000002" />
     <Project Path="tests/Pottmayer.Pandora.Modules.Finances.Tests/Pottmayer.Pandora.Modules.Finances.Tests.csproj" Id="b0000006-0000-0000-0000-000000000004" />
+    <Project Path="tests/Pottmayer.Pandora.Modules.Notes.Tests/Pottmayer.Pandora.Modules.Notes.Tests.csproj" Id="b0000006-0000-0000-0000-000000000005" />
+    <Project Path="tests/Pottmayer.Pandora.Modules.Agenda.Tests/Pottmayer.Pandora.Modules.Agenda.Tests.csproj" Id="b0000006-0000-0000-0000-000000000006" />
+    <Project Path="tests/Pottmayer.Pandora.Modules.Integrations.Tests/Pottmayer.Pandora.Modules.Integrations.Tests.csproj" Id="b0000006-0000-0000-0000-000000000007" />
+    <Project Path="tests/Pottmayer.Pandora.Modules.Assistant.Tests/Pottmayer.Pandora.Modules.Assistant.Tests.csproj" />
+    <Project Path="tests/Pottmayer.Pandora.Modules.Communications.Tests/Pottmayer.Pandora.Modules.Communications.Tests.csproj" />
+    <Project Path="tests/Pottmayer.Pandora.Modules.Files.Tests/Pottmayer.Pandora.Modules.Files.Tests.csproj" />
     <Project Path="tests/Pottmayer.Pandora.IntegrationTests/Pottmayer.Pandora.IntegrationTests.csproj" Id="b0000006-0000-0000-0000-000000000003" />
   </Folder>
 </Solution>

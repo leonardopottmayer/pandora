@@ -21,7 +21,7 @@ interface CardFormValues {
   closingDay: number
   dueDay: number
   currency: string
-  defaultPaymentAccountId?: string
+  accountId: string
 }
 
 export function CardFormModal({ open, card, onClose }: CardFormModalProps) {
@@ -29,6 +29,7 @@ export function CardFormModal({ open, card, onClose }: CardFormModalProps) {
   const { message } = App.useApp()
   const [form] = Form.useForm<CardFormValues>()
   const isEdit = !!card
+  const currency = Form.useWatch('currency', form) ?? card?.currency ?? 'BRL'
 
   const createMutation = useCreateCard()
   const updateMutation = useUpdateCard()
@@ -45,7 +46,7 @@ export function CardFormModal({ open, card, onClose }: CardFormModalProps) {
         closingDay: card.closingDay,
         dueDay: card.dueDay,
         currency: card.currency,
-        defaultPaymentAccountId: card.defaultPaymentAccountId ?? undefined,
+        accountId: card.accountId,
       })
     } else {
       form.resetFields()
@@ -65,7 +66,7 @@ export function CardFormModal({ open, card, onClose }: CardFormModalProps) {
             creditLimit: values.creditLimit ?? null,
             closingDay: values.closingDay,
             dueDay: values.dueDay,
-            defaultPaymentAccountId: values.defaultPaymentAccountId ?? null,
+            accountId: values.accountId,
           },
         })
         message.success(t('finances.cards.updated'))
@@ -78,7 +79,7 @@ export function CardFormModal({ open, card, onClose }: CardFormModalProps) {
           closingDay: values.closingDay,
           dueDay: values.dueDay,
           currency: values.currency,
-          defaultPaymentAccountId: values.defaultPaymentAccountId ?? null,
+          accountId: values.accountId,
         })
         message.success(t('finances.cards.created'))
       }
@@ -98,6 +99,8 @@ export function CardFormModal({ open, card, onClose }: CardFormModalProps) {
       okText={t('common.save')}
       cancelText={t('common.cancel')}
       destroyOnHidden
+      width={640}
+      styles={{ body: { maxHeight: 'calc(100dvh - 260px)', overflowY: 'auto', paddingRight: 8 } }}
     >
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
         <Form.Item
@@ -108,51 +111,63 @@ export function CardFormModal({ open, card, onClose }: CardFormModalProps) {
           <Input maxLength={120} />
         </Form.Item>
 
-        <Form.Item name="brand" label={t('finances.cards.brand')}>
-          <Input maxLength={60} />
-        </Form.Item>
+        <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
+          <Form.Item
+            name="accountId"
+            label={t('finances.cards.account')}
+            extra={t('finances.cards.accountTooltip')}
+            rules={[{ required: true, message: t('finances.cards.accountRequired') }]}
+          >
+            <AccountSelect />
+          </Form.Item>
 
-        <Form.Item
-          name="lastFour"
-          label={t('finances.cards.lastFour')}
-          rules={[{ len: 4, pattern: /^\d{4}$/, message: t('finances.cards.lastFourInvalid'), required: false }]}
-        >
-          <Input maxLength={4} />
-        </Form.Item>
+          <Form.Item
+            name="currency"
+            label={t('finances.cards.currency')}
+            rules={[{ required: true, message: t('finances.accounts.currencyRequired') }]}
+            normalize={(value: string) => value?.toUpperCase()}
+            extra={isEdit ? t('finances.accounts.currencyLocked') : undefined}
+          >
+            <AutoComplete disabled={isEdit} options={COMMON_CURRENCIES.map((value) => ({ value }))} />
+          </Form.Item>
+        </div>
 
-        <Form.Item name="creditLimit" label={t('finances.cards.creditLimit')}>
-          <InputNumber style={{ width: '100%' }} min={0} step={100} />
-        </Form.Item>
+        <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
+          <Form.Item
+            name="closingDay"
+            label={t('finances.cards.closingDay')}
+            rules={[{ required: true, message: t('finances.cards.dayRequired') }]}
+          >
+            <InputNumber style={{ width: '100%' }} min={1} max={28} />
+          </Form.Item>
 
-        <Form.Item
-          name="closingDay"
-          label={t('finances.cards.closingDay')}
-          rules={[{ required: true, message: t('finances.cards.dayRequired') }]}
-        >
-          <InputNumber style={{ width: '100%' }} min={1} max={28} />
-        </Form.Item>
+          <Form.Item
+            name="dueDay"
+            label={t('finances.cards.dueDay')}
+            rules={[{ required: true, message: t('finances.cards.dayRequired') }]}
+          >
+            <InputNumber style={{ width: '100%' }} min={1} max={28} />
+          </Form.Item>
+        </div>
 
-        <Form.Item
-          name="dueDay"
-          label={t('finances.cards.dueDay')}
-          rules={[{ required: true, message: t('finances.cards.dayRequired') }]}
-        >
-          <InputNumber style={{ width: '100%' }} min={1} max={28} />
-        </Form.Item>
-
-        <Form.Item
-          name="currency"
-          label={t('finances.cards.currency')}
-          rules={[{ required: true, message: t('finances.accounts.currencyRequired') }]}
-          normalize={(value: string) => value?.toUpperCase()}
-          tooltip={isEdit ? t('finances.accounts.currencyLocked') : undefined}
-        >
-          <AutoComplete disabled={isEdit} options={COMMON_CURRENCIES.map((c) => ({ value: c }))} />
-        </Form.Item>
-
-        <Form.Item name="defaultPaymentAccountId" label={t('finances.cards.defaultPaymentAccount')}>
-          <AccountSelect />
-        </Form.Item>
+        <details open={!!card && (!!card.brand || !!card.lastFour || card.creditLimit != null) || undefined}>
+          <summary className="mb-3 w-fit cursor-pointer select-none text-sm">{t('finances.cards.moreOptions')}</summary>
+          <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
+            <Form.Item name="brand" label={t('finances.cards.brand')}>
+              <Input maxLength={60} />
+            </Form.Item>
+            <Form.Item
+              name="lastFour"
+              label={t('finances.cards.lastFour')}
+              rules={[{ len: 4, pattern: /^\d{4}$/, message: t('finances.cards.lastFourInvalid'), required: false }]}
+            >
+              <Input maxLength={4} inputMode="numeric" />
+            </Form.Item>
+          </div>
+          <Form.Item name="creditLimit" label={t('finances.cards.creditLimit')}>
+            <InputNumber style={{ width: '100%' }} min={0} step={100} prefix={currency} />
+          </Form.Item>
+        </details>
       </Form>
     </Modal>
   )

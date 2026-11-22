@@ -1,10 +1,14 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Pottmayer.Pandora.Modules.Identity.Abstractions;
+using Pottmayer.Pandora.Modules.Identity.Application.Devices;
 using Pottmayer.Pandora.Modules.Identity.Domain.Ports.Services;
 using Pottmayer.Pandora.Modules.Identity.Infrastructure.Jobs;
 using Pottmayer.Pandora.Modules.Identity.Infrastructure.Security;
 using Pottmayer.Pandora.Modules.Identity.Infrastructure.Stores;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
+using Pottmayer.Tars.Security.Identity.Abstractions.Contracts;
 using Pottmayer.Tars.Security.Identity.Abstractions.Stores;
 using Pottmayer.Tars.Security.Identity.AspNetCore.DI;
 using Pottmayer.Tars.Security.Identity.DI;
@@ -22,6 +26,7 @@ public static class InfrastructureDI
         builder.Services.AddRefreshTokenStore();
         builder.Services.AddIdentityTokenServices();
         builder.Services.AddIdentityAuthentication();
+        builder.Services.AddDeviceAuthorization();
         builder.Services.AddHostedService<RefreshTokenPurgeBackgroundService>();
 
         return builder;
@@ -70,9 +75,19 @@ public static class InfrastructureDI
             options.ConfigureTarsIdentityProblemResponses(
                 unauthorizedError: Error.Unauthorized("Identity.NotAuthenticated", "Authentication required."),
                 forbiddenError:    Error.Forbidden("Identity.AccessDenied", "Access denied."));
-        });
+        })
+        // Device keys (X-Api-Key). Not a default scheme: only endpoints that name it accept a device key.
+        .AddTarsIdentityApiKey(DeviceAuthorization.Scheme);
 
         services.AddAuthorization();
+
+        return services;
+    }
+
+    private static IServiceCollection AddDeviceAuthorization(this IServiceCollection services)
+    {
+        services.AddScoped<IApiKeyValidator, DeviceApiKeyValidator>();
+        services.AddSingleton<IAuthorizationPolicyProvider, DevicePolicyProvider>();
 
         return services;
     }

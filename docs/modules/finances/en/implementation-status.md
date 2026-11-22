@@ -16,15 +16,37 @@ to tell the difference between "documented because it exists" and "documented as
 | **Accounts** | CRUD, types, immutable currency, archive/unarchive, opening balance (`fin001`). |
 | **Ledger** | Transactions, 11 kinds incl. `statement-writeoff`, signs, status machine, derived balance, transfers (`fin008`). |
 | **Cards & statements** | Card CRUD, statement lifecycle, resolver, pay, **settle (write-off)**, close, **reopen**, available limit (`fin006`, `fin007`). |
-| **Installments** | Manual plans, cent split, void single/plan; import-inferred plans + projections (`fin009`). |
+| **Installments** | Manual plans only, cent split, void single/plan (`fin009`). Import-inferred plans + projections are **not** implemented — see below. |
 | **Tags** | Tag CRUD + polymorphic links (`fin004`, `fin005`). |
+| **Attachments** | Images/PDFs on a transaction, a suggestion or a statement, typed (boleto, receipt, invoice, other); a suggestion's files move to its transaction on approval. Files shared with the Telegram assistant bot (captioned "comprovante", "boleto", "financeiro"…) wait in a queue on the inbox until filed (`fin017`, `fin018`). |
 | **Recurrences & inbox** | Recurring templates + rule engine, staging inbox, approve/reject/link/transfer-from-pending, generation job (`fin010`, `fin011`). |
-| **Imports** | OFX **and** CSV, seeded bank layouts + auto-detection, three-level dedup/reconciliation, installment detection & projection, cutoff date, retry (`fin012`–`fin014`). |
+| **Imports** | OFX **and** CSV, seeded bank layouts + auto-detection, three-level dedup/reconciliation, installment-marker extraction into `parsed_payload`/`ImportRow` (number/count only — no plan matching), cutoff date, retry (`fin012`–`fin014`). |
 | **Reversibility** | Void, unvoid, reverse (all cases), delete guards on account/card. |
-| **Audit reads** | `/audit` timeline by entity or correlation id. |
+| **Audit reads** | `/audit` timeline by entity or correlation id. Responsive list with localized event descriptions, read-only details drawer, lazy entity options and complete results fetched in batches. See [Audit screen](audit-and-provenance.md#audit-screen). |
 | **Frontend** | React module (`client-web/src/modules/finances`) covering accounts, cards, statements, transactions, transfers, categories, tags, recurring, inbox, imports, audit. |
+| **Cards list and form** | Redesigned to the screen patterns: compact responsive rows, named action menus, archive/delete confirmation, a scrolling table with fixed header on desktop, and a paired-field modal with optional details folded away. See [Cards screen](cards-and-statements.md#cards-screen). |
+| **Card detail** | Header with editing, limit figures, responsive statement/installment tabs with independent preserved filters and sorting, secondary amount filters in an overlay, count footers and internal table scrolling. Statement rows open the existing detail. See [Card detail screen](cards-and-statements.md#card-detail-screen). |
+
+Statement details now use the shared heading and figures, controlled filters with a secondary overlay, a responsive scrolling table and on-demand attachments. See [Statement detail](cards-and-statements.md#statement-detail-screen).
+
+Transfer and statement-payment forms use paired required fields, folded optional inputs and scrolling modal bodies. Inbox transfer confirmation has associated input labels and localized dates with ISO submission.
 
 ### Additions beyond the original design
+
+Import details use a responsive row list with parser previews, row filters, a read-only data drawer
+and preserved reconciliation actions. Processing completion reloads final rows. See
+[Import detail screen](imports.md#import-detail-screen).
+
+The imports screen has a compact history with filename/status filters, destination and counters,
+confirmed abort actions and a separate upload form. History loads in full and polls while files are
+active. See [Imports screen](imports.md#imports-screen).
+
+The tags screen uses a compact searchable list with row menus, confirmed deletion, theme-readable
+color swatches and a live form preview with optional color clearing. See [Tags screen](categories-and-tags.md#tags-screen).
+
+The categories screen follows the shared screen patterns, with personal/system tabs, independent
+search and nature filters, hierarchical rows, row menus, a responsive form and desktop scrolling.
+See [Categories screen](categories-and-tags.md#categories-screen).
 
 The implementation evolved past the first design proposal. Notable additions:
 
@@ -39,15 +61,18 @@ The implementation evolved past the first design proposal. Notable additions:
 - **`auto_generate`** flag on recurrences (opt out of automatic generation).
 - `import_file.file_hash` is **informational, not unique** — deliberate re-import is allowed.
 
+The import layouts catalog has name/bank/code search, format and destination filters, and a responsive read-only table. See [Imports](imports.md#import-layouts-screen).
+
 ## Not yet implemented (designed / planned)
 
 | Area | Status |
 |---|---|
+| **Import-inferred installment plans + projections** | `InstallmentPlan` only has an `Origin.Manual` factory (`CreateManual`); approving an import suggestion with a detected installment marker creates one plain transaction, not a plan. The `import`/`projection` origin values, and the matching fields on `ImportRow`/`PendingTransaction` (`matched_installment_plan_id`, etc.), exist in the schema/domain but are unused. The `InstallmentPlan` aggregate's own doc comment calls this "phase 10". |
 | **Categorization rules** (`fin015`) | Auto-categorize import suggestions ("description contains UBER → Transport"). Table and use cases not created. |
 | **Reports** | Cash-flow, by-category, balance-history, and the upcoming-agenda endpoints are not implemented — only the audit timeline exists. |
-| **Notifications integration events** | The `Contracts` project is empty; `StatementClosed`/`StatementDueSoon`/`StatementOverdue`/`ImportCompleted`/`PendingTransactionsGenerated` are not published, and there are no Notifications subscribers/templates yet. |
+| **Channels integration events** | The `Contracts` project is empty; `StatementClosed`/`StatementDueSoon`/`StatementOverdue`/`ImportCompleted`/`PendingTransactionsGenerated` are not published, and there are no Channels subscribers/templates yet. |
 | **User-created import layouts** | Only system layouts are seeded; user layouts + preview endpoint are reserved for a future phase. |
-| **Transaction split, budgets, goals, attachments, balance snapshots, multi-currency consolidation, open finance, multi-user households** | Future — the model leaves room without a core rewrite. |
+| **Transaction split, budgets, goals, balance snapshots, multi-currency consolidation, open finance, multi-user households** | Future — the model leaves room without a core rewrite. |
 
 ## Known open points
 
@@ -62,3 +87,4 @@ The implementation evolved past the first design proposal. Notable additions:
    revisit with multi-currency consolidation.
 5. **Backfill of past installments** — when a plan is created from installment N via import, whether
    to optionally generate installments 1..N−1 (default: no).
+

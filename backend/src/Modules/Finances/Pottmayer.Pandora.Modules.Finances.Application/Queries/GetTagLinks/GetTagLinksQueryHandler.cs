@@ -17,7 +17,7 @@ public sealed class GetTagLinksQueryHandler(IUnitOfWorkFactory factory)
     {
         var input = request.Input;
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var tag = await ctx.AcquireRepository<ITagRepository>().FindByIdForUserAsync(input.TagId, input.UserId, token);
             if (tag is null)

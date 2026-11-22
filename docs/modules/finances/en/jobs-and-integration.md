@@ -12,9 +12,15 @@ a `JobConcurrency` guard prevents overlapping runs.
 
 | Job | Interval | Responsibility |
 |---|---|---|
-| `RecurrenceGenerationBackgroundService` | every 24h (+ on demand) | For each active recurrence with occurrences inside the horizon (default 30 days), generate a `PendingTransaction` — or post directly when `auto_post`. Also posts scheduled `pending` transactions whose date has arrived. Idempotent via the unique `(recurring_transaction_id, occurred_on)` index. |
-| `StatementLifecycleBackgroundService` | every 24h | Create upcoming statements, close statements whose `closing_date <= today`, and mark `overdue` past the due date with an outstanding balance. Idempotent (running twice neither duplicates nor re-closes). |
+| `RecurrenceGenerationBackgroundService` | hourly (+ on demand) | For each active recurrence with occurrences inside the horizon (default 30 days), generate a `PendingTransaction` — or post directly when `auto_post`. Also posts scheduled `pending` transactions whose date has arrived. Idempotent via the unique `(recurring_transaction_id, occurred_on)` index. |
+| `StatementLifecycleBackgroundService` | hourly | Create upcoming statements, close statements whose `closing_date <= today`, and mark `overdue` past the due date with an outstanding balance. Idempotent (running twice neither duplicates nor re-closes). |
 | `ImportParsingBackgroundService` | every 30s (queue polling) | Pick up `received` import files and parse them asynchronously. A row failure does not abort the file. |
+
+**"Today" is each user's own day.** The two date-driven jobs process every user in one pass, but each
+row is held to its owner's calendar day in their zone (`UserDays`, through
+`IEffectiveTimeZoneResolver`): at 16:00 UTC a Tokyo user is already on tomorrow while a São Paulo user is
+not. They run hourly so a day turns close to each user's own midnight. The commands take an optional
+`Today` that applies one date to everyone (tests, a manual run).
 
 The corresponding on-demand commands (`RunRecurrenceGeneration`, `RunStatementLifecycle`,
 `RunImportParsing`, `GenerateRecurringTransactionOccurrence`) let the same logic be triggered
@@ -32,7 +38,7 @@ synchronously (e.g. right after creating a recurrence, or in tests).
 ## Integration events (status)
 
 The `Pottmayer.Pandora.Modules.Finances.Contracts` project exists as the intended home for
-integration events consumed by other modules (Notifications is the obvious consumer), but it is
+integration events consumed by other modules (Channels is the obvious consumer), but it is
 currently **empty** — no integration events are published yet.
 
 Planned events (not implemented):
@@ -46,5 +52,5 @@ Planned events (not implemented):
 | `PendingTransactionsGenerated` | Recurrence job produced suggestions | Review reminder |
 
 When implemented, these would be published by the existing use cases/jobs and subscribed to by the
-Notifications module, with idempotency (one event per transition) and `correlation_id` propagated
+Channels module, with idempotency (one event per transition) and `correlation_id` propagated
 from the domain event to the notification. See [Implementation Status](implementation-status.md).

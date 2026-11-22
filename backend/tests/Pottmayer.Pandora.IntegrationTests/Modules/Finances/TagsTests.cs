@@ -137,6 +137,21 @@ public sealed class TagsTests : IAsyncLifetime
 
         var byA = await ListTxAsync($"?accountId={account}&tags={a.Id}");
         Assert.Empty(byA);
+
+        // Reading the entity's tags returns the current set.
+        var current = (await _client.GetFromJsonAsync<IdListEnvelope>($"{Tags}/entities/transaction/{tx}"))!.Data;
+        Assert.Equal(new[] { b.Id, c.Id }.Order(), current.Order());
+    }
+
+    [Fact]
+    public async Task Reading_tags_of_a_foreign_entity_is_404()
+    {
+        await AuthAsync("tag-read-owner");
+        var account = await CreateAccountAsync(new { name = "Mine", type = "cash", currency = "BRL", displayOrder = 0 });
+        await AuthAsync("tag-read-other");
+
+        var foreign = await _client.GetAsync($"{Tags}/entities/account/{account}");
+        Assert.Equal(HttpStatusCode.NotFound, foreign.StatusCode);
     }
 
     [Fact]
@@ -206,6 +221,7 @@ public sealed class TagsTests : IAsyncLifetime
     private sealed record TagNode(Guid Id, string Name, string? Color);
 
     private sealed record LinkListEnvelope(IReadOnlyList<LinkNode> Data);
+    private sealed record IdListEnvelope(IReadOnlyList<Guid> Data);
     private sealed record LinkNode(Guid Id, Guid TagId, string EntityType, Guid EntityId);
 
     private sealed record AccountEnvelope(AccountNode Data);

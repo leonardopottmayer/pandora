@@ -8,6 +8,7 @@ CREATE TABLE identity.idt001_user (
 	password_hash TEXT NOT NULL,
 	email_confirmed_at TIMESTAMPTZ NULL,
 	disabled_at TIMESTAMPTZ NULL,
+	awaiting_approval_since TIMESTAMPTZ NULL,
 	mfa_enabled BOOLEAN NOT NULL DEFAULT false,
 	last_sign_in_at TIMESTAMPTZ NULL,
 	last_password_changed_at TIMESTAMPTZ NULL,

@@ -1,0 +1,156 @@
+using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Pottmayer.Pandora.Modules.Assistant.Application.Commands.CancelInvocation;
+using Pottmayer.Pandora.Modules.Assistant.Application.Commands.ConfirmInvocation;
+using Pottmayer.Pandora.Modules.Assistant.Application.Commands.Interpret;
+using Pottmayer.Pandora.Modules.Assistant.Application.Commands.SaveProfile;
+using Pottmayer.Pandora.Modules.Assistant.Application.Commands.TestProvider;
+using Pottmayer.Pandora.Modules.Assistant.Application.Queries.GetInvocations;
+using Pottmayer.Pandora.Modules.Assistant.Application.Queries.GetProfile;
+using Pottmayer.Pandora.Modules.Assistant.Application.Queries.GetProviders;
+using Pottmayer.Pandora.Shared.Domain;
+using Pottmayer.Tars.Ai.Chat.Abstractions.Models;
+using Pottmayer.Tars.Core.Mediator.Abstractions;
+using Pottmayer.Tars.UserContext.Abstractions.Context;
+using Pottmayer.Tars.Web.Http.Abstractions;
+using Pottmayer.Tars.Web.Http.AspNetCore.Extensions;
+
+namespace Pottmayer.Pandora.Modules.Assistant.Presentation.Controllers;
+
+[ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/assistant")]
+public sealed class AssistantController(
+    ISender sender,
+    IHttpErrorMapper errorMapper,
+    IUserContextAccessor<UserData> userContextAccessor) : ControllerBase
+{
+    /// <summary>The user's assistant configuration. Returns defaults when none has been saved yet.</summary>
+    [Authorize]
+    [HttpGet("profile")]
+    public async Task<IActionResult> GetProfileAsync(CancellationToken ct)
+    {
+        var result = await sender.Send(new GetProfileQuery(new GetProfileInput(UserId)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>Creates or replaces the user's assistant configuration (provider, model, options).</summary>
+    [Authorize]
+    [HttpPost("profile")]
+    public async Task<IActionResult> SaveProfileAsync([FromBody] SaveProfileRequest body, CancellationToken ct)
+    {
+        var command = new SaveProfileCommand(new SaveProfileInput(
+            UserId, body.Provider, body.ChatAccountId, body.Model, body.IsEnabled, body.LocaleOverride, body.ConfirmationLevel));
+        var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>The chat providers the assistant supports and whether the user has a key stored for each.</summary>
+    [Authorize]
+    [HttpGet("providers")]
+    public async Task<IActionResult> GetProvidersAsync(CancellationToken ct)
+    {
+        var result = await sender.Send(new GetProvidersQuery(new GetProvidersInput(UserId)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>
+    /// Runs a reachability probe against a provider: one minimal round-trip with the user's stored key,
+    /// reporting ok/error and latency. An explicit action (not the GET) because it makes a real,
+    /// possibly billed call to the provider.
+    /// </summary>
+    [Authorize]
+    [HttpPost("providers/{provider}/test")]
+    public async Task<IActionResult> TestProviderAsync(string provider, [FromBody] TestProviderRequest? body, CancellationToken ct)
+    {
+        var command = new TestProviderCommand(new TestProviderInput(UserId, provider, body?.AccountId, body?.Model));
+        var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>
+    /// Interprets one sentence and, when it maps cleanly to a command, executes it inline. Returns the
+    /// interpreted intent (the exact tool call) and the outcome. Makes a real, billed provider call.
+    /// </summary>
+    [Authorize]
+    [HttpPost("interpret")]
+    [EnableRateLimiting(RateLimitPolicies.Assistant)]
+    public async Task<IActionResult> InterpretAsync([FromBody] InterpretRequest body, CancellationToken ct)
+    {
+        var result = await sender.Send(
+            new InterpretCommand(new InterpretInput(UserId, body.Text, body.ConversationId)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>
+    /// Interprets a voice note recorded in the browser: transcribed first, then the same pipeline as
+    /// <see cref="InterpretAsync"/>. The reply carries the transcript. The audio is not retained.
+    /// </summary>
+    [Authorize]
+    [HttpPost("interpret/audio")]
+    [EnableRateLimiting(RateLimitPolicies.Assistant)]
+    [Consumes("multipart/form-data")]
+    // A little above the pipeline's own cap, so a slightly long note gets its readable refusal, not a 413.
+    [RequestSizeLimit(InterpretCommandHandler.MaxAudioBytes + 1024 * 1024)]
+    public async Task<IActionResult> InterpretAudioAsync(IFormFile audio, [FromForm] Guid? conversationId, CancellationToken ct)
+    {
+        await using var stream = audio.OpenReadStream();
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms, ct);
+
+        var result = await sender.Send(new InterpretCommand(new InterpretInput(
+            UserId, null, conversationId, new ChatAttachment(ms.ToArray(), audio.ContentType))), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>Runs a tool call that was held for confirmation.</summary>
+    [Authorize]
+    [HttpPost("invocations/{id:guid}/confirm")]
+    public async Task<IActionResult> ConfirmInvocationAsync(Guid id, CancellationToken ct)
+    {
+        var result = await sender.Send(new ConfirmInvocationCommand(new ConfirmInvocationInput(UserId, id)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>Declines a tool call that was held for confirmation.</summary>
+    [Authorize]
+    [HttpPost("invocations/{id:guid}/cancel")]
+    public async Task<IActionResult> CancelInvocationAsync(Guid id, CancellationToken ct)
+    {
+        var result = await sender.Send(new CancelInvocationCommand(new CancelInvocationInput(UserId, id)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>The user's recent interpretations — the audit trail, showing the exact tool call produced.</summary>
+    [Authorize]
+    [HttpGet("invocations")]
+    public async Task<IActionResult> GetInvocationsAsync([FromQuery] int limit, CancellationToken ct)
+    {
+        var result = await sender.Send(
+            new GetInvocationsQuery(new GetInvocationsInput(UserId, limit <= 0 ? 50 : limit)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    private Guid UserId => userContextAccessor.Context.User!.Id;
+
+    /// <summary>Body for the interpret endpoint.</summary>
+    public sealed record InterpretRequest(string Text, Guid? ConversationId);
+
+    /// <summary>Body for saving the assistant profile.</summary>
+    public sealed record SaveProfileRequest(
+        string Provider,
+        Guid? ChatAccountId,
+        string Model,
+        bool IsEnabled,
+        string? LocaleOverride,
+        string ConfirmationLevel);
+
+    /// <summary>
+    /// Body for the reachability test: the account whose key to probe, and an optional model (the default
+    /// is used when omitted).
+    /// </summary>
+    public sealed record TestProviderRequest(Guid? AccountId, string? Model);
+}

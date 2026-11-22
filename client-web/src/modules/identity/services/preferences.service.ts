@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/api/client'
-import type { AppLanguage, AppTheme, UserPreferences } from '../models'
+import type { UserPreferences } from '../models'
 
 const PREFERENCES_BASE = '/api/v1/identity/preferences'
 
@@ -8,6 +8,6 @@ export async function getPreferences(): Promise<UserPreferences> {
   return data
 }
 
-export async function upsertPreferences(theme: AppTheme, language: AppLanguage): Promise<void> {
-  await apiClient.put(PREFERENCES_BASE, { theme, language })
+export async function upsertPreferences(prefs: UserPreferences): Promise<void> {
+  await apiClient.put(PREFERENCES_BASE, prefs)
 }

@@ -6,6 +6,7 @@ CREATE TABLE finances.fin001_account (
 	name VARCHAR(100) NOT NULL,
 	type VARCHAR(20) NOT NULL,
 	currency VARCHAR(10) NOT NULL,
+	bank_code VARCHAR(10) NULL,
 	institution VARCHAR(100) NULL,
 	description VARCHAR(255) NULL,
 	color VARCHAR(20) NULL,
@@ -27,6 +28,11 @@ ADD CONSTRAINT uq_fin001_user_name UNIQUE (user_id, name);
 ALTER TABLE finances.fin001_account
 ADD CONSTRAINT ck_fin001_type
 CHECK (type IN ('cash', 'checking', 'savings', 'international', 'crypto', 'investment', 'other'));
+
+-- COMPE code of the account's bank; routes statement imports to the right layout.
+ALTER TABLE finances.fin001_account
+ADD CONSTRAINT ck_fin001_bank_code
+CHECK (bank_code IS NULL OR bank_code IN ('077', '085', '260', '341'));
 
 CREATE INDEX ix_fin001_user_id
 ON finances.fin001_account (user_id);

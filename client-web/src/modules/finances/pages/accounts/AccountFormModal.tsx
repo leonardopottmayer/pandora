@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { App, AutoComplete, Form, Input, InputNumber, Modal, Select } from 'antd'
 import { toErrorMessage } from '@/lib/api/envelope'
-import { ACCOUNT_TYPES, type AccountDto } from '../../models'
+import { ACCOUNT_TYPES, SUPPORTED_BANKS, type AccountDto } from '../../models'
 import { ACCOUNT_TYPE_META, COMMON_CURRENCIES } from '../../lib/enums'
 import { useCreateAccount, useUpdateAccount } from '../../hooks/useAccounts'
 
@@ -18,6 +18,7 @@ interface AccountFormValues {
   type: AccountDto['type']
   currency: string
   institution?: string
+  bankCode?: string
   description?: string
   color?: string
   icon?: string
@@ -43,6 +44,7 @@ export function AccountFormModal({ open, account, onClose }: AccountFormModalPro
         type: account.type,
         currency: account.currency,
         institution: account.institution ?? undefined,
+        bankCode: account.bankCode ?? undefined,
         description: account.description ?? undefined,
         color: account.color ?? undefined,
         icon: account.icon ?? undefined,
@@ -63,6 +65,7 @@ export function AccountFormModal({ open, account, onClose }: AccountFormModalPro
             name: values.name,
             type: values.type,
             institution: values.institution ?? null,
+            bankCode: values.bankCode ?? null,
             description: values.description ?? null,
             color: values.color ?? null,
             icon: values.icon ?? null,
@@ -76,6 +79,7 @@ export function AccountFormModal({ open, account, onClose }: AccountFormModalPro
           type: values.type,
           currency: values.currency,
           institution: values.institution ?? null,
+          bankCode: values.bankCode ?? null,
           description: values.description ?? null,
           color: values.color ?? null,
           icon: values.icon ?? null,
@@ -110,34 +114,36 @@ export function AccountFormModal({ open, account, onClose }: AccountFormModalPro
           <Input maxLength={120} />
         </Form.Item>
 
-        <Form.Item
-          name="type"
-          label={t('finances.accounts.type')}
-          rules={[{ required: true }]}
-        >
-          <Select
-            options={ACCOUNT_TYPES.map((type) => ({
-              value: type,
-              label: t(ACCOUNT_TYPE_META[type].labelKey),
-            }))}
-          />
-        </Form.Item>
+        <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
+          <Form.Item
+            name="type"
+            label={t('finances.accounts.type')}
+            rules={[{ required: true }]}
+          >
+            <Select
+              options={ACCOUNT_TYPES.map((type) => ({
+                value: type,
+                label: t(ACCOUNT_TYPE_META[type].labelKey),
+              }))}
+            />
+          </Form.Item>
 
-        <Form.Item
-          name="currency"
-          label={t('finances.accounts.currency')}
-          rules={[{ required: true, message: t('finances.accounts.currencyRequired') }]}
-          normalize={(value: string) => value?.toUpperCase()}
-          tooltip={isEdit ? t('finances.accounts.currencyLocked') : undefined}
-        >
-          <AutoComplete
-            disabled={isEdit}
-            options={COMMON_CURRENCIES.map((c) => ({ value: c }))}
-            filterOption={(input, option) =>
-              (option?.value ?? '').toUpperCase().includes(input.toUpperCase())
-            }
-          />
-        </Form.Item>
+          <Form.Item
+            name="currency"
+            label={t('finances.accounts.currency')}
+            rules={[{ required: true, message: t('finances.accounts.currencyRequired') }]}
+            normalize={(value: string) => value?.toUpperCase()}
+            tooltip={isEdit ? t('finances.accounts.currencyLocked') : undefined}
+          >
+            <AutoComplete
+              disabled={isEdit}
+              options={COMMON_CURRENCIES.map((c) => ({ value: c }))}
+              filterOption={(input, option) =>
+                (option?.value ?? '').toUpperCase().includes(input.toUpperCase())
+              }
+            />
+          </Form.Item>
+        </div>
 
         {!isEdit && (
           <Form.Item name="openingBalance" label={t('finances.accounts.openingBalance')}>
@@ -145,17 +151,41 @@ export function AccountFormModal({ open, account, onClose }: AccountFormModalPro
           </Form.Item>
         )}
 
-        <Form.Item name="institution" label={t('finances.accounts.institution')}>
-          <Input maxLength={120} />
-        </Form.Item>
+        <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
+          <Form.Item
+            name="bankCode"
+            label={t('finances.accounts.bank')}
+            tooltip={t('finances.accounts.bankTooltip')}
+          >
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder={t('finances.accounts.bankPlaceholder')}
+              options={SUPPORTED_BANKS.map((b) => ({ value: b.code, label: `${b.name} (${b.code})` }))}
+              // The bank names the institution too, unless one was already typed.
+              onChange={(code?: string) => {
+                const bank = SUPPORTED_BANKS.find((b) => b.code === code)
+                if (bank && !form.getFieldValue('institution')) form.setFieldValue('institution', bank.name)
+              }}
+            />
+          </Form.Item>
 
-        <Form.Item name="description" label={t('finances.accounts.description')}>
-          <Input.TextArea rows={2} maxLength={500} />
-        </Form.Item>
+          <Form.Item name="institution" label={t('finances.accounts.institution')}>
+            <Input maxLength={120} />
+          </Form.Item>
+        </div>
 
-        <Form.Item name="displayOrder" label={t('finances.accounts.displayOrder')} initialValue={0}>
-          <InputNumber style={{ width: '100%' }} min={0} />
-        </Form.Item>
+        <details open={!!account?.description || undefined}>
+          <summary className="mb-3 w-fit cursor-pointer select-none text-sm">{t('finances.accounts.moreOptions')}</summary>
+          <Form.Item name="description" label={t('finances.accounts.description')}>
+            <Input.TextArea rows={2} maxLength={500} />
+          </Form.Item>
+
+          <Form.Item name="displayOrder" label={t('finances.accounts.displayOrder')} initialValue={0}>
+            <InputNumber style={{ width: '100%' }} min={0} />
+          </Form.Item>
+        </details>
       </Form>
     </Modal>
   )

@@ -33,7 +33,7 @@ public sealed class EnableMfaCommandHandler(
         // Recovery codes: keep plaintext to return, persist only the hashes.
         var plaintextCodes = RecoveryCodeFactory.Generate(options.Value.RecoveryCodeCount);
 
-        var result = await factory.ExecuteAsync(IdentityModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(IdentityModule.DatabaseKey, async (ctx, token) =>
         {
             var users = ctx.AcquireRepository<IUserRepository>();
             var user = await users.GetByIdAsync(input.UserId, token);
@@ -62,19 +62,21 @@ public sealed class EnableMfaCommandHandler(
             foreach (var code in plaintextCodes)
                 await recoveryCodes.AddAsync(MfaRecoveryCode.Issue(user.Id, RecoveryCodeFactory.Hash(code), now), token);
 
+            // Published inside the unit of work: the outbox row commits with the MFA change
+            // (transactional outbox).
+            var enabled = new MfaEnabled(
+                EventId: Guid.CreateVersion7(),
+                OccurredAt: now,
+                UserId: input.UserId,
+                Email: user.Email.Value,
+                Locale: CultureInfo.CurrentUICulture.Name);
+            await integrationEventBus.PublishAsync(enabled, token);
+
             return Result<string>.Success(user.Email.Value);
         }, cancellationToken: ct);
 
         if (result.IsFailure)
             return Fail([.. result.Errors]);
-
-        var enabled = new MfaEnabled(
-            EventId: Guid.CreateVersion7(),
-            OccurredAt: now,
-            UserId: input.UserId,
-            Email: result.Value,
-            Locale: CultureInfo.CurrentUICulture.Name);
-        await integrationEventBus.PublishAsync(enabled, ct);
 
         return Ok(new RecoveryCodesDto(plaintextCodes));
     }

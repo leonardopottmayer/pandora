@@ -1,0 +1,129 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Pottmayer.Pandora.Modules.Channels.Abstractions;
+using Pottmayer.Pandora.Modules.Channels.Domain.Aggregates;
+using Pottmayer.Pandora.Modules.Channels.Domain.ValueObjects;
+
+namespace Pottmayer.Pandora.Modules.Channels.Persistence.EntityConfigs;
+
+internal sealed class NotificationEntityConfiguration : IEntityTypeConfiguration<Notification>
+{
+    public void Configure(EntityTypeBuilder<Notification> builder)
+    {
+        builder.ToTable("chn006_notification", ChannelsModule.Schema);
+
+        builder.HasKey(n => n.Id)
+               .HasName("pk_chn006");
+
+        builder.Property(n => n.Id)
+               .HasColumnName("id")
+               .ValueGeneratedNever();
+
+        builder.Property(n => n.Channel)
+               .HasColumnName("channel")
+               .HasConversion(c => c.Value, v => Channel.FromValue(v))
+               .HasMaxLength(20)
+               .IsRequired();
+
+        builder.Property(n => n.Address)
+               .HasColumnName("recipient")
+               .HasConversion(a => a.Value, v => NotificationAddress.FromValue(v))
+               .HasMaxLength(255)
+               .IsRequired();
+
+        builder.Property(n => n.UserId)
+               .HasColumnName("user_id");
+
+        builder.Property(n => n.Category)
+               .HasColumnName("category")
+               .HasMaxLength(100);
+
+        builder.Property(n => n.TemplateKey)
+               .HasColumnName("template_key")
+               .HasConversion(k => k.Value, v => TemplateKey.FromValue(v))
+               .HasMaxLength(100)
+               .IsRequired();
+
+        builder.Property(n => n.Locale)
+               .HasColumnName("locale")
+               .HasMaxLength(10)
+               .IsRequired();
+
+        builder.Property(n => n.Payload)
+               .HasColumnName("payload")
+               .HasColumnType("jsonb")
+               .IsRequired();
+
+        builder.Property(n => n.Subject)
+               .HasColumnName("subject")
+               .HasMaxLength(255)
+               .IsRequired();
+
+        builder.Property(n => n.Body)
+               .HasColumnName("body")
+               .HasColumnType("text")
+               .IsRequired();
+
+        builder.Property(n => n.IsHtml)
+               .HasColumnName("is_html")
+               .IsRequired();
+
+        builder.Property(n => n.RenderedPayload)
+               .HasColumnName("rendered_payload")
+               .HasColumnType("jsonb");
+
+        builder.Property(n => n.Status)
+               .HasColumnName("status")
+               .HasConversion<string>()
+               .HasMaxLength(20)
+               .IsRequired();
+
+        builder.Property(n => n.AttemptCount)
+               .HasColumnName("attempt_count")
+               .IsRequired();
+
+        builder.Property(n => n.MaxAttempts)
+               .HasColumnName("max_attempts")
+               .IsRequired();
+
+        builder.Property(n => n.NextAttemptAt)
+               .HasColumnName("next_attempt_at")
+               .IsRequired();
+
+        builder.Property(n => n.LastError)
+               .HasColumnName("last_error")
+               .HasColumnType("text");
+
+        builder.Property(n => n.Provider)
+               .HasColumnName("provider")
+               .HasMaxLength(100);
+
+        builder.Property(n => n.ProviderMessageId)
+               .HasColumnName("provider_message_id")
+               .HasMaxLength(255);
+
+        builder.Property(n => n.CorrelationId)
+               .HasColumnName("correlation_id")
+               .IsRequired();
+
+        builder.Property(n => n.GroupId)
+               .HasColumnName("group_id");
+
+        // Dedup is per channel: a fan-out shares one correlation id across e-mail and Telegram.
+        builder.HasIndex(n => new { n.CorrelationId, n.Channel })
+               .HasDatabaseName("uq_chn006_correlation_channel")
+               .IsUnique();
+
+        builder.HasIndex(n => new { n.Status, n.NextAttemptAt })
+               .HasDatabaseName("ix_chn006_status_next_attempt_at");
+
+        // The delivery-history read: a user's notifications, newest first.
+        builder.HasIndex(n => new { n.UserId, n.CreatedAt })
+               .HasDatabaseName("ix_chn006_user_created_at");
+
+        builder.Property(n => n.CreatedAt).HasColumnName("created_at").IsRequired();
+        builder.Property(n => n.CreatedBy).HasColumnName("created_by");
+        builder.Property(n => n.UpdatedAt).HasColumnName("updated_at");
+        builder.Property(n => n.UpdatedBy).HasColumnName("updated_by");
+    }
+}

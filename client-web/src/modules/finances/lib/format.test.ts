@@ -33,11 +33,17 @@ describe('formatDate', () => {
 
 describe('formatDateTime', () => {
   it('renders a value for a valid ISO instant', () => {
-    expect(formatDateTime('2026-06-13T10:30:00Z')).not.toBe('')
+    expect(formatDateTime('2026-06-13T10:30:00Z', 'America/Sao_Paulo')).not.toBe('')
+  })
+
+  it('shows the account zone clock, not the device one', () => {
+    // 10:30 UTC is 07:30 in São Paulo and 19:30 in Tokyo, whatever zone the test machine is in.
+    expect(formatDateTime('2026-06-13T10:30:00Z', 'America/Sao_Paulo')).toContain('07:30')
+    expect(formatDateTime('2026-06-13T10:30:00Z', 'Asia/Tokyo')).toContain('19:30')
   })
 
   it('returns empty string for null', () => {
-    expect(formatDateTime(null)).toBe('')
+    expect(formatDateTime(null, 'UTC')).toBe('')
   })
 })
 

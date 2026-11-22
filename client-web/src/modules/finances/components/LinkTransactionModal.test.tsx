@@ -37,6 +37,7 @@ const tx: TransactionDto = {
   descriptionArgs: null,
   statementReferenceMonth: null,
   statementDueDate: null,
+  attachmentCount: 0,
 }
 
 beforeAll(async () => {
@@ -68,6 +69,8 @@ describe('LinkTransactionModal', () => {
 
     // Pick the candidate row, then confirm.
     await user.click(await screen.findByText('Mercado'))
+    expect(screen.getAllByRole('columnheader')).toHaveLength(3)
+    expect(screen.getByText('6/13/2026')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Link' }))
     expect(picked).toBe('x1')
   })

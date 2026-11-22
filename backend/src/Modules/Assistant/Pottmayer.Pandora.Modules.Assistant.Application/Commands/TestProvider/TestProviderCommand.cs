@@ -1,0 +1,17 @@
+using Pottmayer.Pandora.Modules.Assistant.Application.Dtos;
+using Pottmayer.Tars.Core.Cqrs.Commands;
+using Pottmayer.Tars.Security.Authorization.Abstractions;
+using Pottmayer.Pandora.Modules.Assistant.Abstractions;
+
+namespace Pottmayer.Pandora.Modules.Assistant.Application.Commands.TestProvider;
+
+/// <summary>
+/// Probes a provider with one minimal round-trip using the key of <see cref="AccountId"/> — the account
+/// picked in the settings form, saved or not. Null reports "no key". <see cref="Model"/> is optional:
+/// when null the probe uses the default model.
+/// </summary>
+public sealed record TestProviderInput(Guid UserId, string Provider, Guid? AccountId, string? Model);
+
+[RequiresPermission(AssistantPermissions.Profile.Update)]
+public sealed class TestProviderCommand(TestProviderInput input)
+    : CommandBase<TestProviderInput, ReachabilityResultDto>(input);

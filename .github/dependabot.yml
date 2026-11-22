@@ -1,0 +1,44 @@
+# Security updates ignore target-branch: they always open against main and are handled like hotfixes.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # NuGet doesn't tell dev dependencies apart, so every update is a fix(deps).
+  - package-ecosystem: nuget
+    directory: /backend
+    target-branch: dev
+    ignore:
+      # 3.2 and 4.x check for a license key at build time and fail the Release build (the Docker image).
+      # See ImageSharpProcessor.cs.
+      - dependency-name: "SixLabors.ImageSharp"
+        versions: [">= 3.2.0"]
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: fix
+      include: scope
+    groups:
+      nuget:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /client-web
+    target-branch: dev
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: fix
+      prefix-development: chore
+      include: scope
+    groups:
+      npm:
+        patterns: ["*"]

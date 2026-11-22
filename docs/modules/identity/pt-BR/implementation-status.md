@@ -1,0 +1,43 @@
+# Status de implementação
+
+[← Voltar ao índice](README.md)
+
+Um retrato do que está construído no código versus o que está desenhado mas ainda não implementado.
+
+---
+
+## Implementado
+
+| Área | Notas |
+|---|---|
+| **Revisão do frontend** | Segurança e troca de senha seguem PageHeading/SettingsSection, com quebra de linha nas ações dos códigos de recuperação. Dispositivos distinguem falhas de consulta de resultados vazios e formatam o último acesso com idioma e fuso do aplicativo. Alertas e espaçamentos usam a API atual do Ant Design. |
+| **Scaffold do módulo** | Sete projetos por camada; schema `identity`; `idt001`–`idt009`. |
+| **Usuário + senha** | Agregado `User`; hash Argon2id (`Argon2PasswordHasher`); username/e-mail únicos. |
+| **Cadastro + ativação** | `SignUp`; `AccountActivationRequested` → e-mail; `activate` consome `idt004`; `AccountActivated`. |
+| **Login** | Verificação Argon2id; falha uniforme; JWT access token + refresh rotativo (`idt002`), via Tars. |
+| **Refresh + logout** | `refresh` rotaciona tokens de uso único (`consumed_at`); `signout` consome; `RefreshTokenPurgeBackgroundService` limpa. |
+| **Reset/troca de senha** | `forgot` (uniforme) → `PasswordResetRequested`; `reset` consome `idt005`; `change` autenticado; `PasswordChanged`. |
+| **MFA (TOTP)** | `setup`/`enable`/`disable`/`status`; segredo encriptado (`idt006`, `ISecretProtector`); códigos de recuperação hasheados de uso único (`idt007`); challenge de login (`idt008`); `MfaEnabled`/`MfaDisabled`. |
+| **Preferências** | `idt003` — tema, idioma, **fuso, início da semana**; `GET`/`PUT` com validação. |
+| **Contratos** | Seis eventos de segurança consumidos pelos subscribers do Channels. |
+| **Dispositivos** | `idt009`; parear/listar/revogar + `devices/me`; chaves hasheadas, esquema `X-Api-Key` (Tars) ao lado do JWT; `DeviceAuthorization` + políticas de escopo sob demanda para outros módulos. Ver [Dispositivos](devices.md). |
+| **Frontend** | `client-web/src/modules/identity` — login, cadastro, MFA, preferências, dispositivos conectados (pareia este computador dentro do Pandora Desktop). |
+
+## Fatos notáveis para outros módulos
+
+- **O Identity carrega o fuso IANA e o início da semana** (`idt003`) — o par
+  que o plano da Agenda listava como pré-requisito de "fase 0". Está **construído e exposto** via
+  `PUT /identity/preferences`. Consumi-lo por completo (padrões de item na Agenda, quiet hours do
+  Channels) é trabalho de follow-up *naqueles* módulos, não aqui. Ver [Preferências](preferences.md). O offset de alerta
+  padrão foi para a `agd013_preferences`, da própria Agenda, em 2026-11-01.
+- **E-mails de segurança** fluem inteiramente pelo caminho fato→template do Channels; o Identity não
+  nomeia template.
+
+## Ainda não implementado (futuro)
+
+| Área | Status |
+|---|---|
+| **Login social / OAuth** (ex. login com Google) | Não implementado. (Distinto de [Integrations](../../integrations/pt-BR/overview.md), que é o Pandora chamando o Google *como* o usuário.) |
+| **UI de gestão de sessões** | Refresh tokens são guardados + purgados, mas não há lista de sessões logadas para revogar uma a uma. (Os *dispositivos* pareados têm — ver [Dispositivos](devices.md).) |
+| **WebAuthn / passkeys** | Futuro — o MFA é só TOTP hoje. |
+| **Papéis / permissões** | Ficam no módulo [Admin](../../admin/pt-BR/README.md) (papéis, permissões por ação, feature flags), não no Identity. |

@@ -30,7 +30,7 @@ export function ResetPasswordPage() {
           <Alert
             type="error"
             showIcon
-            message={t('reset.invalidTitle')}
+            title={t('reset.invalidTitle')}
             description={t('reset.invalidDesc')}
             action={<Link to="/forgot-password">{t('reset.requestNew')}</Link>}
           />

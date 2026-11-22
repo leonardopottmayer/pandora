@@ -7,6 +7,7 @@ using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
+using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
@@ -16,6 +17,7 @@ namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.ApprovePending
 public sealed class ApprovePendingTransactionCommandHandler(
     IUnitOfWorkFactory factory,
     IStatementResolver resolver,
+    IEffectiveTimeZoneResolver timeZones,
     TimeProvider timeProvider)
     : CommandHandlerBase<ApprovePendingTransactionCommand, TransactionDto>
 {
@@ -24,8 +26,9 @@ public sealed class ApprovePendingTransactionCommandHandler(
     {
         var input = request.Input;
         var now = timeProvider.GetUtcNow();
+        var today = await timeZones.ResolveTodayAsync(input.UserId, now, ct);
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var pendingRepo = ctx.AcquireRepository<IPendingTransactionRepository>();
             var txRepo = ctx.AcquireRepository<ITransactionRepository>();
@@ -97,23 +100,30 @@ public sealed class ApprovePendingTransactionCommandHandler(
                 statement.SyncAmounts(
                     statement.TotalAmount + pending.Amount.Value * kind.StatementSign,
                     statement.PaidAmount,
-                    DateOnly.FromDateTime(now.UtcDateTime),
+                    today,
                     timeProvider);
-                await statementRepo.UpdateAsync(statement, token);
+                // A freshly-created statement is already tracked as Added; UpdateAsync would flip it to
+                // Modified and emit an UPDATE instead of the INSERT, leaving the transaction's FK dangling.
+                if (!statementResult.Value.Created)
+                    await statementRepo.UpdateAsync(statement, token);
             }
 
             // Links the new transaction back to whatever produced the suggestion, so its provenance
             // is traceable from either the transaction or the original import/recurrence side.
             if (pending.IsImportSource)
                 tx.MarkAsImport(pending.Id);
+            else if (pending.IsManualSource)
+                tx.MarkAsManual(pending.Id);
             else
                 tx.MarkAsRecurrence(pending.RecurringTransactionId!.Value, pending.Id);
             await txRepo.AddAsync(tx, token);
 
             pending.Approve(tx.Id, input.UserId, timeProvider);
             await pendingRepo.UpdateAsync(pending, token);
+            await PendingAttachments.MoveToTransactionAsync(
+                ctx.AcquireRepository<IAttachmentRepository>(), input.UserId, pending.Id, tx.Id, token);
 
-            var origin = pending.IsImportSource ? "import" : "recurrence";
+            var origin = pending.Source.Value;
             await ctx.RecordAsync(input.UserId, input.UserId, TransactionEvents.EntityType, tx.Id,
                 TransactionEvents.Created, now, new { origin }, ct: token);
             await ctx.RecordAsync(input.UserId, input.UserId, PendingTransactionEvents.EntityType, pending.Id,

@@ -79,6 +79,7 @@ recurso de outro usuário retorna **404** (não 403). Os controllers ficam em `P
 | GET / POST | `/tags` | Listar / criar |
 | PUT / DELETE | `/tags/{id}` | Atualizar / excluir |
 | GET | `/tags/{id}/links` | Vínculos de uma tag |
+| GET | `/tags/entities/{entityType}/{entityId}` | Ids das tags de uma entidade |
 | POST | `/tags/{id}/links` | Adicionar vínculo |
 | DELETE | `/tags/{id}/links/{entityType}/{entityId}` | Remover vínculo |
 
@@ -99,6 +100,18 @@ recurso de outro usuário retorna **404** (não 403). Os controllers ficam em `P
 | POST | `/pending-transactions/{id}/approve` · `/reject` · `/link` | Decidir |
 | POST | `/pending-transactions/approve-batch` | Aprovar em lote |
 | POST | `/pending-transactions/transfer` | Montar transferência de duas sugestões |
+
+## Anexos — `/attachments`
+
+| Método | Rota | Propósito |
+|---|---|---|
+| GET | `/attachments?transactionId=` · `?pendingTransactionId=` · `?cardStatementId=` · `?queued=true` | Anexos de um dono, ou a fila, mais antigos primeiro |
+| POST | `/attachments` | `multipart/form-data`: `file` (imagem ou PDF, ≤ 25 MB), `kind`, e no máximo um de `transactionId` · `pendingTransactionId` · `cardStatementId` (nenhum põe na fila) |
+| POST | `/attachments/{id}/assign` | Atribui um anexo da fila: `{ transactionId }` · `{ pendingTransactionId }` · `{ cardStatementId }`; 409 se já tem dono |
+| GET | `/attachments/{id}` | Os bytes, inline, com o content type e o nome guardados |
+| DELETE | `/attachments/{id}` | Remove o anexo e os bytes |
+
+As listas de lançamentos e de transações pendentes trazem `attachmentCount`.
 
 ## Importação — `/imports`
 

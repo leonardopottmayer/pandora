@@ -2,7 +2,8 @@ using Pottmayer.Tars.Core.Cqrs.Commands;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.RunStatementLifecycle;
 
-public sealed record RunStatementLifecycleInput(DateOnly Today);
+/// <param name="Today">One date for every user (tests, a manual run); null takes each user's own day in their zone.</param>
+public sealed record RunStatementLifecycleInput(DateOnly? Today = null);
 
 /// <summary>
 /// Daily job that keeps every active card's statements current: opens the current and next

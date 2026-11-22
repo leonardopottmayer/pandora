@@ -7,6 +7,7 @@ using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
+using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.DataContext;
@@ -22,6 +23,7 @@ namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.ReverseTransac
 public sealed class ReverseTransactionCommandHandler(
     IUnitOfWorkFactory factory,
     IStatementResolver statementResolver,
+    IEffectiveTimeZoneResolver timeZones,
     TimeProvider timeProvider)
     : CommandHandlerBase<ReverseTransactionCommand, TransactionDto>
 {
@@ -30,9 +32,9 @@ public sealed class ReverseTransactionCommandHandler(
     {
         var input = request.Input;
         var now = timeProvider.GetUtcNow();
-        var today = DateOnly.FromDateTime(now.UtcDateTime);
+        var today = await timeZones.ResolveTodayAsync(input.UserId, now, ct);
 
-        var loadResult = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var loadResult = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var transactions = ctx.AcquireRepository<ITransactionRepository>();
 
@@ -77,7 +79,7 @@ public sealed class ReverseTransactionCommandHandler(
     private async Task<Result<TransactionDto>> ReverseAccountTransactionAsync(
         Transaction original, TransactionKind reversalKind, ReverseTransactionInput input, DateTimeOffset now, DateOnly today, CancellationToken ct)
     {
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var transactions = ctx.AcquireRepository<ITransactionRepository>();
 
@@ -104,7 +106,7 @@ public sealed class ReverseTransactionCommandHandler(
     private async Task<Result<TransactionDto>> ReverseTransferAsync(
         Transaction original, ReverseTransactionInput input, DateTimeOffset now, DateOnly today, CancellationToken ct)
     {
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var transactions = ctx.AcquireRepository<ITransactionRepository>();
 
@@ -146,7 +148,7 @@ public sealed class ReverseTransactionCommandHandler(
     private async Task<Result<TransactionDto>> ReverseStatementPaymentAsync(
         Transaction original, ReverseTransactionInput input, DateTimeOffset now, DateOnly today, CancellationToken ct)
     {
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var transactions = ctx.AcquireRepository<ITransactionRepository>();
             var statements = ctx.AcquireRepository<ICardStatementRepository>();
@@ -186,7 +188,7 @@ public sealed class ReverseTransactionCommandHandler(
         if (reversalKind is null)
             return Fail(TransactionErrors.ReversalNotSupported(original.Kind.Value));
 
-        var statementResult = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var statementResult = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var cards = ctx.AcquireRepository<ICardRepository>();
             var statements = ctx.AcquireRepository<ICardStatementRepository>();
@@ -223,7 +225,7 @@ public sealed class ReverseTransactionCommandHandler(
 
         var statementId = statementResult.Value!;
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var transactions = ctx.AcquireRepository<ITransactionRepository>();
             var statements = ctx.AcquireRepository<ICardStatementRepository>();

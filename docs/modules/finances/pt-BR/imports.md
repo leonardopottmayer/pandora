@@ -19,8 +19,10 @@ upload → ImportFile(received) → [job ImportParsingService] → parse linhas 
       → gera sugestões (PendingTransaction) → usuário revisa no inbox → completed
 ```
 
-- **Upload** (`POST /imports`, multipart): o destino é uma **conta XOR um cartão**, um layout opcional
-  (auto-detectado se omitido) e uma **data de corte** (cutoff) opcional. Cria um `ImportFile` em
+- **Upload** (`POST /imports`, multipart): o destino é uma **conta XOR um cartão** e uma **data de
+  corte** (cutoff) opcional. O layout é **roteado pelo banco do destino + formato do arquivo +
+  conta/cartão** (ver [Roteamento por banco](#roteamento-por-banco-do-destino)); só cai no
+  auto-detect por conteúdo quando o destino não tem banco. Cria um `ImportFile` em
   `received`, guardando os bytes brutos (`file_content`) e um `correlation_id` que amarra a auditoria
   da importação inteira. `file_hash` (sha256) é guardado de forma **informativa** — a UI pode avisar
   sobre upload duplicado, mas reimportar o mesmo arquivo é permitido de propósito (para reconstruir
@@ -45,21 +47,38 @@ upload → ImportFile(received) → [job ImportParsingService] → parse linhas 
 
 Um **layout** é um perfil de parsing guardado como `config` JSONB, para os parsers ficarem genéricos e
 os quirks por banco viverem em dados. Layouts de sistema têm `user_id NULL` e um `layout_code` único
-global. O `ILayoutDetector` auto-escolhe um layout para o arquivo enviado quando nenhum é informado.
+global. Cada layout carrega um **`bank_code`** (COMPE) além do `bank_name`, usado no roteamento.
 
 Layouts de sistema seed (bancos brasileiros):
 
-| Código do layout | Banco | Formato | Destino |
-|---|---|---|---|
-| `viacredi-ofx` | Viacredi | OFX | conta |
-| `viacredi-account-csv` | Viacredi | CSV | conta |
-| `nubank-card-ofx` | Nubank | OFX | cartão |
-| `nubank-account-ofx` | Nubank | OFX | conta |
-| `nubank-card-csv` | Nubank | CSV | cartão |
-| `nubank-account-csv` | Nubank | CSV | conta |
-| `inter-ofx` | Banco Inter | OFX | conta |
-| `itau-account-ofx` | Itaú | OFX | conta |
-| `itau-card-csv` | Itaú | CSV | cartão |
+| Código do layout | Banco | COMPE | Formato | Destino |
+|---|---|---|---|---|
+| `viacredi-ofx` | Viacredi | 085 | OFX | conta |
+| `viacredi-account-csv` | Viacredi | 085 | CSV | conta |
+| `nubank-card-ofx` | Nubank | 260 | OFX | cartão |
+| `nubank-account-ofx` | Nubank | 260 | OFX | conta |
+| `nubank-card-csv` | Nubank | 260 | CSV | cartão |
+| `nubank-account-csv` | Nubank | 260 | CSV | conta |
+| `inter-ofx` | Banco Inter | 077 | OFX | conta |
+| `itau-account-ofx` | Itaú | 341 | OFX | conta |
+| `itau-card-csv` | Itaú | 341 | CSV | cartão |
+
+### Roteamento por banco do destino
+
+A conta guarda o COMPE do seu banco em `fin001.bank_code` — um valor do registro `Bank` (dominio; 077
+Inter, 085 Viacredi, 260 Nubank, 341 Itaú). O cartão não tem banco próprio: ele pertence a uma conta
+(`fin006.account_id`) e herda o `bank_code` dela. No upload, o `IImportLayoutResolver` escolhe o layout
+pela **chave `(bank_code, file_format, account_type)`**: detecta o formato (ofx/csv) pela
+extensão/conteúdo, deriva account/card do destino (para cartão, o banco vem da conta a que ele
+pertence), e busca o layout de sistema com essa combinação (índice único `uq_fin012_system_bank_route`).
+
+- **Achou** → usa esse layout (determinístico, sem sniffing).
+- **Não achou** (destino sem banco, ou combinação sem layout) → **fallback** para o `ILayoutDetector`
+  (auto-detect por conteúdo, comportamento anterior).
+
+Isso substitui a escolha por sniffing como caminho principal; o detector vira rede de segurança. A
+matriz do que cada banco suporta é derivada dos layouts (`GET /import-layouts`, campos `bankCode`,
+`fileFormat`, `accountType`), consumida pelo front para oferecer o banco no cadastro de conta/cartão.
 
 **Config OFX** captura quirks: `descriptionField` (NAME/MEMO), `amountIsAlwaysAbsolute`,
 `invertAmount`, `treatPaymentAsDebit` e uma lista `quirks` (`multiple-banktranlist`, `comma-decimal`,
@@ -91,26 +110,79 @@ quando existe um FITID/identificador, senão um hash de conteúdo
 A janela de ±2 dias e a tolerância de valor são heurísticas atuais (calibração é um ponto em aberto
 conhecido).
 
-## Detecção de parcelas / projeção
+## Extração do marcador de parcela (implementado)
 
-Para um CSV/OFX de fatura de cartão que traz só a parcela corrente (ex.: `LOJA X 03/12`, R$ 100):
+Para um CSV/OFX de fatura de cartão que traz só a parcela corrente (ex.: `LOJA X 03/12`, R$ 100), o
+parser aplica os `installmentPatterns` do layout para extrair `installment_number = 3` e
+`installment_count = 12` no `parsed_payload` e no `ImportRow`/sugestão. Essa parte está implementada
+(`OFXParser`/`CsvParser`). O usuário vê esses valores na revisão.
 
-1. O parser aplica os `installmentPatterns` do layout para extrair `installment_number = 3` e
-   `installment_count = 12` no `parsed_payload` e na sugestão. O usuário pode corrigir ou zerar esses
-   campos na revisão (falso positivo — descrição que só *parece* uma fração).
-2. Na aprovação, um matcher de parcelas procura plano existente no cartão com a mesma
-   `normalized_description`, mesmo count, valor de parcela compatível e uma posição livre:
-   - **achou** → a transação aprovada vira a parcela N desse plano;
-   - **não achou** → cria plano com `origin = import`, `total_amount = valor × count`
-     (`total_is_estimate = true`) e `first_reference_month` inferido retroativamente
-     (mês da fatura atual − (N−1) meses); a transação aprovada é a parcela N.
-3. **Parcelas futuras** (N+1..count) são geradas como transações `pending` com `origin = projection`
-   nas faturas seguintes — para o usuário ver o comprometimento futuro. Contam para o total
-   *projetado* de uma fatura, não para o `total_amount` postado nem um saldo.
-4. **Parcelas passadas** (1..N−1) **não** são geradas automaticamente.
-5. A importação do mês seguinte de `LOJA X 04/12` concilia com a parcela projetada (mesmo plano,
-   posição 4) → sugestão de confirmação; aprovar posta a projeção com os valores reais. Nada duplica.
-   Ver [Parcelamento](installments.md).
+É até onde vai hoje: **aprovar** essa sugestão (`ApprovePendingTransactionCommand`) ignora
+`installment_number`/`installment_count`/`matched_installment_plan_id` e simplesmente cria uma
+transação simples — não existe matcher que a ligue a um `InstallmentPlan` existente, não existe
+criação de plano com `origin = import`, e não existe geração das parcelas futuras projetadas. O design
+para esse fluxo completo é:
+
+1. Na aprovação, um matcher de parcelas procuraria plano existente no cartão com a mesma
+   `normalized_description`, mesmo count, valor de parcela compatível e uma posição livre: achou → a
+   transação aprovada vira a parcela N desse plano; não achou → um novo plano com `origin = import`,
+   `total_amount = valor × count` (`total_is_estimate = true`) e `first_reference_month` inferido
+   retroativamente.
+2. As **parcelas futuras** (N+1..count) seriam geradas como transações com `origin = projection` nas
+   faturas seguintes.
+3. As **parcelas passadas** (1..N−1) **não** seriam geradas automaticamente.
+4. A importação do mês seguinte de `LOJA X 04/12` conciliaria com a parcela projetada em vez de
+   duplicá-la.
+
+Nada disso (passos 1-4) está implementado — ver [Parcelamento](installments.md) e
+[Status de Implementação](implementation-status.md). O valor `EntryOrigin.Projection` e os campos de
+`ImportRow`/`PendingTransaction` que dariam suporte a isso (`matched_installment_plan_id`, etc.) já
+existem no schema, sem uso.
+
+## Tela de importações
+
+A lista segue os padrões compartilhados: cabeçalho e ação Enviar arquivo, busca por nome e filtro
+de situação, linhas compactas com destino/situação e contadores, e contagem no rodapé. Cada linha
+abre o detalhe existente. Menus identificados mostram Tentar novamente apenas para arquivos com falha e
+Abortar apenas para recebidos, em processamento ou com falha; abortar confirma com o nome do arquivo.
+Nomes e erros longos são truncados em telas estreitas, com texto completo no atributo title.
+
+Enviar abre um modal com escolha de conta/cartão, destino correspondente obrigatório e um arquivo
+OFX ou CSV. Escolher o arquivo só o mantém localmente; confirmar faz o envio. Trocar o tipo de destino
+limpa a seleção anterior. A data de corte opcional fica recolhida, com orientação abaixo do campo;
+aparece em DD/MM/AAAA e é enviada como data ISO. Falhas no envio preservam a seleção para nova tentativa.
+
+O histórico completo é buscado em lotes pela paginação existente. Enquanto algum arquivo estiver
+recebido ou em processamento, a lista atualiza a cada cinco segundos; para quando todos terminam.
+No desktop, o cabeçalho fica fixo dentro do painel com rolagem; no celular, a página rola sem
+transbordamento horizontal. Regras de leitura, deduplicação e geração de sugestões permanecem iguais.
+
+## Tela de detalhe da importação
+
+O detalhe usa o cabeçalho compartilhado, indicadores de sugestões/duplicatas/erros e lista compacta
+de linhas. Os metadados ficam recolhidos em Detalhes do arquivo. A lista busca descrições, dados
+originais e referências externas e filtra situação e duplicidade. Descrição, data, moeda e direção
+de entrada/saída vêm do snapshot imutável do parser; snapshots ausentes ou inválidos usam os dados
+originais do banco, sem deduzir valores.
+
+Clicar na linha abre um drawer de leitura com dados originais e interpretados completos,
+identificadores, classificação, parcela e erro. Menus e ações do drawer preservam a caixa de entrada,
+o drawer do lançamento existente e o seletor de vínculo. Vincular continua disponível apenas para
+linhas com sugestão que ainda não estejam correspondidas. A busca de vínculos só é montada ao abrir.
+
+A lista não tem paginação, tem contagem no rodapé e rolagem interna com cabeçalho fixo no desktop.
+No celular, data e valor passam para baixo da descrição. As linhas atualizam durante o processamento
+e usam chave de cache por fase, buscando o resultado final ao concluir antes de parar a atualização.
+Abortar confirma o nome do arquivo e Tentar novamente continua disponível em falhas. Regras de
+leitura, duplicidade e vínculo permanecem iguais.
+
+## Tela de layouts de importação
+
+O catálogo de sistema, somente leitura, segue o padrão de lista compacta: cabeçalho, busca por nome,
+banco e código do layout, filtros de formato/destino, contagem e cabeçalho fixo no desktop.
+O código do banco fica visível; no celular, banco, formato e destino passam para baixo do nome,
+junto do código do layout. Os metadados permanecem acessíveis sem rolagem horizontal da página.
+Catálogo vazio, busca sem resultados e falhas têm mensagens distintas. A tela não cria nem edita layouts.
 
 ## API
 

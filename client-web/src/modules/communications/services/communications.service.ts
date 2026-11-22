@@ -1,0 +1,200 @@
+import { apiClient } from '@/lib/api/client'
+import type {
+  ComposeDraft,
+  ComposeMode,
+  MailLabel,
+  MailMessage,
+  MailRule,
+  Mailbox,
+  MailProvider,
+  MessageAction,
+  MessageFilter,
+  MessagePage,
+  MessageSummary,
+  RuleAction,
+  RuleCondition,
+} from '../models'
+
+const BASE = '/api/v1/communications'
+
+export async function saveMessageToNotes(id: string, body: { title: string; spaceId: string | null; folderId: string | null }): Promise<string> {
+  const { data } = await apiClient.post<string>(`${BASE}/messages/${id}/notes`, body)
+  return data
+}
+
+export interface ServerSettings {
+  imapHost: string
+  imapPort: number
+  smtpHost: string
+  smtpPort: number
+}
+
+export interface ConnectMailboxInput extends Partial<ServerSettings> {
+  provider: MailProvider
+  externalAccountId: string
+  /** Defaults to the Google email or the IMAP username. */
+  address?: string
+  displayName?: string
+}
+
+export async function listMailboxes(): Promise<Mailbox[]> {
+  const { data } = await apiClient.get<Mailbox[]>(`${BASE}/mailboxes`)
+  return data
+}
+
+/** Tests the connection first: a refused test is an error and nothing is created. */
+export async function connectMailbox(input: ConnectMailboxInput): Promise<Mailbox> {
+  const { data } = await apiClient.post<Mailbox>(`${BASE}/mailboxes`, input)
+  return data
+}
+
+/** New server settings (all four fields, or none) are tested first. */
+export async function updateMailbox(
+  id: string,
+  body: { displayName: string | null } & Partial<ServerSettings>,
+): Promise<Mailbox> {
+  const { data } = await apiClient.patch<Mailbox>(`${BASE}/mailboxes/${id}`, body)
+  return data
+}
+
+export async function deleteMailbox(id: string): Promise<void> {
+  await apiClient.delete(`${BASE}/mailboxes/${id}`)
+}
+
+/** Runs one cycle now; a `needs-reconnect` mailbox is tested first and reconnected when it passes. */
+export async function syncMailbox(id: string): Promise<Mailbox> {
+  const { data } = await apiClient.post<Mailbox>(`${BASE}/mailboxes/${id}/sync`)
+  return data
+}
+
+export async function listLabels(mailboxId: string): Promise<MailLabel[]> {
+  const { data } = await apiClient.get<MailLabel[]>(`${BASE}/mailboxes/${mailboxId}/labels`)
+  return data
+}
+
+/** The label endpoints answer with the mailbox's labels as they are after the operation. */
+export async function createLabel(mailboxId: string, name: string): Promise<MailLabel[]> {
+  const { data } = await apiClient.post<MailLabel[]>(`${BASE}/mailboxes/${mailboxId}/labels`, { name })
+  return data
+}
+
+export async function renameLabel(id: string, name: string): Promise<MailLabel[]> {
+  const { data } = await apiClient.patch<MailLabel[]>(`${BASE}/labels/${id}`, { name })
+  return data
+}
+
+/** An IMAP folder with messages is refused: deleting it would delete what is inside. */
+export async function deleteLabel(id: string): Promise<MailLabel[]> {
+  const { data } = await apiClient.delete<MailLabel[]>(`${BASE}/labels/${id}`)
+  return data
+}
+
+export interface RuleInput {
+  name: string
+  conditions: RuleCondition[]
+  actions: RuleAction[]
+}
+
+export async function listRules(mailboxId: string): Promise<MailRule[]> {
+  const { data } = await apiClient.get<MailRule[]>(`${BASE}/mailboxes/${mailboxId}/rules`)
+  return data
+}
+
+/** The rule endpoints answer with the mailbox's rules as they are after the operation. On Gmail, Gmail goes first. */
+export async function createRule(mailboxId: string, input: RuleInput): Promise<MailRule[]> {
+  const { data } = await apiClient.post<MailRule[]>(`${BASE}/mailboxes/${mailboxId}/rules`, input)
+  return data
+}
+
+/** Disabling a Gmail rule deletes its filter; enabling makes it again. A new name alone does not reach Gmail. */
+export async function updateRule(id: string, input: RuleInput & { isEnabled: boolean }): Promise<MailRule[]> {
+  const { data } = await apiClient.put<MailRule[]>(`${BASE}/rules/${id}`, input)
+  return data
+}
+
+/** On Gmail this deletes the filter too, for good. */
+export async function deleteRule(id: string): Promise<MailRule[]> {
+  const { data } = await apiClient.delete<MailRule[]>(`${BASE}/rules/${id}`)
+  return data
+}
+
+export async function reorderRules(mailboxId: string, ruleIds: string[]): Promise<MailRule[]> {
+  const { data } = await apiClient.put<MailRule[]>(`${BASE}/mailboxes/${mailboxId}/rules/order`, { ruleIds })
+  return data
+}
+
+export interface MessageActionInput {
+  mailboxId: string
+  messageIds: string[]
+  action: MessageAction
+  labelId?: string
+}
+
+/** Goes to the provider first: a failure changes nothing. */
+export async function applyMessageAction(input: MessageActionInput): Promise<MessageSummary[]> {
+  const { data } = await apiClient.post<MessageSummary[]>(`${BASE}/messages/actions`, input)
+  return data
+}
+
+export async function getComposeDraft(messageId: string, mode: ComposeMode): Promise<ComposeDraft> {
+  const { data } = await apiClient.get<ComposeDraft>(`${BASE}/messages/${messageId}/compose`, { params: { mode } })
+  return data
+}
+
+export interface SendMessageInput {
+  mailboxId: string
+  /** Made when the form opens: the server refuses a key it has already handled. */
+  sendKey: string
+  to: string[]
+  cc: string[]
+  bcc: string[]
+  subject: string
+  textBody: string
+  htmlBody: string
+  replyToId?: string
+  forwardOfId?: string
+  keepAttachmentIds: string[]
+  files: File[]
+}
+
+export function toSendForm(input: SendMessageInput): FormData {
+  const form = new FormData()
+  form.append('mailboxId', input.mailboxId)
+  form.append('sendKey', input.sendKey)
+  form.append('subject', input.subject)
+  form.append('textBody', input.textBody)
+  form.append('htmlBody', input.htmlBody)
+  input.to.forEach((a) => form.append('to', a))
+  input.cc.forEach((a) => form.append('cc', a))
+  input.bcc.forEach((a) => form.append('bcc', a))
+  if (input.replyToId) form.append('replyToId', input.replyToId)
+  if (input.forwardOfId) form.append('forwardOfId', input.forwardOfId)
+  input.keepAttachmentIds.forEach((id) => form.append('keepAttachmentIds', id))
+  input.files.forEach((file) => form.append('files', file))
+  return form
+}
+
+/** This cannot be taken back. `copySaved: false` is a success: the mail went, only the sent copy is missing. */
+export async function sendMessage(input: SendMessageInput): Promise<{ copySaved: boolean }> {
+  const { data } = await apiClient.post<{ copySaved: boolean }>(`${BASE}/messages/send`, toSendForm(input), {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data
+}
+
+export async function listMessages(filter: MessageFilter, before?: string, limit = 50): Promise<MessagePage> {
+  const { data } = await apiClient.get<MessagePage>(`${BASE}/messages`, {
+    params: { ...filter, before, limit },
+  })
+  return data
+}
+
+/** The first open fetches the message from the server; later ones read the cache. */
+export async function getMessage(id: string): Promise<MailMessage> {
+  const { data } = await apiClient.get<MailMessage>(`${BASE}/messages/${encodeURIComponent(id)}`)
+  return data
+}
+
+export function attachmentUrl(messageId: string, attachmentId: string): string {
+  return `${BASE}/messages/${messageId}/attachments/${attachmentId}`
+}

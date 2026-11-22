@@ -1,4 +1,10 @@
-import type { ImportFileFilters, PendingTransactionFilters, TransactionFilters } from '../models'
+import type {
+  AttachmentOwner,
+  ImportFileFilters,
+  ImportStatus,
+  PendingTransactionFilters,
+  TransactionFilters,
+} from '../models'
 
 // Central query key factory for the finances module. Centralising prevents
 // mismatches between callers that query and those that invalidate in the TanStack Query cache.
@@ -41,6 +47,7 @@ export const financeKeys = {
   tags: () => [...financeKeys.all, 'tags'] as const,
   tagList: () => [...financeKeys.tags(), 'list'] as const,
   tagLinks: (id: string) => [...financeKeys.tags(), 'links', id] as const,
+  entityTags: (entityType: string, id: string) => [...financeKeys.tags(), 'entity', entityType, id] as const,
 
   audit: () => [...financeKeys.all, 'audit'] as const,
   auditTimeline: (params: object = {}) =>
@@ -54,11 +61,14 @@ export const financeKeys = {
   pendingList: (filters: PendingTransactionFilters = {}) =>
     [...financeKeys.pending(), 'list', filters] as const,
 
+  attachments: () => [...financeKeys.all, 'attachments'] as const,
+  attachmentList: (owner: AttachmentOwner) => [...financeKeys.attachments(), 'list', owner] as const,
+
   imports: () => [...financeKeys.all, 'imports'] as const,
   importList: (filters: ImportFileFilters = {}) =>
     [...financeKeys.imports(), 'list', filters] as const,
   import: (id: string) => [...financeKeys.imports(), 'detail', id] as const,
-  importRows: (id: string) => [...financeKeys.imports(), 'rows', id] as const,
+  importRows: (id: string, phase?: ImportStatus) => [...financeKeys.imports(), 'rows', id, ...(phase ? [phase] : [])] as const,
 
   importLayouts: () => [...financeKeys.all, 'import-layouts'] as const,
 }

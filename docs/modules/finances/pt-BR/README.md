@@ -28,11 +28,11 @@ precisar. Cada arquivo traz o *contexto de negócio* (o que significa para o usu
 | 3 | [Modelo de dados](data-model.md) | Catálogo completo do schema (`fin001`–`fin016`): colunas, constraints, índices |
 | 4 | [Contas](accounts.md) | Tipos de conta, moeda, arquivamento |
 | 5 | [Cartões e faturas](cards-and-statements.md) | Config do cartão, ciclo da fatura, resolver, pagamento, quitação sem caixa, reabertura, limite |
-| 6 | [Parcelamento](installments.md) | Planos manuais e inferidos de importação, arredondamento de centavos, projeções |
+| 6 | [Parcelamento](installments.md) | Planos manuais, arredondamento de centavos (planos inferidos de importação + projeções: projetado, não implementado) |
 | 7 | [Lançamentos (Ledger)](transactions.md) | Tipos e sinais, máquina de status, saldo, transferências, agendamentos |
 | 8 | [Categorias e tags](categories-and-tags.md) | Categorias de sistema vs. do usuário, tags polimórficas |
 | 9 | [Recorrências e inbox](recurrences-and-inbox.md) | Templates de recorrência, inbox de staging, aprovar/rejeitar/vincular/transferir |
-| 10 | [Importação](imports.md) | Pipeline OFX/CSV, layouts, dedup/conciliação, detecção de parcelas, cutoff, retry |
+| 10 | [Importação](imports.md) | Pipeline OFX/CSV, layouts, dedup/conciliação, extração do marcador de parcela, cutoff, retry |
 | 11 | [Reversibilidade](reversibility.md) | Cancelar, desfazer, estornar e proteções de exclusão |
 | 12 | [Auditoria e proveniência](audit-and-provenance.md) | Proveniência estrutural + event log append-only + catálogo de eventos |
 | 13 | [Jobs e integração](jobs-and-integration.md) | Jobs de background, idempotência, eventos de integração (status) |

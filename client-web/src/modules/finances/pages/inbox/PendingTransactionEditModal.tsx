@@ -111,29 +111,9 @@ export function PendingTransactionEditModal({
       okText={t('common.save')}
       cancelText={t('common.cancel')}
       destroyOnHidden
-      width={520}
+      width={640}
     >
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
-        <Form.Item name="kind" label={t('finances.transactions.kind')} rules={[{ required: true }]}>
-          <Select options={kindOptions} />
-        </Form.Item>
-
-        <Form.Item
-          name="amount"
-          label={t('finances.transactions.amount')}
-          rules={[{ required: true, message: t('finances.transactions.amountRequired') }]}
-        >
-          <InputNumber style={{ width: '100%' }} min={0.01} step={0.01} />
-        </Form.Item>
-
-        <Form.Item
-          name="occurredOn"
-          label={t('finances.transactions.occurredOn')}
-          rules={[{ required: true, message: t('finances.transactions.occurredOnRequired') }]}
-        >
-          <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
-        </Form.Item>
-
         <Form.Item
           name="description"
           label={t('finances.transactions.description')}
@@ -142,17 +122,44 @@ export function PendingTransactionEditModal({
           <Input maxLength={200} />
         </Form.Item>
 
-        <Form.Item name="category" label={t('finances.transactions.category')}>
-          <CategorySelect nature={kind ? natureForKind(kind) : undefined} />
-        </Form.Item>
+        <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
+          <Form.Item
+            name="amount"
+            label={t('finances.transactions.amount')}
+            rules={[{ required: true, message: t('finances.transactions.amountRequired') }]}
+          >
+            <InputNumber style={{ width: '100%' }} min={0.01} step={0.01} prefix={pending?.currency} />
+          </Form.Item>
 
-        <Form.Item name="payee" label={t('finances.transactions.payee')}>
-          <Input maxLength={120} />
-        </Form.Item>
+          <Form.Item
+            name="occurredOn"
+            label={t('finances.transactions.occurredOn')}
+            rules={[{ required: true, message: t('finances.transactions.occurredOnRequired') }]}
+          >
+            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+          </Form.Item>
 
-        <Form.Item name="notes" label={t('finances.transactions.notes')}>
-          <Input.TextArea rows={2} maxLength={500} />
-        </Form.Item>
+          <Form.Item name="kind" label={t('finances.transactions.kind')} rules={[{ required: true }]}>
+            <Select options={kindOptions} />
+          </Form.Item>
+
+          <Form.Item name="category" label={t('finances.transactions.category')}>
+            <CategorySelect nature={kind ? natureForKind(kind) : undefined} />
+          </Form.Item>
+        </div>
+
+        <details open={!!(pending?.payee || pending?.notes) || undefined}>
+          <summary className="mb-3 w-fit cursor-pointer select-none text-sm">
+            {t('finances.transactions.moreOptions')}
+          </summary>
+          <Form.Item name="payee" label={t('finances.transactions.payee')}>
+            <Input maxLength={120} />
+          </Form.Item>
+
+          <Form.Item name="notes" label={t('finances.transactions.notes')}>
+            <Input.TextArea rows={2} maxLength={500} />
+          </Form.Item>
+        </details>
       </Form>
     </Modal>
   )

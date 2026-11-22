@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { financeKeys } from './queryKeys'
 import type { CreateAccountRequest, TransactionFilters, UpdateAccountRequest } from '../models'
 import * as accountsService from '../services/accounts.service'
 import type { ListAccountsParams } from '../services/accounts.service'
+import { fetchAllPages } from '../services/transactions.service'
 
 export function useAccounts(params: ListAccountsParams = {}) {
   return useQuery({
@@ -38,10 +39,30 @@ export function useAccountBalance(id: string) {
   })
 }
 
+/** The balances of several accounts, one request each, on the same cache as `useAccountBalance`. */
+// ponytail: one request per account; a list endpoint with balances if accounts ever number in the dozens.
+export function useAccountBalances(ids: string[]) {
+  return useQueries({
+    queries: ids.map((id) => ({
+      queryKey: financeKeys.accountBalance(id),
+      queryFn: () => accountsService.getAccountBalance(id),
+    })),
+  })
+}
+
 export function useAccountTransactions(id: string, filters: TransactionFilters = {}) {
   return useQuery({
     queryKey: financeKeys.accountTransactions(id, filters),
     queryFn: () => accountsService.getAccountTransactions(id, filters),
+    enabled: !!id,
+  })
+}
+
+/** Every transaction of an account in a period, across as many pages as it takes. */
+export function useAllAccountTransactions(id: string, filters: Omit<TransactionFilters, 'skip' | 'take'>) {
+  return useQuery({
+    queryKey: financeKeys.accountTransactions(id, { ...filters, take: -1 }),
+    queryFn: () => fetchAllPages((skip, take) => accountsService.getAccountTransactions(id, { ...filters, skip, take })),
     enabled: !!id,
   })
 }

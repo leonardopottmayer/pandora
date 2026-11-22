@@ -39,6 +39,24 @@ fallback `is_other`. Códigos de sistema específicos referenciados pelo app inc
 
 Auditoria: `category.created`, `category.updated`, `category.activated`, `category.deactivated`.
 
+### Tela de categorias
+
+A página segue os padrões compartilhados: cabeçalho e ação Nova categoria, seguidos das abas Minhas
+categorias e Categorias do sistema. Cada aba preserva sua busca, filtro de natureza e grupos abertos.
+A busca ignora acentos e maiúsculas, mantém o pai de uma subcategoria encontrada e abre os grupos
+correspondentes; encontrar o pai inclui seus filhos. Limpar filtros atua apenas na aba atual.
+
+As duas abas usam linhas hierárquicas compactas, com natureza abaixo do nome e contagem incluindo
+subcategorias no rodapé. Linhas pessoais abrem a edição e oferecem Editar e Ativar/Desativar num
+menu identificado pelo nome; inativas aparecem quando solicitadas, com uma tag Inativa. As linhas
+do sistema são apenas para consulta. No desktop, o painel tem rolagem interna e cabeçalho fixo;
+no celular, a página rola sem transbordamento horizontal. Carregamento e estado vazio ficam no painel.
+
+O formulário põe nome primeiro, natureza e categoria principal opcional lado a lado em telas maiores,
+e ordem de exibição em Mais opções (aberto ao editar uma ordem diferente de zero). Trocar a natureza
+limpa a categoria principal selecionada. Natureza e categoria principal continuam imutáveis após o
+cadastro. Contratos de API e regras de hierarquia permanecem iguais.
+
 ## Tags (`fin004_tag` / `fin005_tag_link`)
 
 - **Rótulos livres** do usuário: `name` (único por usuário), `color`.
@@ -49,12 +67,32 @@ Auditoria: `category.created`, `category.updated`, `category.activated`, `catego
 - Excluir uma tag **cascateia** seus vínculos (`ON DELETE CASCADE`), auditado.
 - Filtrável em listagens (ex.: `GET /transactions?tags=`).
 
+### Tela de etiquetas
+
+A lista compacta segue os padrões compartilhados: cabeçalho, ação Nova etiqueta, busca por nome
+sem distinguir acentos, menus identificados por linha e contagem no rodapé. Clicar na linha abre
+a edição. Nomes usam as cores de texto do tema; uma amostra com borda mostra a cor escolhida para
+que etiquetas brancas ou amarelas continuem legíveis. Excluir pede confirmação com o nome e avisa
+que os vínculos serão removidos.
+
+O formulário mantém nome e cor opcional visíveis, oferece Escolher cor e Limpar cor e mostra uma
+prévia conforme os valores mudam. Limpar a cor envia `null`. No desktop, o painel tem rolagem
+interna e cabeçalho fixo; no celular, a página rola sem transbordamento horizontal. Lista vazia e
+busca sem resultados têm mensagens diferentes. Contratos de API permanecem iguais.
+
+### Aplicar etiquetas
+
+As páginas de conta, cartão e fatura e o painel do lançamento têm um seletor de etiquetas que salva
+assim que a seleção muda (`EntityTags`). As listas de contas e cartões, e "Mais filtros" na lista de
+lançamentos, filtram por etiqueta (qualquer uma das escolhidas).
+
 ### API
 
 | Método | Rota | Propósito |
 |---|---|---|
 | GET / POST / PUT / DELETE | `/tags`, `/tags/{id}` | CRUD |
 | GET | `/tags/{id}/links` | Vínculos de uma tag |
+| GET | `/tags/entities/{entityType}/{entityId}` | Ids das tags de uma entidade |
 | POST | `/tags/{id}/links` | Adicionar vínculo |
 | DELETE | `/tags/{id}/links/{entityType}/{entityId}` | Remover vínculo |
 | PUT | `/{entity}/{id}/tags` | Substituir o conjunto inteiro de tags de uma conta/cartão/fatura/lançamento |

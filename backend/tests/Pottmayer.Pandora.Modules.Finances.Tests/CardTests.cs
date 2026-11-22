@@ -13,6 +13,7 @@ public sealed class CardTests
     public void Create_trims_fields_and_stamps_creation()
     {
         var time = new FixedTimeProvider(Now);
+        var accountId = Guid.NewGuid();
         var card = Card.Create(
             Guid.NewGuid(),
             "  Nubank  ",
@@ -22,13 +23,14 @@ public sealed class CardTests
             10,
             20,
             CurrencyCode.Create("brl"),
-            null,
+            accountId,
             time);
 
         Assert.Equal("Nubank", card.Name);
         Assert.Equal("mastercard", card.Brand);
         Assert.Equal("1234", card.LastFour);
         Assert.Equal("BRL", card.Currency.Value);
+        Assert.Equal(accountId, card.AccountId);
         Assert.Equal(Now, card.CreatedAt);
         Assert.False(card.IsArchived);
     }
@@ -37,10 +39,10 @@ public sealed class CardTests
     public void Update_is_rejected_while_archived()
     {
         var time = new FixedTimeProvider(Now);
-        var card = Card.Create(Guid.NewGuid(), "Card", null, null, null, 10, 20, CurrencyCode.Create("BRL"), null, time);
+        var card = Card.Create(Guid.NewGuid(), "Card", null, null, null, 10, 20, CurrencyCode.Create("BRL"), Guid.NewGuid(), time);
         card.Archive(time);
 
-        var changed = card.Update("New", null, null, 100m, 11, 21, null);
+        var changed = card.Update("New", null, null, 100m, 11, 21, Guid.NewGuid());
 
         Assert.False(changed);
         Assert.Equal("Card", card.Name);

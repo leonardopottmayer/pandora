@@ -99,6 +99,7 @@ export function CategoryFormModal({ open, category, onClose }: CategoryFormModal
       okText={t('common.save')}
       cancelText={t('common.cancel')}
       destroyOnHidden
+      styles={{ body: { maxHeight: 'calc(100dvh - 260px)', overflowY: 'auto', paddingRight: 8 } }}
     >
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
         <Form.Item
@@ -109,25 +110,31 @@ export function CategoryFormModal({ open, category, onClose }: CategoryFormModal
           <Input maxLength={120} />
         </Form.Item>
 
-        <Form.Item name="nature" label={t('finances.categories.nature')} rules={[{ required: true }]}>
-          <Select
-            disabled={isEdit}
-            options={TRANSACTION_NATURES.map((n) => ({
-              value: n,
-              label: t(TRANSACTION_NATURE_META[n].labelKey),
-            }))}
-          />
-        </Form.Item>
-
-        {!isEdit && (
-          <Form.Item name="parentCategoryId" label={t('finances.categories.parent')}>
-            <Select allowClear options={parentOptions} placeholder={t('finances.categories.noParent')} />
+        <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
+          <Form.Item name="nature" label={t('finances.categories.nature')} rules={[{ required: true }]} extra={isEdit ? t('finances.categories.natureLocked') : undefined}>
+            <Select
+              disabled={isEdit}
+              onChange={() => form.setFieldValue('parentCategoryId', undefined)}
+              options={TRANSACTION_NATURES.map((n) => ({
+                value: n,
+                label: t(TRANSACTION_NATURE_META[n].labelKey),
+              }))}
+            />
           </Form.Item>
-        )}
 
-        <Form.Item name="displayOrder" label={t('finances.accounts.displayOrder')} initialValue={0}>
-          <InputNumber style={{ width: '100%' }} min={0} />
-        </Form.Item>
+          {!isEdit && (
+            <Form.Item name="parentCategoryId" label={t('finances.categories.parent')} extra={t('finances.categories.parentHelp')}>
+              <Select allowClear options={parentOptions} placeholder={t('finances.categories.noParent')} />
+            </Form.Item>
+          )}
+        </div>
+
+        <details open={!!category?.displayOrder || undefined}>
+          <summary className="mb-3 w-fit cursor-pointer select-none text-sm">{t('finances.categories.moreOptions')}</summary>
+          <Form.Item name="displayOrder" label={t('finances.accounts.displayOrder')} initialValue={0}>
+            <InputNumber style={{ width: '100%' }} min={0} />
+          </Form.Item>
+        </details>
       </Form>
     </Modal>
   )

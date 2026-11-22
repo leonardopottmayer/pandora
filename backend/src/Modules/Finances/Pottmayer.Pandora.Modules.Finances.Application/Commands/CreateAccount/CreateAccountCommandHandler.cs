@@ -5,19 +5,22 @@ using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 using Pottmayer.Pandora.Modules.Finances.Domain.ValueObjects;
+using Pottmayer.Pandora.Modules.Identity.Abstractions.Ports;
 using Pottmayer.Tars.Core.Cqrs.Commands;
 using Pottmayer.Tars.Core.Primitives.Outcomes;
 using Pottmayer.Tars.Data.Abstractions.UnitOfWork;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateAccount;
 
-public sealed class CreateAccountCommandHandler(IUnitOfWorkFactory factory, TimeProvider timeProvider)
+public sealed class CreateAccountCommandHandler(
+    IUnitOfWorkFactory factory, IEffectiveTimeZoneResolver timeZones, TimeProvider timeProvider)
     : CommandHandlerBase<CreateAccountCommand, AccountDto>
 {
     protected override async Task<Result<AccountDto>> HandleAsync(CreateAccountCommand request, CancellationToken ct)
     {
         var input = request.Input;
         var now = timeProvider.GetUtcNow();
+        var today = await timeZones.ResolveTodayAsync(input.UserId, now, ct);
 
         if (string.IsNullOrWhiteSpace(input.Name))
             return Fail(AccountErrors.InvalidName);
@@ -28,9 +31,13 @@ public sealed class CreateAccountCommandHandler(IUnitOfWorkFactory factory, Time
         if (!CurrencyCode.TryCreate(input.Currency, out var currency))
             return Fail(AccountErrors.InvalidCurrency(input.Currency));
 
+        if (!string.IsNullOrWhiteSpace(input.BankCode) && !Bank.IsSupported(input.BankCode))
+            return Fail(AccountErrors.InvalidBank(input.BankCode));
+
+        var bankCode = Bank.Canonicalize(input.BankCode);
         var type = AccountType.FromValue(input.Type);
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IAccountRepository>();
 
@@ -40,7 +47,7 @@ public sealed class CreateAccountCommandHandler(IUnitOfWorkFactory factory, Time
 
             var account = Account.Create(
                 input.UserId, input.Name, type, currency!, input.Institution, input.Description,
-                input.Color, input.Icon, input.DisplayOrder, timeProvider);
+                input.Color, input.Icon, input.DisplayOrder, timeProvider, bankCode);
             await repo.AddAsync(account, token);
 
             await ctx.RecordAsync(
@@ -60,7 +67,7 @@ public sealed class CreateAccountCommandHandler(IUnitOfWorkFactory factory, Time
             {
                 var opening = Transaction.CreateAccountTransaction(
                     input.UserId, account.Id, TransactionKind.OpeningBalance, currency!,
-                    input.OpeningBalance.Value, DateOnly.FromDateTime(now.UtcDateTime),
+                    input.OpeningBalance.Value, today,
                     description: "", null, null, null, null, post: true, timeProvider,
                     systemDescription: SystemDescription.OpeningBalance());
 

@@ -1,0 +1,2 @@
+Two-factor authentication enabled
+Two-factor authentication (MFA) was enabled on your Pandora account. If this wasn't you, reset your password and contact support immediately.

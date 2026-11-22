@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, DatePicker, Descriptions, Input, Modal } from 'antd'
 import dayjs from 'dayjs'
+import { todayIn } from '@/lib/today'
+import { usePreferences } from '@/modules/identity/context/preferences-context'
 import type { PendingTransactionDto } from '../../models'
 import { kindDirection } from '../../lib/enums'
 import { CurrencyAmount } from '../../components/CurrencyAmount'
@@ -27,9 +29,12 @@ export function TransferFromPendingModal({
   onClose,
   onConfirm,
 }: TransferFromPendingModalProps) {
+  const { timeZone } = usePreferences()
   const { t } = useTranslation()
+  const descriptionId = useId()
+  const dateId = useId()
   const [description, setDescription] = useState('')
-  const [occurredOn, setOccurredOn] = useState(dayjs())
+  const [occurredOn, setOccurredOn] = useState(() => todayIn(timeZone))
 
   // Seed the editable fields from the outflow leg when the modal opens.
   // Adjusting state during render (guarded by an open-transition check) instead
@@ -56,17 +61,19 @@ export function TransferFromPendingModal({
       okButtonProps={{ disabled: !valid || !description.trim(), loading }}
       cancelText={t('common.cancel')}
       destroyOnHidden
+      width={640}
+      styles={{ body: { maxHeight: 'calc(100dvh - 260px)', overflowY: 'auto', paddingRight: 8 } }}
     >
       {!valid ? (
-        <Alert type="warning" showIcon message={t('finances.inbox.transferInvalid')} />
+        <Alert type="warning" showIcon title={t('finances.inbox.transferInvalid')} />
       ) : (
         <>
           <Descriptions column={1} size="small" bordered className="mb-3">
             <Descriptions.Item label={t('finances.transactions.fromAccount')}>
-              {outflow!.accountId ? accountNames.get(outflow!.accountId) ?? '—' : '—'}
+              <span className="break-words">{outflow!.accountId ? accountNames.get(outflow!.accountId) ?? '—' : '—'}</span>
             </Descriptions.Item>
             <Descriptions.Item label={t('finances.transactions.toAccount')}>
-              {inflow!.accountId ? accountNames.get(inflow!.accountId) ?? '—' : '—'}
+              <span className="break-words">{inflow!.accountId ? accountNames.get(inflow!.accountId) ?? '—' : '—'}</span>
             </Descriptions.Item>
             <Descriptions.Item label={t('finances.transactions.amountOut')}>
               {outflow!.amount != null && (
@@ -87,15 +94,18 @@ export function TransferFromPendingModal({
               )}
             </Descriptions.Item>
           </Descriptions>
-          <label className="mb-1 block">{t('finances.transactions.description')}</label>
+          <label htmlFor={descriptionId} className="mb-1 block">{t('finances.transactions.description')}</label>
           <Input
+            id={descriptionId}
             value={description}
             maxLength={255}
             onChange={(e) => setDescription(e.target.value)}
             className="mb-3"
           />
-          <label className="mb-1 block">{t('finances.transactions.occurredOn')}</label>
+          <label htmlFor={dateId} className="mb-1 block">{t('finances.transactions.occurredOn')}</label>
           <DatePicker
+            id={dateId}
+            format="DD/MM/YYYY"
             value={occurredOn}
             onChange={(d) => d && setOccurredOn(d)}
             allowClear={false}

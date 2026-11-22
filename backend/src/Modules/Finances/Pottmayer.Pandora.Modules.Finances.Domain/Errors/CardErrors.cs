@@ -31,8 +31,8 @@ public static class CardErrors
     public static Error Archived =>
         Error.Conflict("Cards.Archived", "An archived card cannot receive new purchases or mutations.");
 
-    public static Error DefaultPaymentAccountNotFound =>
-        Error.Validation("Cards.DefaultPaymentAccountNotFound", "Default payment account was not found.");
+    public static Error AccountNotFound =>
+        Error.Validation("Cards.AccountNotFound", "The card's account was not found.");
 
     public static Error HasHistory =>
         Error.Conflict("Cards.HasHistory", "A card with statements or transactions cannot be deleted; archive it instead.");

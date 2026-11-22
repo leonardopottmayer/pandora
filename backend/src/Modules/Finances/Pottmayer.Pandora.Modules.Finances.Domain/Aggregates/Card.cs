@@ -19,7 +19,7 @@ public sealed class Card : AggregateRoot<Guid>, IAuditable
     public int ClosingDay { get; private set; }
     public int DueDay { get; private set; }
     public CurrencyCode Currency { get; private set; } = null!;
-    public Guid? DefaultPaymentAccountId { get; private set; }
+    public Guid AccountId { get; private set; }
     public DateTimeOffset? ArchivedAt { get; private set; }
 
     public Guid? CreatedBy { get; set; }
@@ -31,7 +31,7 @@ public sealed class Card : AggregateRoot<Guid>, IAuditable
 
     private Card() { }
 
-    /// <summary>Registers a new card for the user with its currency fixed for life.</summary>
+    /// <summary>Registers a new card owned by an account, with its currency fixed for life.</summary>
     public static Card Create(
         Guid userId,
         string name,
@@ -41,7 +41,7 @@ public sealed class Card : AggregateRoot<Guid>, IAuditable
         int closingDay,
         int dueDay,
         CurrencyCode currency,
-        Guid? defaultPaymentAccountId,
+        Guid accountId,
         TimeProvider timeProvider) =>
         new()
         {
@@ -54,7 +54,7 @@ public sealed class Card : AggregateRoot<Guid>, IAuditable
             ClosingDay = closingDay,
             DueDay = dueDay,
             Currency = currency,
-            DefaultPaymentAccountId = defaultPaymentAccountId,
+            AccountId = accountId,
             CreatedAt = timeProvider.GetUtcNow()
         };
 
@@ -69,7 +69,7 @@ public sealed class Card : AggregateRoot<Guid>, IAuditable
         decimal? creditLimit,
         int closingDay,
         int dueDay,
-        Guid? defaultPaymentAccountId)
+        Guid accountId)
     {
         if (IsArchived) return false;
 
@@ -79,7 +79,7 @@ public sealed class Card : AggregateRoot<Guid>, IAuditable
         CreditLimit = creditLimit;
         ClosingDay = closingDay;
         DueDay = dueDay;
-        DefaultPaymentAccountId = defaultPaymentAccountId;
+        AccountId = accountId;
         return true;
     }
 

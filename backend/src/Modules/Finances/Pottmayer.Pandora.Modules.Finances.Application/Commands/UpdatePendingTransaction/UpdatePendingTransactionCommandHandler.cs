@@ -27,7 +27,7 @@ public sealed class UpdatePendingTransactionCommandHandler(
 
         var now = timeProvider.GetUtcNow();
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IPendingTransactionRepository>();
             var pending = await repo.FindByIdForUserAsync(input.Id, input.UserId, token);

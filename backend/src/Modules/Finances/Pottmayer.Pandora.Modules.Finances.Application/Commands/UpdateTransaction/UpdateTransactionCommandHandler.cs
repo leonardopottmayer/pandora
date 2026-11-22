@@ -22,7 +22,7 @@ public sealed class UpdateTransactionCommandHandler(IUnitOfWorkFactory factory, 
         if (string.IsNullOrWhiteSpace(input.Description))
             return Fail(TransactionErrors.InvalidDescription);
 
-        var result = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<ITransactionRepository>();
 

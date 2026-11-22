@@ -16,7 +16,7 @@ public sealed class GetUserCategoriesQueryHandler(IUnitOfWorkFactory factory)
     {
         var input = request.Input;
 
-        var all = await factory.ExecuteAsync(FinancesModule.Name, async (ctx, token) =>
+        var all = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
             var repo = ctx.AcquireRepository<IUserCategoryRepository>();
             return await repo.GetAllForUserAsync(input.UserId, input.IncludeInactive, token);

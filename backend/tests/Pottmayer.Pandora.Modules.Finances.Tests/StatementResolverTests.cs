@@ -9,7 +9,7 @@ namespace Pottmayer.Pandora.Modules.Finances.Tests;
 public sealed class StatementResolverTests
 {
     private static Card NewCard(int closingDay, int dueDay) =>
-        Card.Create(Guid.NewGuid(), "Card", null, null, null, closingDay, dueDay, CurrencyCode.Create("BRL"), null, new FixedTimeProvider(DateTimeOffset.UtcNow));
+        Card.Create(Guid.NewGuid(), "Card", null, null, null, closingDay, dueDay, CurrencyCode.Create("BRL"), Guid.NewGuid(), new FixedTimeProvider(DateTimeOffset.UtcNow));
 
     [Fact]
     public void Purchase_on_closing_day_stays_in_current_month()

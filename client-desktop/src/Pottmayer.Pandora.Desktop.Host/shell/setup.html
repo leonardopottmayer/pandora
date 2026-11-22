@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pandora</title>
+  <link rel="stylesheet" href="shell.css">
+</head>
+<body>
+  <form class="card" id="form">
+    <div class="logo">P</div>
+    <h1 data-t="title"></h1>
+    <p data-t="subtitle"></p>
+    <label for="url" data-t="label"></label>
+    <input id="url" autocomplete="off" spellcheck="false" placeholder="http://192.168.1.10:8730" required autofocus>
+    <div class="hint" data-t="hint"></div>
+    <div class="error" id="error" hidden data-t="invalid"></div>
+    <div class="actions">
+      <button class="primary" type="submit" data-t="connect"></button>
+    </div>
+  </form>
+  <script>
+    const pt = navigator.language.toLowerCase().startsWith('pt');
+    const text = pt ? {
+      title: 'Conectar ao Pandora',
+      subtitle: 'Informe o endereço do seu servidor Pandora — o mesmo que você abre no navegador.',
+      label: 'Endereço do servidor',
+      hint: 'Ex.: http://192.168.1.10:8730 na rede de casa.',
+      invalid: 'Endereço inválido. Use um endereço http:// ou https://.',
+      connect: 'Conectar',
+    } : {
+      title: 'Connect to Pandora',
+      subtitle: 'Enter the address of your Pandora server — the same one you open in the browser.',
+      label: 'Server address',
+      hint: 'E.g. http://192.168.1.10:8730 on the home network.',
+      invalid: 'Invalid address. Use an http:// or https:// address.',
+      connect: 'Connect',
+    };
+    document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = text[el.dataset.t]; });
+
+    const params = new URLSearchParams(location.search);
+    const input = document.getElementById('url');
+    input.value = params.get('value') ?? '';
+    document.getElementById('error').hidden = params.get('invalid') !== '1';
+
+    document.getElementById('form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      window.chrome.webview.postMessage({ type: 'setServer', url: input.value });
+    });
+  </script>
+</body>
+</html>

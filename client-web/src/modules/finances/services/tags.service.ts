@@ -29,6 +29,12 @@ export async function deleteTag(id: string): Promise<void> {
   await apiClient.delete(`${BASE}/${id}`)
 }
 
+/** Ids of the tags on one entity. */
+export async function getEntityTags(entityType: TaggableEntityType, entityId: string): Promise<string[]> {
+  const { data } = await apiClient.get<string[]>(`${BASE}/entities/${entityType}/${entityId}`)
+  return data
+}
+
 export async function getTagLinks(id: string): Promise<TagLinkDto[]> {
   const { data } = await apiClient.get<TagLinkDto[]>(`${BASE}/${id}/links`)
   return data

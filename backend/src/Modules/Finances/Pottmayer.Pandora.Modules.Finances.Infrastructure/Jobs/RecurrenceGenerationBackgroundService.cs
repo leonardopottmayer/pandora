@@ -8,7 +8,8 @@ namespace Pottmayer.Pandora.Modules.Finances.Infrastructure.Jobs;
 
 public sealed class RecurrenceGenerationBackgroundService : BackgroundService
 {
-    private static readonly TimeSpan Interval = TimeSpan.FromHours(24);
+    // Hourly, not daily: each user's day turns at their own midnight, and every step is idempotent.
+    private static readonly TimeSpan Interval = TimeSpan.FromHours(1);
 
     private readonly IServiceProvider _serviceProvider;
     private readonly TimeProvider _timeProvider;
@@ -74,8 +75,8 @@ public sealed class RecurrenceGenerationBackgroundService : BackgroundService
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        var today = DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime);
-        var result = await sender.Send(new RunRecurrenceGenerationCommand(new RunRecurrenceGenerationInput(today)), ct);
+        // No date: the handler takes each user's own day in their zone.
+        var result = await sender.Send(new RunRecurrenceGenerationCommand(new RunRecurrenceGenerationInput()), ct);
 
         if (result.IsFailure)
         {

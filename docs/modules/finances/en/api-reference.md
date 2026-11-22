@@ -80,6 +80,7 @@ user. A resource owned by another user returns **404** (not 403). Controllers li
 | GET / POST | `/tags` | List / create |
 | PUT / DELETE | `/tags/{id}` | Update / delete |
 | GET | `/tags/{id}/links` | Links of a tag |
+| GET | `/tags/entities/{entityType}/{entityId}` | Tag ids on one entity |
 | POST | `/tags/{id}/links` | Add a link |
 | DELETE | `/tags/{id}/links/{entityType}/{entityId}` | Remove a link |
 
@@ -100,6 +101,18 @@ user. A resource owned by another user returns **404** (not 403). Controllers li
 | POST | `/pending-transactions/{id}/approve` · `/reject` · `/link` | Decide |
 | POST | `/pending-transactions/approve-batch` | Batch approve |
 | POST | `/pending-transactions/transfer` | Build a transfer from two suggestions |
+
+## Attachments — `/attachments`
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/attachments?transactionId=` · `?pendingTransactionId=` · `?cardStatementId=` · `?queued=true` | One owner's attachments, or the queue, oldest first |
+| POST | `/attachments` | `multipart/form-data`: `file` (image or PDF, ≤ 25 MB), `kind`, and at most one of `transactionId` · `pendingTransactionId` · `cardStatementId` (none queues it) |
+| POST | `/attachments/{id}/assign` | Files a queued attachment: `{ transactionId }` · `{ pendingTransactionId }` · `{ cardStatementId }`; 409 if it already has an owner |
+| GET | `/attachments/{id}` | The bytes, inline, with the stored content type and file name |
+| DELETE | `/attachments/{id}` | Remove the attachment and its bytes |
+
+Lists of transactions and pending transactions carry `attachmentCount`.
 
 ## Imports — `/imports`
 

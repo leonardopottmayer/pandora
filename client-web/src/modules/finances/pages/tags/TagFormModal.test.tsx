@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import i18n from '@/i18n'
 import { server } from '@/test/msw/server'
@@ -70,5 +70,23 @@ describe('TagFormModal', () => {
 
     await waitFor(() => expect(putCalled).toBe(true))
     expect(onClose).toHaveBeenCalled()
+  })
+
+  it('previews name changes and sends null when removing an existing color', async () => {
+    let body: unknown
+    server.use(http.put(`${FINANCES_BASE}/tags/t1`, async ({ request }) => {
+      body = await request.json()
+      return HttpResponse.json({ success: true, data: { id: 't1', name: 'Renamed', color: null } })
+    }))
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    renderWithProviders(<TagFormModal open tag={{ id: 't1', name: 'Old', color: '#ffffff' }} onClose={vi.fn()} />)
+    const dialog = within(screen.getByRole('dialog'))
+    await user.clear(dialog.getByRole('textbox', { name: 'Name' }))
+    await user.type(dialog.getByRole('textbox', { name: 'Name' }), 'Renamed')
+    expect(dialog.getByText('Renamed')).toBeInTheDocument()
+    await user.click(dialog.getByRole('button', { name: 'Clear color' }))
+    expect(dialog.getByRole('button', { name: 'Clear color' })).toBeDisabled()
+    await user.click(dialog.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(body).toEqual({ name: 'Renamed', color: null }))
   })
 })

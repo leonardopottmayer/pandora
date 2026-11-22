@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.Activation;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.ChangePassword;
 using Pottmayer.Pandora.Modules.Identity.Application.Commands.PasswordReset;
@@ -27,6 +28,7 @@ public sealed class AuthController(
 {
     [AllowAnonymous]
     [HttpPost("signup")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> SignUpAsync(SignUpRequest request, CancellationToken ct)
     {
         var command = new SignUpCommand(
@@ -37,6 +39,7 @@ public sealed class AuthController(
 
     [AllowAnonymous]
     [HttpPost("signin")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> SignInAsync(SignInRequest request, CancellationToken ct)
     {
         var command = new SignInCommand(new SignInInput(request.EmailOrUsername, request.Password));
@@ -46,6 +49,7 @@ public sealed class AuthController(
 
     [AllowAnonymous]
     [HttpPost("activate")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> ActivateAsync(ActivateRequest request, CancellationToken ct)
     {
         var command = new ActivateAccountCommand(new ActivateAccountInput(request.Token));
@@ -55,6 +59,7 @@ public sealed class AuthController(
 
     [AllowAnonymous]
     [HttpPost("password/forgot")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken ct)
     {
         var command = new RequestPasswordResetCommand(new RequestPasswordResetInput(request.Email));
@@ -64,6 +69,7 @@ public sealed class AuthController(
 
     [AllowAnonymous]
     [HttpPost("password/reset")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken ct)
     {
         var command = new ResetPasswordCommand(new ResetPasswordInput(request.Token, request.NewPassword));
@@ -73,6 +79,7 @@ public sealed class AuthController(
 
     [Authorize]
     [HttpPost("password/change")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> ChangePasswordAsync(ChangePasswordRequest request, CancellationToken ct)
     {
         var userId  = userContextAccessor.Context.User!.Id;
@@ -84,6 +91,7 @@ public sealed class AuthController(
 
     [AllowAnonymous]
     [HttpPost("refresh")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> RefreshAsync(RefreshRequest request, CancellationToken ct)
     {
         var command = new RefreshTokenCommand(new RefreshTokenInput(request.RefreshToken));

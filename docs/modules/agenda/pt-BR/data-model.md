@@ -1,0 +1,279 @@
+# Modelo de dados
+
+[← Voltar ao índice](README.md) · Relacionados: [Arquitetura](architecture.md), [Alertas e Sweep](alerts-and-sweep.md)
+
+Schema PostgreSQL **`agenda`**. Convenções: PK `uuid DEFAULT uuid_generate_v7()`, `TIMESTAMPTZ` em todo
+lugar (tempo armazenado absoluto, D4), colunas de auditoria `created_by/created_at/updated_by/updated_at`,
+constraints nomeadas, enums como `VARCHAR` + `CHECK` armazenados **PascalCase** (para casar com
+`agd006_reminder.status`). Cada item carrega seu próprio `time_zone` IANA, porque a recorrência expande
+no fuso do próprio item. (Quando uma requisição de criação o omite, a Agenda o define a partir do `UserPreferences` do Identity — um fuso padrão a nível de usuário — caindo em UTC só quando o usuário não tem preferência.)
+
+As migrations ficam em `migrations/migrations/agenda/`.
+
+## Catálogo de tabelas
+
+| # | Tabela | Conteúdo |
+|---|---|---|
+| agd001 | `calendar` | Container nomeado de eventos |
+| agd002 | `event` | Evento de calendário (+ RRULE, expandido na leitura) |
+| agd003 | `event_occurrence_override` | Desvio por ocorrência de uma série de eventos |
+| agd004 | `task_list` | Container nomeado de tarefas |
+| agd005 | `task` | Uma tarefa (status/prioridade/vencimento/subtarefas/recorrência) |
+| agd006 | `reminder` | Um ping num instante (único-disparo ou recorrente) |
+| agd006x | `reminder_dispatch` | Ledger de dispatch por ocorrência para lembretes recorrentes |
+| agd007 | `alert` | Primitivo polimórfico "me avise sobre *sujeito*" |
+| agd008 | `alert_dispatch` | Ledger de idempotência do disparo de alerta |
+| agd009 | `calendar_binding` | Um calendário do Pandora alimentado por um calendário do Google |
+| agd010 | `event_link` | Um evento do Pandora ligado ao evento do Google |
+| agd011 | `sync_conflict` | Eventos e tarefas mudados dos dois lados; a versão que perdeu |
+| agd012 | `task_list_binding` | Uma lista de tarefas do Pandora sincronizada com uma lista do Google Tasks |
+| agd014 | `task_link` | Uma tarefa do Pandora ligada à tarefa do Google |
+| agd013 | `preferences` | O que o usuário prefere na própria Agenda |
+
+---
+
+## agd001_calendar
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | |
+| `user_id` | uuid NOT NULL | |
+| `name` | varchar(200) NOT NULL | |
+| `color` | varchar(50) NULL | |
+| `is_default` / `is_visible` | bool | no máximo um default por usuário (`uq_agd001_user_default`, parcial `WHERE is_default`) |
+| `time_zone` | varchar(100) NOT NULL DEFAULT 'UTC' | recorrência expande aqui |
+| `origin` | varchar(20) NOT NULL DEFAULT 'Local' | `Local \| External` (`chk_agd001_origin`); só `Local` importa até o sync Google |
+| `archived_at` | timestamptz NULL | arquivar oculta; apagar um calendário com eventos vivos é recusado pela app |
+
+## agd002_event
+
+Um evento é **calculado, nunca armazenado**: uma linha mais uma rrule, expandida em ocorrências na
+leitura.
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | |
+| `user_id`, `calendar_id` | uuid | `fk_agd002_calendar … ON DELETE RESTRICT` (um calendário mantém seus eventos) |
+| `title` / `description` / `location` / `url` | | `url` = link da reunião |
+| `starts_at` / `ends_at` | timestamptz NOT NULL | dia inteiro ⇒ meia-noite no `time_zone`, fim exclusivo |
+| `is_all_day` | bool | |
+| `time_zone` | varchar(100) | IANA, por evento |
+| `rrule` | text NULL | subconjunto RFC 5545, literal; NULL ⇒ ocorrência única |
+| `recurrence_ends_at` | timestamptz NULL | limite denormalizado da última ocorrência (de UNTIL/COUNT) para uma query de intervalo podar séries terminadas por índice |
+| `status` | varchar(20) DEFAULT 'Confirmed' | `Confirmed \| Tentative \| Cancelled` |
+| `deleted_at` | timestamptz NULL | soft delete (um futuro sync de entrada pode ressuscitar) |
+
+Índices: `ix_agd002_user_id`, `ix_agd002_calendar_id` (query de intervalo + guarda de delete).
+
+## agd003_event_occurrence_override
+
+Chave natural `(event_id, original_starts_at)` — qual ocorrência, pelo seu início na grade.
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `event_id` | uuid → agd002 | `ON DELETE CASCADE` |
+| `original_starts_at` | timestamptz NOT NULL | identifica a ocorrência |
+| `is_cancelled` | bool | o caso EXDATE (a ocorrência some) |
+| `starts_at` / `ends_at` / `title` / `description` / `location` | NULL | colunas não-nulas sobrescrevem a série naquela ocorrência; NULL cai de volta |
+
+Constraint: `uq_agd003_event_occurrence (event_id, original_starts_at)`. Editar "esta e futuras" em vez
+disso **divide** a série (uma nova linha `agd002`) e não escreve override.
+
+## agd004_task_list
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | |
+| `user_id` | uuid NOT NULL | |
+| `name` | varchar(200) | |
+| `is_default` | bool | `uq_agd004_user_default` (parcial `WHERE is_default`) |
+| `position` | int | ordenação |
+| `archived_at` | timestamptz NULL | |
+
+## agd005_task
+
+Uma tarefa recorrente é materializada **uma instância por vez**: concluir fecha a linha atual e a app
+insere a próxima da RRULE, carregando campos e alertas (duas linhas, para o histórico sobreviver).
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | |
+| `user_id`, `list_id` | uuid | `fk_agd005_list … ON DELETE RESTRICT` |
+| `parent_task_id` | uuid NULL → agd005 | subtarefas; um nível, garantido no agregado; `ON DELETE CASCADE` |
+| `title` / `notes` | | |
+| `due_at` / `due_has_time` | timestamptz / bool | uma tarefa "para amanhã" não vence às 00:00 — `due_has_time` dirige a renderização + offset de alerta padrão |
+| `priority` | varchar(10) DEFAULT 'None' | `None \| Low \| Medium \| High` |
+| `status` | varchar(20) DEFAULT 'Todo' | `Todo \| InProgress \| Done \| Cancelled` |
+| `completed_at` | timestamptz NULL | |
+| `time_zone` | varchar(100) | recorrência expande aqui |
+| `rrule` | text NULL | só tarefas top-level; NULL ⇒ não recorrente |
+| `position` | int | |
+| `deleted_at` | timestamptz NULL | soft delete |
+
+Índices: `ix_agd005_user_id`, `ix_agd005_list_status (list_id, status)` (tela de lista),
+`ix_agd005_parent_task_id` (parcial).
+
+## agd006_reminder
+
+Um ping num instante. Único-disparo (`rrule` NULL) é guardado por `status`; recorrente é guardado pelo
+ledger `agd006x`, e seu `status` fica `Scheduled` pela vida da série.
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | |
+| `user_id` | uuid NOT NULL | |
+| `title` / `notes` | | |
+| `remind_at` | timestamptz NOT NULL | |
+| `time_zone` | varchar(100) DEFAULT 'UTC' | |
+| `rrule` | text NULL | subconjunto RFC 5545, literal; NULL ⇒ único-disparo |
+| `recurrence_ends_at` | timestamptz NULL | fim de série denormalizado para o sweep podar séries terminadas por índice |
+| `status` | varchar(20) | `Scheduled \| Notified \| Acknowledged \| Snoozed \| Cancelled` |
+| `snoozed_until` / `acknowledged_at` | timestamptz NULL | ação do único-disparo |
+
+Índices: `ix_agd006_user_id`, `ix_agd006_status_remind_at` (caminho quente do sweep único-disparo),
+`ix_agd006_recurrence_ends_at` (parcial `WHERE rrule IS NOT NULL`, sweep recorrente).
+
+## agd006x_reminder_dispatch
+
+Ledger de dispatch por ocorrência para lembretes recorrentes — o que torna o sweep idempotente quando a
+coluna `status` não pode (um lembrete recorrente dispara muitas vezes).
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | |
+| `reminder_id` | uuid → agd006 | `ON DELETE CASCADE` |
+| `user_id` | uuid | |
+| `occurrence_starts_at` | timestamptz NOT NULL | |
+| `dispatched_at` / `correlation_id` | | |
+| `is_late` | bool | disparado da janela de grace (uma máquina suspensa se recuperou); informativo |
+| `acknowledged_at` / `snoozed_until` | timestamptz NULL | ação por ocorrência (ack/soneca agem na ocorrência, nunca na série) |
+
+Constraint: `uq_agd006x_reminder_occurrence (reminder_id, occurrence_starts_at)` — um dispatch por
+(lembrete, ocorrência). Índice `ix_agd006x_snoozed_until` (parcial) para o caminho de re-disparo da
+soneca.
+
+> **Nota de nomenclatura.** Este ledger é `agd006x_` (uma extensão do agregado lembrete), não o
+> polimórfico `agd008` — a forma honesta até o Alert cobrir lembretes; migra para `agd008` depois.
+
+## agd007_alert
+
+O primitivo de agendamento polimórfico: uma linha por ping desejado, com chave para um sujeito por
+`(subject_type, subject_id)` **sem FK** (validado na app, removido com o sujeito).
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | |
+| `user_id` | uuid NOT NULL | |
+| `subject_type` | varchar(20) | `Task \| Event \| Reminder` (`chk_agd007_subject_type`) — **`Task` e `Event` estão ligados**; `Reminder` mantém o ledger `agd006x` em vez disso |
+| `subject_id` | uuid NOT NULL | |
+| `offset_minutes` | int NOT NULL | com sinal, relativo à âncora do sujeito (`0` = no instante, `-15` = 15 min antes) |
+| `channels` | text[] NULL | NULL ⇒ resolve da preferência do usuário no Channels; senão explícito (`email`, `telegram`) |
+| `is_enabled` | bool DEFAULT true | |
+
+Índices: `ix_agd007_user_id`, `ix_agd007_subject (subject_type, subject_id)`,
+`ix_agd007_enabled_subject_type` (parcial `WHERE is_enabled`, a raiz do scan do sweep).
+
+## agd008_alert_dispatch
+
+O ledger de dispatch de alerta. Uma linha na primeira vez que um alerta dispara para uma âncora de
+sujeito.
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | |
+| `alert_id` | uuid → agd007 | `ON DELETE CASCADE` |
+| `user_id` | uuid | |
+| `occurrence_starts_at` | timestamptz NOT NULL | |
+| `dispatched_at` / `correlation_id` | | |
+| `is_late` | bool | disparado da janela de grace; informativo |
+
+Constraint: `uq_agd008_alert_occurrence (alert_id, occurrence_starts_at)`. Sem ack/soneca — o botão de
+um alerta de tarefa conclui a própria tarefa.
+
+## agd013_preferences
+
+O que o usuário prefere na própria Agenda, uma linha por usuário. Sem linha, valem os padrões.
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `user_id` | uuid PK | |
+| `default_alert_offset_minutes` | int NOT NULL DEFAULT -15 | com sinal, relativo ao item; é de onde o editor de alertas parte |
+| `created_by`, `created_at`, `updated_by`, `updated_at` | | auditoria |
+
+## agd009_calendar_binding
+
+Um calendário do Pandora alimentado por um calendário do Google de uma conta do Integrations. Ver
+[Calendário e Eventos §6](calendar-and-events.md#6-google-agenda).
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id`, `user_id` | uuid | |
+| `calendar_id` | uuid → agd001 | único (`uq_agd009_calendar`) |
+| `external_account_id` | uuid | a conta do Integrations; sem FK (outro módulo) |
+| `remote_calendar_id` | varchar(255) | único por conta (`uq_agd009_account_remote`) |
+| `direction` | varchar(20) DEFAULT 'read' | `read \| read-write`; `read-write` quando a conta tem ou pode editar o calendário do Google |
+| `sync_token` | text NULL | o cursor do Google; NULL ⇒ o próximo ciclo lista tudo |
+| `full_synced_at` / `last_synced_at` | timestamptz NULL | uma listagem completa roda de novo depois de 30 dias |
+| `status` | varchar(20) DEFAULT 'ok' | `ok \| needs-reconnect \| error` |
+| `failure_count` / `last_error` | int / varchar(1000) | cinco falhas seguidas ⇒ `error` |
+
+## agd010_event_link
+
+Um evento do Pandora ↔ um evento do Google de um vínculo: o que impede a sincronização de duplicar.
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid PK | |
+| `binding_id` | uuid → agd009 | |
+| `event_id` | uuid → agd002 | único (`uq_agd010_event`) |
+| `remote_event_id` | varchar(1024) | único por vínculo (`uq_agd010_binding_remote`) |
+| `series_remote_id` | varchar(1024) NULL | preenchido nos eventos únicos feitos das instâncias de uma série que o Pandora não expande |
+| `etag` / `remote_updated_at` | | o que o Google disse por último |
+| `reminders_hash` | varchar(64) NULL | os lembretes do Google de que os alertas do evento foram escritos |
+| `pending_push_at` | timestamptz NULL | quando o Pandora mudou o evento pela última vez sem o Google ter recebido; índice parcial `ix_agd010_binding_pending` |
+| `created_at` | timestamptz | |
+
+`etag` NULL num link pendente ⇒ o evento nasceu no Pandora e ainda não está no Google; o
+`remote_event_id` é o id com que o Pandora vai inseri-lo.
+
+## agd011_sync_conflict
+
+Um evento ou tarefa que os dois lados mudaram entre duas sincronizações: venceu a edição mais recente, a outra fica
+aqui. Um log, sem chaves estrangeiras, então sobrevive a um calendário desvinculado.
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id`, `user_id` | uuid | índice `ix_agd011_user_detected (user_id, detected_at DESC)` |
+| `binding_id` | uuid | um vínculo `agd009` ou `agd012` |
+| `subject_type`, `subject_id` | varchar(20), uuid | `event` (`agd002`) ou `task` (`agd005`) |
+| `title` | varchar(200) | o título do evento ou da tarefa no Pandora quando o conflito foi detectado |
+| `losing_side` | varchar(20) | `pandora \| google` |
+| `losing_version` | jsonb | a versão que perdeu, no formato de evento ou tarefa do Google |
+| `detected_at` | timestamptz | |
+
+## agd012_task_list_binding
+
+Uma lista de tarefas do Pandora sincronizada com uma lista do Google Tasks de uma conta do Integrations,
+sempre nos dois sentidos. Ver [Tarefas §6](tasks.md#6-google-tasks).
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id`, `user_id`, `external_account_id` | uuid | índice `ix_agd012_user_id` |
+| `list_id` | uuid → agd004 | único (`uq_agd012_list`) |
+| `remote_list_id` | varchar(255) | único por conta (`uq_agd012_account_remote`) |
+| `updated_cursor` | timestamptz NULL | quando começou a última listagem; a próxima pede o que mudou desde então. NULL ⇒ o próximo ciclo lista tudo |
+| `full_synced_at`, `last_synced_at` | timestamptz NULL | |
+| `status`, `failure_count`, `last_error` | | como na `agd009` |
+
+## agd014_task_link
+
+Uma tarefa do Pandora ↔ uma tarefa do Google de um vínculo.
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid | |
+| `binding_id` | uuid → agd012 | |
+| `task_id` | uuid → agd005 | único (`uq_agd014_task`) |
+| `remote_task_id` | varchar(1024) NULL | único por vínculo (`uq_agd014_binding_remote`); NULL até uma tarefa nascida no Pandora ser inserida (quem escolhe o id é o Google) |
+| `etag` / `remote_updated_at` | | o que o Google disse por último |
+| `pending_push_at` | timestamptz NULL | quando o Pandora mudou a tarefa pela última vez sem o Google ter recebido; índice parcial `ix_agd014_binding_pending` |

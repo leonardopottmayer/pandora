@@ -49,7 +49,7 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
 
     public Guid? ReversedTransactionId { get; private set; }
 
-    /// <summary>Links the transaction back to the inbox entry it was created from (source = recurrence).</summary>
+    /// <summary>Links the transaction back to the inbox entry it was created from (source = recurrence, import or manual).</summary>
     public Guid? PendingTransactionId { get; private set; }
 
     /// <summary>Links the transaction back to the recurring template that generated it.</summary>
@@ -374,6 +374,16 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
     public void MarkAsImport(Guid pendingTransactionId)
     {
         Origin = EntryOrigin.Import;
+        PendingTransactionId = pendingTransactionId;
+    }
+
+    /// <summary>
+    /// Links this transaction to the user-typed inbox entry it was approved from. <see cref="Origin"/>
+    /// stays <see cref="EntryOrigin.Manual"/>.
+    /// </summary>
+    public void MarkAsManual(Guid pendingTransactionId)
+    {
+        Origin = EntryOrigin.Manual;
         PendingTransactionId = pendingTransactionId;
     }
 

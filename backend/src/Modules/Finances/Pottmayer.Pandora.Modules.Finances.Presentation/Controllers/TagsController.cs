@@ -6,6 +6,7 @@ using Pottmayer.Pandora.Modules.Finances.Application.Commands.DeleteTag;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.LinkTag;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.UnlinkTag;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.UpdateTag;
+using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetEntityTags;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetTagLinks;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetTags;
 using Pottmayer.Pandora.Modules.Finances.Presentation.Requests;
@@ -55,6 +56,14 @@ public sealed class TagsController(
     public async Task<IActionResult> DeleteAsync(Guid id, CancellationToken ct)
     {
         var result = await sender.Send(new DeleteTagCommand(new DeleteTagInput(UserId, id)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    /// <summary>The tag ids on one entity; set them with <c>PUT .../{entity}/{id}/tags</c>.</summary>
+    [HttpGet("entities/{entityType}/{entityId:guid}")]
+    public async Task<IActionResult> GetEntityTagsAsync(string entityType, Guid entityId, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetEntityTagsQuery(new GetEntityTagsInput(UserId, entityType, entityId)), ct);
         return result.ToActionResult(errorMapper);
     }
 

@@ -14,6 +14,7 @@ public sealed class ImportLayout : AggregateRoot<Guid>
     public string LayoutCode { get; private set; } = string.Empty;
     public string Name { get; private set; } = string.Empty;
     public string? BankName { get; private set; }
+    public string? BankCode { get; private set; }
     public LayoutFileFormat FileFormat { get; private set; } = null!;
     public ImportLayoutAccountType AccountType { get; private set; } = null!;
     public string Config { get; private set; } = string.Empty;
