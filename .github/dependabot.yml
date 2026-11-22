@@ -1,5 +1,7 @@
 # Security updates ignore target-branch: they always open against main. As an app with staging, Pandora
 # moves them to dev (devkit handbook, deploying.md), so they reach staging before production.
+# Each ecosystem's group takes only minor and patch updates: one routine pull request a week. Every
+# major update arrives in its own pull request, to be read and tested alone.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -12,6 +14,7 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   # NuGet doesn't tell dev dependencies apart, so every update is a fix(deps).
   - package-ecosystem: nuget
@@ -30,6 +33,7 @@ updates:
     groups:
       nuget:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: npm
     directory: /client-web
@@ -47,3 +51,4 @@ updates:
     groups:
       npm:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
