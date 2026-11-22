@@ -130,10 +130,10 @@ backend recreated as above. Prod repeats it with its own account and project (§
 
 ## 4. Release
 
-- [ ] `gh pr create --base main --head dev`; the release preview comment says **v1.0.0**.
-- [ ] Merge it with a merge commit. The bot commits `chore(release): 1.0.0`, tags `v1.0.0`, publishes
+- [x] `gh pr create --base main --head dev`; the release preview comment says **v1.0.0**.
+- [x] Merge it with a merge commit. The bot commits `chore(release): 1.0.0`, tags `v1.0.0`, publishes
       the GitHub Release and opens the `main` → `dev` pull request, which merges itself.
-- [ ] The tag's `build-images` run publishes `:1.0.0` and `:latest`.
+- [x] The tag's `build-images` run publishes `:1.0.0` and `:latest`.
 
 ## 4b. Production
 

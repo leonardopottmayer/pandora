@@ -48,3 +48,15 @@ to another zone they differed from the rest of Pandora. How it works now: every 
 the account zone from `usePreferences()` (`{ timeZone }` on `toLocale*String`/`Intl.DateTimeFormat`, or
 `.tz(timeZone)` on dayjs), and "today"/"yesterday" labels compare days in that zone (`todayIn`). Notes
 chip dates are wall-clock strings the user typed, not instants, so they are shown as written.
+
+---
+
+## KI-004 — Two harmless warnings in the container's startup log *(closed 2026-11-22, nothing to fix)*
+
+- `Error: libgssapi_krb5.so.2: cannot open shared object file`: .NET looks for the Kerberos library
+  once; Pandora authenticates to Postgres with a password and never uses it.
+- `Storing keys in a directory '/root/.aspnet/DataProtection-Keys' that may not be persisted`: ASP.NET
+  Core registers its own data protection by default, but nothing in Pandora uses it (auth is JWT, no
+  cookies, sessions or antiforgery). The secrets Pandora encrypts use `DATA_PROTECTION_KEY`
+  (Tars Security.DataProtection), which comes from the environment and survives a container rebuild.
+  If a cookie or antiforgery feature is ever added, persist these keys (a volume) first.

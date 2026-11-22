@@ -1,4 +1,5 @@
-# Security updates ignore target-branch: they always open against main and are handled like hotfixes.
+# Security updates ignore target-branch: they always open against main. As an app with staging, Pandora
+# moves them to dev (devkit handbook, deploying.md), so they reach staging before production.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -33,6 +34,10 @@ updates:
   - package-ecosystem: npm
     directory: /client-web
     target-branch: dev
+    ignore:
+      # typescript-eslint 8 supports TypeScript < 6.1; lift this when it supports the next major.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     schedule:
       interval: weekly
     commit-message:
