@@ -31,6 +31,10 @@ public sealed class UpdateTransactionCommandHandler(IUnitOfWorkFactory factory, 
             if (transaction is null)
                 return Result<Transaction>.Failure([TransactionErrors.NotFound]);
 
+            // An entry created by an investment movement changes only through its position (INV-7).
+            if (await ctx.AcquireRepository<IPositionMovementRepository>().ExistsForTransactionAsync(transaction.Id, token))
+                return Result<Transaction>.Failure([PositionErrors.LinkedTransaction]);
+
             if (transaction.IsVoid)
                 return Result<Transaction>.Failure([TransactionErrors.AlreadyVoid]);
 

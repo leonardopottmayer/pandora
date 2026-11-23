@@ -481,4 +481,19 @@
   <data name="category.supplements" xml:space="preserve">
     <value>Suplementos</value>
   </data>
+  <data name="transaction.investment-buy" xml:space="preserve">
+    <value>Compra {0}</value>
+  </data>
+  <data name="transaction.investment-sell" xml:space="preserve">
+    <value>Venda {0}</value>
+  </data>
+  <data name="transaction.investment-redemption" xml:space="preserve">
+    <value>Resgate {0}</value>
+  </data>
+  <data name="transaction.investment-maturity" xml:space="preserve">
+    <value>Vencimento {0}</value>
+  </data>
+  <data name="transaction.investment-income" xml:space="preserve">
+    <value>Rendimento {0}</value>
+  </data>
 </root>

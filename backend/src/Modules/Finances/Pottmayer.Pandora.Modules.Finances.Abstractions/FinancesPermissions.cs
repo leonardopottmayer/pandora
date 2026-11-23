@@ -66,6 +66,16 @@ public static class FinancesPermissions
         public const string Void = Module + "." + Resource + "." + Actions.Void;
     }
 
+    public static class Investments
+    {
+        public const string Resource = "investments";
+
+        public const string Read = Module + "." + Resource + "." + PermissionActions.Read;
+        public const string Create = Module + "." + Resource + "." + PermissionActions.Create;
+        public const string Update = Module + "." + Resource + "." + PermissionActions.Update;
+        public const string Delete = Module + "." + Resource + "." + PermissionActions.Delete;
+    }
+
     public static class Pending
     {
         public const string Resource = "pending";

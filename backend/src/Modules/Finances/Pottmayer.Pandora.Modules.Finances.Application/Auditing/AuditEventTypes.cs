@@ -106,3 +106,29 @@ public static class TagEvents
     public const string Linked = "tag.linked";
     public const string Unlinked = "tag.unlinked";
 }
+
+public static class AssetClassEvents
+{
+    public const string EntityType = "asset-class";
+    public const string Created = "asset-class.created";
+    public const string Renamed = "asset-class.renamed";
+    public const string Archived = "asset-class.archived";
+    public const string Unarchived = "asset-class.unarchived";
+}
+
+public static class AssetEvents
+{
+    public const string EntityType = "asset";
+    public const string Created = "asset.created";
+    public const string Updated = "asset.updated";
+}
+
+public static class PositionEvents
+{
+    public const string EntityType = "position";
+    public const string Created = "position.created";
+    public const string MovementAdded = "position.movement-added";
+    public const string MovementUndone = "position.movement-undone";
+    public const string Deleted = "position.deleted";
+    public const string Valued = "position.valued";
+}
