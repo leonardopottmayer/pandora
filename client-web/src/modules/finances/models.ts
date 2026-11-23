@@ -91,6 +91,7 @@ export const SUPPORTED_BANKS: BankOption[] = [
   { code: '077', name: 'Banco Inter' },
   { code: '085', name: 'Viacredi' },
   { code: '260', name: 'Nubank' },
+  { code: '323', name: 'Mercado Pago' },
   { code: '341', name: 'Itaú' },
 ]
 
