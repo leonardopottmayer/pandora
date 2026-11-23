@@ -2,10 +2,13 @@ using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateCard;
+using Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateCardNumber;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.DeleteCard;
+using Pottmayer.Pandora.Modules.Finances.Application.Commands.DeleteCardNumber;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.SetCardArchived;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.SetEntityTags;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.UpdateCard;
+using Pottmayer.Pandora.Modules.Finances.Application.Commands.UpdateCardNumber;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetCard;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetCardAvailableLimit;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetCardInstallmentPlans;
@@ -53,7 +56,7 @@ public sealed class CardsController(
     public async Task<IActionResult> CreateAsync(CreateCardRequest request, CancellationToken ct)
     {
         var command = new CreateCardCommand(new CreateCardInput(
-            UserId, request.Name, request.Brand, request.LastFour, request.CreditLimit,
+            UserId, request.Name, request.Brand, request.CreditLimit,
             request.ClosingDay, request.DueDay, request.Currency, request.AccountId));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
@@ -63,7 +66,7 @@ public sealed class CardsController(
     public async Task<IActionResult> UpdateAsync(Guid id, UpdateCardRequest request, CancellationToken ct)
     {
         var command = new UpdateCardCommand(new UpdateCardInput(
-            UserId, id, request.Name, request.Brand, request.LastFour, request.CreditLimit,
+            UserId, id, request.Name, request.Brand, request.CreditLimit,
             request.ClosingDay, request.DueDay, request.AccountId));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
@@ -87,6 +90,31 @@ public sealed class CardsController(
     public async Task<IActionResult> UnarchiveAsync(Guid id, CancellationToken ct)
     {
         var result = await sender.Send(new SetCardArchivedCommand(new SetCardArchivedInput(UserId, id, false)), ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpPost("{id:guid}/numbers")]
+    public async Task<IActionResult> CreateNumberAsync(Guid id, CardNumberRequest request, CancellationToken ct)
+    {
+        var command = new CreateCardNumberCommand(new CreateCardNumberInput(
+            UserId, id, request.Kind, request.LastFour, request.Nickname));
+        var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpPut("{id:guid}/numbers/{numberId:guid}")]
+    public async Task<IActionResult> UpdateNumberAsync(Guid id, Guid numberId, CardNumberRequest request, CancellationToken ct)
+    {
+        var command = new UpdateCardNumberCommand(new UpdateCardNumberInput(
+            UserId, id, numberId, request.Kind, request.LastFour, request.Nickname));
+        var result = await sender.Send(command, ct);
+        return result.ToActionResult(errorMapper);
+    }
+
+    [HttpDelete("{id:guid}/numbers/{numberId:guid}")]
+    public async Task<IActionResult> DeleteNumberAsync(Guid id, Guid numberId, CancellationToken ct)
+    {
+        var result = await sender.Send(new DeleteCardNumberCommand(new DeleteCardNumberInput(UserId, id, numberId)), ct);
         return result.ToActionResult(errorMapper);
     }
 

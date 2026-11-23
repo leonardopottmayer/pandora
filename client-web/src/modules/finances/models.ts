@@ -126,6 +126,8 @@ export interface TransactionDto {
   accountId: string | null
   cardStatementId: string | null
   cardId: string | null
+  /** Which of the card's numbers the purchase was made with, when known. */
+  cardNumberId: string | null
   paidStatementId: string | null
   kind: TransactionKind
   status: TransactionStatus
@@ -153,10 +155,28 @@ export interface TransactionDto {
   attachmentCount: number
 }
 
+export type CardNumberKind = 'physical' | 'virtual'
+
+export interface CardNumberDto {
+  id: string
+  cardId: string
+  kind: CardNumberKind
+  lastFour: string
+  nickname: string | null
+  archivedAt: string | null
+}
+
+export interface CardNumberRequest {
+  kind: CardNumberKind
+  lastFour: string
+  nickname?: string | null
+}
+
 export interface CardDto {
   id: string
   name: string
   brand: string | null
+  /** The active physical number's last four (else the first active one's); names the card in lists. */
   lastFour: string | null
   creditLimit: number | null
   closingDay: number
@@ -164,6 +184,8 @@ export interface CardDto {
   currency: string
   accountId: string
   archivedAt: string | null
+  /** Archived ones included, physical first. */
+  numbers: CardNumberDto[]
 }
 
 export interface CardAvailableLimitDto {
@@ -386,7 +408,6 @@ export interface UpdateAccountRequest {
 export interface CreateCardRequest {
   name: string
   brand?: string | null
-  lastFour?: string | null
   creditLimit?: number | null
   closingDay: number
   dueDay: number
@@ -397,7 +418,6 @@ export interface CreateCardRequest {
 export interface UpdateCardRequest {
   name: string
   brand?: string | null
-  lastFour?: string | null
   creditLimit?: number | null
   closingDay: number
   dueDay: number
@@ -417,6 +437,7 @@ export interface CreateTransactionRequest {
   systemCategoryId?: string | null
   userCategoryId?: string | null
   installments?: number
+  cardNumberId?: string | null
 }
 
 export interface CreateTransferRequest {
@@ -436,6 +457,8 @@ export interface UpdateTransactionRequest {
   notes?: string | null
   systemCategoryId?: string | null
   userCategoryId?: string | null
+  /** Always send the current value: leaving it out clears the link. */
+  cardNumberId?: string | null
 }
 
 export interface VoidTransactionRequest {

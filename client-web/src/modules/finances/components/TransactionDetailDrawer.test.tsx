@@ -14,6 +14,7 @@ const tx: TransactionDto = {
   accountId: 'a1',
   cardStatementId: null,
   cardId: null,
+  cardNumberId: null,
   paidStatementId: null,
   kind: 'expense',
   status: 'posted',
@@ -92,7 +93,7 @@ describe('TransactionDetailDrawer', () => {
 
     await waitFor(() =>
       expect(bodies).toEqual([
-        { description: 'Supermercado', payee: null, notes: null, systemCategoryId: null, userCategoryId: null },
+        { description: 'Supermercado', payee: null, notes: null, systemCategoryId: null, userCategoryId: null, cardNumberId: null },
       ]),
     )
   })

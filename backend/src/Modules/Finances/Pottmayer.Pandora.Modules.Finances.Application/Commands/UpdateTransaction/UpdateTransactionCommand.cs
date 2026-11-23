@@ -13,7 +13,8 @@ public sealed record UpdateTransactionInput(
     string? Payee,
     string? Notes,
     Guid? SystemCategoryId,
-    Guid? UserCategoryId);
+    Guid? UserCategoryId,
+    Guid? CardNumberId = null);
 
 /// <summary>Edits a transaction's cosmetic fields. Fails on a voided transaction.</summary>
 [RequiresPermission(FinancesPermissions.Transactions.Update)]

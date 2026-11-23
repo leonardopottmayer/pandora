@@ -151,9 +151,14 @@ public async Task<IActionResult> CloseAsync(Guid id, CancellationToken ct)
   constraints/índices nomeados e enums em string com hífen (`pending-confirmation`, `api-key`).
 - Migrations são SQL puro rodado pelo migris, em `migrations/migrations/<módulo>/<timestamp>-<ação>/`
   com um `.up.sql` e um `.down.sql` (`20260616120001-create-table-fin008-transaction`).
-- Pré-1.0: alterar o schema existente no `CREATE TABLE` original; tabelas novas recebem scripts próprios
-  de criação/down. Não criar migrations incrementais de `ALTER` para tabelas existentes. Recriar um
-  banco local com dados é uma operação destrutiva separada, não uma etapa automática de implementação.
+- **O Pandora está em produção (desde a 1.0): nunca editar uma migration que já existe.** Toda mudança
+  de schema é uma migration nova (`<timestamp>-alter-fin008-add-...`; tabela nova ganha seu
+  `create-table-...`), escrita para os dados que já estão em prod continuarem funcionando: coluna nova
+  nullable ou com default, lista de CHECK ampliada com drop e recreate, dados movidos pela própria
+  migration. Prefira deixar uma coluna sem uso por uma release a removê-la de uma vez, para a imagem
+  anterior ainda rodar sobre o schema novo num rollback. O `.down.sql` diz quando não consegue desfazer
+  (por exemplo, linhas que só a CHECK nova aceita). Rode apply → rollback → apply no banco local antes
+  do commit.
 - Reutilizar a integração com Tars e os limites dos módulos documentados em
   [Tars wiring](tars-wiring.md) e [Mensageria](messaging.md).
 

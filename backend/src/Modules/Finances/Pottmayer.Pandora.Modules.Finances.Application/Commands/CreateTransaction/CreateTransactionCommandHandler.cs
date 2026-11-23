@@ -50,6 +50,10 @@ public sealed class CreateTransactionCommandHandler(
         if (hasAccount == hasCard)
             return Fail(StatementErrors.InvalidTarget);
 
+        // Only a card purchase is made with one of the card's numbers.
+        if (input.CardNumberId is not null && !hasCard)
+            return Fail(CardNumberErrors.NotOnCard);
+
         if (input.Installments < 1)
             return Fail(InstallmentErrors.InvalidCount);
 
@@ -128,6 +132,8 @@ public sealed class CreateTransactionCommandHandler(
                 return Result<(Card Card, StatementMaintenance.StatementResolutionResult Statement)>.Failure([CardErrors.NotFound]);
             if (card.IsArchived)
                 return Result<(Card Card, StatementMaintenance.StatementResolutionResult Statement)>.Failure([CardErrors.Archived]);
+            if (await CardNumberCheck.FindErrorAsync(ctx, input.CardNumberId, card.Id, input.UserId, null, token) is { } numberError)
+                return Result<(Card Card, StatementMaintenance.StatementResolutionResult Statement)>.Failure([numberError]);
 
             var ensured = await StatementMaintenance.EnsureStatementForPurchaseAsync(
                 statements, statementResolver, card, input.UserId, input.OccurredOn, input.CardStatementId, timeProvider, token);
@@ -181,6 +187,7 @@ public sealed class CreateTransactionCommandHandler(
                 input.SystemCategoryId,
                 input.UserCategoryId,
                 timeProvider);
+            transaction.SetCardNumber(input.CardNumberId);
 
             await transactions.AddAsync(transaction, token);
             // StatementSign flips the contribution for a refund vs. an expense.
@@ -191,6 +198,7 @@ public sealed class CreateTransactionCommandHandler(
                 new
                 {
                     cardId = cardContext.Id,
+                    cardNumberId = transaction.CardNumberId,
                     cardStatementId = statement.Id,
                     kind = transaction.Kind.Value,
                     status = transaction.Status.Value,
@@ -231,6 +239,8 @@ public sealed class CreateTransactionCommandHandler(
                 return Result<Transaction>.Failure([CardErrors.NotFound]);
             if (card.IsArchived)
                 return Result<Transaction>.Failure([CardErrors.Archived]);
+            if (await CardNumberCheck.FindErrorAsync(ctx, input.CardNumberId, card.Id, input.UserId, null, token) is { } numberError)
+                return Result<Transaction>.Failure([numberError]);
 
             // Groups every event this purchase generates (plan, statements, installments) so the
             // user can trace the whole operation as one unit in the audit trail.
@@ -289,6 +299,7 @@ public sealed class CreateTransactionCommandHandler(
                 var tx = Transaction.CreateInstallmentTransaction(
                     input.UserId, card.Id, statement.Id, plan.Id, (short)i, card.Currency, amount, input.OccurredOn,
                     input.Description, input.Payee, input.Notes, input.SystemCategoryId, input.UserCategoryId, timeProvider);
+                tx.SetCardNumber(input.CardNumberId);
                 await transactions.AddAsync(tx, token);
 
                 // Expense raises the statement total; recompute the cache in this same transaction (D1).

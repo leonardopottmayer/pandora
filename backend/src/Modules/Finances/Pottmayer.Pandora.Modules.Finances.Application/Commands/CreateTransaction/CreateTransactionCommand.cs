@@ -18,7 +18,8 @@ public sealed record CreateTransactionInput(
     string? Notes,
     Guid? SystemCategoryId,
     Guid? UserCategoryId,
-    int Installments = 1);
+    int Installments = 1,
+    Guid? CardNumberId = null);
 
 /// <summary>
 /// Creates a single movement against an account or a card statement, or — when

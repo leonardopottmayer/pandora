@@ -12,4 +12,5 @@ public sealed record CreateTransactionRequest(
     string? Notes,
     Guid? SystemCategoryId,
     Guid? UserCategoryId,
-    int Installments = 1);
+    int Installments = 1,
+    Guid? CardNumberId = null);

@@ -15,11 +15,18 @@ Debit cards are **not** modeled — a debit is a direct account entry.
 
 ## Card
 
-- **Config:** name (unique per user), brand, last four digits, `account_id` (the account the card
+- **Config:** name (unique per user), brand, `account_id` (the account the card
   belongs to, **required**; its `bank_code` routes card-bill imports to the right layout — see
   [Imports](imports.md#routing-by-the-destinations-bank)), `credit_limit` (`>= 0`, optional),
   `closing_day`, `due_day`, currency.
 - **`closing_day` / `due_day` ∈ 1..28** — enforced by CHECK to avoid month-length ambiguity.
+- **Numbers** (`fin019`): the physical card and any virtual ones, each with its last four digits, an
+  optional nickname and its kind. They all bill on the card's statements. A card purchase can say
+  which number it was made with (`fin008.card_number_id`, optional; imports leave it empty because no
+  supported layout carries the card's final). Removing a number a transaction used archives it
+  instead, so the history keeps naming it. The card's `lastFour` in the API is the active physical
+  number's (else the first active one's); the card form only asks for it on creation, as the first
+  physical number. Managing numbers needs `cards.update`.
 - **Currency is fixed** at creation (immutable, like accounts).
 - **Archiving** works like accounts: archived card is hidden, rejects business mutations, keeps
   history, is reversible via unarchive.
@@ -179,6 +186,8 @@ wrap on narrow screens; long filenames and notes truncate while retaining their 
 | GET | `/cards/{id}/installment-plans` | Installment plans of the card |
 | GET | `/cards/{id}/available-limit` | Limit − unpaid statements |
 | PUT | `/cards/{id}/tags` | Replace tag set |
+| POST | `/cards/{id}/numbers` | Add a number |
+| PUT / DELETE | `/cards/{id}/numbers/{numberId}` | Edit / remove a number (`false`: archived because a transaction used it) |
 | GET | `/statements/{id}` | Detail + entries |
 | POST | `/statements/{id}/pay` | Pay from an account |
 | POST | `/statements/{id}/settle` | Cashless write-off (onboarding) |

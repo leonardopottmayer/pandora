@@ -29,7 +29,7 @@ public sealed class FinanceQueryToolsTests
     private static readonly AccountDto Itau = new(Guid.NewGuid(), "Itaú", "checking", "BRL", null, null, null, null, 0, null);
     private static readonly AccountDto NubankAccount = new(Guid.NewGuid(), "Nubank", "checking", "BRL", null, null, null, null, 1, null);
     // Named like the account, as in real life — "Nubank" must find the card when asked for a card.
-    private static readonly CardDto Nubank = new(Guid.NewGuid(), "Nubank", null, null, 5000m, 1, 10, "BRL", NubankAccount.Id, null);
+    private static readonly CardDto Nubank = new(Guid.NewGuid(), "Nubank", null, null, 5000m, 1, 10, "BRL", NubankAccount.Id, null, []);
 
     private static readonly SystemCategoryDto Supermarket = Category("Supermercado");
     private static readonly SystemCategoryDto Food = Category("Alimentação", Supermarket);

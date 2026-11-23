@@ -1,6 +1,7 @@
 using Pottmayer.Pandora.Modules.Finances.Abstractions;
 using Pottmayer.Pandora.Modules.Finances.Application.Auditing;
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
+using Pottmayer.Pandora.Modules.Finances.Application.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
@@ -33,6 +34,12 @@ public sealed class UpdateTransactionCommandHandler(IUnitOfWorkFactory factory, 
             if (transaction.IsVoid)
                 return Result<Transaction>.Failure([TransactionErrors.AlreadyVoid]);
 
+            if (input.CardNumberId is not null && transaction.CardId is null)
+                return Result<Transaction>.Failure([CardNumberErrors.NotOnCard]);
+            if (transaction.CardId is { } cardId
+                && await CardNumberCheck.FindErrorAsync(ctx, input.CardNumberId, cardId, input.UserId, transaction.CardNumberId, token) is { } numberError)
+                return Result<Transaction>.Failure([numberError]);
+
             // Captured before the mutation so the audit event records both sides of the change.
             var diff = new
             {
@@ -40,11 +47,13 @@ public sealed class UpdateTransactionCommandHandler(IUnitOfWorkFactory factory, 
                 payee = new { old = transaction.Payee, @new = input.Payee },
                 notes = new { old = transaction.Notes, @new = input.Notes },
                 systemCategoryId = new { old = transaction.SystemCategoryId, @new = input.SystemCategoryId },
-                userCategoryId = new { old = transaction.UserCategoryId, @new = input.UserCategoryId }
+                userCategoryId = new { old = transaction.UserCategoryId, @new = input.UserCategoryId },
+                cardNumberId = new { old = transaction.CardNumberId, @new = input.CardNumberId }
             };
 
             transaction.UpdateDetails(
                 input.Description, input.Payee, input.Notes, input.SystemCategoryId, input.UserCategoryId);
+            transaction.SetCardNumber(input.CardNumberId);
             await repo.UpdateAsync(transaction, token);
 
             await ctx.RecordAsync(

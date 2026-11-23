@@ -31,6 +31,7 @@ Migrations live in `migrations/migrations/finances/`.
 | fin016 | `audit_event` | Append-only audit log |
 | fin017 | `attachment` | Files on a transaction, a suggestion or a statement (boleto, receipt, invoice), or queued |
 | fin018 | `file_blob` | The bytes behind fin017 |
+| fin019 | `card_number` | A card's physical and virtual numbers |
 
 ---
 
@@ -91,7 +92,7 @@ Same shape as fin002 but scoped to `user_id`, no `code`/`is_other`/`notes`, self
 | `id` / `user_id` | uuid | |
 | `name` | varchar(100) | unique per user |
 | `brand` | varchar(50) NULL | visa, mastercard, … |
-| `last_four` | varchar(4) NULL | |
+| `last_four` | varchar(4) NULL | **no longer used** (since 2026-11): copied into fin019 as the physical number; dropped in a later release |
 | `credit_limit` | numeric(20,8) NULL | `>= 0` |
 | `closing_day` | int NOT NULL | **1..28** |
 | `due_day` | int NOT NULL | **1..28** |
@@ -103,6 +104,22 @@ Constraints: `uq_fin006_user_name`, `ck_fin006_closing_day/due_day (BETWEEN 1 AN
 `ck_fin006_credit_limit`, `fk_fin006_account_id`. Indexes `(user_id, archived_at)`, `(account_id)`.
 
 > The 1..28 range avoids month-length ambiguity (no card closes on the 30th of February).
+
+## fin019_card_number
+
+The numbers a card has. They all bill on the card's single statement, so they are children of fin006,
+not cards of their own.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` / `user_id` / `card_id → fin006` | uuid | |
+| `kind` | varchar(20) NOT NULL | `physical\|virtual` |
+| `last_four` | varchar(4) NOT NULL | 4 digits, unique per card |
+| `nickname` | varchar(50) NULL | e.g. "Uber", "subscriptions" |
+| `archived_at` | timestamptz NULL | set instead of deleting once a transaction used the number |
+
+Constraints: `ck_fin019_kind`, `ck_fin019_last_four (~ '^[0-9]{4}$')`, `uq_fin019_card_last_four`,
+`fk_fin019_card_id`.
 
 ## fin007_card_statement
 
@@ -129,6 +146,7 @@ The central table. Built up across several migrations; final shape:
 | `account_id` | uuid NULL → fin001 | destination (XOR) |
 | `card_statement_id` | uuid NULL → fin007 | destination (XOR) |
 | `card_id` | uuid NULL → fin006 | denormalized when on a statement |
+| `card_number_id` | uuid NULL → fin019 | which of the card's numbers was used; optional, imports leave it empty |
 | `paid_statement_id` | uuid NULL → fin007 | statement paid/settled by this entry |
 | `kind` | varchar(30) NOT NULL | see [Transactions](transactions.md) |
 | `status` | varchar(10) DEFAULT 'posted' | `pending\|posted\|void` |

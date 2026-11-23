@@ -18,7 +18,6 @@ internal sealed class CardEntityConfiguration : IEntityTypeConfiguration<Card>
         builder.Property(c => c.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(c => c.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
         builder.Property(c => c.Brand).HasColumnName("brand").HasMaxLength(50);
-        builder.Property(c => c.LastFour).HasColumnName("last_four").HasMaxLength(4);
         builder.Property(c => c.CreditLimit).HasColumnName("credit_limit").HasColumnType("numeric(20,8)");
         builder.Property(c => c.ClosingDay).HasColumnName("closing_day").IsRequired();
         builder.Property(c => c.DueDay).HasColumnName("due_day").IsRequired();

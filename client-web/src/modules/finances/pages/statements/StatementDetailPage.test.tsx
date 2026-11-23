@@ -28,7 +28,7 @@ function detail(status: CardStatementDetailDto['statement']['status']): CardStat
     },
     transactions: [
       {
-        id: 'x1', accountId: null, cardStatementId: 's1', cardId: 'c1', paidStatementId: null,
+        id: 'x1', accountId: null, cardStatementId: 's1', cardId: 'c1', cardNumberId: null, paidStatementId: null,
         kind: 'expense', status: 'posted', amount: 200, currency: 'BRL', occurredOn: '2026-06-03',
         description: 'Compra A', payee: null, notes: null, systemCategoryId: null, userCategoryId: null,
         transferGroupId: null, fxRate: null, installmentPlanId: null, installmentNumber: null,

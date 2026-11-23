@@ -5,7 +5,7 @@ import { toErrorMessage } from '@/lib/api/envelope'
 import type { CardDto } from '../../models'
 import { COMMON_CURRENCIES } from '../../lib/enums'
 import { AccountSelect } from '../../components/AccountSelect'
-import { useCreateCard, useUpdateCard } from '../../hooks/useCards'
+import { useCreateCard, useSaveCardNumber, useUpdateCard } from '../../hooks/useCards'
 
 interface CardFormModalProps {
   open: boolean
@@ -33,7 +33,8 @@ export function CardFormModal({ open, card, onClose }: CardFormModalProps) {
 
   const createMutation = useCreateCard()
   const updateMutation = useUpdateCard()
-  const pending = createMutation.isPending || updateMutation.isPending
+  const saveNumber = useSaveCardNumber()
+  const pending = createMutation.isPending || updateMutation.isPending || saveNumber.isPending
 
   useEffect(() => {
     if (!open) return
@@ -41,7 +42,6 @@ export function CardFormModal({ open, card, onClose }: CardFormModalProps) {
       form.setFieldsValue({
         name: card.name,
         brand: card.brand ?? undefined,
-        lastFour: card.lastFour ?? undefined,
         creditLimit: card.creditLimit ?? undefined,
         closingDay: card.closingDay,
         dueDay: card.dueDay,
@@ -62,7 +62,6 @@ export function CardFormModal({ open, card, onClose }: CardFormModalProps) {
           body: {
             name: values.name,
             brand: values.brand ?? null,
-            lastFour: values.lastFour ?? null,
             creditLimit: values.creditLimit ?? null,
             closingDay: values.closingDay,
             dueDay: values.dueDay,
@@ -71,16 +70,19 @@ export function CardFormModal({ open, card, onClose }: CardFormModalProps) {
         })
         message.success(t('finances.cards.updated'))
       } else {
-        await createMutation.mutateAsync({
+        const created = await createMutation.mutateAsync({
           name: values.name,
           brand: values.brand ?? null,
-          lastFour: values.lastFour ?? null,
           creditLimit: values.creditLimit ?? null,
           closingDay: values.closingDay,
           dueDay: values.dueDay,
           currency: values.currency,
           accountId: values.accountId,
         })
+        // A new card's last four become its physical number; the card page manages the rest.
+        if (values.lastFour) {
+          await saveNumber.mutateAsync({ cardId: created.id, body: { kind: 'physical', lastFour: values.lastFour } })
+        }
         message.success(t('finances.cards.created'))
       }
       onClose()
@@ -150,19 +152,21 @@ export function CardFormModal({ open, card, onClose }: CardFormModalProps) {
           </Form.Item>
         </div>
 
-        <details open={!!card && (!!card.brand || !!card.lastFour || card.creditLimit != null) || undefined}>
+        <details open={!!card && (!!card.brand || card.creditLimit != null) || undefined}>
           <summary className="mb-3 w-fit cursor-pointer select-none text-sm">{t('finances.cards.moreOptions')}</summary>
           <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
             <Form.Item name="brand" label={t('finances.cards.brand')}>
               <Input maxLength={60} />
             </Form.Item>
-            <Form.Item
-              name="lastFour"
-              label={t('finances.cards.lastFour')}
-              rules={[{ len: 4, pattern: /^\d{4}$/, message: t('finances.cards.lastFourInvalid'), required: false }]}
-            >
-              <Input maxLength={4} inputMode="numeric" />
-            </Form.Item>
+            {!isEdit && (
+              <Form.Item
+                name="lastFour"
+                label={t('finances.cards.lastFour')}
+                rules={[{ len: 4, pattern: /^\d{4}$/, message: t('finances.cards.lastFourInvalid'), required: false }]}
+              >
+                <Input maxLength={4} inputMode="numeric" />
+              </Form.Item>
+            )}
           </div>
           <Form.Item name="creditLimit" label={t('finances.cards.creditLimit')}>
             <InputNumber style={{ width: '100%' }} min={0} step={100} prefix={currency} />

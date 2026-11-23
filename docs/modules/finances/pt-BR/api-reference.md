@@ -32,6 +32,8 @@ recurso de outro usuário retorna **404** (não 403). Os controllers ficam em `P
 | GET | `/cards/{id}/installment-plans` | Planos de parcelamento |
 | GET | `/cards/{id}/available-limit` | Limite − faturas não pagas |
 | PUT | `/cards/{id}/tags` | Substituir conjunto de tags |
+| POST | `/cards/{id}/numbers` | Adicionar um número físico ou virtual |
+| PUT / DELETE | `/cards/{id}/numbers/{numberId}` | Editar / remover (arquiva quando um lançamento usou) |
 
 ## Faturas — `/statements`
 
