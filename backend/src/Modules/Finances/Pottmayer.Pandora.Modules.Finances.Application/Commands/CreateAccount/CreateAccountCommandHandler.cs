@@ -34,8 +34,13 @@ public sealed class CreateAccountCommandHandler(
         if (!string.IsNullOrWhiteSpace(input.BankCode) && !Bank.IsSupported(input.BankCode))
             return Fail(AccountErrors.InvalidBank(input.BankCode));
 
+        if (!string.IsNullOrWhiteSpace(input.BenefitWallet) && !BenefitWallet.IsSupported(input.BenefitWallet))
+            return Fail(AccountErrors.InvalidBenefitWallet(input.BenefitWallet));
+
         var bankCode = Bank.Canonicalize(input.BankCode);
         var type = AccountType.FromValue(input.Type);
+        // Only a benefit account holds a wallet; the aggregate drops it for other types.
+        var wallet = string.IsNullOrWhiteSpace(input.BenefitWallet) ? null : BenefitWallet.FromValue(input.BenefitWallet);
 
         var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
@@ -47,7 +52,7 @@ public sealed class CreateAccountCommandHandler(
 
             var account = Account.Create(
                 input.UserId, input.Name, type, currency!, input.Institution, input.Description,
-                input.Color, input.Icon, input.DisplayOrder, timeProvider, bankCode);
+                input.Color, input.Icon, input.DisplayOrder, timeProvider, bankCode, wallet);
             await repo.AddAsync(account, token);
 
             await ctx.RecordAsync(
@@ -57,6 +62,7 @@ public sealed class CreateAccountCommandHandler(
                     name = account.Name,
                     type = account.Type.Value,
                     currency = account.Currency.Value,
+                    benefitWallet = account.BenefitWallet?.Value,
                     displayOrder = account.DisplayOrder
                 },
                 ct: token);

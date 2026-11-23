@@ -25,6 +25,7 @@ export const ACCOUNT_TYPE_META: Record<AccountType, EnumMeta> = {
   international: { labelKey: 'finances.enums.accountType.international' },
   crypto: { labelKey: 'finances.enums.accountType.crypto' },
   investment: { labelKey: 'finances.enums.accountType.investment' },
+  benefit: { labelKey: 'finances.enums.accountType.benefit' },
   other: { labelKey: 'finances.enums.accountType.other' },
 }
 

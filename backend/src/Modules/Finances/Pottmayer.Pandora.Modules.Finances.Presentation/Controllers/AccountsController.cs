@@ -54,7 +54,7 @@ public sealed class AccountsController(
         var command = new CreateAccountCommand(new CreateAccountInput(
             UserId, request.Name, request.Type, request.Currency, request.Institution,
             request.Description, request.Color, request.Icon, request.DisplayOrder, request.OpeningBalance,
-            request.BankCode));
+            request.BankCode, request.BenefitWallet));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
@@ -64,7 +64,8 @@ public sealed class AccountsController(
     {
         var command = new UpdateAccountCommand(new UpdateAccountInput(
             UserId, id, request.Name, request.Type, request.Institution,
-            request.Description, request.Color, request.Icon, request.DisplayOrder, request.BankCode));
+            request.Description, request.Color, request.Icon, request.DisplayOrder, request.BankCode,
+            request.BenefitWallet));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }

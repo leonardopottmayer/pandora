@@ -5,4 +5,5 @@ public sealed record UpdateTransactionRequest(
     string? Payee,
     string? Notes,
     Guid? SystemCategoryId,
-    Guid? UserCategoryId);
+    Guid? UserCategoryId,
+    Guid? CardNumberId = null);

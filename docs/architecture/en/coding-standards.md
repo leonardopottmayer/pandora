@@ -152,9 +152,14 @@ public async Task<IActionResult> CloseAsync(Guid id, CancellationToken ct)
   named constraints/indexes, and string enums with hyphens (`pending-confirmation`, `api-key`).
 - Migrations are plain SQL run by migris, in `migrations/migrations/<module>/<timestamp>-<action>/`
   with a `.up.sql` and a `.down.sql` (`20260616120001-create-table-fin008-transaction`).
-- Pre-1.0: change existing schema in the original `CREATE TABLE`; new tables get their own create/down
-  scripts. Do not add incremental `ALTER` migrations for existing tables. Recreating a populated
-  local database is a separate destructive operation, not an automatic implementation step.
+- **Pandora is in production (since 1.0): never edit a migration that already exists.** Every schema
+  change is a new migration (`<timestamp>-alter-fin008-add-...`; a new table gets its own
+  `create-table-...`), written so the data already in prod keeps working: new columns nullable or with
+  a default, a CHECK list widened by dropping and recreating it, data moved by the migration itself.
+  Prefer leaving an unused column in place for a release over dropping it at once, so the previous
+  image still runs against the new schema during a rollback. The `.down.sql` says when it cannot undo
+  (for example, rows that only the new CHECK accepts). Run apply → rollback → apply on the local
+  database before committing.
 - Reuse the Tars integration and module boundaries documented in
   [Tars wiring](tars-wiring.md) and [Messaging](messaging.md).
 

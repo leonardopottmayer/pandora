@@ -82,6 +82,10 @@ public static class CardEvents
     public const string Deleted = "card.deleted";
     public const string Archived = "card.archived";
     public const string Unarchived = "card.unarchived";
+    public const string NumberAdded = "card.number-added";
+    public const string NumberUpdated = "card.number-updated";
+    public const string NumberRemoved = "card.number-removed";
+    public const string NumberArchived = "card.number-archived";
 }
 
 public static class UserCategoryEvents

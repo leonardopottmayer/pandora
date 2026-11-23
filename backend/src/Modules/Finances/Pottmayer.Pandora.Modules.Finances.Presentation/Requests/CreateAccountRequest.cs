@@ -10,4 +10,5 @@ public sealed record CreateAccountRequest(
     string? Icon,
     int DisplayOrder,
     decimal? OpeningBalance,
-    string? BankCode = null);
+    string? BankCode = null,
+    string? BenefitWallet = null);

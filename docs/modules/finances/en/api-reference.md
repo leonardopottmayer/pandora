@@ -33,6 +33,8 @@ user. A resource owned by another user returns **404** (not 403). Controllers li
 | GET | `/cards/{id}/installment-plans` | Installment plans |
 | GET | `/cards/{id}/available-limit` | Limit − unpaid statements |
 | PUT | `/cards/{id}/tags` | Replace tag set |
+| POST | `/cards/{id}/numbers` | Add a physical or virtual number |
+| PUT / DELETE | `/cards/{id}/numbers/{numberId}` | Edit / remove (archives when a transaction used it) |
 
 ## Statements — `/statements`
 

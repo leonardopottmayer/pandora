@@ -2,6 +2,7 @@ using Pottmayer.Pandora.Modules.Finances.Abstractions;
 using Pottmayer.Pandora.Modules.Finances.Application.Auditing;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateCard;
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
+using Pottmayer.Pandora.Modules.Finances.Application.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
@@ -19,8 +20,6 @@ public sealed class UpdateCardCommandHandler(IUnitOfWorkFactory factory, TimePro
         var input = request.Input;
         if (string.IsNullOrWhiteSpace(input.Name))
             return Fail(CardErrors.InvalidName);
-        if (!string.IsNullOrWhiteSpace(input.LastFour) && (input.LastFour.Trim().Length != 4 || !input.LastFour.Trim().All(char.IsDigit)))
-            return Fail(CardErrors.InvalidLastFour);
         if (input.CreditLimit is < 0m)
             return Fail(CardErrors.InvalidCreditLimit);
         if (input.ClosingDay is < 1 or > 28)
@@ -47,7 +46,7 @@ public sealed class UpdateCardCommandHandler(IUnitOfWorkFactory factory, TimePro
                 return Result<Card>.Failure([CardErrors.AccountNotFound]);
 
             // The aggregate itself refuses the update once archived.
-            if (!card.Update(input.Name, input.Brand, input.LastFour, input.CreditLimit, input.ClosingDay, input.DueDay, input.AccountId))
+            if (!card.Update(input.Name, input.Brand, input.CreditLimit, input.ClosingDay, input.DueDay, input.AccountId))
                 return Result<Card>.Failure([CardErrors.Archived]);
 
             await repo.UpdateAsync(card, token);
@@ -55,6 +54,6 @@ public sealed class UpdateCardCommandHandler(IUnitOfWorkFactory factory, TimePro
             return Result<Card>.Success(card);
         }, cancellationToken: ct);
 
-        return result.IsFailure ? Fail([.. result.Errors]) : Ok(CardDto.From(result.Value!));
+        return result.IsFailure ? Fail([.. result.Errors]) : Ok(await CardDtoReader.ReadAsync(factory, result.Value!, ct));
     }
 }

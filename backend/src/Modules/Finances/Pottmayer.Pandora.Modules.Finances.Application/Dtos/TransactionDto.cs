@@ -35,7 +35,8 @@ public sealed record TransactionDto(
     string? StatementReferenceMonth,
     DateOnly? StatementDueDate,
     // Filled by the list query; zero elsewhere.
-    int AttachmentCount = 0)
+    int AttachmentCount = 0,
+    Guid? CardNumberId = null)
 {
     /// <summary>Maps without localization — for command results, which only ever carry user text.</summary>
     public static TransactionDto From(Transaction t) => From(t, null, null);
@@ -55,6 +56,6 @@ public sealed record TransactionDto(
             t.Amount, t.Currency.Value, t.OccurredOn, description, t.Payee, t.Notes, t.SystemCategoryId,
             t.UserCategoryId, t.TransferGroupId, t.FxRate, t.InstallmentPlanId, t.InstallmentNumber, t.Origin.Value,
             t.ReversedTransactionId, t.PostedAt, t.VoidedAt, t.VoidReason, t.SystemDescription?.Key, t.SystemDescription?.Args,
-            statement?.ReferenceMonth, statement?.DueDate);
+            statement?.ReferenceMonth, statement?.DueDate, CardNumberId: t.CardNumberId);
     }
 }

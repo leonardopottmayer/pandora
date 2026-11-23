@@ -2,6 +2,8 @@ import { apiClient } from '@/lib/api/client'
 import type {
   CardAvailableLimitDto,
   CardDto,
+  CardNumberDto,
+  CardNumberRequest,
   CardStatementDto,
   CreateCardRequest,
   InstallmentPlanDto,
@@ -49,6 +51,22 @@ export async function archiveCard(id: string): Promise<CardDto> {
 
 export async function unarchiveCard(id: string): Promise<CardDto> {
   const { data } = await apiClient.post<CardDto>(`${BASE}/${id}/unarchive`)
+  return data
+}
+
+export async function createCardNumber(cardId: string, body: CardNumberRequest): Promise<CardNumberDto> {
+  const { data } = await apiClient.post<CardNumberDto>(`${BASE}/${cardId}/numbers`, body)
+  return data
+}
+
+export async function updateCardNumber(cardId: string, numberId: string, body: CardNumberRequest): Promise<CardNumberDto> {
+  const { data } = await apiClient.put<CardNumberDto>(`${BASE}/${cardId}/numbers/${numberId}`, body)
+  return data
+}
+
+/** Resolves to `true` when deleted, `false` when archived because a transaction used it. */
+export async function deleteCardNumber(cardId: string, numberId: string): Promise<boolean> {
+  const { data } = await apiClient.delete<boolean>(`${BASE}/${cardId}/numbers/${numberId}`)
   return data
 }
 

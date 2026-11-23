@@ -53,6 +53,9 @@ public interface ITransactionRepository : IStandardRepository<Transaction, Guid>
     /// <summary>Whether some transaction already declares <paramref name="transactionId"/> as the one it reverses.</summary>
     Task<bool> ExistsReversalForAsync(Guid transactionId, Guid userId, CancellationToken ct = default);
 
+    /// <summary>True when any transaction, voided ones included, was made with the card number.</summary>
+    Task<bool> ExistsForCardNumberAsync(Guid cardNumberId, CancellationToken ct = default);
+
     /// <summary>
     /// Returns all pending account-targeted transactions whose <c>occurred_on</c> is on or before
     /// <paramref name="today"/>. Used by the daily job to auto-post scheduled entries.

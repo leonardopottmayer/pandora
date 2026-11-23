@@ -11,6 +11,8 @@ public sealed class AccountType : IDomainValue<AccountType>
     public static readonly AccountType International = new("international");
     public static readonly AccountType Crypto = new("crypto");
     public static readonly AccountType Investment = new("investment");
+    /// <summary>Meal/food voucher (e.g. Flash): credited by the employer, spent at accepting merchants.</summary>
+    public static readonly AccountType Benefit = new("benefit");
     public static readonly AccountType Other = new("other");
 
     private static readonly Dictionary<string, AccountType> All = new()
@@ -21,6 +23,7 @@ public sealed class AccountType : IDomainValue<AccountType>
         [International.Value] = International,
         [Crypto.Value] = Crypto,
         [Investment.Value] = Investment,
+        [Benefit.Value] = Benefit,
         [Other.Value] = Other
     };
 

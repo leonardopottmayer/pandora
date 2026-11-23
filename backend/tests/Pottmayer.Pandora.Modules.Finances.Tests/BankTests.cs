@@ -10,6 +10,7 @@ public sealed class BankTests
     [InlineData("077")]
     [InlineData("77")]
     [InlineData(" 260 ")]
+    [InlineData("323")]
     public void IsSupported_true_for_known_codes(string code) =>
         Assert.True(Bank.IsSupported(code));
 

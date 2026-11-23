@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { financeKeys } from './queryKeys'
-import type { CreateCardRequest, UpdateCardRequest } from '../models'
+import type { CardNumberRequest, CreateCardRequest, UpdateCardRequest } from '../models'
 import * as cardsService from '../services/cards.service'
 import type { ListCardsParams } from '../services/cards.service'
 
@@ -89,6 +89,23 @@ export function useSetCardArchived() {
   return useMutation({
     mutationFn: ({ id, archived }: { id: string; archived: boolean }) =>
       archived ? cardsService.archiveCard(id) : cardsService.unarchiveCard(id),
+    onSuccess: invalidate,
+  })
+}
+
+export function useSaveCardNumber() {
+  const invalidate = useInvalidateCards()
+  return useMutation({
+    mutationFn: ({ cardId, numberId, body }: { cardId: string; numberId?: string; body: CardNumberRequest }) =>
+      numberId ? cardsService.updateCardNumber(cardId, numberId, body) : cardsService.createCardNumber(cardId, body),
+    onSuccess: invalidate,
+  })
+}
+
+export function useDeleteCardNumber() {
+  const invalidate = useInvalidateCards()
+  return useMutation({
+    mutationFn: ({ cardId, numberId }: { cardId: string; numberId: string }) => cardsService.deleteCardNumber(cardId, numberId),
     onSuccess: invalidate,
   })
 }

@@ -14,10 +14,11 @@ public sealed class Bank : IDomainValue<Bank>
     public static readonly Bank Inter = new("077", "Banco Inter");
     public static readonly Bank Viacredi = new("085", "Viacredi");
     public static readonly Bank Nubank = new("260", "Nubank");
+    public static readonly Bank MercadoPago = new("323", "Mercado Pago");
     public static readonly Bank Itau = new("341", "Itaú");
 
     private static readonly Dictionary<string, Bank> ByCode =
-        new[] { Inter, Viacredi, Nubank, Itau }.ToDictionary(b => Normalize(b.Value));
+        new[] { Inter, Viacredi, Nubank, MercadoPago, Itau }.ToDictionary(b => Normalize(b.Value));
 
     /// <summary>Canonical COMPE code (e.g. "077").</summary>
     public string Value { get; }

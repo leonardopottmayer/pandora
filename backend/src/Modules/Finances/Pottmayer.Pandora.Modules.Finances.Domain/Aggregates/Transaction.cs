@@ -18,6 +18,9 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
     public Guid? AccountId { get; private set; }
     public Guid? CardStatementId { get; private set; }
     public Guid? CardId { get; private set; }
+
+    /// <summary>Which of the card's numbers (physical or virtual) the purchase was made with, when known.</summary>
+    public Guid? CardNumberId { get; private set; }
     public Guid? PaidStatementId { get; private set; }
     public TransactionKind Kind { get; private set; } = TransactionKind.Expense;
     public TransactionStatus Status { get; private set; } = TransactionStatus.Posted;
@@ -386,6 +389,12 @@ public sealed class Transaction : AggregateRoot<Guid>, IAuditable
         Origin = EntryOrigin.Manual;
         PendingTransactionId = pendingTransactionId;
     }
+
+    /// <summary>
+    /// Records which of the card's numbers was used. The caller checks the number belongs to
+    /// <see cref="CardId"/>; it is metadata, so it stays editable like the cosmetic fields.
+    /// </summary>
+    public void SetCardNumber(Guid? cardNumberId) => CardNumberId = cardNumberId;
 
     /// <summary>Edits the cosmetic fields. Value, destination and kind are intentionally absent.</summary>
     public void UpdateDetails(

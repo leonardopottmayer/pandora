@@ -37,6 +37,7 @@ internal sealed class TransactionEntityConfiguration : IEntityTypeConfiguration<
         builder.Property(t => t.AccountId).HasColumnName("account_id");
         builder.Property(t => t.CardStatementId).HasColumnName("card_statement_id");
         builder.Property(t => t.CardId).HasColumnName("card_id");
+        builder.Property(t => t.CardNumberId).HasColumnName("card_number_id");
         builder.Property(t => t.PaidStatementId).HasColumnName("paid_statement_id");
 
         builder.Property(t => t.Kind)
@@ -110,6 +111,11 @@ internal sealed class TransactionEntityConfiguration : IEntityTypeConfiguration<
             .WithMany()
             .HasForeignKey(t => t.CardId)
             .HasConstraintName("fk_fin008_card_id");
+
+        builder.HasOne<CardNumber>()
+            .WithMany()
+            .HasForeignKey(t => t.CardNumberId)
+            .HasConstraintName("fk_fin008_card_number_id");
 
         builder.HasOne<CardStatement>()
             .WithMany()

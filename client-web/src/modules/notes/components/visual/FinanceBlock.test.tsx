@@ -173,7 +173,7 @@ describe('FinanceBlock', () => {
     const picker = screen.getByRole('textbox', { name: 'Expense month' })
     await userEvent.type(picker, '02/2028{Enter}')
     await waitFor(() => expect(update).toHaveBeenCalledWith({ mode: 'expenses', month: '2028-02' }))
-    await userEvent.click(screen.getByRole('button', { name: 'close-circle' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Clear' }))
     await waitFor(() => expect(update).toHaveBeenCalledWith({ mode: 'expenses' }))
   })
 

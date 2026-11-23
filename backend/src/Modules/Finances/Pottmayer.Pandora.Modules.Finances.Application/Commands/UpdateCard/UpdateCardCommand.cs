@@ -10,7 +10,6 @@ public sealed record UpdateCardInput(
     Guid CardId,
     string Name,
     string? Brand,
-    string? LastFour,
     decimal? CreditLimit,
     int ClosingDay,
     int DueDay,

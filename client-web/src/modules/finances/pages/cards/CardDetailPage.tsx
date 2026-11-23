@@ -11,6 +11,7 @@ import { useCard, useCardAvailableLimit, useCardInstallmentPlans, useCardStateme
 import { CardFormModal } from './CardFormModal'
 import { CardStatementsTab } from './CardStatementsTab'
 import { CardInstallmentsTab } from './CardInstallmentsTab'
+import { CardNumbersTab } from './CardNumbersTab'
 
 export function CardDetailPage() {
   const { t } = useTranslation()
@@ -65,6 +66,10 @@ export function CardDetailPage() {
           {
             key: 'installments', label: t('finances.installments.title'), className: 'lg:h-full',
             children: <CardInstallmentsTab plans={plans ?? []} loading={loadingPlans} currency={card.currency} />,
+          },
+          {
+            key: 'numbers', label: t('finances.cards.numbersTab'), className: 'lg:h-full',
+            children: <CardNumbersTab card={card} />,
           },
         ]}
       />

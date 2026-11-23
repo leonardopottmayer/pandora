@@ -22,9 +22,6 @@ public static class CardErrors
     public static Error InvalidDueDay =>
         Error.Validation("Cards.InvalidDueDay", "Due day must be between 1 and 28.");
 
-    public static Error InvalidLastFour =>
-        Error.Validation("Cards.InvalidLastFour", "Card last four must contain exactly 4 digits.");
-
     public static Error InvalidCreditLimit =>
         Error.Validation("Cards.InvalidCreditLimit", "Credit limit cannot be negative.");
 

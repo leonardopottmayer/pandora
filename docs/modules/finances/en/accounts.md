@@ -7,21 +7,25 @@
 ## Business context
 
 An **account** is a balance repository owned by the user: cash/wallet, checking, savings,
-international, crypto, investment, or other. It is where money actually sits. A credit card is
+international, crypto, investment, benefit, or other. It is where money actually sits. A credit card is
 **not** an account (see [Cards & Statements](cards-and-statements.md)). The account's **balance is
 never stored** — it is the signed sum of its posted transactions (design decision D1).
 
 ## Rules
 
 - **Types** (`AccountType`): `cash`, `checking`, `savings`, `international`, `crypto`, `investment`,
-  `other`.
+  `benefit`, `other`.
+- **Benefit** accounts hold a meal/food voucher balance (Flash and the like): one account per wallet,
+  with an optional `benefit_wallet` (`food`, `meal`, `flexible`). The employer's monthly credit is an
+  income (a recurring one, if it repeats) and each purchase an expense, like any other account. The
+  wallet is kept only while the type is `benefit`; changing the type clears it.
 - **Currency** (`CurrencyCode`): an ISO 4217 fiat code or a crypto ticker, validated by shape
   (3–10 uppercase letters), normalized to upper-case. **Fixed at creation** — there is no mutator,
   so it can never change. Rationale: changing an account's currency would invalidate every entry's
   currency and the derived balance.
 - **Name** is unique per user (`uq_fin001_user_name`).
 - **Bank** (`bank_code`, optional): the COMPE code of the account's bank (`Bank` registry;
-  077/085/260/341). Used to route statement imports to the right layout — see
+  077/085/260/323/341). Used to route statement imports to the right layout — see
   [Imports](imports.md#routing-by-the-destinations-bank).
 - **Type is editable**, but **currency is not** (both are absent from the update path in the design;
   in the current aggregate `Update` re-accepts `type` but not `currency`).

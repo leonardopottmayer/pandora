@@ -20,7 +20,7 @@ public sealed class RecordExpenseToolTests
     private static readonly FixedTimeProvider Time = new(new DateTimeOffset(2026, 9, 5, 1, 0, 0, TimeSpan.Zero));
 
     private static readonly AccountDto Itau = new(Guid.NewGuid(), "Itaú", "checking", "BRL", null, null, null, null, 0, null);
-    private static readonly CardDto Nubank = new(Guid.NewGuid(), "Nubank", null, null, null, 1, 10, "BRL", Itau.Id, null);
+    private static readonly CardDto Nubank = new(Guid.NewGuid(), "Nubank", null, null, null, 1, 10, "BRL", Itau.Id, null, []);
 
     /// <summary>Answers each request with the scripted response of its type; echoes the pending expense it is asked to create.</summary>
     private sealed class ScriptedSender(IReadOnlyList<AccountDto> accounts, IReadOnlyList<CardDto> cards) : ISender
