@@ -1,3 +1,13 @@
+## [1.1.0](https://github.com/leonardopottmayer/pandora/compare/v1.0.2...v1.1.0) (2026-11-23)
+
+### Features
+
+* **finances:** Mercado Pago, card numbers and benefit accounts ([#26](https://github.com/leonardopottmayer/pandora/issues/26)) ([81122ec](https://github.com/leonardopottmayer/pandora/commit/81122ecd4e2349bfcd21e4228757b5b6668da0bb))
+
+### Bug Fixes
+
+* **deps:** bump the npm group across 1 directory with 34 updates ([#24](https://github.com/leonardopottmayer/pandora/issues/24)) ([ffdb2e5](https://github.com/leonardopottmayer/pandora/commit/ffdb2e5e6ca0409861e0f0e12ec1321499d21292))
+
 ## [1.0.2](https://github.com/leonardopottmayer/pandora/compare/v1.0.1...v1.0.2) (2026-11-22)
 
 ### Bug Fixes
