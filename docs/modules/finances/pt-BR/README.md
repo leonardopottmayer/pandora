@@ -38,6 +38,7 @@ precisar. Cada arquivo traz o *contexto de negócio* (o que significa para o usu
 | 13 | [Jobs e integração](jobs-and-integration.md) | Jobs de background, idempotência, eventos de integração (status) |
 | 14 | [Referência de API](api-reference.md) | Todos os endpoints em `/api/v{n}/finances` |
 | 15 | [Status de implementação](implementation-status.md) | O que está pronto vs. planejado |
+| 16 | [Plano de produto](product-plan.md) | Trabalho restante: investimentos (em planejamento) |
 
 ---
 
