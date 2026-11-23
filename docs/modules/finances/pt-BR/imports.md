@@ -66,7 +66,7 @@ Layouts de sistema seed (bancos brasileiros):
 ### Roteamento por banco do destino
 
 A conta guarda o COMPE do seu banco em `fin001.bank_code` — um valor do registro `Bank` (dominio; 077
-Inter, 085 Viacredi, 260 Nubank, 341 Itaú). O cartão não tem banco próprio: ele pertence a uma conta
+Inter, 085 Viacredi, 260 Nubank, 323 Mercado Pago, 341 Itaú). O cartão não tem banco próprio: ele pertence a uma conta
 (`fin006.account_id`) e herda o `bank_code` dela. No upload, o `IImportLayoutResolver` escolhe o layout
 pela **chave `(bank_code, file_format, account_type)`**: detecta o formato (ofx/csv) pela
 extensão/conteúdo, deriva account/card do destino (para cartão, o banco vem da conta a que ele

@@ -1,6 +1,7 @@
 using Pottmayer.Pandora.Modules.Finances.Abstractions;
 using Pottmayer.Pandora.Modules.Finances.Application.Auditing;
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
+using Pottmayer.Pandora.Modules.Finances.Application.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
@@ -39,6 +40,6 @@ public sealed class SetCardArchivedCommandHandler(IUnitOfWorkFactory factory, Ti
             return Result<Card>.Success(card);
         }, cancellationToken: ct);
 
-        return result.IsFailure ? Fail([.. result.Errors]) : Ok(CardDto.From(result.Value!));
+        return result.IsFailure ? Fail([.. result.Errors]) : Ok(await CardDtoReader.ReadAsync(factory, result.Value!, ct));
     }
 }

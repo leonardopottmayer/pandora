@@ -64,7 +64,7 @@ Seeded system layouts (Brazilian banks):
 ### Routing by the destination's bank
 
 An account stores its bank's COMPE code in `fin001.bank_code` — a value from the `Bank` registry
-(domain; 077 Inter, 085 Viacredi, 260 Nubank, 341 Itaú). A card has no bank of its own: it belongs to
+(domain; 077 Inter, 085 Viacredi, 260 Nubank, 323 Mercado Pago, 341 Itaú). A card has no bank of its own: it belongs to
 an account (`fin006.account_id`) and inherits that account's `bank_code`. On upload, the
 `IImportLayoutResolver` picks the layout by the **`(bank_code, file_format, account_type)` key**: it
 detects the format (ofx/csv) from the extension/content, derives account/card from the destination

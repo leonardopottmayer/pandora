@@ -15,7 +15,8 @@ public sealed record UpdateAccountInput(
     string? Color,
     string? Icon,
     int DisplayOrder,
-    string? BankCode = null);
+    string? BankCode = null,
+    string? BenefitWallet = null);
 
 /// <summary>Edits an account's mutable fields. Currency is intentionally absent: it is fixed at creation.</summary>
 [RequiresPermission(FinancesPermissions.Accounts.Update)]

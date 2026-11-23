@@ -15,11 +15,18 @@ Cartão de débito **não** é modelado — um débito é lançamento direto na 
 
 ## Cartão
 
-- **Config:** nome (único por usuário), bandeira, últimos quatro dígitos, `account_id` (conta a que o
+- **Config:** nome (único por usuário), bandeira, `account_id` (conta a que o
   cartão pertence, **obrigatória**; o `bank_code` dela roteia a importação de faturas ao layout certo
   — ver [Importação](imports.md#roteamento-por-banco-do-destino)), `credit_limit` (`>= 0`, opcional),
   `closing_day`, `due_day`, moeda.
 - **`closing_day` / `due_day` ∈ 1..28** — imposto por CHECK para evitar ambiguidade com o tamanho do mês.
+- **Números** (`fin019`): o cartão físico e os virtuais, cada um com os últimos quatro dígitos, um
+  apelido opcional e o tipo. Todos caem nas faturas do cartão. A compra no cartão pode dizer com qual
+  número foi feita (`fin008.card_number_id`, opcional; a importação deixa vazio porque nenhum layout
+  suportado traz o final do cartão). Remover um número que algum lançamento usou arquiva ele, para o
+  histórico continuar nomeando. O `lastFour` do cartão na API é o do número físico ativo (senão o do
+  primeiro ativo); o formulário do cartão só pede o final na criação, como primeiro número físico.
+  Gerenciar números exige `cards.update`.
 - **Moeda fixa** na criação (imutável, como as contas).
 - **Arquivamento** funciona como nas contas: cartão arquivado some, rejeita mutações de negócio,
   mantém histórico, é reversível via desarquivar.
@@ -180,6 +187,8 @@ texto completo preservado no atributo title.
 | GET | `/cards/{id}/installment-plans` | Planos de parcelamento do cartão |
 | GET | `/cards/{id}/available-limit` | Limite − faturas não pagas |
 | PUT | `/cards/{id}/tags` | Substituir conjunto de tags |
+| POST | `/cards/{id}/numbers` | Adicionar um número |
+| PUT / DELETE | `/cards/{id}/numbers/{numberId}` | Editar / remover um número (`false`: arquivado porque um lançamento usou) |
 | GET | `/statements/{id}` | Detalhe + lançamentos |
 | POST | `/statements/{id}/pay` | Pagar de uma conta |
 | POST | `/statements/{id}/settle` | Write-off sem caixa (onboarding) |

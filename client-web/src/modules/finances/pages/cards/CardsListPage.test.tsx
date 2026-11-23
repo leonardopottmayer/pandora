@@ -21,6 +21,7 @@ const card: CardDto = {
   currency: 'BRL',
   accountId: 'a1',
   archivedAt: null,
+  numbers: [],
 }
 
 beforeAll(async () => {

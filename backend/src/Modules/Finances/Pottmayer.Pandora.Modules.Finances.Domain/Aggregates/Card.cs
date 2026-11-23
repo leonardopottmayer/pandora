@@ -14,7 +14,6 @@ public sealed class Card : AggregateRoot<Guid>, IAuditable
     public Guid UserId { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public string? Brand { get; private set; }
-    public string? LastFour { get; private set; }
     public decimal? CreditLimit { get; private set; }
     public int ClosingDay { get; private set; }
     public int DueDay { get; private set; }
@@ -36,7 +35,6 @@ public sealed class Card : AggregateRoot<Guid>, IAuditable
         Guid userId,
         string name,
         string? brand,
-        string? lastFour,
         decimal? creditLimit,
         int closingDay,
         int dueDay,
@@ -49,7 +47,6 @@ public sealed class Card : AggregateRoot<Guid>, IAuditable
             UserId = userId,
             Name = name.Trim(),
             Brand = Normalize(brand),
-            LastFour = Normalize(lastFour),
             CreditLimit = creditLimit,
             ClosingDay = closingDay,
             DueDay = dueDay,
@@ -65,7 +62,6 @@ public sealed class Card : AggregateRoot<Guid>, IAuditable
     public bool Update(
         string name,
         string? brand,
-        string? lastFour,
         decimal? creditLimit,
         int closingDay,
         int dueDay,
@@ -75,7 +71,6 @@ public sealed class Card : AggregateRoot<Guid>, IAuditable
 
         Name = name.Trim();
         Brand = Normalize(brand);
-        LastFour = Normalize(lastFour);
         CreditLimit = creditLimit;
         ClosingDay = closingDay;
         DueDay = dueDay;

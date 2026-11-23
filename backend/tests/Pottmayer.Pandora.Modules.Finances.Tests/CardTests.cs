@@ -18,7 +18,6 @@ public sealed class CardTests
             Guid.NewGuid(),
             "  Nubank  ",
             "  mastercard ",
-            " 1234 ",
             5000m,
             10,
             20,
@@ -28,7 +27,6 @@ public sealed class CardTests
 
         Assert.Equal("Nubank", card.Name);
         Assert.Equal("mastercard", card.Brand);
-        Assert.Equal("1234", card.LastFour);
         Assert.Equal("BRL", card.Currency.Value);
         Assert.Equal(accountId, card.AccountId);
         Assert.Equal(Now, card.CreatedAt);
@@ -39,10 +37,10 @@ public sealed class CardTests
     public void Update_is_rejected_while_archived()
     {
         var time = new FixedTimeProvider(Now);
-        var card = Card.Create(Guid.NewGuid(), "Card", null, null, null, 10, 20, CurrencyCode.Create("BRL"), Guid.NewGuid(), time);
+        var card = Card.Create(Guid.NewGuid(), "Card", null, null, 10, 20, CurrencyCode.Create("BRL"), Guid.NewGuid(), time);
         card.Archive(time);
 
-        var changed = card.Update("New", null, null, 100m, 11, 21, Guid.NewGuid());
+        var changed = card.Update("New", null, 100m, 11, 21, Guid.NewGuid());
 
         Assert.False(changed);
         Assert.Equal("Card", card.Name);

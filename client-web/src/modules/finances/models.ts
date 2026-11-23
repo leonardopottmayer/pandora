@@ -14,9 +14,14 @@ export const ACCOUNT_TYPES = [
   'international',
   'crypto',
   'investment',
+  'benefit',
   'other',
 ] as const
 export type AccountType = (typeof ACCOUNT_TYPES)[number]
+
+/** Which wallet a `benefit` account (meal/food voucher) holds. */
+export const BENEFIT_WALLETS = ['food', 'meal', 'flexible'] as const
+export type BenefitWallet = (typeof BENEFIT_WALLETS)[number]
 
 export const TRANSACTION_KINDS = [
   'opening-balance',
@@ -91,6 +96,7 @@ export const SUPPORTED_BANKS: BankOption[] = [
   { code: '077', name: 'Banco Inter' },
   { code: '085', name: 'Viacredi' },
   { code: '260', name: 'Nubank' },
+  { code: '323', name: 'Mercado Pago' },
   { code: '341', name: 'Itaú' },
 ]
 
@@ -106,6 +112,7 @@ export interface AccountDto {
   currency: string
   institution: string | null
   bankCode: string | null
+  benefitWallet: BenefitWallet | null
   description: string | null
   color: string | null
   icon: string | null
@@ -125,6 +132,8 @@ export interface TransactionDto {
   accountId: string | null
   cardStatementId: string | null
   cardId: string | null
+  /** Which of the card's numbers the purchase was made with, when known. */
+  cardNumberId: string | null
   paidStatementId: string | null
   kind: TransactionKind
   status: TransactionStatus
@@ -152,10 +161,28 @@ export interface TransactionDto {
   attachmentCount: number
 }
 
+export type CardNumberKind = 'physical' | 'virtual'
+
+export interface CardNumberDto {
+  id: string
+  cardId: string
+  kind: CardNumberKind
+  lastFour: string
+  nickname: string | null
+  archivedAt: string | null
+}
+
+export interface CardNumberRequest {
+  kind: CardNumberKind
+  lastFour: string
+  nickname?: string | null
+}
+
 export interface CardDto {
   id: string
   name: string
   brand: string | null
+  /** The active physical number's last four (else the first active one's); names the card in lists. */
   lastFour: string | null
   creditLimit: number | null
   closingDay: number
@@ -163,6 +190,8 @@ export interface CardDto {
   currency: string
   accountId: string
   archivedAt: string | null
+  /** Archived ones included, physical first. */
+  numbers: CardNumberDto[]
 }
 
 export interface CardAvailableLimitDto {
@@ -369,6 +398,7 @@ export interface CreateAccountRequest {
   icon?: string | null
   displayOrder: number
   openingBalance?: number | null
+  benefitWallet?: BenefitWallet | null
 }
 
 export interface UpdateAccountRequest {
@@ -376,6 +406,7 @@ export interface UpdateAccountRequest {
   type: AccountType
   institution?: string | null
   bankCode?: string | null
+  benefitWallet?: BenefitWallet | null
   description?: string | null
   color?: string | null
   icon?: string | null
@@ -385,7 +416,6 @@ export interface UpdateAccountRequest {
 export interface CreateCardRequest {
   name: string
   brand?: string | null
-  lastFour?: string | null
   creditLimit?: number | null
   closingDay: number
   dueDay: number
@@ -396,7 +426,6 @@ export interface CreateCardRequest {
 export interface UpdateCardRequest {
   name: string
   brand?: string | null
-  lastFour?: string | null
   creditLimit?: number | null
   closingDay: number
   dueDay: number
@@ -416,6 +445,7 @@ export interface CreateTransactionRequest {
   systemCategoryId?: string | null
   userCategoryId?: string | null
   installments?: number
+  cardNumberId?: string | null
 }
 
 export interface CreateTransferRequest {
@@ -435,6 +465,8 @@ export interface UpdateTransactionRequest {
   notes?: string | null
   systemCategoryId?: string | null
   userCategoryId?: string | null
+  /** Always send the current value: leaving it out clears the link. */
+  cardNumberId?: string | null
 }
 
 export interface VoidTransactionRequest {

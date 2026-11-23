@@ -14,6 +14,7 @@ const tx: TransactionDto = {
   accountId: 'a1',
   cardStatementId: null,
   cardId: null,
+  cardNumberId: null,
   paidStatementId: null,
   kind: 'expense',
   status: 'posted',

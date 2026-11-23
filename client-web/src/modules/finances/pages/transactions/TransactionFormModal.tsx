@@ -9,6 +9,8 @@ import { type TransactionKind } from '../../models'
 import { transactionKindLabelKey } from '../../lib/enums'
 import { AccountSelect } from '../../components/AccountSelect'
 import { CardSelect } from '../../components/CardSelect'
+import { CardNumberSelect } from '../../components/CardNumberSelect'
+import { selectableCardNumbers } from '../../lib/cardNumbers'
 import { CategorySelect, type CategorySelection } from '../../components/CategorySelect'
 import { useCreateTransaction } from '../../hooks/useTransactions'
 import { useAccounts } from '../../hooks/useAccounts'
@@ -50,6 +52,7 @@ interface TransactionFormValues {
   notes?: string
   category?: CategorySelection
   installments?: number
+  cardNumberId?: string | null
 }
 
 interface TransactionFormModalProps {
@@ -71,8 +74,8 @@ export function TransactionFormModal({ open, onClose, defaultAccountId }: Transa
 
   const { data: accounts } = useAccounts()
   const { data: cards } = useCards()
-  const currency =
-    target === 'card' ? cards?.find((c) => c.id === cardId)?.currency : accounts?.find((a) => a.id === accountId)?.currency
+  const card = target === 'card' ? cards?.find((c) => c.id === cardId) : undefined
+  const currency = target === 'card' ? card?.currency : accounts?.find((a) => a.id === accountId)?.currency
 
   const createMutation = useCreateTransaction()
 
@@ -107,6 +110,7 @@ export function TransactionFormModal({ open, onClose, defaultAccountId }: Transa
         systemCategoryId: values.category?.systemCategoryId ?? null,
         userCategoryId: values.category?.userCategoryId ?? null,
         installments: values.target === 'card' ? (values.installments ?? 1) : 1,
+        cardNumberId: values.target === 'card' ? (values.cardNumberId ?? null) : null,
       })
       message.success(t('finances.transactions.created'))
       onClose()
@@ -158,7 +162,8 @@ export function TransactionFormModal({ open, onClose, defaultAccountId }: Transa
               label={t('finances.transactions.card')}
               rules={[{ required: true, message: t('finances.transactions.cardRequired') }]}
             >
-              <CardSelect />
+              {/* Another card has other numbers: drop the one chosen for the previous card. */}
+              <CardSelect onChange={(id) => form.setFieldsValue({ cardId: id, cardNumberId: null })} />
             </Form.Item>
           )}
         </div>
@@ -199,6 +204,12 @@ export function TransactionFormModal({ open, onClose, defaultAccountId }: Transa
           {target === 'card' && (
             <Form.Item name="installments" label={t('finances.transactions.installments')} initialValue={1}>
               <InputNumber style={{ width: '100%' }} min={1} max={48} suffix="x" />
+            </Form.Item>
+          )}
+
+          {selectableCardNumbers(card).length > 0 && (
+            <Form.Item name="cardNumberId" label={t('finances.transactions.cardNumber')}>
+              <CardNumberSelect card={card} />
             </Form.Item>
           )}
         </div>

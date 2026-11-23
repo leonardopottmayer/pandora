@@ -150,6 +150,9 @@ public sealed class TransactionRepository(IDataContextAccessor accessor)
     public Task<bool> ExistsReversalForAsync(Guid transactionId, Guid userId, CancellationToken ct = default)
         => Queryable().AnyAsync(t => t.ReversedTransactionId == transactionId && t.UserId == userId, ct);
 
+    public Task<bool> ExistsForCardNumberAsync(Guid cardNumberId, CancellationToken ct = default)
+        => Queryable().AnyAsync(t => t.CardNumberId == cardNumberId, ct);
+
     public async Task<IReadOnlyList<Transaction>> GetDuePendingAsync(DateOnly today, CancellationToken ct = default)
         => await Queryable()
             .Where(t => t.Status == TransactionStatus.Pending && t.AccountId != null && t.OccurredOn <= today)

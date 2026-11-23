@@ -9,7 +9,6 @@ public sealed record CreateCardInput(
     Guid UserId,
     string Name,
     string? Brand,
-    string? LastFour,
     decimal? CreditLimit,
     int ClosingDay,
     int DueDay,

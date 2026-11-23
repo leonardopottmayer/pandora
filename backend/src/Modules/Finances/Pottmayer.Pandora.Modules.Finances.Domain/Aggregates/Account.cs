@@ -6,7 +6,7 @@ namespace Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 
 /// <summary>
 /// A balance repository owned by the user: wallet/cash, checking, savings, international,
-/// crypto, investment. The <see cref="Currency"/> is fixed at creation — there is no mutator for it,
+/// crypto, investment, benefit (meal/food voucher). The <see cref="Currency"/> is fixed at creation — there is no mutator for it,
 /// so it can never change. An archived account keeps its history but rejects business mutations.
 /// Balance is not stored here; it is derived from the ledger.
 /// </summary>
@@ -18,6 +18,8 @@ public sealed class Account : AggregateRoot<Guid>, IAuditable
     public CurrencyCode Currency { get; private set; } = null!;
     public string? Institution { get; private set; }
     public string? BankCode { get; private set; }
+    /// <summary>The wallet a benefit account holds; always null for other types.</summary>
+    public BenefitWallet? BenefitWallet { get; private set; }
     public string? Description { get; private set; }
     public string? Color { get; private set; }
     public string? Icon { get; private set; }
@@ -45,7 +47,8 @@ public sealed class Account : AggregateRoot<Guid>, IAuditable
         string? icon,
         int displayOrder,
         TimeProvider timeProvider,
-        string? bankCode = null) =>
+        string? bankCode = null,
+        BenefitWallet? benefitWallet = null) =>
         new()
         {
             Id = Guid.CreateVersion7(),
@@ -55,6 +58,7 @@ public sealed class Account : AggregateRoot<Guid>, IAuditable
             Currency = currency,
             Institution = institution,
             BankCode = bankCode,
+            BenefitWallet = type == AccountType.Benefit ? benefitWallet : null,
             Description = description,
             Color = color,
             Icon = icon,
@@ -67,7 +71,7 @@ public sealed class Account : AggregateRoot<Guid>, IAuditable
     /// at creation. Returns <c>false</c> if the account is archived (no business mutation allowed).
     /// </summary>
     public bool Update(string name, AccountType type, string? institution, string? description,
-        string? color, string? icon, int displayOrder, string? bankCode = null)
+        string? color, string? icon, int displayOrder, string? bankCode = null, BenefitWallet? benefitWallet = null)
     {
         if (IsArchived) return false;
 
@@ -75,6 +79,7 @@ public sealed class Account : AggregateRoot<Guid>, IAuditable
         Type = type;
         Institution = institution;
         BankCode = bankCode;
+        BenefitWallet = type == AccountType.Benefit ? benefitWallet : null;
         Description = description;
         Color = color;
         Icon = icon;

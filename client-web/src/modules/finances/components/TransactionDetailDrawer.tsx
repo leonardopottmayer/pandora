@@ -4,11 +4,13 @@ import { App, Button, Descriptions, Drawer, Form, Input, Spin, Tag, Typography }
 import type { TransactionDto } from '../models'
 import { useTransaction, usePostTransaction, useUnvoidTransaction, useUpdateTransaction, useVoidTransaction } from '../hooks/useTransactions'
 import { useAccountNames } from '../hooks/useAccounts'
-import { useCardNames } from '../hooks/useCards'
+import { useCardNames, useCards } from '../hooks/useCards'
 import { kindDirection, transactionKindLabelKey, TRANSACTION_STATUS_META } from '../lib/enums'
 import { formatDate, formatReferenceMonth } from '../lib/format'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { AttachmentsPanel } from './AttachmentsPanel'
+import { CardNumberSelect } from './CardNumberSelect'
+import { selectableCardNumbers } from '../lib/cardNumbers'
 import { CategorySelect, type CategorySelection } from './CategorySelect'
 import { CurrencyAmount } from './CurrencyAmount'
 import { EntityTags } from './EntityTags'
@@ -18,6 +20,7 @@ interface DetailForm {
   category?: CategorySelection
   payee?: string
   notes?: string
+  cardNumberId?: string | null
 }
 
 /**
@@ -31,6 +34,9 @@ export function TransactionDetailDrawer({ transactionId, onClose }: { transactio
   const { data: tx, isLoading } = useTransaction(transactionId)
   const accountNames = useAccountNames()
   const cardNames = useCardNames()
+  const { data: cards } = useCards()
+  const card = tx?.cardId ? cards?.find((c) => c.id === tx.cardId) : undefined
+  const showCardNumber = selectableCardNumbers(card, tx?.cardNumberId).length > 0
   const update = useUpdateTransaction()
   const post = usePostTransaction()
   const voidTx = useVoidTransaction()
@@ -43,6 +49,7 @@ export function TransactionDetailDrawer({ transactionId, onClose }: { transactio
       category: { systemCategoryId: tx.systemCategoryId, userCategoryId: tx.userCategoryId },
       payee: tx.payee ?? undefined,
       notes: tx.notes ?? undefined,
+      cardNumberId: tx.cardNumberId,
     })
   }, [tx, form])
 
@@ -57,6 +64,8 @@ export function TransactionDetailDrawer({ transactionId, onClose }: { transactio
           notes: values.notes?.trim() || null,
           systemCategoryId: values.category?.systemCategoryId ?? null,
           userCategoryId: values.category?.userCategoryId ?? null,
+          // Not on screen (an archived card, no numbers): send what it had, since leaving it out clears it.
+          cardNumberId: showCardNumber ? (values.cardNumberId ?? null) : tx.cardNumberId,
         },
       })
       message.success(t('finances.transactions.updated'))
@@ -162,6 +171,11 @@ export function TransactionDetailDrawer({ transactionId, onClose }: { transactio
             <Form.Item name="category" label={t('finances.transactions.category')}>
               <CategorySelect />
             </Form.Item>
+            {showCardNumber && (
+              <Form.Item name="cardNumberId" label={t('finances.transactions.cardNumber')}>
+                <CardNumberSelect card={card} />
+              </Form.Item>
+            )}
             <Form.Item name="payee" label={t('finances.transactions.payee')}>
               <Input maxLength={200} />
             </Form.Item>

@@ -31,6 +31,7 @@ Migrations em `migrations/migrations/finances/`.
 | fin016 | `audit_event` | Log de auditoria append-only |
 | fin017 | `attachment` | Arquivos de um lançamento, sugestão ou fatura (boleto, comprovante, nota fiscal), ou na fila |
 | fin018 | `file_blob` | Os bytes por trás da fin017 |
+| fin019 | `card_number` | Números físico e virtuais de um cartão |
 
 ---
 
@@ -41,15 +42,17 @@ Migrations em `migrations/migrations/finances/`.
 | `id` | uuid PK | |
 | `user_id` | uuid NOT NULL | |
 | `name` | varchar(100) NOT NULL | único por usuário |
-| `type` | varchar(20) NOT NULL | `cash\|checking\|savings\|international\|crypto\|investment\|other` |
+| `type` | varchar(20) NOT NULL | `cash\|checking\|savings\|international\|crypto\|investment\|benefit\|other` |
 | `currency` | varchar(10) NOT NULL | ISO 4217 ou ticker crypto; imutável |
+| `benefit_wallet` | varchar(20) NULL | `food\|meal\|flexible`; só em conta `benefit` |
 | `institution` | varchar(100) NULL | |
 | `description` | varchar(255) NULL | |
 | `color` / `icon` | varchar | exibição |
 | `display_order` | int NOT NULL DEFAULT 0 | |
 | `archived_at` | timestamptz NULL | arquivamento soft |
 
-Constraints: `uq_fin001_user_name (user_id, name)`, `ck_fin001_type`. Índice `ix_fin001_user_id`.
+Constraints: `uq_fin001_user_name (user_id, name)`, `ck_fin001_type`, `ck_fin001_benefit_wallet`
+(NULL a menos que `type = 'benefit'`). Índice `ix_fin001_user_id`.
 
 ## fin002_system_category
 
@@ -91,7 +94,7 @@ auto-referenciando `fin003`. Único `uq_fin003_user_name_parent (user_id, name, 
 | `id` / `user_id` | uuid | |
 | `name` | varchar(100) | único por usuário |
 | `brand` | varchar(50) NULL | visa, mastercard, … |
-| `last_four` | varchar(4) NULL | |
+| `last_four` | varchar(4) NULL | **não é mais usado** (desde 2026-11): copiado para a fin019 como número físico; sai numa release futura |
 | `credit_limit` | numeric(20,8) NULL | `>= 0` |
 | `closing_day` | int NOT NULL | **1..28** |
 | `due_day` | int NOT NULL | **1..28** |
@@ -103,6 +106,22 @@ Constraints: `uq_fin006_user_name`, `ck_fin006_closing_day/due_day (BETWEEN 1 AN
 `ck_fin006_credit_limit`, `fk_fin006_account_id`. Índices `(user_id, archived_at)`, `(account_id)`.
 
 > A faixa 1..28 evita ambiguidade com o tamanho do mês (nenhum cartão fecha no dia 30 de fevereiro).
+
+## fin019_card_number
+
+Os números de um cartão. Todos caem na mesma fatura do cartão, por isso são filhos da fin006, e não
+cartões próprios.
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` / `user_id` / `card_id → fin006` | uuid | |
+| `kind` | varchar(20) NOT NULL | `physical\|virtual` |
+| `last_four` | varchar(4) NOT NULL | 4 dígitos, único por cartão |
+| `nickname` | varchar(50) NULL | ex.: "Uber", "assinaturas" |
+| `archived_at` | timestamptz NULL | preenchido em vez de excluir quando algum lançamento usou o número |
+
+Constraints: `ck_fin019_kind`, `ck_fin019_last_four (~ '^[0-9]{4}$')`, `uq_fin019_card_last_four`,
+`fk_fin019_card_id`.
 
 ## fin007_card_statement
 
@@ -129,6 +148,7 @@ A tabela central. Construída ao longo de várias migrations; forma final:
 | `account_id` | uuid NULL → fin001 | destino (XOR) |
 | `card_statement_id` | uuid NULL → fin007 | destino (XOR) |
 | `card_id` | uuid NULL → fin006 | denormalizado quando em fatura |
+| `card_number_id` | uuid NULL → fin019 | qual número do cartão foi usado; opcional, a importação deixa vazio |
 | `paid_statement_id` | uuid NULL → fin007 | fatura paga/quitada por este lançamento |
 | `kind` | varchar(30) NOT NULL | ver [Lançamentos](transactions.md) |
 | `status` | varchar(10) DEFAULT 'posted' | `pending\|posted\|void` |

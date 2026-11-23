@@ -17,7 +17,7 @@ public sealed class CreateCardCommandHandler(IUnitOfWorkFactory factory, TimePro
     protected override async Task<Result<CardDto>> HandleAsync(CreateCardCommand request, CancellationToken ct)
     {
         var input = request.Input;
-        var validation = Validate(input.Name, input.LastFour, input.CreditLimit, input.ClosingDay, input.DueDay, input.Currency);
+        var validation = Validate(input.Name, input.CreditLimit, input.ClosingDay, input.DueDay, input.Currency);
         if (validation.IsFailure)
             return Fail([.. validation.Errors]);
 
@@ -40,7 +40,6 @@ public sealed class CreateCardCommandHandler(IUnitOfWorkFactory factory, TimePro
                 input.UserId,
                 input.Name,
                 input.Brand,
-                input.LastFour,
                 input.CreditLimit,
                 input.ClosingDay,
                 input.DueDay,
@@ -60,16 +59,14 @@ public sealed class CreateCardCommandHandler(IUnitOfWorkFactory factory, TimePro
             return Result<Card>.Success(card);
         }, cancellationToken: ct);
 
-        return result.IsFailure ? Fail([.. result.Errors]) : Ok(CardDto.From(result.Value!));
+        return result.IsFailure ? Fail([.. result.Errors]) : Ok(CardDto.From(result.Value!, []));
     }
 
     /// <summary>Validates the card's input shape. Shared with <see cref="UpdateCard"/> validation rules.</summary>
-    internal static Result<bool> Validate(string name, string? lastFour, decimal? creditLimit, int closingDay, int dueDay, string currency)
+    internal static Result<bool> Validate(string name, decimal? creditLimit, int closingDay, int dueDay, string currency)
     {
         if (string.IsNullOrWhiteSpace(name))
             return Result<bool>.Failure([CardErrors.InvalidName]);
-        if (!string.IsNullOrWhiteSpace(lastFour) && (lastFour.Trim().Length != 4 || !lastFour.Trim().All(char.IsDigit)))
-            return Result<bool>.Failure([CardErrors.InvalidLastFour]);
         if (creditLimit is < 0m)
             return Result<bool>.Failure([CardErrors.InvalidCreditLimit]);
         if (closingDay is < 1 or > 28)

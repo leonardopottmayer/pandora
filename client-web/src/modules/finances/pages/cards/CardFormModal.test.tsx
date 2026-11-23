@@ -20,6 +20,7 @@ const card: CardDto = {
   currency: 'BRL',
   accountId: 'a1',
   archivedAt: null,
+  numbers: [],
 }
 
 beforeAll(async () => {
@@ -89,7 +90,9 @@ describe('CardFormModal', () => {
 
     await waitFor(() => expect(putCalled).toBe(true))
     expect(onClose).toHaveBeenCalled()
-    expect(body).toMatchObject({ brand: 'Mastercard', lastFour: '1234', creditLimit: 5000, accountId: 'a1' })
+    expect(body).toMatchObject({ brand: 'Mastercard', creditLimit: 5000, accountId: 'a1' })
+    // The numbers are managed on the card page, never through the card's own update.
+    expect(body).not.toHaveProperty('lastFour')
     expect(body).not.toHaveProperty('currency')
   })
 

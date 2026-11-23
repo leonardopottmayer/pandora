@@ -16,6 +16,7 @@ const account: AccountDto = {
   currency: 'BRL',
   institution: 'Banco X',
   bankCode: null,
+  benefitWallet: null,
   description: null,
   color: null,
   icon: null,

@@ -1,5 +1,6 @@
 using Pottmayer.Pandora.Modules.Finances.Abstractions;
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
+using Pottmayer.Pandora.Modules.Finances.Application.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 using Pottmayer.Tars.Core.Cqrs.Queries;
@@ -19,6 +20,6 @@ public sealed class GetCardQueryHandler(IUnitOfWorkFactory factory)
             return await ctx.AcquireRepository<ICardRepository>().FindByIdForUserAsync(input.CardId, input.UserId, token);
         }, cancellationToken: ct);
 
-        return card is null ? Fail(CardErrors.NotFound) : Ok(CardDto.From(card));
+        return card is null ? Fail(CardErrors.NotFound) : Ok(await CardDtoReader.ReadAsync(factory, card, ct));
     }
 }

@@ -66,7 +66,7 @@ public sealed class TransactionsController(
     {
         var command = new CreateTransactionCommand(new CreateTransactionInput(
             UserId, request.AccountId, request.CardId, request.CardStatementId, request.Kind, request.Amount, request.OccurredOn, request.Description,
-            request.Payee, request.Notes, request.SystemCategoryId, request.UserCategoryId, request.Installments));
+            request.Payee, request.Notes, request.SystemCategoryId, request.UserCategoryId, request.Installments, request.CardNumberId));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
@@ -86,7 +86,7 @@ public sealed class TransactionsController(
     {
         var command = new UpdateTransactionCommand(new UpdateTransactionInput(
             UserId, id, request.Description, request.Payee, request.Notes,
-            request.SystemCategoryId, request.UserCategoryId));
+            request.SystemCategoryId, request.UserCategoryId, request.CardNumberId));
         var result = await sender.Send(command, ct);
         return result.ToActionResult(errorMapper);
     }
