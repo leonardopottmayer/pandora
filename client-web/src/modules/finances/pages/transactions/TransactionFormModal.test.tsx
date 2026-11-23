@@ -2,11 +2,11 @@ import { describe, it, expect, beforeAll, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import dayjs from 'dayjs'
 import i18n from '@/i18n'
 import { server } from '@/test/msw/server'
 import { FINANCES_BASE } from '@/test/constants'
 import { renderWithProviders } from '@/test/utils'
+import { todayIn } from '@/lib/today'
 import { TransactionFormModal } from './TransactionFormModal'
 
 beforeAll(async () => {
@@ -46,7 +46,9 @@ describe('TransactionFormModal', () => {
     server.use(...lookupHandlers())
     renderWithProviders(<TransactionFormModal open onClose={vi.fn()} />)
 
-    expect(await screen.findByDisplayValue(dayjs().format('DD/MM/YYYY'))).toBeInTheDocument()
+    // The modal's "today" is the account zone's (the test preferences say America/Sao_Paulo), not the
+    // machine's: between midnight UTC and midnight in São Paulo the two dates differ.
+    expect(await screen.findByDisplayValue(todayIn('America/Sao_Paulo').format('DD/MM/YYYY'))).toBeInTheDocument()
     expect(screen.getByText('Payee and notes').closest('details')).not.toHaveAttribute('open')
   })
 
