@@ -28,8 +28,13 @@ public sealed class UpdateAccountCommandHandler(IUnitOfWorkFactory factory, Time
         if (!string.IsNullOrWhiteSpace(input.BankCode) && !Bank.IsSupported(input.BankCode))
             return Fail(AccountErrors.InvalidBank(input.BankCode));
 
+        if (!string.IsNullOrWhiteSpace(input.BenefitWallet) && !BenefitWallet.IsSupported(input.BenefitWallet))
+            return Fail(AccountErrors.InvalidBenefitWallet(input.BenefitWallet));
+
         var bankCode = Bank.Canonicalize(input.BankCode);
         var type = AccountType.FromValue(input.Type);
+        // Only a benefit account holds a wallet; the aggregate drops it for other types.
+        var wallet = string.IsNullOrWhiteSpace(input.BenefitWallet) ? null : BenefitWallet.FromValue(input.BenefitWallet);
 
         var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
@@ -56,11 +61,12 @@ public sealed class UpdateAccountCommandHandler(IUnitOfWorkFactory factory, Time
                 color = new { old = account.Color, @new = input.Color },
                 icon = new { old = account.Icon, @new = input.Icon },
                 displayOrder = new { old = account.DisplayOrder, @new = input.DisplayOrder },
-                bankCode = new { old = account.BankCode, @new = bankCode }
+                bankCode = new { old = account.BankCode, @new = bankCode },
+                benefitWallet = new { old = account.BenefitWallet?.Value, @new = type == AccountType.Benefit ? wallet?.Value : null }
             };
 
             account.Update(input.Name, type, input.Institution, input.Description,
-                input.Color, input.Icon, input.DisplayOrder, bankCode);
+                input.Color, input.Icon, input.DisplayOrder, bankCode, wallet);
             await repo.UpdateAsync(account, token);
 
             await ctx.RecordAsync(

@@ -7,14 +7,18 @@
 ## Business context
 
 An **account** is a balance repository owned by the user: cash/wallet, checking, savings,
-international, crypto, investment, or other. It is where money actually sits. A credit card is
+international, crypto, investment, benefit, or other. It is where money actually sits. A credit card is
 **not** an account (see [Cards & Statements](cards-and-statements.md)). The account's **balance is
 never stored** — it is the signed sum of its posted transactions (design decision D1).
 
 ## Rules
 
 - **Types** (`AccountType`): `cash`, `checking`, `savings`, `international`, `crypto`, `investment`,
-  `other`.
+  `benefit`, `other`.
+- **Benefit** accounts hold a meal/food voucher balance (Flash and the like): one account per wallet,
+  with an optional `benefit_wallet` (`food`, `meal`, `flexible`). The employer's monthly credit is an
+  income (a recurring one, if it repeats) and each purchase an expense, like any other account. The
+  wallet is kept only while the type is `benefit`; changing the type clears it.
 - **Currency** (`CurrencyCode`): an ISO 4217 fiat code or a crypto ticker, validated by shape
   (3–10 uppercase letters), normalized to upper-case. **Fixed at creation** — there is no mutator,
   so it can never change. Rationale: changing an account's currency would invalidate every entry's

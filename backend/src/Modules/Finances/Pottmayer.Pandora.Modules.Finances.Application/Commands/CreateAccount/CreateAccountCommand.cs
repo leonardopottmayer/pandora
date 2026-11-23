@@ -16,7 +16,8 @@ public sealed record CreateAccountInput(
     string? Icon,
     int DisplayOrder,
     decimal? OpeningBalance,
-    string? BankCode = null);
+    string? BankCode = null,
+    string? BenefitWallet = null);
 
 /// <summary>
 /// Opens a new account for the user. An optional positive opening balance is recorded as the

@@ -14,9 +14,14 @@ export const ACCOUNT_TYPES = [
   'international',
   'crypto',
   'investment',
+  'benefit',
   'other',
 ] as const
 export type AccountType = (typeof ACCOUNT_TYPES)[number]
+
+/** Which wallet a `benefit` account (meal/food voucher) holds. */
+export const BENEFIT_WALLETS = ['food', 'meal', 'flexible'] as const
+export type BenefitWallet = (typeof BENEFIT_WALLETS)[number]
 
 export const TRANSACTION_KINDS = [
   'opening-balance',
@@ -107,6 +112,7 @@ export interface AccountDto {
   currency: string
   institution: string | null
   bankCode: string | null
+  benefitWallet: BenefitWallet | null
   description: string | null
   color: string | null
   icon: string | null
@@ -392,6 +398,7 @@ export interface CreateAccountRequest {
   icon?: string | null
   displayOrder: number
   openingBalance?: number | null
+  benefitWallet?: BenefitWallet | null
 }
 
 export interface UpdateAccountRequest {
@@ -399,6 +406,7 @@ export interface UpdateAccountRequest {
   type: AccountType
   institution?: string | null
   bankCode?: string | null
+  benefitWallet?: BenefitWallet | null
   description?: string | null
   color?: string | null
   icon?: string | null

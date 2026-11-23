@@ -558,6 +558,9 @@
       "bank": "Banco",
       "bankPlaceholder": "Selecione o banco",
       "bankTooltip": "Usado para rotear a importacao de extratos para o layout certo pelo banco da conta.",
+      "benefitWallet": "Carteira",
+      "benefitWalletPlaceholder": "Não informada",
+      "benefitWalletHint": "Uma conta por carteira do cartão de benefício (ex.: Flash Refeição e Flash Alimentação).",
       "description": "Descricao",
       "displayOrder": "Ordem de exibicao",
       "status": "Situacao",
@@ -1089,7 +1092,13 @@
         "international": "Conta internacional",
         "crypto": "Cripto",
         "investment": "Investimento",
+        "benefit": "Benefício",
         "other": "Outro"
+      },
+      "benefitWallet": {
+        "food": "Alimentação",
+        "meal": "Refeição",
+        "flexible": "Flexível"
       },
       "transactionStatus": {
         "pending": "Pendente",

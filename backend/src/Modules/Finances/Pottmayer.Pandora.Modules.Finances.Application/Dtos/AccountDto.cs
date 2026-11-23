@@ -13,9 +13,11 @@ public sealed record AccountDto(
     string? Icon,
     int DisplayOrder,
     DateTimeOffset? ArchivedAt,
-    string? BankCode = null)
+    string? BankCode = null,
+    string? BenefitWallet = null)
 {
     public static AccountDto From(Account a) =>
         new(a.Id, a.Name, a.Type.Value, a.Currency.Value, a.Institution, a.Description,
-            a.Color, a.Icon, a.DisplayOrder, a.ArchivedAt, a.BankCode);
+            a.Color, a.Icon, a.DisplayOrder, a.ArchivedAt, a.BankCode,
+            a.BenefitWallet?.Value);
 }

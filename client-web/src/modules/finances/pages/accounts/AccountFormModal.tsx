@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { App, AutoComplete, Form, Input, InputNumber, Modal, Select } from 'antd'
 import { toErrorMessage } from '@/lib/api/envelope'
-import { ACCOUNT_TYPES, SUPPORTED_BANKS, type AccountDto } from '../../models'
+import { ACCOUNT_TYPES, BENEFIT_WALLETS, SUPPORTED_BANKS, type AccountDto, type BenefitWallet } from '../../models'
 import { ACCOUNT_TYPE_META, COMMON_CURRENCIES } from '../../lib/enums'
 import { useCreateAccount, useUpdateAccount } from '../../hooks/useAccounts'
 
@@ -19,6 +19,7 @@ interface AccountFormValues {
   currency: string
   institution?: string
   bankCode?: string
+  benefitWallet?: BenefitWallet
   description?: string
   color?: string
   icon?: string
@@ -35,6 +36,7 @@ export function AccountFormModal({ open, account, onClose }: AccountFormModalPro
   const createMutation = useCreateAccount()
   const updateMutation = useUpdateAccount()
   const pending = createMutation.isPending || updateMutation.isPending
+  const isBenefit = Form.useWatch('type', form) === 'benefit'
 
   useEffect(() => {
     if (!open) return
@@ -45,6 +47,7 @@ export function AccountFormModal({ open, account, onClose }: AccountFormModalPro
         currency: account.currency,
         institution: account.institution ?? undefined,
         bankCode: account.bankCode ?? undefined,
+        benefitWallet: account.benefitWallet ?? undefined,
         description: account.description ?? undefined,
         color: account.color ?? undefined,
         icon: account.icon ?? undefined,
@@ -66,6 +69,7 @@ export function AccountFormModal({ open, account, onClose }: AccountFormModalPro
             type: values.type,
             institution: values.institution ?? null,
             bankCode: values.bankCode ?? null,
+            benefitWallet: values.type === 'benefit' ? values.benefitWallet ?? null : null,
             description: values.description ?? null,
             color: values.color ?? null,
             icon: values.icon ?? null,
@@ -85,6 +89,7 @@ export function AccountFormModal({ open, account, onClose }: AccountFormModalPro
           icon: values.icon ?? null,
           displayOrder: values.displayOrder,
           openingBalance: values.openingBalance ?? null,
+          benefitWallet: values.type === 'benefit' ? values.benefitWallet ?? null : null,
         })
         message.success(t('finances.accounts.created'))
       }
@@ -144,6 +149,16 @@ export function AccountFormModal({ open, account, onClose }: AccountFormModalPro
             />
           </Form.Item>
         </div>
+
+        {isBenefit && (
+          <Form.Item name="benefitWallet" label={t('finances.accounts.benefitWallet')} extra={t('finances.accounts.benefitWalletHint')}>
+            <Select
+              allowClear
+              placeholder={t('finances.accounts.benefitWalletPlaceholder')}
+              options={BENEFIT_WALLETS.map((wallet) => ({ value: wallet, label: t(`finances.enums.benefitWallet.${wallet}`) }))}
+            />
+          </Form.Item>
+        )}
 
         {!isEdit && (
           <Form.Item name="openingBalance" label={t('finances.accounts.openingBalance')}>

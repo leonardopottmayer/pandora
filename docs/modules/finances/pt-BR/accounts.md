@@ -7,14 +7,18 @@
 ## Contexto de negócio
 
 Uma **conta** é um repositório de saldo do usuário: dinheiro/carteira, corrente, poupança,
-internacional, crypto, investimento ou outra. É onde o dinheiro realmente está. Um cartão de crédito
+internacional, crypto, investimento, benefício ou outra. É onde o dinheiro realmente está. Um cartão de crédito
 **não** é conta (ver [Cartões e faturas](cards-and-statements.md)). O **saldo da conta nunca é
 armazenado** — é o somatório com sinal dos lançamentos postados (decisão de design D1).
 
 ## Regras
 
 - **Tipos** (`AccountType`): `cash`, `checking`, `savings`, `international`, `crypto`, `investment`,
-  `other`.
+  `benefit`, `other`.
+- Contas **benefício** guardam o saldo de vale-alimentação/refeição (Flash e afins): uma conta por
+  carteira, com `benefit_wallet` opcional (`food`, `meal`, `flexible`). O crédito mensal da empresa é
+  uma receita (recorrente, se repete) e cada compra uma despesa, como em qualquer conta. A carteira só
+  fica enquanto o tipo é `benefit`; mudar o tipo limpa ela.
 - **Moeda** (`CurrencyCode`): um código fiat ISO 4217 ou ticker crypto, validado por forma (3–10
   letras maiúsculas), normalizado para maiúsculas. **Fixa na criação** — não há mutator, então nunca
   muda. Racional: mudar a moeda de uma conta invalidaria a moeda de cada lançamento e o saldo derivado.

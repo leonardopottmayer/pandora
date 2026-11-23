@@ -126,7 +126,8 @@ export function AccountDetailPage() {
   if (!account) return <Empty className="mt-16" image={Empty.PRESENTED_IMAGE_SIMPLE} />
 
   const bank = SUPPORTED_BANKS.find((b) => b.code === account.bankCode)?.name
-  const facts = [account.institution, bank && bank !== account.institution ? bank : null, account.currency]
+  const wallet = account.benefitWallet && t(`finances.enums.benefitWallet.${account.benefitWallet}`)
+  const facts = [account.institution, bank && bank !== account.institution ? bank : null, wallet, account.currency]
     .filter(Boolean)
     .join(' · ')
   const toPost = balance ? balance.projected - balance.posted : 0

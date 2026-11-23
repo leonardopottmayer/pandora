@@ -8,4 +8,5 @@ public sealed record UpdateAccountRequest(
     string? Color,
     string? Icon,
     int DisplayOrder,
-    string? BankCode = null);
+    string? BankCode = null,
+    string? BenefitWallet = null);

@@ -558,6 +558,9 @@
       "bank": "Bank",
       "bankPlaceholder": "Select bank",
       "bankTooltip": "Used to route statement imports to the right layout by the account's bank.",
+      "benefitWallet": "Wallet",
+      "benefitWalletPlaceholder": "Not set",
+      "benefitWalletHint": "One account per wallet of the benefit card (e.g. Flash Meal and Flash Food).",
       "description": "Description",
       "displayOrder": "Display order",
       "status": "Status",
@@ -1089,7 +1092,13 @@
         "international": "International",
         "crypto": "Crypto",
         "investment": "Investment",
+        "benefit": "Benefit",
         "other": "Other"
+      },
+      "benefitWallet": {
+        "food": "Food",
+        "meal": "Meal",
+        "flexible": "Flexible"
       },
       "transactionStatus": {
         "pending": "Pending",

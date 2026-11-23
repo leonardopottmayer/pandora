@@ -62,6 +62,19 @@ public sealed class AccountTests
     }
 
     [Fact]
+    public void Benefit_wallet_is_kept_only_on_a_benefit_account()
+    {
+        var account = NewAccount(new FixedTimeProvider(Now));
+
+        account.Update("Flash", AccountType.Benefit, "Flash", null, null, null, 0, benefitWallet: BenefitWallet.Meal);
+        Assert.Equal(BenefitWallet.Meal, account.BenefitWallet);
+
+        // Switching away from benefit drops the wallet, so the CHECK on fin001 always holds.
+        account.Update("Flash", AccountType.Checking, "Flash", null, null, null, 0, benefitWallet: BenefitWallet.Meal);
+        Assert.Null(account.BenefitWallet);
+    }
+
+    [Fact]
     public void Archive_then_unarchive_toggles_state()
     {
         var time = new FixedTimeProvider(Now);

@@ -42,15 +42,17 @@ Migrations live in `migrations/migrations/finances/`.
 | `id` | uuid PK | |
 | `user_id` | uuid NOT NULL | |
 | `name` | varchar(100) NOT NULL | unique per user |
-| `type` | varchar(20) NOT NULL | `cash\|checking\|savings\|international\|crypto\|investment\|other` |
+| `type` | varchar(20) NOT NULL | `cash\|checking\|savings\|international\|crypto\|investment\|benefit\|other` |
 | `currency` | varchar(10) NOT NULL | ISO 4217 or crypto ticker; immutable |
+| `benefit_wallet` | varchar(20) NULL | `food\|meal\|flexible`; only on a `benefit` account |
 | `institution` | varchar(100) NULL | |
 | `description` | varchar(255) NULL | |
 | `color` / `icon` | varchar | display |
 | `display_order` | int NOT NULL DEFAULT 0 | |
 | `archived_at` | timestamptz NULL | soft archive |
 
-Constraints: `uq_fin001_user_name (user_id, name)`, `ck_fin001_type`. Index `ix_fin001_user_id`.
+Constraints: `uq_fin001_user_name (user_id, name)`, `ck_fin001_type`, `ck_fin001_benefit_wallet`
+(NULL unless `type = 'benefit'`). Index `ix_fin001_user_id`.
 
 ## fin002_system_category
 

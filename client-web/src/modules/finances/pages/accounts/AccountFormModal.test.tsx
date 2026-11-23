@@ -16,6 +16,7 @@ const account: AccountDto = {
   currency: 'BRL',
   institution: null,
   bankCode: null,
+  benefitWallet: null,
   description: null,
   color: null,
   icon: null,
@@ -74,5 +75,41 @@ describe('AccountFormModal', () => {
 
     await waitFor(() => expect(putCalled).toBe(true))
     expect(onClose).toHaveBeenCalled()
+  })
+
+  it('keeps the wallet of a benefit account and shows its field', async () => {
+    let body: Record<string, unknown> | undefined
+    server.use(
+      http.put(`${FINANCES_BASE}/accounts/a1`, async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ success: true, data: account })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(
+      <AccountFormModal open account={{ ...account, type: 'benefit', benefitWallet: 'meal' }} onClose={vi.fn()} />,
+    )
+
+    expect(await screen.findByText('Wallet')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => expect(body).toMatchObject({ type: 'benefit', benefitWallet: 'meal' }))
+  })
+
+  it('sends no wallet for other account types', async () => {
+    let body: Record<string, unknown> | undefined
+    server.use(
+      http.put(`${FINANCES_BASE}/accounts/a1`, async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ success: true, data: account })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<AccountFormModal open account={{ ...account, benefitWallet: 'meal' }} onClose={vi.fn()} />)
+
+    expect(screen.queryByText('Wallet')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => expect(body).toMatchObject({ type: 'checking', benefitWallet: null }))
   })
 })
