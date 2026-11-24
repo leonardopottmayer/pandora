@@ -41,6 +41,33 @@ public sealed class Position : AggregateRoot<Guid>, IAuditable
     /// <summary>What the position cost: quantity × average cost, or the amount still invested.</summary>
     public decimal CostBasis => IsUnit ? RoundMoney((Quantity ?? 0m) * (AverageCost ?? 0m)) : InvestedAmount ?? 0m;
 
+    /// <summary>
+    /// What the position is worth now, worked out at read time like an account's balance (D1): the latest
+    /// reported value is the anchor, and the movements recorded after it move it. A buy adds what was
+    /// paid, a sale or come-cotas keeps the share of the units left, a redemption takes the gross out.
+    /// Without an anchor the position is worth its cost; a closed one is worth nothing.
+    /// </summary>
+    /// <param name="movements">The position's movements, in any order.</param>
+    public decimal CurrentValue(PositionValuation? latest, IEnumerable<PositionMovement> movements)
+    {
+        if (!IsOpen) return 0m;
+        if (latest is null) return CostBasis;
+
+        var anchoredAt = latest.UpdatedAt ?? latest.CreatedAt;
+        var value = latest.Value;
+        foreach (var m in movements.Where(m => m.CreatedAt > anchoredAt).OrderBy(m => m.CreatedAt).ThenBy(m => m.Id))
+        {
+            if (m.Kind == PositionMovementKind.Buy)
+                value += m.GrossAmount ?? 0m;
+            else if ((m.Kind == PositionMovementKind.Sell || m.Kind == PositionMovementKind.ComeCotas) && m.QuantityBefore is > 0m)
+                value *= (m.QuantityBefore.Value - (m.Quantity ?? 0m)) / m.QuantityBefore.Value;
+            else if (m.Kind == PositionMovementKind.Redemption)
+                value = Math.Max(0m, value - (m.GrossAmount ?? 0m));
+        }
+
+        return RoundMoney(value);
+    }
+
     private Position() { }
 
     /// <summary>A unit position, empty until its first movement (opening or buy).</summary>

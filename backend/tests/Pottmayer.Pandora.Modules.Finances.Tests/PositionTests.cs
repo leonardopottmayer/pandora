@@ -257,6 +257,49 @@ public sealed class PositionTests
     }
 
     [Fact]
+    public void Current_value_is_the_cost_without_an_anchor_and_zero_when_closed()
+    {
+        var position = OpenedUnit(quantity: 10m, averageCost: 5m);
+        Assert.Equal(50m, position.CurrentValue(null, []));
+
+        Ok(position, new MovementInput(PositionMovementKind.Sell, Day, Quantity: 10m, UnitPrice: 6m));
+        Assert.Equal(0m, position.CurrentValue(null, []));
+    }
+
+    [Fact]
+    public void Current_value_moves_the_anchor_by_the_movements_recorded_after_it()
+    {
+        var clock = new FixedTimeProvider(new DateTimeOffset(2026, 11, 1, 12, 0, 0, TimeSpan.Zero));
+        var position = Position.CreateUnit(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), clock);
+        var opening = position.Apply(new MovementInput(PositionMovementKind.Opening, Day, Quantity: 100m, AverageCost: 10m), true, clock).Value!;
+
+        clock.Advance(TimeSpan.FromDays(1));
+        var anchor = PositionValuation.Create(position.UserId, position.Id, Day, 1500m, ValuationSource.Manual, clock);
+
+        clock.Advance(TimeSpan.FromDays(1));
+        var sell = position.Apply(new MovementInput(PositionMovementKind.Sell, Day, Quantity: 40m, UnitPrice: 15m), false, clock).Value!;
+        clock.Advance(TimeSpan.FromDays(1));
+        var buy = position.Apply(new MovementInput(PositionMovementKind.Buy, Day, Quantity: 10m, UnitPrice: 16m), false, clock).Value!;
+
+        // The opening came before the anchor and is ignored; then 1500 × 60/100 + 10 × 16.
+        Assert.Equal(1060m, position.CurrentValue(anchor, [buy, opening, sell]));
+    }
+
+    [Fact]
+    public void Current_value_of_an_application_drops_by_what_was_redeemed()
+    {
+        var clock = new FixedTimeProvider(new DateTimeOffset(2026, 11, 1, 12, 0, 0, TimeSpan.Zero));
+        var position = Application();
+        position.Apply(new MovementInput(PositionMovementKind.Opening, Day, InvestedAmount: 5000m), true, clock);
+        var anchor = PositionValuation.Create(position.UserId, position.Id, Day, 5100m, ValuationSource.Manual, clock);
+
+        clock.Advance(TimeSpan.FromMinutes(1));
+        var redemption = position.Apply(new MovementInput(PositionMovementKind.Redemption, Day, GrossAmount: 2550m, CurrentValue: 5100m), false, clock).Value!;
+
+        Assert.Equal(2550m, position.CurrentValue(anchor, [redemption]));
+    }
+
+    [Fact]
     public void System_asset_class_is_read_only()
     {
         var own = AssetClass.Create(Guid.NewGuid(), " Crowdfunding ", AssetBehavior.Application, Time);

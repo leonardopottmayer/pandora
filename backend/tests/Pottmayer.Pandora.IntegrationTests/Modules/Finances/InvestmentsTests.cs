@@ -102,6 +102,9 @@ public sealed class InvestmentsTests : IAsyncLifetime
         // Redeeming 2 550 of 5 100 is half: half of the 5 000 invested.
         var redeemed = await PostAsync($"/positions/{Id(cdb)}/movements", new { kind = "redemption", occurredOn = "2026-11-21", grossAmount = 2550, taxWithheld = 10 });
         Assert.Equal(2500m, Dec(redeemed, "investedAmount"));
+        // The 5 100 reported before the redemption is moved by it: 2 550 are left (like an account's balance, D1).
+        Assert.Equal(2550m, Dec(redeemed, "currentValue"));
+        Assert.Equal(2550m, Dec(await GetAsync($"/accounts/{Id(account)}/balance"), "positionsValue"));
         Assert.Equal(3540m, Dec(await GetAsync($"/accounts/{Id(account)}/balance"), "posted"));
 
         var summary = await GetAsync("/investments/summary");

@@ -99,7 +99,7 @@ public sealed class CreatePositionCommandHandler(
                 correlationId, token);
 
             // Built in memory: nothing of the new position is in the database until the unit of work saves.
-            return Result<PositionDto>.Success(PositionDto.From(position, asset, valuation));
+            return Result<PositionDto>.Success(PositionDto.From(position, asset, valuation, position.CurrentValue(valuation, [movement])));
         }, cancellationToken: ct);
 
         return result.IsFailure ? Fail([.. result.Errors]) : Ok(result.Value!);

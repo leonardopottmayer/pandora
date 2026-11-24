@@ -11,6 +11,9 @@ public interface IPositionMovementRepository : IStandardRepository<PositionMovem
     /// <summary>The position's latest movement, the only one that can be undone.</summary>
     Task<PositionMovement?> FindLatestAsync(Guid positionId, CancellationToken ct = default);
 
+    /// <summary>The movements of several positions, in no particular order.</summary>
+    Task<IReadOnlyList<PositionMovement>> ListByPositionsAsync(IReadOnlyCollection<Guid> positionIds, CancellationToken ct = default);
+
     Task<bool> AnyForPositionAsync(Guid positionId, CancellationToken ct = default);
 
     /// <summary>True when the ledger entry was created by a movement (and can only change through it).</summary>

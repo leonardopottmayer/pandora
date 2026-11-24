@@ -77,7 +77,10 @@ public sealed class AddPositionMovementCommandHandler(
                 },
                 correlationId, token);
 
-            return Result<PositionDto>.Success(await PositionReader.ReadAsync(ctx, input.UserId, position, token));
+            // Built here so the new movement, not saved yet, moves the value too.
+            var latest = (await ctx.AcquireRepository<IPositionValuationRepository>().GetLatestAsync([position.Id], token)).GetValueOrDefault(position.Id);
+            var movements = (await ctx.AcquireRepository<IPositionMovementRepository>().ListByPositionAsync(position.Id, token)).Append(movement);
+            return Result<PositionDto>.Success(PositionDto.From(position, asset, latest, position.CurrentValue(latest, movements)));
         }, cancellationToken: ct);
 
         return result.IsFailure ? Fail([.. result.Errors]) : Ok(result.Value!);

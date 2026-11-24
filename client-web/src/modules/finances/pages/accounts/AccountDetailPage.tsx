@@ -17,6 +17,8 @@ import { EnumTag } from '../../components/EnumTag'
 import { MonthNavigator } from '../../components/MonthNavigator'
 import { StatTile } from '../../components/StatTile'
 import { TransactionDetailDrawer } from '../../components/TransactionDetailDrawer'
+import { PositionDetailDrawer } from '../../components/PositionDetailDrawer'
+import { PositionRow } from '../../components/PositionRow'
 import {
   useAccount,
   useAccountBalance,
@@ -25,7 +27,9 @@ import {
   useSetAccountArchived,
 } from '../../hooks/useAccounts'
 import { useCategoryNames } from '../../hooks/useCategories'
+import { useAssetClassMap, usePositions } from '../../hooks/useInvestments'
 import { TransactionFormModal } from '../transactions/TransactionFormModal'
+import { PositionFormModal } from '../investments/PositionFormModal'
 import { AccountFormModal } from './AccountFormModal'
 
 export function AccountDetailPage() {
@@ -40,6 +44,8 @@ export function AccountDetailPage() {
   const [editing, setEditing] = useState(false)
   const [adding, setAdding] = useState(false)
   const [detailId, setDetailId] = useState<string | null>(null)
+  const [positionId, setPositionId] = useState<string | null>(null)
+  const [addingPosition, setAddingPosition] = useState(false)
 
   const { data: account, isLoading: loadingAccount } = useAccount(id)
   const { data: balance } = useAccountBalance(id)
@@ -48,6 +54,8 @@ export function AccountDetailPage() {
     to: month.endOf('month').format('YYYY-MM-DD'),
   })
   const categoryNames = useCategoryNames()
+  const { data: positions } = usePositions({ accountId: id })
+  const assetClasses = useAssetClassMap()
   const deleteMutation = useDeleteAccount()
   const archiveMutation = useSetAccountArchived()
 
@@ -131,6 +139,7 @@ export function AccountDetailPage() {
     .filter(Boolean)
     .join(' · ')
   const toPost = balance ? balance.projected - balance.posted : 0
+  const hasPositions = (positions?.length ?? 0) > 0
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
@@ -183,6 +192,13 @@ export function AccountDetailPage() {
       </div>
 
       <div className="flex flex-wrap gap-3">
+        {hasPositions && (
+          <StatTile
+            label={t('finances.accounts.total', { currency })}
+            value={balance ? <span className="tabular-nums">{formatMoney(balance.total, currency)}</span> : '—'}
+            note={balance && t('finances.accounts.totalNote', { amount: formatMoney(balance.positionsValue, currency) })}
+          />
+        )}
         <StatTile
           label={t('finances.accounts.postedBalance')}
           value={balance ? <span className="tabular-nums">{formatMoney(balance.posted, currency)}</span> : '—'}
@@ -198,6 +214,37 @@ export function AccountDetailPage() {
           }
         />
       </div>
+
+      {(hasPositions || account.type === 'investment') && (
+        <section className="flex flex-col gap-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-0.5">
+            <Typography.Text strong type="secondary" className="text-xs uppercase tracking-wider">
+              {t('finances.accounts.positions')}
+            </Typography.Text>
+            {!account.archivedAt && (
+              <Button size="small" icon={<PlusOutlined />} onClick={() => setAddingPosition(true)}>
+                {t('finances.investments.newPosition')}
+              </Button>
+            )}
+          </div>
+          <SettingsSection>
+            {hasPositions ? (
+              positions!.map((p, index) => (
+                <PositionRow
+                  key={p.id}
+                  position={p}
+                  assetClass={assetClasses.get(p.assetClassId)}
+                  today={todayIn(timeZone)}
+                  first={index === 0}
+                  onOpen={setPositionId}
+                />
+              ))
+            ) : (
+              <Empty className="my-6" image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('finances.investments.accountEmpty')} />
+            )}
+          </SettingsSection>
+        </section>
+      )}
 
       <section className="flex flex-col gap-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2 px-0.5">
@@ -225,6 +272,8 @@ export function AccountDetailPage() {
       <AccountFormModal open={editing} account={account} onClose={() => setEditing(false)} />
       <TransactionFormModal open={adding} defaultAccountId={account.id} onClose={() => setAdding(false)} />
       <TransactionDetailDrawer transactionId={detailId} onClose={() => setDetailId(null)} />
+      <PositionDetailDrawer positionId={positionId} onClose={() => setPositionId(null)} />
+      <PositionFormModal open={addingPosition} defaultAccountId={account.id} onClose={() => setAddingPosition(false)} />
     </div>
   )
 }

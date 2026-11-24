@@ -20,6 +20,9 @@ public sealed class PositionMovementRepository(IDataContextAccessor accessor)
             .OrderByDescending(m => m.CreatedAt).ThenByDescending(m => m.Id)
             .FirstOrDefaultAsync(ct);
 
+    public async Task<IReadOnlyList<PositionMovement>> ListByPositionsAsync(IReadOnlyCollection<Guid> positionIds, CancellationToken ct = default)
+        => positionIds.Count == 0 ? [] : await Queryable().Where(m => positionIds.Contains(m.PositionId)).ToListAsync(ct);
+
     public Task<bool> AnyForPositionAsync(Guid positionId, CancellationToken ct = default)
         => Queryable().AnyAsync(m => m.PositionId == positionId, ct);
 

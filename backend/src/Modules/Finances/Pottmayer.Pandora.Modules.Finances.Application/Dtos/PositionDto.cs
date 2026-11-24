@@ -3,8 +3,9 @@ using Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 namespace Pottmayer.Pandora.Modules.Finances.Application.Dtos;
 
 /// <summary>
-/// A position with its asset and current value. <see cref="CurrentValue"/> is the latest reported
-/// value, or the cost when none was reported (<see cref="ValuedOn"/> null); a closed position is worth 0.
+/// A position with its asset and current value. <see cref="CurrentValue"/> is the latest reported value
+/// (<see cref="ValuedOn"/>) moved by the movements recorded after it, or the cost when none was reported;
+/// a closed position is worth 0.
 /// </summary>
 public sealed record PositionDto(
     Guid Id,
@@ -29,11 +30,12 @@ public sealed record PositionDto(
     DateOnly? ValuedOn,
     DateTimeOffset? ClosedAt)
 {
-    public static PositionDto From(Position p, Asset asset, PositionValuation? latest) =>
+    /// <param name="currentValue">From <see cref="Position.CurrentValue"/>: the anchor moved by later movements.</param>
+    public static PositionDto From(Position p, Asset asset, PositionValuation? latest, decimal currentValue) =>
         new(p.Id, p.AccountId, p.AssetId, asset.Name, asset.Code, asset.AssetClassId, p.Behavior.Value, p.Status.Value,
             asset.Currency.Value, p.Quantity, p.AverageCost, p.InvestedAmount, p.AppliedOn, p.Index?.Value, p.IndexPercent,
             p.SpreadRate, p.MaturityOn, p.CostBasis,
-            !p.IsOpen ? 0m : latest?.Value ?? p.CostBasis,
+            currentValue,
             latest?.ValuedOn, p.ClosedAt);
 }
 
