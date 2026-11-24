@@ -15,7 +15,9 @@ internal sealed class AssetEntityConfiguration : IEntityTypeConfiguration<Asset>
 
         builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
         builder.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
-        builder.Property(x => x.AssetClassId).HasColumnName("asset_class_id").IsRequired();
+        builder.Property(x => x.SystemAssetClassId).HasColumnName("system_asset_class_id");
+        builder.Property(x => x.UserAssetClassId).HasColumnName("user_asset_class_id");
+        builder.Ignore(x => x.AssetClassId);
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
         builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(20);
         builder.Property(x => x.Isin).HasColumnName("isin").HasMaxLength(12);
@@ -29,6 +31,7 @@ internal sealed class AssetEntityConfiguration : IEntityTypeConfiguration<Asset>
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasOne<AssetClass>().WithMany().HasForeignKey(x => x.AssetClassId).HasConstraintName("fk_fin021_asset_class_id");
+        builder.HasOne<SystemAssetClass>().WithMany().HasForeignKey(x => x.SystemAssetClassId).HasConstraintName("fk_fin021_system_asset_class_id");
+        builder.HasOne<UserAssetClass>().WithMany().HasForeignKey(x => x.UserAssetClassId).HasConstraintName("fk_fin021_user_asset_class_id");
     }
 }

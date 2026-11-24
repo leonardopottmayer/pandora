@@ -1,4 +1,4 @@
--- 20261123130005-create-table-fin024-position-valuation.up.sql
+-- 20261123130006-create-table-fin024-position-valuation.up.sql
 -- What a position is worth at a date. Reported by the user or imported today; generated from quotes
 -- later. The latest one is the position's current value; the history feeds returns later.
 

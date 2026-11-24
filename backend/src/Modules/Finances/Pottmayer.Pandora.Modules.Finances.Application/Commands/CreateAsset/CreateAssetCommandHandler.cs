@@ -26,17 +26,17 @@ public sealed class CreateAssetCommandHandler(IUnitOfWorkFactory factory, TimePr
 
         var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
-            var assetClass = await ctx.AcquireRepository<IAssetClassRepository>().FindVisibleAsync(input.AssetClassId, input.UserId, token);
+            var assetClass = await AssetClassLookup.FindAsync(ctx, input.AssetClassId, input.UserId, token);
             if (assetClass is null) return Result<Asset>.Failure([AssetErrors.ClassNotFound]);
             if (assetClass.IsArchived) return Result<Asset>.Failure([AssetErrors.ClassArchived]);
 
             var assets = ctx.AcquireRepository<IAssetRepository>();
             if (await assets.ExistsWithNameAsync(input.UserId, input.Name, null, token))
                 return Result<Asset>.Failure([AssetErrors.NameAlreadyExists]);
-            if (Asset.NormalizeCode(input.Code) is { } code && await assets.ExistsWithCodeAsync(input.UserId, assetClass.Id, code, null, token))
+            if (Asset.NormalizeCode(input.Code) is { } code && await assets.ExistsWithCodeAsync(input.UserId, assetClass.Ref.Id, code, null, token))
                 return Result<Asset>.Failure([AssetErrors.CodeAlreadyExists]);
 
-            var asset = Asset.Create(input.UserId, assetClass.Id, input.Name, input.Code, input.Isin, input.Issuer, currency!, timeProvider);
+            var asset = Asset.Create(input.UserId, assetClass.Ref, input.Name, input.Code, input.Isin, input.Issuer, currency!, timeProvider);
             await assets.AddAsync(asset, token);
             await ctx.RecordAsync(input.UserId, input.UserId, AssetEvents.EntityType, asset.Id, AssetEvents.Created, timeProvider.GetUtcNow(),
                 new { name = asset.Name, code = asset.Code, assetClassId = asset.AssetClassId, currency = asset.Currency.Value }, ct: token);

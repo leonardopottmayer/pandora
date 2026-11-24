@@ -5,13 +5,16 @@ using Pottmayer.Tars.Core.Ddd;
 namespace Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 
 /// <summary>
-/// Something the user owns (fin021): a stock, a CDB product, a coin. Its <see cref="Currency"/> must
-/// match the account of any position that holds it; like an account's, it is fixed at creation.
+/// Something the user owns (fin021): a stock, a CDB product, a coin. Its class is a system class or one
+/// of the user's own, exactly one of the two (<see cref="SystemAssetClassId"/> / <see cref="UserAssetClassId"/>).
+/// Its <see cref="Currency"/> must match the account of any position that holds it; like an account's,
+/// it is fixed at creation, and so is its class.
 /// </summary>
 public sealed class Asset : AggregateRoot<Guid>, IAuditable
 {
     public Guid UserId { get; private set; }
-    public Guid AssetClassId { get; private set; }
+    public Guid? SystemAssetClassId { get; private set; }
+    public Guid? UserAssetClassId { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public string? Code { get; private set; }
     public string? Isin { get; private set; }
@@ -26,16 +29,20 @@ public sealed class Asset : AggregateRoot<Guid>, IAuditable
 
     public bool IsArchived => ArchivedAt is not null;
 
+    /// <summary>The asset's class, whichever table it lives in.</summary>
+    public Guid AssetClassId => SystemAssetClassId ?? UserAssetClassId!.Value;
+
     private Asset() { }
 
     public static Asset Create(
-        Guid userId, Guid assetClassId, string name, string? code, string? isin, string? issuer,
+        Guid userId, AssetClassRef assetClass, string name, string? code, string? isin, string? issuer,
         CurrencyCode currency, TimeProvider timeProvider) =>
         new()
         {
             Id = Guid.CreateVersion7(),
             UserId = userId,
-            AssetClassId = assetClassId,
+            SystemAssetClassId = assetClass.IsSystem ? assetClass.Id : null,
+            UserAssetClassId = assetClass.IsSystem ? null : assetClass.Id,
             Name = name.Trim(),
             Code = NormalizeCode(code),
             Isin = NormalizeCode(isin),

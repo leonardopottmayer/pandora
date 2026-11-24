@@ -1,6 +1,6 @@
 # Investimentos
 
-[← Voltar ao índice](README.md) · Relacionados: [Contas](accounts.md), [Lançamentos](transactions.md), [Modelo de dados](data-model.md#fin020_asset_class), [Plano de produto](product-plan.md)
+[← Voltar ao índice](README.md) · Relacionados: [Contas](accounts.md), [Lançamentos](transactions.md), [Modelo de dados](data-model.md#fin020_system_asset_class), [Plano de produto](product-plan.md)
 
 > **Status:** a parte 1, o núcleo da carteira, está construída (2026-11-23): posições, movimentos, valores informados e as telas. Cotações, importação, conversão entre moedas, rentabilidade e impostos são as próximas partes, no [Plano de produto](product-plan.md).
 
@@ -29,7 +29,7 @@ renda fixa (CDB, LCI, LCA, Tesouro…), ações, FIIs, fundos, ETFs no exterior 
 
 | Termo | Significado |
 |---|---|
-| **Classe de ativo** | Que tipo de investimento (CDB, ação, FII…). Classes do sistema, semeadas, mais as do usuário. Cada uma tem um **comportamento**: `unit` (quantidade e custo médio) ou `application` (renda fixa: data, taxa, vencimento). |
+| **Classe de ativo** | Que tipo de investimento (CDB, ação, FII…). Classes do sistema, semeadas (`fin020`), mais as do usuário (`fin025`), separadas como as categorias do sistema e do usuário; um ativo tem exatamente uma das duas. Cada uma tem um **comportamento**: `unit` (quantidade e custo médio) ou `application` (renda fixa: data, taxa, vencimento). |
 | **Ativo** | Algo que o usuário tem: nome, código opcional (ticker ou ISIN), emissor opcional, moeda, classe. |
 | **Posição** | Um ativo dentro de uma conta. Ativos `unit`: uma posição aberta por ativo por conta. Ativos `application`: uma posição por aplicação. Aberta enquanto tiver algo, encerrada quando zera. |
 | **Movimento** | Algo que aconteceu com uma posição: abertura, compra, venda, resgate, vencimento, provento, desdobramento, come-cotas. Guarda data, quantidade, preço unitário, valor bruto, custos e imposto retido. |
@@ -41,7 +41,7 @@ Regras que valem sempre:
 - Conta arquivada não recebe posições nem movimentos novos; conta com posições não pode ser excluída.
 - Toda escrita grava um evento de auditoria (`fin016`), como no resto do módulo.
 
-As tabelas são `fin020`–`fin024`, descritas no [Modelo de dados](data-model.md#fin020_asset_class).
+As tabelas são `fin020`–`fin025`, descritas no [Modelo de dados](data-model.md#fin020_system_asset_class).
 
 ## Regras dos movimentos
 

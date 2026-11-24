@@ -26,15 +26,15 @@ public sealed class CreateAssetClassCommandHandler(IUnitOfWorkFactory factory, T
 
         var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
-            var classes = ctx.AcquireRepository<IAssetClassRepository>();
+            var classes = ctx.AcquireRepository<IUserAssetClassRepository>();
             if (await classes.ExistsWithNameAsync(input.UserId, input.Name, null, token))
-                return Result<AssetClass>.Failure([AssetErrors.ClassNameAlreadyExists]);
+                return Result<UserAssetClass>.Failure([AssetErrors.ClassNameAlreadyExists]);
 
-            var assetClass = AssetClass.Create(input.UserId, input.Name, AssetBehavior.FromValue(input.Behavior), timeProvider);
+            var assetClass = UserAssetClass.Create(input.UserId, input.Name, AssetBehavior.FromValue(input.Behavior), timeProvider);
             await classes.AddAsync(assetClass, token);
             await ctx.RecordAsync(input.UserId, input.UserId, AssetClassEvents.EntityType, assetClass.Id, AssetClassEvents.Created,
                 timeProvider.GetUtcNow(), new { name = assetClass.Name, behavior = assetClass.Behavior.Value }, ct: token);
-            return Result<AssetClass>.Success(assetClass);
+            return Result<UserAssetClass>.Success(assetClass);
         }, cancellationToken: ct);
 
         return result.IsFailure ? Fail([.. result.Errors]) : Ok(AssetClassDto.From(result.Value!));

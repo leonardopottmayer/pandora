@@ -25,19 +25,21 @@ public sealed class UpdateAssetClassCommandHandler(IUnitOfWorkFactory factory, T
 
         var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
-            var classes = ctx.AcquireRepository<IAssetClassRepository>();
-            var assetClass = await classes.FindVisibleAsync(input.AssetClassId, input.UserId, token);
-            if (assetClass is null) return Result<AssetClass>.Failure([AssetErrors.ClassNotFound]);
-            if (assetClass.IsSystem) return Result<AssetClass>.Failure([AssetErrors.ClassReadOnly]);
+            var classes = ctx.AcquireRepository<IUserAssetClassRepository>();
+            var assetClass = await classes.FindByIdForUserAsync(input.AssetClassId, input.UserId, token);
+            if (assetClass is null)
+                return Result<UserAssetClass>.Failure([await ctx.AcquireRepository<ISystemAssetClassRepository>().FindAsync(input.AssetClassId, token) is null
+                    ? AssetErrors.ClassNotFound
+                    : AssetErrors.ClassReadOnly]);
             if (await classes.ExistsWithNameAsync(input.UserId, input.Name, assetClass.Id, token))
-                return Result<AssetClass>.Failure([AssetErrors.ClassNameAlreadyExists]);
+                return Result<UserAssetClass>.Failure([AssetErrors.ClassNameAlreadyExists]);
 
             var old = assetClass.Name;
-            if (!assetClass.Rename(input.Name)) return Result<AssetClass>.Failure([AssetErrors.ClassArchived]);
+            if (!assetClass.Rename(input.Name)) return Result<UserAssetClass>.Failure([AssetErrors.ClassArchived]);
             await classes.UpdateAsync(assetClass, token);
             await ctx.RecordAsync(input.UserId, input.UserId, AssetClassEvents.EntityType, assetClass.Id, AssetClassEvents.Renamed,
                 timeProvider.GetUtcNow(), new { name = new { old, @new = assetClass.Name } }, ct: token);
-            return Result<AssetClass>.Success(assetClass);
+            return Result<UserAssetClass>.Success(assetClass);
         }, cancellationToken: ct);
 
         return result.IsFailure ? Fail([.. result.Errors]) : Ok(AssetClassDto.From(result.Value!));

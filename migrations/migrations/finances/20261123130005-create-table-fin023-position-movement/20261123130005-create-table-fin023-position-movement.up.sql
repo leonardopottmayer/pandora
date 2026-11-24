@@ -1,4 +1,4 @@
--- 20261123130004-create-table-fin023-position-movement.up.sql
+-- 20261123130005-create-table-fin023-position-movement.up.sql
 -- Everything that happens to a position, with date, quantity, prices, costs and tax withheld, so returns
 -- and taxes can be computed later. The *_before columns keep the position as it was, so the latest
 -- movement can be undone. transaction_id is the ledger entry the movement created on the account.

@@ -32,11 +32,12 @@ Migrations em `migrations/migrations/finances/`.
 | fin017 | `attachment` | Arquivos de um lançamento, sugestão ou fatura (boleto, comprovante, nota fiscal), ou na fila |
 | fin018 | `file_blob` | Os bytes por trás da fin017 |
 | fin019 | `card_number` | Números físico e virtuais de um cartão |
-| fin020 | `asset_class` | Tipos de investimento: do sistema (semeados) e os do usuário |
+| fin020 | `system_asset_class` | Tipos de investimento que o sistema traz (semeados) |
 | fin021 | `asset` | O que o usuário tem: uma ação, um produto de CDB, uma moeda |
 | fin022 | `position` | Um ativo dentro de uma conta ([Investimentos](investments.md)) |
 | fin023 | `position_movement` | O que aconteceu com uma posição; é dono do seu lançamento |
 | fin024 | `position_valuation` | Valor informado de uma posição numa data |
+| fin025 | `user_asset_class` | As classes de ativo do próprio usuário |
 
 ---
 
@@ -338,34 +339,48 @@ política de aplicação. Ver [Auditoria e proveniência](audit-and-provenance.m
 
 As tabelas de investimentos abaixo ([Investimentos](investments.md), parte 1) vieram depois da 1.0 só com
 migrations novas, sem tocar nos dados existentes. Valores de enum usam hífen.
-usam hífen.
 
-## fin020_asset_class
+## fin020_system_asset_class
+
+As classes de ativo que o sistema traz: globais, semeadas, só leitura, como a `fin002_system_category`.
+As classes do usuário ficam na `fin025`, como as categorias do usuário ficam na `fin003`.
 
 | Coluna | Tipo | Notas |
 |---|---|---|
 | `id` | uuid PK | |
-| `user_id` | uuid NULL | NULL = classe do sistema (semeada, só leitura) |
-| `code` | varchar(40) NULL | só classes do sistema (`cdb`, `stock`…) |
-| `name` | varchar(60) NOT NULL | único por usuário (os nomes do sistema são únicos entre si) |
+| `code` | varchar(40) NOT NULL | único (`cdb`, `stock`…); a UI traduz por ele |
+| `name` | varchar(60) NOT NULL | |
 | `behavior` | varchar(20) NOT NULL | `unit\|application` |
-| `archived_at` | timestamptz NULL | só classes do usuário |
+| `display_order` | int NOT NULL | |
 
 Semeadas: `stock`, `fii`, `etf`, `bdr`, `fund`, `pension`, `crypto`, `currency` (`unit`); `cdb`, `lci`, `lca`,
 `treasury`, `debenture`, `coe` (`application`); `other` (`unit`).
+
+## fin025_user_asset_class
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` / `user_id` | uuid | |
+| `name` | varchar(60) NOT NULL | único por usuário (`uq_fin025_user_name`) |
+| `behavior` | varchar(20) NOT NULL | `unit\|application`; fixo na criação |
+| `archived_at` | timestamptz NULL | |
 
 ## fin021_asset
 
 | Coluna | Tipo | Notas |
 |---|---|---|
 | `id` / `user_id` | uuid | |
-| `asset_class_id` | uuid NOT NULL → fin020 | |
+| `system_asset_class_id` | uuid NULL → fin020 | a classe, quando é do sistema |
+| `user_asset_class_id` | uuid NULL → fin025 | a classe, quando é do usuário |
 | `name` | varchar(100) NOT NULL | único por usuário |
 | `code` | varchar(20) NULL | ticker ou código do produto; único por usuário e classe quando preenchido |
 | `isin` | varchar(12) NULL | |
 | `issuer` | varchar(100) NULL | ex.: Banco Inter |
 | `currency` | varchar(10) NOT NULL | o mesmo `CurrencyCode` das contas |
 | `archived_at` | timestamptz NULL | |
+
+Constraints: `ck_fin021_one_class` (exatamente uma das duas colunas de classe: diferente das duas
+categorias de um lançamento, nunca as duas), `uq_fin021_user_name`, `uq_fin021_user_class_code` (código único por usuário e classe).
 
 ## fin022_position
 
@@ -419,7 +434,8 @@ taxa são informativos; a parte 2 usa para a curva.
 | `value` | numeric(18,2) NOT NULL | valor total da posição nessa data |
 | `source` | varchar(20) NOT NULL | `manual\|import\|quote` |
 
-Migrations: `create-table-fin020-asset-class`, `insert-fin020-system-asset-classes`, `create-table-fin021-asset`,
+Migrations: `create-table-fin020-system-asset-class`, `insert-fin020-system-asset-classes`,
+`create-table-fin025-user-asset-class`, `create-table-fin021-asset`,
 `create-table-fin022-position`, `create-table-fin023-position-movement`, `create-table-fin024-position-valuation`.
 Nenhuma tabela existente muda.
 

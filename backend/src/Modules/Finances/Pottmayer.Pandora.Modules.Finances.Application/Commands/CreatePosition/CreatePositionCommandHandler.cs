@@ -42,7 +42,7 @@ public sealed class CreatePositionCommandHandler(
             if (asset.IsArchived) return Result<PositionDto>.Failure([AssetErrors.Archived]);
             if (asset.Currency != account.Currency) return Result<PositionDto>.Failure([PositionErrors.CurrencyMismatch]);
 
-            var assetClass = await ctx.AcquireRepository<IAssetClassRepository>().FindVisibleAsync(asset.AssetClassId, input.UserId, token);
+            var assetClass = await AssetClassLookup.FindAsync(ctx, asset.AssetClassId, input.UserId, token);
             if (assetClass is null) return Result<PositionDto>.Failure([AssetErrors.ClassNotFound]);
 
             var positions = ctx.AcquireRepository<IPositionRepository>();

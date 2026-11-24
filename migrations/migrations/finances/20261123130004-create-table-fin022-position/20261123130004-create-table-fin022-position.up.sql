@@ -1,4 +1,4 @@
--- 20261123130003-create-table-fin022-position.up.sql
+-- 20261123130004-create-table-fin022-position.up.sql
 -- An asset inside an account. 'unit' positions keep a quantity and an average cost, one open position
 -- per asset and account. 'application' positions are fixed income, one per application, with the
 -- amount still invested and the application's terms (informational until quotes and curves exist).

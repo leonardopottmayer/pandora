@@ -16,7 +16,8 @@ public sealed class AssetRepository(IDataContextAccessor accessor)
     public async Task<IReadOnlyList<Asset>> ListAsync(Guid userId, Guid? assetClassId, string? search, CancellationToken ct = default)
     {
         var query = Queryable().Where(a => a.UserId == userId);
-        if (assetClassId is not null) query = query.Where(a => a.AssetClassId == assetClassId);
+        if (assetClassId is not null)
+            query = query.Where(a => a.SystemAssetClassId == assetClassId || a.UserAssetClassId == assetClassId);
         if (!string.IsNullOrWhiteSpace(search))
         {
             var pattern = $"%{search.Trim()}%";
@@ -39,7 +40,8 @@ public sealed class AssetRepository(IDataContextAccessor accessor)
     public Task<bool> ExistsWithCodeAsync(Guid userId, Guid assetClassId, string code, Guid? excludingId, CancellationToken ct = default)
     {
         var normalized = Asset.NormalizeCode(code);
-        var query = Queryable().Where(a => a.UserId == userId && a.AssetClassId == assetClassId && a.Code == normalized);
+        var query = Queryable().Where(a => a.UserId == userId && a.Code == normalized
+            && (a.SystemAssetClassId == assetClassId || a.UserAssetClassId == assetClassId));
         if (excludingId is not null) query = query.Where(a => a.Id != excludingId);
         return query.AnyAsync(ct);
     }

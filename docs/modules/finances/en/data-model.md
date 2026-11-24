@@ -32,11 +32,12 @@ Migrations live in `migrations/migrations/finances/`.
 | fin017 | `attachment` | Files on a transaction, a suggestion or a statement (boleto, receipt, invoice), or queued |
 | fin018 | `file_blob` | The bytes behind fin017 |
 | fin019 | `card_number` | A card's physical and virtual numbers |
-| fin020 | `asset_class` | Kinds of investment: system (seeded) and the user's own |
+| fin020 | `system_asset_class` | Kinds of investment the system ships (seeded) |
 | fin021 | `asset` | What the user owns: a stock, a CDB product, a coin |
 | fin022 | `position` | An asset inside an account ([Investments](investments.md)) |
 | fin023 | `position_movement` | What happened to a position; owns its ledger entry |
 | fin024 | `position_valuation` | A position's reported value at a date |
+| fin025 | `user_asset_class` | The user's own asset classes |
 
 ---
 
@@ -338,32 +339,47 @@ by application policy. See [Audit & Provenance](audit-and-provenance.md).
 The investment tables below ([Investments](investments.md), part 1) came after 1.0 as new migrations only,
 so existing data was untouched. Enum values use hyphens.
 
-## fin020_asset_class
+## fin020_system_asset_class
+
+The asset classes the system ships: global, seeded, read-only, like `fin002_system_category`. The
+user's own classes are `fin025`, as user categories are `fin003`.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid PK | |
-| `user_id` | uuid NULL | NULL = system class (seeded, read-only) |
-| `code` | varchar(40) NULL | system classes only (`cdb`, `stock`…) |
-| `name` | varchar(60) NOT NULL | unique per user (system names are unique among themselves) |
+| `code` | varchar(40) NOT NULL | unique (`cdb`, `stock`…); the UI translates by it |
+| `name` | varchar(60) NOT NULL | |
 | `behavior` | varchar(20) NOT NULL | `unit\|application` |
-| `archived_at` | timestamptz NULL | user classes only |
+| `display_order` | int NOT NULL | |
 
 Seeded: `stock`, `fii`, `etf`, `bdr`, `fund`, `pension`, `crypto`, `currency` (`unit`); `cdb`, `lci`, `lca`,
 `treasury`, `debenture`, `coe` (`application`); `other` (`unit`).
+
+## fin025_user_asset_class
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` / `user_id` | uuid | |
+| `name` | varchar(60) NOT NULL | unique per user (`uq_fin025_user_name`) |
+| `behavior` | varchar(20) NOT NULL | `unit\|application`; fixed at creation |
+| `archived_at` | timestamptz NULL | |
 
 ## fin021_asset
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` / `user_id` | uuid | |
-| `asset_class_id` | uuid NOT NULL → fin020 | |
+| `system_asset_class_id` | uuid NULL → fin020 | the class, when it is a system one |
+| `user_asset_class_id` | uuid NULL → fin025 | the class, when it is one of the user's own |
 | `name` | varchar(100) NOT NULL | unique per user |
 | `code` | varchar(20) NULL | ticker or product code; unique per user and class when set |
 | `isin` | varchar(12) NULL | |
 | `issuer` | varchar(100) NULL | e.g. Banco Inter |
 | `currency` | varchar(10) NOT NULL | same `CurrencyCode` as accounts |
 | `archived_at` | timestamptz NULL | |
+
+Constraints: `ck_fin021_one_class` (exactly one of the two class columns: unlike a transaction's two
+categories, never both), `uq_fin021_user_name`, `uq_fin021_user_class_code` (code unique per user and class).
 
 ## fin022_position
 
@@ -417,7 +433,8 @@ are informational; part 2 uses them for the curve.
 | `value` | numeric(18,2) NOT NULL | total value of the position on that date |
 | `source` | varchar(20) NOT NULL | `manual\|import\|quote` |
 
-Migrations: `create-table-fin020-asset-class`, `insert-fin020-system-asset-classes`, `create-table-fin021-asset`,
+Migrations: `create-table-fin020-system-asset-class`, `insert-fin020-system-asset-classes`,
+`create-table-fin025-user-asset-class`, `create-table-fin021-asset`,
 `create-table-fin022-position`, `create-table-fin023-position-movement`, `create-table-fin024-position-valuation`.
 No existing table changes.
 

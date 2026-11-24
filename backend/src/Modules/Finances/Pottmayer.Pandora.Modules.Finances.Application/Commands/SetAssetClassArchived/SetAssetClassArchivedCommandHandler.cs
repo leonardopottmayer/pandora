@@ -23,17 +23,20 @@ public sealed class SetAssetClassArchivedCommandHandler(IUnitOfWorkFactory facto
         var input = request.Input;
         var result = await factory.ExecuteAsync(FinancesModule.DatabaseKey, async (ctx, token) =>
         {
-            var classes = ctx.AcquireRepository<IAssetClassRepository>();
-            var assetClass = await classes.FindVisibleAsync(input.AssetClassId, input.UserId, token);
-            if (assetClass is null) return Result<AssetClass>.Failure([AssetErrors.ClassNotFound]);
+            var classes = ctx.AcquireRepository<IUserAssetClassRepository>();
+            var assetClass = await classes.FindByIdForUserAsync(input.AssetClassId, input.UserId, token);
+            if (assetClass is null)
+                return Result<UserAssetClass>.Failure([await ctx.AcquireRepository<ISystemAssetClassRepository>().FindAsync(input.AssetClassId, token) is null
+                    ? AssetErrors.ClassNotFound
+                    : AssetErrors.ClassReadOnly]);
 
-            var changed = input.Archived ? assetClass.Archive(timeProvider) : assetClass.Unarchive();
-            if (!changed) return Result<AssetClass>.Failure([AssetErrors.ClassReadOnly]);
+            if (input.Archived) assetClass.Archive(timeProvider);
+            else assetClass.Unarchive();
             await classes.UpdateAsync(assetClass, token);
             await ctx.RecordAsync(input.UserId, input.UserId, AssetClassEvents.EntityType, assetClass.Id,
                 input.Archived ? AssetClassEvents.Archived : AssetClassEvents.Unarchived, timeProvider.GetUtcNow(),
                 new { name = assetClass.Name }, ct: token);
-            return Result<AssetClass>.Success(assetClass);
+            return Result<UserAssetClass>.Success(assetClass);
         }, cancellationToken: ct);
 
         return result.IsFailure ? Fail([.. result.Errors]) : Ok(AssetClassDto.From(result.Value!));

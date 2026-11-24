@@ -21,7 +21,7 @@ public sealed class GetAssetClassesQueryHandler(IUnitOfWorkFactory factory)
     protected override async Task<Result<IReadOnlyList<AssetClassDto>>> HandleAsync(GetAssetClassesQuery request, CancellationToken ct)
     {
         var classes = await factory.ExecuteAsync(FinancesModule.DatabaseKey, (ctx, token) =>
-            ctx.AcquireRepository<IAssetClassRepository>().ListVisibleAsync(request.Input.UserId, token), cancellationToken: ct);
-        return Ok([.. classes.Select(AssetClassDto.From)]);
+            AssetClassLookup.ListAsync(ctx, request.Input.UserId, token), cancellationToken: ct);
+        return Ok(classes);
     }
 }

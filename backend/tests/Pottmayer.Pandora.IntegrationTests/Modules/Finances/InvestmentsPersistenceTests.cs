@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Pottmayer.Pandora.IntegrationTests.Modules.Finances;
 
-/// <summary>The EF mappings against the fin020–fin024 tables: what is written reads back the same.</summary>
+/// <summary>The EF mappings against the fin020–fin025 tables: what is written reads back the same.</summary>
 [Collection("Integration")]
 public sealed class InvestmentsPersistenceTests(PandoraWebApplicationFactory factory) : IAsyncLifetime
 {
@@ -23,18 +23,19 @@ public sealed class InvestmentsPersistenceTests(PandoraWebApplicationFactory fac
     public async Task System_classes_are_seeded_next_to_the_users_own()
     {
         var userId = Guid.CreateVersion7();
-        var own = AssetClass.Create(userId, "Crowdfunding", AssetBehavior.Application, TimeProvider.System);
+        var own = UserAssetClass.Create(userId, "Crowdfunding", AssetBehavior.Application, TimeProvider.System);
 
-        await RunAsync((ctx, ct) => ctx.AcquireRepository<IAssetClassRepository>().AddAsync(own, ct));
+        await RunAsync((ctx, ct) => ctx.AcquireRepository<IUserAssetClassRepository>().AddAsync(own, ct));
 
         await RunAsync(async (ctx, ct) =>
         {
-            var classes = await ctx.AcquireRepository<IAssetClassRepository>().ListVisibleAsync(userId, ct);
+            var classes = await ctx.AcquireRepository<ISystemAssetClassRepository>().ListAsync(ct);
+            var mine = await ctx.AcquireRepository<IUserAssetClassRepository>().ListByUserAsync(userId, ct);
 
-            Assert.Equal(16, classes.Count);
+            Assert.Equal(15, classes.Count);
             Assert.Equal(AssetBehavior.Application, classes.Single(c => c.Code == "cdb").Behavior);
             Assert.Equal(AssetBehavior.Unit, classes.Single(c => c.Code == "stock").Behavior);
-            Assert.Equal(own.Id, classes[^1].Id);
+            Assert.Equal(own.Id, Assert.Single(mine).Id);
         });
     }
 
@@ -48,10 +49,10 @@ public sealed class InvestmentsPersistenceTests(PandoraWebApplicationFactory fac
         await RunAsync(async (ctx, ct) =>
         {
             await ctx.AcquireRepository<IAccountRepository>().AddAsync(account, ct);
-            stockClassId = (await ctx.AcquireRepository<IAssetClassRepository>().ListVisibleAsync(userId, ct)).Single(c => c.Code == "stock").Id;
+            stockClassId = (await ctx.AcquireRepository<ISystemAssetClassRepository>().ListAsync(ct)).Single(c => c.Code == "stock").Id;
         });
 
-        var asset = Asset.Create(userId, stockClassId, "Itaúsa", "itsa4", "BRITSAACNPR7", null, CurrencyCode.Create("BRL"), TimeProvider.System);
+        var asset = Asset.Create(userId, new AssetClassRef(stockClassId, true), "Itaúsa", "itsa4", "BRITSAACNPR7", null, CurrencyCode.Create("BRL"), TimeProvider.System);
         var position = Position.CreateUnit(userId, account.Id, asset.Id, TimeProvider.System);
         var opening = position.Apply(new MovementInput(PositionMovementKind.Opening, Day, Quantity: 100.5m, AverageCost: 9.1234567891m), true, TimeProvider.System).Value!;
         var income = position.Apply(new MovementInput(PositionMovementKind.Income, Day, GrossAmount: 12.34m, TaxWithheld: 1.85m,
@@ -102,8 +103,8 @@ public sealed class InvestmentsPersistenceTests(PandoraWebApplicationFactory fac
         var userId = Guid.CreateVersion7();
         var account = Account.Create(userId, "Inter", AccountType.Checking, CurrencyCode.Create("BRL"),
             null, null, null, null, 0, TimeProvider.System);
-        var ownClass = AssetClass.Create(userId, "Bank bond", AssetBehavior.Application, TimeProvider.System);
-        var asset = Asset.Create(userId, ownClass.Id, "CDB Inter 110%", null, null, "Banco Inter", CurrencyCode.Create("BRL"), TimeProvider.System);
+        var ownClass = UserAssetClass.Create(userId, "Bank bond", AssetBehavior.Application, TimeProvider.System);
+        var asset = Asset.Create(userId, new AssetClassRef(ownClass.Id, false), "CDB Inter 110%", null, null, "Banco Inter", CurrencyCode.Create("BRL"), TimeProvider.System);
         var position = Position.CreateApplication(userId, account.Id, asset.Id, Day, FixedIncomeIndex.Ipca, null, 6.5m,
             new DateOnly(2029, 5, 15), TimeProvider.System);
         var opening = position.Apply(new MovementInput(PositionMovementKind.Opening, Day, InvestedAmount: 5000m), true, TimeProvider.System).Value!;
@@ -111,7 +112,7 @@ public sealed class InvestmentsPersistenceTests(PandoraWebApplicationFactory fac
         await RunAsync(async (ctx, ct) =>
         {
             await ctx.AcquireRepository<IAccountRepository>().AddAsync(account, ct);
-            await ctx.AcquireRepository<IAssetClassRepository>().AddAsync(ownClass, ct);
+            await ctx.AcquireRepository<IUserAssetClassRepository>().AddAsync(ownClass, ct);
             await ctx.AcquireRepository<IAssetRepository>().AddAsync(asset, ct);
             await ctx.AcquireRepository<IPositionRepository>().AddAsync(position, ct);
             await ctx.AcquireRepository<IPositionMovementRepository>().AddAsync(opening, ct);

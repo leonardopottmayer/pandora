@@ -300,20 +300,20 @@ public sealed class PositionTests
     }
 
     [Fact]
-    public void System_asset_class_is_read_only()
+    public void Own_asset_class_cannot_be_renamed_while_archived()
     {
-        var own = AssetClass.Create(Guid.NewGuid(), " Crowdfunding ", AssetBehavior.Application, Time);
+        var own = UserAssetClass.Create(Guid.NewGuid(), " Crowdfunding ", AssetBehavior.Application, Time);
 
         Assert.Equal("Crowdfunding", own.Name);
         Assert.True(own.Rename("Equity crowdfunding"));
-        Assert.True(own.Archive(Time));
+        own.Archive(Time);
         Assert.False(own.Rename("Again"));
     }
 
     [Fact]
     public void Asset_codes_are_upper_case_and_trimmed()
     {
-        var asset = Asset.Create(Guid.NewGuid(), Guid.NewGuid(), "Itaúsa", " itsa4 ", null, "  ", CurrencyCode.Create("BRL"), Time);
+        var asset = Asset.Create(Guid.NewGuid(), new AssetClassRef(Guid.NewGuid(), true), "Itaúsa", " itsa4 ", null, "  ", CurrencyCode.Create("BRL"), Time);
 
         Assert.Equal("ITSA4", asset.Code);
         Assert.Null(asset.Issuer);

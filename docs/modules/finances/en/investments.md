@@ -1,6 +1,6 @@
 # Investments
 
-[← Back to index](../README.md) · Related: [Accounts](accounts.md), [Transactions](transactions.md), [Data Model](data-model.md#fin020_asset_class), [Product Plan](product-plan.md)
+[← Back to index](../README.md) · Related: [Accounts](accounts.md), [Transactions](transactions.md), [Data Model](data-model.md#fin020_system_asset_class), [Product Plan](product-plan.md)
 
 > **Status:** part 1, the portfolio core, is built (2026-11-23): positions, movements, reported values and the screens. Quotes, imports, conversion between currencies, returns and taxes are the next parts, in the [Product Plan](product-plan.md).
 
@@ -30,7 +30,7 @@ or later.
 
 | Term | Meaning |
 |---|---|
-| **Asset class** | What kind of investment (CDB, stock, FII…). Seeded system classes plus the user's own. Each has a **behavior**: `unit` (quantity and average cost) or `application` (fixed income: date, rate, maturity). |
+| **Asset class** | What kind of investment (CDB, stock, FII…). Seeded system classes (`fin020`) plus the user's own (`fin025`), kept apart like system and user categories; an asset has exactly one of the two. Each has a **behavior**: `unit` (quantity and average cost) or `application` (fixed income: date, rate, maturity). |
 | **Asset** | A thing the user owns: name, optional code (ticker or ISIN), optional issuer, currency, class. |
 | **Position** | An asset inside an account. `unit` assets: one open position per asset per account. `application` assets: one position per application. Open while it holds something, closed when it reaches zero. |
 | **Movement** | Something that happened to a position: opening, buy, sell, redemption, maturity, income, split, come-cotas. Keeps date, quantity, unit price, gross amount, costs and tax withheld. |
@@ -42,7 +42,7 @@ Rules that hold everywhere:
 - An archived account takes no new positions or movements; an account with positions cannot be deleted.
 - Every write records an audit event (`fin016`), like the rest of the module.
 
-The tables are `fin020`–`fin024`, described in the [Data Model](data-model.md#fin020_asset_class).
+The tables are `fin020`–`fin025`, described in the [Data Model](data-model.md#fin020_system_asset_class).
 
 ## Movement rules
 
