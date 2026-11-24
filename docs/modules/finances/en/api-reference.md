@@ -36,6 +36,26 @@ user. A resource owned by another user returns **404** (not 403). Controllers li
 | POST | `/cards/{id}/numbers` | Add a physical or virtual number |
 | PUT / DELETE | `/cards/{id}/numbers/{numberId}` | Edit / remove (archives when a transaction used it) |
 
+## Investments — `/asset-classes`, `/assets`, `/positions`, `/investments`
+
+See [Investments](investments.md). Permissions `finances.investments.*`.
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET / POST | `/asset-classes` | List (system + own) / create |
+| PUT | `/asset-classes/{id}` | Rename (own only) |
+| POST | `/asset-classes/{id}/archive` · `/unarchive` | Own only |
+| GET / POST | `/assets` | List (`search`, `classId`) / create |
+| PUT | `/assets/{id}` | Edit (class and currency fixed) |
+| GET | `/positions` | List (`accountId`, `classId`, `includeClosed`) with current value |
+| GET | `/positions/{id}` | Detail: position, movements, reported values |
+| POST | `/positions` | Create with the first movement (`opening` or `buy`) |
+| POST | `/positions/{id}/movements` | Add a movement (and its ledger entry) |
+| DELETE | `/positions/{id}/movements/latest` | Undo the latest movement; `false` = the position is gone |
+| POST | `/positions/{id}/valuations` | Report a value at a date (same date replaces) |
+| POST | `/positions/valuations` | Report many values on one date |
+| GET | `/investments/summary` | Totals per currency, by class, by account; next maturities |
+
 ## Statements — `/statements`
 
 | Method | Route | Purpose |

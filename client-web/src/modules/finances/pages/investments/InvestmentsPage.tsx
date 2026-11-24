@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Button, Empty, Skeleton, Space, Typography, theme } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
+import { PlusOutlined, SyncOutlined } from '@ant-design/icons'
 import { todayIn } from '@/lib/today'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { PageHeading } from '@/components/settings/PageHeading'
@@ -15,6 +15,7 @@ import { PositionDetailDrawer } from '../../components/PositionDetailDrawer'
 import { useAccountNames } from '../../hooks/useAccounts'
 import { useAssetClassMap, useInvestmentsSummary, usePositions } from '../../hooks/useInvestments'
 import { PositionFormModal } from './PositionFormModal'
+import { UpdateValuesModal } from './UpdateValuesModal'
 
 /** What is invested, where and in what: totals per currency, allocation, and the open positions by account. */
 export function InvestmentsPage() {
@@ -23,6 +24,7 @@ export function InvestmentsPage() {
   const { token } = theme.useToken()
   const navigate = useNavigate()
   const [creating, setCreating] = useState(false)
+  const [updating, setUpdating] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
 
   const { data: summary } = useInvestmentsSummary()
@@ -88,10 +90,14 @@ export function InvestmentsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PageHeading title={t('nav.investments')} description={t('finances.investments.subtitle')} />
-        <Space>
+        <Space wrap>
           <Button onClick={() => navigate('/finances/investments/classes')}>{t('finances.investments.classesButton')}</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreating(true)}>
+          <Button icon={<PlusOutlined />} onClick={() => setCreating(true)}>
             {t('finances.investments.newPosition')}
+          </Button>
+          {/* The routine task once positions exist: the values are reported, not fetched (INV-4). */}
+          <Button type="primary" icon={<SyncOutlined />} disabled={!positions?.length} onClick={() => setUpdating(true)}>
+            {t('finances.investments.updateValues')}
           </Button>
         </Space>
       </div>
@@ -152,6 +158,7 @@ export function InvestmentsPage() {
       </div>
 
       <PositionFormModal open={creating} onClose={() => setCreating(false)} />
+      {updating && <UpdateValuesModal positions={positions ?? []} onClose={() => setUpdating(false)} />}
       <PositionDetailDrawer positionId={openId} onClose={() => setOpenId(null)} />
     </div>
   )

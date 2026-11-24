@@ -1088,6 +1088,15 @@
       "deleteError": "Nao foi possivel excluir a etiqueta."
     },
     "investments": {
+      "updateValues": "Atualizar valores",
+      "valuesOn": "Valores em",
+      "updateValuesHint": "Preencha só o que mudou; o resto fica como está.",
+      "lastValue": "{{amount}} · {{date}}",
+      "newValueFor": "Novo valor de {{name}}",
+      "saveValues_one": "Salvar 1 valor",
+      "saveValues_other": "Salvar {{count}} valores",
+      "valuesSaved_one": "1 valor informado.",
+      "valuesSaved_other": "{{count}} valores informados.",
       "subtitle": "O que você tem investido, onde e em quê.",
       "classesButton": "Classes",
       "newPosition": "Nova posição",

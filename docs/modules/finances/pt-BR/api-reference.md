@@ -35,6 +35,26 @@ recurso de outro usuário retorna **404** (não 403). Os controllers ficam em `P
 | POST | `/cards/{id}/numbers` | Adicionar um número físico ou virtual |
 | PUT / DELETE | `/cards/{id}/numbers/{numberId}` | Editar / remover (arquiva quando um lançamento usou) |
 
+## Investimentos — `/asset-classes`, `/assets`, `/positions`, `/investments`
+
+Ver [Investimentos](investments.md). Permissões `finances.investments.*`.
+
+| Método | Rota | Objetivo |
+|---|---|---|
+| GET / POST | `/asset-classes` | Listar (sistema + próprias) / criar |
+| PUT | `/asset-classes/{id}` | Renomear (só próprias) |
+| POST | `/asset-classes/{id}/archive` · `/unarchive` | Só próprias |
+| GET / POST | `/assets` | Listar (`search`, `classId`) / criar |
+| PUT | `/assets/{id}` | Editar (classe e moeda fixas) |
+| GET | `/positions` | Listar (`accountId`, `classId`, `includeClosed`) com valor atual |
+| GET | `/positions/{id}` | Detalhe: posição, movimentos, valores informados |
+| POST | `/positions` | Criar com o primeiro movimento (`opening` ou `buy`) |
+| POST | `/positions/{id}/movements` | Adicionar um movimento (e o seu lançamento) |
+| DELETE | `/positions/{id}/movements/latest` | Desfazer o último movimento; `false` = a posição deixou de existir |
+| POST | `/positions/{id}/valuations` | Informar um valor numa data (mesma data substitui) |
+| POST | `/positions/valuations` | Informar vários valores numa data |
+| GET | `/investments/summary` | Totais por moeda, por classe, por conta; próximos vencimentos |
+
 ## Faturas — `/statements`
 
 | Método | Rota | Propósito |

@@ -101,6 +101,15 @@ export function useUndoPositionMovement() {
   return useMutation({ mutationFn: (id: string) => service.undoPositionMovement(id), onSuccess: invalidate })
 }
 
+export function useReportPositionValues() {
+  const invalidate = useInvalidateAfterMovement()
+  return useMutation({
+    mutationFn: ({ valuedOn, items }: { valuedOn: string; items: { positionId: string; value: number }[] }) =>
+      service.reportPositionValues(valuedOn, items),
+    onSuccess: invalidate,
+  })
+}
+
 export function useReportPositionValue() {
   const invalidate = useInvalidateAfterMovement()
   return useMutation({

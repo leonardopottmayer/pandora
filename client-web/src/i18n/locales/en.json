@@ -1088,6 +1088,15 @@
       "deleteError": "Could not delete the tag."
     },
     "investments": {
+      "updateValues": "Update values",
+      "valuesOn": "Values on",
+      "updateValuesHint": "Fill in only what changed; the rest stays as it is.",
+      "lastValue": "{{amount}} · {{date}}",
+      "newValueFor": "New value of {{name}}",
+      "saveValues_one": "Save 1 value",
+      "saveValues_other": "Save {{count}} values",
+      "valuesSaved_one": "1 value reported.",
+      "valuesSaved_other": "{{count}} values reported.",
       "subtitle": "What you have invested, where and in what.",
       "classesButton": "Classes",
       "newPosition": "New position",

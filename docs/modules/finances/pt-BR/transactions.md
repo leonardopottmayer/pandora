@@ -36,7 +36,8 @@ Predicados derivados:
 - `IsTransferLeg` → `transfer-in`/`transfer-out` (o usuário nunca escolhe direto; o `CreateTransfer` sim).
 - `RequiresInvestmentAccount` → `investment-contribution`/`investment-redemption`/`yield`
   (decisão da fase 04: restritos a contas `investment`; use uma transferência para mover entre
-  corrente e investimento).
+  corrente e investimento). A regra vale para lançamentos digitados: os gerados por um movimento de
+  investimento passam direto, então qualquer conta pode ter posições ([Investimentos](investments.md), INV-8).
 - `IsStatementPayment` → `card-statement-payment`.
 
 ## Regra de destino (XOR)
@@ -115,6 +116,11 @@ Lançamentos gerados pelo sistema (saldo inicial, pagamento de fatura, write-off
 `Description` vazio e carregam um `SystemDescription` (JSONB). O texto de exibição é renderizado desse
 descritor **na leitura**, localizado (ex.: "Pagamento — junho 2026"). Lançamentos do usuário mantêm o
 texto em `Description` e deixam `SystemDescription` nulo.
+
+Lançamentos gerados por movimentos de investimento usam `transaction.investment-{buy|sell|redemption|maturity|income}`
+com o código ou o nome do ativo ("Compra ITSA4"). Eles pertencem ao movimento: editar, cancelar ou
+estornar pelo ledger responde `409 Positions.LinkedTransaction`, e um cancelado por um desfazer não
+pode ser restaurado ([Investimentos](investments.md#regras-dos-movimentos)).
 
 ## API
 

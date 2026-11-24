@@ -37,7 +37,8 @@ Derived predicates:
 - `IsTransferLeg` → `transfer-in`/`transfer-out` (users never pick these directly; `CreateTransfer` does).
 - `RequiresInvestmentAccount` → `investment-contribution`/`investment-redemption`/`yield`
   (phase-04 decision: these are restricted to `investment` accounts; use a transfer to move between
-  checking and investment).
+  checking and investment). The rule guards entries typed by hand: entries created by an investment
+  movement skip it, so any account can hold positions ([Investments](investments.md), INV-8).
 - `IsStatementPayment` → `card-statement-payment`.
 
 ## Destination rule (XOR)
@@ -114,6 +115,11 @@ System-generated entries (opening balance, statement payment, statement write-of
 `Description` empty and carry a `SystemDescription` (JSONB). The display text is rendered from that
 descriptor **at read time**, localized (e.g. "Payment — June 2026"). User-entered transactions keep
 their text in `Description` and leave `SystemDescription` null.
+
+Entries created by investment movements use `transaction.investment-{buy|sell|redemption|maturity|income}`
+with the asset's code or name ("Buy ITSA4"). They belong to their movement: editing, voiding or
+reversing them from the ledger answers `409 Positions.LinkedTransaction`, and one voided by an undo
+cannot be restored ([Investments](investments.md#movement-rules)).
 
 ## API
 

@@ -82,6 +82,14 @@ export async function reportPositionValue(id: string, valuedOn: string, value: n
   return data
 }
 
+export async function reportPositionValues(
+  valuedOn: string,
+  items: { positionId: string; value: number }[],
+): Promise<PositionValuationDto[]> {
+  const { data } = await apiClient.post<PositionValuationDto[]>(`${BASE}/positions/valuations`, { valuedOn, items })
+  return data
+}
+
 export async function getInvestmentsSummary(): Promise<InvestmentsSummaryDto> {
   const { data } = await apiClient.get<InvestmentsSummaryDto>(`${BASE}/investments/summary`)
   return data
