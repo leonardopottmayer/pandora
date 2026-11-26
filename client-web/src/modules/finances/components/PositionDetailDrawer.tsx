@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { App, Button, Descriptions, Drawer, Empty, Spin, Tag, Typography, theme } from 'antd'
 import { toErrorMessage } from '@/lib/api/envelope'
 import type { PositionMovementDto } from '../models'
-import { formatDate, formatMoney } from '../lib/format'
-import { assetClassLabel, rateLabel } from '../lib/investments'
+import type { FlowDirection } from '../lib/enums'
+import { formatDate, formatMoney, formatSignedPercent } from '../lib/format'
+import { assetClassLabel, positionGain, rateLabel, valuationChanges } from '../lib/investments'
 import { useAccountNames } from '../hooks/useAccounts'
 import { useAssetClassMap, usePosition, useUndoPositionMovement } from '../hooks/useInvestments'
 import { CurrencyAmount } from './CurrencyAmount'
@@ -15,6 +16,11 @@ import { ReportValueModal } from './ReportValueModal'
 function cashDirection(m: PositionMovementDto): 'in' | 'out' | undefined {
   if (m.netAmount == null) return undefined
   return m.kind === 'buy' ? 'out' : 'in'
+}
+
+/** Gains in green, losses in red. */
+function gainDirection(amount: number): FlowDirection {
+  return amount > 0 ? 'in' : amount < 0 ? 'out' : 'neutral'
 }
 
 /** One position: its data, movements and reported values, with its actions in the footer. */
@@ -32,6 +38,8 @@ export function PositionDetailDrawer({ positionId, onClose }: { positionId: stri
   const p = data?.position
   const open = p?.status === 'open'
   const latest = data?.movements.at(-1)
+  const gain = p ? positionGain(p) : null
+  const changes = p && data ? valuationChanges(data.valuations, data.movements, p.costBasis) : new Map<string, number | null>()
 
   function confirmUndo() {
     if (!p || !latest) return
@@ -104,6 +112,17 @@ export function PositionDetailDrawer({ positionId, onClose }: { positionId: stri
             <Typography.Text type="secondary" className="text-xs">
               {p.valuedOn ? t('finances.investments.valueOn', { date: formatDate(p.valuedOn) }) : t('finances.investments.noValue')}
             </Typography.Text>
+            {gain && (
+              <span className="flex flex-wrap items-baseline gap-1.5 tabular-nums">
+                <CurrencyAmount amount={Math.abs(gain.amount)} currency={p.currency} direction={gainDirection(gain.amount)} />
+                <Typography.Text type={gain.amount > 0 ? 'success' : gain.amount < 0 ? 'danger' : 'secondary'}>
+                  ({formatSignedPercent(gain.ratio)})
+                </Typography.Text>
+                <Typography.Text type="secondary" className="text-xs">
+                  {t('finances.investments.gainOverCost')}
+                </Typography.Text>
+              </span>
+            )}
           </div>
 
           <Descriptions
@@ -159,12 +178,22 @@ export function PositionDetailDrawer({ positionId, onClose }: { positionId: stri
               <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('finances.investments.noValues')} />
             ) : (
               <div className="overflow-hidden rounded-xl" style={{ border: divider }}>
-                {data.valuations.map((v, index) => (
-                  <div key={v.id} className="flex items-center justify-between px-3 py-2" style={{ borderTop: index === 0 ? undefined : divider }}>
-                    <span className="tabular-nums">{formatDate(v.valuedOn)}</span>
-                    <span className="tabular-nums">{formatMoney(v.value, p.currency)}</span>
-                  </div>
-                ))}
+                {data.valuations.map((v, index) => {
+                  const change = changes.get(v.id)
+                  return (
+                    <div key={v.id} className="flex items-center justify-between gap-3 px-3 py-2" style={{ borderTop: index === 0 ? undefined : divider }}>
+                      <span className="tabular-nums">{formatDate(v.valuedOn)}</span>
+                      <span className="flex flex-col items-end">
+                        <span className="tabular-nums">{formatMoney(v.value, p.currency)}</span>
+                        {change != null && (
+                          <span className="text-xs tabular-nums">
+                            <CurrencyAmount amount={Math.abs(change)} currency={p.currency} direction={gainDirection(change)} />
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>

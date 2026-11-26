@@ -1,6 +1,13 @@
 import type { TFunction } from 'i18next'
 import dayjs, { type Dayjs } from 'dayjs'
-import type { AssetBehavior, AssetClassDto, PositionDto, PositionMovementKind } from '../models'
+import type {
+  AssetBehavior,
+  AssetClassDto,
+  PositionDto,
+  PositionMovementDto,
+  PositionMovementKind,
+  PositionValuationDto,
+} from '../models'
 
 /** A value older than this is shown as out of date. */
 export const STALE_AFTER_DAYS = 30
@@ -31,4 +38,41 @@ export function rateLabel(position: PositionDto, t: TFunction): string | null {
   const spread = position.spreadRate != null ? ` + ${position.spreadRate}%` : ''
   if (position.index === 'pre') return position.spreadRate != null ? `${position.spreadRate}% ${index}` : index
   return `${percent}${index}${spread}`
+}
+
+/** What an open position gained over its cost: current value minus cost basis. Null when there is nothing to compare. */
+export function positionGain(position: PositionDto): { amount: number; ratio: number } | null {
+  if (position.status !== 'open' || !position.valuedOn || position.costBasis <= 0) return null
+  const amount = position.currentValue - position.costBasis
+  return { amount, ratio: amount / position.costBasis }
+}
+
+/**
+ * What each reported value gained since the one before it, without the money that went in or out in between
+ * (buys add, sells and redemptions take away their gross). The oldest value is compared with the cost when
+ * the opening is the only movement; otherwise it has no change (null).
+ */
+export function valuationChanges(
+  valuations: PositionValuationDto[],
+  movements: PositionMovementDto[],
+  costBasis: number,
+): Map<string, number | null> {
+  const oldestFirst = [...valuations].sort((a, b) => a.valuedOn.localeCompare(b.valuedOn))
+  const changes = new Map<string, number | null>()
+  oldestFirst.forEach((v, i) => {
+    const prev = oldestFirst[i - 1]
+    if (!prev) {
+      changes.set(v.id, movements.length === 1 ? v.value - costBasis : null)
+      return
+    }
+    const flows = movements
+      .filter((m) => m.occurredOn > prev.valuedOn && m.occurredOn <= v.valuedOn)
+      .reduce((sum, m) => {
+        if (m.kind === 'buy') return sum + (m.grossAmount ?? 0)
+        if (m.kind === 'sell' || m.kind === 'redemption') return sum - (m.grossAmount ?? 0)
+        return sum
+      }, 0)
+    changes.set(v.id, v.value - prev.value - flows)
+  })
+  return changes
 }

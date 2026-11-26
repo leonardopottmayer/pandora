@@ -1148,6 +1148,7 @@
       "newMovement": "New movement",
       "movements": "Movements",
       "realized": "result {{amount}}",
+      "gainOverCost": "over cost",
       "valueHistory": "Reported values",
       "noValues": "No value reported yet.",
       "reportValue": "Report value",

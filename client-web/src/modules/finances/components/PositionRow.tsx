@@ -2,8 +2,8 @@ import { useTranslation } from 'react-i18next'
 import { Typography, theme } from 'antd'
 import type { Dayjs } from 'dayjs'
 import type { AssetClassDto, PositionDto } from '../models'
-import { formatDate, formatMoney } from '../lib/format'
-import { assetClassLabel, isValueStale, rateLabel } from '../lib/investments'
+import { formatDate, formatMoney, formatSignedPercent } from '../lib/format'
+import { assetClassLabel, isValueStale, positionGain, rateLabel } from '../lib/investments'
 
 interface PositionRowProps {
   position: PositionDto
@@ -18,6 +18,7 @@ export function PositionRow({ position: p, assetClass, today, first, onOpen }: P
   const { t } = useTranslation()
   const { token } = theme.useToken()
   const stale = isValueStale(p, today)
+  const gain = positionGain(p)
 
   const held = p.behavior === 'unit'
     ? t('finances.investments.heldUnits', {
@@ -50,6 +51,14 @@ export function PositionRow({ position: p, assetClass, today, first, onOpen }: P
       <span className="flex shrink-0 flex-col items-end">
         <span className="tabular-nums">{formatMoney(p.currentValue, p.currency)}</span>
         <span className="text-xs" style={{ color: stale ? token.colorWarning : token.colorTextTertiary }}>
+          {gain && (
+            <span
+              className="tabular-nums"
+              style={{ color: gain.amount > 0 ? token.colorSuccess : gain.amount < 0 ? token.colorError : undefined }}
+            >
+              {`${formatSignedPercent(gain.ratio)} · `}
+            </span>
+          )}
           {p.valuedOn
             ? t(stale ? 'finances.investments.valueStale' : 'finances.investments.valueOn', { date: formatDate(p.valuedOn) })
             : t('finances.investments.noValue')}
