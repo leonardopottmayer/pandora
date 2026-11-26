@@ -1,20 +1,28 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { App, Breadcrumb, Button, Dropdown, Form, Input, Modal, Radio, Skeleton, Tag, Typography, theme } from 'antd'
+import { App, Breadcrumb, Button, Dropdown, Form, Input, Modal, Radio, Skeleton, Space, Tag, Typography, theme } from 'antd'
 import { EllipsisOutlined, PlusOutlined } from '@ant-design/icons'
 import { PageHeading } from '@/components/settings/PageHeading'
 import { toErrorMessage } from '@/lib/api/envelope'
-import { ASSET_BEHAVIORS, type AssetBehavior, type AssetClassDto } from '../../models'
+import { ASSET_BEHAVIORS, type AssetBehavior, type AssetClassDto, type AssetDto } from '../../models'
 import { assetClassLabel } from '../../lib/investments'
 import {
   useAssetClasses,
+  useAssetClassMap,
+  useAssets,
   useCreateAssetClass,
+  usePositions,
   useRenameAssetClass,
+  useSetAssetArchived,
   useSetAssetClassArchived,
 } from '../../hooks/useInvestments'
+import { AssetFormModal } from './AssetFormModal'
 
-/** The system's asset classes, read-only, and the user's own, which can be created, renamed and archived. */
+/**
+ * The user's assets, which can be created, edited and archived even without a position; the system's
+ * asset classes, read-only; and the user's own classes, which can be created, renamed and archived.
+ */
 export function AssetClassesPage() {
   const { t } = useTranslation()
   const { message } = App.useApp()
@@ -25,6 +33,11 @@ export function AssetClassesPage() {
   const create = useCreateAssetClass()
   const rename = useRenameAssetClass()
   const archive = useSetAssetClassArchived()
+  const { data: assets, isLoading: assetsLoading } = useAssets()
+  const { data: openPositions } = usePositions()
+  const classMap = useAssetClassMap()
+  const archiveAsset = useSetAssetArchived()
+  const [assetForm, setAssetForm] = useState<AssetDto | 'new' | null>(null)
 
   function openForm(item: AssetClassDto | 'new') {
     setEditing(item)
@@ -51,7 +64,62 @@ export function AssetClassesPage() {
     }
   }
 
+  async function toggleAssetArchived(item: AssetDto) {
+    try {
+      await archiveAsset.mutateAsync({ id: item.id, archived: !item.archivedAt })
+      message.success(t('finances.investments.assetSaved'))
+    } catch (err) {
+      message.error(toErrorMessage(err, t('finances.investments.saveError')))
+    }
+  }
+
   const divider = `1px solid ${token.colorBorderSecondary}`
+  const openCount = new Map<string, number>()
+  for (const p of openPositions ?? []) openCount.set(p.assetId, (openCount.get(p.assetId) ?? 0) + 1)
+  // Archived assets go last; the API already sorts by name.
+  const sortedAssets = [...(assets ?? [])].sort((a, b) => Number(!!a.archivedAt) - Number(!!b.archivedAt))
+
+  const assetRow = (a: AssetDto, index: number) => {
+    const assetClass = classMap.get(a.assetClassId)
+    const count = openCount.get(a.id) ?? 0
+    const details = [
+      assetClass ? assetClassLabel(assetClass, t) : null,
+      a.code,
+      a.currency,
+      count ? t('finances.investments.openPositionsCount', { count }) : t('finances.investments.noOpenPositions'),
+    ].filter(Boolean)
+    return (
+      <div key={a.id} className="flex items-center gap-3 px-4 py-2.5" style={{ borderTop: index === 0 ? undefined : divider }}>
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="flex min-w-0 items-center gap-2">
+            <Typography.Text type={a.archivedAt ? 'secondary' : undefined} className="truncate">
+              {a.name}
+            </Typography.Text>
+            {a.archivedAt && <Tag>{t('finances.investments.archivedStatus')}</Tag>}
+          </span>
+          <Typography.Text type="secondary" className="text-xs">
+            {details.join(' · ')}
+          </Typography.Text>
+        </span>
+        <Dropdown
+          trigger={['click']}
+          placement="bottomRight"
+          menu={{
+            items: [
+              ...(a.archivedAt ? [] : [{ key: 'edit', label: t('common.edit'), onClick: () => setAssetForm(a) }]),
+              {
+                key: 'archive',
+                label: a.archivedAt ? t('finances.investments.unarchive') : t('finances.investments.archive'),
+                onClick: () => void toggleAssetArchived(a),
+              },
+            ],
+          }}
+        >
+          <Button type="text" size="small" icon={<EllipsisOutlined />} aria-label={t('finances.investments.assetActions', { name: a.name })} />
+        </Dropdown>
+      </div>
+    )
+  }
   const own = (classes ?? []).filter((c) => !c.isSystem)
   const system = (classes ?? []).filter((c) => c.isSystem)
 
@@ -102,15 +170,30 @@ export function AssetClassesPage() {
       />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PageHeading title={t('finances.investments.classesTitle')} description={t('finances.investments.classesSubtitle')} />
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => openForm('new')}>
-          {t('finances.investments.newClass')}
-        </Button>
+        <Space wrap>
+          <Button onClick={() => openForm('new')}>{t('finances.investments.newClass')}</Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setAssetForm('new')}>
+            {t('finances.investments.newAsset')}
+          </Button>
+        </Space>
       </div>
 
-      {isLoading ? (
+      {isLoading || assetsLoading ? (
         <Skeleton active />
       ) : (
         <>
+          <div className="flex flex-col gap-2">
+            {sectionTitle(t('finances.investments.assets'))}
+            <div className="overflow-hidden rounded-xl" style={{ border: divider, background: token.colorBgContainer }}>
+              {sortedAssets.length === 0 ? (
+                <Typography.Text type="secondary" className="block px-4 py-2.5">
+                  {t('finances.investments.noAssets')}
+                </Typography.Text>
+              ) : (
+                sortedAssets.map(assetRow)
+              )}
+            </div>
+          </div>
           <div className="flex flex-col gap-2">
             {sectionTitle(t('finances.investments.ownClasses'))}
             <div className="overflow-hidden rounded-xl" style={{ border: divider, background: token.colorBgContainer }}>
@@ -131,6 +214,12 @@ export function AssetClassesPage() {
           </div>
         </>
       )}
+
+      <AssetFormModal
+        open={!!assetForm}
+        asset={assetForm === 'new' ? undefined : (assetForm ?? undefined)}
+        onClose={() => setAssetForm(null)}
+      />
 
       <Modal
         open={!!editing}

@@ -44,6 +44,17 @@ export async function createAsset(body: CreateAssetRequest): Promise<AssetDto> {
   return data
 }
 
+/** Class and currency are fixed at creation; the rest can change. */
+export async function updateAsset(id: string, body: Pick<CreateAssetRequest, 'name' | 'code' | 'isin' | 'issuer'>): Promise<AssetDto> {
+  const { data } = await apiClient.put<AssetDto>(`${BASE}/assets/${id}`, body)
+  return data
+}
+
+export async function setAssetArchived(id: string, archived: boolean): Promise<AssetDto> {
+  const { data } = await apiClient.post<AssetDto>(`${BASE}/assets/${id}/${archived ? 'archive' : 'unarchive'}`)
+  return data
+}
+
 export interface ListPositionsParams {
   accountId?: string
   includeClosed?: boolean

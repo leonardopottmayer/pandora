@@ -102,7 +102,10 @@ Seguindo o `client-web/DESIGN.md`:
 - **Drawer da posição**: dados, movimentos, histórico de valores; ações: novo movimento, informar valor,
   desfazer o último movimento.
 - **Formulários**: nova posição (conta, ativo escolhido ou criado ali, primeiro movimento), novo movimento
-  (campos conforme o tipo), classes de ativo (página pequena, aberta pela página Investimentos).
+  (campos conforme o tipo).
+- **Ativos e classes** (página aberta pela página Investimentos): os ativos, com classe, código, moeda e quantas
+  posições abertas cada um tem, então um ativo cadastrado sem posição também aparece; editar (classe e moeda
+  fixas) e arquivar pelo menu da linha. Depois as classes do usuário e as do sistema, só leitura.
 - **Atualizar valores** (botão principal da página Investimentos): todas as posições abertas numa lista com um campo de valor cada, uma data para todas; só as linhas preenchidas são enviadas (`POST /positions/valuations`). A lista só é montada enquanto aberta, então começa vazia.
 
 ## API (`/api/v{n}/finances`)
@@ -114,6 +117,7 @@ Seguindo o `client-web/DESIGN.md`:
 | POST | `/asset-classes/{id}/archive` · `/unarchive` | Só próprias |
 | GET / POST | `/assets` | Listar (busca, classe) / criar |
 | PUT | `/assets/{id}` | Editar |
+| POST | `/assets/{id}/archive` · `/unarchive` | Ativo arquivado não abre posição nova; as existentes ficam |
 | GET | `/positions` | Listar (conta, status, classe) com valor atual |
 | GET | `/positions/{id}` | Detalhe, movimentos e valores |
 | POST | `/positions` | Criar com o primeiro movimento (`opening` ou `buy`) |
@@ -131,7 +135,7 @@ Permissões: `finances.investments.read`, `.create`, `.update`, `.delete`. O pap
 | Entidade | Eventos |
 |---|---|
 | `asset-class` | `asset-class.created`, `.renamed`, `.archived`, `.unarchived` |
-| `asset` | `asset.created`, `asset.updated` |
+| `asset` | `asset.created`, `asset.updated`, `.archived`, `.unarchived` |
 | `position` | `position.created`, `.movement-added`, `.movement-undone`, `.deleted`, `.valued` |
 | `transaction` | `transaction.created` / `transaction.voided` dos lançamentos que os movimentos criam e desfazem, com `positionMovementId` no payload |
 

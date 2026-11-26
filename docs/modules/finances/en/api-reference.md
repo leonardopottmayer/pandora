@@ -47,6 +47,7 @@ See [Investments](investments.md). Permissions `finances.investments.*`.
 | POST | `/asset-classes/{id}/archive` · `/unarchive` | Own only |
 | GET / POST | `/assets` | List (`search`, `classId`) / create |
 | PUT | `/assets/{id}` | Edit (class and currency fixed) |
+| POST | `/assets/{id}/archive` · `/unarchive` | Archived: no new positions |
 | GET | `/positions` | List (`accountId`, `classId`, `includeClosed`) with current value |
 | GET | `/positions/{id}` | Detail: position, movements, reported values |
 | POST | `/positions` | Create with the first movement (`opening` or `buy`) |

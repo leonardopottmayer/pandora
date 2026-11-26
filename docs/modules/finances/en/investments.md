@@ -102,7 +102,10 @@ Following `client-web/DESIGN.md`:
 - **Position drawer**: data, movements, valuation history; actions: new movement, report value, undo
   latest movement.
 - **Forms**: new position (account, asset picked or created inline, first movement), new movement (fields
-  by kind), asset classes (small page reached from the Investments page).
+  by kind).
+- **Assets and classes** (page reached from the Investments page): the assets, with class, code, currency and
+  how many open positions each has, so one registered without a position still shows; edit (class and currency
+  fixed) and archive from the row menu. Then the user's own classes and the system's, read-only.
 - **Update values** (the Investments page's primary button): every open position in one list with a value field each, one date for all; only the rows given a value are sent (`POST /positions/valuations`). The list is mounted only while open, so it starts empty.
 
 ## API (`/api/v{n}/finances`)
@@ -114,6 +117,7 @@ Following `client-web/DESIGN.md`:
 | POST | `/asset-classes/{id}/archive` · `/unarchive` | Own only |
 | GET / POST | `/assets` | List (search, class) / create |
 | PUT | `/assets/{id}` | Edit |
+| POST | `/assets/{id}/archive` · `/unarchive` | An archived asset opens no new position; existing ones stay |
 | GET | `/positions` | List (account, status, class) with current value |
 | GET | `/positions/{id}` | Detail, movements and valuations |
 | POST | `/positions` | Create with its first movement (`opening` or `buy`) |
@@ -131,7 +135,7 @@ Permissions: `finances.investments.read`, `.create`, `.update`, `.delete`. The d
 | Entity | Events |
 |---|---|
 | `asset-class` | `asset-class.created`, `.renamed`, `.archived`, `.unarchived` |
-| `asset` | `asset.created`, `asset.updated` |
+| `asset` | `asset.created`, `asset.updated`, `.archived`, `.unarchived` |
 | `position` | `position.created`, `.movement-added`, `.movement-undone`, `.deleted`, `.valued` |
 | `transaction` | `transaction.created` / `transaction.voided` for the entries movements create and undo, with `positionMovementId` in the payload |
 

@@ -121,6 +121,8 @@ public static class AssetEvents
     public const string EntityType = "asset";
     public const string Created = "asset.created";
     public const string Updated = "asset.updated";
+    public const string Archived = "asset.archived";
+    public const string Unarchived = "asset.unarchived";
 }
 
 public static class PositionEvents

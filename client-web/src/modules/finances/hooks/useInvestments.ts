@@ -83,6 +83,22 @@ export function useCreateAsset() {
   return useMutation({ mutationFn: (body: CreateAssetRequest) => service.createAsset(body), onSuccess: invalidate })
 }
 
+export function useUpdateAsset() {
+  const invalidate = useInvalidateInvestments()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Parameters<typeof service.updateAsset>[1] }) => service.updateAsset(id, body),
+    onSuccess: invalidate,
+  })
+}
+
+export function useSetAssetArchived() {
+  const invalidate = useInvalidateInvestments()
+  return useMutation({
+    mutationFn: ({ id, archived }: { id: string; archived: boolean }) => service.setAssetArchived(id, archived),
+    onSuccess: invalidate,
+  })
+}
+
 export function useCreatePosition() {
   const invalidate = useInvalidateAfterMovement()
   return useMutation({ mutationFn: (body: CreatePositionRequest) => service.createPosition(body), onSuccess: invalidate })

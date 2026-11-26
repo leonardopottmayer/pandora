@@ -173,6 +173,24 @@ public sealed class InvestmentsTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, renamed.StatusCode);
     }
 
+    [Fact]
+    public async Task An_archived_asset_opens_no_position_until_brought_back()
+    {
+        await AuthAsync("inv5");
+        var account = await PostAsync("/accounts", new { name = "Broker", type = "investment", currency = "BRL", displayOrder = 0 });
+        var asset = await CreateAssetAsync("cdb", "Itaú Hunter CDB 110%", null);
+        var opening = new { accountId = Id(account), assetId = Id(asset), kind = "opening", occurredOn = "2026-11-01", investedAmount = 1000, index = "cdi", indexPercent = 110, maturityOn = "2099-01-02" };
+
+        var archived = await PostAsync($"/assets/{Id(asset)}/archive", new { });
+        Assert.NotNull(archived["archivedAt"]);
+        var refused = await _client.PostAsJsonAsync($"{Base}/positions", opening);
+        Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
+
+        var back = await PostAsync($"/assets/{Id(asset)}/unarchive", new { });
+        Assert.Null(back["archivedAt"]);
+        await PostAsync("/positions", opening);
+    }
+
     private Task AuthAsync(string username) =>
         IdentityHelper.AuthenticateAsync(_client, _factory.ConnectionString, $"{username}@example.com", username);
 

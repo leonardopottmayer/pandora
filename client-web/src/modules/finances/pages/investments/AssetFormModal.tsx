@@ -5,7 +5,7 @@ import { toErrorMessage } from '@/lib/api/envelope'
 import type { AssetDto } from '../../models'
 import { COMMON_CURRENCIES } from '../../lib/enums'
 import { assetClassLabel } from '../../lib/investments'
-import { useAssetClasses, useCreateAsset } from '../../hooks/useInvestments'
+import { useAssetClasses, useCreateAsset, useUpdateAsset } from '../../hooks/useInvestments'
 
 interface AssetFormValues {
   assetClassId: string
@@ -20,36 +20,54 @@ interface AssetFormModalProps {
   open: boolean
   /** The currency of the account the asset is for. */
   defaultCurrency?: string
+  /** The asset to edit; omitted to create one. */
+  asset?: AssetDto
   onClose: () => void
   onCreated?: (asset: AssetDto) => void
 }
 
-/** Registers an asset: a stock, a CDB product, a coin. */
-export function AssetFormModal({ open, defaultCurrency = 'BRL', onClose, onCreated }: AssetFormModalProps) {
+/** Registers or edits an asset: a stock, a CDB product, a coin. Class and currency are fixed once created. */
+export function AssetFormModal({ open, defaultCurrency = 'BRL', asset, onClose, onCreated }: AssetFormModalProps) {
   const { t } = useTranslation()
   const { message } = App.useApp()
   const [form] = Form.useForm<AssetFormValues>()
   const { data: classes } = useAssetClasses()
   const create = useCreateAsset()
+  const update = useUpdateAsset()
 
   useEffect(() => {
     if (!open) return
     form.resetFields()
-    form.setFieldsValue({ currency: defaultCurrency })
-  }, [open, defaultCurrency, form])
+    form.setFieldsValue(
+      asset
+        ? {
+            assetClassId: asset.assetClassId,
+            name: asset.name,
+            code: asset.code ?? undefined,
+            issuer: asset.issuer ?? undefined,
+            isin: asset.isin ?? undefined,
+            currency: asset.currency,
+          }
+        : { currency: defaultCurrency },
+    )
+  }, [open, defaultCurrency, asset, form])
 
   async function handleSubmit(values: AssetFormValues) {
+    const fields = {
+      name: values.name.trim(),
+      code: values.code?.trim() || null,
+      issuer: values.issuer?.trim() || null,
+      isin: values.isin?.trim() || null,
+    }
     try {
-      const asset = await create.mutateAsync({
-        assetClassId: values.assetClassId,
-        name: values.name.trim(),
-        code: values.code?.trim() || null,
-        issuer: values.issuer?.trim() || null,
-        isin: values.isin?.trim() || null,
-        currency: values.currency,
-      })
-      message.success(t('finances.investments.assetCreated'))
-      onCreated?.(asset)
+      if (asset) {
+        await update.mutateAsync({ id: asset.id, body: fields })
+        message.success(t('finances.investments.assetSaved'))
+      } else {
+        const created = await create.mutateAsync({ ...fields, assetClassId: values.assetClassId, currency: values.currency })
+        message.success(t('finances.investments.assetCreated'))
+        onCreated?.(created)
+      }
       onClose()
     } catch (err) {
       message.error(toErrorMessage(err, t('finances.investments.saveError')))
@@ -59,10 +77,10 @@ export function AssetFormModal({ open, defaultCurrency = 'BRL', onClose, onCreat
   return (
     <Modal
       open={open}
-      title={t('finances.investments.newAsset')}
+      title={asset ? t('finances.investments.editAsset') : t('finances.investments.newAsset')}
       onCancel={onClose}
       onOk={() => form.submit()}
-      okButtonProps={{ loading: create.isPending }}
+      okButtonProps={{ loading: create.isPending || update.isPending }}
       okText={t('common.save')}
       cancelText={t('common.cancel')}
       destroyOnHidden
@@ -74,9 +92,10 @@ export function AssetFormModal({ open, defaultCurrency = 'BRL', onClose, onCreat
           rules={[{ required: true, message: t('finances.investments.required.assetClass') }]}
         >
           <Select
+            disabled={!!asset}
             showSearch={{ optionFilterProp: 'label' }}
             options={(classes ?? [])
-              .filter((c) => !c.archivedAt)
+              .filter((c) => !c.archivedAt || c.id === asset?.assetClassId)
               .map((c) => ({ value: c.id, label: assetClassLabel(c, t) }))}
           />
         </Form.Item>
@@ -98,7 +117,7 @@ export function AssetFormModal({ open, defaultCurrency = 'BRL', onClose, onCreat
             normalize={(value: string) => value?.toUpperCase()}
             rules={[{ required: true }]}
           >
-            <AutoComplete options={COMMON_CURRENCIES.map((c) => ({ value: c }))} />
+            <AutoComplete disabled={!!asset} options={COMMON_CURRENCIES.map((c) => ({ value: c }))} />
           </Form.Item>
         </div>
         <details>
