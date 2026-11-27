@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next'
 import { CALLOUT_TYPES } from './callouts'
 import { BLOCK_COLORS, TURN_INTO } from './blockStyle'
 
@@ -99,7 +100,7 @@ export function filterCommands(
 }
 
 /** A command's label, its colour or kind put in ("Red background", "Turn into Heading 1"). */
-export function slashLabel(t: (key: string, values?: Record<string, string>) => string, entry: SlashCommand): string {
+export function slashLabel(t: TFunction, entry: SlashCommand): string {
   const values = entry.labelValues
   if (!values) return t(entry.labelKey)
   return t(entry.labelKey, {
