@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import type { TFunction } from 'i18next'
 import { filterCommands, SLASH_COMMANDS, SLASH_GROUPS, slashLabel } from './slashCommands'
 
 describe('filterCommands', () => {
@@ -45,7 +46,7 @@ describe('filterCommands', () => {
 })
 
 describe('slashLabel', () => {
-  const t = (key: string, values?: Record<string, string>) => (values ? `${key}(${values.color}${values.kind})` : key)
+  const t = ((key: string, values?: Record<string, string>) => (values ? `${key}(${values.color}${values.kind})` : key)) as unknown as TFunction
 
   it('puts the colour or the kind into the label', () => {
     const red = SLASH_COMMANDS.find((c) => c.id === 'background-red')!

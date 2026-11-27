@@ -1,6 +1,7 @@
 import { Alert, App, Button, Empty, Skeleton, Popconfirm, Tag } from 'antd'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { usePreferences } from '../context/preferences-context'
 import { PageHeading } from '@/components/settings/PageHeading'
 import { SettingsSection } from '@/components/settings/SettingsSection'
@@ -152,7 +153,7 @@ function ThisComputer({
   )
 }
 
-function describe(device: Device, t: (key: string, options?: Record<string, unknown>) => string, language: string, timeZone: string): string {
+function describe(device: Device, t: TFunction, language: string, timeZone: string): string {
   const seen = device.lastSeenAt
     ? t('devices.lastSeen', { when: new Intl.DateTimeFormat(language, { dateStyle: 'short', timeStyle: 'short', timeZone }).format(new Date(device.lastSeenAt)) })
     : t('devices.neverSeen')
