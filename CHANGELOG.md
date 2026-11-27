@@ -1,3 +1,14 @@
+## [1.2.0](https://github.com/leonardopottmayer/pandora/compare/v1.1.0...v1.2.0) (2026-11-27)
+
+### Features
+
+* **finances:** add investments (portfolio core) ([#37](https://github.com/leonardopottmayer/pandora/issues/37)) ([53bd8b2](https://github.com/leonardopottmayer/pandora/commit/53bd8b25330c9bcfd692e8e67c80f8849931a80e))
+
+### Bug Fixes
+
+* **deps:** bump i18next to 26.7.2 and vitest to 4.1.12 on dev ([#36](https://github.com/leonardopottmayer/pandora/issues/36)) ([8c0b8c2](https://github.com/leonardopottmayer/pandora/commit/8c0b8c2d8f80709aa9fb77561b1a4dd2dc834e3b)), closes [#29](https://github.com/leonardopottmayer/pandora/issues/29) [#30](https://github.com/leonardopottmayer/pandora/issues/30)
+* **deps:** bump the npm group in /client-web with 13 updates ([#31](https://github.com/leonardopottmayer/pandora/issues/31)) ([315bbb8](https://github.com/leonardopottmayer/pandora/commit/315bbb80510a70b62af3f2ff4cf552987afbfff0))
+
 ## [1.1.0](https://github.com/leonardopottmayer/pandora/compare/v1.0.2...v1.1.0) (2026-11-23)
 
 ### Features
