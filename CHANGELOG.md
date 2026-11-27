@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/leonardopottmayer/pandora/compare/v1.2.0...v1.2.1) (2026-11-27)
+
+### Bug Fixes
+
+* **deps-dev:** bump baseline-browser-mapping in /client-web ([#41](https://github.com/leonardopottmayer/pandora/issues/41)) ([55a9a0a](https://github.com/leonardopottmayer/pandora/commit/55a9a0a4744780e1c8e9e7d6677f460616e158bc))
+* **deps-dev:** bump browserslist from 4.28.2 to 4.29.6 in /client-web ([#40](https://github.com/leonardopottmayer/pandora/issues/40)) ([f6b9068](https://github.com/leonardopottmayer/pandora/commit/f6b906846b69ead0315700ef3d58ef8233c574c8))
+
 ## [1.2.0](https://github.com/leonardopottmayer/pandora/compare/v1.1.0...v1.2.0) (2026-11-27)
 
 ### Features
