@@ -42,6 +42,10 @@ public sealed class ReverseTransactionCommandHandler(
             if (original is null)
                 return Result<Transaction>.Failure([TransactionErrors.NotFound]);
 
+            // An entry created by an investment movement changes only through its position (INV-7).
+            if (await ctx.AcquireRepository<IPositionMovementRepository>().ExistsForTransactionAsync(original.Id, token))
+                return Result<Transaction>.Failure([PositionErrors.LinkedTransaction]);
+
             if (!original.IsPosted)
                 return Result<Transaction>.Failure([TransactionErrors.NotPosted]);
 

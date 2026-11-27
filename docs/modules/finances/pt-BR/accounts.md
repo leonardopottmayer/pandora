@@ -44,6 +44,10 @@ Duas figuras, ambas derivadas (ver [Lançamentos](transactions.md#saldo)):
 - **Saldo postado** = Σ `signed(kind, amount)` sobre os lançamentos `posted` da conta.
 - **Saldo projetado** = postado + lançamentos `pending` (agendados/futuros).
 
+Uma conta também pode ter posições de investimento ([Investimentos](investments.md)). O endpoint de
+saldo então acrescenta **`positionsValue`** (valor atual das posições abertas) e **`total`** (postado +
+posições); a página da conta mostra o total e uma seção Posições.
+
 ## API
 
 | Método | Rota | Propósito |
@@ -52,10 +56,10 @@ Duas figuras, ambas derivadas (ver [Lançamentos](transactions.md#saldo)):
 | GET | `/accounts/{id}` | Detalhe |
 | POST | `/accounts` | Criar (opcionalmente com saldo inicial) |
 | PUT | `/accounts/{id}` | Atualizar config mutável |
-| DELETE | `/accounts/{id}` | Excluir — **só se a conta não tem histórico** (ver [Reversibilidade](reversibility.md#proteções-de-exclusão)) |
+| DELETE | `/accounts/{id}` | Excluir — **só se a conta não tem histórico**, posições inclusive (ver [Reversibilidade](reversibility.md#proteções-de-exclusão)) |
 | POST | `/accounts/{id}/archive` | Arquivar |
 | POST | `/accounts/{id}/unarchive` | Desarquivar |
-| GET | `/accounts/{id}/balance` | Saldo postado + projetado |
+| GET | `/accounts/{id}/balance` | Saldo postado + projetado, valor das posições e total |
 | GET | `/accounts/{id}/transactions` | Extrato da conta (filtros) |
 | PUT | `/accounts/{id}/tags` | Substituir o conjunto de tags |
 

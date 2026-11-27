@@ -45,6 +45,10 @@ Two figures, both derived (see [Transactions](transactions.md#balance)):
 - **Posted balance** = Σ `signed(kind, amount)` over the account's `posted` transactions.
 - **Projected balance** = posted + `pending` (scheduled/future) transactions.
 
+An account can also hold investment positions ([Investments](investments.md)). The balance endpoint
+then adds **`positionsValue`** (current value of its open positions) and **`total`** (posted +
+positions); the account page shows the total and a Positions section.
+
 ## API
 
 | Method | Route | Purpose |
@@ -53,10 +57,10 @@ Two figures, both derived (see [Transactions](transactions.md#balance)):
 | GET | `/accounts/{id}` | Detail |
 | POST | `/accounts` | Create (optionally with opening balance) |
 | PUT | `/accounts/{id}` | Update mutable config |
-| DELETE | `/accounts/{id}` | Delete — **only if the account has no history** (see [Reversibility](reversibility.md#delete-guards)) |
+| DELETE | `/accounts/{id}` | Delete — **only if the account has no history**, positions included (see [Reversibility](reversibility.md#delete-guards)) |
 | POST | `/accounts/{id}/archive` | Archive |
 | POST | `/accounts/{id}/unarchive` | Unarchive |
-| GET | `/accounts/{id}/balance` | Posted + projected balance |
+| GET | `/accounts/{id}/balance` | Posted + projected balance, positions value and total |
 | GET | `/accounts/{id}/transactions` | Account statement (filters) |
 | PUT | `/accounts/{id}/tags` | Replace the account's tag set |
 

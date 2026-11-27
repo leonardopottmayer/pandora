@@ -32,6 +32,12 @@ Migrations live in `migrations/migrations/finances/`.
 | fin017 | `attachment` | Files on a transaction, a suggestion or a statement (boleto, receipt, invoice), or queued |
 | fin018 | `file_blob` | The bytes behind fin017 |
 | fin019 | `card_number` | A card's physical and virtual numbers |
+| fin020 | `system_asset_class` | Kinds of investment the system ships (seeded) |
+| fin021 | `asset` | What the user owns: a stock, a CDB product, a coin |
+| fin022 | `position` | An asset inside an account ([Investments](investments.md)) |
+| fin023 | `position_movement` | What happened to a position; owns its ledger entry |
+| fin024 | `position_valuation` | A position's reported value at a date |
+| fin025 | `user_asset_class` | The user's own asset classes |
 
 ---
 
@@ -327,6 +333,112 @@ files). Adding/removing (and filing a queued file) records `transaction.attachme
 
 Indexes `(entity_type, entity_id, occurred_at)`, `(user_id, occurred_at)`. No `UPDATE`/`DELETE`
 by application policy. See [Audit & Provenance](audit-and-provenance.md).
+
+---
+
+The investment tables below ([Investments](investments.md), part 1) came after 1.0 as new migrations only,
+so existing data was untouched. Enum values use hyphens.
+
+## fin020_system_asset_class
+
+The asset classes the system ships: global, seeded, read-only, like `fin002_system_category`. The
+user's own classes are `fin025`, as user categories are `fin003`.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `code` | varchar(40) NOT NULL | unique (`cdb`, `stock`…); the UI translates by it |
+| `name` | varchar(60) NOT NULL | |
+| `behavior` | varchar(20) NOT NULL | `unit\|application` |
+| `display_order` | int NOT NULL | |
+
+Seeded: `stock`, `fii`, `etf`, `bdr`, `fund`, `pension`, `crypto`, `currency` (`unit`); `cdb`, `lci`, `lca`,
+`treasury`, `debenture`, `coe` (`application`); `other` (`unit`).
+
+## fin025_user_asset_class
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` / `user_id` | uuid | |
+| `name` | varchar(60) NOT NULL | unique per user (`uq_fin025_user_name`) |
+| `behavior` | varchar(20) NOT NULL | `unit\|application`; fixed at creation |
+| `archived_at` | timestamptz NULL | |
+
+## fin021_asset
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` / `user_id` | uuid | |
+| `system_asset_class_id` | uuid NULL → fin020 | the class, when it is a system one |
+| `user_asset_class_id` | uuid NULL → fin025 | the class, when it is one of the user's own |
+| `name` | varchar(100) NOT NULL | unique per user |
+| `code` | varchar(20) NULL | ticker or product code; unique per user and class when set |
+| `isin` | varchar(12) NULL | |
+| `issuer` | varchar(100) NULL | e.g. Banco Inter |
+| `currency` | varchar(10) NOT NULL | same `CurrencyCode` as accounts |
+| `archived_at` | timestamptz NULL | |
+
+Constraints: `ck_fin021_one_class` (exactly one of the two class columns: unlike a transaction's two
+categories, never both), `uq_fin021_user_name`, `uq_fin021_user_class_code` (code unique per user and class).
+
+## fin022_position
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` / `user_id` | uuid | |
+| `account_id` | uuid NOT NULL → fin001 | |
+| `asset_id` | uuid NOT NULL → fin021 | |
+| `behavior` | varchar(20) NOT NULL | copied from the class at creation: `unit\|application` |
+| `status` | varchar(20) NOT NULL | `open\|closed` |
+| `quantity` | numeric(28,10) NULL | `unit` only; fractions allowed (crypto, fund quotas) |
+| `average_cost` | numeric(28,10) NULL | `unit` only; per unit, costs included |
+| `invested_amount` | numeric(18,2) NULL | `application` only; what is still invested |
+| `applied_on` | date NULL | `application` only |
+| `index` | varchar(20) NULL | `application`: `cdi\|selic\|ipca\|pre\|other` |
+| `index_percent` | numeric(9,4) NULL | e.g. 110 for 110% of CDI |
+| `spread_rate` | numeric(9,4) NULL | % a year: IPCA + 6.5, or the pre-fixed rate |
+| `maturity_on` | date NULL | `application` |
+| `closed_at` | timestamptz NULL | |
+
+Constraints: `unit` rows have quantity and average cost and no application fields; `application` rows the
+reverse. One **open** `unit` position per (account, asset): partial unique index. In part 1 the rate fields
+are informational; part 2 uses them for the curve.
+
+## fin023_position_movement
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` / `user_id` / `position_id → fin022` | uuid | |
+| `kind` | varchar(20) NOT NULL | `opening\|buy\|sell\|redemption\|maturity\|income\|split\|come-cotas` |
+| `occurred_on` | date NOT NULL | |
+| `quantity` | numeric(28,10) NULL | units bought, sold or taken by come-cotas |
+| `unit_price` | numeric(28,10) NULL | |
+| `gross_amount` | numeric(18,2) NULL | |
+| `costs` | numeric(18,2) NOT NULL DEFAULT 0 | brokerage, fees |
+| `tax_withheld` | numeric(18,2) NOT NULL DEFAULT 0 | IR/IOF withheld at source |
+| `net_amount` | numeric(18,2) NULL | what reached or left the cash |
+| `income_kind` | varchar(30) NULL | `income`: `dividend\|interest-on-equity\|rent\|coupon\|other` |
+| `split_factor` | numeric(18,8) NULL | `split`: 2 = 1→2 split, 0.1 = 10→1 reverse split |
+| `realized_result` | numeric(18,2) NULL | `sell`/`redemption`/`maturity`: gain or loss against cost |
+| `quantity_before` / `average_cost_before` / `invested_amount_before` | numeric NULL | the position before this movement, for undo |
+| `transaction_id` | uuid NULL → fin008, unique | the linked ledger entry (INV-7) |
+| `notes` | varchar(255) NULL | |
+
+## fin024_position_valuation
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` / `user_id` / `position_id → fin022` | uuid | |
+| `valued_on` | date NOT NULL | unique per position |
+| `value` | numeric(18,2) NOT NULL | total value of the position on that date |
+| `source` | varchar(20) NOT NULL | `manual\|import\|quote` |
+
+Migrations: `create-table-fin020-system-asset-class`, `insert-fin020-system-asset-classes`,
+`create-table-fin025-user-asset-class`, `create-table-fin021-asset`,
+`create-table-fin022-position`, `create-table-fin023-position-movement`, `create-table-fin024-position-valuation`.
+No existing table changes.
+
+---
 
 ## Entity relationships (simplified)
 

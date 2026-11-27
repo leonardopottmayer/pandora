@@ -38,6 +38,8 @@ the *technical rules* (aggregates, invariants, schema, endpoints).
 | 13 | [Jobs & Integration](en/jobs-and-integration.md) | Background jobs, idempotency, integration events (status) |
 | 14 | [API Reference](en/api-reference.md) | Every endpoint under `/api/v{n}/finances` |
 | 15 | [Implementation Status](en/implementation-status.md) | What is built vs. planned |
+| 16 | [Investments](en/investments.md) | Positions, movements, reported values and the cash they move (part 1) |
+| 17 | [Product Plan](en/product-plan.md) | Remaining work: investments parts 2–6 |
 
 ---
 

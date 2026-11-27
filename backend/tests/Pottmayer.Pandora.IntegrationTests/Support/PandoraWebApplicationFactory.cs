@@ -61,6 +61,8 @@ public sealed class PandoraWebApplicationFactory : WebApplicationFactory<Program
             [
                 new Respawn.Graph.Table("finances", "fin002_system_category"),
                 new Respawn.Graph.Table("finances", "fin012_import_layout"),
+                // fin020 holds the seeded system asset classes, like fin002.
+                new Respawn.Graph.Table("finances", "fin020_system_asset_class"),
                 new Respawn.Graph.Table("admin", "adm002_role"),
                 new Respawn.Graph.Table("admin", "adm003_role_permission")
             ]

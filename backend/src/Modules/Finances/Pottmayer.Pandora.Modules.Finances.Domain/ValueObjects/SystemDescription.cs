@@ -28,6 +28,19 @@ public sealed class SystemDescription : IEquatable<SystemDescription>
     public static SystemDescription StatementWriteoff(string referenceMonth) =>
         new("transaction.statement-writeoff", [referenceMonth]);
 
+    /// <summary>Key prefix of the entries created by investment movements.</summary>
+    public const string InvestmentPrefix = "transaction.investment-";
+
+    /// <summary>
+    /// Entry created by an investment movement; <paramref name="movementKind"/> is the movement's kind
+    /// (buy, sell, redemption, maturity, income) and <paramref name="asset"/> the asset's code or name.
+    /// </summary>
+    public static SystemDescription Investment(string movementKind, string asset) =>
+        new(InvestmentPrefix + movementKind, [asset]);
+
+    /// <summary>True when the entry belongs to an investment movement.</summary>
+    public bool IsInvestment => Key.StartsWith(InvestmentPrefix, StringComparison.Ordinal);
+
     /// <summary>Rehydration from persistence.</summary>
     public static SystemDescription Create(string key, IReadOnlyList<string>? args) =>
         new(key, args ?? []);

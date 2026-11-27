@@ -32,6 +32,10 @@ public sealed class DeleteAccountCommandHandler(IUnitOfWorkFactory factory, Time
             if (existingTransactions.Count > 0)
                 return Result<bool>.Failure([AccountErrors.HasHistory]);
 
+            // Investment positions are history too, even an opening that moved no money.
+            if (await ctx.AcquireRepository<IPositionRepository>().AnyForAccountAsync(account.Id, token))
+                return Result<bool>.Failure([AccountErrors.HasHistory]);
+
             await repo.RemoveAsync(account, token);
 
             await ctx.RecordAsync(

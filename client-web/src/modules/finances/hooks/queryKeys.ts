@@ -57,6 +57,14 @@ export const financeKeys = {
   recurringList: () => [...financeKeys.recurring(), 'list'] as const,
   recurringItem: (id: string) => [...financeKeys.recurring(), 'detail', id] as const,
 
+  investments: () => [...financeKeys.all, 'investments'] as const,
+  assetClasses: () => [...financeKeys.investments(), 'asset-classes'] as const,
+  assets: () => [...financeKeys.investments(), 'assets'] as const,
+  positionList: (params: { accountId?: string; includeClosed?: boolean } = {}) =>
+    [...financeKeys.investments(), 'positions', params] as const,
+  position: (id: string) => [...financeKeys.investments(), 'position', id] as const,
+  investmentsSummary: () => [...financeKeys.investments(), 'summary'] as const,
+
   pending: () => [...financeKeys.all, 'pending'] as const,
   pendingList: (filters: PendingTransactionFilters = {}) =>
     [...financeKeys.pending(), 'list', filters] as const,

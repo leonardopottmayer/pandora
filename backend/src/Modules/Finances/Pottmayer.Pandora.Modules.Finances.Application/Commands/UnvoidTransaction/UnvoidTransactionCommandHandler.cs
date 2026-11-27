@@ -32,6 +32,10 @@ public sealed class UnvoidTransactionCommandHandler(
             if (transaction is null)
                 return Result<Transaction>.Failure([TransactionErrors.NotFound]);
 
+            // An investment entry voided by undoing its movement has no movement left to come back to.
+            if (transaction.SystemDescription?.IsInvestment == true)
+                return Result<Transaction>.Failure([PositionErrors.LinkedTransaction]);
+
             if (!transaction.IsVoid)
                 return Result<Transaction>.Failure([TransactionErrors.NotVoid]);
 
