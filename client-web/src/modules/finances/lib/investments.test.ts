@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { TFunction } from 'i18next'
 import dayjs from 'dayjs'
 import type { AssetClassDto, PositionDto, PositionMovementDto, PositionValuationDto } from '../models'
-import { assetClassLabel, isValueStale, movementKindsFor, positionGain, rateLabel, valuationChanges } from './investments'
+import { assetClassLabel, isValueStale, movementKindLabel, movementKindsFor, positionGain, rateLabel, valuationChanges } from './investments'
 
 const t = ((key: string, fallback?: string) => (key.startsWith('finances.investments.indexes.') ? key.split('.').pop()!.toUpperCase() : fallback ?? key)) as unknown as TFunction
 
@@ -31,7 +31,12 @@ describe('investments', () => {
 
   it('offers the movements of each behavior', () => {
     expect(movementKindsFor('unit')).toContain('sell')
-    expect(movementKindsFor('application')).toEqual(['redemption', 'maturity', 'income'])
+    expect(movementKindsFor('application')).toEqual(['buy', 'redemption', 'maturity', 'income'])
+  })
+
+  it('names a buy on an application a contribution', () => {
+    expect(movementKindLabel('buy', 'application', t)).toBe('finances.investments.movementKinds.contribution')
+    expect(movementKindLabel('buy', 'unit', t)).toBe('finances.investments.movementKinds.buy')
   })
 
   it('writes the rate of an application', () => {

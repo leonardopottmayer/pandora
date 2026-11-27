@@ -1202,6 +1202,7 @@
       "movementKinds": {
         "opening": "Abertura",
         "buy": "Compra",
+        "contribution": "Aporte",
         "sell": "Venda",
         "redemption": "Resgate",
         "maturity": "Vencimento",

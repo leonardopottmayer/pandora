@@ -27,7 +27,12 @@ export function isValueStale(position: PositionDto, today: Dayjs): boolean {
 export function movementKindsFor(behavior: AssetBehavior): PositionMovementKind[] {
   return behavior === 'unit'
     ? ['buy', 'sell', 'income', 'split', 'come-cotas']
-    : ['redemption', 'maturity', 'income']
+    : ['buy', 'redemption', 'maturity', 'income']
+}
+
+/** A movement kind's name; a buy on an application after it opened is a contribution ("Aporte"). */
+export function movementKindLabel(kind: PositionMovementKind, behavior: AssetBehavior, t: TFunction): string {
+  return t(`finances.investments.movementKinds.${kind === 'buy' && behavior === 'application' ? 'contribution' : kind}`)
 }
 
 /** "110% CDI", "IPCA + 6.5%", "12.5% pre": the rate of a fixed-income application. */

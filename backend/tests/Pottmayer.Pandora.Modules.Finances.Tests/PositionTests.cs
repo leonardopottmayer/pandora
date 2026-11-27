@@ -183,7 +183,7 @@ public sealed class PositionTests
     }
 
     [Fact]
-    public void Application_buy_moves_cash_and_only_starts_a_position()
+    public void Application_buy_moves_cash_and_an_opening_only_comes_first()
     {
         var position = Application();
 
@@ -192,8 +192,30 @@ public sealed class PositionTests
         Assert.Equal(5000m, position.InvestedAmount);
         Assert.Equal(5000m, movement.NetAmount);
         Assert.Equal(TransactionKind.InvestmentContribution, movement.LedgerKind);
-        Assert.Equal("Positions.KindNotAllowed",
-            Fails(position, new MovementInput(PositionMovementKind.Buy, Day, InvestedAmount: 100m)));
+        Assert.Equal("Positions.OpeningNotFirst",
+            Fails(position, new MovementInput(PositionMovementKind.Opening, Day, InvestedAmount: 100m)));
+    }
+
+    [Fact]
+    public void Later_buy_on_an_application_is_a_contribution_and_undoes_cleanly()
+    {
+        var clock = new FixedTimeProvider(new DateTimeOffset(2026, 11, 1, 12, 0, 0, TimeSpan.Zero));
+        var position = Application();
+        position.Apply(new MovementInput(PositionMovementKind.Opening, Day, InvestedAmount: 1000m), true, clock);
+        var anchor = PositionValuation.Create(position.UserId, position.Id, Day, 1050m, ValuationSource.Manual, clock);
+
+        clock.Advance(TimeSpan.FromMinutes(1));
+        var contribution = position.Apply(new MovementInput(PositionMovementKind.Buy, Day, GrossAmount: 20.005m), false, clock).Value!;
+
+        Assert.Equal(1020.01m, position.InvestedAmount);
+        Assert.Equal(20.01m, contribution.NetAmount);
+        Assert.Equal(TransactionKind.InvestmentContribution, contribution.LedgerKind);
+        Assert.Equal(1070.01m, position.CurrentValue(anchor, [contribution]));
+        Assert.Equal("Positions.InvalidAmount",
+            Fails(position, new MovementInput(PositionMovementKind.Buy, Day, GrossAmount: 0m)));
+
+        position.Undo(contribution);
+        Assert.Equal(1000m, position.InvestedAmount);
     }
 
     [Fact]

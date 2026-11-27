@@ -62,12 +62,13 @@ Posições `application` (valor aplicado v):
 |---|---|---|---|
 | `opening` | valor aplicado, data, indexador, taxas, vencimento, valor atual | define v; grava um valor informado com o valor atual | nenhum |
 | `buy` | igual à abertura, sem valor atual | define v; primeiro valor informado = v | `investment-contribution`: v + custos |
+| `buy` (aporte, depois do primeiro movimento) | bruto, custos | v += bruto | `investment-contribution`: bruto + custos |
 | `redemption` | bruto, imposto, custos | fração = bruto ÷ valor atual; v −= v·fração; resultado = bruto − v·fração; o valor todo encerra | `investment-redemption`: bruto − imposto − custos |
 | `maturity` | bruto, imposto, custos | resgate total; encerra | `investment-redemption` |
 | `income` | bruto, imposto, tipo (`coupon`) | nenhum | `yield` |
 
 - Uma posição começa com `opening` (sem dinheiro: ele saiu no passado, INV-6) ou `buy` (o dinheiro sai
-  agora). Uma aplicação nova de renda fixa é sempre uma posição nova.
+  agora). Um CDB novo é uma posição nova; aportes na mesma aplicação (plano programado, cotas de capital, caixinha) são `buy` nela, mostrados como "Aporte".
 - **Desfazer** remove só o **último** movimento de uma posição: restaura os valores `*_before` e estorna o
   lançamento ligado com o void que já existe. Desfazer o único movimento exclui a posição.
 - O lançamento ligado não pode ser editado, estornado nem revertido pelo ledger: a API responde com um
