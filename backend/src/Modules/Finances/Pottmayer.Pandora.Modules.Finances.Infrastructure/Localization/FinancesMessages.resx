@@ -67,4 +67,19 @@
   <data name="transaction.statement-writeoff" xml:space="preserve">
     <value>Statement write-off {0}</value>
   </data>
+  <data name="transaction.investment-buy" xml:space="preserve">
+    <value>Buy {0}</value>
+  </data>
+  <data name="transaction.investment-sell" xml:space="preserve">
+    <value>Sale {0}</value>
+  </data>
+  <data name="transaction.investment-redemption" xml:space="preserve">
+    <value>Redemption {0}</value>
+  </data>
+  <data name="transaction.investment-maturity" xml:space="preserve">
+    <value>Maturity {0}</value>
+  </data>
+  <data name="transaction.investment-income" xml:space="preserve">
+    <value>Income {0}</value>
+  </data>
 </root>

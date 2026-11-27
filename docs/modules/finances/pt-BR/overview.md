@@ -44,6 +44,7 @@ Pandora. Ele permite a um único usuário:
 | Termo | Significado |
 |---|---|
 | **Conta** (Account) | Repositório de saldo do usuário: dinheiro/carteira, corrente, poupança, internacional, crypto, investimento, outra. Tem moeda fixa. |
+| **Posição** (Position) | Um investimento dentro de uma conta: uma por ativo (ações, fundos, cripto…) ou uma por aplicação de renda fixa. Seus movimentos geram os lançamentos da conta. Ver [Investimentos](investments.md). |
 | **Cartão** (Card) | Cartão de crédito. **Não é conta**: gastos vão para a fatura; só o pagamento da fatura movimenta uma conta. Cartão de débito não é modelado — débito é lançamento direto na conta. |
 | **Fatura** (Statement) | Ciclo mensal de um cartão: agrupa transações entre fechamentos; tem data de fechamento, vencimento e status (aberta → fechada → paga/parcialmente-paga/vencida). |
 | **Lançamento** (Transaction) | Movimento atômico no ledger. Afeta exatamente **um** destino: uma conta **ou** uma fatura. Transferência = dois lançamentos ligados. |
@@ -67,7 +68,8 @@ Contas, cartões e faturas (com quitação/write-off de onboarding e reabertura)
 transferências, planos de parcelamento manuais, recorrências + inbox, importação OFX e CSV com
 auto-detecção de layout e dedup/conciliação (incluindo extração do marcador de parcela nas linhas
 importadas), tags, categorias de sistema e do usuário, reversibilidade (cancelar/desfazer/estornar +
-proteções de exclusão) e a trilha de auditoria.
+proteções de exclusão), a trilha de auditoria e o núcleo da carteira de investimentos: posições,
+movimentos e valores informados ([Investimentos](investments.md)).
 
 ### Fora de escopo / futuro
 

@@ -1,5 +1,6 @@
 using Pottmayer.Pandora.Modules.Finances.Abstractions;
 using Pottmayer.Pandora.Modules.Finances.Application.Dtos;
+using Pottmayer.Pandora.Modules.Finances.Application.Services;
 using Pottmayer.Pandora.Modules.Finances.Domain.Errors;
 using Pottmayer.Pandora.Modules.Finances.Domain.Ports.Repositories;
 using Pottmayer.Tars.Core.Cqrs.Queries;
@@ -27,7 +28,10 @@ public sealed class GetAccountBalanceQueryHandler(IUnitOfWorkFactory factory)
             var posted = await transactions.GetPostedBalanceAsync(account.Id, input.UserId, token);
             var projected = await transactions.GetProjectedBalanceAsync(account.Id, input.UserId, token);
 
-            return new AccountBalanceDto(account.Id, account.Currency.Value, posted, projected);
+            var positions = await ctx.AcquireRepository<IPositionRepository>().ListAsync(input.UserId, account.Id, openOnly: true, token);
+            var positionsValue = (await PositionReader.ReadAsync(ctx, input.UserId, positions, token)).Sum(p => p.CurrentValue);
+
+            return new AccountBalanceDto(account.Id, account.Currency.Value, posted, projected, positionsValue, posted + positionsValue);
         }, cancellationToken: ct);
 
         return dto is null ? Fail(AccountErrors.NotFound) : Ok(dto);

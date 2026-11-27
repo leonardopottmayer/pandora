@@ -125,6 +125,10 @@ export interface AccountBalanceDto {
   currency: string
   posted: number
   projected: number
+  /** Current value of the account's open investment positions. */
+  positionsValue: number
+  /** posted + positionsValue. */
+  total: number
 }
 
 export interface TransactionDto {
@@ -696,3 +700,155 @@ export interface TransactionFilters {
   skip?: number
   take?: number
 }
+
+// ---------------------------------------------------------------------------
+// Investments (part 1: the portfolio core)
+// ---------------------------------------------------------------------------
+
+/** `unit`: quantity and average cost. `application`: fixed income, one position per application. */
+export const ASSET_BEHAVIORS = ['unit', 'application'] as const
+export type AssetBehavior = (typeof ASSET_BEHAVIORS)[number]
+
+export const POSITION_MOVEMENT_KINDS = [
+  'opening', 'buy', 'sell', 'redemption', 'maturity', 'income', 'split', 'come-cotas',
+] as const
+export type PositionMovementKind = (typeof POSITION_MOVEMENT_KINDS)[number]
+
+export const FIXED_INCOME_INDEXES = ['cdi', 'selic', 'ipca', 'pre', 'other'] as const
+export type FixedIncomeIndex = (typeof FIXED_INCOME_INDEXES)[number]
+
+export const INCOME_KINDS = ['dividend', 'interest-on-equity', 'rent', 'coupon', 'other'] as const
+export type IncomeKind = (typeof INCOME_KINDS)[number]
+
+export interface AssetClassDto {
+  id: string
+  /** Set on system classes; the UI translates them by code. */
+  code: string | null
+  name: string
+  behavior: AssetBehavior
+  isSystem: boolean
+  archivedAt: string | null
+}
+
+export interface AssetDto {
+  id: string
+  assetClassId: string
+  name: string
+  code: string | null
+  isin: string | null
+  issuer: string | null
+  currency: string
+  archivedAt: string | null
+}
+
+export interface PositionDto {
+  id: string
+  accountId: string
+  assetId: string
+  assetName: string
+  assetCode: string | null
+  assetClassId: string
+  behavior: AssetBehavior
+  status: 'open' | 'closed'
+  currency: string
+  quantity: number | null
+  averageCost: number | null
+  investedAmount: number | null
+  appliedOn: string | null
+  index: FixedIncomeIndex | null
+  indexPercent: number | null
+  spreadRate: number | null
+  maturityOn: string | null
+  costBasis: number
+  /** Latest reported value, or the cost when none was reported (valuedOn null). */
+  currentValue: number
+  valuedOn: string | null
+  closedAt: string | null
+}
+
+export interface PositionMovementDto {
+  id: string
+  kind: PositionMovementKind
+  occurredOn: string
+  quantity: number | null
+  unitPrice: number | null
+  grossAmount: number | null
+  costs: number
+  taxWithheld: number
+  netAmount: number | null
+  incomeKind: IncomeKind | null
+  splitFactor: number | null
+  realizedResult: number | null
+  transactionId: string | null
+  notes: string | null
+  createdAt: string
+}
+
+export interface PositionValuationDto {
+  id: string
+  positionId: string
+  valuedOn: string
+  value: number
+  source: 'manual' | 'import' | 'quote'
+}
+
+export interface PositionDetailDto {
+  position: PositionDto
+  movements: PositionMovementDto[]
+  valuations: PositionValuationDto[]
+}
+
+export interface InvestmentGroupDto {
+  /** The asset class or the account. */
+  id: string
+  currency: string
+  value: number
+}
+
+export interface InvestmentsSummaryDto {
+  totals: { currency: string; value: number; cost: number }[]
+  byClass: InvestmentGroupDto[]
+  byAccount: InvestmentGroupDto[]
+  upcomingMaturities: PositionDto[]
+}
+
+export interface CreateAssetRequest {
+  assetClassId: string
+  name: string
+  code?: string | null
+  isin?: string | null
+  issuer?: string | null
+  currency: string
+}
+
+export interface CreatePositionRequest {
+  accountId: string
+  assetId: string
+  kind: 'opening' | 'buy'
+  occurredOn: string
+  quantity?: number | null
+  unitPrice?: number | null
+  averageCost?: number | null
+  investedAmount?: number | null
+  currentValue?: number | null
+  costs?: number
+  index?: FixedIncomeIndex | null
+  indexPercent?: number | null
+  spreadRate?: number | null
+  maturityOn?: string | null
+  notes?: string | null
+}
+
+export interface AddPositionMovementRequest {
+  kind: PositionMovementKind
+  occurredOn: string
+  quantity?: number | null
+  unitPrice?: number | null
+  grossAmount?: number | null
+  costs?: number
+  taxWithheld?: number
+  incomeKind?: IncomeKind | null
+  splitFactor?: number | null
+  notes?: string | null
+}
+

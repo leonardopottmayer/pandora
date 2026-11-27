@@ -42,6 +42,7 @@ monolith. It lets a single user:
 | Term | Meaning |
 |---|---|
 | **Account** (Conta) | A balance repository owned by the user: cash/wallet, checking, savings, international, crypto, investment, other. Has a fixed currency. |
+| **Position** (Posição) | An investment held inside an account: one per asset (stocks, funds, crypto…) or one per fixed-income application. Its movements create the account's ledger entries. See [Investments](investments.md). |
 | **Card** (Cartão) | A credit card. **Not an account**: purchases go to the statement; only paying the statement moves an account. Debit cards are not modeled — a debit is a direct account entry. |
 | **Statement** (Fatura) | A card's monthly cycle: groups transactions between closings; has a closing date, due date, and status (open → closed → paid/partially-paid/overdue). |
 | **Transaction** (Lançamento) | An atomic ledger movement. Targets exactly **one** destination: an account **or** a card statement. A transfer is two linked transactions. |
@@ -64,8 +65,9 @@ monolith. It lets a single user:
 Accounts, cards & statements (with onboarding write-off/settle and reopen), the full transaction
 ledger, transfers, manual installment plans, recurrences + inbox, OFX & CSV imports with layout
 auto-detection and dedup/reconciliation (including installment-marker extraction on import rows),
-tags, system + user categories, reversibility (void/unvoid/reverse + delete guards), and the audit
-trail.
+tags, system + user categories, reversibility (void/unvoid/reverse + delete guards), the audit
+trail, and the investments' portfolio core: positions, movements and reported values
+([Investments](investments.md)).
 
 ### Out of scope / future
 

@@ -58,3 +58,8 @@ export function formatReferenceMonth(reference: string | null | undefined): stri
     new Date(year, month - 1, 1),
   )
 }
+
+/** Formats a ratio as a signed percentage ("+1,25%", "−0,4%"), for gains. */
+export function formatSignedPercent(ratio: number): string {
+  return new Intl.NumberFormat(currentLocale(), { style: 'percent', maximumFractionDigits: 2, signDisplay: 'exceptZero' }).format(ratio)
+}

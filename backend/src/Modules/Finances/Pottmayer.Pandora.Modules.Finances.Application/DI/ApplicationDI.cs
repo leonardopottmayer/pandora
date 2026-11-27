@@ -37,6 +37,7 @@ public static class ApplicationDI
             .Module(FinancesPermissions.Module, feature: FinancesFeatures.Finances)
                 .Resource(FinancesPermissions.Accounts.Resource).Crud()
                 .Resource(FinancesPermissions.Cards.Resource).Crud()
+                .Resource(FinancesPermissions.Investments.Resource).Crud()
                 .Resource(FinancesPermissions.Statements.Resource).Read().Actions(FinancesPermissions.Actions.Close, FinancesPermissions.Actions.Pay)
                 .Resource(FinancesPermissions.Transactions.Resource).Read().Create().Update().Actions(FinancesPermissions.Actions.Post, FinancesPermissions.Actions.Reverse, FinancesPermissions.Actions.Void)
                 .Resource(FinancesPermissions.Pending.Resource).Read().Create().Update().Actions(FinancesPermissions.Actions.Approve, FinancesPermissions.Actions.Reject)
