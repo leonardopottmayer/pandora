@@ -1,3 +1,9 @@
+## [1.4.1](https://github.com/leonardopottmayer/pandora/compare/v1.4.0...v1.4.1) (2026-11-28)
+
+### Bug Fixes
+
+* **finances:** label ledger entries of application contributions "Contribution" ([#53](https://github.com/leonardopottmayer/pandora/issues/53)) ([48a4d06](https://github.com/leonardopottmayer/pandora/commit/48a4d06f8f0d80f94081c8b4996403f995890afe))
+
 ## [1.4.0](https://github.com/leonardopottmayer/pandora/compare/v1.3.0...v1.4.0) (2026-11-28)
 
 ### Features
