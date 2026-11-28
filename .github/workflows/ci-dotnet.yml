@@ -15,10 +15,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    # This name is the required check in the main and dev rulesets. Rename both together.
-    name: Build & Test (.NET)
+  # The tests run in parallel slices, each on its own runner with its own Postgres container: the unit
+  # tests, and the integration tests split by module. A test outside the named modules falls into "other",
+  # so nothing is left out. Each slice builds the whole solution (about a minute) before its tests.
+  test:
+    name: Test (.NET, ${{ matrix.slice }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - slice: unit
+            target: Pottmayer.Pandora.slnx
+            filter: FullyQualifiedName!~Pottmayer.Pandora.IntegrationTests
+          - slice: notes
+            target: tests/Pottmayer.Pandora.IntegrationTests
+            filter: FullyQualifiedName~Pottmayer.Pandora.IntegrationTests.Modules.Notes.
+          - slice: finances
+            target: tests/Pottmayer.Pandora.IntegrationTests
+            filter: FullyQualifiedName~Pottmayer.Pandora.IntegrationTests.Modules.Finances.
+          - slice: communications
+            target: tests/Pottmayer.Pandora.IntegrationTests
+            filter: FullyQualifiedName~Pottmayer.Pandora.IntegrationTests.Modules.Communications.
+          - slice: other
+            target: tests/Pottmayer.Pandora.IntegrationTests
+            filter: >-
+              FullyQualifiedName!~Pottmayer.Pandora.IntegrationTests.Modules.Notes.&FullyQualifiedName!~Pottmayer.Pandora.IntegrationTests.Modules.Finances.&FullyQualifiedName!~Pottmayer.Pandora.IntegrationTests.Modules.Communications.
     defaults:
       run:
         working-directory: backend
@@ -56,4 +78,17 @@ jobs:
       - name: Test
         env:
           DOTNET_USE_POLLING_FILE_WATCHER: "true"
-        run: dotnet test Pottmayer.Pandora.slnx --no-build --configuration Release
+          FILTER: ${{ matrix.filter }}
+        run: dotnet test ${{ matrix.target }} --no-build --configuration Release --filter "$FILTER"
+
+  # The required check in the main and dev rulesets: green only when every slice passed. Rename both together.
+  result:
+    name: Build & Test (.NET)
+    needs: test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every slice passed
+        env:
+          RESULT: ${{ needs.test.result }}
+        run: test "$RESULT" = success
