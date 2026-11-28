@@ -1191,6 +1191,8 @@
       "systemClasses": "Classes do sistema",
       "classSaved": "Classe salva.",
       "classDeleted": "Classe excluída.",
+      "assetDeleted": "Ativo excluído.",
+      "deleteAssetConfirm": "Excluir este ativo?",
       "deleteClassConfirm": "Excluir esta classe?",
       "sameBehaviorHint": "Só classes com o mesmo comportamento; as posições não mudam.",
       "rename": "Renomear",

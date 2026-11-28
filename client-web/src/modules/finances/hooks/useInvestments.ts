@@ -96,6 +96,11 @@ export function useUpdateAsset() {
   })
 }
 
+export function useDeleteAsset() {
+  const invalidate = useInvalidateInvestments()
+  return useMutation({ mutationFn: (id: string) => service.deleteAsset(id), onSuccess: invalidate })
+}
+
 export function useSetAssetArchived() {
   const invalidate = useInvalidateInvestments()
   return useMutation({

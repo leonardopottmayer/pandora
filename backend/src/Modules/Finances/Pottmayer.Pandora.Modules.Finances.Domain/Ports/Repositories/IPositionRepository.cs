@@ -14,4 +14,7 @@ public interface IPositionRepository : IStandardRepository<Position, Guid>
     Task<Position?> FindOpenUnitAsync(Guid accountId, Guid assetId, CancellationToken ct = default);
 
     Task<bool> AnyForAccountAsync(Guid accountId, CancellationToken ct = default);
+
+    /// <summary>True when the asset has any position, open or closed.</summary>
+    Task<bool> AnyForAssetAsync(Guid assetId, CancellationToken ct = default);
 }

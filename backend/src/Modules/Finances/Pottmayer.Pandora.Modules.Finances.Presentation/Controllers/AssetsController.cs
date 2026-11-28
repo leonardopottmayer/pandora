@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateAsset;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.SetAssetArchived;
+using Pottmayer.Pandora.Modules.Finances.Application.Commands.DeleteAsset;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.UpdateAsset;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetAssets;
 using Pottmayer.Pandora.Modules.Finances.Presentation.Requests;
@@ -39,6 +40,10 @@ public sealed class AssetsController(
     public async Task<IActionResult> UpdateAsync(Guid id, UpdateAssetRequest request, CancellationToken ct)
         => (await sender.Send(new UpdateAssetCommand(new UpdateAssetInput(UserId, id, request.Name, request.Code, request.Isin, request.Issuer, request.AssetClassId)), ct))
             .ToActionResult(errorMapper);
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteAsync(Guid id, CancellationToken ct)
+        => (await sender.Send(new DeleteAssetCommand(new DeleteAssetInput(UserId, id)), ct)).ToActionResult(errorMapper);
 
     [HttpPost("{id:guid}/archive")]
     public async Task<IActionResult> ArchiveAsync(Guid id, CancellationToken ct)

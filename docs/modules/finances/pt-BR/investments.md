@@ -106,7 +106,7 @@ Seguindo o `client-web/DESIGN.md`:
   (campos conforme o tipo).
 - **Ativos e classes** (página aberta pela página Investimentos): os ativos, com classe, código, moeda e quantas
   posições abertas cada um tem, então um ativo cadastrado sem posição também aparece; editar (a moeda é fixa;
-  a classe só troca por outra do mesmo comportamento, sem mexer nas posições) e arquivar pelo menu da linha.
+  a classe só troca por outra do mesmo comportamento, sem mexer nas posições) e arquivar pelo menu da linha, ou excluir enquanto nunca teve posição.
   Depois as classes do usuário (renomear, arquivar e, enquanto nenhum ativo usa, excluir) e as do sistema, só
   leitura. Entre as do sistema estão poupança, aplicação programada e cotas de capital de cooperativa, todas
   `application`, para saldos que recebem aportes.
@@ -123,6 +123,7 @@ Seguindo o `client-web/DESIGN.md`:
 | GET / POST | `/assets` | Listar (busca, classe) / criar |
 | PUT | `/assets/{id}` | Editar; `assetClassId` opcional troca a classe por outra do mesmo comportamento |
 | POST | `/assets/{id}/archive` · `/unarchive` | Ativo arquivado não abre posição nova; as existentes ficam |
+| DELETE | `/assets/{id}` | Só ativo que nunca teve posição, nem encerrada |
 | GET | `/positions` | Listar (conta, status, classe) com valor atual |
 | GET | `/positions/{id}` | Detalhe, movimentos e valores |
 | POST | `/positions` | Criar com o primeiro movimento (`opening` ou `buy`) |
@@ -140,7 +141,7 @@ Permissões: `finances.investments.read`, `.create`, `.update`, `.delete`. O pap
 | Entidade | Eventos |
 |---|---|
 | `asset-class` | `asset-class.created`, `.renamed`, `.archived`, `.unarchived`, `.deleted` |
-| `asset` | `asset.created`, `asset.updated`, `.archived`, `.unarchived` |
+| `asset` | `asset.created`, `asset.updated`, `.archived`, `.unarchived`, `.deleted` |
 | `position` | `position.created`, `.movement-added`, `.movement-undone`, `.deleted`, `.valued` |
 | `transaction` | `transaction.created` / `transaction.voided` dos lançamentos que os movimentos criam e desfazem, com `positionMovementId` no payload |
 

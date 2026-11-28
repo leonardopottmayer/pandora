@@ -1191,6 +1191,8 @@
       "systemClasses": "System classes",
       "classSaved": "Class saved.",
       "classDeleted": "Class deleted.",
+      "assetDeleted": "Asset deleted.",
+      "deleteAssetConfirm": "Delete this asset?",
       "deleteClassConfirm": "Delete this class?",
       "sameBehaviorHint": "Only classes with the same behavior; positions stay as they are.",
       "rename": "Rename",
