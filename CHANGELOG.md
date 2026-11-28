@@ -1,3 +1,9 @@
+## [1.5.0](https://github.com/leonardopottmayer/pandora/compare/v1.4.1...v1.5.0) (2026-11-28)
+
+### Features
+
+* **finances:** delete an asset that never had a position ([#56](https://github.com/leonardopottmayer/pandora/issues/56)) ([79913a1](https://github.com/leonardopottmayer/pandora/commit/79913a1fba634f85513cc4ca95a1b26b0ebc26d7))
+
 ## [1.4.1](https://github.com/leonardopottmayer/pandora/compare/v1.4.0...v1.4.1) (2026-11-28)
 
 ### Bug Fixes
