@@ -37,7 +37,7 @@ public sealed class AssetsController(
 
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> UpdateAsync(Guid id, UpdateAssetRequest request, CancellationToken ct)
-        => (await sender.Send(new UpdateAssetCommand(new UpdateAssetInput(UserId, id, request.Name, request.Code, request.Isin, request.Issuer)), ct))
+        => (await sender.Send(new UpdateAssetCommand(new UpdateAssetInput(UserId, id, request.Name, request.Code, request.Isin, request.Issuer, request.AssetClassId)), ct))
             .ToActionResult(errorMapper);
 
     [HttpPost("{id:guid}/archive")]

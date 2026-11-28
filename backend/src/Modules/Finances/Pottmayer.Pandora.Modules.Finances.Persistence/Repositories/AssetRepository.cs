@@ -37,6 +37,9 @@ public sealed class AssetRepository(IDataContextAccessor accessor)
         return query.AnyAsync(ct);
     }
 
+    public Task<bool> AnyForClassAsync(Guid assetClassId, CancellationToken ct = default)
+        => Queryable().AnyAsync(a => a.SystemAssetClassId == assetClassId || a.UserAssetClassId == assetClassId, ct);
+
     public Task<bool> ExistsWithCodeAsync(Guid userId, Guid assetClassId, string code, Guid? excludingId, CancellationToken ct = default)
     {
         var normalized = Asset.NormalizeCode(code);

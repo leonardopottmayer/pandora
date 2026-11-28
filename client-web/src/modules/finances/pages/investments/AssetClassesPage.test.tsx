@@ -40,4 +40,31 @@ describe('AssetClassesPage', () => {
     await user.click(await screen.findByText('Archive'))
     await waitFor(() => expect(archived).toBe(true))
   })
+
+  it('offers to delete an own class only while no asset uses it', async () => {
+    const used: AssetClassDto = { id: 'u1', code: null, name: 'Quotas', behavior: 'application', isSystem: false, archivedAt: null }
+    const unused: AssetClassDto = { ...used, id: 'u2', name: 'Plans' }
+    let deleted = ''
+    server.use(
+      http.get(`${FINANCES_BASE}/asset-classes`, () => HttpResponse.json({ success: true, data: [cdb, used, unused] })),
+      http.get(`${FINANCES_BASE}/assets`, () => HttpResponse.json({ success: true, data: [{ ...asset, assetClassId: 'u1' }] })),
+      http.get(`${FINANCES_BASE}/positions`, () => HttpResponse.json({ success: true, data: [] })),
+      http.delete(`${FINANCES_BASE}/asset-classes/:id`, ({ params }) => {
+        deleted = params.id as string
+        return HttpResponse.json({ success: true, data: true })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<AssetClassesPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'More actions for Quotas' }))
+    expect(await screen.findByText('Archive')).toBeInTheDocument()
+    expect(screen.queryByText('Delete')).not.toBeInTheDocument()
+    await user.keyboard('{Escape}')
+
+    await user.click(screen.getByRole('button', { name: 'More actions for Plans' }))
+    await user.click(await screen.findByText('Delete'))
+    await user.click(await screen.findByRole('button', { name: 'Delete' }))
+    await waitFor(() => expect(deleted).toBe('u2'))
+  })
 })

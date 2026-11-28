@@ -163,7 +163,7 @@ public sealed class InvestmentsTests : IAsyncLifetime
 
         var own = await PostAsync("/asset-classes", new { name = "Crowdfunding", behavior = "application" });
         var classes = (await _client.GetFromJsonAsync<JsonObject>($"{Base}/asset-classes"))!["data"]!.AsArray();
-        Assert.Equal(16, classes.Count);
+        Assert.Equal(19, classes.Count);
 
         var system = classes.First(c => c!["code"]?.GetValue<string>() == "stock")!;
         var renameSystem = await _client.PutAsJsonAsync($"{Base}/asset-classes/{Id(system)}", new { name = "Shares" });
@@ -189,6 +189,31 @@ public sealed class InvestmentsTests : IAsyncLifetime
         var back = await PostAsync($"/assets/{Id(asset)}/unarchive", new { });
         Assert.Null(back["archivedAt"]);
         await PostAsync("/positions", opening);
+    }
+
+    [Fact]
+    public async Task An_asset_moves_to_a_class_of_the_same_behavior_and_an_unused_own_class_is_deleted()
+    {
+        await AuthAsync("inv6");
+        var own = await PostAsync("/asset-classes", new { name = "Cotas", behavior = "application" });
+        var asset = await PostAsync("/assets", new { assetClassId = Id(own), name = "Capital Viacredi", currency = "BRL" });
+        var classes = (await _client.GetFromJsonAsync<JsonObject>($"{Base}/asset-classes"))!["data"]!.AsArray();
+        Guid ClassId(string code) => classes.First(c => c!["code"]?.GetValue<string>() == code)!["id"]!.GetValue<Guid>();
+
+        var inUse = await _client.DeleteAsync($"{Base}/asset-classes/{Id(own)}");
+        Assert.Equal(HttpStatusCode.Conflict, inUse.StatusCode);
+
+        var toUnit = await _client.PutAsJsonAsync($"{Base}/assets/{Id(asset)}", new { name = "Capital Viacredi", assetClassId = ClassId("stock") });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, toUnit.StatusCode);
+
+        var moved = await _client.PutAsJsonAsync($"{Base}/assets/{Id(asset)}", new { name = "Capital Viacredi", assetClassId = ClassId("capital-quotas") });
+        Assert.Equal(HttpStatusCode.OK, moved.StatusCode);
+        Assert.Equal(ClassId("capital-quotas"), (await moved.Content.ReadFromJsonAsync<JsonObject>())!["data"]!["assetClassId"]!.GetValue<Guid>());
+
+        var deleted = await _client.DeleteAsync($"{Base}/asset-classes/{Id(own)}");
+        Assert.Equal(HttpStatusCode.OK, deleted.StatusCode);
+        var system = await _client.DeleteAsync($"{Base}/asset-classes/{ClassId("savings")}");
+        Assert.Equal(HttpStatusCode.Conflict, system.StatusCode);
     }
 
     private Task AuthAsync(string username) =>

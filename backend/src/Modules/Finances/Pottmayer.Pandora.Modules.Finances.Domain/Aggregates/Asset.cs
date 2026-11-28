@@ -8,7 +8,7 @@ namespace Pottmayer.Pandora.Modules.Finances.Domain.Aggregates;
 /// Something the user owns (fin021): a stock, a CDB product, a coin. Its class is a system class or one
 /// of the user's own, exactly one of the two (<see cref="SystemAssetClassId"/> / <see cref="UserAssetClassId"/>).
 /// Its <see cref="Currency"/> must match the account of any position that holds it; like an account's,
-/// it is fixed at creation, and so is its class.
+/// it is fixed at creation. Its class can change only to one with the same behavior (<see cref="MoveTo"/>).
 /// </summary>
 public sealed class Asset : AggregateRoot<Guid>, IAuditable
 {
@@ -51,7 +51,17 @@ public sealed class Asset : AggregateRoot<Guid>, IAuditable
             CreatedAt = timeProvider.GetUtcNow()
         };
 
-    /// <summary>Edits the asset. Class and currency stay: positions depend on them.</summary>
+    /// <summary>
+    /// Moves the asset to another class. The caller checks the behavior matches: positions follow the
+    /// behavior, not the class.
+    /// </summary>
+    public void MoveTo(AssetClassRef assetClass)
+    {
+        SystemAssetClassId = assetClass.IsSystem ? assetClass.Id : null;
+        UserAssetClassId = assetClass.IsSystem ? null : assetClass.Id;
+    }
+
+    /// <summary>Edits the asset. The currency stays: positions depend on it.</summary>
     public void Update(string name, string? code, string? isin, string? issuer)
     {
         Name = name.Trim();

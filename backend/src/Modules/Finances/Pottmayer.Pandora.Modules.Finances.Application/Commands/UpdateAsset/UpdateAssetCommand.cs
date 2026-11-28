@@ -5,8 +5,8 @@ using Pottmayer.Tars.Security.Authorization.Abstractions;
 
 namespace Pottmayer.Pandora.Modules.Finances.Application.Commands.UpdateAsset;
 
-public sealed record UpdateAssetInput(Guid UserId, Guid AssetId, string Name, string? Code, string? Isin, string? Issuer);
+public sealed record UpdateAssetInput(Guid UserId, Guid AssetId, string Name, string? Code, string? Isin, string? Issuer, Guid? AssetClassId = null);
 
-/// <summary>Edits an asset; its class and currency are fixed, since positions depend on them.</summary>
+/// <summary>Edits an asset; it can move to a class with the same behavior, and its currency is fixed.</summary>
 [RequiresPermission(FinancesPermissions.Investments.Update)]
 public sealed class UpdateAssetCommand(UpdateAssetInput input) : CommandBase<UpdateAssetInput, AssetDto>(input);

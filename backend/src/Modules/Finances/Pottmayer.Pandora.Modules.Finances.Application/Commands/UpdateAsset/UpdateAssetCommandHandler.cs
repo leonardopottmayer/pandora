@@ -30,7 +30,20 @@ public sealed class UpdateAssetCommandHandler(IUnitOfWorkFactory factory, TimePr
             if (asset is null) return Result<Asset>.Failure([AssetErrors.NotFound]);
             if (await assets.ExistsWithNameAsync(input.UserId, input.Name, asset.Id, token))
                 return Result<Asset>.Failure([AssetErrors.NameAlreadyExists]);
-            if (Asset.NormalizeCode(input.Code) is { } code && await assets.ExistsWithCodeAsync(input.UserId, asset.AssetClassId, code, asset.Id, token))
+
+            var previousClassId = asset.AssetClassId;
+            var targetClassId = input.AssetClassId ?? previousClassId;
+            if (targetClassId != previousClassId)
+            {
+                var target = await AssetClassLookup.FindAsync(ctx, targetClassId, input.UserId, token);
+                if (target is null) return Result<Asset>.Failure([AssetErrors.ClassNotFound]);
+                if (target.IsArchived) return Result<Asset>.Failure([AssetErrors.ClassArchived]);
+                var current = (await AssetClassLookup.FindAsync(ctx, previousClassId, input.UserId, token))!;
+                if (target.Behavior != current.Behavior) return Result<Asset>.Failure([AssetErrors.ClassBehaviorMismatch]);
+                asset.MoveTo(target.Ref);
+            }
+
+            if (Asset.NormalizeCode(input.Code) is { } code && await assets.ExistsWithCodeAsync(input.UserId, targetClassId, code, asset.Id, token))
                 return Result<Asset>.Failure([AssetErrors.CodeAlreadyExists]);
 
             var diff = new
@@ -38,7 +51,8 @@ public sealed class UpdateAssetCommandHandler(IUnitOfWorkFactory factory, TimePr
                 name = new { old = asset.Name, @new = input.Name.Trim() },
                 code = new { old = asset.Code, @new = Asset.NormalizeCode(input.Code) },
                 isin = new { old = asset.Isin, @new = Asset.NormalizeCode(input.Isin) },
-                issuer = new { old = asset.Issuer, @new = input.Issuer }
+                issuer = new { old = asset.Issuer, @new = input.Issuer },
+                assetClassId = new { old = previousClassId, @new = targetClassId }
             };
             asset.Update(input.Name, input.Code, input.Isin, input.Issuer);
             await assets.UpdateAsync(asset, token);

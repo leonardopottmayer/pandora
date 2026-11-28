@@ -106,8 +106,11 @@ Following `client-web/DESIGN.md`:
 - **Forms**: new position (account, asset picked or created inline, first movement), new movement (fields
   by kind).
 - **Assets and classes** (page reached from the Investments page): the assets, with class, code, currency and
-  how many open positions each has, so one registered without a position still shows; edit (class and currency
-  fixed) and archive from the row menu. Then the user's own classes and the system's, read-only.
+  how many open positions each has, so one registered without a position still shows; edit (the currency is fixed;
+  the class changes only to one with the same behavior, leaving positions alone) and archive from the row menu.
+  Then the user's own classes (rename, archive and, while no asset uses them, delete) and the system's,
+  read-only. The system ones include a savings account, a scheduled savings plan and cooperative capital
+  quotas, all `application`, for balances that take contributions.
 - **Update values** (the Investments page's primary button): every open position in one list with a value field each, one date for all; only the rows given a value are sent (`POST /positions/valuations`). The list is mounted only while open, so it starts empty.
 
 ## API (`/api/v{n}/finances`)
@@ -117,8 +120,9 @@ Following `client-web/DESIGN.md`:
 | GET / POST | `/asset-classes` | List (system + own) / create |
 | PUT | `/asset-classes/{id}` | Rename (own only) |
 | POST | `/asset-classes/{id}/archive` · `/unarchive` | Own only |
+| DELETE | `/asset-classes/{id}` | Own only, with no asset at all, archived or not |
 | GET / POST | `/assets` | List (search, class) / create |
-| PUT | `/assets/{id}` | Edit |
+| PUT | `/assets/{id}` | Edit; an optional `assetClassId` moves it to a class with the same behavior |
 | POST | `/assets/{id}/archive` · `/unarchive` | An archived asset opens no new position; existing ones stay |
 | GET | `/positions` | List (account, status, class) with current value |
 | GET | `/positions/{id}` | Detail, movements and valuations |
@@ -136,7 +140,7 @@ Permissions: `finances.investments.read`, `.create`, `.update`, `.delete`. The d
 
 | Entity | Events |
 |---|---|
-| `asset-class` | `asset-class.created`, `.renamed`, `.archived`, `.unarchived` |
+| `asset-class` | `asset-class.created`, `.renamed`, `.archived`, `.unarchived`, `.deleted` |
 | `asset` | `asset.created`, `asset.updated`, `.archived`, `.unarchived` |
 | `position` | `position.created`, `.movement-added`, `.movement-undone`, `.deleted`, `.valued` |
 | `transaction` | `transaction.created` / `transaction.voided` for the entries movements create and undo, with `positionMovementId` in the payload |

@@ -26,7 +26,10 @@ interface AssetFormModalProps {
   onCreated?: (asset: AssetDto) => void
 }
 
-/** Registers or edits an asset: a stock, a CDB product, a coin. Class and currency are fixed once created. */
+/**
+ * Registers or edits an asset: a stock, a CDB product, a coin. The currency is fixed once created; the class
+ * can change only to one with the same behavior, since positions follow the behavior.
+ */
 export function AssetFormModal({ open, defaultCurrency = 'BRL', asset, onClose, onCreated }: AssetFormModalProps) {
   const { t } = useTranslation()
   const { message } = App.useApp()
@@ -34,6 +37,7 @@ export function AssetFormModal({ open, defaultCurrency = 'BRL', asset, onClose, 
   const { data: classes } = useAssetClasses()
   const create = useCreateAsset()
   const update = useUpdateAsset()
+  const behavior = asset ? classes?.find((c) => c.id === asset.assetClassId)?.behavior : undefined
 
   useEffect(() => {
     if (!open) return
@@ -61,7 +65,7 @@ export function AssetFormModal({ open, defaultCurrency = 'BRL', asset, onClose, 
     }
     try {
       if (asset) {
-        await update.mutateAsync({ id: asset.id, body: fields })
+        await update.mutateAsync({ id: asset.id, body: { ...fields, assetClassId: values.assetClassId } })
         message.success(t('finances.investments.assetSaved'))
       } else {
         const created = await create.mutateAsync({ ...fields, assetClassId: values.assetClassId, currency: values.currency })
@@ -89,13 +93,14 @@ export function AssetFormModal({ open, defaultCurrency = 'BRL', asset, onClose, 
         <Form.Item
           name="assetClassId"
           label={t('finances.investments.assetClass')}
+          extra={asset ? t('finances.investments.sameBehaviorHint') : undefined}
           rules={[{ required: true, message: t('finances.investments.required.assetClass') }]}
         >
           <Select
-            disabled={!!asset}
             showSearch={{ optionFilterProp: 'label' }}
             options={(classes ?? [])
               .filter((c) => !c.archivedAt || c.id === asset?.assetClassId)
+              .filter((c) => !behavior || c.behavior === behavior)
               .map((c) => ({ value: c.id, label: assetClassLabel(c, t) }))}
           />
         </Form.Item>

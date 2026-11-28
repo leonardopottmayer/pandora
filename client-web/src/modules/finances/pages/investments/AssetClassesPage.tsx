@@ -12,6 +12,7 @@ import {
   useAssetClassMap,
   useAssets,
   useCreateAssetClass,
+  useDeleteAssetClass,
   usePositions,
   useRenameAssetClass,
   useSetAssetArchived,
@@ -21,11 +22,12 @@ import { AssetFormModal } from './AssetFormModal'
 
 /**
  * The user's assets, which can be created, edited and archived even without a position; the system's
- * asset classes, read-only; and the user's own classes, which can be created, renamed and archived.
+ * asset classes, read-only; and the user's own classes, which can be created, renamed, archived, and
+ * deleted while no asset uses them.
  */
 export function AssetClassesPage() {
   const { t } = useTranslation()
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   const { token } = theme.useToken()
   const [form] = Form.useForm<{ name: string; behavior: AssetBehavior }>()
   const [editing, setEditing] = useState<AssetClassDto | 'new' | null>(null)
@@ -33,6 +35,7 @@ export function AssetClassesPage() {
   const create = useCreateAssetClass()
   const rename = useRenameAssetClass()
   const archive = useSetAssetClassArchived()
+  const remove = useDeleteAssetClass()
   const { data: assets, isLoading: assetsLoading } = useAssets()
   const { data: openPositions } = usePositions()
   const classMap = useAssetClassMap()
@@ -62,6 +65,24 @@ export function AssetClassesPage() {
     } catch (err) {
       message.error(toErrorMessage(err, t('finances.investments.saveError')))
     }
+  }
+
+  function confirmDelete(item: AssetClassDto) {
+    modal.confirm({
+      title: t('finances.investments.deleteClassConfirm'),
+      content: item.name,
+      okText: t('common.delete'),
+      okButtonProps: { danger: true },
+      cancelText: t('common.cancel'),
+      onOk: async () => {
+        try {
+          await remove.mutateAsync(item.id)
+          message.success(t('finances.investments.classDeleted'))
+        } catch (err) {
+          message.error(toErrorMessage(err, t('finances.investments.saveError')))
+        }
+      },
+    })
   }
 
   async function toggleAssetArchived(item: AssetDto) {
@@ -121,6 +142,8 @@ export function AssetClassesPage() {
     )
   }
   const own = (classes ?? []).filter((c) => !c.isSystem)
+  // Archived assets count too: the class can only go once nothing points at it.
+  const usedClasses = new Set((assets ?? []).map((a) => a.assetClassId))
   const system = (classes ?? []).filter((c) => c.isSystem)
 
   const row = (c: AssetClassDto, index: number) => (
@@ -148,6 +171,7 @@ export function AssetClassesPage() {
                 label: c.archivedAt ? t('finances.investments.unarchive') : t('finances.investments.archive'),
                 onClick: () => void toggleArchived(c),
               },
+              ...(usedClasses.has(c.id) ? [] : [{ key: 'delete', label: t('common.delete'), danger: true, onClick: () => confirmDelete(c) }]),
             ],
           }}
         >

@@ -31,6 +31,12 @@ public static class AssetErrors
     public static Error ClassArchived =>
         Error.Conflict("AssetClasses.Archived", "The asset class is archived.");
 
+    public static Error ClassInUse =>
+        Error.Conflict("AssetClasses.InUse", "The asset class has assets; archive it instead.");
+
+    public static Error ClassBehaviorMismatch =>
+        Error.Validation("Assets.ClassBehaviorMismatch", "An asset can only move to a class with the same behavior.");
+
     public static Error InvalidBehavior(string behavior) =>
         Error.Validation("AssetClasses.InvalidBehavior", $"Asset behavior '{behavior}' is not supported.");
 }
