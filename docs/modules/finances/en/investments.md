@@ -63,12 +63,14 @@ The tables are `fin020`–`fin025`, described in the [Data Model](data-model.md#
 |---|---|---|---|
 | `opening` | amount invested, applied on, index, rates, maturity, current value | v set; a valuation is stored with the current value | none |
 | `buy` | same as opening, without current value | v set; first valuation = v | `investment-contribution`: v + costs |
+| `buy` (contribution, after the first movement) | gross, costs | v += gross | `investment-contribution`: gross + costs |
 | `redemption` | gross, tax, costs | share = gross ÷ current value; v −= v·share; realized = gross − v·share; whole value closes | `investment-redemption`: gross − tax − costs |
 | `maturity` | gross, tax, costs | total redemption; closes | `investment-redemption` |
 | `income` | gross, tax, kind (`coupon`) | none | `yield` |
 
 - A position starts with `opening` (no cash: the money left in the past, INV-6) or `buy` (cash leaves now).
-  A new fixed-income application is always a new position.
+  A new CDB is a new position; contributions to the same application (a scheduled plan, cooperative
+  capital quotas, a savings box) are `buy` on it, shown as "Contribution".
 - **Undo** removes only a position's **latest** movement: it restores the `*_before` values and voids the
   linked ledger entry with the existing void. Undoing the only movement deletes the position.
 - The linked ledger entry cannot be edited, voided or reversed from the ledger: the API answers with an

@@ -65,9 +65,12 @@ public sealed class InvestmentsPersistenceTests(PandoraWebApplicationFactory fac
             await ctx.AcquireRepository<IPositionRepository>().AddAsync(position, ct);
             var movements = ctx.AcquireRepository<IPositionMovementRepository>();
             await movements.AddAsync(opening, ct);
-            await movements.AddAsync(income, ct);
             await ctx.AcquireRepository<IPositionValuationRepository>().AddAsync(value, ct);
         });
+
+        // Saved apart, as each movement is in the app: the auditing interceptor stamps one CreatedAt per save,
+        // so two movements in the same save tie and their order falls to the Guid.
+        await RunAsync((ctx, ct) => ctx.AcquireRepository<IPositionMovementRepository>().AddAsync(income, ct));
 
         await RunAsync(async (ctx, ct) =>
         {
