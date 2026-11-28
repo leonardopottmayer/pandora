@@ -2,6 +2,7 @@ using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.CreateAssetClass;
+using Pottmayer.Pandora.Modules.Finances.Application.Commands.DeleteAssetClass;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.SetAssetClassArchived;
 using Pottmayer.Pandora.Modules.Finances.Application.Commands.UpdateAssetClass;
 using Pottmayer.Pandora.Modules.Finances.Application.Queries.GetAssetClasses;
@@ -38,6 +39,10 @@ public sealed class AssetClassesController(
     public async Task<IActionResult> RenameAsync(Guid id, RenameAssetClassRequest request, CancellationToken ct)
         => (await sender.Send(new UpdateAssetClassCommand(new UpdateAssetClassInput(UserId, id, request.Name)), ct))
             .ToActionResult(errorMapper);
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteAsync(Guid id, CancellationToken ct)
+        => (await sender.Send(new DeleteAssetClassCommand(new DeleteAssetClassInput(UserId, id)), ct)).ToActionResult(errorMapper);
 
     [HttpPost("{id:guid}/archive")]
     public async Task<IActionResult> ArchiveAsync(Guid id, CancellationToken ct)

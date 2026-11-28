@@ -78,6 +78,11 @@ export function useSetAssetClassArchived() {
   })
 }
 
+export function useDeleteAssetClass() {
+  const invalidate = useInvalidateInvestments()
+  return useMutation({ mutationFn: (id: string) => service.deleteAssetClass(id), onSuccess: invalidate })
+}
+
 export function useCreateAsset() {
   const invalidate = useInvalidateInvestments()
   return useMutation({ mutationFn: (body: CreateAssetRequest) => service.createAsset(body), onSuccess: invalidate })

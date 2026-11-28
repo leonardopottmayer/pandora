@@ -114,6 +114,7 @@ public static class AssetClassEvents
     public const string Renamed = "asset-class.renamed";
     public const string Archived = "asset-class.archived";
     public const string Unarchived = "asset-class.unarchived";
+    public const string Deleted = "asset-class.deleted";
 }
 
 public static class AssetEvents

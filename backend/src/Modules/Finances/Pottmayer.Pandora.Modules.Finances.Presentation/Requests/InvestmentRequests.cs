@@ -6,7 +6,7 @@ public sealed record RenameAssetClassRequest(string Name);
 
 public sealed record CreateAssetRequest(Guid AssetClassId, string Name, string? Code, string? Isin, string? Issuer, string Currency);
 
-public sealed record UpdateAssetRequest(string Name, string? Code, string? Isin, string? Issuer);
+public sealed record UpdateAssetRequest(string Name, string? Code, string? Isin, string? Issuer, Guid? AssetClassId = null);
 
 /// <summary>A new position and its first movement (<c>opening</c> or <c>buy</c>).</summary>
 public sealed record CreatePositionRequest(

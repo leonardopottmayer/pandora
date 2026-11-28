@@ -1190,6 +1190,9 @@
       "noOwnClasses": "Nenhuma classe sua ainda.",
       "systemClasses": "Classes do sistema",
       "classSaved": "Classe salva.",
+      "classDeleted": "Classe excluída.",
+      "deleteClassConfirm": "Excluir esta classe?",
+      "sameBehaviorHint": "Só classes com o mesmo comportamento; as posições não mudam.",
       "rename": "Renomear",
       "archive": "Arquivar",
       "unarchive": "Desarquivar",
@@ -1239,6 +1242,9 @@
         "treasury": "Tesouro Direto",
         "debenture": "Debênture",
         "coe": "COE",
+        "savings": "Poupança",
+        "scheduled-plan": "Aplicação programada",
+        "capital-quotas": "Cotas de capital",
         "other": "Outro"
       },
       "required": {

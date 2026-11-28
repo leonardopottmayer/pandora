@@ -34,6 +34,10 @@ export async function setAssetClassArchived(id: string, archived: boolean): Prom
   return data
 }
 
+export async function deleteAssetClass(id: string): Promise<void> {
+  await apiClient.delete(`${BASE}/asset-classes/${id}`)
+}
+
 export async function listAssets(): Promise<AssetDto[]> {
   const { data } = await apiClient.get<AssetDto[]>(`${BASE}/assets`)
   return data
@@ -44,8 +48,11 @@ export async function createAsset(body: CreateAssetRequest): Promise<AssetDto> {
   return data
 }
 
-/** Class and currency are fixed at creation; the rest can change. */
-export async function updateAsset(id: string, body: Pick<CreateAssetRequest, 'name' | 'code' | 'isin' | 'issuer'>): Promise<AssetDto> {
+/** The currency is fixed at creation; the class can change to one with the same behavior. */
+export async function updateAsset(
+  id: string,
+  body: Pick<CreateAssetRequest, 'name' | 'code' | 'isin' | 'issuer' | 'assetClassId'>,
+): Promise<AssetDto> {
   const { data } = await apiClient.put<AssetDto>(`${BASE}/assets/${id}`, body)
   return data
 }
