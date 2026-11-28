@@ -15,9 +15,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    # This name is the required check in the main and dev rulesets. Rename both together.
-    name: Build & Test (Node)
+  # Lint and build on one runner, the tests split in three shards on others (vitest --shard): most of the
+  # test time is importing antd into each file, so only more runners make it shorter.
+  check:
+    name: Lint & Build (Node)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -46,5 +47,46 @@ jobs:
       - name: Build
         run: npm run build
 
+  test:
+    name: Test (Node, ${{ matrix.shard }}/3)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    defaults:
+      run:
+        working-directory: client-web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: client-web/.nvmrc
+          cache: npm
+          cache-dependency-path: client-web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
       - name: Test
-        run: npm test
+        run: npx vitest run --shard=${{ matrix.shard }}/3
+
+  # The required check in the main and dev rulesets: green only when lint, build and every shard passed.
+  # Rename both together.
+  result:
+    name: Build & Test (Node)
+    needs: [check, test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Everything passed
+        env:
+          CHECK: ${{ needs.check.result }}
+          TEST: ${{ needs.test.result }}
+        run: test "$CHECK" = success && test "$TEST" = success

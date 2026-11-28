@@ -51,8 +51,8 @@ dev ◀── PR (merge commit, auto-merged) ── main   (bot: brings the vers
 
 | File | Runs on | Does |
 |---|---|---|
-| `ci-dotnet.yml` | pull requests and pushes to `dev`/`main` | restore (with the Tars feed), Release build, all backend tests (integration ones with Testcontainers). Check **`Build & Test (.NET)`** |
-| `ci-node.yml` | same | `npm ci`, lint, build, tests of `client-web`. Check **`Build & Test (Node)`** |
+| `ci-dotnet.yml` | pull requests and pushes to `dev`/`main` | restore (with the Tars feed), Release build and the backend tests in five parallel slices: unit, and the integration ones (Testcontainers) for Notes, Finances, Communications and every other module. A final job turns them into the check **`Build & Test (.NET)`** |
+| `ci-node.yml` | same | `npm ci`, then lint and build on one runner and the `client-web` tests in three `vitest --shard` runners. A final job turns them into the check **`Build & Test (Node)`** |
 | `release-preview.yml` | pull requests to `main` | comments the version the merge will release |
 | `release.yml` | push to `main` | semantic-release with the release bot's token, then the `main` → `dev` pull request |
 | `build-images.yml` | push to `dev`, tag `v*`, manual | images on GHCR: `:dev`, or `:X.Y.Z` + `:latest`; always `:sha-<commit>` |

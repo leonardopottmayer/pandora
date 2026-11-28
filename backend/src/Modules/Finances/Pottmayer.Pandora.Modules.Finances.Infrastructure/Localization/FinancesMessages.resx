@@ -70,6 +70,9 @@
   <data name="transaction.investment-buy" xml:space="preserve">
     <value>Buy {0}</value>
   </data>
+  <data name="transaction.investment-contribution" xml:space="preserve">
+    <value>Contribution {0}</value>
+  </data>
   <data name="transaction.investment-sell" xml:space="preserve">
     <value>Sale {0}</value>
   </data>
