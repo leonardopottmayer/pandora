@@ -189,6 +189,11 @@ public sealed class InvestmentsTests : IAsyncLifetime
         var back = await PostAsync($"/assets/{Id(asset)}/unarchive", new { });
         Assert.Null(back["archivedAt"]);
         await PostAsync("/positions", opening);
+
+        // With a position it is history: archive, not delete. One never used goes.
+        Assert.Equal(HttpStatusCode.Conflict, (await _client.DeleteAsync($"{Base}/assets/{Id(asset)}")).StatusCode);
+        var unused = await CreateAssetAsync("cdb", "Registered by mistake", null);
+        Assert.Equal(HttpStatusCode.OK, (await _client.DeleteAsync($"{Base}/assets/{Id(unused)}")).StatusCode);
     }
 
     [Fact]

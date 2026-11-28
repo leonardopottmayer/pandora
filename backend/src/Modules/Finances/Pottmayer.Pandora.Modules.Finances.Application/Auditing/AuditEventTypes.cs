@@ -124,6 +124,7 @@ public static class AssetEvents
     public const string Updated = "asset.updated";
     public const string Archived = "asset.archived";
     public const string Unarchived = "asset.unarchived";
+    public const string Deleted = "asset.deleted";
 }
 
 public static class PositionEvents

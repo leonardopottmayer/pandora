@@ -41,6 +41,33 @@ describe('AssetClassesPage', () => {
     await waitFor(() => expect(archived).toBe(true))
   })
 
+  it('offers to delete an asset only while it never had a position', async () => {
+    const used: AssetDto = { ...asset, id: 's2', name: 'Hunter Total Return' }
+    let deleted = ''
+    server.use(
+      http.get(`${FINANCES_BASE}/asset-classes`, () => HttpResponse.json({ success: true, data: [cdb] })),
+      http.get(`${FINANCES_BASE}/assets`, () => HttpResponse.json({ success: true, data: [asset, used] })),
+      // A closed position still counts as history.
+      http.get(`${FINANCES_BASE}/positions`, () => HttpResponse.json({ success: true, data: [{ id: 'p1', assetId: 's2', status: 'closed' }] })),
+      http.delete(`${FINANCES_BASE}/assets/:id`, ({ params }) => {
+        deleted = params.id as string
+        return HttpResponse.json({ success: true, data: true })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<AssetClassesPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'More actions for Hunter Total Return' }))
+    expect(await screen.findByText('Archive')).toBeInTheDocument()
+    expect(screen.queryByText('Delete')).not.toBeInTheDocument()
+    await user.keyboard('{Escape}')
+
+    await user.click(screen.getByRole('button', { name: 'More actions for Itaú Hunter CDB 110%' }))
+    await user.click(await screen.findByText('Delete'))
+    await user.click(await screen.findByRole('button', { name: 'Delete' }))
+    await waitFor(() => expect(deleted).toBe('s1'))
+  })
+
   it('offers to delete an own class only while no asset uses it', async () => {
     const used: AssetClassDto = { id: 'u1', code: null, name: 'Quotas', behavior: 'application', isSystem: false, archivedAt: null }
     const unused: AssetClassDto = { ...used, id: 'u2', name: 'Plans' }

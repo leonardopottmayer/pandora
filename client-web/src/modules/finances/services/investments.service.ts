@@ -38,6 +38,10 @@ export async function deleteAssetClass(id: string): Promise<void> {
   await apiClient.delete(`${BASE}/asset-classes/${id}`)
 }
 
+export async function deleteAsset(id: string): Promise<void> {
+  await apiClient.delete(`${BASE}/assets/${id}`)
+}
+
 export async function listAssets(): Promise<AssetDto[]> {
   const { data } = await apiClient.get<AssetDto[]>(`${BASE}/assets`)
   return data

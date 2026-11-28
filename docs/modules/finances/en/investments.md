@@ -107,7 +107,7 @@ Following `client-web/DESIGN.md`:
   by kind).
 - **Assets and classes** (page reached from the Investments page): the assets, with class, code, currency and
   how many open positions each has, so one registered without a position still shows; edit (the currency is fixed;
-  the class changes only to one with the same behavior, leaving positions alone) and archive from the row menu.
+  the class changes only to one with the same behavior, leaving positions alone) and archive from the row menu, or delete while it never had a position.
   Then the user's own classes (rename, archive and, while no asset uses them, delete) and the system's,
   read-only. The system ones include a savings account, a scheduled savings plan and cooperative capital
   quotas, all `application`, for balances that take contributions.
@@ -124,6 +124,7 @@ Following `client-web/DESIGN.md`:
 | GET / POST | `/assets` | List (search, class) / create |
 | PUT | `/assets/{id}` | Edit; an optional `assetClassId` moves it to a class with the same behavior |
 | POST | `/assets/{id}/archive` · `/unarchive` | An archived asset opens no new position; existing ones stay |
+| DELETE | `/assets/{id}` | Only an asset that never had a position, closed ones included |
 | GET | `/positions` | List (account, status, class) with current value |
 | GET | `/positions/{id}` | Detail, movements and valuations |
 | POST | `/positions` | Create with its first movement (`opening` or `buy`) |
@@ -141,7 +142,7 @@ Permissions: `finances.investments.read`, `.create`, `.update`, `.delete`. The d
 | Entity | Events |
 |---|---|
 | `asset-class` | `asset-class.created`, `.renamed`, `.archived`, `.unarchived`, `.deleted` |
-| `asset` | `asset.created`, `asset.updated`, `.archived`, `.unarchived` |
+| `asset` | `asset.created`, `asset.updated`, `.archived`, `.unarchived`, `.deleted` |
 | `position` | `position.created`, `.movement-added`, `.movement-undone`, `.deleted`, `.valued` |
 | `transaction` | `transaction.created` / `transaction.voided` for the entries movements create and undo, with `positionMovementId` in the payload |
 
