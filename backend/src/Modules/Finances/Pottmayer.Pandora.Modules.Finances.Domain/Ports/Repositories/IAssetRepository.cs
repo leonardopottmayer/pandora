@@ -13,5 +13,8 @@ public interface IAssetRepository : IStandardRepository<Asset, Guid>
 
     Task<bool> ExistsWithNameAsync(Guid userId, string name, Guid? excludingId, CancellationToken ct = default);
 
+    /// <summary>True when any asset, archived or not, belongs to the class.</summary>
+    Task<bool> AnyForClassAsync(Guid assetClassId, CancellationToken ct = default);
+
     Task<bool> ExistsWithCodeAsync(Guid userId, Guid assetClassId, string code, Guid? excludingId, CancellationToken ct = default);
 }

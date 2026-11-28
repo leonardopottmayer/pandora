@@ -1190,6 +1190,9 @@
       "noOwnClasses": "No classes of your own yet.",
       "systemClasses": "System classes",
       "classSaved": "Class saved.",
+      "classDeleted": "Class deleted.",
+      "deleteClassConfirm": "Delete this class?",
+      "sameBehaviorHint": "Only classes with the same behavior; positions stay as they are.",
       "rename": "Rename",
       "archive": "Archive",
       "unarchive": "Unarchive",
@@ -1239,6 +1242,9 @@
         "treasury": "Treasury bond",
         "debenture": "Debenture",
         "coe": "COE",
+        "savings": "Savings account",
+        "scheduled-plan": "Scheduled savings plan",
+        "capital-quotas": "Cooperative capital quotas",
         "other": "Other"
       },
       "required": {

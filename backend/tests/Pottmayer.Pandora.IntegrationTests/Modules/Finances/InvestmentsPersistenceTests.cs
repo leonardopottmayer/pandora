@@ -32,7 +32,7 @@ public sealed class InvestmentsPersistenceTests(PandoraWebApplicationFactory fac
             var classes = await ctx.AcquireRepository<ISystemAssetClassRepository>().ListAsync(ct);
             var mine = await ctx.AcquireRepository<IUserAssetClassRepository>().ListByUserAsync(userId, ct);
 
-            Assert.Equal(15, classes.Count);
+            Assert.Equal(18, classes.Count);
             Assert.Equal(AssetBehavior.Application, classes.Single(c => c.Code == "cdb").Behavior);
             Assert.Equal(AssetBehavior.Unit, classes.Single(c => c.Code == "stock").Behavior);
             Assert.Equal(own.Id, Assert.Single(mine).Id);
