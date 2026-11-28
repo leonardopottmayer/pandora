@@ -210,6 +210,13 @@ public sealed class InvestmentsTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, moved.StatusCode);
         Assert.Equal(ClassId("capital-quotas"), (await moved.Content.ReadFromJsonAsync<JsonObject>())!["data"]!["assetClassId"]!.GetValue<Guid>());
 
+        // A buy into an application is a contribution, and its ledger entry says so.
+        var account = await PostAsync("/accounts", new { name = "Viacredi", type = "checking", currency = "BRL", displayOrder = 0, openingBalance = 100 });
+        var position = await PostAsync("/positions", new { accountId = Id(account), assetId = Id(asset), kind = "opening", occurredOn = "2026-11-26", investedAmount = 1490 });
+        await PostAsync($"/positions/{Id(position)}/movements", new { kind = "buy", occurredOn = "2026-11-27", grossAmount = 50 });
+        var entries = (await _client.GetFromJsonAsync<JsonObject>($"{Base}/transactions?accountId={Id(account)}"))!["data"]!.AsArray();
+        Assert.Contains(entries, e => e!["descriptionKey"]?.GetValue<string>() == "transaction.investment-contribution");
+
         var deleted = await _client.DeleteAsync($"{Base}/asset-classes/{Id(own)}");
         Assert.Equal(HttpStatusCode.OK, deleted.StatusCode);
         var system = await _client.DeleteAsync($"{Base}/asset-classes/{ClassId("savings")}");

@@ -56,7 +56,7 @@ public sealed class AddPositionMovementCommandHandler(
 
             var correlationId = Guid.CreateVersion7();
             await positions.UpdateAsync(position, token);
-            await PositionLedger.LinkAsync(ctx, account, asset, movement, today, timeProvider, correlationId, token);
+            await PositionLedger.LinkAsync(ctx, account, asset, position, movement, today, timeProvider, correlationId, token);
             await ctx.AcquireRepository<IPositionMovementRepository>().AddAsync(movement, token);
 
             await ctx.RecordAsync(input.UserId, input.UserId, PositionEvents.EntityType, position.Id, PositionEvents.MovementAdded, now,

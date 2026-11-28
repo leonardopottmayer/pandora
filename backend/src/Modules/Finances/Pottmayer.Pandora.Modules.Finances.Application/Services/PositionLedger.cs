@@ -17,17 +17,21 @@ internal static class PositionLedger
 
     /// <summary>Creates and links the movement's ledger entry, when the movement moves money.</summary>
     public static async Task LinkAsync(
-        IDataContext ctx, Account account, Asset asset, PositionMovement movement, DateOnly today,
+        IDataContext ctx, Account account, Asset asset, Position position, PositionMovement movement, DateOnly today,
         TimeProvider timeProvider, Guid correlationId, CancellationToken ct)
     {
         if (movement.LedgerKind is not { } kind || movement.NetAmount is not > 0m) return;
 
         var label = asset.Code ?? asset.Name;
+        // A buy into an application is a contribution ("Aporte"), as the movement form calls it.
+        var descriptionKind = movement.Kind == PositionMovementKind.Buy && position.Behavior == AssetBehavior.Application
+            ? "contribution"
+            : movement.Kind.Value;
         var transaction = Transaction.CreateAccountTransaction(
             movement.UserId, account.Id, kind, account.Currency, movement.NetAmount.Value, movement.OccurredOn,
             description: $"Investment {movement.Kind.Value}: {label}", payee: null, notes: movement.Notes,
             systemCategoryId: null, userCategoryId: null, post: movement.OccurredOn <= today, timeProvider,
-            systemDescription: SystemDescription.Investment(movement.Kind.Value, label));
+            systemDescription: SystemDescription.Investment(descriptionKind, label));
 
         await ctx.AcquireRepository<ITransactionRepository>().AddAsync(transaction, ct);
         movement.LinkTransaction(transaction.Id);

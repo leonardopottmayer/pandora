@@ -69,7 +69,7 @@ public sealed class CreatePositionCommandHandler(
 
             var correlationId = Guid.CreateVersion7();
             await positions.AddAsync(position, token);
-            await PositionLedger.LinkAsync(ctx, account, asset, movement, today, timeProvider, correlationId, token);
+            await PositionLedger.LinkAsync(ctx, account, asset, position, movement, today, timeProvider, correlationId, token);
             await ctx.AcquireRepository<IPositionMovementRepository>().AddAsync(movement, token);
 
             // A fixed-income buy is worth what was invested on day one; anything else only when told.
