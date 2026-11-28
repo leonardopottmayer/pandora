@@ -484,6 +484,9 @@
   <data name="transaction.investment-buy" xml:space="preserve">
     <value>Compra {0}</value>
   </data>
+  <data name="transaction.investment-contribution" xml:space="preserve">
+    <value>Aporte {0}</value>
+  </data>
   <data name="transaction.investment-sell" xml:space="preserve">
     <value>Venda {0}</value>
   </data>
