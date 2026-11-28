@@ -1,3 +1,9 @@
+## [1.4.0](https://github.com/leonardopottmayer/pandora/compare/v1.3.0...v1.4.0) (2026-11-28)
+
+### Features
+
+* **finances:** add savings classes, move assets between classes, delete unused classes ([#49](https://github.com/leonardopottmayer/pandora/issues/49)) ([d32fffc](https://github.com/leonardopottmayer/pandora/commit/d32fffcce51fcf8f78ec4d1607884721daed5061))
+
 ## [1.3.0](https://github.com/leonardopottmayer/pandora/compare/v1.2.1...v1.3.0) (2026-11-28)
 
 ### Features
