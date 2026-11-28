@@ -5,7 +5,7 @@ import { toErrorMessage } from '@/lib/api/envelope'
 import type { PositionMovementDto } from '../models'
 import type { FlowDirection } from '../lib/enums'
 import { formatDate, formatMoney, formatSignedPercent } from '../lib/format'
-import { assetClassLabel, positionGain, rateLabel, valuationChanges } from '../lib/investments'
+import { assetClassLabel, movementKindLabel, positionGain, rateLabel, valuationChanges } from '../lib/investments'
 import { useAccountNames } from '../hooks/useAccounts'
 import { useAssetClassMap, usePosition, useUndoPositionMovement } from '../hooks/useInvestments'
 import { CurrencyAmount } from './CurrencyAmount'
@@ -47,7 +47,7 @@ export function PositionDetailDrawer({ positionId, onClose }: { positionId: stri
       title: t('finances.investments.undoConfirm'),
       content: (
         <div className="flex flex-col gap-2">
-          <span>{`${t(`finances.investments.movementKinds.${latest.kind}`)} · ${formatDate(latest.occurredOn)}`}</span>
+          <span>{`${movementKindLabel(latest.kind, p.behavior, t)} · ${formatDate(latest.occurredOn)}`}</span>
           <Typography.Text type="secondary">
             {data?.movements.length === 1 ? t('finances.investments.undoDeletesHint') : t('finances.investments.undoHint')}
           </Typography.Text>
@@ -152,7 +152,7 @@ export function PositionDetailDrawer({ positionId, onClose }: { positionId: stri
               {[...data.movements].reverse().map((m, index) => (
                 <div key={m.id} className="flex items-center gap-3 px-3 py-2" style={{ borderTop: index === 0 ? undefined : divider }}>
                   <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate">{t(`finances.investments.movementKinds.${m.kind}`)}</span>
+                    <span className="truncate">{movementKindLabel(m.kind, p.behavior, t)}</span>
                     <Typography.Text type="secondary" className="truncate text-xs">
                       {[
                         formatDate(m.occurredOn),

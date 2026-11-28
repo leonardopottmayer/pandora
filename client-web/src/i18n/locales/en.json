@@ -1202,6 +1202,7 @@
       "movementKinds": {
         "opening": "Opening",
         "buy": "Buy",
+        "contribution": "Contribution",
         "sell": "Sell",
         "redemption": "Redemption",
         "maturity": "Maturity",

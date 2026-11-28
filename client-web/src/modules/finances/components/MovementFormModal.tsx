@@ -6,7 +6,7 @@ import { todayIn } from '@/lib/today'
 import { toErrorMessage } from '@/lib/api/envelope'
 import { usePreferences } from '@/modules/identity/context/preferences-context'
 import { INCOME_KINDS, type IncomeKind, type PositionDto, type PositionMovementKind } from '../models'
-import { movementKindsFor } from '../lib/investments'
+import { movementKindLabel, movementKindsFor } from '../lib/investments'
 import { useAddPositionMovement } from '../hooks/useInvestments'
 
 interface MovementFormValues {
@@ -25,6 +25,7 @@ interface MovementFormValues {
 /** Which fields each kind asks for. */
 const FIELDS: Record<string, (keyof MovementFormValues)[]> = {
   buy: ['quantity', 'unitPrice', 'costs'],
+  contribution: ['grossAmount', 'costs'],
   sell: ['quantity', 'unitPrice', 'costs', 'taxWithheld'],
   redemption: ['grossAmount', 'taxWithheld', 'costs'],
   maturity: ['grossAmount', 'taxWithheld', 'costs'],
@@ -41,7 +42,7 @@ export function MovementFormModal({ position, onClose }: { position: PositionDto
   const [form] = Form.useForm<MovementFormValues>()
   const add = useAddPositionMovement()
   const kind = Form.useWatch('kind', form)
-  const fields = FIELDS[kind ?? ''] ?? []
+  const fields = FIELDS[kind === 'buy' && position?.behavior === 'application' ? 'contribution' : kind ?? ''] ?? []
   const has = (field: keyof MovementFormValues) => fields.includes(field)
 
   useEffect(() => {
@@ -101,7 +102,7 @@ export function MovementFormModal({ position, onClose }: { position: PositionDto
         <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-2">
           <Form.Item name="kind" label={t('finances.investments.movementKind')}>
             <Select
-              options={movementKindsFor(position.behavior).map((k) => ({ value: k, label: t(`finances.investments.movementKinds.${k}`) }))}
+              options={movementKindsFor(position.behavior).map((k) => ({ value: k, label: movementKindLabel(k, position.behavior, t) }))}
             />
           </Form.Item>
           <Form.Item name="occurredOn" label={t('finances.investments.date')} rules={required('date')}>

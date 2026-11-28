@@ -201,9 +201,20 @@ public sealed class Position : AggregateRoot<Guid>, IAuditable
         var v = InvestedAmount ?? 0m;
         var kind = input.Kind;
 
+        // A later buy is a contribution to the same application (a scheduled plan, a savings box): the
+        // gross adds to what was invested.
+        if (kind == PositionMovementKind.Buy && !isFirst)
+        {
+            if (input.GrossAmount is not > 0m) return Fail(PositionErrors.InvalidAmount);
+
+            var gross = RoundMoney(input.GrossAmount.Value);
+            var movement = Record(input, timeProvider, gross, net: gross + input.Costs, realized: null);
+            InvestedAmount = v + gross;
+            return Ok(movement);
+        }
+
         if (kind == PositionMovementKind.Opening || kind == PositionMovementKind.Buy)
         {
-            // A new application is always a new position: a buy only starts one.
             if (!isFirst) return Fail(PositionErrors.KindNotAllowed(kind.Value, Behavior.Value));
             if (input.InvestedAmount is not > 0m) return Fail(PositionErrors.InvalidAmount);
 
