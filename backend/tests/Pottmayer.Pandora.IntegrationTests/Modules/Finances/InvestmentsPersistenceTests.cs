@@ -56,7 +56,7 @@ public sealed class InvestmentsPersistenceTests(PandoraWebApplicationFactory fac
         var position = Position.CreateUnit(userId, account.Id, asset.Id, TimeProvider.System);
         var opening = position.Apply(new MovementInput(PositionMovementKind.Opening, Day, Quantity: 100.5m, AverageCost: 9.1234567891m), true, TimeProvider.System).Value!;
         var income = position.Apply(new MovementInput(PositionMovementKind.Income, Day, GrossAmount: 12.34m, TaxWithheld: 1.85m,
-            IncomeKind: IncomeKind.InterestOnEquity, Notes: " JCP "), false, new SecondLater()).Value!;
+            IncomeKind: IncomeKind.InterestOnEquity, Notes: " JCP "), false, TimeProvider.System).Value!;
         var value = PositionValuation.Create(userId, position.Id, Day, 1050.255m, ValuationSource.Manual, TimeProvider.System);
 
         await RunAsync(async (ctx, ct) =>
@@ -65,9 +65,12 @@ public sealed class InvestmentsPersistenceTests(PandoraWebApplicationFactory fac
             await ctx.AcquireRepository<IPositionRepository>().AddAsync(position, ct);
             var movements = ctx.AcquireRepository<IPositionMovementRepository>();
             await movements.AddAsync(opening, ct);
-            await movements.AddAsync(income, ct);
             await ctx.AcquireRepository<IPositionValuationRepository>().AddAsync(value, ct);
         });
+
+        // Saved apart, as each movement is in the app: the auditing interceptor stamps one CreatedAt per save,
+        // so two movements in the same save tie and their order falls to the Guid.
+        await RunAsync((ctx, ct) => ctx.AcquireRepository<IPositionMovementRepository>().AddAsync(income, ct));
 
         await RunAsync(async (ctx, ct) =>
         {
@@ -136,11 +139,5 @@ public sealed class InvestmentsPersistenceTests(PandoraWebApplicationFactory fac
         using var scope = factory.Services.CreateScope();
         var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWorkFactory>();
         await uow.ExecuteAsync(FinancesModule.DatabaseKey, work);
-    }
-
-    /// <summary>A clock one second ahead, so a second movement never ties the first on CreatedAt.</summary>
-    private sealed class SecondLater : TimeProvider
-    {
-        public override DateTimeOffset GetUtcNow() => base.GetUtcNow().AddSeconds(1);
     }
 }
