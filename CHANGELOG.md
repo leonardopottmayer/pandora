@@ -1,3 +1,9 @@
+## [1.3.0](https://github.com/leonardopottmayer/pandora/compare/v1.2.1...v1.3.0) (2026-11-28)
+
+### Features
+
+* **finances:** allow contributions to an open fixed-income application ([#46](https://github.com/leonardopottmayer/pandora/issues/46)) ([1a11602](https://github.com/leonardopottmayer/pandora/commit/1a116021ca95a2ffe14752702a15eea95d3cdc3c))
+
 ## [1.2.1](https://github.com/leonardopottmayer/pandora/compare/v1.2.0...v1.2.1) (2026-11-27)
 
 ### Bug Fixes
