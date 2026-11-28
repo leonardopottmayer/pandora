@@ -28,4 +28,7 @@ public sealed class PositionRepository(IDataContextAccessor accessor)
 
     public Task<bool> AnyForAccountAsync(Guid accountId, CancellationToken ct = default)
         => Queryable().AnyAsync(p => p.AccountId == accountId, ct);
+
+    public Task<bool> AnyForAssetAsync(Guid assetId, CancellationToken ct = default)
+        => Queryable().AnyAsync(p => p.AssetId == assetId, ct);
 }

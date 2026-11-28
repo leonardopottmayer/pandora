@@ -19,6 +19,9 @@ public static class AssetErrors
     public static Error Archived =>
         Error.Conflict("Assets.Archived", "The asset is archived.");
 
+    public static Error HasPositions =>
+        Error.Conflict("Assets.HasPositions", "An asset with positions cannot be deleted; archive it instead.");
+
     public static Error ClassNotFound =>
         Error.NotFound("AssetClasses.NotFound", "Asset class not found.");
 

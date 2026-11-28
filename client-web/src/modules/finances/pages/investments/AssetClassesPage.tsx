@@ -12,6 +12,7 @@ import {
   useAssetClassMap,
   useAssets,
   useCreateAssetClass,
+  useDeleteAsset,
   useDeleteAssetClass,
   usePositions,
   useRenameAssetClass,
@@ -21,7 +22,8 @@ import {
 import { AssetFormModal } from './AssetFormModal'
 
 /**
- * The user's assets, which can be created, edited and archived even without a position; the system's
+ * The user's assets, which can be created, edited and archived even without a position, and deleted while
+ * they never had one; the system's
  * asset classes, read-only; and the user's own classes, which can be created, renamed, archived, and
  * deleted while no asset uses them.
  */
@@ -37,9 +39,11 @@ export function AssetClassesPage() {
   const archive = useSetAssetClassArchived()
   const remove = useDeleteAssetClass()
   const { data: assets, isLoading: assetsLoading } = useAssets()
-  const { data: openPositions } = usePositions()
+  // Closed positions count too: an asset that ever had one is history, so it is archived, not deleted.
+  const { data: positions } = usePositions({ includeClosed: true })
   const classMap = useAssetClassMap()
   const archiveAsset = useSetAssetArchived()
+  const removeAsset = useDeleteAsset()
   const [assetForm, setAssetForm] = useState<AssetDto | 'new' | null>(null)
 
   function openForm(item: AssetClassDto | 'new') {
@@ -85,6 +89,24 @@ export function AssetClassesPage() {
     })
   }
 
+  function confirmDeleteAsset(item: AssetDto) {
+    modal.confirm({
+      title: t('finances.investments.deleteAssetConfirm'),
+      content: item.name,
+      okText: t('common.delete'),
+      okButtonProps: { danger: true },
+      cancelText: t('common.cancel'),
+      onOk: async () => {
+        try {
+          await removeAsset.mutateAsync(item.id)
+          message.success(t('finances.investments.assetDeleted'))
+        } catch (err) {
+          message.error(toErrorMessage(err, t('finances.investments.saveError')))
+        }
+      },
+    })
+  }
+
   async function toggleAssetArchived(item: AssetDto) {
     try {
       await archiveAsset.mutateAsync({ id: item.id, archived: !item.archivedAt })
@@ -96,7 +118,8 @@ export function AssetClassesPage() {
 
   const divider = `1px solid ${token.colorBorderSecondary}`
   const openCount = new Map<string, number>()
-  for (const p of openPositions ?? []) openCount.set(p.assetId, (openCount.get(p.assetId) ?? 0) + 1)
+  for (const p of positions ?? []) if (p.status === 'open') openCount.set(p.assetId, (openCount.get(p.assetId) ?? 0) + 1)
+  const withPositions = new Set((positions ?? []).map((p) => p.assetId))
   // Archived assets go last; the API already sorts by name.
   const sortedAssets = [...(assets ?? [])].sort((a, b) => Number(!!a.archivedAt) - Number(!!b.archivedAt))
 
@@ -133,6 +156,7 @@ export function AssetClassesPage() {
                 label: a.archivedAt ? t('finances.investments.unarchive') : t('finances.investments.archive'),
                 onClick: () => void toggleAssetArchived(a),
               },
+              ...(withPositions.has(a.id) ? [] : [{ key: 'delete', label: t('common.delete'), danger: true, onClick: () => confirmDeleteAsset(a) }]),
             ],
           }}
         >
